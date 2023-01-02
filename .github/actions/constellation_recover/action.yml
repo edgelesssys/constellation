@@ -1,0 +1,102 @@
+name: Constellation recover
+description: "Recover a Constellation cluster with an unavailable control plane."
+
+inputs:
+  kubeconfig:
+    description: "The kubeconfig for the cluster."
+    required: true
+  masterSecret:
+    description: "The master-secret for the cluster."
+    required: true
+  cloudProvider:
+    description: "Which cloud provider to use."
+    required: true
+  gcpProject:
+    description: "The GCP project Constellation is deployed in."
+    required: false
+  resourceGroup:
+    description: "The Azure resource group Constellation is deployed in."
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    # Get Constellation UID
+    - name: Get Constellation cluster UID
+      shell: bash
+      run: |
+        CONSTELLATION_UID=$(yq -r ".uid" constellation-id.json)
+        echo "CONSTELLATION_UID=$CONSTELLATION_UID" >> $GITHUB_ENV
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+    # Restart worker node machine and wait for it to rejoin the cluster
+    - name: Restart worker node on GCP
+      if: ${{ inputs.cloudProvider == 'gcp' }}
+      shell: bash
+      run: |
+        export GCP_ZONE=$(yq -r ".provider.gcp.zone" constellation-conf.yaml)
+        export WORKER_NODE_INSTANCE=$(gcloud compute instances list --project=${{ inputs.gcpProject }} --zones=${GCP_ZONE} --filter="labels.constellation-role=worker AND labels.constellation-uid=${CONSTELLATION_UID}" --format="json" | jq '.[0].name' -r)
+        echo Shutting down worker instance: ${WORKER_NODE_INSTANCE}
+        gcloud compute instances reset ${WORKER_NODE_INSTANCE} --project=${{ inputs.gcpProject }} --zone=${GCP_ZONE}
+        kubectl wait --for=condition=ready --all nodes --timeout=10m
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+    - name: Restart worker node on Azure
+      if: ${{ inputs.cloudProvider == 'azure' }}
+      shell: bash
+      run: |
+        echo Shutting down worker instance: e2e-test-${CONSTELLATION_UID}-worker
+        az vmss restart --instance-ids 0 --name e2e-test-${CONSTELLATION_UID}-worker --resource-group ${{ inputs.resourceGroup }}
+        kubectl wait --for=condition=ready --all nodes --timeout=10m
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+    - name: Restart worker node on AWS
+      if: ${{ inputs.cloudProvider == 'aws' }}
+      shell: bash
+      run: |
+        export AWS_REGION=$(yq -r ".provider.aws.region" constellation-conf.yaml)
+        export WORKER_NODE_INSTANCE=$(aws ec2 describe-instances --region=${AWS_REGION} --filters Name=tag:constellation-role,Values=worker Name=tag:constellation-uid,Values=${CONSTELLATION_UID} | yq '.Reservations[0].Instances[0].InstanceId' -r)
+        echo Shutting down worker instance: ${WORKER_NODE_INSTANCE}
+        aws ec2 reboot-instances --region=${AWS_REGION} --instance-ids=${WORKER_NODE_INSTANCE}
+        kubectl wait --for=condition=ready --all nodes --timeout=10m
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+    # Restart control plane machines
+    - name: Restart control plane on GCP
+      if: ${{ inputs.cloudProvider == 'gcp' }}
+      shell: bash
+      run: |
+        export GCP_ZONE=$(yq -r ".provider.gcp.zone" constellation-conf.yaml)
+        export CONTROL_PLANE_INSTANCES=$(gcloud compute instances list --project=${{ inputs.gcpProject }} --zones=${GCP_ZONE} --filter="labels.constellation-role=control-plane AND labels.constellation-uid=${CONSTELLATION_UID}" --format="json" | jq '.[].name' -r)
+        echo Shutting down control plane instances: ${CONTROL_PLANE_INSTANCES}
+        for instance in ${CONTROL_PLANE_INSTANCES}
+        do
+        gcloud compute instances reset ${instance} --project=${{ inputs.gcpProject }} --zone=${GCP_ZONE}
+        done
+    - name: Restart control plane on Azure
+      if: ${{ inputs.cloudProvider == 'azure' }}
+      shell: bash
+      run: |
+        export CONTROL_PLANE_INSTANCES=$(az vmss list-instances --name e2e-test-${CONSTELLATION_UID}-control-plane --resource-group ${{ inputs.resourceGroup }} | yq '.[].instanceId' -r)
+        echo Shutting down control plane instances: ${CONTROL_PLANE_INSTANCES}
+        for id in ${CONTROL_PLANE_INSTANCES}
+        do
+        az vmss restart --instance-ids ${id} --name e2e-test-${CONSTELLATION_UID}-control-plane --resource-group ${{ inputs.resourceGroup }}
+        done
+    - name: Restart control plane on AWS
+      if: ${{ inputs.cloudProvider == 'aws' }}
+      shell: bash
+      run: |
+        export AWS_REGION=$(yq -r ".provider.aws.region" constellation-conf.yaml)
+        export CONTROL_PLANE_INSTANCES=$(aws ec2 describe-instances --region=${AWS_REGION} --filters Name=tag:constellation-role,Values=control-plane Name=tag:constellation-uid,Values=${CONSTELLATION_UID} | yq '.Reservations[0].Instances[].InstanceId' -r)
+        echo Shutting down control plane instances: ${CONTROL_PLANE_INSTANCES}
+        for id in ${CONTROL_PLANE_INSTANCES}
+        do
+        aws ec2 reboot-instances --region=${AWS_REGION} --instance-ids=${id}
+        done
+    # Recover the control plane
+    - name: Constellation recover
+      run: constellation recover --master-secret=${{ inputs.masterSecret }}
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
