@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )
