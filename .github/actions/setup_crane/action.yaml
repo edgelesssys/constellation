@@ -1,0 +1,17 @@
+name: Setup crane
+description: "Install crane (go-containerregistry)."
+runs:
+  using: composite
+  steps:
+    - name: Install
+      shell: bash
+      env:
+        VERSION: "0.12.1"
+        OS: ${{ runner.os == 'Linux' && 'Linux' || 'Darwin' }}
+        ARCH: ${{ runner.arch == 'X64' && 'x86_64' || runner.arch == 'ARM64' && 'arm64' }}
+      run: |
+        echo "::group::Install crane"
+        curl -sL "https://github.com/google/go-containerregistry/releases/download/v${VERSION}/go-containerregistry_${OS}_${ARCH}.tar.gz" > go-containerregistry.tar.gz
+        tar -xzf go-containerregistry.tar.gz
+        sudo mv krane gcrane crane /usr/local/bin/
+        echo "::endgroup::"
