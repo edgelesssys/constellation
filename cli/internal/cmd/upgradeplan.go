@@ -22,9 +22,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/manifoldco/promptui"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

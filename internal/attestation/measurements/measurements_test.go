@@ -16,9 +16,9 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 )
 

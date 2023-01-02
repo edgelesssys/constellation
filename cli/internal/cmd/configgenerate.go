@@ -13,9 +13,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 )
 
 func newConfigGenerateCmd() *cobra.Command {

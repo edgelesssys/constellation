@@ -9,7 +9,7 @@ runs:
       with:
         fetch-depth: 0
         repository: "siderolabs/talos"
-        ref: "v1.2.6"
+        ref: "v1.3.1"
         path: talos
 
     # This is required to be able to build docgen
