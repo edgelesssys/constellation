@@ -1,8 +1,4 @@
-# Components
-
-
-
-(**FS: Overall, good. Should be renamed to something like "Kubernetes Components"**)
+# Constellation services
 
 Constellation takes care of bootstrapping and initializing a Confidential Kubernetes cluster. (**FS: weird**)
 During the lifetime of the cluster, it handles day 2 operations such as key management, remote attestation, and updates. (**FS: features**)
@@ -35,15 +31,6 @@ flowchart LR
     C -- deploys --> E
     C -- deploys --> F
 ```
-
-## Bootstrapper
-
-**FS: some context missing**
-The *Bootstrapper* is the first component launched after booting a Constellation node image.
-It sets up that machine as a Kubernetes node and integrates that node into the Kubernetes cluster.
-To this end, the *Bootstrapper* first downloads and [verifies](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) (**FS: this is not a good link**) the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) at the configured versions. (**FS: where are they configured?**)
-The *Bootstrapper* tries to find an existing cluster (**FS: how?**) and if successful, communicates with the [JoinService](components.md#joinservice) to join the node.
-Otherwise, it waits for an initialization request to create a new Kubernetes cluster.
 
 ## JoinService
 
