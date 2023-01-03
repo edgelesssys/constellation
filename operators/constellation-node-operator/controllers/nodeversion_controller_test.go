@@ -107,7 +107,7 @@ func TestAnnotateNodes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			reconciler := NodeImageReconciler{
+			reconciler := NodeVersionReconciler{
 				nodeReplacer: &stubNodeReplacerReader{
 					nodeImage:         "node-image",
 					scalingGroupID:    "scaling-group-id",
@@ -217,13 +217,13 @@ func TestPairDonorsAndHeirs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			reconciler := NodeImageReconciler{
+			reconciler := NodeVersionReconciler{
 				nodeReplacer: &stubNodeReplacerReader{},
 				Client: &stubReadWriterClient{
 					stubReaderClient: *newStubReaderClient(t, []runtime.Object{&tc.outdatedNode, &tc.mintNode.node}, nil, nil),
 				},
 			}
-			nodeImage := updatev1alpha1.NodeImage{}
+			nodeImage := updatev1alpha1.NodeVersion{}
 			pairs := reconciler.pairDonorsAndHeirs(context.Background(), &nodeImage, []corev1.Node{tc.outdatedNode}, []mintNode{tc.mintNode})
 			if tc.wantPair == nil {
 				assert.Len(pairs, 0)
@@ -307,7 +307,7 @@ func TestMatchDonorsAndHeirs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			reconciler := NodeImageReconciler{
+			reconciler := NodeVersionReconciler{
 				nodeReplacer: &stubNodeReplacerReader{},
 				Client: &stubReadWriterClient{
 					stubReaderClient: *newStubReaderClient(t, []runtime.Object{&tc.donor, &tc.heir}, nil, nil),
@@ -578,12 +578,12 @@ func TestCreateNewNodes(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			desiredNodeImage := updatev1alpha1.NodeImage{
-				Spec: updatev1alpha1.NodeImageSpec{
+			desiredNodeImage := updatev1alpha1.NodeVersion{
+				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageReference: "image",
 				},
 			}
-			reconciler := NodeImageReconciler{
+			reconciler := NodeVersionReconciler{
 				nodeReplacer: &stubNodeReplacerWriter{},
 				Client: &stubReadWriterClient{
 					stubReaderClient: *newStubReaderClient(t, []runtime.Object{}, nil, nil),
@@ -600,6 +600,7 @@ func TestCreateNewNodes(t *testing.T) {
 
 func TestGroupNodes(t *testing.T) {
 	latestImageReference := "latest-image"
+	latestK8sComponentsReference := "latest-k8s-components-ref"
 	scalingGroup := "scaling-group"
 	wantNodeGroups := nodeGroups{
 		Outdated: []corev1.Node{
@@ -607,8 +608,19 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "outdated",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    "old-image",
+						scalingGroupAnnotation:                         scalingGroup,
+						NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
+						nodeImageAnnotation:                            "old-image",
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "outdated",
+					Annotations: map[string]string{
+						scalingGroupAnnotation:                         scalingGroup,
+						NodeKubernetesComponentsReferenceAnnotationKey: "old-ref",
+						nodeImageAnnotation:                            latestImageReference,
 					},
 				},
 			},
@@ -618,8 +630,9 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "uptodate",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
+						scalingGroupAnnotation:                         scalingGroup,
+						nodeImageAnnotation:                            latestImageReference,
+						NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
 					},
 				},
 			},
@@ -629,9 +642,21 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "donor",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    "old-image",
-						heirAnnotation:         "heir",
+						scalingGroupAnnotation:                         scalingGroup,
+						nodeImageAnnotation:                            "old-image",
+						NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
+						heirAnnotation:                                 "heir",
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "donor",
+					Annotations: map[string]string{
+						scalingGroupAnnotation:                         scalingGroup,
+						nodeImageAnnotation:                            latestImageReference,
+						NodeKubernetesComponentsReferenceAnnotationKey: "old-ref",
+						heirAnnotation:                                 "heir",
 					},
 				},
 			},
@@ -641,9 +666,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "heir",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						donorAnnotation:        "donor",
+						scalingGroupAnnotation:                         scalingGroup,
+						nodeImageAnnotation:                            latestImageReference,
+						NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
+						donorAnnotation:                                "donor",
 					},
 				},
 			},
@@ -653,9 +679,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "obsolete",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						obsoleteAnnotation:     "true",
+						scalingGroupAnnotation:                         scalingGroup,
+						nodeImageAnnotation:                            latestImageReference,
+						NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
+						obsoleteAnnotation:                             "true",
 					},
 				},
 			},
@@ -666,8 +693,9 @@ func TestGroupNodes(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mint",
 						Annotations: map[string]string{
-							scalingGroupAnnotation: scalingGroup,
-							nodeImageAnnotation:    latestImageReference,
+							scalingGroupAnnotation:                         scalingGroup,
+							nodeImageAnnotation:                            latestImageReference,
+							NodeKubernetesComponentsReferenceAnnotationKey: latestK8sComponentsReference,
 						},
 					},
 				},
@@ -695,7 +723,7 @@ func TestGroupNodes(t *testing.T) {
 	}
 
 	assert := assert.New(t)
-	groups := groupNodes(nodes, pendingNodes, latestImageReference)
+	groups := groupNodes(nodes, pendingNodes, latestImageReference, latestK8sComponentsReference)
 	assert.Equal(wantNodeGroups, groups)
 }
 

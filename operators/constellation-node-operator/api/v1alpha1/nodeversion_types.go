@@ -11,16 +11,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NodeImageSpec defines the desired state of NodeImage.
-type NodeImageSpec struct {
+// NodeVersionSpec defines the desired state of NodeVersion.
+type NodeVersionSpec struct {
 	// ImageReference is the image to use for all nodes.
 	ImageReference string `json:"image,omitempty"`
 	// ImageVersion is the CSP independent version of the image to use for all nodes.
 	ImageVersion string `json:"imageVersion,omitempty"`
+	// KubernetesComponentsReference is a reference to the ConfigMap containing the Kubernetes components to use for all nodes.
+	KubernetesComponentsReference string `json:"kubernetesComponentsReference,omitempty"`
 }
 
-// NodeImageStatus defines the observed state of NodeImage.
-type NodeImageStatus struct {
+// NodeVersionStatus defines the observed state of NodeVersion.
+type NodeVersionStatus struct {
 	// Outdated is a list of nodes that are using an outdated image.
 	Outdated []corev1.ObjectReference `json:"outdated,omitempty"`
 	// UpToDate is a list of nodes that are using the latest image and labels.
@@ -47,24 +49,24 @@ type NodeImageStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// NodeImage is the Schema for the nodeimages API.
-type NodeImage struct {
+// NodeVersion is the Schema for the nodeversions API.
+type NodeVersion struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NodeImageSpec   `json:"spec,omitempty"`
-	Status NodeImageStatus `json:"status,omitempty"`
+	Spec   NodeVersionSpec   `json:"spec,omitempty"`
+	Status NodeVersionStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// NodeImageList contains a list of NodeImage.
-type NodeImageList struct {
+// NodeVersionList contains a list of NodeVersion.
+type NodeVersionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []NodeImage `json:"items"`
+	Items           []NodeVersion `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&NodeImage{}, &NodeImageList{})
+	SchemeBuilder.Register(&NodeVersion{}, &NodeVersionList{})
 }

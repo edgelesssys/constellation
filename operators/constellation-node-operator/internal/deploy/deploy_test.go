@@ -10,18 +10,22 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestInitialResources(t *testing.T) {
+	k8sComponentsReference := "k8s-components-sha256-ABC"
 	testCases := map[string]struct {
 		items         []scalingGroupStoreItem
 		imageErr      error
@@ -85,7 +89,16 @@ func TestInitialResources(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			k8sClient := &stubK8sClient{createErr: tc.createErr}
+			k8sClient := &fakeK8sClient{
+				createErr: tc.createErr,
+				listConfigMaps: []corev1.ConfigMap{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: k8sComponentsReference,
+						},
+					},
+				},
+			}
 			scalingGroupGetter := newScalingGroupGetter(tc.items, tc.imageErr, tc.nameErr, tc.listErr)
 			err := InitialResources(context.Background(), k8sClient, &stubImageInfo{}, scalingGroupGetter, "uid")
 			if tc.wantErr {
@@ -156,7 +169,7 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			k8sClient := &stubK8sClient{createErr: tc.createErr}
+			k8sClient := &fakeK8sClient{createErr: tc.createErr}
 			err := createAutoscalingStrategy(context.Background(), k8sClient, "stub")
 			if tc.wantErr {
 				assert.Error(err)
@@ -169,21 +182,24 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 	}
 }
 
-func TestCreateNodeImage(t *testing.T) {
+func TestCreateNodeVersion(t *testing.T) {
+	k8sComponentsReference := "k8s-components-sha256-reference"
 	testCases := map[string]struct {
-		createErr     error
-		wantNodeImage *updatev1alpha1.NodeImage
-		wantErr       bool
+		createErr           error
+		existingNodeVersion *updatev1alpha1.NodeVersion
+		wantNodeVersion     *updatev1alpha1.NodeVersion
+		wantErr             bool
 	}{
 		"create works": {
-			wantNodeImage: &updatev1alpha1.NodeImage{
-				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeImage"},
+			wantNodeVersion: &updatev1alpha1.NodeVersion{
+				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: constants.NodeImageResourceName,
+					Name: constants.NodeVersionResourceName,
 				},
-				Spec: updatev1alpha1.NodeImageSpec{
-					ImageReference: "image-reference",
-					ImageVersion:   "image-version",
+				Spec: updatev1alpha1.NodeVersionSpec{
+					ImageReference:                "image-reference",
+					ImageVersion:                  "image-version",
+					KubernetesComponentsReference: k8sComponentsReference,
 				},
 			},
 		},
@@ -191,16 +207,28 @@ func TestCreateNodeImage(t *testing.T) {
 			createErr: errors.New("create failed"),
 			wantErr:   true,
 		},
-		"image exists": {
-			createErr: k8sErrors.NewAlreadyExists(schema.GroupResource{}, constants.AutoscalingStrategyResourceName),
-			wantNodeImage: &updatev1alpha1.NodeImage{
-				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeImage"},
+		"version exists": {
+			createErr: k8sErrors.NewAlreadyExists(schema.GroupResource{}, constants.NodeVersionResourceName),
+			existingNodeVersion: &updatev1alpha1.NodeVersion{
+				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: constants.NodeImageResourceName,
+					Name: constants.NodeVersionResourceName,
 				},
-				Spec: updatev1alpha1.NodeImageSpec{
-					ImageReference: "image-reference",
-					ImageVersion:   "image-version",
+				Spec: updatev1alpha1.NodeVersionSpec{
+					ImageReference:                "image-reference2",
+					ImageVersion:                  "image-version2",
+					KubernetesComponentsReference: "components-reference2",
+				},
+			},
+			wantNodeVersion: &updatev1alpha1.NodeVersion{
+				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: constants.NodeVersionResourceName,
+				},
+				Spec: updatev1alpha1.NodeVersionSpec{
+					ImageReference:                "image-reference2",
+					ImageVersion:                  "image-version2",
+					KubernetesComponentsReference: "components-reference2",
 				},
 			},
 		},
@@ -211,15 +239,28 @@ func TestCreateNodeImage(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			k8sClient := &stubK8sClient{createErr: tc.createErr}
-			err := createNodeImage(context.Background(), k8sClient, "image-reference", "image-version")
+			k8sClient := &fakeK8sClient{
+				createErr: tc.createErr,
+				listConfigMaps: []corev1.ConfigMap{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:              k8sComponentsReference,
+							CreationTimestamp: metav1.Time{Time: time.Unix(1, 0)},
+						},
+					},
+				},
+			}
+			if tc.existingNodeVersion != nil {
+				k8sClient.createdObjects = append(k8sClient.createdObjects, tc.existingNodeVersion)
+			}
+			err := createNodeVersion(context.Background(), k8sClient, "image-reference", "image-version")
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			assert.Len(k8sClient.createdObjects, 1)
-			assert.Equal(tc.wantNodeImage, k8sClient.createdObjects[0])
+			assert.Equal(tc.wantNodeVersion, k8sClient.createdObjects[0])
 		})
 	}
 }
@@ -237,7 +278,7 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeImage:           constants.NodeImageResourceName,
+					NodeVersion:         constants.NodeVersionResourceName,
 					GroupID:             "group-id",
 					AutoscalerGroupName: "group-Name",
 					Min:                 1,
@@ -258,7 +299,7 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeImage:           constants.NodeImageResourceName,
+					NodeVersion:         constants.NodeVersionResourceName,
 					GroupID:             "group-id",
 					AutoscalerGroupName: "group-Name",
 					Min:                 1,
@@ -274,7 +315,7 @@ func TestCreateScalingGroup(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			k8sClient := &stubK8sClient{createErr: tc.createErr}
+			k8sClient := &fakeK8sClient{createErr: tc.createErr}
 			newScalingGroupConfig := newScalingGroupConfig{k8sClient, "group-id", "group-Name", "group-Name", updatev1alpha1.WorkerRole}
 			err := createScalingGroup(context.Background(), newScalingGroupConfig)
 			if tc.wantErr {
@@ -288,15 +329,63 @@ func TestCreateScalingGroup(t *testing.T) {
 	}
 }
 
-type stubK8sClient struct {
+type fakeK8sClient struct {
 	createdObjects []client.Object
 	createErr      error
-	client.Writer
+	listConfigMaps []corev1.ConfigMap
+	listErr        error
+	getErr         error
+	updateErr      error
+	client.Client
 }
 
-func (s *stubK8sClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+func (s *fakeK8sClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+	for _, o := range s.createdObjects {
+		if obj.GetName() == o.GetName() {
+			return k8sErrors.NewAlreadyExists(schema.GroupResource{}, obj.GetName())
+		}
+	}
+
 	s.createdObjects = append(s.createdObjects, obj)
 	return s.createErr
+}
+
+func (s *fakeK8sClient) Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
+	if ObjNodeVersion, ok := obj.(*updatev1alpha1.NodeVersion); ok {
+		for _, o := range s.createdObjects {
+			if createdNodeVersion, ok := o.(*updatev1alpha1.NodeVersion); ok && createdNodeVersion != nil {
+				if createdNodeVersion.Name == key.Name {
+					ObjNodeVersion.ObjectMeta = createdNodeVersion.ObjectMeta
+					ObjNodeVersion.TypeMeta = createdNodeVersion.TypeMeta
+					ObjNodeVersion.Spec = createdNodeVersion.Spec
+					return nil
+				}
+			}
+		}
+	}
+
+	return s.getErr
+}
+
+func (s *fakeK8sClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+	if updatedObjectNodeVersion, ok := obj.(*updatev1alpha1.NodeVersion); ok {
+		for i, o := range s.createdObjects {
+			if createdObjectNodeVersion, ok := o.(*updatev1alpha1.NodeVersion); ok && createdObjectNodeVersion != nil {
+				if createdObjectNodeVersion.Name == updatedObjectNodeVersion.Name {
+					s.createdObjects[i] = obj
+					return nil
+				}
+			}
+		}
+	}
+	return s.updateErr
+}
+
+func (s *fakeK8sClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	if configMapList, ok := list.(*corev1.ConfigMapList); ok {
+		configMapList.Items = append(configMapList.Items, s.listConfigMaps...)
+	}
+	return s.listErr
 }
 
 type stubImageInfo struct {

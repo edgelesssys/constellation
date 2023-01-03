@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: nodeimages.update.edgeless.systems
+  name: nodeversions.update.edgeless.systems
 spec:
   group: update.edgeless.systems
   names:
-    kind: NodeImage
-    listKind: NodeImageList
-    plural: nodeimages
-    singular: nodeimage
+    kind: NodeVersion
+    listKind: NodeVersionList
+    plural: nodeversions
+    singular: nodeversion
   scope: Cluster
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: NodeImage is the Schema for the nodeimages API.
+        description: NodeVersion is the Schema for the nodeversions API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: NodeImageSpec defines the desired state of NodeImage.
+            description: NodeVersionSpec defines the desired state of NodeVersion.
             properties:
               image:
                 description: ImageReference is the image to use for all nodes.
@@ -42,9 +42,13 @@ spec:
                 description: ImageVersion is the CSP independent version of the image
                   to use for all nodes.
                 type: string
+              kubernetesComponentsReference:
+                description: KubernetesComponentsReference is a reference to the ConfigMap
+                  containing the Kubernetes components to use for all nodes.
+                type: string
             type: object
           status:
-            description: NodeImageStatus defines the observed state of NodeImage.
+            description: NodeVersionStatus defines the observed state of NodeVersion.
             properties:
               budget:
                 description: Budget is the amount of extra nodes that can be created

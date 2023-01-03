@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the hash of the installed components of this node.
-	NodeKubernetesComponentsHashAnnotationKey = "updates.edgeless.systems/kubernetes-components-hash"
+	// NodeKubernetesComponentsReferenceAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.
+	NodeKubernetesComponentsReferenceAnnotationKey = "constellation.edgeless.systems/kubernetes-components"
 
 	joiningNodeNameKey = ".spec.name"
 )
@@ -76,7 +76,7 @@ func (r *JoiningNodesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if node.Annotations == nil {
 			node.Annotations = map[string]string{}
 		}
-		node.Annotations[NodeKubernetesComponentsHashAnnotationKey] = joiningNode.Spec.ComponentsHash
+		node.Annotations[NodeKubernetesComponentsReferenceAnnotationKey] = joiningNode.Spec.ComponentsReference
 		return r.Update(ctx, &node)
 	})
 	if err != nil {

@@ -14,8 +14,8 @@ import (
 type JoiningNodeSpec struct {
 	// Name of the node expected to join.
 	Name string `json:"name,omitempty"`
-	// ComponentsHash is the hash of the components that were sent to the node by the join service.
-	ComponentsHash string `json:"componentshash,omitempty"`
+	// ComponentsReference is the reference to the ConfigMap containing the components.
+	ComponentsReference string `json:"componentsreference,omitempty"`
 	// IsControlPlane is true if the node is a control plane node.
 	IsControlPlane bool `json:"iscontrolplane,omitempty"`
 	// Deadline is the time after which the joining node is considered to have failed.

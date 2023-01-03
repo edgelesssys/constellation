@@ -38,29 +38,29 @@ const (
 	// nodeJoinTimeout is the time limit pending nodes have to join the cluster before being terminated.
 	nodeJoinTimeout = time.Minute * 30
 	// nodeLeaveTimeout is the time limit pending nodes have to leave the cluster and being terminated.
-	nodeLeaveTimeout                   = time.Minute
-	donorAnnotation                    = "constellation.edgeless.systems/donor"
-	heirAnnotation                     = "constellation.edgeless.systems/heir"
-	scalingGroupAnnotation             = "constellation.edgeless.systems/scaling-group-id"
-	nodeImageAnnotation                = "constellation.edgeless.systems/node-image"
-	obsoleteAnnotation                 = "constellation.edgeless.systems/obsolete"
-	conditionNodeImageUpToDateReason   = "NodeImagesUpToDate"
-	conditionNodeImageUpToDateMessage  = "Node image of every node is up to date"
-	conditionNodeImageOutOfDateReason  = "NodeImagesOutOfDate"
-	conditionNodeImageOutOfDateMessage = "Some node images are out of date"
+	nodeLeaveTimeout                     = time.Minute
+	donorAnnotation                      = "constellation.edgeless.systems/donor"
+	heirAnnotation                       = "constellation.edgeless.systems/heir"
+	scalingGroupAnnotation               = "constellation.edgeless.systems/scaling-group-id"
+	nodeImageAnnotation                  = "constellation.edgeless.systems/node-image"
+	obsoleteAnnotation                   = "constellation.edgeless.systems/obsolete"
+	conditionNodeVersionUpToDateReason   = "NodeVersionsUpToDate"
+	conditionNodeVersionUpToDateMessage  = "Node version of every node is up to date"
+	conditionNodeVersionOutOfDateReason  = "NodeVersionsOutOfDate"
+	conditionNodeVersionOutOfDateMessage = "Some node versions are out of date"
 )
 
-// NodeImageReconciler reconciles a NodeImage object.
-type NodeImageReconciler struct {
+// NodeVersionReconciler reconciles a NodeVersion object.
+type NodeVersionReconciler struct {
 	nodeReplacer
 	etcdRemover
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-// NewNodeImageReconciler creates a new NodeImageReconciler.
-func NewNodeImageReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover, client client.Client, scheme *runtime.Scheme) *NodeImageReconciler {
-	return &NodeImageReconciler{
+// NewNodeVersionReconciler creates a new NodeVersionReconciler.
+func NewNodeVersionReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover, client client.Client, scheme *runtime.Scheme) *NodeVersionReconciler {
+	return &NodeVersionReconciler{
 		nodeReplacer: nodeReplacer,
 		etcdRemover:  etcdRemover,
 		Client:       client,
@@ -68,20 +68,20 @@ func NewNodeImageReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover, 
 	}
 }
 
-//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/finalizers,verbs=update
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeversions,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeversions/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeversions/finalizers,verbs=update
 //+kubebuilder:rbac:groups=nodemaintenance.medik8s.io,resources=nodemaintenances,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
 
-// Reconcile replaces outdated nodes (using an old image) with new nodes (using a new image) as specified in the NodeImage spec.
-func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// Reconcile replaces outdated nodes (using an old image) with new nodes (using a new image) as specified in the NodeVersion spec.
+func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logr := log.FromContext(ctx)
-	logr.Info("Reconciling NodeImage")
+	logr.Info("Reconciling NodeVersion")
 
-	var desiredNodeImage updatev1alpha1.NodeImage
-	if err := r.Get(ctx, req.NamespacedName, &desiredNodeImage); err != nil {
+	var desiredNodeVersion updatev1alpha1.NodeVersion
+	if err := r.Get(ctx, req.NamespacedName, &desiredNodeVersion); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	// get list of autoscaling strategies
@@ -122,7 +122,7 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		scalingGroupByID[strings.ToLower(scalingGroup.Spec.GroupID)] = scalingGroup
 	}
 	annotatedNodes, invalidNodes := r.annotateNodes(ctx, nodeList.Items)
-	groups := groupNodes(annotatedNodes, pendingNodeList.Items, desiredNodeImage.Spec.ImageReference)
+	groups := groupNodes(annotatedNodes, pendingNodeList.Items, desiredNodeVersion.Spec.ImageReference, desiredNodeVersion.Spec.KubernetesComponentsReference)
 
 	logr.Info("Grouped nodes",
 		"outdatedNodes", len(groups.Outdated),
@@ -147,7 +147,7 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	logr.Info("Budget for new nodes", "newNodesBudget", newNodesBudget)
 
-	status := nodeImageStatus(r.Scheme, groups, pendingNodeList.Items, invalidNodes, newNodesBudget)
+	status := nodeVersionStatus(r.Scheme, groups, pendingNodeList.Items, invalidNodes, newNodesBudget)
 	if err := r.tryUpdateStatus(ctx, req.NamespacedName, status); err != nil {
 		logr.Error(err, "Updating status")
 	}
@@ -159,20 +159,20 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if allNodesUpToDate {
-		logr.Info("All node images up to date")
+		logr.Info("All node versions up to date")
 		return ctrl.Result{}, nil
 	}
 
 	// should requeue is set if a node is deleted
 	var shouldRequeue bool
 	// find pairs of mint nodes and outdated nodes in the same scaling group to become donor & heir
-	replacementPairs := r.pairDonorsAndHeirs(ctx, &desiredNodeImage, groups.Outdated, groups.Mint)
+	replacementPairs := r.pairDonorsAndHeirs(ctx, &desiredNodeVersion, groups.Outdated, groups.Mint)
 	// extend replacement pairs to include existing pairs of donors and heirs
 	replacementPairs = r.matchDonorsAndHeirs(ctx, replacementPairs, groups.Donors, groups.Heirs)
 	// replace donor nodes by heirs
 	for _, pair := range replacementPairs {
 		logr.Info("Replacing node", "donorNode", pair.donor.Name, "heirNode", pair.heir.Name)
-		done, err := r.replaceNode(ctx, &desiredNodeImage, pair)
+		done, err := r.replaceNode(ctx, &desiredNodeVersion, pair)
 		if err != nil {
 			logr.Error(err, "Replacing node")
 			return ctrl.Result{}, err
@@ -192,13 +192,13 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 
-	newNodeConfig := newNodeConfig{desiredNodeImage, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
+	newNodeConfig := newNodeConfig{desiredNodeVersion, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
 	if err := r.createNewNodes(ctx, newNodeConfig); err != nil {
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 	// cleanup obsolete nodes
 	for _, node := range groups.Obsolete {
-		done, err := r.deleteNode(ctx, &desiredNodeImage, node)
+		done, err := r.deleteNode(ctx, &desiredNodeVersion, node)
 		if err != nil {
 			logr.Error(err, "Unable to remove obsolete node")
 		}
@@ -211,9 +211,9 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *NodeImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *NodeVersionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&updatev1alpha1.NodeImage{}).
+		For(&updatev1alpha1.NodeVersion{}).
 		Watches(
 			&source.Kind{Type: &updatev1alpha1.ScalingGroup{}},
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForScalingGroup),
@@ -221,17 +221,17 @@ func (r *NodeImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Watches(
 			&source.Kind{Type: &updatev1alpha1.AutoscalingStrategy{}},
-			handler.EnqueueRequestsFromMapFunc(r.findAllNodeImages),
+			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(autoscalerEnabledStatusChangedPredicate()),
 		).
 		Watches(
 			&source.Kind{Type: &corev1.Node{}},
-			handler.EnqueueRequestsFromMapFunc(r.findAllNodeImages),
+			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(nodeReadyPredicate()),
 		).
 		Watches(
 			&source.Kind{Type: &nodemaintenancev1beta1.NodeMaintenance{}},
-			handler.EnqueueRequestsFromMapFunc(r.findAllNodeImages),
+			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(nodeMaintenanceSucceededPredicate()),
 		).
 		Owns(&updatev1alpha1.PendingNode{}).
@@ -239,7 +239,7 @@ func (r *NodeImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // annotateNodes takes all nodes of the cluster and annotates them with the scaling group they are in and the image they are using.
-func (r *NodeImageReconciler) annotateNodes(ctx context.Context, nodes []corev1.Node) (annotatedNodes, invalidNodes []corev1.Node) {
+func (r *NodeVersionReconciler) annotateNodes(ctx context.Context, nodes []corev1.Node) (annotatedNodes, invalidNodes []corev1.Node) {
 	logr := log.FromContext(ctx)
 	for _, node := range nodes {
 		annotations := make(map[string]string)
@@ -285,7 +285,7 @@ func (r *NodeImageReconciler) annotateNodes(ctx context.Context, nodes []corev1.
 
 // pairDonorsAndHeirs takes a list of outdated nodes (that do not yet have a heir node) and a list of mint nodes (nodes using the latest image) and pairs matching nodes to become donor and heir.
 // outdatedNodes is also updated with heir annotations.
-func (r *NodeImageReconciler) pairDonorsAndHeirs(ctx context.Context, controller metav1.Object, outdatedNodes []corev1.Node, mintNodes []mintNode) []replacementPair {
+func (r *NodeVersionReconciler) pairDonorsAndHeirs(ctx context.Context, controller metav1.Object, outdatedNodes []corev1.Node, mintNodes []mintNode) []replacementPair {
 	logr := log.FromContext(ctx)
 	var pairs []replacementPair
 	for _, mintNode := range mintNodes {
@@ -345,7 +345,7 @@ func (r *NodeImageReconciler) pairDonorsAndHeirs(ctx context.Context, controller
 // matchDonorsAndHeirs takes separate lists of donors and heirs and matches each heir to its previously chosen donor.
 // a list of replacement pairs is returned.
 // donors and heirs with invalid pair references are cleaned up (the donor/heir annotations gets removed).
-func (r *NodeImageReconciler) matchDonorsAndHeirs(ctx context.Context, pairs []replacementPair, donors, heirs []corev1.Node) []replacementPair {
+func (r *NodeVersionReconciler) matchDonorsAndHeirs(ctx context.Context, pairs []replacementPair, donors, heirs []corev1.Node) []replacementPair {
 	logr := log.FromContext(ctx)
 	for _, heir := range heirs {
 		var foundPair bool
@@ -389,7 +389,7 @@ func (r *NodeImageReconciler) matchDonorsAndHeirs(ctx context.Context, pairs []r
 }
 
 // ensureAutoscaling will ensure that the autoscaling is enabled or disabled as needed.
-func (r *NodeImageReconciler) ensureAutoscaling(ctx context.Context, autoscalingEnabled bool, wantAutoscalingEnabled bool) error {
+func (r *NodeVersionReconciler) ensureAutoscaling(ctx context.Context, autoscalingEnabled bool, wantAutoscalingEnabled bool) error {
 	if autoscalingEnabled == wantAutoscalingEnabled {
 		return nil
 	}
@@ -418,7 +418,7 @@ func (r *NodeImageReconciler) ensureAutoscaling(ctx context.Context, autoscaling
 // Labels are copied from the donor node to the heir node.
 // Readiness of the heir node is awaited.
 // Deletion of the donor node is scheduled.
-func (r *NodeImageReconciler) replaceNode(ctx context.Context, controller metav1.Object, pair replacementPair) (bool, error) {
+func (r *NodeVersionReconciler) replaceNode(ctx context.Context, controller metav1.Object, pair replacementPair) (bool, error) {
 	logr := log.FromContext(ctx)
 	if !reflect.DeepEqual(nodeutil.FilterLabels(pair.donor.Labels), nodeutil.FilterLabels(pair.heir.Labels)) {
 		if err := r.copyNodeLabels(ctx, pair.donor.Name, pair.heir.Name); err != nil {
@@ -434,7 +434,7 @@ func (r *NodeImageReconciler) replaceNode(ctx context.Context, controller metav1
 }
 
 // deleteNode safely removes a node from the cluster and issues termination of the node by the CSP.
-func (r *NodeImageReconciler) deleteNode(ctx context.Context, controller metav1.Object, node corev1.Node) (bool, error) {
+func (r *NodeVersionReconciler) deleteNode(ctx context.Context, controller metav1.Object, node corev1.Node) (bool, error) {
 	logr := log.FromContext(ctx)
 	// cordon & drain node using node-maintenance-operator
 	var foundNodeMaintenance nodemaintenancev1beta1.NodeMaintenance
@@ -509,7 +509,7 @@ func (r *NodeImageReconciler) deleteNode(ctx context.Context, controller metav1.
 }
 
 // createNewNodes creates new nodes using up to date images as replacement for outdated nodes.
-func (r *NodeImageReconciler) createNewNodes(ctx context.Context, config newNodeConfig) error {
+func (r *NodeVersionReconciler) createNewNodes(ctx context.Context, config newNodeConfig) error {
 	logr := log.FromContext(ctx)
 	if config.newNodesBudget < 1 || len(config.outdatedNodes) == 0 {
 		return nil
@@ -543,8 +543,8 @@ func (r *NodeImageReconciler) createNewNodes(ctx context.Context, config newNode
 			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID, "scalingGroups", config.scalingGroupByID)
 			continue
 		}
-		if !strings.EqualFold(scalingGroup.Status.ImageReference, config.desiredNodeImage.Spec.ImageReference) {
-			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", config.desiredNodeImage.Spec.ImageReference)
+		if !strings.EqualFold(scalingGroup.Status.ImageReference, config.desiredNodeVersion.Spec.ImageReference) {
+			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", config.desiredNodeVersion.Spec.ImageReference)
 			continue
 		}
 		if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
@@ -573,7 +573,7 @@ func (r *NodeImageReconciler) createNewNodes(ctx context.Context, config newNode
 					Deadline:       &deadline,
 				},
 			}
-			if err := ctrl.SetControllerReference(&config.desiredNodeImage, pendingNode, r.Scheme); err != nil {
+			if err := ctrl.SetControllerReference(&config.desiredNodeVersion, pendingNode, r.Scheme); err != nil {
 				return err
 			}
 			if err := r.Create(ctx, pendingNode); err != nil {
@@ -588,7 +588,7 @@ func (r *NodeImageReconciler) createNewNodes(ctx context.Context, config newNode
 }
 
 // patchNodeAnnotations attempts to patch node annotations in a retry loop.
-func (r *NodeImageReconciler) patchNodeAnnotations(ctx context.Context, nodeName string, annotations map[string]string) error {
+func (r *NodeVersionReconciler) patchNodeAnnotations(ctx context.Context, nodeName string, annotations map[string]string) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var node corev1.Node
 		if err := r.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
@@ -601,7 +601,7 @@ func (r *NodeImageReconciler) patchNodeAnnotations(ctx context.Context, nodeName
 }
 
 // patchNodeAnnotations attempts to remove node annotations using a patch in a retry loop.
-func (r *NodeImageReconciler) patchUnsetNodeAnnotations(ctx context.Context, nodeName string, annotationKeys []string) error {
+func (r *NodeVersionReconciler) patchUnsetNodeAnnotations(ctx context.Context, nodeName string, annotationKeys []string) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var node corev1.Node
 		if err := r.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
@@ -614,7 +614,7 @@ func (r *NodeImageReconciler) patchUnsetNodeAnnotations(ctx context.Context, nod
 }
 
 // copyNodeLabels attempts to copy all node labels (except for reserved labels) from one node to another in a retry loop.
-func (r *NodeImageReconciler) copyNodeLabels(ctx context.Context, oldNodeName, newNodeName string) error {
+func (r *NodeVersionReconciler) copyNodeLabels(ctx context.Context, oldNodeName, newNodeName string) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var oldNode corev1.Node
 		if err := r.Get(ctx, types.NamespacedName{Name: oldNodeName}, &oldNode); err != nil {
@@ -630,35 +630,35 @@ func (r *NodeImageReconciler) copyNodeLabels(ctx context.Context, oldNodeName, n
 	})
 }
 
-// tryUpdateStatus attempts to update the NodeImage status field in a retry loop.
-func (r *NodeImageReconciler) tryUpdateStatus(ctx context.Context, name types.NamespacedName, status updatev1alpha1.NodeImageStatus) error {
+// tryUpdateStatus attempts to update the NodeVersion status field in a retry loop.
+func (r *NodeVersionReconciler) tryUpdateStatus(ctx context.Context, name types.NamespacedName, status updatev1alpha1.NodeVersionStatus) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		var nodeImage updatev1alpha1.NodeImage
-		if err := r.Get(ctx, name, &nodeImage); err != nil {
+		var nodeVersion updatev1alpha1.NodeVersion
+		if err := r.Get(ctx, name, &nodeVersion); err != nil {
 			return err
 		}
-		nodeImage.Status = *status.DeepCopy()
-		if err := r.Status().Update(ctx, &nodeImage); err != nil {
+		nodeVersion.Status = *status.DeepCopy()
+		if err := r.Status().Update(ctx, &nodeVersion); err != nil {
 			return err
 		}
 		return nil
 	})
 }
 
-// nodeImageStatus generates the NodeImage.Status field given node groups and the budget for new nodes.
-func nodeImageStatus(scheme *runtime.Scheme, groups nodeGroups, pendingNodes []updatev1alpha1.PendingNode, invalidNodes []corev1.Node, newNodesBudget int) updatev1alpha1.NodeImageStatus {
-	var status updatev1alpha1.NodeImageStatus
+// nodeVersionStatus generates the NodeVersion.Status field given node groups and the budget for new nodes.
+func nodeVersionStatus(scheme *runtime.Scheme, groups nodeGroups, pendingNodes []updatev1alpha1.PendingNode, invalidNodes []corev1.Node, newNodesBudget int) updatev1alpha1.NodeVersionStatus {
+	var status updatev1alpha1.NodeVersionStatus
 	outdatedCondition := metav1.Condition{
 		Type: updatev1alpha1.ConditionOutdated,
 	}
 	if len(groups.Outdated)+len(groups.Heirs)+len(pendingNodes)+len(groups.Obsolete) == 0 {
 		outdatedCondition.Status = metav1.ConditionFalse
-		outdatedCondition.Reason = conditionNodeImageUpToDateReason
-		outdatedCondition.Message = conditionNodeImageUpToDateMessage
+		outdatedCondition.Reason = conditionNodeVersionUpToDateReason
+		outdatedCondition.Message = conditionNodeVersionUpToDateMessage
 	} else {
 		outdatedCondition.Status = metav1.ConditionTrue
-		outdatedCondition.Reason = conditionNodeImageOutOfDateReason
-		outdatedCondition.Message = conditionNodeImageOutOfDateMessage
+		outdatedCondition.Reason = conditionNodeVersionOutOfDateReason
+		outdatedCondition.Message = conditionNodeVersionOutOfDateMessage
 	}
 	meta.SetStatusCondition(&status.Conditions, outdatedCondition)
 	for _, node := range groups.Outdated {
@@ -739,20 +739,20 @@ type replacementPair struct {
 // every properly annotated kubernetes node can be placed in exactly one of the sets.
 type nodeGroups struct {
 	// Outdated nodes are nodes that
-	// do not use the most recent image AND
+	// do not use the most recent version AND
 	// are not yet a donor to an up to date heir node
 	Outdated,
 	// UpToDate nodes are nodes that
-	// use the most recent image,
+	// use the most recent version,
 	// are not an heir to an outdated donor node AND
 	// are not mint nodes
 	UpToDate,
 	// Donors are nodes that
-	// do not use the most recent image AND
+	// do not use the most recent version AND
 	// are paired up with an up to date heir node
 	Donors,
 	// Heirs are nodes that
-	// use the most recent image AND
+	// use the most recent version AND
 	// are paired up with an outdated donor node
 	Heirs,
 	// Obsolete nodes are nodes that
@@ -761,21 +761,22 @@ type nodeGroups struct {
 	// They will be cleaned up by the operator.
 	Obsolete []corev1.Node
 	// Mint nodes are nodes that
-	// use the most recent image AND
+	// use the most recent version AND
 	// were created by the operator as replacements (heirs)
 	// and are awaiting pairing up with a donor node.
 	Mint []mintNode
 }
 
 // groupNodes classifies nodes by placing each into exactly one group.
-func groupNodes(nodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode, latestImageReference string) nodeGroups {
+func groupNodes(nodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode, latestImageReference string, latestK8sComponentsReference string) nodeGroups {
 	groups := nodeGroups{}
 	for _, node := range nodes {
 		if node.Annotations[obsoleteAnnotation] == "true" {
 			groups.Obsolete = append(groups.Obsolete, node)
 			continue
 		}
-		if !strings.EqualFold(node.Annotations[nodeImageAnnotation], latestImageReference) {
+		if !strings.EqualFold(node.Annotations[nodeImageAnnotation], latestImageReference) ||
+			!strings.EqualFold(node.Annotations[NodeKubernetesComponentsReferenceAnnotationKey], latestK8sComponentsReference) {
 			if heir := node.Annotations[heirAnnotation]; heir != "" {
 				groups.Donors = append(groups.Donors, node)
 			} else {
@@ -816,9 +817,9 @@ type etcdRemover interface {
 }
 
 type newNodeConfig struct {
-	desiredNodeImage updatev1alpha1.NodeImage
-	outdatedNodes    []corev1.Node
-	pendingNodes     []updatev1alpha1.PendingNode
-	scalingGroupByID map[string]updatev1alpha1.ScalingGroup
-	newNodesBudget   int
+	desiredNodeVersion updatev1alpha1.NodeVersion
+	outdatedNodes      []corev1.Node
+	pendingNodes       []updatev1alpha1.PendingNode
+	scalingGroupByID   map[string]updatev1alpha1.ScalingGroup
+	newNodesBudget     int
 }

@@ -73,8 +73,26 @@ func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string
 	return cm.Data[key], nil
 }
 
+// GetK8sComponentsRefFromNodeVersionCRD returns the K8sComponentsRef from the node version CRD.
+func (c *Client) GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error) {
+	nodeVersionResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "nodeversions"}
+	nodeVersion, err := c.dynClient.Resource(nodeVersionResource).Get(ctx, nodeName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get node version: %w", err)
+	}
+	// Extract K8sComponentsRef from nodeVersion.
+	k8sComponentsRef, found, err := unstructured.NestedString(nodeVersion.Object, "spec", "kubernetesComponentsReference")
+	if err != nil {
+		return "", fmt.Errorf("failed to get K8sComponentsRef from node version: %w", err)
+	}
+	if !found {
+		return "", fmt.Errorf("kubernetesComponentsReference not found in node version")
+	}
+	return k8sComponentsRef, nil
+}
+
 // AddNodeToJoiningNodes adds the provided node as a joining node CRD.
-func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
+func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsReference string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
 
 	compliantNodeName, err := k8sCompliantHostname(nodeName)
@@ -98,10 +116,10 @@ func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, com
 			"name": objectMetadataName,
 		},
 		"spec": map[string]any{
-			"name":           compliantNodeName,
-			"componentshash": componentsHash,
-			"iscontrolplane": isControlPlane,
-			"deadline":       deadline,
+			"name":                compliantNodeName,
+			"componentsreference": componentsReference,
+			"iscontrolplane":      isControlPlane,
+			"deadline":            deadline,
 		},
 	})
 	if isControlPlane {

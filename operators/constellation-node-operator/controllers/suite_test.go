@@ -115,7 +115,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&NodeImageReconciler{
+	err = (&NodeVersionReconciler{
 		nodeReplacer: fakes.nodeReplacer,
 		Client:       k8sManager.GetClient(),
 		Scheme:       k8sManager.GetScheme(),

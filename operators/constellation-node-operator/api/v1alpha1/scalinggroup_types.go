@@ -22,8 +22,8 @@ const (
 
 // ScalingGroupSpec defines the desired state of ScalingGroup.
 type ScalingGroupSpec struct {
-	// NodeImage is the name of the NodeImage resource.
-	NodeImage string `json:"nodeImage,omitempty"`
+	// NodeVersion is the name of the NodeVersion resource.
+	NodeVersion string `json:"nodeImage,omitempty"`
 	// GroupID is the CSP specific, canonical identifier of a scaling group.
 	GroupID string `json:"groupId,omitempty"`
 	// AutoscalerGroupName is name that is expected by the autoscaler.

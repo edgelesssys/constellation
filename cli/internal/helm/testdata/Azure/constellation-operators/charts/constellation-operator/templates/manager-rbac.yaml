@@ -105,7 +105,7 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimage
+  - nodeversion
   verbs:
   - get
   - list
@@ -113,7 +113,13 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages
+  - nodeversion/status
+  verbs:
+  - get
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - nodeversions
   verbs:
   - create
   - delete
@@ -125,13 +131,13 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages/finalizers
+  - nodeversions/finalizers
   verbs:
   - update
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages/status
+  - nodeversions/status
   verbs:
   - get
   - patch

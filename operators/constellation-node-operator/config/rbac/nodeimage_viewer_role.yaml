@@ -1,13 +1,13 @@
-# permissions for end users to view nodeimages.
+# permissions for end users to view nodeversions.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: nodeimage-viewer-role
+  name: nodeversion-viewer-role
 rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages
+  - nodeversions
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages/status
+  - nodeversions/status
   verbs:
   - get

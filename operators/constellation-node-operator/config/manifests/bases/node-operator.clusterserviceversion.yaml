@@ -16,10 +16,10 @@ spec:
       kind: AutoscalingStrategy
       name: autoscalingstrategies.update.edgeless.systems
       version: v1alpha1
-    - description: NodeImage is the Schema for the nodeimages API.
-      displayName: Node Image
-      kind: NodeImage
-      name: nodeimages.update.edgeless.systems
+    - description: NodeVersion is the Schema for the nodeversions API.
+      displayName: Node Version
+      kind: NodeVersion
+      name: nodeversions.update.edgeless.systems
       version: v1alpha1
     - description: PendingNode is the Schema for the pendingnodes API.
       displayName: Pending Node

@@ -87,7 +87,6 @@ func main() {
 
 	server, err := server.New(
 		measurementSalt,
-		handler,
 		kubernetesca.New(log.Named("certificateAuthority"), handler),
 		kubeadm,
 		kms,
