@@ -1,0 +1,14 @@
+name: Purge branch
+
+on:
+  delete:
+
+jobs:
+  purge:
+    name: Delete ref from versions API
+    uses: ./.github/workflows/versionsapi.yml
+    with:
+      command: rm
+      rm_all: true
+      dryrun: true
+      ref: ${{ github.event.ref }}
