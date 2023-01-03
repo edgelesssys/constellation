@@ -111,7 +111,7 @@ First, the node operator consumes the JoiningNode CRD. It watches on changes in 
 
 Second, we need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
 
-The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
+The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we currently use for the image reference:
 
 ```patch
 // NodeImageSpec defines the desired state of NodeImage.
@@ -252,7 +252,7 @@ Since the service versions bundled inside a `microserviceVersion` are hidden, th
 ```bash
 $ constellation upgrade apply
 Upgrading Kubernetes: 1.24.2 --> 1.24.3 ...
-Upgrading VM image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 --> /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 (not updated)
+Upgrading VM image: 2.3.0 --> 2.3.0 (not updated)
 
 Upgrading Kubernetes services version to 1.24.5:
   Autoscaler: 1.24.3 --> 1.24.3 (not updated)
