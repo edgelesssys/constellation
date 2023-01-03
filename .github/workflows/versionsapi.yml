@@ -39,6 +39,11 @@ on:
         required: false
         default: false
         type: boolean
+      dryrun:
+        description: --dryrun flag
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       command:
@@ -68,6 +73,11 @@ on:
       rm_all:
         description: --all flag
         required: false
+        type: boolean
+      dryrun:
+        description: --dryrun flag
+        required: false
+        default: false
         type: boolean
     outputs:
       output:
@@ -175,6 +185,7 @@ jobs:
           add_latest=$([[ "${{ inputs.add_latest }}" == "true" ]] && echo "--latest" || echo "")
           add_release=$([[ "${{ inputs.add_release }}" == "true" ]] && echo "--release" || echo "")
           rm_all=$([[ "${{ inputs.rm_all }}" == "true" ]] && echo "--all" || echo "")
+          dryrun=$([[ "${{ inputs.dryrun }}" == "true" ]] && echo "--dryrun" || echo "")
 
           # shellcheck disable=SC2086
           out=$(
@@ -185,6 +196,7 @@ jobs:
               ${add_latest} \
               ${add_release} \
               ${rm_all} \
+              ${dryrun} \
               --verbose
           )
           echo "$out"
