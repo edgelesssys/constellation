@@ -8,24 +8,28 @@ The lifecycle of a Constellation cluster consist of three phases: *creation*, *u
 
 The cluster administrator uses the [`constellation create`](../reference/cli.md#constellation-create) command to create a Constellation cluster. The process is as follows:
 
-1. The CLI (i.e., the `constellation` program) uses the cloud provider's API to create the initial set of Confidential VMs (CVMs). It writes 
+1. The CLI (i.e., the `constellation` program) uses the cloud provider's API to create the initial set of Confidential VMs (CVMs). It writes TODO
 2. Each CVM boots the [node image](images.md) configured in `constellation-conf.yaml`. 
-3. On each CVM, the [Bootstrapper](components.md#bootstrapper) is automatically launched. The *Bootstrapper* waits until it either receives an initialization request from the CLI or discovers an initialized cluster.
+3. On each CVM, the [Bootstrapper](components.md#bootstrapper) is automatically launched. The Bootstrapper waits until it either receives an initialization request from the CLI or discovers an initialized cluster.
 
-The cluster administrator then uses the [`constellation init`](../reference/cli.md#constellation-init) command to initialize the cluster. This triggers the following additional steps:
+The cluster administrator then uses the [`constellation init`](../reference/cli.md#constellation-init) command to initialize the cluster. This triggers the following steps:
 
-1. The CLI sets up an [aTLS](../architecture/attestation.md) ("attested TLS") connection with the Bootstrapper on one of the previously created CVMs. During the aTLS handshake, the CLI verifies the CVM (and the software running in it) based on the policy specified in `constellation-conf.yaml`.
+1. The CLI sets up an [aTLS](./attestation.md) ("attested TLS") connection with the Bootstrapper on one of the previously created CVMs. During the aTLS handshake, the CLI verifies the CVM (and the software running in it) based on the policy specified in `constellation-conf.yaml`.
 2. The CLI sends `constellation-conf.yaml` to the Bootstrapper over the aTLS connection and triggers the initialization of Kubernetes.
-3. The Bootstrapper downloads the official Kubernetes release specified in `constellation-conf.yaml`. The Bootstrapper verifies the [Sigstore-based signatures](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) of the downloaded Kubernetes release. 
+3. The Bootstrapper downloads the official Kubernetes release specified in `constellation-conf.yaml` and the [Constellation services](./services.md). The Bootstrapper verifies the integrity of the downloaded  binaries (based on their SHA-256 hashes. For this, the Bootstrapper contains a hardcoded list of the SHA-256 hashes of all supported binaries). (**FS: Probably move explanation somewhere else.**)
+4. The Bootstrapper initializes the Kubernetes cluster and launches the Constellation services. 
 
-, sends the configuration, and initiates the initialization of the cluster
-6. The *Bootstrapper* of **that** node [initializes the Kubernetes cluster](components.md#bootstrapper) and deploys the other Constellation [components](components.md) including the [*JoinService*](components.md#joinservice)
-7. Subsequently, the *Bootstrappers* of the other nodes discover the initialized cluster and send join requests to the *JoinService*
+The Kubernetes cluster is now operational and consists of a single CVM-based node. Additional nodes automatically join the cluster as is described in the section on [cluster scaling](#cluster-scaling).
+
+## Cluster scaling and failover
+
+New nodes automatically boot the configured [node image](images.md) and 
+
+7. The Bootstrappers of the other nodes discover the initialized cluster via the cloud provider's API. 
+8. Each node's Bootstraper sends a request to join the newly created cluster to the JoinService.
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication
 9. The *JoinService* verifies the attestation statements and joins the nodes to the Kubernetes cluster
 10. This process is repeated for every node joining the cluster later (e.g., through autoscaling)
-
-## Cluster scaling
 
 ## Cluster upgrade
 
