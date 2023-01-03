@@ -111,7 +111,7 @@ First, the node operator consumes the JoiningNode CRD. It watches on changes in 
 
 Second, we need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
 
-The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
+The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we currently use for the image reference:
 
 ```patch
 // NodeImageSpec defines the desired state of NodeImage.
