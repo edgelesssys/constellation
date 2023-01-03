@@ -151,7 +151,7 @@ jobs:
           {
             echo "imageVersion=${IMAGE_VERSION}"
             echo "imageName=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}"
-            echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}"
+            echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}/image"
           } >> "$GITHUB_OUTPUT"
 
           if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then

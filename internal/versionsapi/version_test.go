@@ -385,7 +385,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/v9.9.9/image",
 		},
 		"release debug stream": {
 			ver: Version{
@@ -394,7 +394,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/v9.9.9/image",
 		},
 		"branch ref": {
 			ver: Version{
@@ -403,7 +403,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/v9.9.9/image",
 		},
 	}
 

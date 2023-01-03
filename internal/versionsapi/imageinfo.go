@@ -41,7 +41,8 @@ func (i ImageInfo) JSONPath() string {
 		constants.CDNAPIPrefix,
 		"ref", i.Ref,
 		"stream", i.Stream,
-		"image", i.Version,
+		i.Version,
+		"image",
 		"info.json",
 	)
 }

@@ -24,7 +24,7 @@ func TestImageInfoJSONPath(t *testing.T) {
 				Stream:  "nightly",
 				Version: "v1.0.0",
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/image/v1.0.0/info.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
 		},
 		"image info release": {
 			info: ImageInfo{
@@ -32,7 +32,7 @@ func TestImageInfoJSONPath(t *testing.T) {
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/-/stream/stable/image/v1.0.0/info.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/-/stream/stable/v1.0.0/image/info.json",
 		},
 	}
 
@@ -55,7 +55,7 @@ func TestImageInfoURL(t *testing.T) {
 				Stream:  "nightly",
 				Version: "v1.0.0",
 			},
-			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/image/v1.0.0/info.json",
+			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
 		},
 		"image info release": {
 			info: ImageInfo{
@@ -63,7 +63,7 @@ func TestImageInfoURL(t *testing.T) {
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
-			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/image/v1.0.0/info.json",
+			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/v1.0.0/image/info.json",
 		},
 	}
 

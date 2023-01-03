@@ -145,14 +145,13 @@ func (v Version) ListPath(gran Granularity) string {
 
 // ImagePath returns the path to the image specification of this version.
 // The path points to a directory and is intended to be used for deletion.
-//
-// TODO(katexochen): Refactor path and make this a unified path for all version kinds.
 func (v Version) ImagePath() string {
 	return path.Join(
 		constants.CDNAPIPrefix,
 		"ref", v.Ref,
 		"stream", v.Stream,
-		"image", v.Version,
+		v.Version,
+		"image",
 	)
 }
 
