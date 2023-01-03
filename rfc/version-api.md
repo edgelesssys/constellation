@@ -135,4 +135,4 @@ It allows admins to manually clean up resources.
 - Version metadata
     - Changelogs
     - Deprecation warnings
-    - Security informatio
+    - Security information
