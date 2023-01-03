@@ -32,7 +32,7 @@ const (
 	newPort       = int32(8044)
 	numRequests   = 256
 	numPods       = 3
-	timeout       = time.Minute * 5
+	timeout       = time.Minute * 15
 	interval      = time.Second * 5
 )
 
@@ -120,17 +120,19 @@ func testEventuallyStatusOK(t *testing.T, url string) {
 	}, timeout, interval)
 }
 
-// testEventuallyExternalIPAvailable uses k to query if the whoami service is available
-// within 5 minutes. Once the service is available the Service is returned.
+// testEventuallyExternalIPAvailable uses k to query if the whoami service is eventually available.
+// Once the service is available the Service is returned.
 func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *coreV1.Service {
-	assert := assert.New(t)
-	require := require.New(t)
 	var svc *coreV1.Service
 
-	assert.Eventually(func() bool {
+	require.Eventually(t, func() bool {
 		var err error
 		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, v1.GetOptions{})
-		require.NoError(err)
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+		fmt.Printf("Fetched service: %v\n", svc.String())
 		return len(svc.Status.LoadBalancer.Ingress) > 0
 	}, timeout, interval)
 

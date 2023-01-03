@@ -28,4 +28,4 @@ runs:
       working-directory: ./.github/actions/e2e_lb
       run: |
         kubectl delete -f lb.yml
-        kubectl delete -f ns.yml
+        kubectl delete -f ns.yml --timeout=5m
