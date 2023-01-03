@@ -137,3 +137,7 @@ func (*nopWriteCloser) Write(p []byte) (int, error) {
 func (*nopWriteCloser) Close() error {
 	return nil
 }
+
+type httpc interface {
+	Do(req *http.Request) (*http.Response, error)
+}
