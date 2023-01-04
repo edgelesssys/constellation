@@ -171,6 +171,11 @@ func (c *Client) DeleteVersion(ctx context.Context, ver versionsapi.Version) err
 		retErr = multierr.Append(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
+	c.log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(), ver.Version)
+	if err := c.deletePath(ctx, ver.ArtifactPath()); err != nil {
+		retErr = multierr.Append(retErr, fmt.Errorf("deleting artifact path: %w", err))
+	}
+
 	return retErr
 }
 

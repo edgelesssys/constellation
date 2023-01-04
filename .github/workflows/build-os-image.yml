@@ -151,7 +151,7 @@ jobs:
           {
             echo "imageVersion=${IMAGE_VERSION}"
             echo "imageName=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}"
-            echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}"
+            echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}/image"
           } >> "$GITHUB_OUTPUT"
 
           if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then
@@ -728,22 +728,14 @@ jobs:
             echo -e "\`\`\`"
           ) >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Checkout
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Setup Go environment
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "1.19.4"
-          cache: true
-
-      - name: Add version to versionsapi
-        if: needs.build-settings.outputs.ref != '-'
-        uses: ./.github/workflows/versionsapi
-        with:
-          ref: ${{ needs.build-settings.outputs.ref }}
-          stream: ${{ inputs.stream }}
-          version: ${{ needs.build-settings.outputs.imageVersion }}
-          add_latest: true
+  add-version-to-versionsapi:
+    needs: [upload-image-lookup-table, build-settings]
+    name: "Add version to versionsapi"
+    if: needs.build-settings.outputs.ref != '-'
+    uses: ./.github/workflows/versionsapi.yml
+    with:
+      command: add
+      ref: ${{ needs.build-settings.outputs.ref }}
+      stream: ${{ inputs.stream }}
+      version: ${{ needs.build-settings.outputs.imageVersion }}
+      add_latest: true

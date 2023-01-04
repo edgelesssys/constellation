@@ -50,7 +50,7 @@ jobs:
 
       - name: Check if image definition from build pipeline exists
         run: |
-          wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/image/${{ steps.extract.outputs.version }}/info.json"
+          wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/${{ steps.extract.outputs.version }}/image/info.json"
         shell: bash
 
       - name: Setup Go environment
@@ -217,7 +217,7 @@ jobs:
 
       - name: Download expected measurements from build pipeline for image
         run: |
-          path="constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}/measurements.image.json"
+          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
           mkdir -p ${{ github.workspace }}/expected-measurements
           wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
           cat ${{ github.workspace }}/expected-measurements/measurements.image.json
@@ -319,7 +319,7 @@ jobs:
 
       - name: Upload to S3
         run: |
-          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}
+          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
         shell: bash
