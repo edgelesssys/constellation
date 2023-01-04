@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,8 +83,8 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-
-			flags, err := parseFetchMeasurementsFlags(cmd)
+			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
+			flags, err := cfm.parseFetchMeasurementsFlags(cmd)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -242,8 +243,9 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
+			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
 
-			assert.NoError(configFetchMeasurements(cmd, tc.verifier, cosignPublicKey, fileHandler, client))
+			assert.NoError(cfm.configFetchMeasurements(cmd, tc.verifier, cosignPublicKey, fileHandler, client))
 		})
 	}
 }

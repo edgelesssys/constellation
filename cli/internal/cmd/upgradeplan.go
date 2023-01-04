@@ -43,13 +43,16 @@ func newUpgradePlanCmd() *cobra.Command {
 	return cmd
 }
 
+type upgradePlanCmd struct {
+	log debugLog
+}
+
 func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	flags, err := parseUpgradePlanFlags(cmd)
 	if err != nil {
@@ -65,12 +68,13 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 	cliVersion := getCurrentCLIVersion()
+	up := &upgradePlanCmd{log: log}
 
-	return upgradePlan(cmd, planner, patchLister, fileHandler, http.DefaultClient, rekor, flags, cliVersion)
+	return up.upgradePlan(cmd, planner, patchLister, fileHandler, http.DefaultClient, rekor, flags, cliVersion)
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLister,
+func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLister,
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 	cliVersion string,
 ) error {
@@ -78,14 +82,16 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
-
+	up.log.Debugf("Read config from %s", flags.configPath)
 	// get current image version of the cluster
 	csp := conf.GetProvider()
+	up.log.Debugf("Using provider %s", csp.String())
 
 	version, err := getCurrentImageVersion(cmd.Context(), planner)
 	if err != nil {
 		return fmt.Errorf("checking current image version: %w", err)
 	}
+	up.log.Debugf("Using image version %s", version)
 
 	// find compatible images
 	// image updates should always be possible for the current minor version of the cluster
@@ -98,7 +104,9 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 	if err != nil {
 		return fmt.Errorf("calculating next image minor version: %w", err)
 	}
-
+	up.log.Debugf("Current image minor version is %s", currentImageMinorVer)
+	up.log.Debugf("Current CLI minor version is %s", currentCLIMinorVer)
+	up.log.Debugf("Next image minor version is %s", nextImageMinorVer)
 	var allowedMinorVersions []string
 
 	cliImageCompare := semver.Compare(currentCLIMinorVer, currentImageMinorVer)
@@ -111,6 +119,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 	case cliImageCompare > 0:
 		allowedMinorVersions = []string{currentImageMinorVer, nextImageMinorVer}
 	}
+	up.log.Debugf("Allowed minor versions are %#v", allowedMinorVersions)
 
 	var updateCandidates []string
 	for _, minorVer := range allowedMinorVersions {
@@ -119,15 +128,18 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 			updateCandidates = append(updateCandidates, versionList.Versions...)
 		}
 	}
+	up.log.Debugf("Update candidates are %v", updateCandidates)
 
 	// filter out versions that are not compatible with the current cluster
 	compatibleImages := getCompatibleImages(version, updateCandidates)
+	up.log.Debugf("Of those images, these ones are compaitble %v", compatibleImages)
 
 	// get expected measurements for each image
 	upgrades, err := getCompatibleImageMeasurements(cmd.Context(), cmd, client, rekor, []byte(flags.cosignPubKey), csp, compatibleImages)
 	if err != nil {
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
+	up.log.Debugf("Compatible image measurements are %v", upgrades)
 
 	if len(upgrades) == 0 {
 		cmd.PrintErrln("No compatible images found to upgrade to.")
@@ -136,6 +148,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	// interactive mode
 	if flags.filePath == "" {
+		up.log.Debugf("Writing upgrade plan in interactive mode")
 		cmd.Printf("Current version: %s\n", version)
 		return upgradePlanInteractive(
 			&nopWriteCloser{cmd.OutOrStdout()},
@@ -147,6 +160,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	// write upgrade plan to stdout
 	if flags.filePath == "-" {
+		up.log.Debugf("Writing upgrade plan to stdout")
 		content, err := encoder.NewEncoder(upgrades).Encode()
 		if err != nil {
 			return fmt.Errorf("encoding compatible images: %w", err)
@@ -156,6 +170,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 	}
 
 	// write upgrade plan to file
+	up.log.Debugf("Writing upgrade plan to file")
 	return fileHandler.WriteYAML(flags.filePath, upgrades)
 }
 
