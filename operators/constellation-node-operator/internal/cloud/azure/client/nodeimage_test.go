@@ -14,7 +14,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/poller"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

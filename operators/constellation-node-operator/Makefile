@@ -118,7 +118,11 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	# Since we need to download the dependencies from the project root, we need to change the build context to the project root.
+	pushd . ;\
+	cd ../.. ;\
+	docker build -t ${IMG} -f operators/constellation-node-operator/Dockerfile . ;\
+	popd
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
