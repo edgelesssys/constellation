@@ -24,9 +24,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/azure/client"
+	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/azure/client"
+	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/deploy"
-	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/gcp/client"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/controllers"
