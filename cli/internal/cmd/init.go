@@ -148,7 +148,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,
-		KubernetesVersion:      conf.KubernetesVersion,
+		KubernetesVersion:      versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           conf.EnforcedPCRs(),

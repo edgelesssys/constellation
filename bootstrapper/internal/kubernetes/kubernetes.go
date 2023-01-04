@@ -46,7 +46,7 @@ type configReader interface {
 
 // configurationProvider provides kubeadm init and join configuration.
 type configurationProvider interface {
-	InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) k8sapi.KubeadmInitYAML
+	InitConfiguration(externalCloudProvider bool, k8sVersion string) k8sapi.KubeadmInitYAML
 	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
@@ -92,11 +92,7 @@ func (k *KubeWrapper) InitCluster(
 	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents versions.ComponentVersions, log *logger.Logger,
 ) ([]byte, error) {
-	k8sVersion, err := versions.NewValidK8sVersion(versionString)
-	if err != nil {
-		return nil, err
-	}
-	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
+	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
@@ -141,7 +137,7 @@ func (k *KubeWrapper) InitCluster(
 	// Step 2: configure kubeadm init config
 	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
 		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
-	initConfig := k.configProvider.InitConfiguration(ccmSupported, k8sVersion)
+	initConfig := k.configProvider.InitConfiguration(ccmSupported, versionString)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
@@ -171,7 +167,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	// Setup the K8s components ConfigMap.
-	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents)
+	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents, versionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
@@ -323,7 +319,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 
 // setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.
 // It returns the name of the ConfigMap.
-func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components versions.ComponentVersions) (string, error) {
+func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components versions.ComponentVersions, clusterVersion string) (string, error) {
 	componentsMarshalled, err := json.Marshal(components)
 	if err != nil {
 		return "", fmt.Errorf("marshalling component versions: %w", err)
@@ -342,7 +338,8 @@ func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, component
 			Namespace: "kube-system",
 		},
 		Data: map[string]string{
-			constants.K8sComponentsFieldName: string(componentsMarshalled),
+			constants.ComponentsListKey:   string(componentsMarshalled),
+			constants.K8sVersionFieldName: clusterVersion,
 		},
 	}
 
