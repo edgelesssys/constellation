@@ -156,9 +156,9 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
 	}
-	i.log.Debugf("Initialization request is %+v", req)
+	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
-	i.log.Debugf("Initialization response is %+v", resp)
+	i.log.Debugf("Got initialization response")
 	spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
@@ -223,7 +223,6 @@ func (i *initCmd) writeOutput(idFile clusterid.File, resp *initproto.InitRespons
 	ownerID := hex.EncodeToString(resp.OwnerId)
 	i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(resp.ClusterId)
-	i.log.Debugf("Cluster id is %s", clusterID)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
