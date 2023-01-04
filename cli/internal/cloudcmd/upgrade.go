@@ -109,8 +109,8 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
-	return u.helmClient.Upgrade(ctx, config, timeout)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
 }
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
@@ -234,7 +234,7 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
 }
 
 type debugLog interface {
