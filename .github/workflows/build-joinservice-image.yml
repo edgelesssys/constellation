@@ -9,6 +9,7 @@ on:
     paths:
       - "joinservice/**"
       - "internal/**"
+      - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
 
 jobs:
   build-join-service:
