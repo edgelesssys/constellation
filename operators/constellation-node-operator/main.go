@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/azure/client"
+	cloudfake "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/fake/client"
 	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/deploy"
 
@@ -100,6 +101,7 @@ func main() {
 		}
 	default:
 		setupLog.Info("CSP does not support upgrades", "csp", csp)
+		cspClient = &cloudfake.Client{}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -127,13 +129,13 @@ func main() {
 	}
 	defer etcdClient.Close()
 
+	imageInfo := deploy.NewImageInfo()
+	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
+		setupLog.Error(err, "Unable to deploy initial resources")
+		os.Exit(1)
+	}
 	// Create Controllers
 	if csp == "azure" || csp == "gcp" {
-		imageInfo := deploy.NewImageInfo()
-		if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
-			setupLog.Error(err, "Unable to deploy initial resources")
-			os.Exit(1)
-		}
 		if err = controllers.NewNodeVersionReconciler(
 			cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
 		).SetupWithManager(mgr); err != nil {
@@ -204,7 +206,7 @@ type cspAPI interface {
 	SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error
 	// GetScalingGroupName retrieves the name of a scaling group.
 	GetScalingGroupName(scalingGroupID string) (string, error)
-	// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+	// GetAutoscalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 	GetAutoscalingGroupName(scalingGroupID string) (string, error)
 	// ListScalingGroups retrieves a list of scaling groups for the cluster.
 	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)

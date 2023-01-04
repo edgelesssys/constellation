@@ -29,7 +29,7 @@ func NewImageInfo() *ImageInfo {
 
 // ImageVersion tries to parse the image version from the host mounted os-release file.
 // If the file is not present or does not contain the version, a fallback lookup is performed.
-func (i *ImageInfo) ImageVersion(imageReference string) (string, error) {
+func (i *ImageInfo) ImageVersion() (string, error) {
 	var version string
 	var err error
 	for _, path := range osReleasePaths {
@@ -38,10 +38,13 @@ func (i *ImageInfo) ImageVersion(imageReference string) (string, error) {
 			break
 		}
 	}
-	if version != "" {
-		return version, nil
+	if err != nil {
+		return "", err
 	}
-	return imageVersionFromFallback(imageReference)
+	if version == "" {
+		return "", fmt.Errorf("IMAGE_VERSION not found in %s", strings.Join(osReleasePaths, ", "))
+	}
+	return version, nil
 }
 
 // getOSReleaseImageVersion reads the os-release file and returns the image version (if present).
@@ -94,17 +97,6 @@ func parseOSRelease(osRelease *bufio.Scanner) (map[string]string, error) {
 	return osReleaseMap, nil
 }
 
-// imageVersionFromFallback tries to guess the image version from the image reference.
-// It is a fallback mechanism in case the os-release file is not present or does not contain the version.
-// This was the case for older images (< v2.3.0).
-func imageVersionFromFallback(imageReference string) (string, error) {
-	version, ok := fallbackLookup[strings.ToLower(imageReference)]
-	if !ok {
-		return "", fmt.Errorf("image version not found in fallback lookup")
-	}
-	return version, nil
-}
-
 const versionKey = "IMAGE_VERSION"
 
 var (
@@ -113,42 +105,5 @@ var (
 	osReleasePaths    = []string{
 		"/host/etc/os-release",
 		"/host/usr/lib/os-release",
-	}
-
-	fallbackLookup = map[string]string{
-		// AWS
-		"ami-06b8cbf4837a0a57c": "v2.2.2",
-		"ami-02e96dc04a9e438cd": "v2.2.2",
-		"ami-028ead928a9034b2f": "v2.2.2",
-		"ami-032ac10dd8d8266e3": "v2.2.1",
-		"ami-032e0d57cc4395088": "v2.2.1",
-		"ami-053c3e49e19b96bdd": "v2.2.1",
-		"ami-0e27ebcefc38f648b": "v2.2.0",
-		"ami-098cd37f66523b7c3": "v2.2.0",
-		"ami-04a87d302e2509aad": "v2.2.0",
-
-		// Azure
-		"/communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.2":                                                                       "v2.2.2",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation/images/constellation/versions/2.2.2":     "v2.2.2",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation_cvm/images/constellation/versions/2.2.2": "v2.2.2",
-		"/communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.1":                                                                       "v2.2.1",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation/images/constellation/versions/2.2.1":     "v2.2.1",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation_cvm/images/constellation/versions/2.2.1": "v2.2.1",
-		"/communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.0":                                                                       "v2.2.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation/images/constellation/versions/2.2.0":     "v2.2.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation_cvm/images/constellation/versions/2.2.0": "v2.2.0",
-		"/communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.1.0":                                                                       "v2.1.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation/images/constellation/versions/2.1.0":     "v2.1.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation_cvm/images/constellation/versions/2.1.0": "v2.1.0",
-		"/communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.0.0":                                                                       "v2.0.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation/images/constellation/versions/2.0.0":     "v2.0.0",
-		"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourcegroups/constellation-images/providers/microsoft.compute/galleries/constellation_cvm/images/constellation/versions/2.0.0": "v2.0.0",
-
-		// GCP
-		"projects/constellation-images/global/images/constellation-v2-2-2": "v2.2.2",
-		"projects/constellation-images/global/images/constellation-v2-2-1": "v2.2.1",
-		"projects/constellation-images/global/images/constellation-v2-2-0": "v2.2.0",
-		"projects/constellation-images/global/images/constellation-v2-1-0": "v2.1.0",
-		"projects/constellation-images/global/images/constellation-v2-0-0": "v2.0.0",
 	}
 )

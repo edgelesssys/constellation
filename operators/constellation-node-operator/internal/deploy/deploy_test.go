@@ -393,7 +393,7 @@ type stubImageInfo struct {
 	err          error
 }
 
-func (s stubImageInfo) ImageVersion(_ string) (string, error) {
+func (s stubImageInfo) ImageVersion() (string, error) {
 	return s.imageVersion, s.err
 }
 

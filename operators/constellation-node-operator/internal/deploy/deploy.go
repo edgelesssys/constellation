@@ -44,7 +44,7 @@ func InitialResources(ctx context.Context, k8sClient client.Client, imageInfo im
 	if err != nil {
 		return fmt.Errorf("determining initial node image: %w", err)
 	}
-	imageVersion, err := imageInfo.ImageVersion(imageReference)
+	imageVersion, err := imageInfo.ImageVersion()
 	if err != nil {
 		// do not fail if the image version cannot be determined
 		// this is important for backwards compatibility
@@ -192,7 +192,7 @@ func createScalingGroup(ctx context.Context, config newScalingGroupConfig) error
 }
 
 type imageInfoGetter interface {
-	ImageVersion(imageReference string) (string, error)
+	ImageVersion() (string, error)
 }
 
 type scalingGroupGetter interface {
