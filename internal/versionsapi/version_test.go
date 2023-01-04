@@ -373,7 +373,7 @@ func TestVersionListPathURL(t *testing.T) {
 	}
 }
 
-func TestVersionImagePath(t *testing.T) {
+func TestVersionArtifactPath(t *testing.T) {
 	testCases := map[string]struct {
 		ver      Version
 		wantPath string
@@ -385,7 +385,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/v9.9.9",
 		},
 		"release debug stream": {
 			ver: Version{
@@ -394,7 +394,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/v9.9.9",
 		},
 		"branch ref": {
 			ver: Version{
@@ -403,7 +403,7 @@ func TestVersionImagePath(t *testing.T) {
 				Version: "v9.9.9",
 				Kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/image/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/v9.9.9",
 		},
 	}
 
@@ -411,7 +411,7 @@ func TestVersionImagePath(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			path := tc.ver.ImagePath()
+			path := tc.ver.ArtifactPath()
 			assert.Equal(tc.wantPath, path)
 		})
 	}

@@ -27,12 +27,12 @@ There may be more API groups in the future (e.g. `cli`)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/versions/latest/<kind>.json`](version-api.md#latest)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/versions/major/<base>/<kind>.json`](version-api.md#major-to-minor-version-list)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/versions/minor/<base>/<kind>.json`](version-api.md#minor-to-patch-version-list)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/info.json`](image-api.md#image-lookup-table)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/sbom.<format>.json`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/measurements.json`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/measurements.json.sig`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/measurements.image.json`](image-api.md)
-- [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/image.raw`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/info.json`](image-api.md#image-lookup-table)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/sbom.<format>.json`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json.sig`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.image.json`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/image.raw`](image-api.md)
 
 ## API path identifiers  `ref`, `stream` and `version`
 

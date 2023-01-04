@@ -71,7 +71,7 @@ Where applicable, the API uses the following CSP names:
 
 The following HTTP endpoints are available:
 
-- `GET /constellation/v1/ref/<REF>/stream/<STREAM>/image/<VERSION>/`
+- `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/`
   - [`info.json` returns the lookup table for the given image version.](#image-lookup-table)
   - `sbom.<format>.json` contains SBOM files for the given image version. The exact formats and file names are TBD.
 - `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/csp/<csp>/` contains files with measurements and signatures for the given image version and CSP.
@@ -87,7 +87,7 @@ The following HTTP endpoints are available:
 The image lookup table is a JSON file that maps the image name consisting of `ref`, `stream` and `version` to the CSP-specific image references:
 
 ```
-/constellation/v1/ref/<REF>/stream/<STREAM>/image/<VERSION>/info.json
+/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/info.json
 ```
 
 ```json
@@ -108,7 +108,7 @@ The image lookup table is a JSON file that maps the image name consisting of `re
     "sev-es": "gcp-image-123"
   },
   "qemu": {
-    "default": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/image/<VERSION>/csp/qemu/image.raw"
+    "default": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/csp/qemu/image.raw"
   }
 }
 ```
@@ -133,7 +133,7 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 The CLI can find a CSP- and region specific image reference by looking up the image name in the following order:
 
 - if a local file `<IMAGE NAME>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/image/<VERSION>/info.json`) and use the lookup table in that file
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/info.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
   - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)
