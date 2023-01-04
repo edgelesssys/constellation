@@ -8,6 +8,8 @@ on:
       - "release/**"
     paths:
       - "operators/constellation-node-operator/**"
+      - "internal/**"
+      - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
 
 jobs:
   build-constellation-node-operator:

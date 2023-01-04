@@ -24,14 +24,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/azure/client"
-	cloudfake "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/fake/client"
-	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/deploy"
+	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
+	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
+	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/controllers"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/etcd"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
