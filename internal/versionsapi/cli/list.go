@@ -14,9 +14,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	verclient "github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
-	"github.com/rogpeppe/go-internal/semver"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/mod/semver"
 )
 
 func newListCmd() *cobra.Command {
