@@ -113,8 +113,8 @@ const (
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
 	AzureCVM = "azureCVM"
 
-	// K8sComponentsFieldName is the name of the of the key holding the configMap name that holds the components configuration.
-	K8sComponentsFieldName = "components"
+	// K8sVersionFieldName is the name of the of the key holding the wanted Kubernetes version.
+	K8sVersionFieldName = "cluster-version"
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
 

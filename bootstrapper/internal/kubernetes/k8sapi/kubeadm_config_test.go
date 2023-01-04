@@ -28,11 +28,11 @@ func TestInitConfiguration(t *testing.T) {
 		config KubeadmInitYAML
 	}{
 		"kubeadm init config can be created": {
-			config: kubeadmConfig.InitConfiguration(true, versions.Default),
+			config: kubeadmConfig.InitConfiguration(true, versions.VersionConfigs[versions.Default].ClusterVersion),
 		},
 		"kubeadm init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := kubeadmConfig.InitConfiguration(true, versions.Default)
+				c := kubeadmConfig.InitConfiguration(true, versions.VersionConfigs[versions.Default].ClusterVersion)
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
 				c.SetProviderID("somecloudprovider://instance-id")
@@ -65,8 +65,8 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 		wantErr         bool
 	}{
 		"Kubeadm accepts version 'Latest'": {
-			config:          kubeadmConfig.InitConfiguration(true, versions.Default),
-			expectedVersion: versions.VersionConfigs[versions.Default].PatchVersion,
+			config:          kubeadmConfig.InitConfiguration(true, versions.VersionConfigs[versions.Default].ClusterVersion),
+			expectedVersion: versions.VersionConfigs[versions.Default].ClusterVersion,
 		},
 		"Kubeadm receives incompatible version": {
 			config:  kubeadmConfig.InitConfiguration(true, "1.19"),

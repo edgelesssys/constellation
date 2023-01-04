@@ -556,7 +556,7 @@ type stubConfigProvider struct {
 	joinConfig k8sapi.KubeadmJoinYAML
 }
 
-func (s *stubConfigProvider) InitConfiguration(_ bool, _ versions.ValidK8sVersion) k8sapi.KubeadmInitYAML {
+func (s *stubConfigProvider) InitConfiguration(_ bool, _ string) k8sapi.KubeadmInitYAML {
 	return s.initConfig
 }
 
