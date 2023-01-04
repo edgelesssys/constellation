@@ -16,14 +16,23 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/semver"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+	// AllowDestructive is a named bool to signal that destructive actions have been confirmed by the user.
+	AllowDestructive = true
+	// DenyDestructive is a named bool to signal that destructive actions have not been confirmed by the user yet.
+	DenyDestructive = false
 )
 
 // Client handles interaction with helm.
@@ -31,6 +40,7 @@ type Client struct {
 	config  *action.Configuration
 	kubectl crdClient
 	fs      file.Handler
+	actions actionWrapper
 	log     debugLog
 }
 
@@ -55,26 +65,26 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 		return nil, fmt.Errorf("initializing kubectl: %w", err)
 	}
 
-	return &Client{config: actionConfig, kubectl: client, fs: fileHandler, log: log}, nil
+	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error {
-	if err := c.upgradeRelease(ctx, timeout, ciliumPath, ciliumReleaseName, false); err != nil {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+	if err := c.upgradeRelease(ctx, timeout, ciliumPath, ciliumReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading cilium: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, certManagerPath, certManagerReleaseName, false); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, certManagerPath, certManagerReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading cert-manager: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, conOperatorsPath, conOperatorsReleaseName, true); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading constellation operators: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, conServicesPath, conServicesReleaseName, false); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, conServicesPath, conServicesReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading constellation-services: %w", err)
 	}
 
@@ -83,9 +93,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 
 // currentVersion returns the version of the currently installed helm release.
 func (c *Client) currentVersion(release string) (string, error) {
-	client := action.NewList(c.config)
-	client.Filter = release
-	rel, err := client.Run()
+	rel, err := c.actions.listAction(release)
 	if err != nil {
 		return "", err
 	}
@@ -104,8 +112,11 @@ func (c *Client) currentVersion(release string) (string, error) {
 	return rel[0].Chart.Metadata.Version, nil
 }
 
+// ErrConfirmationMissing signals that an action requires user confirmation.
+var ErrConfirmationMissing = errors.New("action requires user confirmation")
+
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, chartPath, releaseName string, hasCRDs bool,
+	ctx context.Context, timeout time.Duration, chartPath, releaseName string, hasCRDs bool, allowDestructive bool,
 ) error {
 	chart, err := loadChartsDir(helmFS, chartPath)
 	if err != nil {
@@ -126,6 +137,10 @@ func (c *Client) upgradeRelease(
 		return nil
 	}
 
+	if releaseName == certManagerReleaseName && !allowDestructive {
+		return ErrConfirmationMissing
+	}
+
 	if hasCRDs {
 		if err := c.updateCRDs(ctx, chart); err != nil {
 			return fmt.Errorf("updating CRDs: %w", err)
@@ -137,13 +152,9 @@ func (c *Client) upgradeRelease(
 	}
 
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
-	action := action.NewUpgrade(c.config)
-	action.Atomic = true
-	action.Namespace = constants.HelmNamespace
-	action.ReuseValues = false
-	action.Timeout = timeout
-	if _, err := action.RunWithContext(ctx, releaseName, chart, values); err != nil {
-		return fmt.Errorf("upgrading %s: %w", releaseName, err)
+	err = c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -159,9 +170,9 @@ func (c *Client) prepareValues(chart *chart.Chart, releaseName string) (map[stri
 	if releaseName == certManagerReleaseName {
 		chart.Values["installCRDs"] = true
 	}
-	values, err := c.GetValues(releaseName)
+	values, err := c.actions.getValues(releaseName)
 	if err != nil {
-		return nil, fmt.Errorf("getting values: %w", err)
+		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
 	}
 	return helm.MergeMaps(chart.Values, values), nil
 }
@@ -229,4 +240,41 @@ type crdClient interface {
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
 	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
 	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+}
+
+type actionWrapper interface {
+	listAction(release string) ([]*release.Release, error)
+	getValues(release string) (map[string]any, error)
+	upgradeAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error
+}
+
+type actions struct {
+	config *action.Configuration
+}
+
+// listAction execute a List action by wrapping helm's action package.
+// It creates the action, runs it at returns results and errors.
+func (a actions) listAction(release string) ([]*release.Release, error) {
+	action := action.NewList(a.config)
+	action.Filter = release
+	return action.Run()
+}
+
+func (a actions) getValues(release string) (map[string]any, error) {
+	client := action.NewGetValues(a.config)
+	// Version corresponds to the releases revision. Specifying a Version <= 0 yields the latest release.
+	client.Version = 0
+	return client.Run(release)
+}
+
+func (a actions) upgradeAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error {
+	action := action.NewUpgrade(a.config)
+	action.Atomic = true
+	action.Namespace = constants.HelmNamespace
+	action.ReuseValues = false
+	action.Timeout = timeout
+	if _, err := action.RunWithContext(ctx, releaseName, chart, values); err != nil {
+		return fmt.Errorf("upgrading %s: %w", releaseName, err)
+	}
+	return nil
 }

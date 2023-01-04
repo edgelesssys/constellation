@@ -75,7 +75,7 @@ func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) e
 	return u.err
 }
 
-func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
+func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
 	return u.helmErr
 }
 
