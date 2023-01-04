@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	nodeutil "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/patch"
 	corev1 "k8s.io/api/core/v1"
@@ -776,7 +777,7 @@ func groupNodes(nodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode, 
 			continue
 		}
 		if !strings.EqualFold(node.Annotations[nodeImageAnnotation], latestImageReference) ||
-			!strings.EqualFold(node.Annotations[NodeKubernetesComponentsReferenceAnnotationKey], latestK8sComponentsReference) {
+			!strings.EqualFold(node.Annotations[mainconstants.NodeKubernetesComponentsHashAnnotationKey], latestK8sComponentsReference) {
 			if heir := node.Annotations[heirAnnotation]; heir != "" {
 				groups.Donors = append(groups.Donors, node)
 			} else {

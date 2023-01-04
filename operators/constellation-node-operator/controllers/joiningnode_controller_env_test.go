@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
 
@@ -80,7 +81,7 @@ var _ = Describe("JoiningNode controller", func() {
 			By("annotating the node")
 			Eventually(func() string {
 				_ = k8sClient.Get(ctx, types.NamespacedName{Name: nodeName1}, createdNode)
-				return createdNode.Annotations[NodeKubernetesComponentsReferenceAnnotationKey]
+				return createdNode.Annotations[mainconstants.NodeKubernetesComponentsHashAnnotationKey]
 			}, timeout, interval).Should(Equal(ComponentsReference1))
 
 			By("deleting the joining node resource")
@@ -134,7 +135,7 @@ var _ = Describe("JoiningNode controller", func() {
 		By("annotating the node")
 		Eventually(func() string {
 			_ = k8sClient.Get(ctx, types.NamespacedName{Name: createdNode.Name}, createdNode)
-			return createdNode.Annotations[NodeKubernetesComponentsReferenceAnnotationKey]
+			return createdNode.Annotations[mainconstants.NodeKubernetesComponentsHashAnnotationKey]
 		}, timeout, interval).Should(Equal(ComponentsReference2))
 
 		By("deleting the joining node resource")
