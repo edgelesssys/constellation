@@ -68,12 +68,6 @@
       "groupName": "libvirt.org/go"
     },
     {
-      "matchPackagePatterns": [
-        "^registry.k8s.io/kas-network-proxy"
-      ],
-      "groupName": "registry.k8s.io/kas-network-proxy"
-    },
-    {
       "matchDatasources": [
         "golang-version"
       ],
@@ -131,7 +125,7 @@
     },
     {
       "matchPackageNames": [
-        "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent",
+        "registry.k8s.io/kas-network-proxy/proxy-agent",
         "registry.k8s.io/kas-network-proxy/proxy-server"
       ],
       "versioning": "semver",
