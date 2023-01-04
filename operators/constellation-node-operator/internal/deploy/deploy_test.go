@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
@@ -184,6 +185,7 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 
 func TestCreateNodeVersion(t *testing.T) {
 	k8sComponentsReference := "k8s-components-sha256-reference"
+	k8sClusterVersion := "1.20.0"
 	testCases := map[string]struct {
 		createErr           error
 		existingNodeVersion *updatev1alpha1.NodeVersion
@@ -200,6 +202,7 @@ func TestCreateNodeVersion(t *testing.T) {
 					ImageReference:                "image-reference",
 					ImageVersion:                  "image-version",
 					KubernetesComponentsReference: k8sComponentsReference,
+					KubernetesClusterVersion:      k8sClusterVersion,
 				},
 			},
 		},
@@ -218,6 +221,7 @@ func TestCreateNodeVersion(t *testing.T) {
 					ImageReference:                "image-reference2",
 					ImageVersion:                  "image-version2",
 					KubernetesComponentsReference: "components-reference2",
+					KubernetesClusterVersion:      "cluster-version2",
 				},
 			},
 			wantNodeVersion: &updatev1alpha1.NodeVersion{
@@ -229,6 +233,7 @@ func TestCreateNodeVersion(t *testing.T) {
 					ImageReference:                "image-reference2",
 					ImageVersion:                  "image-version2",
 					KubernetesComponentsReference: "components-reference2",
+					KubernetesClusterVersion:      "cluster-version2",
 				},
 			},
 		},
@@ -246,6 +251,9 @@ func TestCreateNodeVersion(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:              k8sComponentsReference,
 							CreationTimestamp: metav1.Time{Time: time.Unix(1, 0)},
+						},
+						Data: map[string]string{
+							mainconstants.K8sVersionFieldName: k8sClusterVersion,
 						},
 					},
 				},

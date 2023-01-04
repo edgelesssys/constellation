@@ -42,6 +42,10 @@ spec:
                 description: ImageVersion is the CSP independent version of the image
                   to use for all nodes.
                 type: string
+              kubernetesClusterVersion:
+                description: KubernetesClusterVersion is the advertised Kubernetes
+                  version of the cluster.
+                type: string
               kubernetesComponentsReference:
                 description: KubernetesComponentsReference is a reference to the ConfigMap
                   containing the Kubernetes components to use for all nodes.

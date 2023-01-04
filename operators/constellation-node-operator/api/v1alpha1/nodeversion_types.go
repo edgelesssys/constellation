@@ -19,6 +19,8 @@ type NodeVersionSpec struct {
 	ImageVersion string `json:"imageVersion,omitempty"`
 	// KubernetesComponentsReference is a reference to the ConfigMap containing the Kubernetes components to use for all nodes.
 	KubernetesComponentsReference string `json:"kubernetesComponentsReference,omitempty"`
+	// KubernetesClusterVersion is the advertised Kubernetes version of the cluster.
+	KubernetesClusterVersion string `json:"kubernetesClusterVersion,omitempty"`
 }
 
 // NodeVersionStatus defines the observed state of NodeVersion.

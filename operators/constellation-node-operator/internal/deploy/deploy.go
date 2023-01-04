@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 
+	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -113,7 +114,7 @@ func createAutoscalingStrategy(ctx context.Context, k8sClient client.Writer, pro
 
 // createNodeVersion creates the initial nodeversion resource if it does not exist yet.
 func createNodeVersion(ctx context.Context, k8sClient client.Client, imageReference, imageVersion string) error {
-	k8sComponentsRef, err := findLatestK8sComponentsConfigMap(ctx, k8sClient)
+	latestComponentCM, err := findLatestK8sComponentsConfigMap(ctx, k8sClient)
 	if err != nil {
 		return fmt.Errorf("finding latest k8s-components configmap: %w", err)
 	}
@@ -125,7 +126,8 @@ func createNodeVersion(ctx context.Context, k8sClient client.Client, imageRefere
 		Spec: updatev1alpha1.NodeVersionSpec{
 			ImageReference:                imageReference,
 			ImageVersion:                  imageVersion,
-			KubernetesComponentsReference: k8sComponentsRef,
+			KubernetesComponentsReference: latestComponentCM.Name,
+			KubernetesClusterVersion:      latestComponentCM.Data[mainconstants.K8sVersionFieldName],
 		},
 	})
 	if k8sErrors.IsAlreadyExists(err) {
@@ -138,31 +140,29 @@ func createNodeVersion(ctx context.Context, k8sClient client.Client, imageRefere
 
 // findLatestK8sComponentsConfigMap finds most recently created k8s-components configmap in the kube-system namespace.
 // It returns an error if there is no or multiple configmaps matching the prefix "k8s-components".
-func findLatestK8sComponentsConfigMap(ctx context.Context, k8sClient client.Client) (string, error) {
+func findLatestK8sComponentsConfigMap(ctx context.Context, k8sClient client.Client) (corev1.ConfigMap, error) {
 	var configMaps corev1.ConfigMapList
 	err := k8sClient.List(ctx, &configMaps, client.InNamespace("kube-system"))
 	if err != nil {
-		return "", fmt.Errorf("listing configmaps: %w", err)
+		return corev1.ConfigMap{}, fmt.Errorf("listing configmaps: %w", err)
 	}
 
 	// collect all k8s-components configmaps
-	componentConfigMaps := make(map[string]time.Time)
+	componentConfigMaps := []corev1.ConfigMap{}
 	for _, configMap := range configMaps.Items {
 		if strings.HasPrefix(configMap.Name, "k8s-components") {
-			componentConfigMaps[configMap.Name] = configMap.CreationTimestamp.Time
+			componentConfigMaps = append(componentConfigMaps, configMap)
 		}
 	}
 	if len(componentConfigMaps) == 0 {
-		return "", fmt.Errorf("no configmaps found")
+		return corev1.ConfigMap{}, fmt.Errorf("no configmaps found")
 	}
 
 	// find latest configmap
-	var latestConfigMap string
-	var latestTime time.Time
-	for configMap, creationTime := range componentConfigMaps {
-		if creationTime.After(latestTime) {
-			latestConfigMap = configMap
-			latestTime = creationTime
+	var latestConfigMap corev1.ConfigMap
+	for _, cm := range componentConfigMaps {
+		if cm.CreationTimestamp.After(latestConfigMap.CreationTimestamp.Time) {
+			latestConfigMap = cm
 		}
 	}
 	return latestConfigMap, nil
