@@ -100,7 +100,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
 
-			err := iamCreateAWS(cmd, nopSpinner{}, tc.creator)
+			err := iamCreateAWS(cmd, &nopSpinner{}, tc.creator)
 
 			if tc.wantErr {
 				assert.Error(err)

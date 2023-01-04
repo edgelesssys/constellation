@@ -123,7 +123,7 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 
-			err := iamCreateGCP(cmd, nopSpinner{}, fileHandler, tc.creator)
+			err := iamCreateGCP(cmd, &nopSpinner{}, fileHandler, tc.creator)
 
 			if tc.wantErr {
 				assert.Error(err)

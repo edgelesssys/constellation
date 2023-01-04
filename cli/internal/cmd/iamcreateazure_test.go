@@ -101,7 +101,7 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
 
-			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator)
+			err := iamCreateAzure(cmd, &nopSpinner{}, tc.creator)
 
 			if tc.wantErr {
 				assert.Error(err)

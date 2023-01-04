@@ -49,9 +49,13 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	fileHandler := file.NewHandler(afero.NewOsFs())
-	spinner := newSpinner(cmd.ErrOrStderr())
+	spinner, err := newSpinnerOrStdout(cmd)
+	if err != nil {
+		return fmt.Errorf("creating spinner: %w", err)
+	}
 	defer spinner.Stop()
+
+	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewCreator(spinner)
 	c := &createCmd{log: log}
 	return c.create(cmd, creator, fileHandler, spinner)
