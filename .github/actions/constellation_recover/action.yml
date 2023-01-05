@@ -36,7 +36,8 @@ runs:
         export WORKER_NODE_INSTANCE=$(gcloud compute instances list --project=${{ inputs.gcpProject }} --zones=${GCP_ZONE} --filter="labels.constellation-role=worker AND labels.constellation-uid=${CONSTELLATION_UID}" --format="json" | jq '.[0].name' -r)
         echo Shutting down worker instance: ${WORKER_NODE_INSTANCE}
         gcloud compute instances reset ${WORKER_NODE_INSTANCE} --project=${{ inputs.gcpProject }} --zone=${GCP_ZONE}
-        kubectl wait --for=condition=ready --all nodes --timeout=10m
+        kubectl wait --for=condition=Ready=false --timeout=10m e2e-test-${CONSTELLATION_UID}-worker
+        kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
     - name: Restart worker node on Azure
@@ -45,7 +46,8 @@ runs:
       run: |
         echo Shutting down worker instance: e2e-test-${CONSTELLATION_UID}-worker
         az vmss restart --instance-ids 0 --name e2e-test-${CONSTELLATION_UID}-worker --resource-group ${{ inputs.resourceGroup }}
-        kubectl wait --for=condition=ready --all nodes --timeout=10m
+        kubectl wait --for=condition=Ready=false --timeout=10m e2e-test-${CONSTELLATION_UID}-worker
+        kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
     - name: Restart worker node on AWS
@@ -56,7 +58,8 @@ runs:
         export WORKER_NODE_INSTANCE=$(aws ec2 describe-instances --region=${AWS_REGION} --filters Name=tag:constellation-role,Values=worker Name=tag:constellation-uid,Values=${CONSTELLATION_UID} | yq '.Reservations[0].Instances[0].InstanceId' -r)
         echo Shutting down worker instance: ${WORKER_NODE_INSTANCE}
         aws ec2 reboot-instances --region=${AWS_REGION} --instance-ids=${WORKER_NODE_INSTANCE}
-        kubectl wait --for=condition=ready --all nodes --timeout=10m
+        kubectl wait --for=condition=Ready=false --timeout=10m e2e-test-${CONSTELLATION_UID}-worker
+        kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
     # Restart control plane machines
