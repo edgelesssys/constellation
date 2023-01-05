@@ -8,7 +8,7 @@ on:
       - "release/**"
       - "feat/reproducible-builds-ko-nogcp"
     paths:
-      - "image/apko/*.yaml"
+      - "./image/apko/*.yaml"
 
 jobs:
   build-apko-image:
