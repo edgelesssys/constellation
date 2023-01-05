@@ -16,9 +16,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      image: ${{ steps.build-and-upload.outputs.image }}
-      digest: ${{ steps.build-and-upload.outputs.digest }}
     steps:
       - name: Check out repository
         id: checkout
