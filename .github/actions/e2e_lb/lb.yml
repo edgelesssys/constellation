@@ -35,3 +35,5 @@ spec:
         image: traefik/whoami:v1.8.7
         ports:
         - containerPort: 80
+        args:
+        - "--verbose"
