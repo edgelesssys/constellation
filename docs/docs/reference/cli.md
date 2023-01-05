@@ -354,6 +354,7 @@ constellation upgrade execute [flags]
 
 ```
   -h, --help   help for execute
+  -y, --yes    Run upgrades without further confirmation. WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
 ```
 
 ### Options inherited from parent commands
