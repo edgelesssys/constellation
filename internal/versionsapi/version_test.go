@@ -607,6 +607,11 @@ func TestShortPath(t *testing.T) {
 			stream:  "debug",
 			version: "v9.9.9",
 		},
+		"ref/foo/stream/stable/v9.9.9": {
+			ref:     "foo",
+			stream:  "stable",
+			version: "v9.9.9",
+		},
 	}
 
 	for name, tc := range testCases {

@@ -320,12 +320,14 @@ var (
 func shortPath(ref, stream, version string) string {
 	var sp string
 	if ref != ReleaseRef {
-		sp = path.Join("ref", ref)
+		return path.Join("ref", ref, "stream", stream, version)
 	}
+
 	if stream != "stable" {
-		sp = path.Join(sp, "stream", stream)
+		return path.Join(sp, "stream", stream, version)
 	}
-	return path.Join(sp, version)
+
+	return version
 }
 
 func parseShortPath(shortPath string) (ref, stream, version string, err error) {
