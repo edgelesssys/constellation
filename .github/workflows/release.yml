@@ -73,6 +73,7 @@ jobs:
           git push origin "${BRANCH}"
 
   micro-services:
+    name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
     uses: ./.github/workflows/build-micro-service-manual.yml
     secrets: inherit
@@ -88,6 +89,7 @@ jobs:
       release: true
 
   constellation-node-operator:
+    name: Build Constellation node-operator
     needs: [verify-inputs, prepare-release-branch]
     secrets: inherit
     uses: ./.github/workflows/build-operator-manual.yml
@@ -97,6 +99,7 @@ jobs:
       release: true
 
   update-versions:
+    name: Update container image versions
     needs: [verify-inputs, micro-services, constellation-node-operator]
     runs-on: ubuntu-22.04
     env:
@@ -154,6 +157,7 @@ jobs:
           git push
 
   os-image:
+    name: Build OS image
     needs: [verify-inputs, update-versions]
     uses: ./.github/workflows/build-os-image.yml
     secrets: inherit
@@ -164,6 +168,7 @@ jobs:
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
   generate-measurements:
+    name: Generate OS image measurements
     needs: [verify-inputs, os-image]
     uses: ./.github/workflows/generate-measurements.yml
     secrets: inherit
@@ -172,3 +177,38 @@ jobs:
       isDebugImage: false
       signMeasurements: true
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  update-hardcoded-measurements:
+    name: Update hardcoded measurements (in the CLI)
+    needs: [verify-inputs, generate-measurements]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ inputs.version }}
+      WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.19.4"
+          cache: true
+
+      - name: Build generateMeasurements tool
+        working-directory: internal/attestation/measurements/measurement-generator
+        run: go build -o generate -tags=enterprise .
+
+      - name: Update hardcoded measurements
+        working-directory: internal/attestation/measurements
+        run: |
+          ./measurement-generator/generate
+          git add measurements_enterprise.go
+
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git commit -m "attestation: hardcode measurements for ${VERSION}"
+          git push
