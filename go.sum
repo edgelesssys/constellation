@@ -346,8 +346,8 @@ github.com/cyberphone/json-canonicalization v0.0.0-20210303052042-6bc126869bf4 h
 github.com/cyberphone/json-canonicalization v0.0.0-20210303052042-6bc126869bf4/go.mod h1:uzvlm1mxhHkdfqitSA92i7Se+S9ksOn3a3qmv/kyOCw=
 github.com/cyphar/filepath-securejoin v0.2.3 h1:YX6ebbZCZP7VkM3scTTokDgBL2TY741X51MTk3ycuNI=
 github.com/cyphar/filepath-securejoin v0.2.3/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxGGx79pTxQpKOJNYHHl4=
-github.com/daniel-weisse/go-tpm-tools v0.0.0-20221111090237-e51fbcb20b1f h1:xaEAq1XJxYsRekdcxnN8CTauUlvH1mCQByqN59+Ko+Y=
-github.com/daniel-weisse/go-tpm-tools v0.0.0-20221111090237-e51fbcb20b1f/go.mod h1:7iobJRG5hBAEI4g/EGF7H9onZ0o7t5uTRQpylgDG46M=
+github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc h1:cJp8NluCBP5idNdtfo2nauPeepn94/jIaeSqTTac9zc=
+github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc/go.mod h1:HQfQboO+M8pRtBfO5U3KMhwzfC/XC3TaMCgRfTpII8Q=
 github.com/danieljoos/wincred v1.0.2/go.mod h1:SnuYRW9lp1oJrZX/dXJqr0cPK5gYXqx3EJbmjhLdK9U=
 github.com/davecgh/go-spew v0.0.0-20161028175848-04cdfd42973b/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -650,8 +650,8 @@ github.com/google/go-licenses v0.0.0-20210329231322-ce1d9163b77d/go.mod h1:+TYOm
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/go-replayers/grpcreplay v0.1.0/go.mod h1:8Ig2Idjpr6gifRd6pNVggX6TC1Zw6Jx74AKp7QNH2QE=
 github.com/google/go-replayers/httpreplay v0.1.0/go.mod h1:YKZViNhiGgqdBlUbI2MwGpq4pXxNmhJLPHQ7cv2b5no=
-github.com/google/go-sev-guest v0.2.6 h1:IH3neBTmwVXLX1OfYzI3vbUM8psEJ47y1xnwhsFDXcY=
-github.com/google/go-sev-guest v0.2.6/go.mod h1:OMtBJPoT3rJO9HkA+ufUz4v/C71QJM4gf0IMz8dchPw=
+github.com/google/go-sev-guest v0.4.1 h1:IjxtGAvzR+zSyAqMc1FWfYKCg1cwPkBly9+Xog3YMZc=
+github.com/google/go-sev-guest v0.4.1/go.mod h1:UEi9uwoPbLdKGl1QHaq1G8pfCbQ4QP0swWX4J0k6r+Q=
 github.com/google/go-tpm v0.3.3 h1:P/ZFNBZYXRxc+z7i5uyd8VP7MaDteuLZInzrH2idRGo=
 github.com/google/go-tpm v0.3.3/go.mod h1:9Hyn3rgnzWF9XBWVk6ml6A6hNkbWjNFlDQL51BeghL4=
 github.com/google/go-tspi v0.2.1-0.20190423175329-115dea689aad/go.mod h1:xfMGI3G0PhxCdNVcYr1C4C+EizojDg/TXuX5by8CiHI=

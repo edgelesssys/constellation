@@ -30,7 +30,7 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.25.3
 )
 
-replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221111090237-e51fbcb20b1f
+replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc
 
 require (
 	cloud.google.com/go/compute v1.14.0
@@ -67,7 +67,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-tpm v0.3.3
-	github.com/google/go-tpm-tools v0.3.9
+	github.com/google/go-tpm-tools v0.3.10
 	github.com/google/tink/go v1.7.0
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -194,7 +194,7 @@ require (
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.12.1 // indirect
-	github.com/google/go-sev-guest v0.2.6 // indirect
+	github.com/google/go-sev-guest v0.4.1 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect
