@@ -52,7 +52,7 @@ runs:
 
     - name: Publish test results
       if: ${{ !env.ACT }}
-      uses: mikepenz/action-junit-report@c06eeb43cf77da3d290b179c834b2d8725177971 # v3.7.0
+      uses: mikepenz/action-junit-report@7210fead7f92f6395c37241964df3b0f730f5e4e # v3.7.1
       with:
         report_paths: "**/junit_01.xml"
         fail_on_failure: true
