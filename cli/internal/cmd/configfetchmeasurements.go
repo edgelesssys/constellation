@@ -20,8 +20,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/shortname"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -187,14 +187,15 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 }
 
 func measurementURL(provider cloudprovider.Provider, image, file string) (*url.URL, error) {
-	ref, stream, version, err := shortname.ToParts(image)
+	ver, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
-		return nil, fmt.Errorf("parsing image name: %w", err)
+		return nil, fmt.Errorf("creating version from image name: %w", err)
 	}
-	url, err := url.Parse(constants.CDNRepositoryURL)
+	artifactBaseURL := ver.ArtifactURL()
+	url, err := url.Parse(artifactBaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
+		return nil, fmt.Errorf("parsing artifact base URL %s: %w", artifactBaseURL, err)
 	}
-	url.Path = path.Join(constants.CDNAPIPrefix, "ref", ref, "stream", stream, version, "image", "csp", strings.ToLower(provider.String()), file)
+	url.Path = path.Join(url.Path, "image", "csp", strings.ToLower(provider.String()), file)
 	return url, nil
 }
