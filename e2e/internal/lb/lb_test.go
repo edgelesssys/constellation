@@ -43,15 +43,17 @@ func TestLoadBalancer(t *testing.T) {
 	k, err := kubectl.New()
 	require.NoError(err)
 
-	// Wait for external IP to be registered
+	t.Log("Waiting for external IP to be registered")
 	svc := testEventuallyExternalIPAvailable(t, k)
 	loadBalancerIP := getIPOrHostname(t, svc)
 	loadBalancerPort := svc.Spec.Ports[0].Port
 	require.Equal(initialPort, loadBalancerPort)
 	url := buildURL(t, loadBalancerIP, loadBalancerPort)
+
+	t.Log("Checking service can be reached through LB")
 	testEventuallyStatusOK(t, url)
 
-	// Check that all pods receive traffic
+	t.Log("Check that all pods receive traffic")
 	var allHostnames []string
 	for i := 0; i < numRequests; i++ {
 		allHostnames = testEndpointAvailable(t, url, allHostnames)
@@ -59,17 +61,17 @@ func TestLoadBalancer(t *testing.T) {
 	assert.True(hasNUniqueStrings(allHostnames, numPods))
 	allHostnames = allHostnames[:0]
 
-	// Change port to 8044
+	t.Log("Change port of service to 8044")
 	svc.Spec.Ports[0].Port = newPort
 	svc, err = k.CoreV1().Services(namespaceName).Update(context.Background(), svc, v1.UpdateOptions{})
 	require.NoError(err)
 	assert.Equal(newPort, svc.Spec.Ports[0].Port)
 
-	// Wait for changed port to be available
+	t.Log("Wait for changed port to be available")
 	newURL := buildURL(t, loadBalancerIP, newPort)
 	testEventuallyStatusOK(t, newURL)
 
-	// Check again that all pods receive traffic
+	t.Log("Check again that all pods receive traffic")
 	for i := 0; i < numRequests; i++ {
 		allHostnames = testEndpointAvailable(t, newURL, allHostnames)
 	}
@@ -113,10 +115,19 @@ func testEventuallyStatusOK(t *testing.T, url string) {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
+			t.Log("Request failed: ", err.Error())
 			return false
 		}
 		defer resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
+
+		statusOK := resp.StatusCode == http.StatusOK
+		if !statusOK {
+			t.Log("Status not OK: ", resp.StatusCode)
+			return false
+		}
+
+		t.Log("Status OK")
+		return true
 	}, timeout, interval)
 }
 
@@ -129,11 +140,19 @@ func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *c
 		var err error
 		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, v1.GetOptions{})
 		if err != nil {
-			fmt.Println(err)
+			t.Log("Getting service failed: ", err.Error())
 			return false
 		}
-		fmt.Printf("Fetched service: %v\n", svc.String())
-		return len(svc.Status.LoadBalancer.Ingress) > 0
+		t.Log("Successfully fetched service: ", svc.String())
+
+		ingressAvailable := len(svc.Status.LoadBalancer.Ingress) > 0
+		if !ingressAvailable {
+			t.Log("Ingress not yet available")
+			return false
+		}
+
+		t.Log("Ingress available")
+		return true
 	}, timeout, interval)
 
 	return svc
