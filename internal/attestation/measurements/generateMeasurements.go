@@ -76,7 +76,7 @@ func measurementURL(provider cloudprovider.Provider, image, file string) (*url.U
 	if err != nil {
 		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
 	}
-	url.Path = path.Join(constants.CDNAPIPrefix, "ref", ref, "stream", stream, "image", version, "csp", strings.ToLower(provider.String()), file)
+	url.Path = path.Join(constants.CDNAPIPrefix, "ref", ref, "stream", stream, version, "image", "csp", strings.ToLower(provider.String()), file)
 	return url, nil
 }
 
