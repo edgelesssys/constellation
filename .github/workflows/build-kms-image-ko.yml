@@ -4,6 +4,11 @@ env:
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/**"
+      - "feat/reproducible-builds-ko-nogcp"
 
 jobs:
   build-kms-server:
