@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,6 +97,12 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 }
 
 func TestUpdateURLs(t *testing.T) {
+	ver := versionsapi.Version{
+		Ref:     "foo",
+		Stream:  "nightly",
+		Version: "v7.7.7",
+		Kind:    versionsapi.VersionKindImage,
+	}
 	testCases := map[string]struct {
 		conf                   *config.Config
 		flags                  *fetchMeasurementsFlags
@@ -104,14 +111,14 @@ func TestUpdateURLs(t *testing.T) {
 	}{
 		"both values nil": {
 			conf: &config.Config{
-				Image: "someImageVersion",
+				Image: ver.ShortPath(),
 				Provider: config.ProviderConfig{
 					GCP: &config.GCPConfig{},
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/someImageVersion/image/csp/gcp/measurements.json",
-			wantMeasurementsSigURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/someImageVersion/image/csp/gcp/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactURL() + "/image/csp/gcp/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactURL() + "/image/csp/gcp/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},

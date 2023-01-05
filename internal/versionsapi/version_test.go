@@ -373,7 +373,7 @@ func TestVersionListPathURL(t *testing.T) {
 	}
 }
 
-func TestVersionArtifactPath(t *testing.T) {
+func TestVersionArtifactPathURL(t *testing.T) {
 	testCases := map[string]struct {
 		ver      Version
 		wantPath string
@@ -413,6 +413,8 @@ func TestVersionArtifactPath(t *testing.T) {
 
 			path := tc.ver.ArtifactPath()
 			assert.Equal(tc.wantPath, path)
+			url := tc.ver.ArtifactURL()
+			assert.Equal(constants.CDNRepositoryURL+"/"+tc.wantPath, url)
 		})
 	}
 }
