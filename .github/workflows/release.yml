@@ -176,6 +176,7 @@ jobs:
       osImage: ${{ inputs.version }}
       isDebugImage: false
       signMeasurements: true
+      isRelease: true
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
   update-hardcoded-measurements:
