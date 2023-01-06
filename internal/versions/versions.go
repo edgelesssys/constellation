@@ -63,7 +63,7 @@ const (
 	// KmsImage image of Constellation KMS server.
 	KmsImage = "ghcr.io/edgelesssys/kmsserver-ko:ci-test" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/verification-service-ko:ci-test" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.4.0-pre.0.20230105135209-620436626b10@sha256:fbd0fcd79140bfca6faa4243094eeb8c195263420572d88a5039f8395a4c41c1" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
