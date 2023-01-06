@@ -86,6 +86,34 @@ the `<REPOSITORY>/.vscode/settings.json` repo, so the settings will only affect 
 
 Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to have uniform formatting in our `.yaml` files.
 
+## PR conventions
+
+Our changelog is generated from PR titles. Which PR is listed in which category is determined by labels, see the [release.yml](/.github/release.yml).
+
+The PR title should be structured in one of the following ways:
+
+```
+<module>: <title>
+```
+
+Where the `<module>` is
+
+- the top level directory of the microservice or component, e.g., `joinservice`, `disk-mapper`, `upgrade-agent` but also `docs` and `rfc`
+- in internal, the second level directory
+- `deps` for dependency upgrades
+- `ci` for things that are CI related
+
+and `<title>` is all lower case (except proper names, including acronyms).
+Ticket numbers shouldn't be part of the title.
+
+In case the scope of your PR is to wide, use the alternative format.
+
+```
+<Title>
+```
+
+and `<Title>` starts with a capital letter.
+
 ## Naming convention
 
 ### Network
