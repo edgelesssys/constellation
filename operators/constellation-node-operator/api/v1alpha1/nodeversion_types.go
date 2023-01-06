@@ -35,6 +35,8 @@ type NodeVersionStatus struct {
 	Heirs []corev1.ObjectReference `json:"heirs,omitempty"`
 	// Mints is a list of up to date nodes that will become heirs.
 	Mints []corev1.ObjectReference `json:"mints,omitempty"`
+	// AwaitingAnnotation is a list of nodes that are waiting for the operator to annotate them.
+	AwaitingAnnotation []corev1.ObjectReference `json:"awaitingAnnotation,omitempty"`
 	// Pending is a list of pending nodes (joining or leaving the cluster).
 	Pending []corev1.ObjectReference `json:"pending,omitempty"`
 	// Obsolete is a list of obsolete nodes (nodes that have been created by the operator but are no longer needed).
@@ -45,6 +47,8 @@ type NodeVersionStatus struct {
 	Budget uint32 `json:"budget"`
 	// Conditions represent the latest available observations of an object's state
 	Conditions []metav1.Condition `json:"conditions"`
+	// ActiveClusterVersionUpgrade indicates whether the cluster is currently upgrading.
+	ActiveClusterVersionUpgrade bool `json:"activeclusterversionupgrade"`
 }
 
 //+kubebuilder:object:root=true

@@ -9,6 +9,13 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
   - create
