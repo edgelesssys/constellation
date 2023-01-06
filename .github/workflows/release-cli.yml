@@ -78,33 +78,6 @@ jobs:
           echo "${HASHESB64}"
           echo provenance-subjects="${HASHESB64}" >> "$GITHUB_OUTPUT"
 
-  versions-manifest:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-      - name: Login to Azure
-        uses: ./.github/actions/login_azure
-        with:
-          azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Login to GCP
-        uses: ./.github/actions/login_gcp
-        with:
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - name: Build version manifest
-        working-directory: ${{ github.workspace }}/hack/build-manifest
-        run: |
-          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > ${{ github.workspace }}/versions-manifest.json
-          cat ${{ github.workspace }}/versions-manifest.json
-      - name: Upload versions-manifest
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        with:
-          name: versions-manifest.json
-          path: versions-manifest.json
-
   signed-sbom:
     runs-on: ubuntu-22.04
     steps:
@@ -222,7 +195,6 @@ jobs:
       - build-cli
       - provenance
       - signed-sbom
-      - versions-manifest
     steps:
       - name: Write cosign public key
         run: echo "$COSIGN_PUBLIC_KEY" > cosign.pub
