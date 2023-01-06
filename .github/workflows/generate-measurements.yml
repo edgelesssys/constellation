@@ -160,7 +160,7 @@ jobs:
           CSP: ${{ matrix.provider }}
 
       - name: Upload measurements as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
@@ -256,7 +256,7 @@ jobs:
           rm rekor-cli-linux-amd64
 
       - name: Download measurements from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
@@ -280,7 +280,7 @@ jobs:
           cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
 
       - name: Upload signed measurements as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: measurements-${{ matrix.provider }}.json.sig
           path: "${{ github.workspace }}/generated-measurements"
@@ -300,13 +300,13 @@ jobs:
       contents: read
     steps:
       - name: Download measurements from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
 
       - name: Download signature from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json.sig
           path: "${{ github.workspace }}/generated-measurements"
