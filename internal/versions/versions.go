@@ -59,7 +59,7 @@ const (
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.35@sha256:d863f7fd0da4392b9753dc6c9195a658e80d70e0be8c9adb410d77cf20b75c76" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/joinservice-ko:ci-test" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.4.0-pre.0.20230105135209-620436626b10@sha256:218f719ce949e84383e52c0c1b7429c54f4af5e43d4aeb520563ac82cbecf6db" // renovate:container
 	// KmsImage image of Constellation KMS server.
 	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.4.0-pre.0.20230105135209-620436626b10@sha256:58041ec493132de4f5fb2eda8da57f29447c716fba784e6ec4f060d7cfecd3e5" // renovate:container
 	// VerificationImage image of Constellation verification service.
