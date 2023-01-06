@@ -142,9 +142,9 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23.0.0@sha256:bf54ecb58fef5b1358d1dd25b1068598a74adbc7e7622b42a2708d1ed4bdc4bc", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.23.23@sha256:a5ff0f4c2ee3438ff5372442f657552dec549afb4fa04aeab90a15f37a466125", // renovate:container
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.23.25@sha256:bc24df9f9b46bf28e69778892835d730b90b94a5315b9de51eacd2292c7dd499", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.23.23@sha256:a82d73fb1ee10e3041b4f03cfe4ab5bb8edc8329c45bf1d42ff9e06340137de3", // renovate:container
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.23.25@sha256:ecf4cbd18a98255151e5692469c658a3067cc84b3b7749a8af5bfa10cb4a060f", // renovate:container
 		// External service image. Depends on k8s version.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
 	},
@@ -284,10 +284,10 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.26.0@sha256:d84015d5961c0cdfd30dacc07c8edde30e75ecce14a310db23dc2aa305d3898f", // renovate:container
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.26.2@sha256:bd5cff08104068c0ca5b6bdefc4a5fa7d96b60119b698d175fd14309f4f90dcd", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.26.0@sha256:a78e7009df5c062ff4cf4bd4f49cdbd063cbde8dcc6b55e9b8cc6c3b2cc31800", // renovate:container
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.26.2@sha256:8f9a21851278d5ba634ca39ccb0e75756dd4dbb63aeeb492274e0f05301fccd1", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df", // renovate:container
