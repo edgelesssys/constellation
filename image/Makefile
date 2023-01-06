@@ -10,7 +10,7 @@ IMAGE_VERSION                    ?= v0.0.0
 csps := aws qemu gcp azure
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
-AZURE_FIXED_KERNEL_RPMS := kernel-5.19.4-300.fc37.x86_64.rpm kernel-core-5.19.4-300.fc37.x86_64.rpm kernel-modules-5.19.4-300.fc37.x86_64.rpm
+AZURE_FIXED_KERNEL_RPMS := kernel-6.0.17-300.fc37.x86_64.rpm kernel-core-6.0.17-300.fc37.x86_64.rpm kernel-modules-6.0.17-300.fc37.x86_64.rpm
 GCP_FIXED_KERNEL_RPMS := kernel-5.19.17-300.fc37.x86_64.rpm kernel-core-5.19.17-300.fc37.x86_64.rpm kernel-modules-5.19.17-300.fc37.x86_64.rpm
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
@@ -29,7 +29,7 @@ prebuilt/rpms/gcp/%.rpm:
 prebuilt/rpms/azure/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -sL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.4/300.fc37/x86_64/$*.rpm
+	@curl -sL -o $@ https://cdn.confidential.cloud/constellation/testing/kernel/dogfooding/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) build
