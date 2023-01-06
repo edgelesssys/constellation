@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,18 +20,18 @@ import (
 func TestGetScalingGroupImage(t *testing.T) {
 	testCases := map[string]struct {
 		scalingGroupID string
-		scaleSet       armcomputev2.VirtualMachineScaleSet
+		scaleSet       armcompute.VirtualMachineScaleSet
 		getScaleSetErr error
 		wantImage      string
 		wantErr        bool
 	}{
 		"getting image works": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
-				Properties: &armcomputev2.VirtualMachineScaleSetProperties{
-					VirtualMachineProfile: &armcomputev2.VirtualMachineScaleSetVMProfile{
-						StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
-							ImageReference: &armcomputev2.ImageReference{
+			scaleSet: armcompute.VirtualMachineScaleSet{
+				Properties: &armcompute.VirtualMachineScaleSetProperties{
+					VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
+						StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
+							ImageReference: &armcompute.ImageReference{
 								ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/images/image-name"),
 							},
 						},
@@ -42,11 +42,11 @@ func TestGetScalingGroupImage(t *testing.T) {
 		},
 		"getting community image works": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
-				Properties: &armcomputev2.VirtualMachineScaleSetProperties{
-					VirtualMachineProfile: &armcomputev2.VirtualMachineScaleSetVMProfile{
-						StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
-							ImageReference: &armcomputev2.ImageReference{
+			scaleSet: armcompute.VirtualMachineScaleSet{
+				Properties: &armcompute.VirtualMachineScaleSetProperties{
+					VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
+						StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
+							ImageReference: &armcompute.ImageReference{
 								CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
 							},
 						},
@@ -77,7 +77,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 
 			client := Client{
 				scaleSetsAPI: &stubScaleSetsAPI{
-					scaleSet: armcomputev2.VirtualMachineScaleSetsClientGetResponse{
+					scaleSet: armcompute.VirtualMachineScaleSetsClientGetResponse{
 						VirtualMachineScaleSet: tc.scaleSet,
 					},
 					getErr: tc.getScaleSetErr,
@@ -184,14 +184,14 @@ func TestGetScalingGroupName(t *testing.T) {
 
 func TestListScalingGroups(t *testing.T) {
 	testCases := map[string]struct {
-		scaleSet          armcomputev2.VirtualMachineScaleSet
+		scaleSet          armcompute.VirtualMachineScaleSet
 		fetchPageErr      error
 		wantControlPlanes []string
 		wantWorkers       []string
 		wantErr           bool
 	}{
 		"listing control-plane works": {
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
+			scaleSet: armcompute.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
@@ -201,7 +201,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"},
 		},
 		"listing worker works": {
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
+			scaleSet: armcompute.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
@@ -211,7 +211,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantWorkers: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"},
 		},
 		"listing is not dependent on resource name": {
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
+			scaleSet: armcompute.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
@@ -221,7 +221,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"},
 		},
 		"listing other works": {
-			scaleSet: armcomputev2.VirtualMachineScaleSet{
+			scaleSet: armcompute.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/other"),
 			},
 		},
@@ -240,7 +240,7 @@ func TestListScalingGroups(t *testing.T) {
 			client := Client{
 				scaleSetsAPI: &stubScaleSetsAPI{
 					pager: &stubVMSSPager{
-						list:     []armcomputev2.VirtualMachineScaleSet{tc.scaleSet},
+						list:     []armcompute.VirtualMachineScaleSet{tc.scaleSet},
 						fetchErr: tc.fetchPageErr,
 					},
 				},

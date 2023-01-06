@@ -14,7 +14,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,15 +23,15 @@ import (
 func TestGetNodeState(t *testing.T) {
 	testCases := map[string]struct {
 		providerID         string
-		instanceView       armcomputev2.VirtualMachineScaleSetVMInstanceView
+		instanceView       armcompute.VirtualMachineScaleSetVMInstanceView
 		getInstanceViewErr error
 		wantState          updatev1alpha1.CSPNodeState
 		wantErr            bool
 	}{
 		"getting node state works": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			instanceView: armcomputev2.VirtualMachineScaleSetVMInstanceView{
-				Statuses: []*armcomputev2.InstanceViewStatus{
+			instanceView: armcompute.VirtualMachineScaleSetVMInstanceView{
+				Statuses: []*armcompute.InstanceViewStatus{
 					{Code: to.Ptr("ProvisioningState/succeeded")},
 					{Code: to.Ptr("PowerState/running")},
 				},
@@ -61,7 +61,7 @@ func TestGetNodeState(t *testing.T) {
 
 			client := Client{
 				virtualMachineScaleSetVMsAPI: &stubvirtualMachineScaleSetVMsAPI{
-					instanceView: armcomputev2.VirtualMachineScaleSetVMsClientGetInstanceViewResponse{
+					instanceView: armcompute.VirtualMachineScaleSetVMsClientGetInstanceViewResponse{
 						VirtualMachineScaleSetVMInstanceView: tc.instanceView,
 					},
 					instanceViewErr: tc.getInstanceViewErr,

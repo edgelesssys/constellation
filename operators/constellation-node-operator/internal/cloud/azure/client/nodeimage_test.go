@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,17 +22,17 @@ import (
 func TestGetNodeImage(t *testing.T) {
 	testCases := map[string]struct {
 		providerID       string
-		vm               armcomputev2.VirtualMachineScaleSetVM
+		vm               armcompute.VirtualMachineScaleSetVM
 		getScaleSetVMErr error
 		wantImage        string
 		wantErr          bool
 	}{
 		"getting node image works": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			vm: armcomputev2.VirtualMachineScaleSetVM{
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					StorageProfile: &armcomputev2.StorageProfile{
-						ImageReference: &armcomputev2.ImageReference{
+			vm: armcompute.VirtualMachineScaleSetVM{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
 							ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/images/image-name"),
 						},
 					},
@@ -42,10 +42,10 @@ func TestGetNodeImage(t *testing.T) {
 		},
 		"getting community node image works": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			vm: armcomputev2.VirtualMachineScaleSetVM{
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					StorageProfile: &armcomputev2.StorageProfile{
-						ImageReference: &armcomputev2.ImageReference{
+			vm: armcompute.VirtualMachineScaleSetVM{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					StorageProfile: &armcompute.StorageProfile{
+						ImageReference: &armcompute.ImageReference{
 							CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
 						},
 					},
@@ -64,7 +64,7 @@ func TestGetNodeImage(t *testing.T) {
 		},
 		"scale set vm does not have valid image reference": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			vm:         armcomputev2.VirtualMachineScaleSetVM{},
+			vm:         armcompute.VirtualMachineScaleSetVM{},
 			wantErr:    true,
 		},
 	}
@@ -76,7 +76,7 @@ func TestGetNodeImage(t *testing.T) {
 
 			client := Client{
 				virtualMachineScaleSetVMsAPI: &stubvirtualMachineScaleSetVMsAPI{
-					scaleSetVM: armcomputev2.VirtualMachineScaleSetVMsClientGetResponse{
+					scaleSetVM: armcompute.VirtualMachineScaleSetVMsClientGetResponse{
 						VirtualMachineScaleSetVM: tc.vm,
 					},
 					getErr: tc.getScaleSetVMErr,
@@ -129,9 +129,9 @@ func TestGetScalingGroupID(t *testing.T) {
 func TestCreateNode(t *testing.T) {
 	testCases := map[string]struct {
 		scalingGroupID    string
-		sku               *armcomputev2.SKU
-		preexistingVMs    []armcomputev2.VirtualMachineScaleSetVM
-		newVM             *armcomputev2.VirtualMachineScaleSetVM
+		sku               *armcompute.SKU
+		preexistingVMs    []armcompute.VirtualMachineScaleSetVM
+		newVM             *armcompute.VirtualMachineScaleSetVM
 		fetchErr          error
 		pollErr           error
 		getSKUCapacityErr error
@@ -143,13 +143,13 @@ func TestCreateNode(t *testing.T) {
 	}{
 		"creating node works": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			sku: &armcomputev2.SKU{
+			sku: &armcompute.SKU{
 				Capacity: to.Ptr(int64(0)),
 			},
-			newVM: &armcomputev2.VirtualMachineScaleSetVM{
+			newVM: &armcompute.VirtualMachineScaleSetVM{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/node-name"),
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					OSProfile: &armcomputev2.OSProfile{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcompute.OSProfile{
 						ComputerName: to.Ptr("node-name"),
 					},
 				},
@@ -159,16 +159,16 @@ func TestCreateNode(t *testing.T) {
 		},
 		"creating node works with existing nodes": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			sku: &armcomputev2.SKU{
+			sku: &armcompute.SKU{
 				Capacity: to.Ptr(int64(1)),
 			},
-			preexistingVMs: []armcomputev2.VirtualMachineScaleSetVM{
+			preexistingVMs: []armcompute.VirtualMachineScaleSetVM{
 				{ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/preexisting-node")},
 			},
-			newVM: &armcomputev2.VirtualMachineScaleSetVM{
+			newVM: &armcompute.VirtualMachineScaleSetVM{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/new-node"),
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					OSProfile: &armcomputev2.OSProfile{
+				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcompute.OSProfile{
 						ComputerName: to.Ptr("new-node"),
 					},
 				},
@@ -196,19 +196,19 @@ func TestCreateNode(t *testing.T) {
 		},
 		"updating scale set capacity fails": {
 			scalingGroupID:    "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			sku:               &armcomputev2.SKU{Capacity: to.Ptr(int64(0))},
+			sku:               &armcompute.SKU{Capacity: to.Ptr(int64(0))},
 			updateScaleSetErr: errors.New("update scale set error"),
 			wantEarlyErr:      true,
 		},
 		"polling for increased capacity fails": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			sku:            &armcomputev2.SKU{Capacity: to.Ptr(int64(0))},
+			sku:            &armcompute.SKU{Capacity: to.Ptr(int64(0))},
 			pollErr:        errors.New("poll error"),
 			wantLateErr:    true,
 		},
 		"new node cannot be found": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
-			sku:            &armcomputev2.SKU{Capacity: to.Ptr(int64(0))},
+			sku:            &armcompute.SKU{Capacity: to.Ptr(int64(0))},
 			wantLateErr:    true,
 		},
 	}
@@ -228,8 +228,8 @@ func TestCreateNode(t *testing.T) {
 					pager: pager,
 				},
 				scaleSetsAPI: &stubScaleSetsAPI{
-					scaleSet: armcomputev2.VirtualMachineScaleSetsClientGetResponse{
-						VirtualMachineScaleSet: armcomputev2.VirtualMachineScaleSet{
+					scaleSet: armcompute.VirtualMachineScaleSetsClientGetResponse{
+						VirtualMachineScaleSet: armcompute.VirtualMachineScaleSet{
 							SKU: tc.sku,
 						},
 					},
@@ -321,9 +321,9 @@ func TestCapacityPollingHandler(t *testing.T) {
 	var gotCapacity int64
 	handler := capacityPollingHandler{
 		scaleSetsAPI: &stubScaleSetsAPI{
-			scaleSet: armcomputev2.VirtualMachineScaleSetsClientGetResponse{
-				VirtualMachineScaleSet: armcomputev2.VirtualMachineScaleSet{
-					SKU: &armcomputev2.SKU{Capacity: to.Ptr(int64(0))},
+			scaleSet: armcompute.VirtualMachineScaleSetsClientGetResponse{
+				VirtualMachineScaleSet: armcompute.VirtualMachineScaleSet{
+					SKU: &armcompute.SKU{Capacity: to.Ptr(int64(0))},
 				},
 			},
 		},
@@ -344,7 +344,7 @@ func TestCapacityPollingHandler(t *testing.T) {
 	assert.Error(handler.Poll(context.Background()))
 
 	// let Poll finish
-	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = &armcomputev2.SKU{Capacity: to.Ptr(wantCapacity)}
+	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = &armcompute.SKU{Capacity: to.Ptr(wantCapacity)}
 	assert.NoError(handler.Poll(context.Background()))
 	assert.True(handler.Done())
 	assert.NoError(handler.Result(context.Background(), &gotCapacity))

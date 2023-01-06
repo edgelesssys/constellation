@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
 
@@ -29,7 +29,7 @@ const (
 // reference:
 // - https://docs.microsoft.com/en-us/azure/virtual-machines/states-billing#provisioning-states
 // - https://docs.microsoft.com/en-us/azure/virtual-machines/states-billing#power-states-and-billing
-func nodeStateFromStatuses(statuses []*armcomputev2.InstanceViewStatus) updatev1alpha1.CSPNodeState {
+func nodeStateFromStatuses(statuses []*armcompute.InstanceViewStatus) updatev1alpha1.CSPNodeState {
 	for _, status := range statuses {
 		if status == nil || status.Code == nil {
 			continue
