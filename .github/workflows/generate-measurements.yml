@@ -15,6 +15,11 @@ on:
         description: "Sign and upload the measurements?"
         type: boolean
         required: true
+      isRelease:
+        description: "Is this a release?"
+        type: boolean
+        default: false
+        required: false
       ref:
         type: string
         description: "Git ref to checkout"
@@ -33,6 +38,9 @@ on:
         description: "Sign and upload the measurements?"
         type: boolean
         required: true
+      isRelease:
+        description: "Is this a release?"
+        type: boolean
       ref:
         type: string
         description: "Git ref to checkout"
@@ -286,9 +294,9 @@ jobs:
       - name: Sign measurements
         shell: bash
         env:
-          COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+          COSIGN_PUBLIC_KEY: ${{ inputs.isRelease && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          COSIGN_PRIVATE_KEY: ${{ inputs.isRelease && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ inputs.isRelease && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
         run: |
           echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
           # Enabling experimental mode also publishes signature to Rekor
