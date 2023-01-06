@@ -61,7 +61,7 @@ jobs:
           outputPath: ${{ github.workspace }}/build/upgrade-agent
 
       - name: Upload dependencies
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: dependencies
           path: |
@@ -212,7 +212,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download build dependencies
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: dependencies
           path: ${{ github.workspace }}/build
@@ -270,7 +270,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload raw OS image as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw
@@ -278,7 +278,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload individual OS parts as artifacts
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: parts-${{ matrix.csp }}
           path: |
@@ -293,7 +293,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload manifest as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: manifest-${{ matrix.csp }}
           path: |
@@ -324,7 +324,7 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
@@ -488,7 +488,7 @@ jobs:
           IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
 
       - name: Upload image lookup table as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: lookup-table
           path: ${{ github.workspace }}/image/mkosi.output.*/*/image-upload*.json
@@ -517,7 +517,7 @@ jobs:
           aws-region: eu-central-1
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: image-${{ matrix.csp }}
 
@@ -543,7 +543,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image/measured-boot
 
       - name: Upload expected PCRs as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: pcrs
           path: pcrs-${{ matrix.csp }}.json
@@ -578,14 +578,14 @@ jobs:
           echo "::endgroup::"
 
       - name: Download rootfs
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           # downloading / using only the QEMU rootfs is fine
           # since the images only differ in the ESP partition
           name: parts-qemu
 
       - name: Download manifest
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           # downloading / using only the QEMU manifest is fine
           # since the images only differ in the ESP partition
@@ -682,7 +682,7 @@ jobs:
       contents: read
     steps:
       - name: Download image lookup table
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
           name: lookup-table
 
