@@ -106,7 +106,7 @@ Where the `<module>` is
 and `<title>` is all lower case (except proper names, including acronyms).
 Ticket numbers shouldn't be part of the title.
 
-In case the scope of your PR is to wide, use the alternative format.
+In case the scope of your PR is too wide, use the alternative format.
 
 ```
 <Title>
