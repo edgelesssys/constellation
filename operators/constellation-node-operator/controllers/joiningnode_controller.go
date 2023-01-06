@@ -74,7 +74,7 @@ func (r *JoiningNodesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if node.Annotations == nil {
 			node.Annotations = map[string]string{}
 		}
-		node.Annotations[mainconstants.NodeKubernetesComponentsHashAnnotationKey] = joiningNode.Spec.ComponentsReference
+		node.Annotations[mainconstants.NodeKubernetesComponentsAnnotationKey] = joiningNode.Spec.ComponentsReference
 		return r.Update(ctx, &node)
 	})
 	if err != nil {
