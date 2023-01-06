@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/version"
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -675,6 +676,28 @@ func TestGroupNodes(t *testing.T) {
 				},
 			},
 		},
+		AwaitingAnnotation: []corev1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "awaiting-annotation-missing-components-ref",
+					Annotations: map[string]string{
+						scalingGroupAnnotation: scalingGroup,
+						nodeImageAnnotation:    latestImageReference,
+						donorAnnotation:        "donor",
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "awaiting-annotation-missing-image-ref",
+					Annotations: map[string]string{
+						scalingGroupAnnotation:                              scalingGroup,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
+						donorAnnotation:                                     "donor",
+					},
+				},
+			},
+		},
 		Obsolete: []corev1.Node{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -717,6 +740,7 @@ func TestGroupNodes(t *testing.T) {
 	nodes = append(nodes, wantNodeGroups.UpToDate...)
 	nodes = append(nodes, wantNodeGroups.Donors...)
 	nodes = append(nodes, wantNodeGroups.Heirs...)
+	nodes = append(nodes, wantNodeGroups.AwaitingAnnotation...)
 	nodes = append(nodes, wantNodeGroups.Obsolete...)
 	nodes = append(nodes, wantNodeGroups.Mint[0].node)
 	pendingNodes := []updatev1alpha1.PendingNode{
@@ -790,6 +814,15 @@ func (r *stubNodeReplacer) setCreatedNode(nodeName, providerID string, err error
 	r.createNodeName = nodeName
 	r.createProviderID = providerID
 	r.createErr = err
+}
+
+type stubKubernetesServerVersionGetter struct {
+	version string
+	err     error
+}
+
+func (g *stubKubernetesServerVersionGetter) ServerVersion() (*version.Info, error) {
+	return &version.Info{GitVersion: g.version}, g.err
 }
 
 type stubNodeReplacerReader struct {

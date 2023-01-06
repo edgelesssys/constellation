@@ -14,6 +14,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +29,7 @@ import (
 	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
 	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers"
@@ -122,6 +124,11 @@ func main() {
 		setupLog.Error(err, "Unable to create k8s client")
 		os.Exit(1)
 	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		setupLog.Error(err, "Unable to create discovery client")
+		os.Exit(1)
+	}
 	etcdClient, err := etcd.New(k8sClient)
 	if err != nil {
 		setupLog.Error(err, "Unable to create etcd client")
@@ -137,7 +144,7 @@ func main() {
 	// Create Controllers
 	if csp == "azure" || csp == "gcp" {
 		if err = controllers.NewNodeVersionReconciler(
-			cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
+			cspClient, etcdClient, upgrade.NewClient(), discoveryClient, mgr.GetClient(), mgr.GetScheme(),
 		).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "Unable to create controller", "controller", "NodeVersion")
 			os.Exit(1)

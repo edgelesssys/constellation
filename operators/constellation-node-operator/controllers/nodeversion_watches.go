@@ -93,6 +93,16 @@ func nodeMaintenanceSucceededPredicate() predicate.Predicate {
 	}
 }
 
+// joiningNodeDeletedPredicate checks if a joining node was deleted.
+func joiningNodeDeletedPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			_, ok := e.Object.(*updatev1alpha1.JoiningNode)
+			return ok
+		},
+	}
+}
+
 // findObjectsForScalingGroup requests a reconcile call for the node image referenced by a scaling group.
 func (r *NodeVersionReconciler) findObjectsForScalingGroup(rawScalingGroup client.Object) []reconcile.Request {
 	scalingGroup := rawScalingGroup.(*updatev1alpha1.ScalingGroup)

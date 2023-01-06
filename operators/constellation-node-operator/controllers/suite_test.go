@@ -116,9 +116,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&NodeVersionReconciler{
-		nodeReplacer: fakes.nodeReplacer,
-		Client:       k8sManager.GetClient(),
-		Scheme:       k8sManager.GetScheme(),
+		kubernetesServerVersionGetter: fakes.k8sVerGetter,
+		nodeReplacer:                  fakes.nodeReplacer,
+		Client:                        k8sManager.GetClient(),
+		Scheme:                        k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -140,6 +141,7 @@ type fakeCollection struct {
 	scalingGroupUpdater *fakeScalingGroupUpdater
 	nodeStateGetter     *stubNodeStateGetter
 	nodeReplacer        *stubNodeReplacer
+	k8sVerGetter        *stubKubernetesServerVersionGetter
 	clock               *testclock.FakeClock
 }
 
@@ -148,6 +150,7 @@ func newFakes() fakeCollection {
 		scalingGroupUpdater: newFakeScalingGroupUpdater(),
 		nodeStateGetter:     &stubNodeStateGetter{},
 		nodeReplacer:        &stubNodeReplacer{},
+		k8sVerGetter:        &stubKubernetesServerVersionGetter{},
 		clock:               testclock.NewFakeClock(time.Now()),
 	}
 }

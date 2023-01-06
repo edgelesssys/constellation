@@ -302,6 +302,11 @@ func (in *NodeVersionStatus) DeepCopyInto(out *NodeVersionStatus) {
 		*out = make([]v1.ObjectReference, len(*in))
 		copy(*out, *in)
 	}
+	if in.AwaitingAnnotation != nil {
+		in, out := &in.AwaitingAnnotation, &out.AwaitingAnnotation
+		*out = make([]v1.ObjectReference, len(*in))
+		copy(*out, *in)
+	}
 	if in.Pending != nil {
 		in, out := &in.Pending, &out.Pending
 		*out = make([]v1.ObjectReference, len(*in))
