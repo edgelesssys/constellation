@@ -777,7 +777,7 @@ func groupNodes(nodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode, 
 			continue
 		}
 		if !strings.EqualFold(node.Annotations[nodeImageAnnotation], latestImageReference) ||
-			!strings.EqualFold(node.Annotations[mainconstants.NodeKubernetesComponentsHashAnnotationKey], latestK8sComponentsReference) {
+			!strings.EqualFold(node.Annotations[mainconstants.NodeKubernetesComponentsAnnotationKey], latestK8sComponentsReference) {
 			if heir := node.Annotations[heirAnnotation]; heir != "" {
 				groups.Donors = append(groups.Donors, node)
 			} else {

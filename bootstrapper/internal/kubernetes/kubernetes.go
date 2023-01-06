@@ -174,7 +174,7 @@ func (k *KubeWrapper) InitCluster(
 
 	// Annotate Node with the hash of the installed components
 	if err := k.client.AnnotateNode(ctx, nodeName,
-		constants.NodeKubernetesComponentsHashAnnotationKey, k8sComponentsConfigMap,
+		constants.NodeKubernetesComponentsAnnotationKey, k8sComponentsConfigMap,
 	); err != nil {
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}

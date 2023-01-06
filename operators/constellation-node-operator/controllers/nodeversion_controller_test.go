@@ -609,9 +609,9 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "outdated",
 					Annotations: map[string]string{
-						scalingGroupAnnotation:                                  scalingGroup,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
-						nodeImageAnnotation:                                     "old-image",
+						scalingGroupAnnotation:                              scalingGroup,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
+						nodeImageAnnotation:                                 "old-image",
 					},
 				},
 			},
@@ -619,9 +619,9 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "outdated",
 					Annotations: map[string]string{
-						scalingGroupAnnotation:                                  scalingGroup,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: "old-ref",
-						nodeImageAnnotation:                                     latestImageReference,
+						scalingGroupAnnotation:                              scalingGroup,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: "old-ref",
+						nodeImageAnnotation:                                 latestImageReference,
 					},
 				},
 			},
@@ -631,9 +631,9 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "uptodate",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
+						scalingGroupAnnotation:                              scalingGroup,
+						nodeImageAnnotation:                                 latestImageReference,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
 					},
 				},
 			},
@@ -643,10 +643,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "donor",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    "old-image",
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
-						heirAnnotation: "heir",
+						scalingGroupAnnotation:                              scalingGroup,
+						nodeImageAnnotation:                                 "old-image",
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
+						heirAnnotation:                                      "heir",
 					},
 				},
 			},
@@ -654,10 +654,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "donor",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: "old-ref",
-						heirAnnotation: "heir",
+						scalingGroupAnnotation:                              scalingGroup,
+						nodeImageAnnotation:                                 latestImageReference,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: "old-ref",
+						heirAnnotation:                                      "heir",
 					},
 				},
 			},
@@ -667,10 +667,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "heir",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
-						donorAnnotation: "donor",
+						scalingGroupAnnotation:                              scalingGroup,
+						nodeImageAnnotation:                                 latestImageReference,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
+						donorAnnotation:                                     "donor",
 					},
 				},
 			},
@@ -680,10 +680,10 @@ func TestGroupNodes(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "obsolete",
 					Annotations: map[string]string{
-						scalingGroupAnnotation: scalingGroup,
-						nodeImageAnnotation:    latestImageReference,
-						mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
-						obsoleteAnnotation: "true",
+						scalingGroupAnnotation:                              scalingGroup,
+						nodeImageAnnotation:                                 latestImageReference,
+						mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
+						obsoleteAnnotation:                                  "true",
 					},
 				},
 			},
@@ -694,9 +694,9 @@ func TestGroupNodes(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mint",
 						Annotations: map[string]string{
-							scalingGroupAnnotation: scalingGroup,
-							nodeImageAnnotation:    latestImageReference,
-							mainconstants.NodeKubernetesComponentsHashAnnotationKey: latestK8sComponentsReference,
+							scalingGroupAnnotation:                              scalingGroup,
+							nodeImageAnnotation:                                 latestImageReference,
+							mainconstants.NodeKubernetesComponentsAnnotationKey: latestK8sComponentsReference,
 						},
 					},
 				},
