@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -284,7 +285,7 @@ func TestJoinCluster(t *testing.T) {
 	privateIP := "192.0.2.1"
 	k8sVersion := versions.Default
 
-	k8sComponents := versions.ComponentVersions{
+	k8sComponents := components.Components{
 		{
 			URL:         "URL",
 			Hash:        "Hash",
@@ -298,7 +299,7 @@ func TestJoinCluster(t *testing.T) {
 		providerMetadata ProviderMetadata
 		wantConfig       kubeadm.JoinConfiguration
 		role             role.Role
-		k8sComponents    versions.ComponentVersions
+		k8sComponents    components.Components
 		wantErr          bool
 	}{
 		"kubeadm join worker works with metadata and remote Kubernetes Components": {
@@ -510,7 +511,7 @@ func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityA
 	return s.setupKonnectivityError
 }
 
-func (s *stubClusterUtil) InstallComponents(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+func (s *stubClusterUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
 	return s.installComponentsErr
 }
 

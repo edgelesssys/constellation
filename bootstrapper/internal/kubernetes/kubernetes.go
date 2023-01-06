@@ -29,7 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -90,7 +90,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents versions.ComponentVersions, log *logger.Logger,
+	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
@@ -255,7 +255,7 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents versions.ComponentVersions, log *logger.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents components.Components, log *logger.Logger) error {
 	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
 		return fmt.Errorf("installing kubernetes components: %w", err)
@@ -319,7 +319,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 
 // setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.
 // It returns the name of the ConfigMap.
-func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components versions.ComponentVersions, clusterVersion string) (string, error) {
+func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components components.Components, clusterVersion string) (string, error) {
 	componentsMarshalled, err := json.Marshal(components)
 	if err != nil {
 		return "", fmt.Errorf("marshalling component versions: %w", err)

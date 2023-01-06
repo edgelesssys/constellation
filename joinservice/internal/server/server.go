@@ -17,7 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"go.uber.org/zap"
@@ -224,6 +224,6 @@ type certificateAuthority interface {
 
 type kubeClient interface {
 	GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error)
-	GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error)
+	GetComponents(ctx context.Context, configMapName string) (components.Components, error)
 	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error
 }

@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,6 +100,6 @@ type stubOsInstaller struct {
 	InstallErr error
 }
 
-func (s stubOsInstaller) Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error {
+func (s stubOsInstaller) Install(ctx context.Context, kubernetesComponent components.Component) error {
 	return s.InstallErr
 }

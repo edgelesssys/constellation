@@ -14,7 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,7 @@ func TestIssueJoinTicket(t *testing.T) {
 		Token:             "token",
 	}
 
-	components := versions.ComponentVersions{
+	clusterComponents := components.Components{
 		{
 			URL:         "URL",
 			Hash:        "hash",
@@ -64,7 +64,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 		},
 		"kubeclient fails": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
@@ -83,7 +83,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node", getNameErr: someErr},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 		"Cannot add node to JoiningNode CRD": {
@@ -93,14 +93,14 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, addNodeToJoiningNodesErr: someErr, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, addNodeToJoiningNodesErr: someErr, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 		"GetDataKey fails": {
 			kubeadm:    stubTokenGetter{token: testJoinToken},
 			kms:        stubKeyGetter{dataKeys: make(map[string][]byte), getDataKeyErr: someErr},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 		"GetJoinToken fails": {
@@ -110,7 +110,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 		"GetCertificate fails": {
@@ -120,7 +120,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{getCertErr: someErr, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 		"control plane": {
@@ -134,7 +134,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 		},
 		"GetControlPlaneCertificateKey fails": {
 			isControlPlane: true,
@@ -144,7 +144,7 @@ func TestIssueJoinTicket(t *testing.T) {
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
 			ca:         stubCA{cert: testCert, nodeName: "node"},
-			kubeClient: stubKubeClient{getComponentsVal: components, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
+			kubeClient: stubKubeClient{getComponentsVal: clusterComponents, getK8sComponentsRefFromNodeVersionCRDVal: "k8s-components-ref"},
 			wantErr:    true,
 		},
 	}
@@ -286,7 +286,7 @@ func (f stubCA) GetNodeNameFromCSR(csr []byte) (string, error) {
 }
 
 type stubKubeClient struct {
-	getComponentsVal versions.ComponentVersions
+	getComponentsVal components.Components
 	getComponentsErr error
 
 	getK8sComponentsRefFromNodeVersionCRDErr error
@@ -301,7 +301,7 @@ func (s *stubKubeClient) GetK8sComponentsRefFromNodeVersionCRD(ctx context.Conte
 	return s.getK8sComponentsRefFromNodeVersionCRDVal, s.getK8sComponentsRefFromNodeVersionCRDErr
 }
 
-func (s *stubKubeClient) GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error) {
+func (s *stubKubeClient) GetComponents(ctx context.Context, configMapName string) (components.Components, error) {
 	return s.getComponentsVal, s.getComponentsErr
 }
 

@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/installer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto"
 	"golang.org/x/mod/semver"
 	"google.golang.org/grpc"
@@ -127,17 +127,12 @@ func prepareUpdate(ctx context.Context, installer osInstaller, updateRequest *up
 	}
 
 	// download & install the kubeadm binary
-	err = installer.Install(ctx, versions.ComponentVersion{
+	return installer.Install(ctx, components.Component{
 		URL:         updateRequest.KubeadmUrl,
 		Hash:        updateRequest.KubeadmHash,
 		InstallPath: constants.KubeadmPath,
 		Extract:     false,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // verifyVersion verifies the provided Kubernetes version.
@@ -150,7 +145,7 @@ func verifyVersion(version string) error {
 
 type osInstaller interface {
 	// Install downloads, installs and verifies the kubernetes component.
-	Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error
+	Install(ctx context.Context, kubernetesComponent components.Component) error
 }
 
 type serveStopper interface {
