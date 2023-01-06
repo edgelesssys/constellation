@@ -60,6 +60,48 @@ on:
         type: string
         default: "head"
         required: false
+  workflow_call:
+    inputs:
+      workerNodesCount:
+        description: "Number of worker nodes to spawn."
+        type: number
+        required: true
+      controlNodesCount:
+        description: "Number of control-plane nodes to spawn."
+        type: number
+        required: true
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: string
+        required: true
+      test:
+        description: "The test to run."
+        type: string
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        type: string
+        required: true
+      keepMeasurements:
+        description: "Keep measurements embedded in the CLI."
+        type: boolean
+        required: true
+      osImage:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        required: true
+      isDebugImage:
+        description: "Is OS image a debug image?"
+        type: boolean
+        required: true
+      machineType:
+        description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
+        type: string
+        required: true
+      git-ref:
+        description: "Git ref to checkout."
+        type: string
+        required: true
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -89,10 +131,17 @@ jobs:
             exit 0
           fi
 
-      - name: Checkout
+      - name: Checkout head
+        if: inputs.git-ref == 'head'
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.git-ref != 'head'
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          ref: ${{ inputs.git-ref }}
 
       - name: Find latest image
         id: find-latest-image
@@ -126,14 +175,14 @@ jobs:
           go-version: "1.19.4"
 
       - name: Login to Azure
-        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        if: ${{ inputs.cloudProvider == 'azure' }}
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
         id: az_resource_group_gen
-        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        if: ${{ inputs.cloudProvider == 'azure' }}
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -145,16 +194,16 @@ jobs:
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
-          workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
-          controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
-          cloudProvider: ${{ github.event.inputs.cloudProvider }}
-          machineType: ${{ github.event.inputs.machineType }}
+          workerNodesCount: ${{ inputs.workerNodesCount }}
+          controlNodesCount: ${{ inputs.controlNodesCount }}
+          cloudProvider: ${{ inputs.cloudProvider }}
+          machineType: ${{ inputs.machineType }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          test: ${{ github.event.inputs.test }}
-          kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
-          keepMeasurements: ${{ github.event.inputs.keepMeasurements }}
+          test: ${{ inputs.test }}
+          kubernetesVersion: ${{ inputs.kubernetesVersion }}
+          keepMeasurements: ${{ inputs.keepMeasurements }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -162,7 +211,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
-          isDebugImage: ${{ github.event.inputs.isDebugImage }}
+          isDebugImage: ${{ inputs.isDebugImage }}
 
       - name: Always terminate cluster
         if: always()
@@ -175,7 +224,7 @@ jobs:
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: |
           sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME="${{ github.event.inputs.cloudProvider }} (manual)"
+          export TEAMS_JOB_NAME="${{ inputs.cloudProvider }} (manual)"
           export TEAMS_RUN_ID=${{ github.run_id }}
           envsubst < teams-payload.json > to-be-send.json
           curl                                          \
@@ -186,7 +235,7 @@ jobs:
         working-directory: .github/actions/e2e_test
 
       - name: Always destroy Azure resource group
-        if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}
+        if: ${{ always() && inputs.cloudProvider == 'azure' }}
         shell: bash
         run: |
           az group delete \
