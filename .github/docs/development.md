@@ -80,7 +80,6 @@ After collecting the measurements you can put them into your `constellation-conf
 
 To download an image you will have to export it first.
 Below you find general instructions on how to do this for GCP and Azure.
-You can find values for `<image_path>` in the `version_manifest.json` that is part of each constellation release.
 
 ## GCP
 
