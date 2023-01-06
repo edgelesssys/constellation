@@ -54,6 +54,45 @@ jobs:
             echo "RELEASE_BRANCH=release/v${PART_MAJOR}.${PART_MINOR}"
           } >> "$GITHUB_OUTPUT"
 
+  docs:
+    name: Create docs release
+    runs-on: ubuntu-22.04
+    if: inputs.kind == 'minor'
+    needs: verify-inputs
+    env:
+      VERSION: ${{ inputs.version }}
+      MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
+      BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Create docs branch
+        run: |
+          git fetch
+          git pull
+          git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
+      - name: Create docs release
+        working-directory: docs
+        run: |
+          npm install
+          npm run docusaurus docs:version "${MAJOR_MINOR}"
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git add docs
+          git commit -m "Generate docs for ${VERSION}"
+          git push --set-upstream origin "${BRANCH}"
+      - name: Create docs pull request
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
+        with:
+          destination_branch: "main"
+          pr_title: "Update docs for ${VERSION}"
+          pr_body: |
+            :robot: *This is an automated PR.* :robot:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
   prepare-release-branch:
     name: Prepare release branch
     if: inputs.kind == 'minor'
@@ -213,3 +252,104 @@ jobs:
           git config --global user.email "release[bot]@users.noreply.github.com"
           git commit -m "Hardcode measurements for ${VERSION}"
           git push
+
+  e2e-tests:
+    name: Run E2E tests
+    needs: [verify-inputs, update-hardcoded-measurements]
+    strategy:
+      matrix:
+        csp: [aws, azure, gcp]
+    uses: ./.github/workflows/e2e-test-manual.yml
+    with:
+      workerNodesCount: 2
+      controlNodesCount: 3
+      cloudProvider: ${{ matrix.csp }}
+      test: "sonobuoy full"
+      kubernetesVersion: "1.25"
+      keepMeasurements: true
+      osImage: ${{ inputs.version }}
+      isDebugImage: false
+      machineType: "default"
+      git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  e2e-tests-macos:
+    name: Run E2E tests (macOS)
+    needs: [verify-inputs, update-hardcoded-measurements]
+    strategy:
+      matrix:
+        csp: [aws, azure, gcp]
+    uses: ./.github/workflows/e2e-test-manual-macos.yml
+    with:
+      workerNodesCount: 2
+      controlNodesCount: 3
+      cloudProvider: ${{ matrix.csp }}
+      test: "sonobuoy full"
+      kubernetesVersion: "1.25"
+      keepMeasurements: true
+      osImage: ${{ inputs.version }}
+      isDebugImage: false
+      machineType: "default"
+      git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  e2e-mini:
+    name: Run E2E tests for mini Constellation
+    needs: [verify-inputs, update-hardcoded-measurements]
+    uses: ./.github/workflows/e2e-mini.yml
+    with:
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  tag-release:
+    name: Tag release
+    needs: [verify-inputs, e2e-tests, e2e-tests-macos, e2e-mini]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Tag release
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push origin "refs/tags/v${VERSION}"
+
+  draft-release-cli:
+    name: Draft release (CLI)
+    needs: [verify-inputs, tag-release]
+    uses: ./.github/workflows/release-cli.yml
+    with:
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  pr-get-changes-back-into-main:
+    name: PR to Merge changes from release branch into main
+    if: inputs.kind == 'minor'
+    runs-on: ubuntu-22.04
+    needs: [verify-inputs, tag-release]
+    env:
+      VERSION: ${{ inputs.version }}
+      NEW_BRANCH: feat/release/${{ inputs.version }}/changes-to-main
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Create branch with changes
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git fetch
+          git checkout -b "${NEW_BRANCH}"
+          git rebase origin/main
+          git push --set-upstream origin "${NEW_BRANCH}"
+
+      - name: Create docs pull request
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
+        with:
+          destination_branch: "main"
+          pr_title: "Bring back changes from release branch ${VERSION}"
+          pr_body: |
+            :robot: *This is an automated PR.* :robot:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
