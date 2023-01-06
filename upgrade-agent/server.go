@@ -99,19 +99,19 @@ func (s *Server) ExecuteUpdate(ctx context.Context, updateRequest *upgradeproto.
 	installer := installer.NewOSInstaller()
 	err := prepareUpdate(ctx, installer, updateRequest)
 	if errors.Is(err, errInvalidKubernetesVersion) {
-		return &upgradeproto.ExecuteUpdateResponse{}, status.Errorf(codes.Internal, "unable to verify the Kubernetes version %s: %s", updateRequest.WantedKubernetesVersion, err)
+		return nil, status.Errorf(codes.Internal, "unable to verify the Kubernetes version %s: %s", updateRequest.WantedKubernetesVersion, err)
 	} else if err != nil {
-		return &upgradeproto.ExecuteUpdateResponse{}, status.Errorf(codes.Internal, "unable to install the kubeadm binary: %s", err)
+		return nil, status.Errorf(codes.Internal, "unable to install the kubeadm binary: %s", err)
 	}
 
 	upgradeCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "plan")
-	if err := upgradeCmd.Run(); err != nil {
-		return &upgradeproto.ExecuteUpdateResponse{}, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan: %s", err)
+	if out, err := upgradeCmd.CombinedOutput(); err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade plan: %s: %s", err, string(out))
 	}
 
-	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", updateRequest.WantedKubernetesVersion)
-	if err := applyCmd.Run(); err != nil {
-		return &upgradeproto.ExecuteUpdateResponse{}, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s", err)
+	applyCmd := exec.CommandContext(ctx, "kubeadm", "upgrade", "apply", "--yes", updateRequest.WantedKubernetesVersion)
+	if out, err := applyCmd.CombinedOutput(); err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to execute kubeadm upgrade apply: %s: %s", err, string(out))
 	}
 
 	s.log.Infof("Upgrade to Kubernetes version succeeded: %s", updateRequest.WantedKubernetesVersion)
