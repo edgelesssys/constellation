@@ -8,7 +8,7 @@ package client
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller"
 	"github.com/spf13/afero"
 )
@@ -34,11 +34,11 @@ func NewFromDefault(configPath string) (*Client, error) {
 		return nil, err
 	}
 
-	scaleSetAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(config.SubscriptionID, cred, nil)
+	scaleSetAPI, err := armcompute.NewVirtualMachineScaleSetsClient(config.SubscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(config.SubscriptionID, cred, nil)
+	virtualMachineScaleSetVMsAPI, err := armcompute.NewVirtualMachineScaleSetVMsClient(config.SubscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
