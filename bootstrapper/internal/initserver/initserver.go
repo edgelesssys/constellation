@@ -25,7 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -150,7 +150,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
-		versions.NewComponentVersionsFromInitProto(req.KubernetesComponents),
+		components.NewComponentsFromInitProto(req.KubernetesComponents),
 		s.log,
 	)
 	if err != nil {
@@ -251,7 +251,7 @@ type ClusterInitializer interface {
 		azureCVM bool,
 		helmDeployments []byte,
 		conformanceMode bool,
-		kubernetesComponents versions.ComponentVersions,
+		kubernetesComponents components.Components,
 		log *logger.Logger,
 	) ([]byte, error)
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	corev1 "k8s.io/api/core/v1"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/installer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -57,7 +57,7 @@ type Client interface {
 
 type componentsInstaller interface {
 	Install(
-		ctx context.Context, kubernetesComponent versions.ComponentVersion,
+		ctx context.Context, kubernetesComponent components.Component,
 	) error
 }
 
@@ -76,7 +76,7 @@ func NewKubernetesUtil() *KubernetesUtil {
 }
 
 // InstallComponents installs the kubernetes components passed from the CLI.
-func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
 	for _, component := range kubernetesComponents {
 		if err := k.inst.Install(ctx, component); err != nil {
 			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)

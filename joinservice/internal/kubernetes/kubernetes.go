@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -52,16 +52,16 @@ func New() (*Client, error) {
 }
 
 // GetComponents returns the components of the cluster.
-func (c *Client) GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error) {
+func (c *Client) GetComponents(ctx context.Context, configMapName string) (components.Components, error) {
 	componentsRaw, err := c.getConfigMapData(ctx, configMapName, constants.ComponentsListKey)
 	if err != nil {
-		return versions.ComponentVersions{}, fmt.Errorf("failed to get components: %w", err)
+		return components.Components{}, fmt.Errorf("failed to get components: %w", err)
 	}
-	var components versions.ComponentVersions
-	if err := json.Unmarshal([]byte(componentsRaw), &components); err != nil {
-		return versions.ComponentVersions{}, fmt.Errorf("failed to unmarshal components %s: %w", componentsRaw, err)
+	var clusterComponents components.Components
+	if err := json.Unmarshal([]byte(componentsRaw), &clusterComponents); err != nil {
+		return components.Components{}, fmt.Errorf("failed to unmarshal components %s: %w", componentsRaw, err)
 	}
-	return components, nil
+	return clusterComponents, nil
 }
 
 func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string, error) {

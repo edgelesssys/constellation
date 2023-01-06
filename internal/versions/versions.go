@@ -7,13 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package versions
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 )
 
 // ValidK8sVersion represents any of the three currently supported k8s versions.
@@ -104,7 +102,7 @@ const (
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_23: {
 		ClusterVersion: "v1.23.15", // renovate:kubernetes-release
-		KubernetesComponents: ComponentVersions{
+		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
@@ -150,7 +148,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	},
 	V1_24: {
 		ClusterVersion: "v1.24.9", // renovate:kubernetes-release
-		KubernetesComponents: ComponentVersions{
+		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
@@ -196,7 +194,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	},
 	V1_25: {
 		ClusterVersion: "v1.25.5", // renovate:kubernetes-release
-		KubernetesComponents: ComponentVersions{
+		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
@@ -245,7 +243,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	},
 	V1_26: {
 		ClusterVersion: "v1.26.0", // renovate:kubernetes-release
-		KubernetesComponents: ComponentVersions{
+		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
@@ -297,75 +295,12 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 // KubernetesVersion bundles download URLs to all version-releated binaries necessary for installing/deploying a particular Kubernetes version.
 type KubernetesVersion struct {
 	ClusterVersion                   string
-	KubernetesComponents             ComponentVersions
+	KubernetesComponents             components.Components
 	CloudControllerManagerImageAWS   string // k8s version dependency.
 	CloudControllerManagerImageGCP   string // Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
 	CloudControllerManagerImageAzure string // k8s version dependency.
 	CloudNodeManagerImageAzure       string // k8s version dependency. Same version as above.
 	ClusterAutoscalerImage           string // Matches k8s versioning scheme.
-}
-
-// ComponentVersion is a version of a particular artifact.
-type ComponentVersion struct {
-	URL         string
-	Hash        string
-	InstallPath string
-	Extract     bool
-}
-
-// ComponentVersions is a list of ComponentVersion.
-type ComponentVersions []ComponentVersion
-
-// NewComponentVersionsFromInitProto converts a protobuf KubernetesVersion to ComponentVersions.
-func NewComponentVersionsFromInitProto(protoComponents []*initproto.KubernetesComponent) ComponentVersions {
-	components := ComponentVersions{}
-	for _, protoComponent := range protoComponents {
-		if protoComponent == nil {
-			continue
-		}
-		components = append(components, ComponentVersion{URL: protoComponent.Url, Hash: protoComponent.Hash, InstallPath: protoComponent.InstallPath, Extract: protoComponent.Extract})
-	}
-	return components
-}
-
-// NewComponentVersionsFromJoinProto converts a protobuf KubernetesVersion to ComponentVersions.
-func NewComponentVersionsFromJoinProto(protoComponents []*joinproto.KubernetesComponent) ComponentVersions {
-	components := ComponentVersions{}
-	for _, protoComponent := range protoComponents {
-		if protoComponent == nil {
-			continue
-		}
-		components = append(components, ComponentVersion{URL: protoComponent.Url, Hash: protoComponent.Hash, InstallPath: protoComponent.InstallPath, Extract: protoComponent.Extract})
-	}
-	return components
-}
-
-// ToInitProto converts a ComponentVersions to a protobuf KubernetesVersion.
-func (c ComponentVersions) ToInitProto() []*initproto.KubernetesComponent {
-	protoComponents := []*initproto.KubernetesComponent{}
-	for _, component := range c {
-		protoComponents = append(protoComponents, &initproto.KubernetesComponent{Url: component.URL, Hash: component.Hash, InstallPath: component.InstallPath, Extract: component.Extract})
-	}
-	return protoComponents
-}
-
-// ToJoinProto converts a ComponentVersions to a protobuf KubernetesVersion.
-func (c ComponentVersions) ToJoinProto() []*joinproto.KubernetesComponent {
-	protoComponents := []*joinproto.KubernetesComponent{}
-	for _, component := range c {
-		protoComponents = append(protoComponents, &joinproto.KubernetesComponent{Url: component.URL, Hash: component.Hash, InstallPath: component.InstallPath, Extract: component.Extract})
-	}
-	return protoComponents
-}
-
-// GetHash returns the hash over all component hashes.
-func (c ComponentVersions) GetHash() string {
-	sha := sha256.New()
-	for _, component := range c {
-		sha.Write([]byte(component.Hash))
-	}
-
-	return fmt.Sprintf("sha256:%x", sha.Sum(nil))
 }
 
 // versionFromDockerImage returns the version tag from the image name, e.g. "v1.22.2" from "foocr.io/org/repo:v1.22.2@sha256:3009fj0...".

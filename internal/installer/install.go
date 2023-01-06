@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/retry"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"k8s.io/utils/clock"
 )
@@ -54,7 +54,7 @@ func NewOSInstaller() *OsInstaller {
 
 // Install downloads a resource from a URL, applies any given text transformations and extracts the resulting file if required.
 // The resulting file(s) are copied to the destination. It also verifies the sha256 hash of the downloaded file.
-func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error {
+func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent components.Component) error {
 	tempPath, err := i.retryDownloadToTempDir(ctx, kubernetesComponent.URL)
 	if err != nil {
 		return err
