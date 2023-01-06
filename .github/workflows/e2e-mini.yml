@@ -2,6 +2,17 @@ name: e2e test qemu (MiniConstellation)
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: true
 
 permissions:
   id-token: write
@@ -15,6 +26,8 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Azure login OIDC
         uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2 # v1.4.7
