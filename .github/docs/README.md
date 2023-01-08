@@ -9,12 +9,13 @@ gh workflow run e2e-test-manual.yml \
     --ref feat/e2e_pipeline \                       # On your specific branch!
     -F cloudProvider=gcp \       # With your ...
     -F controlNodesCount=1 -F workerNodesCount=2 \  # ... settings
-    -F machineType=n2d-standard-4
+    -F machineType=n2d-standard-4 \
+    -F test=nop
 ```
 
 ### E2E Test Suites
 
-Here are some examples for test suits you might want to run. Values for `sonobuoyTestSuiteCmd`:
+Here are some examples for test suites you might want to run. Values for `sonobuoyTestSuiteCmd`:
 
 * `--mode quick`
     * Runs a set of tests that are known to be quick to execute! (<1 min)
