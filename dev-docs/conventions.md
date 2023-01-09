@@ -57,7 +57,7 @@ It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mv
 
 ## Logging
 
-We use [custom subset](/internal/logger/) of [zap](https://pkg.go.dev/go.uber.org/zap) to provide logging for Constellation's services and components.
+We use a [custom subset](/internal/logger/) of [zap](https://pkg.go.dev/go.uber.org/zap) to provide logging for Constellation's services and components.
 Usage instructions can be found in the package documentation.
 
 Certain components may further specify a subset of the logger for their use. For example, the CLI has a debug-only logger, restricting the use of the logger to only `Debugf()`.
@@ -76,12 +76,12 @@ Further we try to adhere to the following guidelines:
   log.Error("A critical error occurred!")
   ```
 
-* Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering.
+* Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
   
   Example:
 
   ```Go
-  log.With(zap.Error(someError), zap.String("endpoint", "192.0.2.1")).Errorf("Connecting to remote endpoint failed")
+  log.With(zap.Error(someError), zap.String("ip", "192.0.2.1")).Errorf("Connecting to IP failed")
   ```
 
 * Log messages may use format strings to produce human readable messages. However, the information should also be present as structured context fields if it might be valuable for debugging purposes.
