@@ -419,21 +419,22 @@ func (a *awsClient) deleteImage(ctx context.Context, ami string, region string, 
 		log.Warnf("Failed to get AWS snapshot ID for image %s: %v", ami, err)
 	}
 
+	var retErr error
 	if err := a.deregisterImage(ctx, ami, dryrun, log); err != nil {
-		return fmt.Errorf("deregistering image %s: %w", ami, err)
+		retErr = multierr.Append(retErr, fmt.Errorf("deregistering image %s: %w", ami, err))
 	}
 
 	if snapshotID != "" {
 		if err := a.deleteSnapshot(ctx, snapshotID, dryrun, log); err != nil {
-			return fmt.Errorf("deleting snapshot %s: %w", snapshotID, err)
+			retErr = multierr.Append(retErr, fmt.Errorf("deleting snapshot %s: %w", snapshotID, err))
 		}
 	}
 
-	return nil
+	return retErr
 }
 
 func (a *awsClient) deregisterImage(ctx context.Context, ami string, dryrun bool, log *logger.Logger) error {
-	log.Debugf("Deregistering image %s", ami)
+	log.Debugf("Deregistering AWS image %s", ami)
 
 	deregisterReq := ec2.DeregisterImageInput{
 		ImageId: &ami,
@@ -452,7 +453,7 @@ func (a *awsClient) deregisterImage(ctx context.Context, ami string, dryrun bool
 }
 
 func (a *awsClient) getSnapshotID(ctx context.Context, ami string, log *logger.Logger) (string, error) {
-	log.Debugf("Describing image %s", ami)
+	log.Debugf("Describing AWS image %s", ami)
 
 	req := ec2.DescribeImagesInput{
 		ImageIds: []string{ami},
@@ -483,6 +484,10 @@ func (a *awsClient) getSnapshotID(ctx context.Context, ami string, log *logger.L
 		return "", fmt.Errorf("image %s does not have an EBS snapshot", ami)
 	}
 	snapshotID := *ebs.SnapshotId
+
+	if snapshotID == "" {
+		return "", fmt.Errorf("image %s does not have an EBS snapshot", ami)
+	}
 
 	return snapshotID, nil
 }
