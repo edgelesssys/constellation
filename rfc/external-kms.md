@@ -30,6 +30,28 @@ It's designed to support different (cloud) KMS services as backend.
 Currently, only the ClusterKMS backend is used, which uses the master secret from the Kubernetes secrets to derive the DEKs.
 The clients of the CKMS are the join-service and the CSI drivers.
 
+### Recovery
+
+When a node boots, the disk-mapper will setup the encrypted state disk during initramfs.
+To decrypt an already existing disks, the disk-mapper will ask all available joinservice instances for a decryption key for it's current disk UUID.
+In case there is no join-service instance that can provide the decryption key, manual recovery becomes necessary.
+
+To enable manual recovery the disk-mapper starts a recovery server.
+The recovery server waits for a `recover` gRPC call.
+During a `recover` call the CLI will attest the measurements of the node.
+After successful attestation the CLI will provide a disk decryption key and measurement secret for the given disk UUID.
+The measurement secret, together with a measurement salt (not secret) is used to derive the clusterID.
+
+*Changes for eKMS; regarding disk decryption:*
+* Recovery server additionally accepts one KMS URI and one storage URI instead of a masterSecret.
+* The current flow (provide masterSecret directly) will still be supported in case no eKMS is used.
+* If recovery server receives KMS+storage URIs it will query the storage URI for a DEK that matches it's current disk UUID.
+* Upon retrieval of the disk DEK it will ask the KMS URI for decryption of the DEK.
+
+*Changes for eKMS; regarding clusterID:*
+* Additionally to the DEK to decrypt the state disk, the recovery server will ask for a second DEK that is used as measurementSecret.
+* The measurementSecret DEK can be used like the existing value.
+
 ### Implemented, but yet unused features
 
 There are CKMS backends for Azure, GCP, and AWS.
