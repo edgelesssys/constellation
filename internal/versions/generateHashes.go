@@ -21,9 +21,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"golang.org/x/tools/go/ast/astutil"
 )
+
+var kuberntesMinorRegex = regexp.MustCompile(`^.*\.(?P<Minor>\d+)\..*(kubelet|kubeadm|kubectl)+$`)
 
 func mustGetHash(url string) string {
 	// remove quotes around url
@@ -80,7 +85,76 @@ func mustGetHash(url string) string {
 		panic("hash mismatch")
 	}
 
+	// Verify cosign signature if available
+	// Currently, we verify the signature of kubeadm, kubelet and kubectl with minor version >=1.26.
+	minorVersion := kuberntesMinorRegex.FindStringSubmatch(url)
+	if minorVersion == nil {
+		return fmt.Sprintf("\"sha256:%x\"", fileHash)
+	}
+	minorVersionIndex := kuberntesMinorRegex.SubexpIndex("Minor")
+	if minorVersionIndex != -1 {
+		minorVersionNumber, err := strconv.Atoi(minorVersion[minorVersionIndex])
+		if err != nil {
+			panic(err)
+		}
+		if minorVersionNumber >= 26 {
+			content, err := io.ReadAll(resp.Body)
+			if err != nil {
+				panic(err)
+			}
+			if err := verifyCosignSignature(content, url); err != nil {
+				panic(err)
+			}
+		}
+	}
+
 	return fmt.Sprintf("\"sha256:%x\"", fileHash)
+}
+
+func verifyCosignSignature(content []byte, url string) error {
+	// Get the signature
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url+".sig", nil)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		panic("bad status: " + resp.Status)
+	}
+
+	sig, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get the certificate
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, url+".cert", nil)
+	if err != nil {
+		panic(err)
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		panic("bad status: " + resp.Status)
+	}
+
+	cert, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	return sigstore.VerifySignature(content, sig, cert)
 }
 
 func main() {

@@ -29,6 +29,9 @@ jobs:
       - name: Install docgen
         uses: ./constellation/.github/actions/install_docgen
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+
       - name: Install stringer
         shell: bash
         run: go install golang.org/x/tools/cmd/stringer@latest
