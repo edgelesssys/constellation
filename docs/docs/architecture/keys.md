@@ -53,7 +53,6 @@ Currently, the following primitives are used for block storage encryption:
 * [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html)
 * [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html)
 
-Adding primitives for integrity protection in the CVM attacker model are under active development and will be available in a future version of Constellation.
 See [encrypted storage](encrypted-storage.md) for more details.
 
 As a cluster administrator, when creating a cluster, you can use the Constellation [installation program](orchestration.md) to select one of the following methods for key management:
