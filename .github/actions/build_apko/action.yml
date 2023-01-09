@@ -1,10 +1,18 @@
-name: Build apko image
-description: Build an apko image based on a supplied .yaml file
+name: Build container images using apko
+description: Build one or multiple apko images based on supplied .yaml files
 
 inputs:
   apkoConfig:
     description: "Path to the apko .yaml config file. If left empty, all images will be built."
     required: false
+  apkoTag:
+    description: "Use this image tag"
+    required: false
+    default: latest
+  apkoArch:
+    description: "Use this image architecture"
+    required: false
+    default: amd64
   registry:
     description: "Container registry to use"
     default: "ghcr.io"
@@ -12,6 +20,18 @@ inputs:
   githubToken:
     description: "GitHub authorization token"
     required: true
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+    default: ""
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+    default: ""
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
+    default: ""
 
 # Linux runner only (podman required)
 runs:
@@ -21,7 +41,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y podman
+        sudo apt-get install -y podman zip
 
     - name: Log in to the Container registry
       id: podman-login
@@ -31,11 +51,15 @@ runs:
         username: ${{ github.actor }}
         password: ${{ inputs.githubToken }}
 
-    - name: Build apko images
-      shell: bash
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # v2.8.1
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+
+    - name: Build apko images and sign them
       run: |
         if [ -z "${{ inputs.apkoConfig }}" ]; then
           echo "Building all images in image"
+          mkdir sboms
           for imageConfig in image/apko/*.yaml; do
             echo "Building image for $imageConfig"
 
@@ -43,10 +67,33 @@ runs:
             registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
             outTar=$imageName.tar
 
-            podman run -v "$PWD":/work cgr.dev/chainguard/apko build $imageConfig $registry $outTar
+            mkdir -p sboms/$imageName
+
+            # build the image
+            podman run \
+              -v "$PWD":/work \
+              cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
+              build \
+              $imageConfig \
+              --build-arch ${{ inputs.apkoArch }} \
+              --sbom \
+              $registry \
+              $outTar
+
+            # push container
             podman load < $outTar
             podman push $registry
+            imageDigest=$(podman inspect --format='{{index .RepoDigests 0}}' $registry)
+            echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
 
+            # cosign the container and push to registry
+            cosign sign \
+              --key env://COSIGN_PRIVATE_KEY \
+               $imageDigest \
+              -y
+
+            # move sboms to folder
+            mv sbom-${{ inputs.apkoArch }}.* sboms/$imageName
           done
         else
           echo "Building image for ${{ inputs.apkoConfig }}"
@@ -55,7 +102,58 @@ runs:
           registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
           outTar=$imageName.tar
 
-          podman run -v "$PWD":/work cgr.dev/chainguard/apko build ${{ inputs.apkoConfig }} $registry $outTar
+          mkdir -p sboms/$imageName
+
+          # build the image
+            podman run \
+              -v "$PWD":/work \
+              cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
+              build \
+              $imageConfig \
+              --build-arch ${{ inputs.apkoArch }} \
+              --sbom \
+              $registry \
+              $outTar
+
+          # push container
           podman load < $outTar
           podman push $registry
+          imageDigest=$(podman inspect --format='{{index .RepoDigests 0}}' $registry)
+          echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
+
+          # cosign the container and push to registry
+          cosign sign \
+              --key env://COSIGN_PRIVATE_KEY \
+              $imageDigest \
+              -y
         fi
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+
+    - name: Sign sboms
+      run: |
+        # cosign all sboms in folder
+        cosign sign-blob \
+          --key env://COSIGN_PRIVATE_KEY \
+          sboms/$imageName/sbom-${{ inputs.apkoArch }}.* \
+          -y
+
+        zip -r sboms.zip sboms
+      shell: bash
+      env:
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+
+    - name: Upload SBOMs
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      with:
+        name: sboms
+        path: sboms.zip
+      if: always()
+      continue-on-error: true
