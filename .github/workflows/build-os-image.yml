@@ -720,13 +720,13 @@ jobs:
             "lookup-table.json" \
             "s3://cdn-constellation-backend/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json" \
             --no-progress
-          (
+          {
             echo -e "Image version ([Lookup table](https://cdn.confidential.cloud/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json)):"
             echo
             echo -e "\`\`\`"
             echo "${{ needs.build-settings.outputs.imageNameShort }}"
             echo -e "\`\`\`"
-          ) >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   add-version-to-versionsapi:
     needs: [upload-image-lookup-table, build-settings]
