@@ -29,6 +29,7 @@ on:
           - "autoscaling"
           - "lb"
           - "k-bench"
+          - "verify"
           - "nop"
         required: true
       kubernetesVersion:
