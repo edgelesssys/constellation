@@ -51,6 +51,22 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 		return err
 	}
 
+	_, err = createConfig(cmd, fileHandler, provider, flags.file)
+	if err != nil {
+		return err
+	}
+
+	if flags.file != "-" {
+		cmd.Println("Config file written to", flags.file)
+		cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
+		cmd.Println("For more information refer to the documentation:")
+		cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
+	}
+	return nil
+}
+
+// createConfig creates a config file for the given provider and writes it to the given outputFile. If the outputFile is "-", the config is written to stdout.
+func createConfig(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, outputFile string) (*config.Config, error) {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
@@ -59,24 +75,20 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 		conf.StateDiskSizeGB = 10
 	}
 
-	if flags.file == "-" {
+	if outputFile == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
-			return fmt.Errorf("encoding config content: %w", err)
+			return nil, fmt.Errorf("encoding config content: %w", err)
 		}
 		_, err = cmd.OutOrStdout().Write(content)
-		return err
+		return nil, err
 	}
 
-	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
-		return err
+	if err := fileHandler.WriteYAML(outputFile, conf, file.OptMkdirAll); err != nil {
+		return nil, err
 	}
-	cmd.Println("Config file written to", flags.file)
-	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
-	cmd.Println("For more information refer to the documentation:")
-	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
-	return nil
+	return conf, nil
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {

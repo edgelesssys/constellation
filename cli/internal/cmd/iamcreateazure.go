@@ -32,7 +32,7 @@ func newIAMCreateAzureCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
 	cmd.Flags().String("servicePrincipal", "", "Name of the service principal that will be created.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "servicePrincipal"))
-	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation")
+	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation.")
 
 	return cmd
 }
@@ -59,8 +59,8 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 		cmd.Printf("Region:\t%s\n", azureFlags.region)
 		cmd.Printf("Resource Group:\t%s\n", azureFlags.resourceGroup)
 		cmd.Printf("Service Principal:\t%s\n", azureFlags.servicePrincipal)
-		if azureFlags.fillFlag {
-			cmd.Printf("Configuration file:\t%s\n", azureFlags.configPath)
+		if azureFlags.generateConfig {
+			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", azureFlags.configPath)
 		}
 		ok, err := askToConfirm(cmd, "Do you want to create the configuration?")
 		if err != nil {
@@ -72,17 +72,17 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 		}
 	}
 
+	// Creation.
+	spinner.Start("Creating", false)
+
 	var conf *config.Config
-	// Load config before creation
-	if azureFlags.fillFlag {
-		conf, err = config.NewWithoutValidation(fileHandler, azureFlags.configPath)
+	if azureFlags.generateConfig {
+		conf, err = createConfig(cmd, fileHandler, cloudprovider.Azure, azureFlags.configPath)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Creation.
-	spinner.Start("Creating", false)
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.Azure, &cloudcmd.IAMConfig{
 		Azure: cloudcmd.AzureIAMConfig{
 			Region:           azureFlags.region,
@@ -90,12 +90,13 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 			ResourceGroup:    azureFlags.resourceGroup,
 		},
 	})
+
 	spinner.Stop()
 	if err != nil {
 		return err
 	}
 
-	if azureFlags.fillFlag {
+	if azureFlags.generateConfig {
 		conf.Provider.Azure.SubscriptionID = iamFile.AzureOutput.SubscriptionID
 		conf.Provider.Azure.TenantID = iamFile.AzureOutput.TenantID
 		conf.Provider.Azure.Location = azureFlags.region
@@ -127,38 +128,39 @@ func parseAzureFlags(cmd *cobra.Command) (azureFlags, error) {
 	if err != nil {
 		return azureFlags{}, fmt.Errorf("parsing region string: %w", err)
 	}
+
 	resourceGroup, err := cmd.Flags().GetString("resourceGroup")
 	if err != nil {
 		return azureFlags{}, fmt.Errorf("parsing resourceGroup string: %w", err)
 	}
+
 	servicePrincipal, err := cmd.Flags().GetString("servicePrincipal")
 	if err != nil {
 		return azureFlags{}, fmt.Errorf("parsing servicePrincipal string: %w", err)
 	}
+
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return azureFlags{}, fmt.Errorf("parsing config string: %w", err)
+	}
+
+	generateConfig, err := cmd.Flags().GetBool("generate-config")
+	if err != nil {
+		return azureFlags{}, fmt.Errorf("parsing generate-config bool: %w", err)
+	}
+
 	yesFlag, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return azureFlags{}, fmt.Errorf("parsing yes bool: %w", err)
-	}
-	fillFlag, err := cmd.Flags().GetBool("fill")
-	if err != nil {
-		return azureFlags{}, fmt.Errorf("parsing fill bool: %w", err)
-	}
-	var configPath string
-	// only check for configPath when filling is enabled
-	if fillFlag {
-		configPath, err = cmd.Flags().GetString("config")
-		if err != nil {
-			return azureFlags{}, fmt.Errorf("parsing config string: %w", err)
-		}
 	}
 
 	return azureFlags{
 		servicePrincipal: servicePrincipal,
 		resourceGroup:    resourceGroup,
 		region:           region,
-		yesFlag:          yesFlag,
-		fillFlag:         fillFlag,
+		generateConfig:   generateConfig,
 		configPath:       configPath,
+		yesFlag:          yesFlag,
 	}, nil
 }
 
@@ -167,7 +169,8 @@ type azureFlags struct {
 	region           string
 	resourceGroup    string
 	servicePrincipal string
-	configPath       string
-	fillFlag         bool
-	yesFlag          bool
+
+	generateConfig bool
+	configPath     string
+	yesFlag        bool
 }

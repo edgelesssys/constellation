@@ -20,12 +20,6 @@ import (
 )
 
 func TestIAMCreateAzure(t *testing.T) {
-	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
-		fs := afero.NewMemMapFs()
-		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
-		return fs
-	}
 	validIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.Azure,
 		AzureOutput: iamid.AzureFile{
@@ -38,74 +32,77 @@ func TestIAMCreateAzure(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(*require.Assertions, cloudprovider.Provider) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		regionFlag           string
 		servicePrincipalFlag string
 		resourceGroupFlag    string
 		yesFlag              bool
-		fillFlag             bool
+		generateConfigFlag   bool
 		configFlag           string
+		existingFiles        []string
 		stdin                string
 		wantAbort            bool
 		wantErr              bool
 	}{
 		"iam create azure": {
-			setupFs:              fsWithDefaultConfig,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
-			fillFlag:             false,
 		},
-		"iam create azure fill": {
-			setupFs:              fsWithDefaultConfig,
+		"iam create generate config": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
 			yesFlag:              true,
-			fillFlag:             true,
-			configFlag:           "",
 		},
-		"config path does not exist": {
-			setupFs:              fsWithDefaultConfig,
+		"iam create generate config custom path": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			configFlag:           "custom-config.yaml",
 			yesFlag:              true,
-			fillFlag:             true,
-			configFlag:           "does/not/exist",
+		},
+		"iam create generate config path already exists": {
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			existingFiles:        []string{constants.ConfigFilename},
+			yesFlag:              true,
 			wantErr:              true,
 		},
 		"interactive": {
-			setupFs:              fsWithDefaultConfig,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
-			fillFlag:             false,
 		},
-		"interactive fill": {
-			setupFs:              fsWithDefaultConfig,
+		"interactive generate config": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
-			fillFlag:             true,
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
 		},
 		"interactive abort": {
-			setupFs:              fsWithDefaultConfig,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -113,18 +110,16 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "no\n",
 			wantAbort:            true,
-			fillFlag:             false,
 		},
-		"interactive abort fill": {
-			setupFs:              fsWithDefaultConfig,
+		"interactive generate config abort": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "no\n",
+			generateConfigFlag:   true,
 			wantAbort:            true,
-			fillFlag:             true,
 		},
 	}
 
@@ -138,7 +133,8 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("fill", true, "")                         // register persistent flag manually
+			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
+
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
 			}
@@ -148,18 +144,22 @@ func TestIAMCreateAzure(t *testing.T) {
 			if tc.servicePrincipalFlag != "" {
 				require.NoError(cmd.Flags().Set("servicePrincipal", tc.servicePrincipalFlag))
 			}
-			if tc.fillFlag {
-				if tc.configFlag != "" {
-					require.NoError(cmd.Flags().Set("config", tc.configFlag))
-				}
-			} else {
-				require.NoError(cmd.Flags().Set("fill", "false"))
-			}
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
+			if tc.generateConfigFlag {
+				require.NoError(cmd.Flags().Set("generate-config", "true"))
+			}
+			if tc.configFlag != "" {
+				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
+			fs := afero.NewMemMapFs()
+			fileHandler := file.NewHandler(fs)
+			for _, f := range tc.existingFiles {
+				require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+			}
+
 			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
@@ -168,6 +168,12 @@ func TestIAMCreateAzure(t *testing.T) {
 				if tc.wantAbort {
 					assert.False(tc.creator.createCalled)
 				} else {
+					if tc.generateConfigFlag {
+						readConfig := &config.Config{}
+						readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+						assert.NoError(readErr)
+						assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
+					}
 					assert.NoError(err)
 					assert.True(tc.creator.createCalled)
 					assert.Equal(tc.creator.id.AzureOutput, validIAMIDFile.AzureOutput)
