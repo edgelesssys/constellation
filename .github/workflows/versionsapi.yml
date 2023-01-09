@@ -11,7 +11,7 @@ on:
           - add
           - latest
           - list
-          - rm
+          - remove
       ref:
         description: --ref flag
         required: false
@@ -113,7 +113,7 @@ jobs:
               echo "No authentication at cloud provider required."
               echo "auth=false" >> "$GITHUB_OUTPUT"
             ;;
-            rm)
+            remove)
               echo "Write access to S3 bucket required."
               echo "write=true" >> "$GITHUB_OUTPUT"
               echo "Authentication at cloud provider required."
