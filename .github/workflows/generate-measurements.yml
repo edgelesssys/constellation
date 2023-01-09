@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
@@ -112,6 +112,7 @@ jobs:
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Create Cluster in E2E Test environment
+        if: matrix.provider != 'qemu'
         id: create_cluster
         uses: ./.github/actions/e2e_test
         with:
@@ -132,6 +133,7 @@ jobs:
           test: "nop"
 
       - name: Fetch PCRs from running cluster
+        if: matrix.provider != 'qemu'
         run: |
           KUBECONFIG="${PWD}/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
           CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
@@ -189,6 +191,33 @@ jobs:
         env:
           CSP: ${{ matrix.provider }}
 
+      - name: Set PCRs for QEMU
+        if: matrix.provider == 'qemu'
+        env:
+          ref: ${{ steps.extract.outputs.ref }}
+          stream: ${{ steps.extract.outputs.stream }}
+          version: ${{ steps.extract.outputs.version }}
+        run: |
+          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
+          mkdir -p "${{ github.workspace }}/generated-measurements"
+          wget -O ${{ github.workspace }}/generated-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
+          cat ${{ github.workspace }}/generated-measurements/measurements.image.json | jq '.measurements' | jq '{"measurements": .}' > ${{ github.workspace }}/generated-measurements/measurements.json
+          cat "${{ github.workspace }}/generated-measurements/measurements.json"
+          yq '
+          .csp = "QEMU" |
+          .image = "${{ steps.extract.outputs.version }}" |
+          .measurements.4.warnOnly = false |
+          .measurements.8.warnOnly = false |
+          .measurements.9.warnOnly = false |
+          .measurements.11.warnOnly = false |
+          .measurements.12.warnOnly = false |
+          .measurements.13.warnOnly = false |
+          .measurements.15.warnOnly = false |
+          .measurements.15.expected = "0000000000000000000000000000000000000000000000000000000000000000"' \
+          -I 0 -o json -i "${{ github.workspace }}/generated-measurements/measurements.json"
+          mv "${{ github.workspace }}/generated-measurements/measurements.json" "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
+        shell: bash
+
       - name: Upload measurements as artifact
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
@@ -220,7 +249,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     steps:
       - name: Check out repository
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
@@ -270,7 +299,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
@@ -324,7 +353,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
