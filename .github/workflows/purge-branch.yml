@@ -8,7 +8,7 @@ jobs:
     name: Delete ref from versions API
     uses: ./.github/workflows/versionsapi.yml
     with:
-      command: rm
+      command: remove
       rm_all: true
       dryrun: true
       ref: ${{ github.event.ref }}
