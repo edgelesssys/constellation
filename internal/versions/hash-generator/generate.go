@@ -1,5 +1,3 @@
-//go:build ignore
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
@@ -170,5 +168,5 @@ func main() {
 		log.Fatalf("no components lists found")
 	}
 
-	fmt.Printf("Successfully generated hashes for %d components in %d component lists.", componentCtr, componentListsCtr)
+	fmt.Printf("Successfully generated hashes for %d components in %d component lists.\n", componentCtr, componentListsCtr)
 }
