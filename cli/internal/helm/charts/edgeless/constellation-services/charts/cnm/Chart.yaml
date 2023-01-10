@@ -2,4 +2,4 @@ apiVersion: v2
 name: cnm
 description: A chart to deploy cloud node manager for constellation
 type: application
-version: 2.3.0
+version: 1.0.3

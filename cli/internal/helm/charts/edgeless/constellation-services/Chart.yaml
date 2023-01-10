@@ -2,55 +2,54 @@ apiVersion: v2
 name: constellation-services
 description: A chart to deploy all microservices that are part of a valid constellation cluster
 type: application
-version: 2.3.0
-
+version: 1.0.3
 dependencies:
   - name: kms
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
       - QEMU
   - name: join-service
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
       - QEMU
   - name: ccm
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
   - name: cnm
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
   - name: autoscaler
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
   - name: verification-service
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
       - QEMU
   - name: konnectivity
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
       - QEMU
   - name: gcp-guest-agent
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - GCP
   - name: gcp-compute-persistent-disk-csi-driver

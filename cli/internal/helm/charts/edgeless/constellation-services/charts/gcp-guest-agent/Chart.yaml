@@ -2,4 +2,4 @@ apiVersion: v2
 name: gcp-guest-agent
 description: A chart to deploy the GCP guest agent for Constellation
 type: application
-version: 2.3.0
+version: 1.0.3
