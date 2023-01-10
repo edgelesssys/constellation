@@ -53,7 +53,7 @@ func mustGetHash(url string) string {
 	fileHash := sha.Sum(nil)
 
 	// Get upstream hash
-	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, url+".sha256", nil)
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, url+".sha256", http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -94,58 +94,65 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var componentListsCtr, componentCtr int
+
 	newFile := astutil.Apply(file, func(cursor *astutil.Cursor) bool {
 		n := cursor.Node()
 
-		if x, ok := n.(*ast.CompositeLit); ok {
-			ident, ok := x.Type.(*ast.Ident)
-			if !ok {
-				return true
-			}
-			if ident.Name == "ComponentVersions" {
-				for _, elt := range x.Elts {
-					// component is one list element
-					component := elt.(*ast.CompositeLit)
+		//
+		// Find CompositeLit of type 'components.Components'
+		//
+		comp, ok := n.(*ast.CompositeLit)
+		if !ok {
+			return true
+		}
+		selExpr, ok := comp.Type.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		if selExpr.Sel.Name != "Components" {
+			return true
+		}
+		xIdent, ok := selExpr.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+		if xIdent.Name != "components" {
+			return true
+		}
+		componentListsCtr++
 
-					var url *ast.KeyValueExpr
-					var hash *ast.KeyValueExpr
-					// Find the URL field
-					for _, e := range component.Elts {
-						kv, ok := e.(*ast.KeyValueExpr)
-						if !ok {
-							continue
-						}
-						ident, ok := kv.Key.(*ast.Ident)
-						if !ok {
-							continue
-						}
-						if ident.Name == "URL" {
-							url = kv
-							break
-						}
-					}
-					// Find the Hash field
-					for _, e := range component.Elts {
-						kv, ok := e.(*ast.KeyValueExpr)
-						if !ok {
-							continue
-						}
-						ident, ok := kv.Key.(*ast.Ident)
-						if !ok {
-							continue
-						}
-						if ident.Name == "Hash" {
-							hash = kv
-							break
-						}
-					}
+		//
+		// Iterate over the components
+		//
+		for _, componentElt := range comp.Elts {
+			component := componentElt.(*ast.CompositeLit)
+			componentCtr++
 
-					// Generate the hash
-					fmt.Println("Generating hash for", url.Value.(*ast.BasicLit).Value)
-					hash.Value.(*ast.BasicLit).Value = mustGetHash(url.Value.(*ast.BasicLit).Value)
+			var url *ast.KeyValueExpr
+			var hash *ast.KeyValueExpr
+
+			for _, e := range component.Elts {
+				kv, ok := e.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				ident, ok := kv.Key.(*ast.Ident)
+				if !ok {
+					continue
+				}
+				switch ident.Name {
+				case "URL":
+					url = kv
+				case "Hash":
+					hash = kv
 				}
 			}
+
+			fmt.Println("Generating hash for", url.Value.(*ast.BasicLit).Value)
+			hash.Value.(*ast.BasicLit).Value = mustGetHash(url.Value.(*ast.BasicLit).Value)
 		}
+
 		return true
 	}, nil,
 	)
@@ -159,5 +166,9 @@ func main() {
 	if err := os.WriteFile(filePath, buf.Bytes(), 0o644); err != nil {
 		log.Fatalf("error writing file %s: %s", filePath, err)
 	}
-	fmt.Println("Successfully generated hashes.")
+	if componentCtr == 0 {
+		log.Fatalf("no components lists found")
+	}
+
+	fmt.Printf("Successfully generated hashes for %d components in %d component lists.", componentCtr, componentListsCtr)
 }
