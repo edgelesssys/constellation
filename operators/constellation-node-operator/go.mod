@@ -5,7 +5,7 @@ go 1.19
 replace github.com/edgelesssys/constellation/v2 => ./../..
 
 require (
-	cloud.google.com/go/compute v1.15.0
+	cloud.google.com/go/compute v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.0

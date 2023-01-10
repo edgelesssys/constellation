@@ -33,11 +33,11 @@ replace (
 replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc
 
 require (
-	cloud.google.com/go/compute v1.15.0
+	cloud.google.com/go/compute v1.14.0
 	cloud.google.com/go/compute/metadata v0.2.3
-	cloud.google.com/go/kms v1.8.0
+	cloud.google.com/go/kms v1.7.0
 	cloud.google.com/go/logging v1.6.1
-	cloud.google.com/go/secretmanager v1.10.0
+	cloud.google.com/go/secretmanager v1.9.0
 	cloud.google.com/go/storage v1.28.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
