@@ -96,7 +96,7 @@ const (
 
 // Regenerate the hashes by running go generate.
 // To add another Kubernetes version, add a new entry to the VersionConfigs map below and fill the Hash field with an empty string.
-//go:generate go run generateHashes.go
+//go:generate go run hash-generator/generate.go
 
 // VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{

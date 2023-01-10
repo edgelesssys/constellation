@@ -1,5 +1,3 @@
-//go:build ignore
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
