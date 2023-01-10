@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot@sha256:bce851161342b0c9d19d0d56e3d37b4787cc6b53a164ec21432e0e1755d08e17 as release
+FROM gcr.io/distroless/static:nonroot@sha256:1fa522fe6cfe020d50341f1ca561c099487bd44f8eb98d25d1920b07e05e40be as release
 WORKDIR /
 COPY --from=builder /workspace/operators/constellation-node-operator/manager .
 USER 65532:65532
