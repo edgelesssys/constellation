@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ghcr.io/edgelesssys/constellation/node-operator
-  newTag: v2.3.0
+  newTag: v2.4.0
