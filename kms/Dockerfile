@@ -26,6 +26,6 @@ WORKDIR /constellation/kms/cmd
 ARG PROJECT_VERSION=0.0.0
 RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o /constellation/build/kmsserver -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
 
-FROM gcr.io/distroless/static:nonroot@sha256:bce851161342b0c9d19d0d56e3d37b4787cc6b53a164ec21432e0e1755d08e17 as release
+FROM gcr.io/distroless/static:nonroot@sha256:1fa522fe6cfe020d50341f1ca561c099487bd44f8eb98d25d1920b07e05e40be as release
 COPY --from=build /constellation/build/kmsserver /kmsserver
 ENTRYPOINT ["/kmsserver"]
