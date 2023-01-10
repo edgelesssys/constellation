@@ -16,8 +16,8 @@ Constellation is licensed under the [AGPLv3](LICENSE). When contributing, you al
 
 We have some documentation, guidelines and conventions that you can go through to familiarize yourself with the project and get started hacking on it.
 
-* Building, testing, deploying: [local development](/.github/docs/development.md)
-* [Code conventions](/.github/docs/conventions.md#code-conventions)
-* [Process conventions](/.github/docs/conventions.md#process-conventions)
-* [Repository layout](/.github/docs/layout.md#repository-layout)
-* [Upgrading Kubernetes](/.github/docs/upgrade-kubernetes.md)
+* Building, testing, deploying: [local development](/dev-docs/workflows/build-test-run.md)
+* [Code conventions](/dev-docs/conventions.md#code-conventions)
+* [Process conventions](/dev-docs/conventions.md#process-conventions)
+* [Repository layout](/dev-docs/layout.md#repository-layout)
+* [Upgrading Kubernetes](/dev-docs/workflows/upgrade-kubernetes.md)
