@@ -216,10 +216,6 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-arm64
-      - name: Download versions-manifest.json
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: versions-manifest.json
       - name: Download Constellation CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
@@ -243,7 +239,6 @@ jobs:
           files: |
             constellation-*
             cosign.pub
-            versions-manifest.json
             constellation.spdx.sbom
             constellation.spdx.sbom.sig
             constellation.intoto.jsonl
