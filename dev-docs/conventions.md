@@ -66,7 +66,7 @@ Further we try to adhere to the following guidelines:
 
 * Do not log potentially sensitive information, e.g. variables that contain keys, secrets or otherwise protected information.
 
-* Start log messages with in uppercase and end without a punctuation mark. Exclamation, question marks, or ellipsis may be used where appropriate.
+* Start log messages in uppercase and end without a punctuation mark. Exclamation, question marks, or ellipsis may be used where appropriate.
 
   Example:
 
