@@ -413,6 +413,7 @@ func (a *awsClient) deleteImage(ctx context.Context, ami string, region string, 
 		return err
 	}
 	a.ec2 = ec2.NewFromConfig(cfg)
+	log.Debugf("Deleting resources in AWS region %s", region)
 
 	snapshotID, err := a.getSnapshotID(ctx, ami, log)
 	if err != nil {
