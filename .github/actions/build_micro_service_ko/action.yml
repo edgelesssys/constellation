@@ -1,0 +1,78 @@
+name: Build micro service (KO)
+description: Build and upload a container image for a Constellation micro-service
+inputs:
+  name:
+    description: "Name of the micro-service"
+    required: true
+  koConfig:
+    description: "Path to the .ko.yaml config file"
+    default: ".ko.yaml"
+    required: false
+  pseudoVersion:
+    description: "Check if pseudo-version should be generated"
+    default: "false"
+    required: true
+  koTarget:
+    description: "Go package to build with ko"
+    required: true
+  pushTag:
+    description: "Use this image tag"
+    required: false
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+  generateKoSBOM:
+    description: "Generate unsigned ko SBOM"
+    required: false
+    default: "false"
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
+
+# Linux runner only
+runs:
+  using: "composite"
+  steps:
+    - name: Determine pseudo version
+      #if: ${{ inputs.pseudoVersion == 'true' }}
+      if: ${{ failure() }}
+      uses: ./.github/actions/pseudo_version
+      with:
+        constellationPath: ${{ inputs.constellationPath }}
+
+    - name: Build and upload container image
+      id: build-and-upload
+      uses: ./.github/actions/build_ko
+      with:
+        name: ${{ inputs.name }}
+        koConfig: ${{ inputs.koConfig }}
+        pseudoVersion: ${{ inputs.pseudoVersion }}
+        koTarget: ${{ inputs.koTarget }}
+        githubToken: ${{ inputs.GITHUB_TOKEN }}
+        pushTag: ci-test
+
+    - name: Download ko Container Data
+      id: download_container_data
+      uses: actions/download-artifact@v2
+      with:
+        name: container_data_ko
+        path: CONTAINER_DATA_KO
+    - shell: bash
+      run: |
+        container_full=$(jq -r .container_full < container_data_ko.json)
+        echo CONTAINER_FULL=$container_full >> $GITHUB_ENV
+
+    - name: Generate SBOM
+      uses: ./.github/actions/container_sbom
+      with:
+        containerReference: ${{ env.CONTAINER_FULL }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' && inputs.generateKoSBOM == 'false' }}
