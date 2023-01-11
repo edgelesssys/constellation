@@ -320,28 +320,6 @@ func New(fileHandler file.Handler, name string) (*Config, error) {
 	return c, c.Validate()
 }
 
-// TODO: Create a better way of validating config values,
-// maybe provide an option to pass a custom validation function
-
-// NewWithoutValidation creates a new config by:
-// 1. Reading config file via provided fileHandler from file with name.
-// 2. Read secrets from environment variables.
-func NewWithoutValidation(fileHandler file.Handler, name string) (*Config, error) {
-	// Read config file
-	c, err := FromFile(fileHandler, name)
-	if err != nil {
-		return nil, err
-	}
-
-	// Read secrets from env-vars.
-	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
-	if clientSecretValue != "" && c.Provider.Azure != nil {
-		c.Provider.Azure.ClientSecretValue = clientSecretValue
-	}
-
-	return c, nil
-}
-
 // HasProvider checks whether the config contains the provider.
 func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 	switch provider {
