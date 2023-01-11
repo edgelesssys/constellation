@@ -11,7 +11,7 @@ runs:
         ARCH: ${{ runner.arch == 'X64' && 'x86_64' || runner.arch == 'ARM64' && 'arm64' }}
       run: |
         echo "::group::Install crane"
-        curl -sL "https://github.com/google/go-containerregistry/releases/download/v${VERSION}/go-containerregistry_${OS}_${ARCH}.tar.gz" > go-containerregistry.tar.gz
+        curl -fsSL "https://github.com/google/go-containerregistry/releases/download/v${VERSION}/go-containerregistry_${OS}_${ARCH}.tar.gz" > go-containerregistry.tar.gz
         tar -xzf go-containerregistry.tar.gz
         sudo mv krane gcrane crane /usr/local/bin/
         echo "::endgroup::"
