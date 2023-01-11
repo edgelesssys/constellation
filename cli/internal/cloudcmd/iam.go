@@ -18,6 +18,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
+// DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files
+func DestroyIAMUser(ctx context.Context) error {
+
+}
+
 // IAMCreator creates the IAM configuration on the cloud provider.
 type IAMCreator struct {
 	out                io.Writer

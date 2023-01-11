@@ -571,10 +571,17 @@ func newIAMDestroyCmd() *cobra.Command {
 		Short: "Destroy an IAM user and delete local terraform files for the IAM user",
 		Long:  "Destroy an IAM user and delete local terraform files for the IAM user",
 		Args:  cobra.ExactArgs(0),
-		Run:   destroyIAMUser,
+		RunE:  destroyIAMUserHandler,
 	}
 }
 
-func destroyIAMUser(_cmd *cobra.Command, _args []string) {
+func destroyIAMUserHandler(cmd *cobra.Command, _args []string) error {
+	spinner := newSpinner(cmd.ErrOrStderr())
+	spinner.Start("Destroying IAM User", false)
+	defer spinner.Stop()
 
+	if err := cloudcmd.DestroyIAMUser(cmd.Context()); err != nil {
+		return fmt.Errorf("Couldn't destroy IAM User: %w", err)
+	}
+	return nil
 }
