@@ -47,7 +47,7 @@ The measurement secret, together with a measurement salt (not secret) is used to
 * For eKMS backends the two URIs can be used directly to request new DEKs.
 * For the cKMS backend the KMS URI can include an optional parameter that holds the masterSecret: `kms://cluster-kms?masterSecret=<masterSecret>`.
 
-The above approach allows us to integrate with the existing setup code in `kms/setup/setup.go` with only minimal changes (parse masterSecret in case of cluster-kms).
+The above approach allows us to integrate with the existing setup code in `keyservice/setup/setup.go` with only minimal changes (parse masterSecret in case of cluster-kms).
 This code is used to setup CloudKMS objects.
 The `setup.go` code will have to be refactored to live in `internal` so that the disk-mapper pkg can directly communicate with the respective external KMS.
 

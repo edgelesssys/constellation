@@ -11,7 +11,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
@@ -27,8 +27,8 @@ type stubKMSClient struct {
 	dataKey       []byte
 }
 
-func (c *stubKMSClient) GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
-	return &kmsproto.GetDataKeyResponse{DataKey: c.dataKey}, c.getDataKeyErr
+func (c *stubKMSClient) GetDataKey(context.Context, *keyserviceproto.GetDataKeyRequest, *grpc.ClientConn) (*keyserviceproto.GetDataKeyResponse, error) {
+	return &keyserviceproto.GetDataKeyResponse{DataKey: c.dataKey}, c.getDataKeyErr
 }
 
 func TestConstellationKMS(t *testing.T) {

@@ -107,7 +107,7 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--support-zone=true"
             - "--get-node-info-from-labels=false"
-            - "--kms-addr=kms.testNamespace:9000"
+            - "--kms-addr=keyservice.testNamespace:9000"
           ports:
             - containerPort: 29603
               name: healthz

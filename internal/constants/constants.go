@@ -44,8 +44,8 @@ const (
 	VerifyServiceNodePortHTTP = 30080
 	// VerifyServiceNodePortGRPC GRPC node port for verification service.
 	VerifyServiceNodePortGRPC = 30081
-	// KMSPort is the port the KMS server listens on.
-	KMSPort = 9000
+	// KeyservicePort is the port the KMS server listens on.
+	KeyservicePort = 9000
 	// BootstrapperPort port of bootstrapper.
 	BootstrapperPort = 9000
 	// KubernetesPort port for Kubernetes API.

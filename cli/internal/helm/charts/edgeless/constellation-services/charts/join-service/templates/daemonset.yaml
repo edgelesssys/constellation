@@ -38,7 +38,7 @@ spec:
           image: {{ .Values.image | quote }}
           args:
             - --cloud-provider={{ .Values.csp }}
-            - --kms-endpoint=kms.{{ .Release.Namespace }}:{{ .Values.global.kmsPort }}
+            - --keyservice-endpoint=keyservice.{{ .Release.Namespace }}:{{ .Values.global.keyservicePort }}
           volumeMounts:
             - mountPath: {{ .Values.global.serviceBasePath | quote }}
               name: config

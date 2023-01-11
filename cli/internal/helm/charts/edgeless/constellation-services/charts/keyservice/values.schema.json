@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "image": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "string",
+            "examples": ["ghcr.io/edgelesssys/constellation/keyservice:latest"]
+        },
+        "masterSecret": {
+            "description": "Secret used to derive key material within the cluster",
+            "type": "string",
+            "examples": ["h1ydxM+1LKhL6kfj3XJnCYvTPnQGUgU0stk91ebEVqM="],
+            "minLength": 44
+        },
+        "salt": {
+            "description": "Salt for key derivation within the cluster",
+            "type": "string",
+            "examples": ["loC4hhWwFH5rHAKq5/EshSWk1jwkrf22VuHc2SGsWdc="],
+            "minLength": 44
+        }
+    },
+    "required": [
+        "image",
+        "salt",
+        "masterSecret"
+    ],
+    "title": "Values",
+    "type": "object"
+}
