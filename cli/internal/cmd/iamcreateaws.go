@@ -11,7 +11,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -73,13 +72,7 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 	// Creation.
 	spinner.Start("Creating", false)
 
-	var conf *config.Config
-	if awsFlags.generateConfig {
-		conf, err = createConfig(cmd, fileHandler, cloudprovider.AWS, awsFlags.configPath)
-		if err != nil {
-			return err
-		}
-	}
+	conf := createConfig(cloudprovider.AWS)
 
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.AWS, &cloudcmd.IAMConfig{
 		AWS: cloudcmd.AWSIAMConfig{
@@ -100,7 +93,7 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 		conf.Provider.AWS.IAMProfileControlPlane = iamFile.AWSOutput.ControlPlaneInstanceProfile
 		conf.Provider.AWS.IAMProfileWorkerNodes = iamFile.AWSOutput.WorkerNodeInstanceProfile
 
-		if err := fileHandler.WriteYAML(awsFlags.configPath, conf, file.OptOverwrite); err != nil {
+		if err := fileHandler.WriteYAML(awsFlags.configPath, conf, file.OptMkdirAll); err != nil {
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", awsFlags.configPath)

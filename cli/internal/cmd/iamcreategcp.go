@@ -14,7 +14,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -88,13 +87,7 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 	// Creation.
 	spinner.Start("Creating", false)
 
-	var conf *config.Config
-	if gcpFlags.generateConfig {
-		conf, err = createConfig(cmd, fileHandler, cloudprovider.GCP, gcpFlags.configPath)
-		if err != nil {
-			return err
-		}
-	}
+	conf := createConfig(cloudprovider.GCP)
 
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.GCP, &cloudcmd.IAMConfig{
 		GCP: cloudcmd.GCPIAMConfig{
@@ -124,7 +117,7 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 	if gcpFlags.generateConfig {
 		conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
 
-		if err := fileHandler.WriteYAML(gcpFlags.configPath, conf, file.OptOverwrite); err != nil {
+		if err := fileHandler.WriteYAML(gcpFlags.configPath, conf, file.OptMkdirAll); err != nil {
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", gcpFlags.configPath)

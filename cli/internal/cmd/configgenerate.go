@@ -51,8 +51,18 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 		return err
 	}
 
-	_, err = createConfig(cmd, fileHandler, provider, flags.file)
-	if err != nil {
+	conf := createConfig(provider)
+
+	if flags.file == "-" {
+		content, err := encoder.NewEncoder(conf).Encode()
+		if err != nil {
+			return fmt.Errorf("encoding config content: %w", err)
+		}
+		_, err = cmd.OutOrStdout().Write(content)
+		return err
+	}
+
+	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
 		return err
 	}
 
@@ -65,8 +75,8 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	return nil
 }
 
-// createConfig creates a config file for the given provider and writes it to the given outputFile. If the outputFile is "-", the config is written to stdout.
-func createConfig(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, outputFile string) (*config.Config, error) {
+// createConfig creates a config file for the given provider.
+func createConfig(provider cloudprovider.Provider) (*config.Config) {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
@@ -75,20 +85,7 @@ func createConfig(cmd *cobra.Command, fileHandler file.Handler, provider cloudpr
 		conf.StateDiskSizeGB = 10
 	}
 
-	if outputFile == "-" {
-		content, err := encoder.NewEncoder(conf).Encode()
-		if err != nil {
-			return nil, fmt.Errorf("encoding config content: %w", err)
-		}
-		_, err = cmd.OutOrStdout().Write(content)
-		return nil, err
-	}
-
-	if err := fileHandler.WriteYAML(outputFile, conf, file.OptMkdirAll); err != nil {
-		return nil, err
-	}
-
-	return conf, nil
+	return conf
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {

@@ -10,7 +10,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -75,13 +74,7 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 	// Creation.
 	spinner.Start("Creating", false)
 
-	var conf *config.Config
-	if azureFlags.generateConfig {
-		conf, err = createConfig(cmd, fileHandler, cloudprovider.Azure, azureFlags.configPath)
-		if err != nil {
-			return err
-		}
-	}
+	conf := createConfig(cloudprovider.Azure)
 
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.Azure, &cloudcmd.IAMConfig{
 		Azure: cloudcmd.AzureIAMConfig{
@@ -105,7 +98,7 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 		conf.Provider.Azure.UserAssignedIdentity = iamFile.AzureOutput.UAMIID
 		conf.Provider.Azure.AppClientID = iamFile.AzureOutput.ApplicationID
 		conf.Provider.Azure.ClientSecretValue = iamFile.AzureOutput.ApplicationClientSecretValue
-		if err := fileHandler.WriteYAML(azureFlags.configPath, conf, file.OptOverwrite); err != nil {
+		if err := fileHandler.WriteYAML(azureFlags.configPath, conf, file.OptMkdirAll); err != nil {
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", azureFlags.configPath)
