@@ -2,18 +2,17 @@ apiVersion: v2
 name: constellation-operators
 description: A Helm chart for Kubernetes
 type: application
-version: 2.3.0
-
+version: 1.0.3
 dependencies:
   - name: node-maintenance-operator
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP
       - AWS
       - QEMU
   - name: constellation-operator
-    version: 2.3.0
+    version: 1.0.3
     tags:
       - Azure
       - GCP

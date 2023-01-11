@@ -2,4 +2,4 @@ apiVersion: v2
 name: verification-service
 description: A Helm chart for Kubernetes
 type: application
-version: 2.3.0
+version: 1.0.3

@@ -2,4 +2,4 @@ apiVersion: v2
 name: join-service
 description: A chart to deploy the Constellation join-service
 type: application
-version: 2.3.0
+version: 1.0.3
