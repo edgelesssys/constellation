@@ -249,12 +249,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 5. Initialize the cluster
 
-    :::caution
-
-    Initialization on **Azure** might be slow and might take up to 60 minutes to initialize all Kubernetes nodes. We're already working with Microsoft to resolve the issue. The stability of already initialized clusters isn't affected.
-
-    :::
-
     ```bash
     constellation init
     ```
