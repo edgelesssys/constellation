@@ -11,6 +11,9 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +31,7 @@ func newIAMCreateAWSCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "prefix"))
 	cmd.Flags().String("zone", "", "AWS availability zone the resources will be created in (e.g. us-east-2a). Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
-	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation")
+	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation.")
 
 	return cmd
 }
@@ -36,12 +39,13 @@ func newIAMCreateAWSCmd() *cobra.Command {
 func runIAMCreateAWS(cmd *cobra.Command, args []string) error {
 	spinner := newSpinner(cmd.ErrOrStderr())
 	defer spinner.Stop()
+	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewIAMCreator(spinner)
 
-	return iamCreateAWS(cmd, spinner, creator)
+	return iamCreateAWS(cmd, spinner, creator, fileHandler)
 }
 
-func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator) error {
+func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator, fileHandler file.Handler) error {
 	// Get input variables.
 	awsFlags, err := parseAWSFlags(cmd)
 	if err != nil {
@@ -53,6 +57,9 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator)
 		cmd.Printf("The following IAM configuration will be created:\n")
 		cmd.Printf("Region:\t%s\n", awsFlags.region)
 		cmd.Printf("Name Prefix:\t%s\n", awsFlags.prefix)
+		if awsFlags.generateConfig {
+			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", awsFlags.configPath)
+		}
 		ok, err := askToConfirm(cmd, "Do you want to create the configuration?")
 		if err != nil {
 			return err
@@ -65,22 +72,44 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator)
 
 	// Creation.
 	spinner.Start("Creating", false)
+
+	var conf *config.Config
+	if awsFlags.generateConfig {
+		conf, err = createConfig(cmd, fileHandler, cloudprovider.AWS, awsFlags.configPath)
+		if err != nil {
+			return err
+		}
+	}
+
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.AWS, &cloudcmd.IAMConfig{
 		AWS: cloudcmd.AWSIAMConfig{
 			Region: awsFlags.region,
 			Prefix: awsFlags.prefix,
 		},
 	})
+
 	spinner.Stop()
 	if err != nil {
 		return err
 	}
 
-	cmd.Printf("region:\t%s\n", awsFlags.region)
-	cmd.Printf("zone:\t%s\n", awsFlags.zone)
-	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
-	cmd.Printf("iamProfileWorkerNodes:\t%s\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
-	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+	if awsFlags.generateConfig {
+		conf.Provider.AWS.Region = awsFlags.region
+		conf.Provider.AWS.Zone = awsFlags.zone
+		conf.Provider.AWS.IAMProfileControlPlane = iamFile.AWSOutput.ControlPlaneInstanceProfile
+		conf.Provider.AWS.IAMProfileWorkerNodes = iamFile.AWSOutput.WorkerNodeInstanceProfile
+
+		if err := fileHandler.WriteYAML(awsFlags.configPath, conf, file.OptOverwrite); err != nil {
+			return err
+		}
+		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", awsFlags.configPath)
+	} else {
+		cmd.Printf("region:\t%s\n", awsFlags.region)
+		cmd.Printf("zone:\t%s\n", awsFlags.zone)
+		cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
+		cmd.Printf("iamProfileWorkerNodes:\t%s\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
+		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+	}
 
 	return nil
 }
@@ -106,7 +135,14 @@ func parseAWSFlags(cmd *cobra.Command) (awsFlags, error) {
 	} else {
 		return awsFlags{}, fmt.Errorf("invalid AWS region, to find a correct region please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
 	}
-
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return awsFlags{}, fmt.Errorf("parsing config string: %w", err)
+	}
+	generateConfig, err := cmd.Flags().GetBool("generate-config")
+	if err != nil {
+		return awsFlags{}, fmt.Errorf("parsing generate-config bool: %w", err)
+	}
 	yesFlag, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return awsFlags{}, fmt.Errorf("parsing yes bool: %w", err)
@@ -115,6 +151,8 @@ func parseAWSFlags(cmd *cobra.Command) (awsFlags, error) {
 		zone:    zone,
 		prefix:  prefix,
 		region:  region,
+		generateConfig: generateConfig,
+		configPath: configPath,
 		yesFlag: yesFlag,
 	}, nil
 }
@@ -124,5 +162,7 @@ type awsFlags struct {
 	prefix  string
 	region  string
 	zone    string
+	generateConfig bool
+	configPath string
 	yesFlag bool
 }
