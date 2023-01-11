@@ -21,6 +21,18 @@ import (
 )
 
 func TestIAMCreateAWS(t *testing.T) {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+		fs := afero.NewMemMapFs()
+		fileHandler := file.NewHandler(fs)
+		for _, f := range existingFiles {
+			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+		}
+		return fs
+	}
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+		return fs
+	}
 	validIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.AWS,
 		AWSOutput: iamid.AWSFile{
@@ -30,6 +42,7 @@ func TestIAMCreateAWS(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		setupFs func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
 		creator    *stubIAMCreator
 		provider   cloudprovider.Provider
 		zoneFlag   string
@@ -43,6 +56,7 @@ func TestIAMCreateAWS(t *testing.T) {
 		wantErr    bool
 	}{
 		"iam create aws": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -50,6 +64,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:    true,
 		},
 		"iam create aws generate config": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -59,6 +74,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			generateConfigFlag: true,
 		},
 		"iam create aws generate config custom path": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -68,6 +84,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			configFlag: "custom-config.yaml",
 		},
 		"iam create aws generate config path already exists": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -79,6 +96,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			existingFiles: []string{constants.ConfigFilename},
 		},
 		"iam create aws generate config custom path already exists": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -90,6 +108,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			existingFiles: []string{"custom-config.yaml"},
 		},
 		"interactive": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -97,6 +116,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			stdin:      "yes\n",
 		},
 		"interactive generate config": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -106,6 +126,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			generateConfigFlag: true,
 		},
 		"interactive abort": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -114,6 +135,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantAbort:  true,
 		},
 		"interactive generate config abort": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -124,12 +146,24 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantAbort:  true,
 		},
 		"invalid zone": {
+			setupFs: defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-west-5b",
 			prefixFlag: "test",
 			yesFlag:    true,
 			wantErr:    true,
+		},
+		"unwritable fs": {
+			setupFs: readOnlyFs,
+			creator:    &stubIAMCreator{id: validIAMIDFile},
+			provider:   cloudprovider.AWS,
+			zoneFlag:   "us-east-2a",
+			prefixFlag: "test",
+			yesFlag:    true,
+			generateConfigFlag: true,
+			wantErr: true,
+			configFlag: constants.ConfigFilename,
 		},
 	}
 
@@ -162,34 +196,32 @@ func TestIAMCreateAWS(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-			fs := afero.NewMemMapFs()
-			fileHandler := file.NewHandler(fs)
-			for _, f := range tc.existingFiles {
-				require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
-			}
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
 
 			err := iamCreateAWS(cmd, nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				if tc.wantAbort {
-					assert.False(tc.creator.createCalled)
-				} else {
-					if tc.generateConfigFlag {
-						readConfig := &config.Config{}
-						readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
-						require.NoError(readErr)
-						assert.Equal(tc.creator.id.AWSOutput.ControlPlaneInstanceProfile, readConfig.Provider.AWS.IAMProfileControlPlane)
-						assert.Equal(tc.creator.id.AWSOutput.WorkerNodeInstanceProfile, readConfig.Provider.AWS.IAMProfileWorkerNodes)
-						assert.Equal(tc.zoneFlag, readConfig.Provider.AWS.Zone)
-						assert.True(strings.HasPrefix(readConfig.Provider.AWS.Zone, readConfig.Provider.AWS.Region))
-					}
-					require.NoError(err)
-					assert.True(tc.creator.createCalled)
-					assert.Equal(tc.creator.id.AWSOutput, validIAMIDFile.AWSOutput)
-				}
+				return
 			}
+
+			if tc.wantAbort {
+				assert.False(tc.creator.createCalled)
+				return
+			}
+
+			if tc.generateConfigFlag {
+				readConfig := &config.Config{}
+				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+				require.NoError(readErr)
+				assert.Equal(tc.creator.id.AWSOutput.ControlPlaneInstanceProfile, readConfig.Provider.AWS.IAMProfileControlPlane)
+				assert.Equal(tc.creator.id.AWSOutput.WorkerNodeInstanceProfile, readConfig.Provider.AWS.IAMProfileWorkerNodes)
+				assert.Equal(tc.zoneFlag, readConfig.Provider.AWS.Zone)
+				assert.True(strings.HasPrefix(readConfig.Provider.AWS.Zone, readConfig.Provider.AWS.Region))
+			}
+			require.NoError(err)
+			assert.True(tc.creator.createCalled)
+			assert.Equal(tc.creator.id.AWSOutput, validIAMIDFile.AWSOutput)
 		})
 	}
 }

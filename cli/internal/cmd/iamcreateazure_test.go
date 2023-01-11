@@ -20,6 +20,18 @@ import (
 )
 
 func TestIAMCreateAzure(t *testing.T) {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+		fs := afero.NewMemMapFs()
+		fileHandler := file.NewHandler(fs)
+		for _, f := range existingFiles {
+			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+		}
+		return fs
+	}
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+		return fs
+	}
 	validIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.Azure,
 		AzureOutput: iamid.AzureFile{
@@ -32,6 +44,7 @@ func TestIAMCreateAzure(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		setupFs 			func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		regionFlag           string
@@ -46,6 +59,7 @@ func TestIAMCreateAzure(t *testing.T) {
 		wantErr              bool
 	}{
 		"iam create azure": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -54,6 +68,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -64,6 +79,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config custom path": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -74,6 +90,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config custom path already exists": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -86,6 +103,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			existingFiles: []string{"custom-config.yaml"},
 		},
 		"iam create generate config path already exists": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -98,6 +116,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			wantErr:              true,
 		},
 		"interactive": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -106,6 +125,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "yes\n",
 		},
 		"interactive generate config": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -116,6 +136,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			configFlag:           constants.ConfigFilename,
 		},
 		"interactive abort": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -125,6 +146,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			wantAbort:            true,
 		},
 		"interactive generate config abort": {
+			setupFs: defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -133,6 +155,18 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "no\n",
 			generateConfigFlag:   true,
 			wantAbort:            true,
+		},
+		"unwritable fs": {
+			setupFs: readOnlyFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			yesFlag:              true,
+			generateConfigFlag:  true,
+			configFlag: 		constants.ConfigFilename,
+			wantErr:             true,
 		},
 	}
 
@@ -168,37 +202,35 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-			fs := afero.NewMemMapFs()
-			fileHandler := file.NewHandler(fs)
-			for _, f := range tc.existingFiles {
-				require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
-			}
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
 
 			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				if tc.wantAbort {
-					assert.False(tc.creator.createCalled)
-				} else {
-					if tc.generateConfigFlag {
-						readConfig := &config.Config{}
-						readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
-						require.NoError(readErr)
-						assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
-						assert.Equal(tc.creator.id.AzureOutput.TenantID, readConfig.Provider.Azure.TenantID)
-						assert.Equal(tc.creator.id.AzureOutput.ApplicationID, readConfig.Provider.Azure.AppClientID)
-						assert.Equal(tc.creator.id.AzureOutput.ApplicationClientSecretValue, readConfig.Provider.Azure.ClientSecretValue)
-						assert.Equal(tc.creator.id.AzureOutput.UAMIID, readConfig.Provider.Azure.UserAssignedIdentity)
-						assert.Equal(tc.regionFlag, readConfig.Provider.Azure.Location)
-						assert.Equal(tc.resourceGroupFlag, readConfig.Provider.Azure.ResourceGroup)
-					}
-					require.NoError(err)
-					assert.True(tc.creator.createCalled)
-					assert.Equal(tc.creator.id.AzureOutput, validIAMIDFile.AzureOutput)
-				}
+				return
 			}
+
+			if tc.wantAbort {
+				assert.False(tc.creator.createCalled)
+				return
+			}
+
+			if tc.generateConfigFlag {
+				readConfig := &config.Config{}
+				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+				require.NoError(readErr)
+				assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
+				assert.Equal(tc.creator.id.AzureOutput.TenantID, readConfig.Provider.Azure.TenantID)
+				assert.Equal(tc.creator.id.AzureOutput.ApplicationID, readConfig.Provider.Azure.AppClientID)
+				assert.Equal(tc.creator.id.AzureOutput.ApplicationClientSecretValue, readConfig.Provider.Azure.ClientSecretValue)
+				assert.Equal(tc.creator.id.AzureOutput.UAMIID, readConfig.Provider.Azure.UserAssignedIdentity)
+				assert.Equal(tc.regionFlag, readConfig.Provider.Azure.Location)
+				assert.Equal(tc.resourceGroupFlag, readConfig.Provider.Azure.ResourceGroup)
+			}
+			require.NoError(err)
+			assert.True(tc.creator.createCalled)
+			assert.Equal(tc.creator.id.AzureOutput, validIAMIDFile.AzureOutput)
 		})
 	}
 }
