@@ -26,7 +26,7 @@ func newIAMCreateAzureCmd() *cobra.Command {
 		RunE:  runIAMCreateAzure,
 	}
 
-	cmd.Flags().String("resourceGroup", "", "Name of the resource group your IAM resources will be created in.")
+	cmd.Flags().String("resourceGroup", "", "Name prefix of the two resource groups your cluster / IAM resources will be created in.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "resourceGroup"))
 	cmd.Flags().String("region", "", "Region the resources will be created in. (e.g. westus)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
