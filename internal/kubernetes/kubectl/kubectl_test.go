@@ -18,7 +18,7 @@ func TestParseCRDs(t *testing.T) {
 		wantErr bool
 	}{
 		"success": {
-			data:    "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: nodeimages.update.edgeless.systems\nspec:\n  group: update.edgeless.systems\n  names:\n    kind: NodeImage\n",
+			data:    "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: nodeversions.update.edgeless.systems\nspec:\n  group: update.edgeless.systems\n  names:\n    kind: NodeImage\n",
 			wantErr: false,
 		},
 		"wrong kind": {
