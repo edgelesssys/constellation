@@ -20,7 +20,11 @@ import (
 
 // DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files
 func DestroyIAMUser(ctx context.Context) error {
-
+	c, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
+	if err != nil {
+		return err
+	}
+	return c.DestroyCluster(ctx)
 }
 
 // IAMCreator creates the IAM configuration on the cloud provider.
