@@ -53,7 +53,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
 		},
-		"iam create generate config": {
+		"iam create azure generate config": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -63,7 +63,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			configFlag:           constants.ConfigFilename,
 			yesFlag:              true,
 		},
-		"iam create generate config custom path": {
+		"iam create azure generate config custom path": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -73,6 +73,18 @@ func TestIAMCreateAzure(t *testing.T) {
 			configFlag:           "custom-config.yaml",
 			yesFlag:              true,
 		},
+		"iam create azure generate config custom path already exists": {
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			yesFlag:              true,
+			wantErr:              true,
+			configFlag: "custom-config.yaml",
+			existingFiles: []string{"custom-config.yaml"},
+		},
 		"iam create generate config path already exists": {
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
@@ -80,6 +92,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			generateConfigFlag:   true,
+			configFlag: constants.ConfigFilename,
 			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
 			wantErr:              true,
@@ -132,6 +145,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
+
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
 
@@ -171,10 +185,16 @@ func TestIAMCreateAzure(t *testing.T) {
 					if tc.generateConfigFlag {
 						readConfig := &config.Config{}
 						readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
-						assert.NoError(readErr)
+						require.NoError(readErr)
 						assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
+						assert.Equal(tc.creator.id.AzureOutput.TenantID, readConfig.Provider.Azure.TenantID)
+						assert.Equal(tc.creator.id.AzureOutput.ApplicationID, readConfig.Provider.Azure.AppClientID)
+						assert.Equal(tc.creator.id.AzureOutput.ApplicationClientSecretValue, readConfig.Provider.Azure.ClientSecretValue)
+						assert.Equal(tc.creator.id.AzureOutput.UAMIID, readConfig.Provider.Azure.UserAssignedIdentity)
+						assert.Equal(tc.regionFlag, readConfig.Provider.Azure.Location)
+						assert.Equal(tc.resourceGroupFlag, readConfig.Provider.Azure.ResourceGroup)
 					}
-					assert.NoError(err)
+					require.NoError(err)
 					assert.True(tc.creator.createCalled)
 					assert.Equal(tc.creator.id.AzureOutput, validIAMIDFile.AzureOutput)
 				}
