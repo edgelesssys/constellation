@@ -563,3 +563,18 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 	}
 	return out, nil
 }
+
+// NewIAMDestroyCmd returns a new cobra.Command for the iam destroy subcommand.
+func newIAMDestroyCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "destroy",
+		Short: "Destroy an IAM user and delete local terraform files for the IAM user",
+		Long:  "Destroy an IAM user and delete local terraform files for the IAM user",
+		Args:  cobra.ExactArgs(0),
+		Run:   destroyIAMUser,
+	}
+}
+
+func destroyIAMUser(_cmd *cobra.Command, _args []string) {
+
+}
