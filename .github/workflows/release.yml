@@ -52,7 +52,7 @@ jobs:
             echo "MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}"
             echo "MAJOR_MINOR_PATCH=${PART_MAJOR}.${PART_MINOR}.${PART_PATCH}"
             echo "RELEASE_BRANCH=release/v${PART_MAJOR}.${PART_MINOR}"
-          } >> "$GITHUB_OUTPUT"
+          } | tee "$GITHUB_OUTPUT"
 
   docs:
     name: Create docs release
