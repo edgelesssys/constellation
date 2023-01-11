@@ -97,7 +97,6 @@ jobs:
 
   prepare-release-branch:
     name: Prepare release branch
-    if: inputs.kind == 'minor'
     runs-on: ubuntu-22.04
     needs: verify-inputs
     env:
@@ -107,6 +106,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       - name: Create release branch
+        if: inputs.kind == 'minor'
         run: |
           git fetch
           git pull
