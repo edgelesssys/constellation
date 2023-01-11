@@ -42,6 +42,7 @@ func NewIAMCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newIAMCreateCmd())
+	cmd.AddCommand(newIAMDestroyCmd())
 
 	return cmd
 }
