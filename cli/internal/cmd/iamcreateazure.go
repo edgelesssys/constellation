@@ -55,10 +55,10 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 
 	// Confirmation.
 	if !azureFlags.yesFlag {
-		cmd.Printf("The following IAM configuration will be created:\n")
-		cmd.Printf("Region:\t%s\n", azureFlags.region)
-		cmd.Printf("Resource Group:\t%s\n", azureFlags.resourceGroup)
-		cmd.Printf("Service Principal:\t%s\n", azureFlags.servicePrincipal)
+		cmd.Printf("The following IAM configuration will be created:\n\n")
+		cmd.Printf("Region:\t\t\t%s\n", azureFlags.region)
+		cmd.Printf("Resource Group:\t\t%s\n", azureFlags.resourceGroup)
+		cmd.Printf("Service Principal:\t%s\n\n", azureFlags.servicePrincipal)
 		if azureFlags.generateConfig {
 			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", azureFlags.configPath)
 		}
@@ -95,6 +95,7 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 	if err != nil {
 		return err
 	}
+	cmd.Println() // Print empty line to separate after spinner ended.
 
 	if azureFlags.generateConfig {
 		conf.Provider.Azure.SubscriptionID = iamFile.AzureOutput.SubscriptionID
@@ -109,13 +110,13 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", azureFlags.configPath)
 	} else {
-		cmd.Printf("subscription:\t%s\n", iamFile.AzureOutput.SubscriptionID)
-		cmd.Printf("tenant:\t%s\n", iamFile.AzureOutput.TenantID)
-		cmd.Printf("location:\t%s\n", azureFlags.region)
-		cmd.Printf("resourceGroup:\t%s\n", azureFlags.resourceGroup)
+		cmd.Printf("subscription:\t\t%s\n", iamFile.AzureOutput.SubscriptionID)
+		cmd.Printf("tenant:\t\t\t%s\n", iamFile.AzureOutput.TenantID)
+		cmd.Printf("location:\t\t\t%s\n", azureFlags.region)
+		cmd.Printf("resourceGroup:\t\t%s\n", azureFlags.resourceGroup)
 		cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
-		cmd.Printf("appClientID:\t%s\n", iamFile.AzureOutput.ApplicationID)
-		cmd.Printf("appClientSecretValue:\t%s\n", iamFile.AzureOutput.ApplicationClientSecretValue)
+		cmd.Printf("appClientID:\t\t\t%s\n", iamFile.AzureOutput.ApplicationID)
+		cmd.Printf("appClientSecretValue:\t%s\n\n", iamFile.AzureOutput.ApplicationClientSecretValue)
 		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 	}
 

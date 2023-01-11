@@ -67,11 +67,11 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 
 	// Confirmation.
 	if !gcpFlags.yesFlag {
-		cmd.Printf("The following IAM configuration will be created:\n")
-		cmd.Printf("Project ID:\t%s\n", gcpFlags.projectID)
+		cmd.Printf("The following IAM configuration will be created:\n\n")
+		cmd.Printf("Project ID:\t\t%s\n", gcpFlags.projectID)
 		cmd.Printf("Service Account ID:\t%s\n", gcpFlags.serviceAccountID)
-		cmd.Printf("Region:\t%s\n", gcpFlags.region)
-		cmd.Printf("Zone:\t%s\n", gcpFlags.zone)
+		cmd.Printf("Region:\t\t\t%s\n", gcpFlags.region)
+		cmd.Printf("Zone:\t\t\t%s\n\n", gcpFlags.zone)
 		if gcpFlags.generateConfig {
 			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", gcpFlags.configPath)
 		}
@@ -109,6 +109,7 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 	if err != nil {
 		return err
 	}
+	cmd.Println() // Print empty line to separate after spinner ended.
 
 	// Write back values.
 	tmpOut, err := parseIDFile(iamFile.GCPOutput.ServiceAccountKey)
@@ -128,7 +129,7 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", gcpFlags.configPath)
 	} else {
-		cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s", constants.GCPServiceAccountKeyFile))
+		cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
 		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 	}
 	return nil

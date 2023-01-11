@@ -54,9 +54,9 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 
 	// Confirmation.
 	if !awsFlags.yesFlag {
-		cmd.Printf("The following IAM configuration will be created:\n")
-		cmd.Printf("Region:\t%s\n", awsFlags.region)
-		cmd.Printf("Name Prefix:\t%s\n", awsFlags.prefix)
+		cmd.Printf("The following IAM configuration will be created:\n\n")
+		cmd.Printf("Region:\t\t%s\n", awsFlags.region)
+		cmd.Printf("Name Prefix:\t%s\n\n", awsFlags.prefix)
 		if awsFlags.generateConfig {
 			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", awsFlags.configPath)
 		}
@@ -92,6 +92,7 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 	if err != nil {
 		return err
 	}
+	cmd.Println() // Print empty line to separate after spinner ended.
 
 	if awsFlags.generateConfig {
 		conf.Provider.AWS.Region = awsFlags.region
@@ -104,10 +105,10 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", awsFlags.configPath)
 	} else {
-		cmd.Printf("region:\t%s\n", awsFlags.region)
-		cmd.Printf("zone:\t%s\n", awsFlags.zone)
+		cmd.Printf("region:\t\t\t%s\n", awsFlags.region)
+		cmd.Printf("zone:\t\t\t%s\n", awsFlags.zone)
 		cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
-		cmd.Printf("iamProfileWorkerNodes:\t%s\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
+		cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
 		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 	}
 
