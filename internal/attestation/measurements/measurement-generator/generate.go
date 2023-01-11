@@ -32,7 +32,66 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
-const byteArrayCompositeLitWidth = 235
+func main() {
+	defaultConf := config.Default()
+	log.Printf("Generating measurements for %s\n", defaultConf.Image)
+
+	const filePath = "./measurements_enterprise.go"
+
+	ctx := context.Background()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rekor, err := sigstore.NewRekor()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var returnStmtCtr int
+
+	newFile := astutil.Apply(file, func(cursor *astutil.Cursor) bool {
+		n := cursor.Node()
+
+		if clause, ok := n.(*ast.CaseClause); ok && len(clause.List) > 0 && len(clause.Body) > 0 {
+			sel, ok := clause.List[0].(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			returnStmt, ok := clause.Body[0].(*ast.ReturnStmt)
+			if !ok || len(returnStmt.Results) == 0 {
+				return true
+			}
+
+			provider := cloudprovider.FromString(sel.Sel.Name)
+			if provider == cloudprovider.Unknown {
+				log.Fatalf("unknown provider %s", sel.Sel.Name)
+			}
+			log.Println("Found", provider)
+			returnStmtCtr++
+			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, defaultConf.Image)
+			returnStmt.Results[0] = measurementsCompositeLiteral(measuremnts, returnStmt.Return+7)
+		}
+		return true
+	}, nil,
+	)
+
+	if returnStmtCtr == 0 {
+		log.Fatal("no measurements updated")
+	}
+
+	var buf bytes.Buffer
+	printConfig := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
+
+	if err = printConfig.Fprint(&buf, fset, newFile); err != nil {
+		log.Fatalf("error formatting file %s: %s", filePath, err)
+	}
+	if err := os.WriteFile(filePath, buf.Bytes(), 0o644); err != nil {
+		log.Fatalf("error writing file %s: %s", filePath, err)
+	}
+	log.Println("Successfully generated hashes.")
+}
 
 func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPublicKey []byte, client *http.Client, provider cloudprovider.Provider, image string) measurements.M {
 	measurementsURL, err := measurementURL(provider, image, "measurements.json")
@@ -70,12 +129,10 @@ func measurementURL(provider cloudprovider.Provider, image, file string) (*url.U
 	if err != nil {
 		return nil, fmt.Errorf("parsing image name: %w", err)
 	}
-	url, err := url.Parse(constants.CDNRepositoryURL)
-	if err != nil {
-		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
-	}
-	url.Path = path.Join(constants.CDNAPIPrefix, "ref", version.Ref, "stream", version.Stream, version.Version, "image", "csp", strings.ToLower(provider.String()), file)
-	return url, nil
+
+	return url.Parse(
+		version.ArtifactURL() + path.Join("/image", "csp", strings.ToLower(provider.String()), file),
+	)
 }
 
 func verifyWithRekor(ctx context.Context, verifier rekorVerifier, hash string) error {
@@ -196,58 +253,7 @@ func measurementsCompositeLiteral(measurements measurements.M, pos token.Pos) *a
 	}
 }
 
-func main() {
-	defaultConf := config.Default()
-	log.Printf("Generating measurements for %s\n", defaultConf.Image)
-
-	const filePath = "./measurements_enterprise.go"
-
-	ctx := context.Background()
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
-	if err != nil {
-		log.Fatal(err)
-	}
-	rekor, err := sigstore.NewRekor()
-	if err != nil {
-		log.Fatal(err)
-	}
-	newFile := astutil.Apply(file, func(cursor *astutil.Cursor) bool {
-		n := cursor.Node()
-
-		if clause, ok := n.(*ast.CaseClause); ok && len(clause.List) > 0 && len(clause.Body) > 0 {
-			sel, ok := clause.List[0].(*ast.SelectorExpr)
-			if !ok {
-				return true
-			}
-			returnStmt, ok := clause.Body[0].(*ast.ReturnStmt)
-			if !ok || len(returnStmt.Results) == 0 {
-				return true
-			}
-
-			provider := cloudprovider.FromString(sel.Sel.Name)
-			if provider == cloudprovider.Unknown {
-				return true
-			}
-			log.Println("Found", provider)
-			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, defaultConf.Image)
-			returnStmt.Results[0] = measurementsCompositeLiteral(measuremnts, returnStmt.Return+7)
-		}
-		return true
-	}, nil,
-	)
-
-	var buf bytes.Buffer
-	printConfig := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
-
-	if err = printConfig.Fprint(&buf, fset, newFile); err != nil {
-		log.Fatalf("error formatting file %s: %s", filePath, err)
-	}
-	if err := os.WriteFile(filePath, buf.Bytes(), 0o644); err != nil {
-		log.Fatalf("error writing file %s: %s", filePath, err)
-	}
-	log.Println("Successfully generated hashes.")
-}
+const byteArrayCompositeLitWidth = 235
 
 type rekorVerifier interface {
 	SearchByHash(context.Context, string) ([]string, error)
