@@ -82,7 +82,7 @@ func (u *Upgrader) Upgrade(ctx context.Context, imageReference, imageVersion str
 
 // GetCurrentImage returns the currently used image version of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-os")
+	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
 	if err != nil {
 		return nil, "", err
 	}
@@ -198,7 +198,7 @@ func (u *dynamicClient) getCurrent(ctx context.Context, name string) (*unstructu
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
-		Resource: "nodeimages",
+		Resource: "nodeversions",
 	}).Get(ctx, name, metav1.GetOptions{})
 }
 
@@ -207,7 +207,7 @@ func (u *dynamicClient) update(ctx context.Context, obj *unstructured.Unstructur
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
-		Resource: "nodeimages",
+		Resource: "nodeversions",
 	}).Update(ctx, obj, metav1.UpdateOptions{})
 }
 
