@@ -31,7 +31,7 @@ jobs:
       - name: Install shellfmt
         shell: bash
         run: |
-          go install github.com/katexochen/sh/v3/cmd/shfmt@latest
+          go install github.com/katexochen/sh/v3/cmd/shfmt@faf7f58964998201d22efe41fef41ae4e1953f3b # v3.6.0
 
       - name: Run shellfmt
         shell: bash
