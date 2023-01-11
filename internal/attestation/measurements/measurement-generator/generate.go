@@ -131,18 +131,18 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 	key := fmt.Sprintf("%d", pcr)
 	keyLen := len(key)
 	colon := pos + token.Pos(keyLen)
-	valuePos := token.Pos(colon + 2)
-	expectedKeyPos := token.Pos(valuePos + 5)
-	expectedColon := token.Pos(expectedKeyPos + 8)
-	expectedValuePos := token.Pos(expectedColon + 2)
-	warnOnlyKeyPos := token.Pos(expectedColon + 1 + byteArrayCompositeLitWidth)
-	warnOnlyColon := token.Pos(warnOnlyKeyPos + 9)
-	warnOnlyValuePos := token.Pos(warnOnlyColon + 2)
+	valuePos := colon + 2
+	expectedKeyPos := valuePos + 5
+	expectedColon := expectedKeyPos + 8
+	expectedValuePos := expectedColon + 2
+	warnOnlyKeyPos := expectedColon + 1 + byteArrayCompositeLitWidth
+	warnOnlyColon := warnOnlyKeyPos + 9
+	warnOnlyValuePos := warnOnlyColon + 2
 	var rbrace token.Pos
 	if measuremnt.WarnOnly {
-		rbrace = token.Pos(warnOnlyValuePos + 9) // 9 = len("true") + padding
+		rbrace = warnOnlyValuePos + 9 // 9 = len("true") + padding
 	} else {
-		rbrace = token.Pos(warnOnlyValuePos + 10) // 10 = len("false") + padding
+		rbrace = warnOnlyValuePos + 10 // 10 = len("false") + padding
 	}
 
 	return &ast.KeyValueExpr{
@@ -153,7 +153,6 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 		},
 		Colon: colon,
 		Value: &ast.CompositeLit{
-			// Type:   ast.NewIdent("Measurement"),
 			Lbrace: valuePos,
 			Elts: []ast.Expr{
 				&ast.KeyValueExpr{
