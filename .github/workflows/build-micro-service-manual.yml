@@ -8,7 +8,7 @@ on:
         type: choice
         options:
           - "join-service"
-          - "kmsserver"
+          - "keyservice"
           - "verification-service"
           - "qemu-metadata-api"
           - "filebeat-debugd"
@@ -80,8 +80,8 @@ jobs:
           case "${{ inputs.microService }}" in
             "join-service" )
               echo "microServiceDockerfile=joinservice/Dockerfile" >> "$GITHUB_ENV" ;;
-            "kmsserver" )
-              echo "microServiceDockerfile=kms/Dockerfile" >> "$GITHUB_ENV" ;;
+            "keyservice" )
+              echo "microServiceDockerfile=keyservice/Dockerfile" >> "$GITHUB_ENV" ;;
             "verification-service" )
               echo "microServiceDockerfile=verify/Dockerfile" >> "$GITHUB_ENV" ;;
             "qemu-metadata-api" )

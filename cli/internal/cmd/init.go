@@ -33,7 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	kms "github.com/edgelesssys/constellation/v2/kms/setup"
+	keyservice "github.com/edgelesssys/constellation/v2/keyservice/setup"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -143,8 +143,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	req := &initproto.InitRequest{
 		MasterSecret:           masterSecret.Key,
 		Salt:                   masterSecret.Salt,
-		KmsUri:                 kms.ClusterKMSURI,
-		StorageUri:             kms.NoStoreURI,
+		KmsUri:                 keyservice.ClusterKMSURI,
+		StorageUri:             keyservice.NoStoreURI,
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,

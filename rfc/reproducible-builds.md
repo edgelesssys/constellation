@@ -140,7 +140,7 @@ Then in our `.ko.yaml`, we can use the newly created image as a base image, also
 
 ```yaml
 baseImageOverrides:
-  github.com/edgelesssys/constellation/v2/kms/cmd: edgelesssys/alpine-custom:base
+  github.com/edgelesssys/constellation/v2/keyservice/cmd: edgelesssys/alpine-custom:base
 ```
 
 The result is also a reproducible OCI image with reproducible artifacts.

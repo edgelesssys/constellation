@@ -34,7 +34,7 @@ sequenceDiagram
 
 ### [internal/kms](./internal/kms/)
 
-Implements interaction with Constellation's key management service.
+Implements interaction with Constellation's keyservice.
 This is needed for fetching data encryption keys for joining nodes.
 
 ### [internal/kubeadm](./internal/kubeadm/)

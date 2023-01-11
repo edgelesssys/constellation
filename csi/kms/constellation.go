@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -39,7 +39,7 @@ func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int
 
 	res, err := k.kms.GetDataKey(
 		ctx,
-		&kmsproto.GetDataKeyRequest{
+		&keyserviceproto.GetDataKeyRequest{
 			DataKeyId: dekID,
 			Length:    uint32(dekSize),
 		},
@@ -53,11 +53,11 @@ func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int
 }
 
 type kmsClient interface {
-	GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error)
+	GetDataKey(context.Context, *keyserviceproto.GetDataKeyRequest, *grpc.ClientConn) (*keyserviceproto.GetDataKeyResponse, error)
 }
 
 type constellationKMSClient struct{}
 
-func (c *constellationKMSClient) GetDataKey(ctx context.Context, req *kmsproto.GetDataKeyRequest, conn *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
-	return kmsproto.NewAPIClient(conn).GetDataKey(ctx, req)
+func (c *constellationKMSClient) GetDataKey(ctx context.Context, req *keyserviceproto.GetDataKeyRequest, conn *grpc.ClientConn) (*keyserviceproto.GetDataKeyResponse, error) {
+	return keyserviceproto.NewAPIClient(conn).GetDataKey(ctx, req)
 }

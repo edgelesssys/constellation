@@ -11,13 +11,13 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Client interacts with Constellation's key management service.
+// Client interacts with Constellation's keyservice.
 type Client struct {
 	log      *logger.Logger
 	endpoint string
@@ -48,7 +48,7 @@ func (c Client) GetDataKey(ctx context.Context, keyID string, length int) ([]byt
 	log.Infof("Requesting data key")
 	res, err := c.grpc.GetDataKey(
 		ctx,
-		&kmsproto.GetDataKeyRequest{
+		&keyserviceproto.GetDataKeyRequest{
 			DataKeyId: keyID,
 			Length:    uint32(length),
 		},
@@ -63,11 +63,11 @@ func (c Client) GetDataKey(ctx context.Context, keyID string, length int) ([]byt
 }
 
 type grpcClient interface {
-	GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error)
+	GetDataKey(context.Context, *keyserviceproto.GetDataKeyRequest, *grpc.ClientConn) (*keyserviceproto.GetDataKeyResponse, error)
 }
 
 type client struct{}
 
-func (c client) GetDataKey(ctx context.Context, req *kmsproto.GetDataKeyRequest, conn *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
-	return kmsproto.NewAPIClient(conn).GetDataKey(ctx, req)
+func (c client) GetDataKey(ctx context.Context, req *keyserviceproto.GetDataKeyRequest, conn *grpc.ClientConn) (*keyserviceproto.GetDataKeyResponse, error) {
+	return keyserviceproto.NewAPIClient(conn).GetDataKey(ctx, req)
 }

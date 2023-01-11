@@ -4,7 +4,7 @@ description: A chart to deploy all microservices that are part of a valid conste
 type: application
 version: 2.4.0
 dependencies:
-  - name: kms
+  - name: keyservice
     version: 2.4.0
     tags:
       - Azure
