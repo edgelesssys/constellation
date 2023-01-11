@@ -1,7 +1,7 @@
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeVersion
 metadata:
-  name: constellation-os-azure
+  name: constellation-version-azure
   namespace: kube-system
 spec:
   image: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/galleries/<gallery-name>/images/<image-definition-name>/versions/<version>"
@@ -9,7 +9,7 @@ spec:
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeVersion
 metadata:
-  name: constellation-os-gcp
+  name: constellation-version-gcp
   namespace: kube-system
 spec:
   image: projects/<project>/global/images/<image-name>
