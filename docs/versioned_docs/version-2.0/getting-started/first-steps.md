@@ -197,12 +197,6 @@ The following steps guide you through the process of creating a cluster and depl
 
 5. Initialize the cluster
 
-    :::caution
-
-    Initialization on **Azure** might be slow and might take up to 60 minutes to initialize all Kubernetes nodes. We're already working with Microsoft to resolve the issue. The stability of already initialized clusters isn't affected.
-
-    :::
-
     ```bash
     constellation init
     ```
