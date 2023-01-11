@@ -44,7 +44,7 @@ func TestIAMCreateAzure(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs 			func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		regionFlag           string
@@ -59,7 +59,7 @@ func TestIAMCreateAzure(t *testing.T) {
 		wantErr              bool
 	}{
 		"iam create azure": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -68,7 +68,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -79,7 +79,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config custom path": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -90,7 +90,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create azure generate config custom path already exists": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -99,24 +99,24 @@ func TestIAMCreateAzure(t *testing.T) {
 			generateConfigFlag:   true,
 			yesFlag:              true,
 			wantErr:              true,
-			configFlag: "custom-config.yaml",
-			existingFiles: []string{"custom-config.yaml"},
+			configFlag:           "custom-config.yaml",
+			existingFiles:        []string{"custom-config.yaml"},
 		},
 		"iam create generate config path already exists": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			generateConfigFlag:   true,
-			configFlag: constants.ConfigFilename,
+			configFlag:           constants.ConfigFilename,
 			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
 			wantErr:              true,
 		},
 		"interactive": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -125,7 +125,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "yes\n",
 		},
 		"interactive generate config": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -136,7 +136,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			configFlag:           constants.ConfigFilename,
 		},
 		"interactive abort": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -146,7 +146,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			wantAbort:            true,
 		},
 		"interactive generate config abort": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
@@ -157,16 +157,16 @@ func TestIAMCreateAzure(t *testing.T) {
 			wantAbort:            true,
 		},
 		"unwritable fs": {
-			setupFs: readOnlyFs,
+			setupFs:              readOnlyFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
-			generateConfigFlag:  true,
-			configFlag: 		constants.ConfigFilename,
-			wantErr:             true,
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
+			wantErr:              true,
 		},
 	}
 

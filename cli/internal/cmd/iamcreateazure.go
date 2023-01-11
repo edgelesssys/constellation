@@ -109,16 +109,17 @@ func iamCreateAzure(cmd *cobra.Command, spinner spinnerInterf, creator iamCreato
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", azureFlags.configPath)
-	} else {
-		cmd.Printf("subscription:\t\t%s\n", iamFile.AzureOutput.SubscriptionID)
-		cmd.Printf("tenant:\t\t\t%s\n", iamFile.AzureOutput.TenantID)
-		cmd.Printf("location:\t\t\t%s\n", azureFlags.region)
-		cmd.Printf("resourceGroup:\t\t%s\n", azureFlags.resourceGroup)
-		cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
-		cmd.Printf("appClientID:\t\t\t%s\n", iamFile.AzureOutput.ApplicationID)
-		cmd.Printf("appClientSecretValue:\t%s\n\n", iamFile.AzureOutput.ApplicationClientSecretValue)
-		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+		return nil
 	}
+
+	cmd.Printf("subscription:\t\t%s\n", iamFile.AzureOutput.SubscriptionID)
+	cmd.Printf("tenant:\t\t\t%s\n", iamFile.AzureOutput.TenantID)
+	cmd.Printf("location:\t\t\t%s\n", azureFlags.region)
+	cmd.Printf("resourceGroup:\t\t%s\n", azureFlags.resourceGroup)
+	cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
+	cmd.Printf("appClientID:\t\t\t%s\n", iamFile.AzureOutput.ApplicationID)
+	cmd.Printf("appClientSecretValue:\t%s\n\n", iamFile.AzureOutput.ApplicationClientSecretValue)
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 
 	return nil
 }

@@ -42,21 +42,21 @@ func TestIAMCreateAWS(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
-		creator    *stubIAMCreator
-		provider   cloudprovider.Provider
-		zoneFlag   string
-		prefixFlag string
-		yesFlag    bool
+		setupFs            func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		creator            *stubIAMCreator
+		provider           cloudprovider.Provider
+		zoneFlag           string
+		prefixFlag         string
+		yesFlag            bool
 		generateConfigFlag bool
-		configFlag string
-		existingFiles []string
-		stdin      string
-		wantAbort  bool
-		wantErr    bool
+		configFlag         string
+		existingFiles      []string
+		stdin              string
+		wantAbort          bool
+		wantErr            bool
 	}{
 		"iam create aws": {
-			setupFs: defaultFs,
+			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -64,51 +64,51 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:    true,
 		},
 		"iam create aws generate config": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			yesFlag:    true,
-			configFlag: constants.ConfigFilename,
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			yesFlag:            true,
+			configFlag:         constants.ConfigFilename,
 			generateConfigFlag: true,
 		},
 		"iam create aws generate config custom path": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			yesFlag:    true,
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			yesFlag:            true,
 			generateConfigFlag: true,
-			configFlag: "custom-config.yaml",
+			configFlag:         "custom-config.yaml",
 		},
 		"iam create aws generate config path already exists": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			yesFlag:    true,
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			yesFlag:            true,
 			generateConfigFlag: true,
-			wantErr:   true,
-			configFlag: constants.ConfigFilename,
-			existingFiles: []string{constants.ConfigFilename},
+			wantErr:            true,
+			configFlag:         constants.ConfigFilename,
+			existingFiles:      []string{constants.ConfigFilename},
 		},
 		"iam create aws generate config custom path already exists": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			yesFlag:    true,
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			yesFlag:            true,
 			generateConfigFlag: true,
-			wantErr:   true,
-			configFlag: "custom-config.yaml",
-			existingFiles: []string{"custom-config.yaml"},
+			wantErr:            true,
+			configFlag:         "custom-config.yaml",
+			existingFiles:      []string{"custom-config.yaml"},
 		},
 		"interactive": {
-			setupFs: defaultFs,
+			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -116,17 +116,17 @@ func TestIAMCreateAWS(t *testing.T) {
 			stdin:      "yes\n",
 		},
 		"interactive generate config": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			stdin:      "yes\n",
-			configFlag: constants.ConfigFilename,
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			stdin:              "yes\n",
+			configFlag:         constants.ConfigFilename,
 			generateConfigFlag: true,
 		},
 		"interactive abort": {
-			setupFs: defaultFs,
+			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-east-2a",
@@ -135,18 +135,18 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantAbort:  true,
 		},
 		"interactive generate config abort": {
-			setupFs: defaultFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			stdin:      "no\n",
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			stdin:              "no\n",
 			generateConfigFlag: true,
-			configFlag: constants.ConfigFilename,
-			wantAbort:  true,
+			configFlag:         constants.ConfigFilename,
+			wantAbort:          true,
 		},
 		"invalid zone": {
-			setupFs: defaultFs,
+			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
 			zoneFlag:   "us-west-5b",
@@ -155,15 +155,15 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantErr:    true,
 		},
 		"unwritable fs": {
-			setupFs: readOnlyFs,
-			creator:    &stubIAMCreator{id: validIAMIDFile},
-			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-east-2a",
-			prefixFlag: "test",
-			yesFlag:    true,
+			setupFs:            readOnlyFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			yesFlag:            true,
 			generateConfigFlag: true,
-			wantErr: true,
-			configFlag: constants.ConfigFilename,
+			wantErr:            true,
+			configFlag:         constants.ConfigFilename,
 		},
 	}
 

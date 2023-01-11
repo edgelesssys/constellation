@@ -46,22 +46,22 @@ func TestIAMCreateGCP(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs 			func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		zoneFlag             string
 		serviceAccountIDFlag string
 		projectIDFlag        string
 		yesFlag              bool
-		generateConfigFlag bool
-		configFlag string
-		existingFiles []string
+		generateConfigFlag   bool
+		configFlag           string
+		existingFiles        []string
 		stdin                string
 		wantAbort            bool
 		wantErr              bool
 	}{
 		"iam create gcp": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
@@ -70,55 +70,55 @@ func TestIAMCreateGCP(t *testing.T) {
 			yesFlag:              true,
 		},
 		"iam create gcp generate config": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:  true,
-			configFlag: constants.ConfigFilename,
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
 			yesFlag:              true,
 		},
 		"iam create gcp generate config custom path": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:  true,
-			configFlag: "custom-config.yaml",
+			generateConfigFlag:   true,
+			configFlag:           "custom-config.yaml",
 			yesFlag:              true,
 		},
 		"iam create gcp generate config path already exists": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:  true,
-			configFlag: constants.ConfigFilename,
-			existingFiles: []string{constants.ConfigFilename},
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
+			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
-			wantErr: 			true,
+			wantErr:              true,
 		},
 		"iam create gcp generate config custom path already exists": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:  true,
-			configFlag: "custom-config.yaml",
-			existingFiles: []string{"custom-config.yaml"},
+			generateConfigFlag:   true,
+			configFlag:           "custom-config.yaml",
+			existingFiles:        []string{"custom-config.yaml"},
 			yesFlag:              true,
-			wantErr: 			true,
+			wantErr:              true,
 		},
 		"iam create gcp invalid flags": {
-			setupFs: defaultFs,
+			setupFs:  defaultFs,
 			creator:  &stubIAMCreator{id: validIAMIDFile},
 			provider: cloudprovider.GCP,
 			zoneFlag: "-a",
@@ -126,7 +126,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			wantErr:  true,
 		},
 		"iam create gcp invalid b64": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: invalidIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
@@ -136,7 +136,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			wantErr:              true,
 		},
 		"interactive": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
@@ -145,18 +145,18 @@ func TestIAMCreateGCP(t *testing.T) {
 			stdin:                "yes\n",
 		},
 		"interactive generate config": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			stdin:                "yes\n",
-			configFlag: constants.ConfigFilename,
-			generateConfigFlag: true,
+			configFlag:           constants.ConfigFilename,
+			generateConfigFlag:   true,
 		},
 		"interactive abort": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
@@ -166,7 +166,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			wantAbort:            true,
 		},
 		"interactive abort generate config": {
-			setupFs: defaultFs,
+			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
@@ -174,19 +174,19 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			stdin:                "no\n",
 			wantAbort:            true,
-			configFlag: constants.ConfigFilename,
-			generateConfigFlag: true,
+			configFlag:           constants.ConfigFilename,
+			generateConfigFlag:   true,
 		},
 		"unwritable fs": {
-			setupFs: readOnlyFs,
+			setupFs:              readOnlyFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			yesFlag:              true,
-			generateConfigFlag: true,
-			configFlag: constants.ConfigFilename,
+			generateConfigFlag:   true,
+			configFlag:           constants.ConfigFilename,
 			wantErr:              true,
 		},
 	}

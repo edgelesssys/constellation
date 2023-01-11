@@ -128,10 +128,12 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", gcpFlags.configPath)
-	} else {
-		cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
-		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+		return nil
 	}
+
+	cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+
 	return nil
 }
 
@@ -199,8 +201,8 @@ func parseGCPFlags(cmd *cobra.Command) (gcpFlags, error) {
 		zone:             zone,
 		region:           region,
 		projectID:        projectID,
-		generateConfig:  generateConfig,
-		configPath: 	configPath,
+		generateConfig:   generateConfig,
+		configPath:       configPath,
 		yesFlag:          yesFlag,
 	}, nil
 }
@@ -211,7 +213,7 @@ type gcpFlags struct {
 	zone             string
 	region           string
 	projectID        string
-	generateConfig  bool
-	configPath      string
+	generateConfig   bool
+	configPath       string
 	yesFlag          bool
 }

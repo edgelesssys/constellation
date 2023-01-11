@@ -104,13 +104,14 @@ func iamCreateAWS(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator,
 			return err
 		}
 		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", awsFlags.configPath)
-	} else {
-		cmd.Printf("region:\t\t\t%s\n", awsFlags.region)
-		cmd.Printf("zone:\t\t\t%s\n", awsFlags.zone)
-		cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
-		cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
-		cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+		return nil
 	}
+
+	cmd.Printf("region:\t\t\t%s\n", awsFlags.region)
+	cmd.Printf("zone:\t\t\t%s\n", awsFlags.zone)
+	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
+	cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 
 	return nil
 }
@@ -149,21 +150,21 @@ func parseAWSFlags(cmd *cobra.Command) (awsFlags, error) {
 		return awsFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
 	return awsFlags{
-		zone:    zone,
-		prefix:  prefix,
-		region:  region,
+		zone:           zone,
+		prefix:         prefix,
+		region:         region,
 		generateConfig: generateConfig,
-		configPath: configPath,
-		yesFlag: yesFlag,
+		configPath:     configPath,
+		yesFlag:        yesFlag,
 	}, nil
 }
 
 // awsFlags contains the parsed flags of the iam create aws command.
 type awsFlags struct {
-	prefix  string
-	region  string
-	zone    string
+	prefix         string
+	region         string
+	zone           string
 	generateConfig bool
-	configPath string
-	yesFlag bool
+	configPath     string
+	yesFlag        bool
 }
