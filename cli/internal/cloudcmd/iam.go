@@ -24,7 +24,8 @@ func DestroyIAMUser(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.DestroyCluster(ctx)
+	c.Destroy(ctx)
+	return c.CleanUpWorkspace()
 }
 
 // IAMCreator creates the IAM configuration on the cloud provider.
