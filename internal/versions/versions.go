@@ -68,7 +68,7 @@ const (
 	// ConstellationOperatorImage is the image for the constellation node operator.
 	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v2.4.0-pre.0.20230109111654-2700d5182b7d@sha256:c84c03b1adf52f82b2f969d7bee92c001a2c9fe8fa127f8d4dd34ee86a83ea1f" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
-	NodeMaintenanceOperatorImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator:v0.13.1-alpha1@sha256:e011d428dba3ef66a2a4656a2bf58bcfe89836c62b0a75676f5c12350502a3cf" // renovate:container
+	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.14.0@sha256:2dffb6ffdbbe997d317799fc709baf030d678bde0be0264931ff6b3e94fd89ab" // renovate:container
 
 	// QEMUMetadataImage image of QEMU metadata api service.
 	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.4.0-pre.0.20230109111654-2700d5182b7d@sha256:ab0d4f76d3c5627bf201b8b56286929ff2cef41b1d844917a556cfa799195d56" // renovate:container
