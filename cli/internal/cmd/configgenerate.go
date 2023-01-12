@@ -80,12 +80,11 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return err
 	}
 
-	if flags.file != "-" {
-		cmd.Println("Config file written to", flags.file)
-		cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
-		cmd.Println("For more information refer to the documentation:")
-		cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
-	}
+	cmd.Println("Config file written to", flags.file)
+	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
+	cmd.Println("For more information refer to the documentation:")
+	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
+
 	return nil
 }
 
