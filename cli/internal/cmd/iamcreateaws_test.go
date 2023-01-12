@@ -198,7 +198,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
 
-			err := iamCreateAWS(cmd, nopSpinner{}, tc.creator, fileHandler)
+			err := iamCreateAWS(cmd, &nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

@@ -202,10 +202,9 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
 
-			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator, fileHandler)
+			err := iamCreateAzure(cmd, &nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

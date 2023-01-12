@@ -60,9 +60,9 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	if err != nil {
 		return err
 	}
-  
-  cg.log.Debugf("Parsed flags as %v", flags)
-  cg.log.Debugf("Using cloud provider %s", provider.String())
+
+	cg.log.Debugf("Parsed flags as %v", flags)
+	cg.log.Debugf("Using cloud provider %s", provider.String())
 	conf := createConfig(provider)
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
@@ -90,7 +90,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfig(provider cloudprovider.Provider) (*config.Config) {
+func createConfig(provider cloudprovider.Provider) *config.Config {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
