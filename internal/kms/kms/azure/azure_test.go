@@ -14,8 +14,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )

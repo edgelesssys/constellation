@@ -22,9 +22,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/config"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	kmsInterface "github.com/edgelesssys/constellation/v2/keyservice/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/config"
+	kmsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )

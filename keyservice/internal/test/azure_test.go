@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/config"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/azure"
+	"github.com/edgelesssys/constellation/v2/internal/kms/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

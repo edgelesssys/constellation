@@ -14,12 +14,12 @@ import (
 	"strconv"
 
 	"cloud.google.com/go/kms/apiv1/kmspb"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/aws"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/azure"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/cluster"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/cluster"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 )
 
 // Well known endpoints for KMS services.
@@ -28,7 +28,7 @@ const (
 	AzureKMSURI   = "kms://azure-kms?name=%s&type=%s"
 	AzureHSMURI   = "kms://azure-hsm?name=%s"
 	GCPKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&protectionLvl=%s"
-	ClusterKMSURI = "kms://cluster-kms"
+	ClusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	AWSS3URI      = "storage://aws?bucket=%s"
 	AzureBlobURI  = "storage://azure?container=%s&connectionString=%s"
 	GCPStorageURI = "storage://gcp?projects=%s&bucket=%s"

@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/kms/apiv1/kmspb"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/config"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/kms/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

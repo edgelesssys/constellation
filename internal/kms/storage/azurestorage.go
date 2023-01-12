@@ -16,7 +16,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/config"
 )
 
 type azureBlobAPI interface {
