@@ -475,7 +475,8 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ### Options
 
 ```
-  -h, --help   help for create
+      --generate-config   Automatically generate a config file and fill in the required fields
+  -h, --help              help for create
 ```
 
 ### Options inherited from parent commands
@@ -502,15 +503,16 @@ constellation iam create aws [flags]
 ```
   -h, --help            help for aws
       --prefix string   Name prefix for all resources.
-      --yes             Create the IAM configuration without further confirmation
+      --yes             Create the IAM configuration without further confirmation.
       --zone string     AWS availability zone the resources will be created in (e.g. us-east-2a). Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   Automatically generate a config file and fill in the required fields
 ```
 
 ## constellation iam create azure
@@ -530,16 +532,17 @@ constellation iam create azure [flags]
 ```
   -h, --help                      help for azure
       --region string             Region the resources will be created in. (e.g. westus)
-      --resourceGroup string      Name of the resource group your IAM resources will be created in.
+      --resourceGroup string      Name prefix of the two resource groups your cluster / IAM resources will be created in.
       --servicePrincipal string   Name of the service principal that will be created.
-      --yes                       Create the IAM configuration without further confirmation
+      --yes                       Create the IAM configuration without further confirmation.
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   Automatically generate a config file and fill in the required fields
 ```
 
 ## constellation iam create gcp
@@ -560,14 +563,15 @@ constellation iam create gcp [flags]
   -h, --help                      help for gcp
       --projectID string          ID of the GCP project the configuration will be created in. Find it on the welcome screen of your project: https://console.cloud.google.com/welcome
       --serviceAccountID string   ID for the service account that will be created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
-      --yes                       Create the IAM configuration without further confirmation
+      --yes                       Create the IAM configuration without further confirmation.
       --zone string               GCP zone the cluster will be deployed in. Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   Automatically generate a config file and fill in the required fields
 ```
 
