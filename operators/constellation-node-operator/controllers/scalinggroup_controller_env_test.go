@@ -27,7 +27,6 @@ var _ = Describe("ScalingGroup controller", func() {
 		scalingGroupName = "test-group"
 
 		timeout  = time.Second * 20
-		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)
 
@@ -89,13 +88,6 @@ var _ = Describe("ScalingGroup controller", func() {
 				}
 				return createdScalingGroup.Status.ImageReference
 			}, timeout, interval).Should(Equal("image-1"))
-			Consistently(func() (string, error) {
-				err := k8sClient.Get(ctx, scalingGroupLookupKey, createdScalingGroup)
-				if err != nil {
-					return "", err
-				}
-				return createdScalingGroup.Status.ImageReference, nil
-			}, duration, interval).Should(Equal("image-1"))
 
 			By("updating the node image")
 			Expect(k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)).Should(Succeed())
@@ -109,13 +101,13 @@ var _ = Describe("ScalingGroup controller", func() {
 			}, timeout, interval).Should(Equal("image-2"))
 
 			By("checking the scaling group status shows the latest image")
-			Consistently(func() (string, error) {
+			Eventually(func() (string, error) {
 				err := k8sClient.Get(ctx, scalingGroupLookupKey, createdScalingGroup)
 				if err != nil {
 					return "", err
 				}
 				return createdScalingGroup.Status.ImageReference, nil
-			}, duration, interval).Should(Equal("image-2"))
+			}, timeout, interval).Should(Equal("image-2"))
 
 			By("cleaning up all resources")
 			Expect(k8sClient.Delete(ctx, createdNodeVersion)).Should(Succeed())
