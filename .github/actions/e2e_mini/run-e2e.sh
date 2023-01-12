@@ -37,9 +37,6 @@ chmod u+x constellation
 
 sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
-mkdir -p "$HOME"/.docker
-touch "$HOME"/.docker/config.json
-
 ./constellation mini up
 
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
