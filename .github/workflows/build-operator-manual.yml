@@ -6,29 +6,6 @@ on:
       imageTag:
         description: "Container image tag."
         required: false
-      ref:
-        type: string
-        description: "Git ref to checkout"
-        required: false
-      release:
-        type: boolean
-        description: "Is this a release build?"
-        required: false
-        default: false
-  workflow_call:
-    inputs:
-      imageTag:
-        type: string
-        description: "Container image tag"
-        required: true
-      ref:
-        type: string
-        description: "Git ref to checkout"
-        required: false
-      release:
-        type: boolean
-        description: "Is this a release build?"
-        required: true
 
 jobs:
   build-operator-manual:
@@ -41,7 +18,7 @@ jobs:
         id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ inputs.ref || github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -55,6 +32,6 @@ jobs:
           sourceDir: operators/constellation-node-operator
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           pushTag: ${{ inputs.imageTag }}
-          cosignPublicKey: ${{ inputs.release && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ inputs.release && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ inputs.release && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}

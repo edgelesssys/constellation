@@ -2,17 +2,6 @@ name: Build CLI and prepare release
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        type: string
-        description: "Git ref to checkout"
-        required: false
-  workflow_call:
-    inputs:
-      ref:
-        type: string
-        description: "Git ref to checkout"
-        required: true
 
 jobs:
   build-cli:
@@ -27,7 +16,7 @@ jobs:
         id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ inputs.ref || github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
@@ -96,7 +85,7 @@ jobs:
         id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ inputs.ref || github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
       - name: Download syft & grype
         run: |
           SYFT_VERSION=0.62.1
@@ -247,7 +236,6 @@ jobs:
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         with:
           draft: true
-          generate_release_notes: true
           files: |
             constellation-*
             cosign.pub

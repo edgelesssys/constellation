@@ -23,9 +23,7 @@ write_output() {
   cat > "${out}" << EOF
 {
   "measurements": {
-    "4": {
-      "expected": "${expected_pcr_4}"
-    }
+    "4": "${expected_pcr_4}"
   },
   "efistages": [
     {

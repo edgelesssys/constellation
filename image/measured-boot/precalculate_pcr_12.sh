@@ -35,9 +35,7 @@ write_output() {
   cat > "${out}" << EOF
 {
   "measurements": {
-    "12": {
-      "expected": "${expected_pcr_12}"
-    }
+    "12": "${expected_pcr_12}"
   },
   "cmdline": "${cmdline}",
   "cmdline-sha256": "${cmdline_hash}"
