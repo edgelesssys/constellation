@@ -1179,8 +1179,8 @@ github.com/sergi/go-diff v1.2.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNX
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
-github.com/siderolabs/talos/pkg/machinery v1.3.1 h1:zZ7deoEvNIvRBq9hOsfBWtfZCCmne0JkumW/GA1vyw8=
-github.com/siderolabs/talos/pkg/machinery v1.3.1/go.mod h1:PXpbFE4TwMm0c2v4wRRU6EZlEEknUde1pwcsRAqf4bs=
+github.com/siderolabs/talos/pkg/machinery v1.3.2 h1:UqaPWMzxu85SjM09c2jn6LPbOABKCevYvau4I/fxI0Y=
+github.com/siderolabs/talos/pkg/machinery v1.3.2/go.mod h1:PXpbFE4TwMm0c2v4wRRU6EZlEEknUde1pwcsRAqf4bs=
 github.com/sigstore/rekor v1.0.1 h1:rcESXSNkAPRWFYZel9rarspdvneET60F2ngNkadi89c=
 github.com/sigstore/rekor v1.0.1/go.mod h1:ecTKdZWGWqE1pl3U1m1JebQJLU/hSjD9vYHOmHQ7w4g=
 github.com/sigstore/sigstore v1.5.0 h1:NqstQ6SwwhQsp6Ll0wgk/d9g5MlfmEppo14aquUjJ/8=
