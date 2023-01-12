@@ -4,6 +4,14 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package terraform handles creation/destruction of a Constellation cluster using Terraform.
+
+Since Terraform does not provide a stable Go API, we use the `terraform-exec` package to interact with Terraform.
+
+The Terraform templates are located in the "terraform" subdirectory. The templates are embedded into the CLI binary using `go:embed`.
+On use the relevant template is extracted to the working directory and the user customized variables are written to a `terraform.tfvars` file.
+*/
 package terraform
 
 import (

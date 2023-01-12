@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Implements interaction with the GCP API.
+
+Instance metadata is retrieved from the [GCP metadata API].
+
+Retrieving metadata of other instances is done by using the GCP compute API, and requires GCP credentials.
+
+[GCP metadata API]: https://cloud.google.com/compute/docs/storing-retrieving-metadata
+*/
 package gcp
 
 import (

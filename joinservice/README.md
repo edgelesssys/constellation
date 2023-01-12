@@ -7,7 +7,6 @@ New nodes (at cluster start, or later through autoscaling) send an IssueJoinTick
 The join service verifies the new nodes certificate and attestation statement.
 If attestation is successful, the new node is supplied with a disk encryption key for its state disk, and a Kubernetes bootstrap token, so it may join the cluster.
 
-
 ## Packages
 
 ### [joinproto](./joinproto/)

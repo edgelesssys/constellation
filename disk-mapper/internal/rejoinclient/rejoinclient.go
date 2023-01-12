@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package rejoinclient handles the automatic rejoining of a restarting node.
+
+It does so by continuously sending rejoin requests to the JoinService of available control-plane endpoints.
+*/
 package rejoinclient
 
 import (

@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kubernetes interacts with the Kubernetes API to update an fetch objects related to joining nodes.
 package kubernetes
 
 import (

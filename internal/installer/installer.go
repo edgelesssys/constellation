@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package installer provides functionality to install binary components of supported kubernetes versions.
 package installer
 
 import (
