@@ -11,5 +11,4 @@ jobs:
     with:
       command: remove
       rm_all: true
-      dryrun: true
       ref: ${{ github.event.ref }}
