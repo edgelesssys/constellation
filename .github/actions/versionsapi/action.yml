@@ -1,6 +1,14 @@
 name: versionsapi
 description: "A GitHub Action to interact with the versions API"
 
+#
+# !!! Attention !!!
+#
+# Calls with command 'add' and 'remove' need synchronization.
+# Don't use this action directly for these commands.
+# Use the 'versionsapi' workflow instead.
+#
+
 inputs:
   command:
     description: Command to run
