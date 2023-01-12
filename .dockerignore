@@ -24,9 +24,6 @@ image
 Dockerfile
 Dockerfile.*
 
-# GitHub actions
-.github
-
 # VS Code configuration folder
 .vscode
 
