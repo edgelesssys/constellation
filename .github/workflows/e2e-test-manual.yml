@@ -184,7 +184,7 @@ jobs:
         if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true'
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Checkout head
         if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true' && inputs.git-ref == 'head'
@@ -241,7 +241,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Set up gcloud CLI (macOS)
         if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
