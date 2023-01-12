@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package retry provides functions to check if a gRPC error is retryable.
 package retry
 
 import (

@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Implements interaction with the Azure API.
+
+Instance metadata is retrieved from the [Azure IMDS API].
+
+Retrieving metadata of other instances is done by using the Azure API, and requires Azure credentials.
+
+[Azure IMDS API]: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/instance-metadata-service
+*/
 package azure
 
 import (

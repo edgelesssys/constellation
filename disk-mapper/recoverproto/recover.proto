@@ -5,6 +5,7 @@ package recoverproto;
 option go_package = "github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto";
 
 service API {
+    // Recover initiates the recovery of a node.
     rpc Recover(stream RecoverMessage) returns (stream RecoverResponse) {}
 }
 

@@ -26,15 +26,15 @@ This can also be used to add context to a single log message:
 
 # Log Levels
 
-Use Debugf() to log low level and detailed information that is useful for debugging.
+Use [Logger.Debugf] to log low level and detailed information that is useful for debugging.
 
-Use Infof() to log general information. This method is correct for most logging purposes.
+Use [Logger.Infof] to log general information. This method is correct for most logging purposes.
 
-Use Warnf() to log information that may indicate unwanted behavior, but is not an error.
+Use [Logger.Warnf] to log information that may indicate unwanted behavior, but is not an error.
 
-Use Errorf() to log information about any errors that occurred.
+Use [Logger.Errorf] to log information about any errors that occurred.
 
-Use Fatalf() to log information about any errors that occurred and then exit the program.
+Use [Logger.Fatalf] to log information about any errors that occurred and then exit the program.
 */
 package logger
 

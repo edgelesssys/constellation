@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Implements interaction with the AWS API.
+
+Instance metadata is retrieved from the [AWS IMDS API].
+
+Retrieving metadata of other instances is done by using the AWS compute API, and requires AWS credentials.
+
+[AWS IMDS API]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
+*/
 package aws
 
 import (

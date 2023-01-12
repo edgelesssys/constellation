@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kubectl provides a kubectl-like interface for Kubernetes.
+// Functions defined here should not make use of [os/exec].
 package kubectl
 
 import (

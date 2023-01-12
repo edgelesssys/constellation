@@ -4,6 +4,9 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+This package provides an interface to fake a CSP API for QEMU instances.
+*/
 package qemu
 
 import (

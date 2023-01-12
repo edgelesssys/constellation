@@ -4,6 +4,26 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+# Cloud
+
+This package provides functions to interact with cloud providers.
+This is mainly used to fetch information about the current instance, or other instances of the Constellation cluster.
+
+Implementation of the cloud provider specific code is done in subpackages named after the CSP.
+Code that is commonly used by other packages that do not require actual interaction with the CSP API,
+such as CSP URI string parsing or data types, should go in a <CSP>shared package instead.
+
+A cloud package should implement the following interface:
+
+	type Cloud interface {
+		List(ctx context.Context) ([]metadata.InstanceMetadata, error)
+		Self(ctx context.Context) (metadata.InstanceMetadata, error)
+		GetLoadBalancerEndpoint(ctx context.Context) (string, error)
+		InitSecretHash(ctx context.Context) ([]byte, error)
+		UID(ctx context.Context) (string, error)
+	}
+*/
 package cloud
 
 const (

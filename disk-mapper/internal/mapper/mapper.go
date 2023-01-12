@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package mapper uses libcryptsetup to format and map crypt devices.
+
+This is used by the disk-mapper to set up a node's state disk.
+
+All interaction with libcryptsetup should be done here.
+
+Warning: This package is not thread safe, since libcryptsetup is not thread safe.
+*/
 package mapper
 
 import (
@@ -24,7 +33,7 @@ import (
 //	https://stackoverflow.com/questions/30553386/cryptsetup-backend-safe-with-multithreading
 var packageLock = sync.Mutex{}
 
-// Mapper handles actions for formating and mapping crypt devices.
+// Mapper handles actions for formatting and mapping crypt devices.
 type Mapper struct {
 	device cryptDevice
 	log    *logger.Logger
