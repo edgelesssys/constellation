@@ -2,7 +2,9 @@
 Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
+*/
 
+/*
 Package oid defines OIDs for different CSPs. Currently this is used in attested TLS to distinguish the attestation documents.
 OIDs beginning with 1.3.9900 are reserved and can be used without registration.
 

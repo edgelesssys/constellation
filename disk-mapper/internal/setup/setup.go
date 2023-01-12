@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package setup handles setting up rejoinclient and recoveryserver for the disk-mapper.
+
+On success of either of these services, the state disk is decrypted and the node is tainted as initialized by updating it's PCRs.
+*/
 package setup
 
 import (

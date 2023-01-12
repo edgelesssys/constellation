@@ -141,6 +141,26 @@ the `<REPOSITORY>/.vscode/settings.json` repo, so the settings will only affect 
 
 Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to have uniform formatting in our `.yaml` files.
 
+## Code documentation
+
+Documentation of the latest release are available on [pkg.go.dev](https://pkg.go.dev/github.com/edgelesssys/constellation/v2).
+
+Alternatively use `pkgsite` to host your own documentation server and view documentation for the local version of your code.
+
+<details>
+<summary>View installation instructions</summary>
+
+```shell
+CONSTELLATION_DIR=</path/to/your/local/report>
+git clone https://github.com/golang/pkgsite && cd pkgsite
+go install ./cmd/pkgsite
+cd "${CONSTELLATION_DIR}
+pkgsite
+```
+
+You can now view the documentation on http://localhost:8080/github.com/edgelesssys/constellation/v2
+</details>
+
 ## PR conventions
 
 Our changelog is generated from PR titles. Which PR is listed in which category is determined by labels, see the [release.yml](/.github/release.yml).

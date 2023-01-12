@@ -5,14 +5,18 @@ package verify;
 option go_package = "github.com/edgelesssys/constellation/v2/verify/verifyproto";
 
 service API {
+    // GetAttestation returns an attestation for the given user data and nonce.
     rpc GetAttestation(GetAttestationRequest) returns (GetAttestationResponse);
 }
 
 message GetAttestationRequest {
+    // user_data is some data that the user wants to be attested.
     bytes user_data = 1;
+    // nonce is a random nonce that the user wants to be attested.
     bytes nonce = 2;
 }
 
 message GetAttestationResponse {
+    // attestation is the attestation for the given user data and nonce.
     bytes attestation = 1;
 }

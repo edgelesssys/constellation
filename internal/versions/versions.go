@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package versions defines the supported versions of Constellation components.
+
+Binaries and container image versions are pinned by their hashes, the generate tool can be found in the hash-generator subpackage.
+*/
 package versions
 
 import (

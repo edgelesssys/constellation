@@ -1,1 +1,0 @@
-# Amazon Web Services attestation
