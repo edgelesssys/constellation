@@ -162,8 +162,14 @@ var _ = Describe("NodeVersion controller", func() {
 			By("updating the node version")
 			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateReady)
 			fakes.nodeReplacer.setCreatedNode(secondNodeName, secondNodeName, nil)
-			nodeVersion.Spec = newNodeVersionSpec
-			Expect(k8sClient.Update(ctx, nodeVersion)).Should(Succeed())
+			// Eventually the node version with the new NodeVersion spec.
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
+					return err
+				}
+				nodeVersion.Spec = newNodeVersionSpec
+				return k8sClient.Update(ctx, nodeVersion)
+			}, timeout, interval).Should(Succeed())
 
 			By("checking that there is an outdated node in the status")
 			Eventually(func() int {
@@ -185,11 +191,11 @@ var _ = Describe("NodeVersion controller", func() {
 			pendingNode := &updatev1alpha1.PendingNode{}
 			Eventually(func() error {
 				return k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
-			}).Should(Succeed())
+			}, timeout, interval).Should(Succeed())
 			Eventually(func() updatev1alpha1.CSPNodeState {
 				_ = k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
 				return pendingNode.Status.CSPNodeState
-			}).Should(Equal(updatev1alpha1.NodeStateReady))
+			}, timeout, interval).Should(Equal(updatev1alpha1.NodeStateReady))
 			Eventually(func() int {
 				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
 					return 0
