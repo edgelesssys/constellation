@@ -74,5 +74,5 @@ jobs:
         run: |
           git config --global user.name "renovate[bot]"
           git config --global user.email "29139614+renovate[bot]@users.noreply.github.com"
-          git commit -am "[bot] Tidy all modules"
+          git commit -am "deps: tidy all modules"
           git push

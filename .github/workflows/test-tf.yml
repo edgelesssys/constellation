@@ -58,5 +58,5 @@ jobs:
         run: |
           git config --global user.name "renovate[bot]"
           git config --global user.email "29139614+renovate[bot]@users.noreply.github.com"
-          git commit -am "[bot] Update HCL lock files"
+          git commit -am "deps: update HCL lock files"
           git push
