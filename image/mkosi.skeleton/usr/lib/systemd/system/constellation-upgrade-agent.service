@@ -1,0 +1,12 @@
+[Unit]
+Description=Constellation Upgrade Agent
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+Restart=on-failure
+Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/upgrade-agent
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,203 @@
+name: Versionsapi cli
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Command to run
+        required: true
+        type: choice
+        options:
+          - add
+          - latest
+          - list
+          - remove
+      ref:
+        description: --ref flag
+        required: false
+        type: string
+      stream:
+        description: --stream flag
+        required: false
+        type: string
+      version:
+        description: --version flag
+        required: false
+        type: string
+      add_latest:
+        description: --latest flag
+        required: false
+        default: false
+        type: boolean
+      add_release:
+        description: --release flag
+        required: false
+        default: false
+        type: boolean
+      rm_all:
+        description: --all flag
+        required: false
+        default: false
+        type: boolean
+      dryrun:
+        description: --dryrun flag
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      command:
+        description: Command to run
+        required: true
+        type: string
+      ref:
+        description: --ref flag
+        required: false
+        type: string
+      stream:
+        description: --stream flag
+        required: false
+        type: string
+      version:
+        description: --version flag
+        required: false
+        type: string
+      add_latest:
+        description: --latest flag
+        required: false
+        type: boolean
+      add_release:
+        description: --release flag
+        required: false
+        type: boolean
+      rm_all:
+        description: --all flag
+        required: false
+        type: boolean
+      dryrun:
+        description: --dryrun flag
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      output:
+        description: Output of the command
+        value: ${{ jobs.versionsapi.outputs.output }}
+
+concurrency:
+  group: versionsapi
+  cancel-in-progress: false
+
+jobs:
+  versionsapi:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      output: ${{ steps.run.outputs.output }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Check required rights
+        id: check-rights
+        shell: bash
+        run: |
+          case "${{ inputs.command }}" in
+            add)
+              echo "Write access to S3 bucket required."
+              echo "write=true" >> "$GITHUB_OUTPUT"
+              echo "No authentication at cloud provider required."
+              echo "auth=false" >> "$GITHUB_OUTPUT"
+            ;;
+            remove)
+              echo "Write access to S3 bucket required."
+              echo "write=true" >> "$GITHUB_OUTPUT"
+              echo "Authentication at cloud provider required."
+              echo "auth=true" >> "$GITHUB_OUTPUT"
+              ;;
+            latest | list)
+              echo "Only read access required."
+              echo "write=false" >> "$GITHUB_OUTPUT"
+              echo "auth=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown command '${{ inputs.command }}'."
+              exit 1
+              ;;
+          esac
+
+      - name: Login to AWS without write access
+        if: steps.check-rights.outputs.write == 'false'
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: Login to AWS with write access
+        if: steps.check-rights.outputs.write == 'true' && steps.check-rights.outputs.auth == 'false'
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIWrite
+          aws-region: eu-central-1
+
+      - name: Login to AWS with write and image remove access
+        if: steps.check-rights.outputs.write == 'true' && steps.check-rights.outputs.auth == 'true'
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRemove
+          aws-region: eu-central-1
+
+      - name: Login to Azure
+        if: steps.check-rights.outputs.auth == 'true'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to GCP
+        if: steps.check-rights.outputs.auth == 'true'
+        uses: ./.github/actions/login_gcp
+        with:
+          gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.19.4"
+          cache: true
+
+      - name: Build versionsapi CLI
+        working-directory: internal/versionsapi/cli
+        run: go build -o versionsapi
+
+      - name: Execute versionsapi CLI
+        id: run
+        working-directory: internal/versionsapi/cli
+        run: |
+          set -x
+
+          ref=$([[ -n "${{ inputs.ref }}" ]] && echo "--ref ${{ inputs.ref }}" || echo "")
+          stream=$([[ -n "${{ inputs.stream }}" ]] && echo "--stream ${{ inputs.stream }}" || echo "")
+          version=$([[ -n "${{ inputs.version }}" ]] && echo "--version ${{ inputs.version }}" || echo "")
+          add_latest=$([[ "${{ inputs.add_latest }}" == "true" ]] && echo "--latest" || echo "")
+          add_release=$([[ "${{ inputs.add_release }}" == "true" ]] && echo "--release" || echo "")
+          rm_all=$([[ "${{ inputs.rm_all }}" == "true" ]] && echo "--all" || echo "")
+          dryrun=$([[ "${{ inputs.dryrun }}" == "true" ]] && echo "--dryrun" || echo "")
+
+          # shellcheck disable=SC2086
+          out=$(
+            ./versionsapi "${{ inputs.command }}" \
+              ${ref} \
+              ${stream} \
+              ${version} \
+              ${add_latest} \
+              ${add_release} \
+              ${rm_all} \
+              ${dryrun} \
+              --verbose
+          )
+          echo "$out"
+          echo "output=$out" >> "$GITHUB_OUTPUT"

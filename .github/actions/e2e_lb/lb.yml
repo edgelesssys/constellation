@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+  namespace: lb-test
+spec:
+  selector:
+    app: whoami
+  ports:
+    - port: 8080
+      targetPort: 80
+  type: LoadBalancer
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  namespace: lb-test
+  labels:
+    app: whoami
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+      - name: whoami
+        image: traefik/whoami:v1.8.7
+        ports:
+        - containerPort: 80
+        args:
+        - "--verbose"

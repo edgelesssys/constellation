@@ -22,7 +22,7 @@ With `cdbg` and `yq` installed in your path:
 
 1. Run `constellation config generate` to create a new default configuration
 
-2. Locate the latest debugd images by running `hack/find-image/find-image.sh --ref main --stream debug`
+2. Locate the latest debugd images by running `(cd internal/versionsapi/cli && go build -o versionsapi . && ./versionsapi latest --ref main --stream debug)`
 
 3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
 
@@ -57,6 +57,8 @@ With `cdbg` and `yq` installed in your path:
 You can enable the logcollection of debugd to send logs to Opensearch.
 
 On Azure, ensure your user assigned identity has the `Key Vault Secrets User` role assigned on the key vault `opensearch-creds`.
+
+On AWS, attach the `SecretManagerE2E` policy to your control-plane and worker node role.
 
 When deploying with cdbg, enable by setting the `logcollect=true` and your name `logcollect.admin=yourname`.
 

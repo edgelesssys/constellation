@@ -14,12 +14,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 )
 
 type clusterUtil interface {
-	InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error
-	InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error
+	InstallComponents(ctx context.Context, kubernetesComponents components.Components) error
 	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error
 	FixCilium(log *logger.Logger)

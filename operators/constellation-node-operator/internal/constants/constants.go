@@ -9,8 +9,8 @@ package constants
 const (
 	// AutoscalingStrategyResourceName resource name used for AutoscalingStrategy.
 	AutoscalingStrategyResourceName = "autoscalingstrategy"
-	// NodeImageResourceName resource name used for NodeImage.
-	NodeImageResourceName = "constellation-os"
+	// NodeVersionResourceName resource name used for NodeVersion.
+	NodeVersionResourceName = "constellation-version"
 	// ControlPlaneScalingGroupResourceName resource name used for ControlPlaneScalingGroup.
 	ControlPlaneScalingGroupResourceName = "scalinggroup-controlplane"
 	// WorkerScalingGroupResourceName resource name used for WorkerScaling.

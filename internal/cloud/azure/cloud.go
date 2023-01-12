@@ -15,8 +15,8 @@ import (
 	"path"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -68,7 +68,7 @@ func New(ctx context.Context) (*Cloud, error) {
 	if err != nil {
 		return nil, err
 	}
-	scaleSetsAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	scaleSetsAPI, err := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func New(ctx context.Context) (*Cloud, error) {
 	if err != nil {
 		return nil, err
 	}
-	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+	virtualMachineScaleSetVMsAPI, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +354,7 @@ func (c *Cloud) getSubnetworkCIDR(ctx context.Context) (string, error) {
 }
 
 // getVMInterfaces retrieves all network interfaces referenced by a scale set virtual machine.
-func (c *Cloud) getVMInterfaces(ctx context.Context, vm armcomputev2.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID string) ([]armnetwork.Interface, error) {
+func (c *Cloud) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID string) ([]armnetwork.Interface, error) {
 	if vm.Properties == nil || vm.Properties.NetworkProfile == nil {
 		return []armnetwork.Interface{}, errors.New("no network profile found")
 	}
@@ -399,7 +399,7 @@ type cloudConfig struct {
 }
 
 // convertToInstanceMetadata converts a armcomputev2.VirtualMachineScaleSetVM to a metadata.InstanceMetadata.
-func convertToInstanceMetadata(vm armcomputev2.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface,
+func convertToInstanceMetadata(vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface,
 ) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
 		return metadata.InstanceMetadata{}, errors.New("missing instance ID")

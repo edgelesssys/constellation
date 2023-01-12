@@ -26,13 +26,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	corev1 "k8s.io/api/core/v1"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/installer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -40,9 +41,7 @@ import (
 const (
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
-	// crdTimeout is the maximum time given to the CRDs to be created.
-	crdTimeout         = 30 * time.Second
-	executablePerm     = 0o544
+
 	kubeletServicePath = "/usr/lib/systemd/system/kubelet.service"
 )
 
@@ -56,43 +55,29 @@ type Client interface {
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
 }
 
-type installer interface {
+type componentsInstaller interface {
 	Install(
-		ctx context.Context, kubernetesComponent versions.ComponentVersion,
+		ctx context.Context, kubernetesComponent components.Component,
 	) error
 }
 
 // KubernetesUtil provides low level management of the kubernetes cluster.
 type KubernetesUtil struct {
-	inst installer
+	inst componentsInstaller
 	file file.Handler
 }
 
 // NewKubernetesUtil creates a new KubernetesUtil.
 func NewKubernetesUtil() *KubernetesUtil {
 	return &KubernetesUtil{
-		inst: newOSInstaller(),
+		inst: installer.NewOSInstaller(),
 		file: file.NewHandler(afero.NewOsFs()),
 	}
 }
 
-// InstallComponentsFromCLI installs the kubernetes components passed from the CLI.
-func (k *KubernetesUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+// InstallComponents installs the kubernetes components passed from the CLI.
+func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
 	for _, component := range kubernetesComponents {
-		if err := k.inst.Install(ctx, component); err != nil {
-			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
-		}
-	}
-
-	return enableSystemdUnit(ctx, kubeletServicePath)
-}
-
-// InstallComponents installs kubernetes components in the version specified.
-// TODO(AB#2543,3u13r): Remove this function once the JoinService is extended.
-func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
-	versionConf := versions.VersionConfigs[version]
-
-	for _, component := range versionConf.KubernetesComponents {
 		if err := k.inst.Install(ctx, component); err != nil {
 			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
 		}
@@ -244,11 +229,13 @@ type SetupPodNetworkInput struct {
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
 // the cilium daemonset, it only restarts the local cilium pod.
 func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
+	ctx := context.Background()
+
 	// wait for cilium pod to be healthy
 	client := http.Client{}
 	for {
 		time.Sleep(5 * time.Second)
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
 		if err != nil {
 			log.With(zap.Error(err)).Errorf("Unable to create request")
 			continue
@@ -265,7 +252,7 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	}
 
 	// get cilium container id
-	out, err := exec.CommandContext(context.Background(), "/run/state/bin/crictl", "ps", "--name", "cilium-agent", "-q").CombinedOutput()
+	out, err := exec.CommandContext(ctx, "/run/state/bin/crictl", "ps", "--name", "cilium-agent", "-q").CombinedOutput()
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Getting cilium container id failed: %s", out)
 		return
@@ -278,7 +265,7 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	containerID := outLines[len(outLines)-2]
 
 	// get cilium pod id
-	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "inspect", "-o", "go-template", "--template", "{{ .info.sandboxID }}", containerID).CombinedOutput()
+	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "inspect", "-o", "go-template", "--template", "{{ .info.sandboxID }}", containerID).CombinedOutput()
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Getting cilium pod id failed: %s", out)
 		return
@@ -291,12 +278,12 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	podID := outLines[len(outLines)-2]
 
 	// stop and delete pod
-	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "stopp", podID).CombinedOutput()
+	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "stopp", podID).CombinedOutput()
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Stopping cilium agent pod failed: %s", out)
 		return
 	}
-	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "rmp", podID).CombinedOutput()
+	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "rmp", podID).CombinedOutput()
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Removing cilium agent pod failed: %s", out)
 	}

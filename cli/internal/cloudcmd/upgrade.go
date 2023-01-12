@@ -12,10 +12,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -35,7 +38,7 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
+func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -52,7 +55,7 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
-	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace)
+	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -79,7 +82,7 @@ func (u *Upgrader) Upgrade(ctx context.Context, imageReference, imageVersion str
 
 // GetCurrentImage returns the currently used image version of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-os")
+	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
 	if err != nil {
 		return nil, "", err
 	}
@@ -105,9 +108,9 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	return imageStruct, imageVersion, nil
 }
 
-// CurrentHelmVersion returns the version of the currently installed helm release.
-func (u *Upgrader) CurrentHelmVersion(release string) (string, error) {
-	return u.helmClient.CurrentVersion(release)
+// UpgradeHelmServices upgrade helm services.
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
 }
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
@@ -195,7 +198,7 @@ func (u *dynamicClient) getCurrent(ctx context.Context, name string) (*unstructu
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
-		Resource: "nodeimages",
+		Resource: "nodeversions",
 	}).Get(ctx, name, metav1.GetOptions{})
 }
 
@@ -204,7 +207,7 @@ func (u *dynamicClient) update(ctx context.Context, obj *unstructured.Unstructur
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
-		Resource: "nodeimages",
+		Resource: "nodeversions",
 	}).Update(ctx, obj, metav1.UpdateOptions{})
 }
 
@@ -231,5 +234,10 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	CurrentVersion(release string) (string, error)
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+}
+
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
 }

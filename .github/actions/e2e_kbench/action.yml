@@ -14,7 +14,7 @@ runs:
 
   steps:
     - name: Setup python
-      uses: actions/setup-python@2c3dd9e7e29afd70cc0950079bde6c979d1f69f9 # v4.3.1
+      uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912 # v4.4.0
       with:
         python-version: "3.10"
 
@@ -23,7 +23,7 @@ runs:
       run: pip install -r .github/actions/e2e_kbench/evaluate/requirements.txt
 
     - name: Checkout patched K-Bench
-      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
       with:
         fetch-depth: 0
         repository: "edgelesssys/k-bench"
@@ -68,7 +68,7 @@ runs:
         cat ./out/kbench-constellation-${{ inputs.cloudProvider }}/*/kbench.log
 
     - name: Upload original benchmark results
-      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       if: ${{ !env.ACT }}
       with:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
@@ -113,7 +113,7 @@ runs:
         CSP: ${{ inputs.cloudProvider }}
 
     - name: Upload benchmark results and graphs to action run
-      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       if: ${{ !env.ACT }}
       with:
         path: |

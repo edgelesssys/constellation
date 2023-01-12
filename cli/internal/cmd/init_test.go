@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/license"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -163,8 +164,8 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-
-			err := initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, nopSpinner{})
+			i := &initCmd{log: logger.NewTest(t)}
+			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, &nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -217,7 +218,8 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  "cluster-ip",
 	}
-	err := writeOutput(idFile, resp, &out, fileHandler)
+	i := &initCmd{log: logger.NewTest(t)}
+	err := i.writeOutput(idFile, resp, &out, fileHandler)
 	assert.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -324,7 +326,8 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
-			secret, err := readOrGenerateMasterSecret(&out, fileHandler, tc.filename)
+			i := &initCmd{log: logger.NewTest(t)}
+			secret, err := i.readOrGenerateMasterSecret(&out, fileHandler, tc.filename)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -411,7 +414,8 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	err := initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, nopSpinner{})
+	i := &initCmd{log: logger.NewTest(t)}
+	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, &nopSpinner{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")

@@ -38,18 +38,7 @@ All Constellation microservices will be bundled into and therefore updated via o
 
 ## Extending the JoinService
 
-The CLI will use a lookup table to map the Kubernetes version from the config to URLs and hashes. Those are sent over during `constellation init` and used by the first Bootstrapper. Then, the URLs and hashes are pushed to the `k8s-components-1.23.12` ConfigMap and the Kubernetes version with a reference to the `k8s-components-1.23.12` ConfigMap is pushed to `k8s-versions`.
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: k8s-version
-  namespace: kube-system
-data:
-  k8s-version: "1.23.12"
-  components: "k8s-components-1.23.12-sha256-8ae09b7e922a90fea7a4259fb096f73e9efa948ea2f09349618102a328c44b8b" # This references the ConfigMap below.
-```
+The CLI will use a lookup table to map the Kubernetes version from the config to URLs and hashes. Those are sent over during `constellation init` and used by the first Bootstrapper. Then, the URLs and hashes are pushed to the `k8s-components-1.23.12` ConfigMap and the `k8s-components-1.23.12` ConfigMap is referenced by the `NodeVersion` CR named `constellation-version`.
 
 ```yaml
 apiVersion: v1
@@ -63,10 +52,11 @@ data:
     '[{"URL":"https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz","Hash":"sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5","InstallPath":"/opt/cni/bin","Extract":true},{"URL":"https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz","Hash":"sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235","InstallPath":"/run/state/bin","Extract":true},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubelet","Hash":"sha256:2da0b93857cf352bff5d1eb42e34d398a5971b63a53d8687b45179a78540d6d6","InstallPath":"/run/state/bin/kubelet","Extract":false},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubeadm","Hash":"sha256:9fea42b4fb5eb2da638d20710ebb791dde221e6477793d3de70134ac058c4cc7","InstallPath":"/run/state/bin/kubeadm","Extract":false},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl","Hash":"sha256:f93c18751ec715b4d4437e7ece18fe91948c71be1f24ab02a2dde150f5449855","InstallPath":"/run/state/bin/kubectl","Extract":false}]'
 ```
 
-The JoinService will consume the `k8s-components-1.23.12` ConfigMap in addition to the `k8s-version` ConfigMap. Currently, the `k8s-version` ConfigMap is mounted into the JoinService pod. We will change that so that the JoinService requests the ConfigMap values via the Kubernetes API. If a new node wants to join the cluster, the JoinService looks up the current Kubernetes version and all the component download URLs and hashes and sends them to the joining node.
+The JoinService will look at the `k8s-components-1.23.12` ConfigMap in addition to the `NodeVersion` CR named `constellation-version`. Currently, the `k8s-version` ConfigMap is mounted into the JoinService pod. We will change that so that the JoinService requests the `kubernetesComponentsReference` from `constellation-version` and then uses this to look up the Kubernetes components.
+Those components are then sent to any node requesting to join the cluster.
 
-Additionally, with each node trying to join the cluster is tracked.
-The JoinService creates a JoiningNode CRD for each issued JoinTicket with the node's name and the hash of the components it was sent. This JoiningNode CRD is consumed by the node operator.
+Additionally, each node trying to join the cluster is tracked as a `JoiningNode` CR.
+The JoinService creates a `JoiningNode` CRD for each issued JoinTicket with the node's name and reference to the Kubernetes components ConfigMap it was sent. This `JoiningNode` CRD is consumed by the node operator.
 
 ## Extending the Bootstrapper
 
@@ -76,20 +66,20 @@ We receive all necessary information from the CLI in the first place, since we n
 To be able to even update singular components, we need to know if the set of components of a node is the desired one. To achieve that, the Bootstrapper calculates a hash of all the components' hashes.
 Because of the length restriction for labels, we need to attach this information as an annotation to the node.
 Annotations cannot be set during the join process (in contrast to node-labels).
-Therefore, for every JoinRequest, the JoinService writes an entry to a ConfigMap.
-This ConfigMap will later be consumed by the node operator.
-The ConfigMap will contain a `map[string]map[string]string` in `data.joining-nodes`.
-This map will map the node name to a map of annotation keys and annotation values.
+Therefore, for every JoinRequest, the JoinService will create a JoiningNode CR.
+This CRD will later be consumed by the node operator.
+The JoiningNode CRD will contain a `componentsreference` in its spec.
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
+apiVersion: update.edgeless.systems/v1alpha1
+kind: JoiningNode
 metadata:
-  name: joining-nodes
-  namespace: kube-system
-data:
-  joining-nodes: '{"constell-worker-83df2": {"constellation.edgeless.systems/kubernetes-components-hash": "sha256:f40d4b6feb791e069158b69bf7a70e4acd43600976673ea40f649919233fa783"},
-  "constell-worker-jsu3l": {"constellation.edgeless.systems/kubernetes-components-hash": "sha256:f40d4b6feb791e069158b69bf7a70e4acd43600976673ea40f649919233fa783"}}'
+  name: leo-1645f3a5-worker000001
+spec:
+  name: leo-1645f3a5-worker000001
+  iscontrolplane: false
+  componentsreferece: k8s-components-sha256-4054c3597f2ff5c582aaaf212db56db2b14037e79148d82d95dc046f4fc6d92e
+  deadline: "2023-01-04T10:30:35Z"
 ```
 
 ## Creating an upgrade agent
@@ -121,22 +111,22 @@ First, the node operator consumes the JoiningNode CRD. It watches on changes in 
 
 Second, we need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
 
-The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
+The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we currently use for the image reference:
 
 ```patch
 // NodeImageSpec defines the desired state of NodeImage.
 -type NodeImageSpec struct {
-+type NodeSpec struct {
++type NodeVersionSpec struct {
     // ImageReference is the image to use for all nodes.
     ImageReference string `json:"image,omitempty"`
     // ImageVersion is the CSP independent version of the image to use for all nodes.
     ImageVersion string `json:"imageVersion,omitempty"`
-+   // KubernetesVersion defines the Kubernetes version for all nodes.
-+   KubernetesVersion string `json:"kubernetesVersion,omitempty"`
++   // KubernetesComponentsReference is a reference to the ConfigMap containing the Kubernetes components to use for all nodes.
++   KubernetesComponentsReference string `json:"kubernetesComponentsReference,omitempty"`
 }
 ```
 
-Additionally, we will change the `NodeImageStatus` to `NodeStatus` (see `nodeimage_types.go`) along with the corresponding controllers.
+Additionally, we will change the `NodeImageStatus` to `NodeVersionStatus` (see `nodeimage_types.go`) along with the corresponding controllers.
 
 The Controller will need to take the following steps to update the Kubernetes version:
 
@@ -144,7 +134,7 @@ The Controller will need to take the following steps to update the Kubernetes ve
 * get the kubeadm download URL and hash from the `k8s-components-1.23.12` ConfigMap
 * pass the URL and hash over a socket mounted into its container to the local update agent running on the same node
   * The agent downloads the new kubeadm binary, checks its hash and executes `kubeadm upgrade plan` and `kubeadm upgrade apply v1.23.12`
-* After the agent returned successfully, update the Kubernetes version to `1.23.12` and components reference to `k8s-components-1.23.12` in the `k8s-version` ConfigMap
+* After the agent returned successfully, update the components reference to `k8s-components-1.23.12` in the `NodeVersion` CRD named `constellation-version`.
 * Now, iterate over all nodes, and replace them if their Kubernetes version is outdated
 
 ## Extending the `constellation upgrade` command
@@ -254,17 +244,15 @@ When `constellation upgrade apply` is called the CLI needs to perform the follow
 1. warn the user to create a Constellation/etcd backup before updating as documented in the [official K8s update docs](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/#before-you-begin)
 2. create a new `k8s-components-1.24.3` ConfigMap with the corresponding URLs and hashes from the lookup table in the CLI
 3. update the measurements in the `join-config` ConfigMap
-4. update the Kubernetes version and VM image in the `nodeimage` CRD
+4. update the Kubernetes version and VM image in the `NodeVersion` CRD named `constellation-verison`
 5. update Constellation microservices
-
-The actual update in step 2. and 3. will be handled by the node-operator inside Constellation. Step 5. will be done via client side helm deployments.
 
 Since the service versions bundled inside a `microserviceVersion` are hidden, the CLI will print the changes taking place. We also print a warning to back up any important components when the upgrade necessitates a node replacement, i.e. on Kubernetes and VM image upgrades.
 
 ```bash
 $ constellation upgrade apply
 Upgrading Kubernetes: 1.24.2 --> 1.24.3 ...
-Upgrading VM image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 --> /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 (not updated)
+Upgrading VM image: 2.3.0 --> 2.3.0 (not updated)
 
 Upgrading Kubernetes services version to 1.24.5:
   Autoscaler: 1.24.3 --> 1.24.3 (not updated)

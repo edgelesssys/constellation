@@ -22,16 +22,19 @@ runs:
     - name: Login to AWS
       uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
       with:
-        role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationImageFinder
+        role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
         aws-region: eu-central-1
+
+    - name: Build versionsapi CLI
+      shell: bash
+      working-directory: internal/versionsapi/cli
+      run: go build -o versionsapi
 
     - name: Find latest image
       id: find-latest-image
       shell: bash
-      env:
-        ref: ${{ inputs.ref }}
-        stream: ${{ inputs.stream }}
+      working-directory: internal/versionsapi/cli
       run: |
-        image=$(./find-image.sh --ref "${ref}" --stream "${stream}")
+        image=$(./versionsapi latest --ref "${{ inputs.ref }}" --stream "${{ inputs.stream }}")
         echo "image=${image}" >> "${GITHUB_OUTPUT}"
-      working-directory: hack/find-image
+        echo "Found image ${image}."

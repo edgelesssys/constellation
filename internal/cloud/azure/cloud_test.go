@@ -14,8 +14,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -322,15 +322,15 @@ func TestGetInstance(t *testing.T) {
 	someErr := errors.New("failed")
 	sampleProviderID := "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"
 	successVMAPI := &stubVirtualMachineScaleSetVMsAPI{
-		getVM: armcomputev2.VirtualMachineScaleSetVM{
+		getVM: armcompute.VirtualMachineScaleSetVM{
 			Name: to.Ptr("scale-set-name-instance-id"),
 			ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-			Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-				OSProfile: &armcomputev2.OSProfile{
+			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+				OSProfile: &armcompute.OSProfile{
 					ComputerName: to.Ptr("scale-set-name-instance-id"),
 				},
-				NetworkProfile: &armcomputev2.NetworkProfile{
-					NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+				NetworkProfile: &armcompute.NetworkProfile{
+					NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 						{
 							ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/nic-name"),
 						},
@@ -379,15 +379,15 @@ func TestGetInstance(t *testing.T) {
 		},
 		"success control-plane": {
 			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
-				getVM: armcomputev2.VirtualMachineScaleSetVM{
+				getVM: armcompute.VirtualMachineScaleSetVM{
 					Name: to.Ptr("scale-set-name-instance-id"),
 					ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-						OSProfile: &armcomputev2.OSProfile{
+					Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+						OSProfile: &armcompute.OSProfile{
 							ComputerName: to.Ptr("scale-set-name-instance-id"),
 						},
-						NetworkProfile: &armcomputev2.NetworkProfile{
-							NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+						NetworkProfile: &armcompute.NetworkProfile{
+							NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 								{
 									ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/nic-name"),
 								},
@@ -543,7 +543,7 @@ func TestList(t *testing.T) {
 	}
 	scaleSetsResponse := &stubScaleSetsAPI{
 		pager: &stubVirtualMachineScaleSetsClientListPager{
-			list: []armcomputev2.VirtualMachineScaleSet{{
+			list: []armcompute.VirtualMachineScaleSet{{
 				Name: to.Ptr("scale-set"),
 				Tags: map[string]*string{
 					cloud.TagUID:  to.Ptr("uid"),
@@ -552,19 +552,19 @@ func TestList(t *testing.T) {
 			}},
 		},
 	}
-	scaleSetVM := armcomputev2.VirtualMachineScaleSetVM{
+	scaleSetVM := armcompute.VirtualMachineScaleSetVM{
 		Name:       to.Ptr("scale-set_0"),
 		InstanceID: to.Ptr("instance-id"),
 		ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set/virtualMachines/0"),
-		Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-			NetworkProfile: &armcomputev2.NetworkProfile{
-				NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+		Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+			NetworkProfile: &armcompute.NetworkProfile{
+				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 					{
 						ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set/virtualMachines/0/networkInterfaces/interface-name"),
 					},
 				},
 			},
-			OSProfile: &armcomputev2.OSProfile{
+			OSProfile: &armcompute.OSProfile{
 				ComputerName: to.Ptr("scale-set-0"),
 			},
 		},
@@ -598,7 +598,7 @@ func TestList(t *testing.T) {
 			scaleSetsAPI:         scaleSetsResponse,
 			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
 				pager: &stubVirtualMachineScaleSetVMPager{
-					list: []armcomputev2.VirtualMachineScaleSetVM{scaleSetVM},
+					list: []armcompute.VirtualMachineScaleSetVM{scaleSetVM},
 				},
 			},
 			wantInstances: []metadata.InstanceMetadata{workerInstance},
@@ -612,21 +612,21 @@ func TestList(t *testing.T) {
 			scaleSetsAPI:         scaleSetsResponse,
 			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
 				pager: &stubVirtualMachineScaleSetVMPager{
-					list: []armcomputev2.VirtualMachineScaleSetVM{
+					list: []armcompute.VirtualMachineScaleSetVM{
 						scaleSetVM,
 						{
 							Name:       to.Ptr("control-set_0"),
 							InstanceID: to.Ptr("0"),
 							ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/control-set/virtualMachines/0"),
-							Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-								NetworkProfile: &armcomputev2.NetworkProfile{
-									NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+							Properties: &armcompute.VirtualMachineScaleSetVMProperties{
+								NetworkProfile: &armcompute.NetworkProfile{
+									NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
 										{
 											ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/control-set/virtualMachines/0/networkInterfaces/interface-name"),
 										},
 									},
 								},
-								OSProfile: &armcomputev2.OSProfile{
+								OSProfile: &armcompute.OSProfile{
 									ComputerName: to.Ptr("control-set-0"),
 								},
 							},
@@ -657,7 +657,7 @@ func TestList(t *testing.T) {
 			scaleSetsAPI:         scaleSetsResponse,
 			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
 				pager: &stubVirtualMachineScaleSetVMPager{
-					list: []armcomputev2.VirtualMachineScaleSetVM{scaleSetVM},
+					list: []armcompute.VirtualMachineScaleSetVM{scaleSetVM},
 				},
 			},
 			wantErr: true,
@@ -671,7 +671,7 @@ func TestList(t *testing.T) {
 			scaleSetsAPI:         scaleSetsResponse,
 			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
 				pager: &stubVirtualMachineScaleSetVMPager{
-					list: []armcomputev2.VirtualMachineScaleSetVM{scaleSetVM},
+					list: []armcompute.VirtualMachineScaleSetVM{scaleSetVM},
 				},
 			},
 			wantErr: true,
@@ -1050,26 +1050,26 @@ func (a *stubIMDSAPI) initSecretHash(ctx context.Context) (string, error) {
 }
 
 type stubVirtualMachineScaleSetVMPager struct {
-	list     []armcomputev2.VirtualMachineScaleSetVM
+	list     []armcompute.VirtualMachineScaleSetVM
 	fetchErr error
 	more     bool
 }
 
-func (p *stubVirtualMachineScaleSetVMPager) moreFunc() func(armcomputev2.VirtualMachineScaleSetVMsClientListResponse) bool {
-	return func(armcomputev2.VirtualMachineScaleSetVMsClientListResponse) bool {
+func (p *stubVirtualMachineScaleSetVMPager) moreFunc() func(armcompute.VirtualMachineScaleSetVMsClientListResponse) bool {
+	return func(armcompute.VirtualMachineScaleSetVMsClientListResponse) bool {
 		return p.more
 	}
 }
 
-func (p *stubVirtualMachineScaleSetVMPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMachineScaleSetVMsClientListResponse,
-) (armcomputev2.VirtualMachineScaleSetVMsClientListResponse, error) {
-	return func(context.Context, *armcomputev2.VirtualMachineScaleSetVMsClientListResponse) (armcomputev2.VirtualMachineScaleSetVMsClientListResponse, error) {
-		page := make([]*armcomputev2.VirtualMachineScaleSetVM, len(p.list))
+func (p *stubVirtualMachineScaleSetVMPager) fetcherFunc() func(context.Context, *armcompute.VirtualMachineScaleSetVMsClientListResponse,
+) (armcompute.VirtualMachineScaleSetVMsClientListResponse, error) {
+	return func(context.Context, *armcompute.VirtualMachineScaleSetVMsClientListResponse) (armcompute.VirtualMachineScaleSetVMsClientListResponse, error) {
+		page := make([]*armcompute.VirtualMachineScaleSetVM, len(p.list))
 		for i := range p.list {
 			page[i] = &p.list[i]
 		}
-		return armcomputev2.VirtualMachineScaleSetVMsClientListResponse{
-			VirtualMachineScaleSetVMListResult: armcomputev2.VirtualMachineScaleSetVMListResult{
+		return armcompute.VirtualMachineScaleSetVMsClientListResponse{
+			VirtualMachineScaleSetVMListResult: armcompute.VirtualMachineScaleSetVMListResult{
 				Value: page,
 			},
 		}, p.fetchErr
@@ -1077,21 +1077,21 @@ func (p *stubVirtualMachineScaleSetVMPager) fetcherFunc() func(context.Context, 
 }
 
 type stubVirtualMachineScaleSetVMsAPI struct {
-	getVM  armcomputev2.VirtualMachineScaleSetVM
+	getVM  armcompute.VirtualMachineScaleSetVM
 	getErr error
 	pager  *stubVirtualMachineScaleSetVMPager
 }
 
-func (a *stubVirtualMachineScaleSetVMsAPI) Get(context.Context, string, string, string, *armcomputev2.VirtualMachineScaleSetVMsClientGetOptions,
-) (armcomputev2.VirtualMachineScaleSetVMsClientGetResponse, error) {
-	return armcomputev2.VirtualMachineScaleSetVMsClientGetResponse{
+func (a *stubVirtualMachineScaleSetVMsAPI) Get(context.Context, string, string, string, *armcompute.VirtualMachineScaleSetVMsClientGetOptions,
+) (armcompute.VirtualMachineScaleSetVMsClientGetResponse, error) {
+	return armcompute.VirtualMachineScaleSetVMsClientGetResponse{
 		VirtualMachineScaleSetVM: a.getVM,
 	}, a.getErr
 }
 
-func (a *stubVirtualMachineScaleSetVMsAPI) NewListPager(string, string, *armcomputev2.VirtualMachineScaleSetVMsClientListOptions,
-) *runtime.Pager[armcomputev2.VirtualMachineScaleSetVMsClientListResponse] {
-	return runtime.NewPager(runtime.PagingHandler[armcomputev2.VirtualMachineScaleSetVMsClientListResponse]{
+func (a *stubVirtualMachineScaleSetVMsAPI) NewListPager(string, string, *armcompute.VirtualMachineScaleSetVMsClientListOptions,
+) *runtime.Pager[armcompute.VirtualMachineScaleSetVMsClientListResponse] {
+	return runtime.NewPager(runtime.PagingHandler[armcompute.VirtualMachineScaleSetVMsClientListResponse]{
 		More:    a.pager.moreFunc(),
 		Fetcher: a.pager.fetcherFunc(),
 	})
@@ -1118,26 +1118,26 @@ func (a *stubNetworkInterfacesAPI) Get(context.Context, string, string, *armnetw
 }
 
 type stubVirtualMachineScaleSetsClientListPager struct {
-	list     []armcomputev2.VirtualMachineScaleSet
+	list     []armcompute.VirtualMachineScaleSet
 	fetchErr error
 	more     bool
 }
 
-func (p *stubVirtualMachineScaleSetsClientListPager) moreFunc() func(armcomputev2.VirtualMachineScaleSetsClientListResponse) bool {
-	return func(armcomputev2.VirtualMachineScaleSetsClientListResponse) bool {
+func (p *stubVirtualMachineScaleSetsClientListPager) moreFunc() func(armcompute.VirtualMachineScaleSetsClientListResponse) bool {
+	return func(armcompute.VirtualMachineScaleSetsClientListResponse) bool {
 		return p.more
 	}
 }
 
-func (p *stubVirtualMachineScaleSetsClientListPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMachineScaleSetsClientListResponse,
-) (armcomputev2.VirtualMachineScaleSetsClientListResponse, error) {
-	return func(context.Context, *armcomputev2.VirtualMachineScaleSetsClientListResponse) (armcomputev2.VirtualMachineScaleSetsClientListResponse, error) {
-		page := make([]*armcomputev2.VirtualMachineScaleSet, len(p.list))
+func (p *stubVirtualMachineScaleSetsClientListPager) fetcherFunc() func(context.Context, *armcompute.VirtualMachineScaleSetsClientListResponse,
+) (armcompute.VirtualMachineScaleSetsClientListResponse, error) {
+	return func(context.Context, *armcompute.VirtualMachineScaleSetsClientListResponse) (armcompute.VirtualMachineScaleSetsClientListResponse, error) {
+		page := make([]*armcompute.VirtualMachineScaleSet, len(p.list))
 		for i := range p.list {
 			page[i] = &p.list[i]
 		}
-		return armcomputev2.VirtualMachineScaleSetsClientListResponse{
-			VirtualMachineScaleSetListResult: armcomputev2.VirtualMachineScaleSetListResult{
+		return armcompute.VirtualMachineScaleSetsClientListResponse{
+			VirtualMachineScaleSetListResult: armcompute.VirtualMachineScaleSetListResult{
 				Value: page,
 			},
 		}, p.fetchErr
@@ -1148,9 +1148,9 @@ type stubScaleSetsAPI struct {
 	pager *stubVirtualMachineScaleSetsClientListPager
 }
 
-func (a *stubScaleSetsAPI) NewListPager(string, *armcomputev2.VirtualMachineScaleSetsClientListOptions,
-) *runtime.Pager[armcomputev2.VirtualMachineScaleSetsClientListResponse] {
-	return runtime.NewPager(runtime.PagingHandler[armcomputev2.VirtualMachineScaleSetsClientListResponse]{
+func (a *stubScaleSetsAPI) NewListPager(string, *armcompute.VirtualMachineScaleSetsClientListOptions,
+) *runtime.Pager[armcompute.VirtualMachineScaleSetsClientListResponse] {
+	return runtime.NewPager(runtime.PagingHandler[armcompute.VirtualMachineScaleSetsClientListResponse]{
 		More:    a.pager.moreFunc(),
 		Fetcher: a.pager.fetcherFunc(),
 	})

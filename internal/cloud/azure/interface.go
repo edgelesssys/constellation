@@ -11,8 +11,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 )
 
 type imdsAPI interface {
@@ -58,16 +58,16 @@ type publicIPAddressesAPI interface {
 
 type virtualMachineScaleSetVMsAPI interface {
 	Get(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string,
-		options *armcomputev2.VirtualMachineScaleSetVMsClientGetOptions,
-	) (armcomputev2.VirtualMachineScaleSetVMsClientGetResponse, error)
+		options *armcompute.VirtualMachineScaleSetVMsClientGetOptions,
+	) (armcompute.VirtualMachineScaleSetVMsClientGetResponse, error)
 	NewListPager(resourceGroupName string, virtualMachineScaleSetName string,
-		options *armcomputev2.VirtualMachineScaleSetVMsClientListOptions,
-	) *runtime.Pager[armcomputev2.VirtualMachineScaleSetVMsClientListResponse]
+		options *armcompute.VirtualMachineScaleSetVMsClientListOptions,
+	) *runtime.Pager[armcompute.VirtualMachineScaleSetVMsClientListResponse]
 }
 
 type scaleSetsAPI interface {
-	NewListPager(resourceGroupName string, options *armcomputev2.VirtualMachineScaleSetsClientListOptions,
-	) *runtime.Pager[armcomputev2.VirtualMachineScaleSetsClientListResponse]
+	NewListPager(resourceGroupName string, options *armcompute.VirtualMachineScaleSetsClientListOptions,
+	) *runtime.Pager[armcompute.VirtualMachineScaleSetsClientListResponse]
 }
 
 type loadBalancerAPI interface {

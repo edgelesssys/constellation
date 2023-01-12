@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -160,8 +161,8 @@ func TestRecover(t *testing.T) {
 			))
 
 			newDialer := func(*cloudcmd.Validator) *dialer.Dialer { return nil }
-
-			err := recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
+			r := &recoverCmd{log: logger.NewTest(t)}
+			err := r.recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.successfulCalls > 0 {
@@ -229,8 +230,8 @@ func TestParseRecoverFlags(t *testing.T) {
 			if tc.writeIDFile {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, &clusterid.File{IP: "192.0.2.42"}))
 			}
-
-			flags, err := parseRecoverFlags(cmd, fileHandler)
+			r := &recoverCmd{log: logger.NewTest(t)}
+			flags, err := r.parseRecoverFlags(cmd, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -354,6 +355,7 @@ func TestDoRecovery(t *testing.T) {
 			go recoverServer.Serve(listener)
 			defer recoverServer.GracefulStop()
 
+			r := &recoverCmd{log: logger.NewTest(t)}
 			recoverDoer := &recoverDoer{
 				dialer:            dialer.New(nil, nil, netDialer),
 				endpoint:          addr,
@@ -361,6 +363,7 @@ func TestDoRecovery(t *testing.T) {
 				getDiskKey: func(string) ([]byte, error) {
 					return []byte("disk-key"), nil
 				},
+				log: r.log,
 			}
 
 			err := recoverDoer.Do(context.Background())

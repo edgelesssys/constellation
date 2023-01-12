@@ -12,7 +12,7 @@ resources:
   controller: true
   domain: edgeless.systems
   group: update
-  kind: NodeImage
+  kind: NodeVersion
   path: github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1
   version: v1alpha1
 - api:

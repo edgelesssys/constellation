@@ -10,11 +10,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -51,16 +52,16 @@ func New() (*Client, error) {
 }
 
 // GetComponents returns the components of the cluster.
-func (c *Client) GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error) {
+func (c *Client) GetComponents(ctx context.Context, configMapName string) (components.Components, error) {
 	componentsRaw, err := c.getConfigMapData(ctx, configMapName, constants.ComponentsListKey)
 	if err != nil {
-		return versions.ComponentVersions{}, fmt.Errorf("failed to get components: %w", err)
+		return components.Components{}, fmt.Errorf("failed to get components: %w", err)
 	}
-	var components versions.ComponentVersions
-	if err := json.Unmarshal([]byte(componentsRaw), &components); err != nil {
-		return versions.ComponentVersions{}, fmt.Errorf("failed to unmarshal components %s: %w", componentsRaw, err)
+	var clusterComponents components.Components
+	if err := json.Unmarshal([]byte(componentsRaw), &clusterComponents); err != nil {
+		return components.Components{}, fmt.Errorf("failed to unmarshal components %s: %w", componentsRaw, err)
 	}
-	return components, nil
+	return clusterComponents, nil
 }
 
 func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string, error) {
@@ -72,20 +73,36 @@ func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string
 	return cm.Data[key], nil
 }
 
-// CreateConfigMap creates the provided configmap.
-func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
-	_, err := c.client.CoreV1().ConfigMaps(configMap.ObjectMeta.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
+// GetK8sComponentsRefFromNodeVersionCRD returns the K8sComponentsRef from the node version CRD.
+func (c *Client) GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error) {
+	nodeVersionResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "nodeversions"}
+	nodeVersion, err := c.dynClient.Resource(nodeVersionResource).Get(ctx, nodeName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create configmap: %w", err)
+		return "", fmt.Errorf("failed to get node version: %w", err)
 	}
-	return nil
+	// Extract K8sComponentsRef from nodeVersion.
+	k8sComponentsRef, found, err := unstructured.NestedString(nodeVersion.Object, "spec", "kubernetesComponentsReference")
+	if err != nil {
+		return "", fmt.Errorf("failed to get K8sComponentsRef from node version: %w", err)
+	}
+	if !found {
+		return "", fmt.Errorf("kubernetesComponentsReference not found in node version")
+	}
+	return k8sComponentsRef, nil
 }
 
 // AddNodeToJoiningNodes adds the provided node as a joining node CRD.
-func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
+func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsReference string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
 
-	objectMetadataName := nodeName
+	compliantNodeName, err := k8sCompliantHostname(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get k8s compliant hostname: %w", err)
+	}
+
+	// JoiningNodes referencing a worker node are named after the worker node.
+	// JoiningNodes referencing the control-plane node are named "control-plane".
+	objectMetadataName := compliantNodeName
 	deadline := metav1.NewTime(time.Now().Add(48 * time.Hour))
 	if isControlPlane {
 		objectMetadataName = "control-plane"
@@ -99,10 +116,10 @@ func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, com
 			"name": objectMetadataName,
 		},
 		"spec": map[string]any{
-			"name":           nodeName,
-			"componentshash": componentsHash,
-			"iscontrolplane": isControlPlane,
-			"deadline":       deadline,
+			"name":                compliantNodeName,
+			"componentsreference": componentsReference,
+			"iscontrolplane":      isControlPlane,
+			"deadline":            deadline,
 		},
 	})
 	if isControlPlane {
@@ -129,16 +146,15 @@ func (c *Client) addWorkerToJoiningNodes(ctx context.Context, joiningNode *unstr
 	return nil
 }
 
-// AddReferenceToK8sVersionConfigMap adds a reference to the provided configmap to the k8s version configmap.
-func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error {
-	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, k8sVersionsConfigMapName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get configmap: %w", err)
+var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+
+// k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
+// Only a simple heuristic is used for now (to lowercase, replace underscores).
+func k8sCompliantHostname(in string) (string, error) {
+	hostname := strings.ToLower(in)
+	hostname = strings.ReplaceAll(hostname, "_", "-")
+	if !validHostnameRegex.MatchString(hostname) {
+		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
 	}
-	cm.Data[constants.K8sComponentsFieldName] = componentsConfigMapName
-	_, err = c.client.CoreV1().ConfigMaps("kube-system").Update(ctx, cm, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update configmap: %w", err)
-	}
-	return nil
+	return hostname, nil
 }

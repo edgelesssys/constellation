@@ -28,8 +28,6 @@ rules:
   - configmaps
   verbs:
   - get
-  - create
-  - update
 - apiGroups:
   - "update.edgeless.systems"
   resources:
@@ -39,3 +37,9 @@ rules:
   - create
   - update
   - patch
+- apiGroups:
+  - "update.edgeless.systems"
+  resources:
+  - nodeversions
+  verbs:
+  - get

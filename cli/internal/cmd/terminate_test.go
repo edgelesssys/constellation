@@ -142,7 +142,7 @@ func TestTerminate(t *testing.T) {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
 
-			err := terminate(cmd, tc.terminator, fileHandler, nopSpinner{})
+			err := terminate(cmd, tc.terminator, fileHandler, &nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)

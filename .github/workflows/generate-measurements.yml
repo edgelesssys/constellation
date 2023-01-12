@@ -38,9 +38,9 @@ jobs:
       version: ${{ steps.extract.outputs.version }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Extract ref, stream and version
         id: extract
@@ -50,11 +50,11 @@ jobs:
 
       - name: Check if image definition from build pipeline exists
         run: |
-          wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/image/${{ steps.extract.outputs.version }}/info.json"
+          wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/${{ steps.extract.outputs.version }}/image/info.json"
         shell: bash
 
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.4"
 
@@ -160,7 +160,7 @@ jobs:
           CSP: ${{ matrix.provider }}
 
       - name: Upload measurements as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
@@ -193,12 +193,12 @@ jobs:
         provider: ["aws", "azure", "gcp"]
     steps:
       - name: Check out repository
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.4"
 
@@ -217,7 +217,7 @@ jobs:
 
       - name: Download expected measurements from build pipeline for image
         run: |
-          path="constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}/measurements.image.json"
+          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
           mkdir -p ${{ github.workspace }}/expected-measurements
           wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
           cat ${{ github.workspace }}/expected-measurements/measurements.image.json
@@ -256,7 +256,7 @@ jobs:
           rm rekor-cli-linux-amd64
 
       - name: Download measurements from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
@@ -280,7 +280,7 @@ jobs:
           cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
 
       - name: Upload signed measurements as artifact
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: measurements-${{ matrix.provider }}.json.sig
           path: "${{ github.workspace }}/generated-measurements"
@@ -300,13 +300,13 @@ jobs:
       contents: read
     steps:
       - name: Download measurements from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json
           path: "${{ github.workspace }}/generated-measurements"
 
       - name: Download signature from artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: measurements-${{ matrix.provider }}.json.sig
           path: "${{ github.workspace }}/generated-measurements"
@@ -319,7 +319,7 @@ jobs:
 
       - name: Upload to S3
         run: |
-          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}
+          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
         shell: bash

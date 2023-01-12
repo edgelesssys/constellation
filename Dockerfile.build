@@ -1,4 +1,4 @@
-FROM fedora:37@sha256:f2c083c0b7d2367a375f15e002c2dc7baaca2b3181ace61f9d5113a8fe2f6b44 as build
+FROM fedora:37@sha256:99aa8919afd1880064ec915dba44cdc5b52808667717f605750329d55006538a as build
 
 RUN dnf -y update && \
     dnf -y install @development-tools pkg-config iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
@@ -33,8 +33,17 @@ WORKDIR /constellation/disk-mapper/
 ARG PROJECT_VERSION
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o disk-mapper -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
+FROM build AS build-upgrade-agent
+WORKDIR /constellation/upgrade-agent/
+
+ARG PROJECT_VERSION
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o upgrade-agent -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+
 FROM scratch AS bootstrapper
 COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /
 
 FROM scratch AS disk-mapper
 COPY --from=build-disk-mapper /constellation/disk-mapper/disk-mapper /
+
+FROM scratch AS upgrade-agent
+COPY --from=build-upgrade-agent /constellation/upgrade-agent/upgrade-agent /

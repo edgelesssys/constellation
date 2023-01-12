@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -23,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -285,7 +285,7 @@ func TestJoinCluster(t *testing.T) {
 	privateIP := "192.0.2.1"
 	k8sVersion := versions.Default
 
-	k8sComponents := versions.ComponentVersions{
+	k8sComponents := components.Components{
 		{
 			URL:         "URL",
 			Hash:        "Hash",
@@ -295,13 +295,12 @@ func TestJoinCluster(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		clusterUtil           stubClusterUtil
-		providerMetadata      ProviderMetadata
-		wantConfig            kubeadm.JoinConfiguration
-		role                  role.Role
-		k8sComponents         versions.ComponentVersions
-		wantComponentsFromCLI bool
-		wantErr               bool
+		clusterUtil      stubClusterUtil
+		providerMetadata ProviderMetadata
+		wantConfig       kubeadm.JoinConfiguration
+		role             role.Role
+		k8sComponents    components.Components
+		wantErr          bool
 	}{
 		"kubeadm join worker works with metadata and remote Kubernetes Components": {
 			clusterUtil: stubClusterUtil{},
@@ -312,9 +311,8 @@ func TestJoinCluster(t *testing.T) {
 					VPCIP:      "192.0.2.1",
 				},
 			},
-			k8sComponents:         k8sComponents,
-			role:                  role.Worker,
-			wantComponentsFromCLI: true,
+			k8sComponents: k8sComponents,
+			role:          role.Worker,
 			wantConfig: kubeadm.JoinConfiguration{
 				Discovery: kubeadm.Discovery{
 					BootstrapToken: joinCommand,
@@ -393,20 +391,6 @@ func TestJoinCluster(t *testing.T) {
 			},
 		},
 		"kubeadm join worker fails when installing remote Kubernetes components": {
-			clusterUtil: stubClusterUtil{installComponentsFromCLIErr: errors.New("error")},
-			providerMetadata: &stubProviderMetadata{
-				selfResp: metadata.InstanceMetadata{
-					ProviderID: "provider-id",
-					Name:       "metadata-name",
-					VPCIP:      "192.0.2.1",
-				},
-			},
-			k8sComponents:         k8sComponents,
-			role:                  role.Worker,
-			wantComponentsFromCLI: true,
-			wantErr:               true,
-		},
-		"kubeadm join worker fails when installing local Kubernetes components": {
 			clusterUtil: stubClusterUtil{installComponentsErr: errors.New("error")},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
@@ -415,9 +399,9 @@ func TestJoinCluster(t *testing.T) {
 					VPCIP:      "192.0.2.1",
 				},
 			},
-			role:                  role.Worker,
-			wantComponentsFromCLI: true,
-			wantErr:               true,
+			k8sComponents: k8sComponents,
+			role:          role.Worker,
+			wantErr:       true,
 		},
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
@@ -458,29 +442,37 @@ func TestJoinCluster(t *testing.T) {
 			require.NoError(kubernetes.UnmarshalK8SResources(tc.clusterUtil.joinConfigs[0], &joinYaml))
 
 			assert.Equal(tc.wantConfig, joinYaml.JoinConfiguration)
-			assert.Equal(tc.wantComponentsFromCLI, tc.clusterUtil.calledInstallComponentsFromCLI)
-			assert.Equal(!tc.wantComponentsFromCLI, tc.clusterUtil.calledInstallComponents)
 		})
 	}
 }
 
 func TestK8sCompliantHostname(t *testing.T) {
-	compliantHostname := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	testCases := map[string]struct {
-		hostname     string
-		wantHostname string
+		input    string
+		expected string
+		wantErr  bool
 	}{
-		"azure scale set names work": {
-			hostname:     "constellation-scale-set-bootstrappers-name_0",
-			wantHostname: "constellation-scale-set-bootstrappers-name-0",
+		"no change": {
+			input:    "test",
+			expected: "test",
 		},
-		"compliant hostname is not modified": {
-			hostname:     "abcd-123",
-			wantHostname: "abcd-123",
+		"uppercase": {
+			input:    "TEST",
+			expected: "test",
 		},
-		"uppercase hostnames are lowercased": {
-			hostname:     "ABCD",
-			wantHostname: "abcd",
+		"underscore": {
+			input:    "test_node",
+			expected: "test-node",
+		},
+		"empty": {
+			input:    "",
+			expected: "",
+			wantErr:  true,
+		},
+		"error": {
+			input:    "test_node_",
+			expected: "",
+			wantErr:  true,
 		},
 	}
 
@@ -488,29 +480,28 @@ func TestK8sCompliantHostname(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			hostname := k8sCompliantHostname(tc.hostname)
-
-			assert.Equal(tc.wantHostname, hostname)
-			assert.Regexp(compliantHostname, hostname)
+			actual, err := k8sCompliantHostname(tc.input)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.expected, actual)
 		})
 	}
 }
 
 type stubClusterUtil struct {
-	installComponentsErr        error
-	installComponentsFromCLIErr error
-	initClusterErr              error
-	setupAutoscalingError       error
-	setupKonnectivityError      error
-	setupGCPGuestAgentErr       error
-	setupOLMErr                 error
-	setupNMOErr                 error
-	setupNodeOperatorErr        error
-	joinClusterErr              error
-	startKubeletErr             error
-
-	calledInstallComponents        bool
-	calledInstallComponentsFromCLI bool
+	installComponentsErr   error
+	initClusterErr         error
+	setupAutoscalingError  error
+	setupKonnectivityError error
+	setupGCPGuestAgentErr  error
+	setupOLMErr            error
+	setupNMOErr            error
+	setupNodeOperatorErr   error
+	joinClusterErr         error
+	startKubeletErr        error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -520,14 +511,8 @@ func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityA
 	return s.setupKonnectivityError
 }
 
-func (s *stubClusterUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
-	s.calledInstallComponents = true
+func (s *stubClusterUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
 	return s.installComponentsErr
-}
-
-func (s *stubClusterUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
-	s.calledInstallComponentsFromCLI = true
-	return s.installComponentsFromCLIErr
 }
 
 func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error {
@@ -572,7 +557,7 @@ type stubConfigProvider struct {
 	joinConfig k8sapi.KubeadmJoinYAML
 }
 
-func (s *stubConfigProvider) InitConfiguration(_ bool, _ versions.ValidK8sVersion) k8sapi.KubeadmInitYAML {
+func (s *stubConfigProvider) InitConfiguration(_ bool, _ string) k8sapi.KubeadmInitYAML {
 	return s.initConfig
 }
 

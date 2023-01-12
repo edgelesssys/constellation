@@ -54,6 +54,11 @@ WORKDIR /init
 COPY bootstrapper/initproto/*.proto /init
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
+## upgrade agent
+WORKDIR /upgrade-agent
+COPY upgrade-agent/upgradeproto/*.proto /upgrade-agent
+RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+
 FROM scratch as export
 COPY --from=build /disk-mapper/*.go disk-mapper/recoverproto/
 COPY --from=build /service/*.go debugd/service/
@@ -61,3 +66,4 @@ COPY --from=build /kms/*.go kms/kmsproto/
 COPY --from=build /joinservice/*.go joinservice/joinproto/
 COPY --from=build /verify/*.go verify/verifyproto/
 COPY --from=build /init/*.go bootstrapper/initproto/
+COPY --from=build /upgrade-agent/*.go upgrade-agent/upgradeproto/

@@ -15,16 +15,16 @@ In particular, it is responsible for updating the OS images of nodes by replacin
 
 The operator has multiple controllers with corresponding custom resource definitions (CRDs) that are responsible for the following high level tasks:
 
-### NodeImage
+### NodeVersion
 
-`NodeImage` is the only user controlled CRD. The spec allows an administrator to update the desired image and trigger a rolling update.
+`NodeVersion` is the only user controlled CRD. The spec allows an administrator to update the desired image and trigger a rolling update.
 
 Example for GCP:
 ```yaml
 apiVersion: update.edgeless.systems/v1alpha1
-kind: NodeImage
+kind: NodeVersion
 metadata:
-  name: constellation-os
+  name: constellation-version
 spec:
   image: "projects/constellation-images/global/images/<image-name>"
 ```
@@ -32,9 +32,9 @@ spec:
 Example for Azure:
 ```yaml
 apiVersion: update.edgeless.systems/v1alpha1
-kind: NodeImage
+kind: NodeVersion
 metadata:
-  name: constellation-os
+  name: constellation-version
 spec:
   image: "/subscriptions/<subscription-id>/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/<image-definition-name>/versions/<image-version>"
 ```
@@ -42,7 +42,7 @@ spec:
 
 ### AutoscalingStrategy
 
-`AutoscalingStrategy` is used and modified by the `NodeImage` controller to pause the `cluster-autoscaler` while an image update is in progress.
+`AutoscalingStrategy` is used and modified by the `NodeVersion` controller to pause the `cluster-autoscaler` while an image update is in progress.
 
 Example:
 
@@ -60,7 +60,7 @@ spec:
 ### ScalingGroup
 
 `ScalingGroup` represents one scaling group at the CSP. Constellation uses one scaling group for worker nodes and one for control-plane nodes.
-The scaling group controller will automatically set the image used for newly created nodes to be the image set in the `NodeImage` Spec. On cluster creation, one instance of the `ScalingGroup` resource per scaling group at the CSP is created. It does not need to be updated manually.
+The scaling group controller will automatically set the image used for newly created nodes to be the image set in the `NodeVersion` Spec. On cluster creation, one instance of the `ScalingGroup` resource per scaling group at the CSP is created. It does not need to be updated manually.
 
 Example for GCP:
 
@@ -70,7 +70,7 @@ kind: ScalingGroup
 metadata:
   name: scalinggroup-worker
 spec:
-  nodeImage: "constellation-os"
+  nodeImage: "constellation-version"
   groupId: "projects/<project-id>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
   autoscaling: true
 ```
@@ -83,7 +83,7 @@ kind: ScalingGroup
 metadata:
   name: scalinggroup-worker
 spec:
-  nodeImage: "constellation-os"
+  nodeImage: "constellation-version"
   groupId: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
   autoscaling: true
 ```

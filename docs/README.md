@@ -13,7 +13,7 @@ npm run build
 npm run serve
 ```
 
-Browse to <http://localhost:3000/constellation>
+Browse to <http://localhost:3000/constellation> and choose the "Next" version in the top right.
 
 ## Release process
 
@@ -28,4 +28,3 @@ Browse to <http://localhost:3000/constellation>
     Copy the full `docs/` folder contents into a new `versioned_docs/version-[versionName]/` folder.
     Create a versioned sidebars file based from your current sidebar configuration (if it exists) - saved as `versioned_sidebars/version-[versionName]-sidebars.json`.
     Append the new version number to `versions.json`.
-

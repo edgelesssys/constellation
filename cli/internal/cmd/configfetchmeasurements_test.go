@@ -19,6 +19,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,8 +84,8 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-
-			flags, err := parseFetchMeasurementsFlags(cmd)
+			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
+			flags, err := cfm.parseFetchMeasurementsFlags(cmd)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -95,6 +97,12 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 }
 
 func TestUpdateURLs(t *testing.T) {
+	ver := versionsapi.Version{
+		Ref:     "foo",
+		Stream:  "nightly",
+		Version: "v7.7.7",
+		Kind:    versionsapi.VersionKindImage,
+	}
 	testCases := map[string]struct {
 		conf                   *config.Config
 		flags                  *fetchMeasurementsFlags
@@ -103,14 +111,14 @@ func TestUpdateURLs(t *testing.T) {
 	}{
 		"both values nil": {
 			conf: &config.Config{
-				Image: "someImageVersion",
+				Image: ver.ShortPath(),
 				Provider: config.ProviderConfig{
 					GCP: &config.GCPConfig{},
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/image/someImageVersion/csp/gcp/measurements.json",
-			wantMeasurementsSigURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/image/someImageVersion/csp/gcp/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactURL() + "/image/csp/gcp/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactURL() + "/image/csp/gcp/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},
@@ -185,14 +193,14 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	signature := "MEYCIQDRAQNK2NjHJBGrnw3HQAyBsXMCmVCptBdgA6VZ3IlyiAIhAPG42waF1aFZq7dnjP3b2jsMNUtaKYDQQSazW1AX8jgF"
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/image/v999.999.999/csp/gcp/measurements.json" {
+		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/v999.999.999/image/csp/gcp/measurements.json" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/image/v999.999.999/csp/gcp/measurements.json.sig" {
+		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/v999.999.999/image/csp/gcp/measurements.json.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),
@@ -242,8 +250,9 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
+			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
 
-			assert.NoError(configFetchMeasurements(cmd, tc.verifier, cosignPublicKey, fileHandler, client))
+			assert.NoError(cfm.configFetchMeasurements(cmd, tc.verifier, cosignPublicKey, fileHandler, client))
 		})
 	}
 }

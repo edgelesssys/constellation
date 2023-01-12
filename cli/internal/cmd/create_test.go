@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -211,8 +212,8 @@ func TestCreate(t *testing.T) {
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
-
-			err := create(cmd, tc.creator, fileHandler, nopSpinner{})
+			c := &createCmd{log: logger.NewTest(t)}
+			err := c.create(cmd, tc.creator, fileHandler, &nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -268,8 +269,8 @@ func TestCheckDirClean(t *testing.T) {
 			for _, f := range tc.existingFiles {
 				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
-
-			err := checkDirClean(tc.fileHandler)
+			c := &createCmd{log: logger.NewTest(t)}
+			err := c.checkDirClean(tc.fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

@@ -151,6 +151,7 @@ runs:
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
+        sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
 
     - name: Cdbg deploy
@@ -225,7 +226,7 @@ runs:
 
     - name: Upload boot logs
       if: ${{ always() && !env.ACT }}
-      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: serial-logs-${{ inputs.cloudProvider }}
         path: "*.log"

@@ -10,7 +10,8 @@ import (
 	"context"
 	"time"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
+	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,9 +27,6 @@ import (
 )
 
 const (
-	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the hash of the installed components of this node.
-	NodeKubernetesComponentsHashAnnotationKey = "updates.edgeless.systems/kubernetes-components-hash"
-
 	joiningNodeNameKey = ".spec.name"
 )
 
@@ -76,7 +74,7 @@ func (r *JoiningNodesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if node.Annotations == nil {
 			node.Annotations = map[string]string{}
 		}
-		node.Annotations[NodeKubernetesComponentsHashAnnotationKey] = joiningNode.Spec.ComponentsHash
+		node.Annotations[mainconstants.NodeKubernetesComponentsAnnotationKey] = joiningNode.Spec.ComponentsReference
 		return r.Update(ctx, &node)
 	})
 	if err != nil {

@@ -5,5 +5,8 @@ https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md
 # Tracking: https://github.com/lycheeverse/lychee/issues/645
 https://blog.edgeless.systems/
 https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73
-# TODO: Remove when www.linux-kvm.org fixes their TLS chain (https://github.com/edgelesssys/constellation/pull/430)
+# TODO: Remove when site fixed their TLS chain (https://github.com/edgelesssys/constellation/pull/430)
 https://www.linux-kvm.org/page/Main_Page
+https://www.ntia.gov/SBOM
+# Twitter times out on request, maybe someone pulled the plug of this subsystem...
+https://twitter.com/EdgelessSystems

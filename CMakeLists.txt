@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(constellation LANGUAGES C VERSION 2.2.2)
+project(constellation LANGUAGES C VERSION 2.4.0)
 set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI.")
 
 enable_testing()
@@ -20,6 +20,15 @@ add_custom_target(bootstrapper ALL
   DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target bootstrapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS bootstrapper
+)
+
+#
+# upgrade-agent
+#
+add_custom_target(upgrade-agent ALL
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target upgrade-agent .
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  BYPRODUCTS upgrade-agent
 )
 
 #

@@ -7,7 +7,7 @@ inputs:
     required: true
   sonobuoyVersion:
     description: "Version of sonobuoy test CLI to use."
-    default: "0.56.12"
+    default: "0.56.14"
     required: true
   sonobuoyTestSuiteCmd:
     description: "Which tests should be run?"
@@ -45,14 +45,14 @@ runs:
 
     - name: Upload test results
       if: ${{ always() && !env.ACT }}
-      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: "sonobuoy_logs_${{ inputs.cloudProvider}}.tar.gz"
         path: "*_sonobuoy_*.tar.gz"
 
     - name: Publish test results
       if: ${{ !env.ACT }}
-      uses: mikepenz/action-junit-report@6e9933f4a97f4d2b99acef4d7b97924466037882 # v3.6.1
+      uses: mikepenz/action-junit-report@7210fead7f92f6395c37241964df3b0f730f5e4e # v3.7.1
       with:
         report_paths: "**/junit_01.xml"
         fail_on_failure: true

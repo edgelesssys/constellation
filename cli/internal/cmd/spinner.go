@@ -15,6 +15,7 @@ import (
 	"time"
 
 	tty "github.com/mattn/go-isatty"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -31,6 +32,7 @@ var (
 type spinnerInterf interface {
 	Start(text string, showDots bool)
 	Stop()
+	io.Writer
 }
 
 type spinner struct {
@@ -39,6 +41,17 @@ type spinner struct {
 	wg       *sync.WaitGroup
 	stop     *atomic.Bool
 	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool)
+}
+
+func newSpinnerOrStdout(cmd *cobra.Command) (spinnerInterf, error) {
+	debug, err := cmd.Flags().GetBool("debug")
+	if err != nil {
+		return nil, err
+	}
+	if debug {
+		return &nopSpinner{cmd.ErrOrStderr()}, nil
+	}
+	return newSpinner(cmd.ErrOrStderr()), nil
 }
 
 func newSpinner(writer io.Writer) *spinner {
@@ -108,7 +121,12 @@ func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *atomic.Bool, _ time.Duratio
 	fmt.Fprintln(out, text+"...")
 }
 
-type nopSpinner struct{}
+type nopSpinner struct {
+	io.Writer
+}
 
-func (s nopSpinner) Start(string, bool) {}
-func (s nopSpinner) Stop()              {}
+func (s *nopSpinner) Start(string, bool) {}
+func (s *nopSpinner) Stop()              {}
+func (s *nopSpinner) Write(p []byte) (n int, err error) {
+	return s.Writer.Write(p)
+}

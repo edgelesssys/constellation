@@ -57,7 +57,7 @@ spec:
                 format: int32
                 type: integer
               nodeImage:
-                description: NodeImage is the name of the NodeImage resource.
+                description: NodeVersion is the name of the NodeVersion resource.
                 type: string
               role:
                 description: Role is the role of the nodes in the scaling group.

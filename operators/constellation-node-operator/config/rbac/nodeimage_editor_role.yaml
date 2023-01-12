@@ -1,13 +1,13 @@
-# permissions for end users to edit nodeimages.
+# permissions for end users to edit nodeversions.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: nodeimage-editor-role
+  name: nodeversion-editor-role
 rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages
+  - nodeversions
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
-  - nodeimages/status
+  - nodeversions/status
   verbs:
   - get

@@ -57,7 +57,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, k-bench, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, verify, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "nop"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "nop"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -100,13 +100,14 @@ runs:
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
+        enterpriseCLI: ${{ inputs.keepMeasurements }}
 
     # macOS runners don't have Docker preinstalled, so they cannot build the bootstrapper.
     # But we can use a Linux runner to build it and store/retrieve it from the action cache.
     - name: Download the bootstrapper from cache
       id: download-bootstrapper-cache
       if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
-      uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # tag=v3.0.11
+      uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
       with:
         key: bootstrapper-${{ github.sha }}
         path: "build/bootstrapper"
@@ -192,9 +193,22 @@ runs:
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
 
+    - name: Run lb test
+      if: inputs.test == 'lb'
+      uses: ./.github/actions/e2e_lb
+      with:
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
     - name: Run K-Bench
       if: inputs.test == 'k-bench'
       uses: ./.github/actions/e2e_kbench
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
+    - name: Run constellation verify test
+      if: inputs.test == 'verify'
+      uses: ./.github/actions/constellation_verify
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        osImage: ${{ inputs.osImage }}

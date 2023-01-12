@@ -13,9 +13,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 )
 
 func newConfigGenerateCmd() *cobra.Command {
@@ -39,29 +39,43 @@ type generateFlags struct {
 	file string
 }
 
-func runConfigGenerate(cmd *cobra.Command, args []string) error {
-	fileHandler := file.NewHandler(afero.NewOsFs())
-	provider := cloudprovider.FromString(args[0])
-	return configGenerate(cmd, fileHandler, provider)
+type configGenerateCmd struct {
+	log debugLog
 }
 
-func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
+func runConfigGenerate(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	provider := cloudprovider.FromString(args[0])
+	cg := &configGenerateCmd{log: log}
+	return cg.configGenerate(cmd, fileHandler, provider)
+}
+
+func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
 	flags, err := parseGenerateFlags(cmd)
 	if err != nil {
 		return err
 	}
-
+  
+  cg.log.Debugf("Parsed flags as %v", flags)
+  cg.log.Debugf("Using cloud provider %s", provider.String())
 	conf := createConfig(provider)
-
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
 			return fmt.Errorf("encoding config content: %w", err)
 		}
+
+		cg.log.Debugf("Writing YAML data to stdout")
 		_, err = cmd.OutOrStdout().Write(content)
 		return err
 	}
 
+	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
 		return err
 	}

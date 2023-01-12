@@ -24,11 +24,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
 
 const (
-	nodeImageField                        = ".spec.nodeImage"
+	nodeVersionField                      = ".spec.nodeVersion"
 	conditionScalingGroupUpToDateReason   = "ScalingGroupNodeImageUpToDate"
 	conditionScalingGroupUpToDateMessage  = "Scaling group will use the latest image when creating new nodes"
 	conditionScalingGroupOutOfDateReason  = "ScalingGroupNodeImageOutOfDate"
@@ -54,10 +54,10 @@ func NewScalingGroupReconciler(scalingGroupUpdater scalingGroupUpdater, client c
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=scalinggroups,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=scalinggroups/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=scalinggroups/finalizers,verbs=update
-//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimage,verbs=get;list;watch
-//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/status,verbs=get
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeversion,verbs=get;list;watch
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeversion/status,verbs=get
 
-// Reconcile reads the latest node image from the referenced NodeImage spec and updates the scaling group to match.
+// Reconcile reads the latest node image from the referenced NodeVersion spec and updates the scaling group to match.
 func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logr := log.FromContext(ctx)
 
@@ -66,9 +66,9 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		logr.Error(err, "Unable to fetch ScalingGroup")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	var desiredNodeImage updatev1alpha1.NodeImage
-	if err := r.Get(ctx, client.ObjectKey{Name: desiredScalingGroup.Spec.NodeImage}, &desiredNodeImage); err != nil {
-		logr.Error(err, "Unable to fetch NodeImage")
+	var desiredNodeVersion updatev1alpha1.NodeVersion
+	if err := r.Get(ctx, client.ObjectKey{Name: desiredScalingGroup.Spec.NodeVersion}, &desiredNodeVersion); err != nil {
+		logr.Error(err, "Unable to fetch NodeVersion")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	nodeImage, err := r.scalingGroupUpdater.GetScalingGroupImage(ctx, desiredScalingGroup.Spec.GroupID)
@@ -81,7 +81,7 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	outdatedCondition := metav1.Condition{
 		Type: updatev1alpha1.ConditionOutdated,
 	}
-	imagesMatch := strings.EqualFold(nodeImage, desiredNodeImage.Spec.ImageReference)
+	imagesMatch := strings.EqualFold(nodeImage, desiredNodeVersion.Spec.ImageReference)
 	if imagesMatch {
 		outdatedCondition.Status = metav1.ConditionFalse
 		outdatedCondition.Reason = conditionScalingGroupUpToDateReason
@@ -99,7 +99,7 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if !imagesMatch {
 		logr.Info("ScalingGroup NodeImage is out of date")
-		if err := r.scalingGroupUpdater.SetScalingGroupImage(ctx, desiredScalingGroup.Spec.GroupID, desiredNodeImage.Spec.ImageReference); err != nil {
+		if err := r.scalingGroupUpdater.SetScalingGroupImage(ctx, desiredScalingGroup.Spec.GroupID, desiredNodeVersion.Spec.ImageReference); err != nil {
 			logr.Error(err, "Unable to set ScalingGroup NodeImage")
 			return ctrl.Result{}, err
 		}
@@ -111,31 +111,31 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ScalingGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &updatev1alpha1.ScalingGroup{}, nodeImageField, func(rawObj client.Object) []string {
-		// Extract the NodeImage name from the ScalingGroup Spec, if one is provided
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &updatev1alpha1.ScalingGroup{}, nodeVersionField, func(rawObj client.Object) []string {
+		// Extract the NodeVersion name from the ScalingGroup Spec, if one is provided
 		scalingGroup := rawObj.(*updatev1alpha1.ScalingGroup)
-		if scalingGroup.Spec.NodeImage == "" {
+		if scalingGroup.Spec.NodeVersion == "" {
 			return nil
 		}
-		return []string{scalingGroup.Spec.NodeImage}
+		return []string{scalingGroup.Spec.NodeVersion}
 	}); err != nil {
 		return err
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.ScalingGroup{}).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.NodeImage{}},
-			handler.EnqueueRequestsFromMapFunc(r.findObjectsForNodeImage),
+			&source.Kind{Type: &updatev1alpha1.NodeVersion{}},
+			handler.EnqueueRequestsFromMapFunc(r.findObjectsForNodeVersion),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Complete(r)
 }
 
-// findObjectsForNodeImage requests reconcile calls for every scaling group referencing the node image.
-func (r *ScalingGroupReconciler) findObjectsForNodeImage(nodeImage client.Object) []reconcile.Request {
+// findObjectsForNodeVersion requests reconcile calls for every scaling group referencing the node image.
+func (r *ScalingGroupReconciler) findObjectsForNodeVersion(nodeVersion client.Object) []reconcile.Request {
 	attachedScalingGroups := &updatev1alpha1.ScalingGroupList{}
 	listOps := &client.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector(nodeImageField, nodeImage.GetName()),
+		FieldSelector: fields.OneTermEqualSelector(nodeVersionField, nodeVersion.GetName()),
 	}
 	if err := r.List(context.TODO(), attachedScalingGroups, listOps); err != nil {
 		return []reconcile.Request{}

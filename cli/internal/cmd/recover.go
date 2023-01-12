@@ -45,33 +45,47 @@ func NewRecoverCmd() *cobra.Command {
 	return cmd
 }
 
+type recoverCmd struct {
+	log debugLog
+}
+
 func runRecover(cmd *cobra.Command, _ []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
-	return recover(cmd, fileHandler, 5*time.Second, &recoverDoer{}, newDialer)
+	r := &recoverCmd{log: log}
+	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
-func recover(
+func (r *recoverCmd) recover(
 	cmd *cobra.Command, fileHandler file.Handler, interval time.Duration,
 	doer recoverDoerInterface, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
 ) error {
-	flags, err := parseRecoverFlags(cmd, fileHandler)
+	flags, err := r.parseRecoverFlags(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
+	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret masterSecret
+	r.log.Debugf("Loading master secret file from %s", flags.secretPath)
 	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
 		return err
 	}
 
+	r.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 	provider := conf.GetProvider()
+	r.log.Debugf("Got provider %s", provider.String())
 	if provider == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
@@ -80,15 +94,17 @@ func recover(
 	if err != nil {
 		return err
 	}
+	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)
-
+	r.log.Debugf("Set dialer for endpoint %s", flags.endpoint)
 	measurementSecret, err := attestation.DeriveMeasurementSecret(masterSecret.Key, masterSecret.Salt)
+	r.log.Debugf("Derived measurementSecret")
 	if err != nil {
 		return err
 	}
 	doer.setSecrets(getStateDiskKeyFunc(masterSecret.Key, masterSecret.Salt), measurementSecret)
-
-	if err := recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
+	r.log.Debugf("Set secrets")
+	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
 		if grpcRetry.ServiceIsUnavailable(err) {
 			return nil
 		}
@@ -97,7 +113,7 @@ func recover(
 	return nil
 }
 
-func recoverCall(ctx context.Context, out io.Writer, interval time.Duration, doer recoverDoerInterface) error {
+func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval time.Duration, doer recoverDoerInterface) error {
 	var err error
 	ctr := 0
 	for {
@@ -118,6 +134,7 @@ func recoverCall(ctx context.Context, out io.Writer, interval time.Duration, doe
 		}
 
 		retrier := retry.NewIntervalRetrier(doer, interval, retryOnceOnFailure)
+		r.log.Debugf("Created new interval retrier")
 		err = retrier.Do(ctx)
 		if err != nil {
 			break
@@ -125,14 +142,13 @@ func recoverCall(ctx context.Context, out io.Writer, interval time.Duration, doe
 		fmt.Fprintln(out, "Pushed recovery key.")
 		ctr++
 	}
-
+	r.log.Debugf("Retry counter is %d", ctr)
 	if ctr > 0 {
 		fmt.Fprintf(out, "Recovered %d control-plane nodes.\n", ctr)
 	} else if grpcRetry.ServiceIsUnavailable(err) {
 		fmt.Fprintln(out, "No control-plane nodes in need of recovery found. Exiting.")
 		return nil
 	}
-
 	return err
 }
 
@@ -147,6 +163,7 @@ type recoverDoer struct {
 	endpoint          string
 	measurementSecret []byte
 	getDiskKey        func(uuid string) (key []byte, err error)
+	log               debugLog
 }
 
 // Do performs the recover streaming rpc.
@@ -155,11 +172,14 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("dialing recovery server: %w", err)
 	}
+	d.log.Debugf("Dialed recovery server")
 	defer conn.Close()
 
 	// set up streaming client
 	protoClient := recoverproto.NewAPIClient(conn)
+	d.log.Debugf("Created protoClient")
 	recoverclient, err := protoClient.Recover(ctx)
+	d.log.Debugf("Created recoverclient")
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
@@ -175,16 +195,19 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 	}); err != nil {
 		return fmt.Errorf("sending measurement secret: %w", err)
 	}
+	d.log.Debugf("Sent measurement secret")
 
 	// receive disk uuid
 	res, err := recoverclient.Recv()
 	if err != nil {
 		return fmt.Errorf("receiving disk uuid: %w", err)
 	}
+	d.log.Debugf("Received disk uuid")
 	stateDiskKey, err := d.getDiskKey(res.DiskUuid)
 	if err != nil {
 		return fmt.Errorf("getting state disk key: %w", err)
 	}
+	d.log.Debugf("Got state disk key")
 
 	// send disk key
 	if err := recoverclient.Send(&recoverproto.RecoverMessage{
@@ -194,10 +217,12 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 	}); err != nil {
 		return fmt.Errorf("sending state disk key: %w", err)
 	}
+	d.log.Debugf("Sent state disk key")
 
 	if _, err := recoverclient.Recv(); err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("receiving confirmation: %w", err)
 	}
+	d.log.Debugf("Received confirmation")
 	return nil
 }
 
@@ -217,8 +242,9 @@ type recoverFlags struct {
 	configPath string
 }
 
-func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
+func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
 	endpoint, err := cmd.Flags().GetString("endpoint")
+	r.log.Debugf("Endpoint flag is %s", endpoint)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
@@ -232,16 +258,17 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
-
+	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
-
+	r.log.Debugf("Master secret flag is %s", masterSecretPath)
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
+	r.log.Debugf("Config path flag is %s", configPath)
 
 	return recoverFlags{
 		endpoint:   endpoint,

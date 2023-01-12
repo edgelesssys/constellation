@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -393,7 +393,7 @@ type stubClusterJoiner struct {
 	joinClusterErr    error
 }
 
-func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, versions.ComponentVersions, *logger.Logger) error {
+func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, components.Components, *logger.Logger) error {
 	j.joinClusterCalled = true
 	return j.joinClusterErr
 }

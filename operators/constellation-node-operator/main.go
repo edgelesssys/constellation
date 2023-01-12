@@ -14,6 +14,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,13 +25,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/azure/client"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/deploy"
-	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/gcp/client"
+	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
+	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
+	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/controllers"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/etcd"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
@@ -100,6 +103,7 @@ func main() {
 		}
 	default:
 		setupLog.Info("CSP does not support upgrades", "csp", csp)
+		cspClient = &cloudfake.Client{}
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -120,6 +124,11 @@ func main() {
 		setupLog.Error(err, "Unable to create k8s client")
 		os.Exit(1)
 	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		setupLog.Error(err, "Unable to create discovery client")
+		os.Exit(1)
+	}
 	etcdClient, err := etcd.New(k8sClient)
 	if err != nil {
 		setupLog.Error(err, "Unable to create etcd client")
@@ -127,17 +136,17 @@ func main() {
 	}
 	defer etcdClient.Close()
 
+	imageInfo := deploy.NewImageInfo()
+	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
+		setupLog.Error(err, "Unable to deploy initial resources")
+		os.Exit(1)
+	}
 	// Create Controllers
 	if csp == "azure" || csp == "gcp" {
-		imageInfo := deploy.NewImageInfo()
-		if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
-			setupLog.Error(err, "Unable to deploy initial resources")
-			os.Exit(1)
-		}
-		if err = controllers.NewNodeImageReconciler(
-			cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
+		if err = controllers.NewNodeVersionReconciler(
+			cspClient, etcdClient, upgrade.NewClient(), discoveryClient, mgr.GetClient(), mgr.GetScheme(),
 		).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
+			setupLog.Error(err, "Unable to create controller", "controller", "NodeVersion")
 			os.Exit(1)
 		}
 		if err = (&controllers.AutoscalingStrategyReconciler{
@@ -204,7 +213,7 @@ type cspAPI interface {
 	SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error
 	// GetScalingGroupName retrieves the name of a scaling group.
 	GetScalingGroupName(scalingGroupID string) (string, error)
-	// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+	// GetAutoscalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 	GetAutoscalingGroupName(scalingGroupID string) (string, error)
 	// ListScalingGroups retrieves a list of scaling groups for the cluster.
 	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)

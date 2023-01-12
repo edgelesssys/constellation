@@ -32,6 +32,7 @@ debug/
 
 # Image
 image/*.ign
+image/prebuilt/*
 image/build/*
 image/dependencies/bootstrapper
 image/dependencies/cilium
@@ -54,3 +55,6 @@ __pycache__/
 
 # Nix shells
 shell.nix
+
+# Gitpod
+.gitpod.yml

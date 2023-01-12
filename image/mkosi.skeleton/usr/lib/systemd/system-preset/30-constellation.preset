@@ -1,4 +1,5 @@
 enable configure-constel-csp.service
+enable constellation-upgrade-agent.service
 enable constellation-bootstrapper.service
 enable containerd.service
 enable kubelet.service

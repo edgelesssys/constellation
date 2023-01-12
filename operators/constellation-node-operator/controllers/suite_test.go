@@ -28,7 +28,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -115,10 +115,11 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&NodeImageReconciler{
-		nodeReplacer: fakes.nodeReplacer,
-		Client:       k8sManager.GetClient(),
-		Scheme:       k8sManager.GetScheme(),
+	err = (&NodeVersionReconciler{
+		kubernetesServerVersionGetter: fakes.k8sVerGetter,
+		nodeReplacer:                  fakes.nodeReplacer,
+		Client:                        k8sManager.GetClient(),
+		Scheme:                        k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -140,6 +141,7 @@ type fakeCollection struct {
 	scalingGroupUpdater *fakeScalingGroupUpdater
 	nodeStateGetter     *stubNodeStateGetter
 	nodeReplacer        *stubNodeReplacer
+	k8sVerGetter        *stubKubernetesServerVersionGetter
 	clock               *testclock.FakeClock
 }
 
@@ -148,6 +150,7 @@ func newFakes() fakeCollection {
 		scalingGroupUpdater: newFakeScalingGroupUpdater(),
 		nodeStateGetter:     &stubNodeStateGetter{},
 		nodeReplacer:        &stubNodeReplacer{},
+		k8sVerGetter:        &stubKubernetesServerVersionGetter{},
 		clock:               testclock.NewFakeClock(time.Now()),
 	}
 }

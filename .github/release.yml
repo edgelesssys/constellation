@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - no-changelog
+      - dependencies
+  categories:
+    - title: 🛠 Breaking changes
+      labels:
+        - breaking-change
+    - title: 🎁 New features
+      labels:
+        - feature
+    - title: 🛡 Security improvements
+      labels:
+        - security-fix
+    - title: 🐛 Bug fixes
+      labels:
+        - bug-fix
+    - title: 🔧 Other changes
+      labels:
+        - "*"

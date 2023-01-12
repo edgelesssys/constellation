@@ -60,7 +60,9 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 						Args: []string{
 							"--logtostderr=true",
 							// This needs to be consistent with the value set in egressSelectorConfiguration.
-							"--uds-name=/etc/kubernetes/konnectivity-server/konnectivity-server.socket",
+							"--uds-name=/run/konnectivity-server/konnectivity-server.socket",
+							// Clean up existing UDS file before starting the server in case the server crashed at some point.
+							"--delete-existing-uds-file=true",
 							// The following two lines assume the Konnectivity server is
 							// deployed on the same machine as the apiserver, and the certs and
 							// key of the API Server are at the specified location.
@@ -119,7 +121,7 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 							},
 							{
 								Name:      "konnectivity-uds",
-								MountPath: "/etc/kubernetes/konnectivity-server",
+								MountPath: "/run/konnectivity-server",
 								ReadOnly:  false,
 							},
 						},
@@ -146,7 +148,7 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 						Name: "konnectivity-uds",
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
-								Path: "/etc/kubernetes/konnectivity-server",
+								Path: "/run/konnectivity-server",
 								Type: &udsHostPathType,
 							},
 						},
@@ -172,7 +174,7 @@ func NewEgressSelectorConfiguration() *EgressSelectorConfiguration {
 						ProxyProtocol: "GRPC",
 						Transport: &apiserver.Transport{
 							UDS: &apiserver.UDSTransport{
-								UDSName: "/etc/kubernetes/konnectivity-server/konnectivity-server.socket",
+								UDSName: "/run/konnectivity-server/konnectivity-server.socket",
 							},
 						},
 					},

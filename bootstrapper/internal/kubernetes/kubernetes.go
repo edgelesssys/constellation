@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -28,13 +29,15 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
+
+var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 
 // configReader provides kubeconfig as []byte.
 type configReader interface {
@@ -43,7 +46,7 @@ type configReader interface {
 
 // configurationProvider provides kubeadm init and join configuration.
 type configurationProvider interface {
-	InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) k8sapi.KubeadmInitYAML
+	InitConfiguration(externalCloudProvider bool, k8sVersion string) k8sapi.KubeadmInitYAML
 	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
@@ -87,14 +90,10 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents versions.ComponentVersions, log *logger.Logger,
+	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
-	k8sVersion, err := versions.NewValidK8sVersion(versionString)
-	if err != nil {
-		return nil, err
-	}
-	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-	if err := k.clusterUtil.InstallComponentsFromCLI(ctx, kubernetesComponents); err != nil {
+	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
+	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +109,11 @@ func (k *KubeWrapper) InitCluster(
 	if instance.VPCIP != "" {
 		validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
 	}
-	nodeName := k8sCompliantHostname(instance.Name)
+	nodeName, err := k8sCompliantHostname(instance.Name)
+	if err != nil {
+		return nil, fmt.Errorf("generating node name: %w", err)
+	}
+
 	nodeIP := instance.VPCIP
 	subnetworkPodCIDR := instance.SecondaryIPRange
 	if len(instance.AliasIPRanges) > 0 {
@@ -134,7 +137,7 @@ func (k *KubeWrapper) InitCluster(
 	// Step 2: configure kubeadm init config
 	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
 		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
-	initConfig := k.configProvider.InitConfiguration(ccmSupported, k8sVersion)
+	initConfig := k.configProvider.InitConfiguration(ccmSupported, versionString)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
@@ -163,9 +166,15 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
+	// Setup the K8s components ConfigMap.
+	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents, versionString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
+	}
+
 	// Annotate Node with the hash of the installed components
 	if err := k.client.AnnotateNode(ctx, nodeName,
-		constants.NodeKubernetesComponentsHashAnnotationKey, kubernetesComponents.GetHash(),
+		constants.NodeKubernetesComponentsAnnotationKey, k8sComponentsConfigMap,
 	); err != nil {
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}
@@ -240,34 +249,16 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 
-	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
-	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
-	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion, kubernetesComponents); err != nil {
-		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
-	}
-
 	k.clusterUtil.FixCilium(log)
 
 	return k.GetKubeconfig()
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents versions.ComponentVersions, log *logger.Logger) error {
-	k8sVersion, err := versions.NewValidK8sVersion(versionString)
-	if err != nil {
-		return err
-	}
-
-	if len(k8sComponents) != 0 {
-		log.With("k8sComponents", k8sComponents).Infof("Using provided kubernetes components")
-		if err := k.clusterUtil.InstallComponentsFromCLI(ctx, k8sComponents); err != nil {
-			return fmt.Errorf("installing kubernetes components: %w", err)
-		}
-	} else {
-		log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-		if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
-			return fmt.Errorf("installing kubernetes components: %w", err)
-		}
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents components.Components, log *logger.Logger) error {
+	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
+	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
+		return fmt.Errorf("installing kubernetes components: %w", err)
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
@@ -278,7 +269,10 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 	providerID := instance.ProviderID
 	nodeInternalIP := instance.VPCIP
-	nodeName := k8sCompliantHostname(instance.Name)
+	nodeName, err := k8sCompliantHostname(instance.Name)
+	if err != nil {
+		return fmt.Errorf("generating node name: %w", err)
+	}
 
 	loadbalancerEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
@@ -323,14 +317,15 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
 }
 
-// setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
-func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion versions.ValidK8sVersion, components versions.ComponentVersions) error {
+// setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.
+// It returns the name of the ConfigMap.
+func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components components.Components, clusterVersion string) (string, error) {
 	componentsMarshalled, err := json.Marshal(components)
 	if err != nil {
-		return fmt.Errorf("marshalling component versions: %w", err)
+		return "", fmt.Errorf("marshalling component versions: %w", err)
 	}
 	componentsHash := components.GetHash()
-	componentConfigMapName := fmt.Sprintf("k8s-component-%s", strings.ReplaceAll(componentsHash, ":", "-"))
+	componentConfigMapName := fmt.Sprintf("k8s-components-%s", strings.ReplaceAll(componentsHash, ":", "-"))
 
 	componentsConfig := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -343,34 +338,16 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 			Namespace: "kube-system",
 		},
 		Data: map[string]string{
-			constants.K8sComponentsFieldName: string(componentsMarshalled),
+			constants.ComponentsListKey:   string(componentsMarshalled),
+			constants.K8sVersionFieldName: clusterVersion,
 		},
 	}
 
 	if err := k.client.CreateConfigMap(ctx, componentsConfig); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
+		return "", fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
 	}
 
-	config := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.K8sVersionConfigMapName,
-			Namespace: "kube-system",
-		},
-		Data: map[string]string{
-			constants.K8sVersionFieldName:    string(k8sVersion),
-			constants.K8sComponentsFieldName: componentConfigMapName,
-		},
-	}
-
-	if err := k.client.CreateConfigMap(ctx, config); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for version config map failed with: %w", err)
-	}
-
-	return nil
+	return componentConfigMapName, nil
 }
 
 // setupInternalConfigMap applies a ConfigMap (cf. server-side apply) to store information that is not supposed to be user-editable.
@@ -401,10 +378,13 @@ func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM strin
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
 // The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
-func k8sCompliantHostname(in string) string {
+func k8sCompliantHostname(in string) (string, error) {
 	hostname := strings.ToLower(in)
 	hostname = strings.ReplaceAll(hostname, "_", "-")
-	return hostname
+	if !validHostnameRegex.MatchString(hostname) {
+		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
+	}
+	return hostname, nil
 }
 
 // StartKubelet starts the kubelet service.

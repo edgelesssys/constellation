@@ -8,7 +8,7 @@ The following gives an overview of the architecture and explains the technical d
 ## Confidential VMs
 
 Confidential VM (CVM) technology comes with hardware and software components for memory encryption, isolation, and remote attestation.
-For details on the implementations and cryptographic soundness please refer to the hardware vendors' documentation and advisories.
+For details on the implementations and cryptographic soundness, refer to the hardware vendors' documentation and advisories.
 
 ## Master secret
 
