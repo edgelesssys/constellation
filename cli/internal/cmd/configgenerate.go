@@ -60,15 +60,10 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	if err != nil {
 		return err
 	}
-	cg.log.Debugf("Parsed flags as %v", flags)
-	conf := config.Default()
-	conf.RemoveProviderExcept(provider)
-	cg.log.Debugf("Using cloud provider %s", provider.String())
-	// set a lower default for QEMU's state disk
-	if provider == cloudprovider.QEMU {
-		conf.StateDiskSizeGB = 10
-	}
 
+	cg.log.Debugf("Parsed flags as %v", flags)
+	cg.log.Debugf("Using cloud provider %s", provider.String())
+	conf := createConfig(provider)
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
@@ -84,12 +79,26 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
 		return err
 	}
+
 	cmd.Println("Config file written to", flags.file)
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
 	return nil
+}
+
+// createConfig creates a config file for the given provider.
+func createConfig(provider cloudprovider.Provider) *config.Config {
+	conf := config.Default()
+	conf.RemoveProviderExcept(provider)
+
+	// set a lower default for QEMU's state disk
+	if provider == cloudprovider.QEMU {
+		conf.StateDiskSizeGB = 10
+	}
+
+	return conf
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {

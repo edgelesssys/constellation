@@ -43,7 +43,7 @@ func newIAMCreateGCPCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
 	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in. Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
-	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation")
+	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation.")
 
 	return cmd
 }
@@ -54,10 +54,10 @@ func runIAMCreateGCP(cmd *cobra.Command, args []string) error {
 	defer spinner.Stop()
 	creator := cloudcmd.NewIAMCreator(spinner)
 
-	return iamCreateGCP(cmd, spinner, fileHandler, creator)
+	return iamCreateGCP(cmd, spinner, creator, fileHandler)
 }
 
-func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, fileHandler file.Handler, creator iamCreator) error {
+func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, creator iamCreator, fileHandler file.Handler) error {
 	// Get input variables.
 	gcpFlags, err := parseGCPFlags(cmd)
 	if err != nil {
@@ -66,11 +66,14 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, fileHandler file.Ha
 
 	// Confirmation.
 	if !gcpFlags.yesFlag {
-		cmd.Printf("The following IAM configuration will be created:\n")
-		cmd.Printf("Project ID:\t%s\n", gcpFlags.projectID)
+		cmd.Printf("The following IAM configuration will be created:\n\n")
+		cmd.Printf("Project ID:\t\t%s\n", gcpFlags.projectID)
 		cmd.Printf("Service Account ID:\t%s\n", gcpFlags.serviceAccountID)
-		cmd.Printf("Region:\t%s\n", gcpFlags.region)
-		cmd.Printf("Zone:\t%s\n", gcpFlags.zone)
+		cmd.Printf("Region:\t\t\t%s\n", gcpFlags.region)
+		cmd.Printf("Zone:\t\t\t%s\n\n", gcpFlags.zone)
+		if gcpFlags.generateConfig {
+			cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", gcpFlags.configPath)
+		}
 		ok, err := askToConfirm(cmd, "Do you want to create the configuration?")
 		if err != nil {
 			return err
@@ -83,6 +86,9 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, fileHandler file.Ha
 
 	// Creation.
 	spinner.Start("Creating", false)
+
+	conf := createConfig(cloudprovider.GCP)
+
 	iamFile, err := creator.Create(cmd.Context(), cloudprovider.GCP, &cloudcmd.IAMConfig{
 		GCP: cloudcmd.GCPIAMConfig{
 			ServiceAccountID: gcpFlags.serviceAccountID,
@@ -91,10 +97,12 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, fileHandler file.Ha
 			ProjectID:        gcpFlags.projectID,
 		},
 	})
+
 	spinner.Stop()
 	if err != nil {
 		return err
 	}
+	cmd.Println() // Print empty line to separate after spinner ended.
 
 	// Write back values.
 	tmpOut, err := parseIDFile(iamFile.GCPOutput.ServiceAccountKey)
@@ -106,7 +114,17 @@ func iamCreateGCP(cmd *cobra.Command, spinner spinnerInterf, fileHandler file.Ha
 		return err
 	}
 
-	cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s", constants.GCPServiceAccountKeyFile))
+	if gcpFlags.generateConfig {
+		conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
+
+		if err := fileHandler.WriteYAML(gcpFlags.configPath, conf, file.OptMkdirAll); err != nil {
+			return err
+		}
+		cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", gcpFlags.configPath)
+		return nil
+	}
+
+	cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
 	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 
 	return nil
@@ -158,7 +176,14 @@ func parseGCPFlags(cmd *cobra.Command) (gcpFlags, error) {
 	if !serviceAccIDRegex.MatchString(serviceAccID) {
 		return gcpFlags{}, fmt.Errorf("invalid serviceAccountID string: %s", serviceAccID)
 	}
-
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return gcpFlags{}, fmt.Errorf("parsing config string: %w", err)
+	}
+	generateConfig, err := cmd.Flags().GetBool("generate-config")
+	if err != nil {
+		return gcpFlags{}, fmt.Errorf("parsing generate-config bool: %w", err)
+	}
 	yesFlag, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return gcpFlags{}, fmt.Errorf("parsing yes bool: %w", err)
@@ -169,6 +194,8 @@ func parseGCPFlags(cmd *cobra.Command) (gcpFlags, error) {
 		zone:             zone,
 		region:           region,
 		projectID:        projectID,
+		generateConfig:   generateConfig,
+		configPath:       configPath,
 		yesFlag:          yesFlag,
 	}, nil
 }
@@ -179,5 +206,7 @@ type gcpFlags struct {
 	zone             string
 	region           string
 	projectID        string
+	generateConfig   bool
+	configPath       string
 	yesFlag          bool
 }
