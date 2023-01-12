@@ -19,17 +19,24 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.image }}
+      image: ${{ steps.find-latest-image.outputs.output }}
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
       - name: Find latest image
         id: find-latest-image
-        uses: ./.github/actions/find_latest_image
+        uses: ./.github/actions/versionsapi
         with:
+          command: latest
           ref: main
           stream: debug
 

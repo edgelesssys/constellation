@@ -120,7 +120,7 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.image }}${{ steps.check-input.outputs.image }}
+      image: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
       isDebugImage: ${{ steps.isDebugImage.outputs.isDebugImage }}
     steps:
       - name: Check input
@@ -147,11 +147,18 @@ jobs:
         with:
           ref: ${{ inputs.git-ref }}
 
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
       - name: Find latest image
         id: find-latest-image
         if: steps.check-input.outputs.image == ''
-        uses: ./.github/actions/find_latest_image
+        uses: ./.github/actions/versionsapi
         with:
+          command: latest
           ref: main
           stream: debug
 
