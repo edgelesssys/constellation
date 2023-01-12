@@ -247,6 +247,8 @@ jobs:
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         with:
           draft: true
+          generate_release_notes: true
+          tag_name: ${{ inputs.ref }}
           files: |
             constellation-*
             cosign.pub
