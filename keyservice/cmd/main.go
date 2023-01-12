@@ -18,9 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/internal/server"
-	"github.com/edgelesssys/constellation/v2/keyservice/setup"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

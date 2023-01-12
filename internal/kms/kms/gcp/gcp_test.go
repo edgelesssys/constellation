@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"cloud.google.com/go/kms/apiv1/kmspb"
-	"github.com/edgelesssys/constellation/v2/keyservice/internal/storage"
-	kmsInterface "github.com/edgelesssys/constellation/v2/keyservice/kms"
-	"github.com/edgelesssys/constellation/v2/keyservice/kms/util"
+	kmsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/util"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"

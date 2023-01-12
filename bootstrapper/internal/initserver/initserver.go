@@ -22,6 +22,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	kmsSetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
