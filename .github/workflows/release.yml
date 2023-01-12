@@ -67,16 +67,19 @@ jobs:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ github.head_ref }}
+
       - name: Create docs branch
         run: |
           git fetch
           git pull
           git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
+
       - name: Create docs release
         working-directory: docs
         run: |
           npm install
           npm run docusaurus docs:version "${MAJOR_MINOR}"
+
       - name: Commit
         run: |
           git config --global user.name "release[bot]"
@@ -84,6 +87,7 @@ jobs:
           git add docs
           git commit -m "docs: generate docs for ${VERSION}"
           git push --set-upstream origin "${BRANCH}"
+
       - name: Create docs pull request
         uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
         with:
@@ -92,6 +96,9 @@ jobs:
           pr_title: "docs: add release ${VERSION}"
           pr_body: |
             :robot: *This is an automated PR.* :robot:
+
+            The PR is triggered as part of the automated release process of version ${VERSION}.
+            It releases a new version of the documentation.
           pr_label: "no-changelog"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -339,5 +346,8 @@ jobs:
           pr_title: "release: bring back changes from ${VERSION}"
           pr_body: |
             :robot: *This is an automated PR.* :robot:
+
+            This PR is triggered as part of the release process of version ${VERSION}.
+            It brings back changes from the release branch into the main branch.
           pr_label: "no-changelog"
           github_token: ${{ secrets.GITHUB_TOKEN }}
