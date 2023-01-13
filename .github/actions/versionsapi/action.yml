@@ -76,10 +76,9 @@ runs:
             ${{ inputs.rm_all == 'true' && '--all' || '' }} \
             ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
         )
+
         if [[ ${{ inputs.command == 'list' }} ]]; then
-          echo "VERSIONSAPI_LIST_RESULT<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$out" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "$out" > versionsapi_output.txt
           exit 0
         fi
 

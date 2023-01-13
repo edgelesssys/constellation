@@ -40,7 +40,7 @@ jobs:
         id: find
         shell: bash
         run: |
-          versions=${VERSIONSAPI_LIST_RESULT}
+          versions=$(cat versionsapi_output.txt)
           echo "Found versions:"
           echo "${versions}"
 
