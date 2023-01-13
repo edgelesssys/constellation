@@ -77,10 +77,13 @@ var _ = Describe("PendingNode controller", func() {
 			}, timeout, interval).Should(Equal(updatev1alpha1.NodeStateCreating))
 
 			By("updating the deadline to be in the past")
-			deadline := fakes.clock.Now().Add(-time.Second)
-			Expect(k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode)).Should(Succeed())
-			pendingNode.Spec.Deadline = &metav1.Time{Time: deadline}
-			Expect(k8sClient.Update(ctx, pendingNode)).Should(Succeed())
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode); err != nil {
+					return err
+				}
+				pendingNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
+				return k8sClient.Update(ctx, pendingNode)
+			}, timeout, interval).Should(Succeed())
 
 			By("checking the pending node updates its goal")
 			Eventually(func() updatev1alpha1.PendingNodeGoal {

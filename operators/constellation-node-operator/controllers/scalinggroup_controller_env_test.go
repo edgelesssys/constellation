@@ -90,9 +90,13 @@ var _ = Describe("ScalingGroup controller", func() {
 			}, timeout, interval).Should(Equal("image-1"))
 
 			By("updating the node image")
-			Expect(k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)).Should(Succeed())
-			nodeVersion.Spec.ImageReference = "image-2"
-			Expect(k8sClient.Update(ctx, nodeVersion)).Should(Succeed())
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
+					return err
+				}
+				nodeVersion.Spec.ImageReference = "image-2"
+				return k8sClient.Update(ctx, nodeVersion)
+			}, timeout, interval).Should(Succeed())
 
 			By("checking the scaling group eventually uses the latest image")
 			Eventually(func() string {

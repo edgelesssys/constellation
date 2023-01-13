@@ -169,8 +169,13 @@ var _ = Describe("JoiningNode controller", func() {
 		Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference3))
 
 		By("setting the deadline to the past")
-		createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
-		Expect(k8sClient.Update(ctx, createdJoiningNode)).Should(Succeed())
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode); err != nil {
+				return err
+			}
+			createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
+			return k8sClient.Update(ctx, createdJoiningNode)
+		}, timeout, interval).Should(Succeed())
 
 		By("deleting the joining node resource")
 		Eventually(func() error {

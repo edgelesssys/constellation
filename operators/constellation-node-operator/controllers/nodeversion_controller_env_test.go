@@ -276,9 +276,19 @@ var _ = Describe("NodeVersion controller", func() {
 			}, timeout, interval).Should(HaveKeyWithValue(heirAnnotation, secondNodeName))
 			Expect(k8sClient.Get(ctx, secondNodeLookupKey, secondNode)).Should(Succeed())
 			Expect(secondNode.Annotations).Should(HaveKeyWithValue(donorAnnotation, firstNodeName))
-			Expect(k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)).Should(Succeed())
-			Expect(nodeVersion.Status.Donors).Should(HaveLen(1))
-			Expect(nodeVersion.Status.Heirs).Should(HaveLen(1))
+
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
+					return err
+				}
+				if len(nodeVersion.Status.Donors) != 1 {
+					return fmt.Errorf("node version %s has %d donors, expected 1", nodeVersion.Name, len(nodeVersion.Status.Donors))
+				}
+				if len(nodeVersion.Status.Heirs) != 1 {
+					return fmt.Errorf("node version %s has %d heirs, expected 1", nodeVersion.Name, len(nodeVersion.Status.Heirs))
+				}
+				return nil
+			}, timeout, interval).Should(Succeed())
 			Expect(k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)).Should(Not(Succeed()))
 
 			By("checking that node labels are copied to the heir")
