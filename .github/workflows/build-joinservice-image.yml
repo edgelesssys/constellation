@@ -1,4 +1,4 @@
-name: Build and upload join service image (KO)
+name: Build and upload join service image
 env:
   REGISTRY: ghcr.io
 
@@ -10,7 +10,7 @@ on:
       - "release/**"
 
 jobs:
-  build-join-service-ko:
+  build-join-service:
     runs-on: ubuntu-22.04
     permissions:
       contents: read

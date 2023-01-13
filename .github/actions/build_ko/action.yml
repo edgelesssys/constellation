@@ -60,7 +60,7 @@ runs:
         KO_USER: ${{ github.actor }}
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
-        KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}-ko
+        KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}
       run: |
         tags=""
         sbom=""
