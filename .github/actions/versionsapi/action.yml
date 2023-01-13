@@ -47,7 +47,7 @@ outputs:
 
 runs:
   using: docker
-  image: docker://ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:latest
+  image: docker://ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:feat-ci-delete-img-main
   args:
     - ${{ inputs.command }}
     - ${{ inputs.ref != '' && format('--ref={0}', inputs.ref) || '' }}
