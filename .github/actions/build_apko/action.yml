@@ -93,7 +93,7 @@ runs:
               -y
 
             # move sboms to folder
-            mv sbom-${{ inputs.apkoArch }}.* sboms/$imageName
+            mv sbom-*.* sboms/$imageName/
           done
         else
           echo "Building image for ${{ inputs.apkoConfig }}"
@@ -126,6 +126,8 @@ runs:
               --key env://COSIGN_PRIVATE_KEY \
               $imageDigest \
               -y
+
+          mv sbom-*.* sboms/$imageName/
         fi
       shell: bash
       env:
@@ -136,11 +138,15 @@ runs:
 
     - name: Sign sboms
       run: |
-        # cosign all sboms in folder
-        cosign sign-blob \
-          --key env://COSIGN_PRIVATE_KEY \
-          sboms/$imageName/sbom-${{ inputs.apkoArch }}.* \
-          -y
+        for dir in sboms/*; do
+          for file in $dir/*; do
+            cosign sign-blob \
+              --key env://COSIGN_PRIVATE_KEY \
+              $file \
+              -y \
+              > $file.sig
+          done
+        done
 
         zip -r sboms.zip sboms
       shell: bash
