@@ -21,6 +21,17 @@ mv /etc/issue.d /usr/lib/issue.d || true
 rm -f /etc/issue
 rm -f /etc/issue.net
 
+# add motd for constellation console access
+if [[ "${CONSOLE_MOTD:-false}" == "true" ]]; then
+cat <<EOF > /usr/lib/motd.d/10-constellation-console-access.motd
+~ Welcome to Constellation! ~
+Usually, on release versions of Constellation running in the cloud, you are not able to login through the serial console.
+This shell access is specifically granted for debug images and MiniConstellation to allow users to research the environment Constellation runs in.
+Have fun! Feel free to report any issues to GitHub or security@edgeless.systems (for security vulnerabilities only).
+EOF
+fi
+
+
 # update /etc/os-release
 echo "IMAGE_ID=\"${IMAGE_ID}\"" >> /etc/os-release
 echo "IMAGE_VERSION=\"${IMAGE_VERSION}\"" >> /etc/os-release
