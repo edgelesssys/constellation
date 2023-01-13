@@ -22,6 +22,9 @@ inputs:
   version:
     description: --version flag
     required: false
+  version_path:
+    description: --version-path flag
+    required: false
   add_latest:
     description: --latest flag (boolean)
     required: false
@@ -50,6 +53,7 @@ runs:
     - ${{ inputs.ref != '' && format('--ref={0}', inputs.ref) || '' }}
     - ${{ inputs.stream != '' && format('--stream={0}', inputs.stream) || '' }}
     - ${{ inputs.version != '' && format('--version={0}', inputs.version) || '' }}
+    - ${{ inputs.version_path != '' && format('--version-path={0}', inputs.version_path) || '' }}
     - ${{ inputs.add_latest == 'true' && '--latest' || '' }}
     - ${{ inputs.add_release == 'true' && '--release' || '' }}
     - ${{ inputs.rm_all == 'true' && '--all' || '' }}
