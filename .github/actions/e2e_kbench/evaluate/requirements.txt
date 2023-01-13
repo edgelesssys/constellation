@@ -1,2 +1,4 @@
-matplotlib==3.6.2
-numpy==1.23.5
+matplotlib==3.6.2 \
+    --hash=sha256:9347cc6822f38db2b1d1ce992f375289670e595a2d1c15961aacbe0977407dfc
+numpy==1.23.5 \
+    --hash=sha256:5e05b1c973a9f858c74367553e236f287e749465f773328c8ef31abe18f691e1
