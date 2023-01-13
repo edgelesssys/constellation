@@ -94,13 +94,13 @@ runs:
 
         container_full=$(ko build ${{ inputs.koTarget }} --bare --tags ${tags} ${sbom})
         container_image=$(echo $container_full | cut -d@ -f1)
-        container_tag=$(echo $container_full | cut -d: -f2)
+        container_sha256=$(echo $container_full | cut -d: -f2)
 
         cat <<EOF > container_data_ko.json
         {
           "container_full": "${container_full}",
           "container_image": "${container_image}",
-          "container_tag": "${container_tag}"
+          "container_sha256": "${container_sha256}"
         }
         EOF
 
