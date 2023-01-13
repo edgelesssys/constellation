@@ -246,7 +246,7 @@ var _ = Describe("NodeVersion controller", func() {
 			Eventually(func() int {
 				err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion)
 				if err != nil {
-					return 0
+					return 1
 				}
 				return len(nodeVersion.Status.AwaitingAnnotation)
 			}, timeout, interval).Should(Equal(0))
@@ -300,13 +300,18 @@ var _ = Describe("NodeVersion controller", func() {
 			}, timeout, interval).Should(HaveKeyWithValue("custom-node-label", "custom-node-label-value"))
 
 			By("marking the new node as ready")
-			secondNode.Status.Conditions = []corev1.NodeCondition{
-				{
-					Type:   corev1.NodeReady,
-					Status: corev1.ConditionTrue,
-				},
-			}
-			Expect(k8sClient.Status().Update(ctx, secondNode)).Should(Succeed())
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
+					return err
+				}
+				secondNode.Status.Conditions = []corev1.NodeCondition{
+					{
+						Type:   corev1.NodeReady,
+						Status: corev1.ConditionTrue,
+					},
+				}
+				return k8sClient.Status().Update(ctx, secondNode)
+			}, timeout, interval).Should(Succeed())
 
 			By("waiting for a NodeMaintenance resource to be created")
 			nodeMaintenance := &nodemaintenancev1beta1.NodeMaintenance{}
@@ -316,10 +321,12 @@ var _ = Describe("NodeVersion controller", func() {
 
 			By("marking the NodeMaintenance as successful")
 			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateTerminated)
-			nodeMaintenance.Status.Phase = nodemaintenancev1beta1.MaintenanceSucceeded
-			Expect(k8sClient.Status().Update(ctx, nodeMaintenance)).Should(Succeed())
 			Eventually(func() error {
-				return k8sClient.Get(ctx, nodeMaintenanceLookupKey, nodeMaintenance)
+				if err := k8sClient.Get(ctx, nodeMaintenanceLookupKey, nodeMaintenance); err != nil {
+					return err
+				}
+				nodeMaintenance.Status.Phase = nodemaintenancev1beta1.MaintenanceSucceeded
+				return k8sClient.Status().Update(ctx, nodeMaintenance)
 			}, timeout, interval).Should(Succeed())
 
 			By("checking that the outdated node is removed")
