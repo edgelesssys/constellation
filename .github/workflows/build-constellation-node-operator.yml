@@ -1,4 +1,4 @@
-name: Build and upload constellation node operator image (KO)
+name: Build and upload constellation node operator image
 
 on:
   workflow_dispatch:
