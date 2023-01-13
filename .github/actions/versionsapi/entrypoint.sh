@@ -14,13 +14,10 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ ${GITHUB_ACTIONS} == "true" ]]; then
-  echo 'output<<EOF' >> "${GITHUB_OUTPUT}"
-  echo "test" | tee "${GITHUB_OUTPUT}"
-  echo 'EOF' >> "${GITHUB_OUTPUT}"
-
-  echo "a=b" >> "${GITHUB_OUTPUT}"
-  echo "c=d" | tee "${GITHUB_OUTPUT}"
-  echo "foo" >> "${GITHUB_OUTPUT}"
+  out="${out//'%'/'%25'}"
+  out="${out//$'\n'/'%0A'}"
+  out="${out//$'\r'/'%0D'}"
+  echo "${out}" | tee "${GITHUB_OUTPUT}"
 else
   echo "${out}"
 fi
