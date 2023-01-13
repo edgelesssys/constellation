@@ -74,7 +74,10 @@ runs:
             ${{ inputs.add_latest == 'true' && '--latest' || '' }} \
             ${{ inputs.add_release == 'true' && '--release' || '' }} \
             ${{ inputs.rm_all == 'true' && '--all' || '' }} \
-            ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
+            ${{ inputs.dryrun == 'true' && '--dryrun' || '' }} \
+            ${{ inputs.command == 'list' && '--json' || '' }}
         )
-        outJSON=$(jq --compact-output --null-input '$ARGS.positional' --args -- ${out})
+        if [[ ${{ inputs.command == 'list' }} ]]; then
+          out=$(echo $out | jq --compact-output)
+        fi
         echo "output=${outJSON}" >> "$GITHUB_OUTPUT"
