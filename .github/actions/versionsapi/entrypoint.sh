@@ -12,7 +12,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ ${GITHUB_ACTIONS} == "true" ]]; then
-  echo "output=${out}" | tee "${GITHUB_ENV}"
+  echo "output=${out}" | tee "${GITHUB_OUTPUT}"
 else
   echo "${out}"
 fi
