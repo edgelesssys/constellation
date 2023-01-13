@@ -40,8 +40,7 @@ jobs:
         id: find
         shell: bash
         run: |
-          versionsJSON="${{ steps.list.outputs.output }}"
-          versions=$(echo "${versionsJSON}" | jq -r '.[]')
+          versions=${VERSIONSAPI_LIST_RESULT}
           echo "Found versions:"
           echo "${versions}"
 

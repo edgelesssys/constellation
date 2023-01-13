@@ -74,10 +74,13 @@ runs:
             ${{ inputs.add_latest == 'true' && '--latest' || '' }} \
             ${{ inputs.add_release == 'true' && '--release' || '' }} \
             ${{ inputs.rm_all == 'true' && '--all' || '' }} \
-            ${{ inputs.dryrun == 'true' && '--dryrun' || '' }} \
-            ${{ inputs.command == 'list' && '--json' || '' }}
+            ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
         )
         if [[ ${{ inputs.command == 'list' }} ]]; then
-          out=$(echo $out | jq --compact-output)
+          echo "VERSIONSAPI_LIST_RESULT<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$out" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
+
         echo "output=${outJSON}" >> "$GITHUB_OUTPUT"
