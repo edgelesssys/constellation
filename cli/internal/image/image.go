@@ -54,11 +54,22 @@ func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (st
 		Version: ver.Version,
 	}
 
+	url, err := imgInfoReq.URL()
+	if err != nil {
+		return "", err
+	}
+
 	imgInfo, err := getFromFile(f.fs, imgInfoReq)
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
 		imgInfo, err = f.fetcher.FetchImageInfo(ctx, imgInfoReq)
 	}
-	if err != nil {
+
+	var notFoundErr *fetcher.NotFoundError
+	switch {
+	case errors.As(err, &notFoundErr):
+		overridePath := imageInfoFilename(imgInfoReq)
+		return "", fmt.Errorf("image info file not found locally at %q or remotely at %s", overridePath, url)
+	case err != nil:
 		return "", err
 	}
 
