@@ -10,9 +10,12 @@ builds:
   main: ./kms/cmd
   env:
   - CGO_ENABLED=0
+  - GOOS=linux
+  - GOARCH=amd64
   flags:
   - -trimpath
   - -buildvcs=false
+  - -a
   ldflags:
   - -s -w -buildid=''
   - -extldflags "-static"
@@ -22,9 +25,12 @@ builds:
   main: ./joinservice/cmd
   env:
   - CGO_ENABLED=0
+  - GOOS=linux
+  - GOARCH=amd64
   flags:
   - -trimpath
   - -buildvcs=false
+  - -a
   ldflags:
   - -s -w -buildid=''
   - -extldflags "-static"

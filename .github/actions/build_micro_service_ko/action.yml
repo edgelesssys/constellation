@@ -63,7 +63,9 @@ runs:
       with:
         name: container_data_ko
         path: CONTAINER_DATA_KO
-    - shell: bash
+
+    - name: Set container url to Github Env
+      shell: bash
       run: |
         container_full=$(jq -r .container_full < container_data_ko.json)
         echo CONTAINER_FULL=$container_full >> $GITHUB_ENV

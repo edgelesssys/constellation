@@ -26,10 +26,10 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.5"
 
       - name: Set up ko
-        uses: imjasonh/setup-ko@v0.6
+        uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
 
       - name: Build and upload KMS server container image
         id: build-and-upload

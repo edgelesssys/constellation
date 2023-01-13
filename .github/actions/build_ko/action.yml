@@ -47,12 +47,12 @@ runs:
   using: "composite"
   steps:
     - name: Determine pseudo version
-      if: ${{ inputs.pseudoVersion == 'true' }}
+      if: inputs.pseudoVersion == 'true'
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
 
     - name: Set up ko
-      uses: imjasonh/setup-ko@v0.6
+      uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
 
     - name: Build and upload ko container image
       shell: bash
@@ -66,7 +66,7 @@ runs:
         tags=""
         sbom=""
 
-        if [ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]; then
+        if [[ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]]; then
           tags="latest"
         else:
           tags="${{ github.sha }}"

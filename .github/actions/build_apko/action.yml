@@ -40,8 +40,10 @@ runs:
     - name: Install deps
       shell: bash
       run: |
+        echo "::group::Install dependencies"
         sudo apt-get update
         sudo apt-get install -y zip
+        echo "::endgroup::"
 
     - name: Log in to the Container registry
       id: docker-login
@@ -57,15 +59,15 @@ runs:
 
     - name: Build apko images and sign them
       run: |
-        if [ -z "${{ inputs.apkoConfig }}" ]; then
+        if [[ -z "${{ inputs.apkoConfig }}" ]]; then
           echo "Building all images in image"
           mkdir sboms
           for imageConfig in image/apko/*.yaml; do
             echo "Building image for $imageConfig"
 
             imageName=$(basename $imageConfig | cut -d. -f1 )
-            registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
-            outTar=$imageName.tar
+            registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
+            outTar="${imageName}.tar"
 
             mkdir -p sboms/$imageName
 
@@ -74,11 +76,11 @@ runs:
               -v "$PWD":/work \
               cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
               build \
-              $imageConfig \
+              "${imageConfig}" \
               --build-arch ${{ inputs.apkoArch }} \
               --sbom \
-              $registry \
-              $outTar
+              "${registry}" \
+              "${outTar}"
 
             # push container
             docker load < $outTar
@@ -99,21 +101,21 @@ runs:
           echo "Building image for ${{ inputs.apkoConfig }}"
 
           imageName=$(basename ${{ inputs.apkoConfig }} | cut -d. -f1 )
-          registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
-          outTar=$imageName.tar
+          registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
+          outTar="${imageName}.tar"
 
           mkdir -p sboms/$imageName
 
           # build the image
-            docker run \
-              -v "$PWD":/work \
-              cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
-              build \
-              $imageConfig \
-              --build-arch ${{ inputs.apkoArch }} \
-              --sbom \
-              $registry \
-              $outTar
+          docker run \
+            -v "$PWD":/work \
+            cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
+            build \
+            "${imageConfig}" \
+            --build-arch ${{ inputs.apkoArch }} \
+            --sbom \
+            "${registry}" \
+            "${outTar}"
 
           # push container
           docker load < $outTar
