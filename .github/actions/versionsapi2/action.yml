@@ -64,7 +64,7 @@ runs:
       id: run
       shell: bash
       run: |
-        {
+        out=$(
           ./versionsapi
             ${{ inputs.command }} \
             ${{ inputs.ref != '' && format('--ref={0}', inputs.ref) || '' }} \
@@ -75,5 +75,5 @@ runs:
             ${{ inputs.add_release == 'true' && '--release' || '' }} \
             ${{ inputs.rm_all == 'true' && '--all' || '' }} \
             ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
-        } | tee "$out"
+        )
         echo "output=${out}" >> "$GITHUB_OUTPUT"
