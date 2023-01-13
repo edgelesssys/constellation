@@ -31,7 +31,7 @@ jobs:
 
       - name: Install stringer
         shell: bash
-        run: go install golang.org/x/tools/cmd/stringer@latest
+        run: go install golang.org/x/tools/cmd/stringer@7db99dd12661adab9ce92e9b9633b6ef90867fad # v0.5.0
 
       - name: Get Go submodules
         id: submods

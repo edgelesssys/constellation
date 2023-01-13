@@ -34,7 +34,7 @@ jobs:
 
       - name: Install Actionlint
         shell: bash
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@7fdc9630cc360ea1a469eed64ac6d78caeda1234 # v1.6.22
 
       - name: Run Actionlint
         shell: bash
