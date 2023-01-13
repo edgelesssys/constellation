@@ -76,4 +76,5 @@ runs:
             ${{ inputs.rm_all == 'true' && '--all' || '' }} \
             ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
         )
-        echo "output=${out}" >> "$GITHUB_OUTPUT"
+        outJSON=$(jq --compact-output --null-input '$ARGS.positional' --args -- ${out})
+        echo "output=${outJSON}" >> "$GITHUB_OUTPUT"
