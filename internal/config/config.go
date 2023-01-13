@@ -255,7 +255,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
+				IDKeyDigest:          "0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3",
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
