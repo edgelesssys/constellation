@@ -105,7 +105,7 @@ runs:
         EOF
 
     - name: Upload Container Data # since github censors hashes that may share data with secrets, we need to upload the data as an artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: container_data_ko
         path: container_data_ko.json
