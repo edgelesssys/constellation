@@ -80,7 +80,7 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.13.0
-	github.com/siderolabs/talos/pkg/machinery v1.3.1
+	github.com/siderolabs/talos/pkg/machinery v1.3.2
 	github.com/sigstore/rekor v1.0.1
 	github.com/sigstore/sigstore v1.5.0
 	github.com/spf13/afero v1.9.3
