@@ -62,7 +62,7 @@ runs:
         if [[ -z "${{ inputs.apkoConfig }}" ]]; then
           echo "Building all images in image"
           mkdir sboms
-          for imageConfig in image/apko/*.yaml; do
+          for imageConfig in apko/*.yaml; do
             echo "Building image for $imageConfig"
 
             imageName=$(basename $imageConfig | cut -d. -f1 )
