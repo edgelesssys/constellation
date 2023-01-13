@@ -21,11 +21,6 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Install operator-sdk
-        uses: ./.github/actions/install_operator_sdk
-        with:
-          version: v1.22.2
-
       - name: Build and upload constellation-node-operator container image
         uses: ./.github/actions/build_micro_service_ko
         with:
