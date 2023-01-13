@@ -224,7 +224,7 @@
     },
     {
       "fileMatch": [
-        "(^|\\/)versions.go$"
+        "versions.go$"
       ],
       "matchStrings": [
         " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\""
@@ -235,8 +235,8 @@
     },
     {
       "fileMatch": [
-        ".yaml$",
-        ".yml$"
+        "\\.yaml$",
+        "\\.yml$"
       ],
       "matchStrings": [
         "go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})"

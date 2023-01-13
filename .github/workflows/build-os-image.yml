@@ -573,11 +573,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "::group::Install dependencies"
-          cat <<EOF > requirements.txt
-          lief==0.12.2 \
-            --hash=sha256:8e97f109cf4a24ad37d8227b52cf878a58723abe7d88f0f3d5867c02d8ead49b
-          EOF
-          python3 -m pip install --user --require-hashes -r requirements.txt
+          python -m pip install --user --require-hashes -r .github/workflows/build-os-image-requirements.txt
           sudo apt-get update
           sudo apt-get install -y systemd-container # for systemd-dissect
           echo "::endgroup::"
