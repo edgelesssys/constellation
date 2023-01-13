@@ -65,7 +65,7 @@ runs:
       shell: bash
       run: |
         out=$(
-          ./versionsapi
+          ./versionsapi \
             ${{ inputs.command }} \
             ${{ inputs.ref != '' && format('--ref={0}', inputs.ref) || '' }} \
             ${{ inputs.stream != '' && format('--stream={0}', inputs.stream) || '' }} \
