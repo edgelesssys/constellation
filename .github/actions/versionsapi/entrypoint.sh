@@ -13,7 +13,7 @@ fi
 
 if [[ ${GITHUB_ACTIONS} == "true" ]]; then
   echo 'output<<EOF' >> "${GITHUB_OUTPUT}"
-  echo "${out}" | tee "${GITHUB_OUTPUT}"
+  echo "test" | tee "${GITHUB_OUTPUT}"
   echo 'EOF' >> "${GITHUB_OUTPUT}"
 else
   echo "${out}"
