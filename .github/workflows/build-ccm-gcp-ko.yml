@@ -20,10 +20,31 @@ jobs:
           - version: v25.2.0
             latest: true
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Check out repository
+        id: checkout-constellation
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Copy action and workflows
+        id: copy-actions-and-workflows
+        run: |
+          mkdir ${GITHUB_WORKSPACE}/constellation-actions
+          cp -r .github/* ${GITHUB_WORKSPACE}/constellation-actions/
+        shell: bash
+
+      - name: Check out cloud-provider-gcp
+        id: checkout-cloud-provider-gcp
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           repository: "kubernetes/cloud-provider-gcp"
           ref: refs/tags/ccm/${{ matrix.version }}
+
+      - name: Overwrite .github folder with constellation .github
+        id: overwrite-actions-and-workflows
+        run: |
+          cp -r ${GITHUB_WORKSPACE}/.github/* .github/
+        shell: bash
 
       - name: Log in to the Container registry
         id: docker-login
