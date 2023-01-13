@@ -14,10 +14,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ ${GITHUB_ACTIONS} == "true" ]]; then
-  out="${out//'%'/'%25'}"
-  out="${out//$'\n'/'%0A'}"
-  out="${out//$'\r'/'%0D'}"
-  echo "${out}" | tee "${GITHUB_OUTPUT}"
+  echo "output=test" | tee "${GITHUB_OUTPUT}"
 else
   echo "${out}"
 fi
