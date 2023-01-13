@@ -1,7 +1,11 @@
-name: Build and Upload GCP CCM container image
+name: Build and Upload GCP CCM container image (KO)
 env:
   REGISTRY: ghcr.io
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "feat/reproducible-builds-ko-gcp"
 
 jobs:
   build-ccm-gcp:
