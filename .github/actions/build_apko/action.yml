@@ -33,19 +33,19 @@ inputs:
     required: false
     default: ""
 
-# Linux runner only (podman required)
+# Linux runner only (docker required)
 runs:
   using: "composite"
   steps:
-    - name: Install podman
+    - name: Install deps
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y podman zip
+        sudo apt-get install -y zip
 
     - name: Log in to the Container registry
-      id: podman-login
-      uses: redhat-actions/podman-login@v1
+      id: docker-login
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ github.actor }}
@@ -70,7 +70,7 @@ runs:
             mkdir -p sboms/$imageName
 
             # build the image
-            podman run \
+            docker run \
               -v "$PWD":/work \
               cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
               build \
@@ -81,9 +81,9 @@ runs:
               $outTar
 
             # push container
-            podman load < $outTar
-            podman push $registry
-            imageDigest=$(podman inspect --format='{{index .RepoDigests 0}}' $registry)
+            docker load < $outTar
+            docker push $registry
+            imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
             echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
 
             # cosign the container and push to registry
@@ -105,7 +105,7 @@ runs:
           mkdir -p sboms/$imageName
 
           # build the image
-            podman run \
+            docker run \
               -v "$PWD":/work \
               cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
               build \
@@ -116,9 +116,9 @@ runs:
               $outTar
 
           # push container
-          podman load < $outTar
-          podman push $registry
-          imageDigest=$(podman inspect --format='{{index .RepoDigests 0}}' $registry)
+          docker load < $outTar
+          docker push $registry
+          imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
           echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
 
           # cosign the container and push to registry
