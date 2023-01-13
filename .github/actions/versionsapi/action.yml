@@ -77,7 +77,11 @@ runs:
             ${{ inputs.dryrun == 'true' && '--dryrun' || '' }}
         )
 
-        if [[ ${{ inputs.command == 'list' }} ]]; then
+        # Multiline output is not supported by GitHub Actions,
+        # and if we encode it, it is redacted as secret. 🤦
+        # So we have to workaround by writing it to a file.
+
+        if [[ $(echo ${out} | wc -l) -gt 1 ]]; then
           echo "$out" > versionsapi_output.txt
           exit 0
         fi
