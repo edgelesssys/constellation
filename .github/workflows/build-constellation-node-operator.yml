@@ -1,4 +1,4 @@
-name: Build and upload constellation node operator image
+name: Build and upload constellation node operator image (KO)
 
 on:
   workflow_dispatch:
@@ -6,10 +6,6 @@ on:
     branches:
       - main
       - "release/**"
-    paths:
-      - "operators/constellation-node-operator/**"
-      - "internal/**"
-      - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
 
 jobs:
   build-constellation-node-operator:
@@ -20,20 +16,15 @@ jobs:
     steps:
       - name: Check out repository
         id: checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Setup Go environment
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "1.19.5"
+          ref: ${{ github.head_ref }}
 
       - name: Build and upload constellation-node-operator container image
-        uses: ./.github/actions/build_operator
+        uses: ./.github/actions/build_micro_service_ko
         with:
           name: node-operator
-          sourceDir: operators/constellation-node-operator
+          koTarget: ./operators/constellation-node-operator
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
