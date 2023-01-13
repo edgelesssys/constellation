@@ -1,0 +1,41 @@
+name: Build and Upload GCP CCM container image
+env:
+  REGISTRY: ghcr.io
+on: [workflow_dispatch]
+
+jobs:
+  build-ccm-gcp:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        version: [v25.2.0, v24.0.0, v23.0.0]
+        include:
+          - version: v25.2.0
+            latest: true
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          repository: "kubernetes/cloud-provider-gcp"
+          ref: refs/tags/ccm/${{ matrix.version }}
+
+      - name: Log in to the Container registry
+        id: docker-login
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload ccm-gcp container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro_service_ko
+        with:
+          name: cloud-provider-gcp-ko
+          koTarget: ./cmd/cloud-controller-manager
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
