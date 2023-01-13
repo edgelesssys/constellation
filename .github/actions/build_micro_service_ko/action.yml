@@ -54,7 +54,6 @@ runs:
         pseudoVersion: ${{ inputs.pseudoVersion }}
         koTarget: ${{ inputs.koTarget }}
         githubToken: ${{ inputs.GITHUB_TOKEN }}
-        pushTag: ci-test
 
     - name: Download ko Container Data
       id: download_container_data
