@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 for arg in "$@"; do
   if [[ ${arg} != "" ]]; then
     args[${#args[@]}]="${arg}"
