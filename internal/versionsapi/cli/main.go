@@ -4,6 +4,17 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+This package provides a CLI tool to interact with the Constellation versions API.
+
+The tool can be used to request information from the API, but also for admin tasks.
+All actions require an authentication against AWS with the common permissions.
+Andministrative tasks like adding or removing versions require further AWS permissions
+as well as permissions to GCP and Azure.
+
+The CLI is commonly used in the CI pipeline. Most actions shouldn't be executed manually
+by a developer. Notice that there is no synchronization on API operations.
+*/
 package main
 
 import (

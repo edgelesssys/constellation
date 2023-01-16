@@ -4,6 +4,24 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package client provides a client for the versions API.
+
+The client needs to be authenticated with AWS. It should be used in internal
+development and CI tools for administrative tasks. For just fetching information
+from the API, use the fetcher package instead.
+
+Needed IAM permissions for read mode:
+- "s3:GetObject"
+- "s3:ListBucket"
+
+Additional needed IAM permissions for write mode:
+- "s3:PutObject"
+- "s3:DeleteObject"
+- "cloudfront:CreateInvalidation"
+
+Thread-safety of the bucket is not guaranteed. The client is not thread-safe.
+*/
 package client
 
 import (
@@ -30,20 +48,6 @@ import (
 )
 
 // Client is the client for the versions API.
-//
-// The client needs to be authenticated with AWS. It is the interface that should
-// be used in internal development and CI tools.
-//
-// Needed IAM permissions for read mode:
-// - "s3:GetObject"
-// - "s3:ListBucket"
-//
-// Additional needed IAM permissions for write mode:
-// - "s3:PutObject"
-// - "s3:DeleteObject"
-// - "cloudfront:CreateInvalidation"
-//
-// Thread-safety of the bucket is not guaranteed. The client is not thread-safe.
 type Client struct {
 	config                       aws.Config
 	cloudfrontClient             *cloudfront.Client
