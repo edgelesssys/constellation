@@ -125,7 +125,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	if err != nil {
 		return err
 	}
-	i.log.Debugf("Got service account uri %s", serviceAccURI)
 	i.log.Debugf("Loading master secret file from %s", flags.masterSecretPath)
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
