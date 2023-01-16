@@ -81,4 +81,4 @@ runs:
           exit 0
         fi
 
-        echo "output=${outJSON}" >> "$GITHUB_OUTPUT"
+        echo "output=${out}" >> "$GITHUB_OUTPUT"
