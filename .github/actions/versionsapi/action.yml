@@ -76,9 +76,10 @@ runs:
         # and if we encode it, it is redacted as secret. 🤦
         # So we have to workaround by writing it to a file.
 
-        if [[ ${{ inputs.command == 'list' }} ]]; then
+        if [[ ${{ inputs.command }} == 'list' ]]; then
           echo "$out" > versionsapi_output.txt
           exit 0
         fi
 
         echo "output=${out}" >> "$GITHUB_OUTPUT"
+        echo "${out}"
