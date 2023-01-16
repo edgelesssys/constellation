@@ -9,7 +9,7 @@ The bootstrapper has two active components:
 
 ## Init Flow
 
-The InitServer is a gRPC server that is listining for initialization requests.
+The InitServer is a gRPC server that is listening for initialization requests.
 The first instance needs to be initialized by the user, see the [initproto](./initproto)
 for a description of the initialization protocol. The client that talks to this server
 is part of Constellation's CLI.

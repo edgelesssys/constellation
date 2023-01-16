@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package helm is used to install Constellation microservices and other services during cluster initialization.
 package helm
 
 import (

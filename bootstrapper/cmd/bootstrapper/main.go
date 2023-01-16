@@ -17,7 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
-	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"

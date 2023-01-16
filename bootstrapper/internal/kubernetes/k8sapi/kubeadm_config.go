@@ -9,7 +9,7 @@ package k8sapi
 import (
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubelet"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	corev1 "k8s.io/api/core/v1"
@@ -166,8 +166,8 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, cl
 					Effect: corev1.TaintEffectPreferNoSchedule,
 				},
 			},
-			TLSCertFile:       kubelet.CertificateFilename,
-			TLSPrivateKeyFile: kubelet.KeyFilename,
+			TLSCertFile:       certificate.CertificateFilename,
+			TLSPrivateKeyFile: certificate.KeyFilename,
 		},
 	}
 }

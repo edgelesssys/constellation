@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubelet"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -345,11 +345,11 @@ func (k *KubernetesUtil) StartKubelet() error {
 // This is necessary because this node does not request a certificate from the join service.
 func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) error {
 	// Create CSR
-	certRequestRaw, kubeletKey, err := kubelet.GetCertificateRequest(nodeName, ips)
+	certRequestRaw, kubeletKey, err := certificate.GetKubeletCertificateRequest(nodeName, ips)
 	if err != nil {
 		return err
 	}
-	if err := k.file.Write(kubelet.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
+	if err := k.file.Write(certificate.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
 		return err
 	}
 
@@ -399,7 +399,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 		Bytes: certRaw,
 	})
 
-	return k.file.Write(kubelet.CertificateFilename, kubeletCert, file.OptMkdirAll)
+	return k.file.Write(certificate.CertificateFilename, kubeletCert, file.OptMkdirAll)
 }
 
 // createSignedKonnectivityCert manually creates a Kubernetes CA signed certificate for the Konnectivity server.

@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package nodelock handles locking operations on the node.
 package nodelock
 
 import (
