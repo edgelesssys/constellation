@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -183,7 +185,7 @@ func TestInitialize(t *testing.T) {
 			require.NoError(err)
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
 			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
-			var secret masterSecret
+			var secret kmssetup.MasterSecret
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
 			assert.NotEmpty(secret.Salt)
@@ -251,7 +253,7 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 			createFileFunc: func(handler file.Handler) error {
 				return handler.WriteJSON(
 					"someSecret",
-					masterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("constellation-32Byte-length-salt")},
+					kmssetup.MasterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("constellation-32Byte-length-salt")},
 					file.OptNone,
 				)
 			},
@@ -282,7 +284,7 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 			createFileFunc: func(handler file.Handler) error {
 				return handler.WriteJSON(
 					"shortSecret",
-					masterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("short")},
+					kmssetup.MasterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("short")},
 					file.OptNone,
 				)
 			},
@@ -294,7 +296,7 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 			createFileFunc: func(handler file.Handler) error {
 				return handler.WriteJSON(
 					"shortSecret",
-					masterSecret{Key: []byte("short"), Salt: []byte("constellation-32Byte-length-salt")},
+					kmssetup.MasterSecret{Key: []byte("short"), Salt: []byte("constellation-32Byte-length-salt")},
 					file.OptNone,
 				)
 			},
@@ -340,7 +342,7 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 					tc.filename = strings.Trim(filename[1], "\n")
 				}
 
-				var masterSecret masterSecret
+				var masterSecret kmssetup.MasterSecret
 				require.NoError(fileHandler.ReadJSON(tc.filename, &masterSecret))
 				assert.Equal(masterSecret.Key, secret.Key)
 				assert.Equal(masterSecret.Salt, secret.Salt)

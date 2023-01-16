@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
-	Recover(ctx context.Context, opts ...grpc.CallOption) (API_RecoverClient, error)
+	Recover(ctx context.Context, in *RecoverMessage, opts ...grpc.CallOption) (*RecoverResponse, error)
 }
 
 type aPIClient struct {
@@ -33,42 +33,20 @@ func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
 }
 
-func (c *aPIClient) Recover(ctx context.Context, opts ...grpc.CallOption) (API_RecoverClient, error) {
-	stream, err := c.cc.NewStream(ctx, &API_ServiceDesc.Streams[0], "/recoverproto.API/Recover", opts...)
+func (c *aPIClient) Recover(ctx context.Context, in *RecoverMessage, opts ...grpc.CallOption) (*RecoverResponse, error) {
+	out := new(RecoverResponse)
+	err := c.cc.Invoke(ctx, "/recoverproto.API/Recover", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &aPIRecoverClient{stream}
-	return x, nil
-}
-
-type API_RecoverClient interface {
-	Send(*RecoverMessage) error
-	Recv() (*RecoverResponse, error)
-	grpc.ClientStream
-}
-
-type aPIRecoverClient struct {
-	grpc.ClientStream
-}
-
-func (x *aPIRecoverClient) Send(m *RecoverMessage) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *aPIRecoverClient) Recv() (*RecoverResponse, error) {
-	m := new(RecoverResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
-	Recover(API_RecoverServer) error
+	Recover(context.Context, *RecoverMessage) (*RecoverResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -76,8 +54,8 @@ type APIServer interface {
 type UnimplementedAPIServer struct {
 }
 
-func (UnimplementedAPIServer) Recover(API_RecoverServer) error {
-	return status.Errorf(codes.Unimplemented, "method Recover not implemented")
+func (UnimplementedAPIServer) Recover(context.Context, *RecoverMessage) (*RecoverResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Recover not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -92,30 +70,22 @@ func RegisterAPIServer(s grpc.ServiceRegistrar, srv APIServer) {
 	s.RegisterService(&API_ServiceDesc, srv)
 }
 
-func _API_Recover_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(APIServer).Recover(&aPIRecoverServer{stream})
-}
-
-type API_RecoverServer interface {
-	Send(*RecoverResponse) error
-	Recv() (*RecoverMessage, error)
-	grpc.ServerStream
-}
-
-type aPIRecoverServer struct {
-	grpc.ServerStream
-}
-
-func (x *aPIRecoverServer) Send(m *RecoverResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *aPIRecoverServer) Recv() (*RecoverMessage, error) {
-	m := new(RecoverMessage)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _API_Recover_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecoverMessage)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(APIServer).Recover(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/recoverproto.API/Recover",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).Recover(ctx, req.(*RecoverMessage))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
@@ -124,14 +94,12 @@ func (x *aPIRecoverServer) Recv() (*RecoverMessage, error) {
 var API_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "recoverproto.API",
 	HandlerType: (*APIServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Recover",
-			Handler:       _API_Recover_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Recover",
+			Handler:    _API_Recover_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "recover.proto",
 }

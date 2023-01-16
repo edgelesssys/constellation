@@ -34,6 +34,7 @@ import (
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	tpmClient "github.com/google/go-tpm-tools/client"
@@ -151,7 +152,7 @@ func main() {
 		// set up recovery server if control-plane node
 		var recoveryServer setup.RecoveryServer
 		if self.Role == role.ControlPlane {
-			recoveryServer = recoveryserver.New(issuer, log.Named("recoveryServer"))
+			recoveryServer = recoveryserver.New(issuer, kmssetup.KMS, log.Named("recoveryServer"))
 		} else {
 			recoveryServer = recoveryserver.NewStub(log.Named("recoveryServer"))
 		}

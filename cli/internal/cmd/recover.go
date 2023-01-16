@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
-	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -25,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -73,7 +72,7 @@ func (r *recoverCmd) recover(
 	}
 	r.log.Debugf("Using flags: %+v", flags)
 
-	var masterSecret masterSecret
+	var masterSecret kmssetup.MasterSecret
 	r.log.Debugf("Loading master secret file from %s", flags.secretPath)
 	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
 		return err
@@ -97,12 +96,7 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)
 	r.log.Debugf("Set dialer for endpoint %s", flags.endpoint)
-	measurementSecret, err := attestation.DeriveMeasurementSecret(masterSecret.Key, masterSecret.Salt)
-	r.log.Debugf("Derived measurementSecret")
-	if err != nil {
-		return err
-	}
-	doer.setSecrets(getStateDiskKeyFunc(masterSecret.Key, masterSecret.Salt), measurementSecret)
+	doer.setURIs(masterSecret.EncodeToURI(), kmssetup.NoStoreURI)
 	r.log.Debugf("Set secrets")
 	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
 		if grpcRetry.ServiceIsUnavailable(err) {
@@ -157,15 +151,15 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 type recoverDoerInterface interface {
 	Do(ctx context.Context) error
 	setDialer(dialer grpcDialer, endpoint string)
-	setSecrets(getDiskKey func(uuid string) ([]byte, error), measurementSecret []byte)
+	setURIs(kmsURI, storageURI string)
 }
 
 type recoverDoer struct {
-	dialer            grpcDialer
-	endpoint          string
-	measurementSecret []byte
-	getDiskKey        func(uuid string) (key []byte, err error)
-	log               debugLog
+	dialer     grpcDialer
+	endpoint   string
+	kmsURI     string // encodes masterSecret
+	storageURI string
+	log        debugLog
 }
 
 // Do performs the recover streaming rpc.
@@ -177,53 +171,19 @@ func (d *recoverDoer) Do(ctx context.Context) (retErr error) {
 	d.log.Debugf("Dialed recovery server")
 	defer conn.Close()
 
-	// set up streaming client
 	protoClient := recoverproto.NewAPIClient(conn)
 	d.log.Debugf("Created protoClient")
-	recoverclient, err := protoClient.Recover(ctx)
-	d.log.Debugf("Created recoverclient")
+
+	req := &recoverproto.RecoverMessage{
+		KmsUri:     d.kmsURI,
+		StorageUri: d.storageURI,
+	}
+
+	_, err = protoClient.Recover(ctx, req)
 	if err != nil {
-		return fmt.Errorf("creating client: %w", err)
+		return fmt.Errorf("calling recover: %w", err)
 	}
-	defer func() {
-		_ = recoverclient.CloseSend()
-	}()
 
-	// send measurement secret as first message
-	if err := recoverclient.Send(&recoverproto.RecoverMessage{
-		Request: &recoverproto.RecoverMessage_MeasurementSecret{
-			MeasurementSecret: d.measurementSecret,
-		},
-	}); err != nil {
-		return fmt.Errorf("sending measurement secret: %w", err)
-	}
-	d.log.Debugf("Sent measurement secret")
-
-	// receive disk uuid
-	res, err := recoverclient.Recv()
-	if err != nil {
-		return fmt.Errorf("receiving disk uuid: %w", err)
-	}
-	d.log.Debugf("Received disk uuid")
-	stateDiskKey, err := d.getDiskKey(res.DiskUuid)
-	if err != nil {
-		return fmt.Errorf("getting state disk key: %w", err)
-	}
-	d.log.Debugf("Got state disk key")
-
-	// send disk key
-	if err := recoverclient.Send(&recoverproto.RecoverMessage{
-		Request: &recoverproto.RecoverMessage_StateDiskKey{
-			StateDiskKey: stateDiskKey,
-		},
-	}); err != nil {
-		return fmt.Errorf("sending state disk key: %w", err)
-	}
-	d.log.Debugf("Sent state disk key")
-
-	if _, err := recoverclient.Recv(); err != nil && !errors.Is(err, io.EOF) {
-		return fmt.Errorf("receiving confirmation: %w", err)
-	}
 	d.log.Debugf("Received confirmation")
 	return nil
 }
@@ -233,9 +193,9 @@ func (d *recoverDoer) setDialer(dialer grpcDialer, endpoint string) {
 	d.endpoint = endpoint
 }
 
-func (d *recoverDoer) setSecrets(getDiskKey func(string) ([]byte, error), measurementSecret []byte) {
-	d.getDiskKey = getDiskKey
-	d.measurementSecret = measurementSecret
+func (d *recoverDoer) setURIs(kmsURI, storageURI string) {
+	d.kmsURI = kmsURI
+	d.storageURI = storageURI
 }
 
 type recoverFlags struct {
@@ -281,6 +241,6 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 
 func getStateDiskKeyFunc(masterKey, salt []byte) func(uuid string) ([]byte, error) {
 	return func(uuid string) ([]byte, error) {
-		return crypto.DeriveKey(masterKey, salt, []byte(crypto.HKDFInfoPrefix+uuid), crypto.StateDiskKeyLength)
+		return crypto.DeriveKey(masterKey, salt, []byte(crypto.DEKPrefix+uuid), crypto.StateDiskKeyLength)
 	}
 }

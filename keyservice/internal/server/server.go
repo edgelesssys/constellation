@@ -74,7 +74,7 @@ func (s *Server) GetDataKey(ctx context.Context, in *keyserviceproto.GetDataKeyR
 		return nil, status.Error(codes.InvalidArgument, "no data key ID specified")
 	}
 
-	key, err := s.conKMS.GetDEK(ctx, "Constellation", crypto.HKDFInfoPrefix+in.DataKeyId, int(in.Length))
+	key, err := s.conKMS.GetDEK(ctx, crypto.DEKPrefix+in.DataKeyId, int(in.Length))
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to get data key")
 		return nil, status.Errorf(codes.Internal, "%v", err)

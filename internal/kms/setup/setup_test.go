@@ -18,6 +18,8 @@ import (
 	"go.uber.org/goleak"
 )
 
+const constellationKekID = "Constellation"
+
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
@@ -80,23 +82,23 @@ func TestGetKMS(t *testing.T) {
 		wantErr bool
 	}{
 		"cluster kms": {
-			uri:     fmt.Sprintf("%s?salt=%s", ClusterKMSURI, base64.URLEncoding.EncodeToString([]byte("salt"))),
+			uri:     fmt.Sprintf(ClusterKMSURI, base64.URLEncoding.EncodeToString([]byte("key")), base64.URLEncoding.EncodeToString([]byte("salt"))),
 			wantErr: false,
 		},
 		"aws kms": {
-			uri:     fmt.Sprintf(AWSKMSURI, ""),
+			uri:     fmt.Sprintf(AWSKMSURI, "", ""),
 			wantErr: true,
 		},
 		"azure kms": {
-			uri:     fmt.Sprintf(AzureKMSURI, "", ""),
+			uri:     fmt.Sprintf(AzureKMSURI, "", "", ""),
 			wantErr: true,
 		},
 		"azure hsm": {
-			uri:     fmt.Sprintf(AzureHSMURI, ""),
+			uri:     fmt.Sprintf(AzureHSMURI, "", ""),
 			wantErr: true,
 		},
 		"gcp kms": {
-			uri:     fmt.Sprintf(GCPKMSURI, "", "", "", ""),
+			uri:     fmt.Sprintf(GCPKMSURI, "", "", "", "", ""),
 			wantErr: true,
 		},
 		"unknown kms": {
@@ -135,7 +137,8 @@ func TestSetUpKMS(t *testing.T) {
 	assert.Error(err)
 	assert.Nil(kms)
 
-	kms, err = KMS(context.Background(), "storage://no-store", "kms://cluster-kms?salt="+base64.URLEncoding.EncodeToString([]byte("salt")))
+	masterSecret := MasterSecret{Key: []byte("key"), Salt: []byte("salt")}
+	kms, err = KMS(context.Background(), "storage://no-store", masterSecret.EncodeToURI())
 	assert.NoError(err)
 	assert.NotNil(kms)
 }
@@ -146,13 +149,15 @@ func TestGetAWSKMSConfig(t *testing.T) {
 
 	policy := "{keyPolicy: keyPolicy}"
 	escapedPolicy := url.QueryEscape(policy)
-	uri, err := url.Parse(fmt.Sprintf(AWSKMSURI, escapedPolicy))
+	kekID := base64.URLEncoding.EncodeToString([]byte(constellationKekID))
+	uri, err := url.Parse(fmt.Sprintf(AWSKMSURI, escapedPolicy, kekID))
 	require.NoError(err)
-	policyProducer, err := getAWSKMSConfig(uri)
+	policyProducer, rKekID, err := getAWSKMSConfig(uri)
 	require.NoError(err)
 	keyPolicy, err := policyProducer.CreateKeyPolicy("")
 	require.NoError(err)
 	assert.Equal(policy, keyPolicy)
+	assert.Equal(constellationKekID, rKekID)
 }
 
 func TestGetAzureBlobConfig(t *testing.T) {
@@ -178,18 +183,20 @@ func TestGetGCPKMSConfig(t *testing.T) {
 	location := "global"
 	keyRing := "test-ring"
 	protectionLvl := "2"
-	uri, err := url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, protectionLvl))
+	kekID := base64.URLEncoding.EncodeToString([]byte(constellationKekID))
+	uri, err := url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, protectionLvl, kekID))
 	require.NoError(err)
-	rProject, rLocation, rKeyRing, rProtectionLvl, err := getGCPKMSConfig(uri)
+	rProject, rLocation, rKeyRing, rProtectionLvl, rKekID, err := getGCPKMSConfig(uri)
 	require.NoError(err)
 	assert.Equal(project, rProject)
 	assert.Equal(location, rLocation)
 	assert.Equal(keyRing, rKeyRing)
 	assert.Equal(int32(2), rProtectionLvl)
+	assert.Equal(constellationKekID, rKekID)
 
-	uri, err = url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, "invalid"))
+	uri, err = url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, "invalid", kekID))
 	require.NoError(err)
-	_, _, _, _, err = getGCPKMSConfig(uri)
+	_, _, _, _, _, err = getGCPKMSConfig(uri)
 	assert.Error(err)
 }
 
@@ -202,12 +209,13 @@ func TestGetClusterKMSConfig(t *testing.T) {
 		0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
 	}
 
-	uri, err := url.Parse(ClusterKMSURI + "?salt=" + base64.URLEncoding.EncodeToString(expectedSalt))
+	masterSecretIn := MasterSecret{Key: []byte("key"), Salt: expectedSalt}
+	uri, err := url.Parse(masterSecretIn.EncodeToURI())
 	require.NoError(err)
 
-	salt, err := getClusterKMSConfig(uri)
+	masterSecretOut, err := getClusterKMSConfig(uri)
 	assert.NoError(err)
-	assert.Equal(expectedSalt, salt)
+	assert.Equal(expectedSalt, masterSecretOut.Salt)
 }
 
 func TestGetConfig(t *testing.T) {

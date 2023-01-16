@@ -42,20 +42,20 @@ func TestCreateGcpKEK(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	kmsClient, err := gcp.New(ctx, gcpProjectID, gcpLocation, gcpKeyRing, store, kmspb.ProtectionLevel_SOFTWARE)
+	kmsClient, err := gcp.New(ctx, gcpProjectID, gcpLocation, gcpKeyRing, store, kmspb.ProtectionLevel_SOFTWARE, kekName)
 	require.NoError(err)
 
 	// Key name is random, but there is a chance we try to create a key that already exists, in that case the test fails
 	assert.NoError(kmsClient.CreateKEK(ctx, kekName, nil))
 
-	res, err := kmsClient.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 
-	res2, err := kmsClient.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res2, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(res, res2)
 
-	res3, err := kmsClient.GetDEK(ctx, kekName, addSuffix(dekName), config.SymmetricKeyLength)
+	res3, err := kmsClient.GetDEK(ctx, addSuffix(dekName), config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Len(res3, config.SymmetricKeyLength)
 	assert.NotEqual(res, res3)
@@ -76,15 +76,15 @@ func TestImportGcpKEK(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	kmsClient, err := gcp.New(ctx, gcpProjectID, gcpLocation, gcpKeyRing, store, kmspb.ProtectionLevel_SOFTWARE)
+	kmsClient, err := gcp.New(ctx, gcpProjectID, gcpLocation, gcpKeyRing, store, kmspb.ProtectionLevel_SOFTWARE, kekName)
 	require.NoError(err)
 
 	assert.NoError(kmsClient.CreateKEK(ctx, kekName, kekData))
 
-	res, err := kmsClient.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 
-	res2, err := kmsClient.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res2, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(res, res2)
 }

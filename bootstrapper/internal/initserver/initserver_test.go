@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -30,7 +31,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
 }
 
 func TestNew(t *testing.T) {
@@ -86,6 +90,8 @@ func TestInit(t *testing.T) {
 	initSecretHash, err := bcrypt.GenerateFromPassword(initSecret, bcrypt.DefaultCost)
 	require.NoError(t, err)
 
+	masterSecret := kmssetup.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
+
 	testCases := map[string]struct {
 		nodeLock       *fakeLock
 		initializer    ClusterInitializer
@@ -102,14 +108,14 @@ func TestInit(t *testing.T) {
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			initSecretHash: initSecretHash,
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 		},
 		"node locked": {
 			nodeLock:       lockedLock,
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -119,7 +125,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{openErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -128,7 +134,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{uuidErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -137,7 +143,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{updatePassphraseErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -146,7 +152,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -155,7 +161,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{initClusterErr: someErr},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -211,28 +217,29 @@ func TestInit(t *testing.T) {
 
 func TestSetupDisk(t *testing.T) {
 	testCases := map[string]struct {
-		uuid         string
-		masterSecret []byte
-		salt         []byte
-		wantKey      []byte
+		uuid      string
+		masterKey []byte
+		salt      []byte
+		wantKey   []byte
 	}{
 		"lower case uuid": {
-			uuid:         strings.ToLower(testvector.HKDF0xFF.Info),
-			masterSecret: testvector.HKDF0xFF.Secret,
-			salt:         testvector.HKDF0xFF.Salt,
-			wantKey:      testvector.HKDF0xFF.Output,
+			uuid:      strings.ToLower(testvector.HKDF0xFF.Info),
+			masterKey: testvector.HKDF0xFF.Secret,
+			salt:      testvector.HKDF0xFF.Salt,
+			wantKey:   testvector.HKDF0xFF.Output,
 		},
 		"upper case uuid": {
-			uuid:         strings.ToUpper(testvector.HKDF0xFF.Info),
-			masterSecret: testvector.HKDF0xFF.Secret,
-			salt:         testvector.HKDF0xFF.Salt,
-			wantKey:      testvector.HKDF0xFF.Output,
+			uuid:      strings.ToUpper(testvector.HKDF0xFF.Info),
+			masterKey: testvector.HKDF0xFF.Secret,
+			salt:      testvector.HKDF0xFF.Salt,
+			wantKey:   testvector.HKDF0xFF.Output,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			disk := &fakeDisk{
 				uuid:    tc.uuid,
@@ -242,7 +249,11 @@ func TestSetupDisk(t *testing.T) {
 				disk: disk,
 			}
 
-			assert.NoError(server.setupDisk(tc.masterSecret, tc.salt))
+			masterSecret := kmssetup.MasterSecret{Key: tc.masterKey, Salt: tc.salt}
+
+			cloudKms, err := kmssetup.KMS(context.Background(), kmssetup.NoStoreURI, masterSecret.EncodeToURI())
+			require.NoError(err)
+			assert.NoError(server.setupDisk(context.Background(), cloudKms))
 		})
 	}
 }

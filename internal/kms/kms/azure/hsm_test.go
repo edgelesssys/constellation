@@ -165,7 +165,7 @@ func TestHSMGetNewDEK(t *testing.T) {
 				storage: tc.storage,
 			}
 
-			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
+			dek, err := client.GetDEK(context.Background(), "volume-01", 32)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -208,7 +208,7 @@ func TestHSMGetExistingDEK(t *testing.T) {
 				storage: storage,
 			}
 
-			dek, err := client.GetDEK(context.Background(), "test-key", keyID, len(testKey))
+			dek, err := client.GetDEK(context.Background(), keyID, len(testKey))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

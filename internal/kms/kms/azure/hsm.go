@@ -38,10 +38,11 @@ type HSMClient struct {
 	client      hsmClientAPI
 	storage     kms.Storage
 	vaultURL    string
+	kekID       string
 }
 
 // NewHSM initializes a KMS client for Azure manged HSM Key Vault.
-func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts) (*HSMClient, error) {
+func NewHSM(ctx context.Context, vaultName string, store kms.Storage, kekID string, opts *Opts) (*HSMClient, error) {
 	if opts == nil {
 		opts = &Opts{}
 	}
@@ -72,6 +73,7 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 		client:      client,
 		credentials: cred,
 		storage:     store,
+		kekID:       kekID,
 	}, nil
 }
 
@@ -114,7 +116,7 @@ func (c *HSMClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 }
 
 // GetDEK loads an encrypted DEK from storage and unwraps it using an HSM-backed key.
-func (c *HSMClient) GetDEK(ctx context.Context, kekID string, keyID string, dekSize int) ([]byte, error) {
+func (c *HSMClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
 	encryptedDEK, err := c.storage.Get(ctx, keyID)
 	if err != nil {
 		if !errors.Is(err, storage.ErrDEKUnset) {
@@ -126,7 +128,7 @@ func (c *HSMClient) GetDEK(ctx context.Context, kekID string, keyID string, dekS
 		if err != nil {
 			return nil, fmt.Errorf("key generation: %w", err)
 		}
-		if err := c.putDEK(ctx, kekID, keyID, newDEK); err != nil {
+		if err := c.putDEK(ctx, c.kekID, keyID, newDEK); err != nil {
 			return nil, fmt.Errorf("creating new DEK: %w", err)
 		}
 
@@ -137,7 +139,7 @@ func (c *HSMClient) GetDEK(ctx context.Context, kekID string, keyID string, dekS
 		Algorithm: to.Ptr(azkeys.JSONWebKeyEncryptionAlgorithmA256KW),
 		Value:     encryptedDEK,
 	}
-	res, err := c.client.UnwrapKey(ctx, kekID, "", params, &azkeys.UnwrapKeyOptions{})
+	res, err := c.client.UnwrapKey(ctx, c.kekID, "", params, &azkeys.UnwrapKeyOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("unwrapping key: %w", err)
 	}

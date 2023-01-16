@@ -17,7 +17,7 @@ type CloudKMS interface {
 	CreateKEK(ctx context.Context, keyID string, kek []byte) error
 	// GetDEK returns the DEK for dekID and kekID from the KMS.
 	// If the DEK does not exist, a new one is created and saved to storage.
-	GetDEK(ctx context.Context, kekID string, dekID string, dekSize int) ([]byte, error)
+	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
 }
 
 // Storage provides an abstract interface for the storage backend used for DEKs.

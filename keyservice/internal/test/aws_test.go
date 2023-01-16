@@ -146,7 +146,7 @@ func TestAwsKms(t *testing.T) {
 	require.NotEqual(newKEKId1, newKEKId2)
 	var keyPolicyProducer createKeyPolicyFunc
 
-	client, err := awsInterface.New(context.Background(), &keyPolicyProducer, nil)
+	client, err := awsInterface.New(context.Background(), &keyPolicyProducer, nil, newKEKId1)
 	require.NoError(err)
 
 	privateKEK1 := []byte(strings.Repeat("1234", 8))
@@ -166,14 +166,14 @@ func TestAwsKms(t *testing.T) {
 	assert.NoError(client.CreateKEK(ctx, newKEKId1, privateKEK2))
 
 	// make sure that GetDEK is idempotent
-	volumeKey1, err := client.GetDEK(ctx, newKEKId1, "volume01", kmsconfig.SymmetricKeyLength)
+	volumeKey1, err := client.GetDEK(ctx, "volume01", kmsconfig.SymmetricKeyLength)
 	require.NoError(err)
-	volumeKey1Copy, err := client.GetDEK(ctx, newKEKId1, "volume01", kmsconfig.SymmetricKeyLength)
+	volumeKey1Copy, err := client.GetDEK(ctx, "volume01", kmsconfig.SymmetricKeyLength)
 	require.NoError(err)
 	assert.Equal(volumeKey1, volumeKey1Copy)
 
 	// test setting a second DEK
-	volumeKey2, err := client.GetDEK(ctx, newKEKId1, "volume02", kmsconfig.SymmetricKeyLength)
+	volumeKey2, err := client.GetDEK(ctx, "volume02", kmsconfig.SymmetricKeyLength)
 	require.NoError(err)
 	assert.NotEqual(volumeKey1, volumeKey2)
 
@@ -184,7 +184,7 @@ func TestAwsKms(t *testing.T) {
 	assert.NoError(client.CreateKEK(ctx, newKEKId2, privateKEK3))
 
 	// test setting a DEK with AWS KMS generated KEK
-	volumeKey3, err := client.GetDEK(ctx, newKEKId2, "volume03", kmsconfig.SymmetricKeyLength)
+	volumeKey3, err := client.GetDEK(ctx, "volume03", kmsconfig.SymmetricKeyLength)
 	require.NoError(err)
 	assert.NotEqual(volumeKey1, volumeKey3)
 

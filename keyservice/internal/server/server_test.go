@@ -63,7 +63,7 @@ func (c *stubKMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error
 	return nil
 }
 
-func (c *stubKMS) GetDEK(ctx context.Context, kekID string, dekID string, dekSize int) ([]byte, error) {
+func (c *stubKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	if c.deriveKeyErr != nil {
 		return nil, c.deriveKeyErr
 	}

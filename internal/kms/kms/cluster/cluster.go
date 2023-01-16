@@ -20,8 +20,15 @@ type KMS struct {
 }
 
 // New creates a new ClusterKMS.
-func New(salt []byte) *KMS {
-	return &KMS{salt: salt}
+func New(key []byte, salt []byte) (*KMS, error) {
+	if len(key) == 0 {
+		return nil, errors.New("missing master key")
+	}
+	if len(salt) == 0 {
+		return nil, errors.New("missing salt")
+	}
+
+	return &KMS{masterKey: key, salt: salt}, nil
 }
 
 // CreateKEK sets the ClusterKMS masterKey.
@@ -31,7 +38,7 @@ func (c *KMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
 }
 
 // GetDEK derives a key from the KMS masterKey.
-func (c *KMS) GetDEK(ctx context.Context, kekID string, dekID string, dekSize int) ([]byte, error) {
+func (c *KMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	if len(c.masterKey) == 0 {
 		return nil, errors.New("master key not set for Constellation KMS")
 	}

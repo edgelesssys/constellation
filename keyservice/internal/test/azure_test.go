@@ -66,22 +66,22 @@ func TestAzureKeyVault(t *testing.T) {
 	store := storage.NewMemMapStorage()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	client, err := azure.New(ctx, azVaultName, azure.DefaultCloud, store, nil)
+	kekName := "test-kek"
+	client, err := azure.New(ctx, azVaultName, azure.DefaultCloud, store, kekName, nil)
 	require.NoError(err)
 
-	kekName := "test-kek"
 	dekName := "test-dek"
 
 	assert.NoError(client.CreateKEK(ctx, kekName, nil))
 
-	res, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res, err := client.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 
-	res2, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res2, err := client.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(res, res2)
 
-	res3, err := client.GetDEK(ctx, kekName, addSuffix(dekName), config.SymmetricKeyLength)
+	res3, err := client.GetDEK(ctx, addSuffix(dekName), config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Len(res3, config.SymmetricKeyLength)
 	assert.NotEqual(res, res3)
@@ -102,10 +102,10 @@ func TestAzureHSM(t *testing.T) {
 	store := storage.NewMemMapStorage()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	client, err := azure.NewHSM(ctx, azHSMName, store, nil)
+	kekName := "test-kek"
+	client, err := azure.NewHSM(ctx, azHSMName, store, kekName, nil)
 	require.NoError(err)
 
-	kekName := "test-kek"
 	dekName := "test-dek"
 	importedKek := "test-kek-import"
 	kekData := []byte{0x52, 0xFD, 0xFC, 0x07, 0x21, 0x82, 0x65, 0x4F, 0x16, 0x3F, 0x5F, 0x0F, 0x9A, 0x62, 0x1D, 0x72, 0x95, 0x66, 0xC7, 0x4D, 0x10, 0x03, 0x7C, 0x4D, 0x7B, 0xBB, 0x04, 0x07, 0xD1, 0xE2, 0xC6, 0x49}
@@ -114,15 +114,15 @@ func TestAzureHSM(t *testing.T) {
 
 	assert.NoError(client.CreateKEK(ctx, kekName, nil))
 
-	res, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res, err := client.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	require.NoError(err)
 	assert.NotNil(res)
 
-	res2, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
+	res2, err := client.GetDEK(ctx, dekName, config.SymmetricKeyLength)
 	require.NoError(err)
 	assert.Equal(res, res2)
 
-	res3, err := client.GetDEK(ctx, kekName, addSuffix(dekName), config.SymmetricKeyLength)
+	res3, err := client.GetDEK(ctx, addSuffix(dekName), config.SymmetricKeyLength)
 	require.NoError(err)
 	assert.Len(res3, config.SymmetricKeyLength)
 	assert.NotEqual(res, res3)

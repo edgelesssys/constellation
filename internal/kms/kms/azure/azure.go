@@ -47,6 +47,7 @@ type kmsClientAPI interface {
 type KMSClient struct {
 	client  kmsClientAPI
 	storage kms.Storage
+	kekID   string
 }
 
 // Opts are optional settings for AKV clients.
@@ -57,7 +58,7 @@ type Opts struct {
 }
 
 // New initializes a KMS client for Azure Key Vault.
-func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms.Storage, opts *Opts) (*KMSClient, error) {
+func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms.Storage, kekID string, opts *Opts) (*KMSClient, error) {
 	if opts == nil {
 		opts = &Opts{}
 	}
@@ -80,7 +81,7 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if store == nil {
 		store = storage.NewMemMapStorage()
 	}
-	return &KMSClient{client: client, storage: store}, nil
+	return &KMSClient{client: client, storage: store, kekID: kekID}, nil
 }
 
 // CreateKEK saves a new Key Encryption Key using Azure Key Vault.
@@ -111,8 +112,8 @@ func (c *KMSClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 }
 
 // GetDEK decrypts a DEK from storage.
-func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int) ([]byte, error) {
-	kek, err := c.getKEK(ctx, kekID)
+func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
+	kek, err := c.getKEK(ctx, c.kekID)
 	if err != nil {
 		return nil, fmt.Errorf("loading KEK from key vault: %w", err)
 	}
