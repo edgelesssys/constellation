@@ -4,6 +4,17 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+# JoinClient
+
+The JoinClient is one of the two main components of the bootstrapper.
+It is responsible for for the initial setup of a node, and joining an existing Kubernetes cluster.
+
+The JoinClient is started on each node, it then continuously checks for an existing cluster to join,
+or for the InitServer to bootstrap a new cluster.
+
+If the JoinClient finds an existing cluster, it will attempt to join it as either a control-plane or a worker node.
+*/
 package joinclient
 
 import (
@@ -16,8 +27,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -201,7 +212,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
-	certificateRequest, kubeletKey, err := kubelet.GetCertificateRequest(c.nodeName, c.validIPs)
+	certificateRequest, kubeletKey, err := certificate.GetKubeletCertificateRequest(c.nodeName, c.validIPs)
 	if err != nil {
 		return err
 	}
@@ -267,10 +278,10 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 			return fmt.Errorf("writing control plane files: %w", err)
 		}
 	}
-	if err := c.fileHandler.Write(kubelet.CertificateFilename, ticket.KubeletCert, file.OptMkdirAll); err != nil {
+	if err := c.fileHandler.Write(certificate.CertificateFilename, ticket.KubeletCert, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing kubelet certificate: %w", err)
 	}
-	if err := c.fileHandler.Write(kubelet.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
+	if err := c.fileHandler.Write(certificate.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
 		return fmt.Errorf("writing kubelet key: %w", err)
 	}
 

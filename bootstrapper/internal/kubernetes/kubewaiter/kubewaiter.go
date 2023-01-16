@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kubewaiter is used to wait for the Kubernetes API to be available.
 package kubewaiter
 
 import (

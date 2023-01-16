@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package logging provides an interface for logging information to a non-confidential destination
 package logging
 
 import "io"
