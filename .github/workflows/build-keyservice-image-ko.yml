@@ -1,4 +1,4 @@
-name: Build and upload KMS image (KO)
+name: Build and upload KeyService image (KO)
 env:
   REGISTRY: ghcr.io
 
@@ -10,7 +10,7 @@ on:
       - "release/**"
 
 jobs:
-  build-kms-server:
+  build-keyservice:
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -30,13 +30,13 @@ jobs:
       - name: Set up ko
         uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
 
-      - name: Build and upload KMS server container image
+      - name: Build and upload KeyService container image
         id: build-and-upload
         uses: ./.github/actions/build_micro_service_ko
         with:
-          name: kmsserver
+          name: keyservice
           koConfig: .ko.yaml
-          koTarget: ./kms/cmd
+          koTarget: ./keyservice/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
