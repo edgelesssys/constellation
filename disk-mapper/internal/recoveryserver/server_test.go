@@ -8,7 +8,7 @@ package recoveryserver
 
 import (
 	"context"
-	"io"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/stretchr/testify/assert"
@@ -25,14 +26,17 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
 }
 
 func TestServe(t *testing.T) {
 	assert := assert.New(t)
 	log := logger.NewTest(t)
 	uuid := "uuid"
-	server := New(atls.NewFakeIssuer(oid.Dummy{}), log)
+	server := New(atls.NewFakeIssuer(oid.Dummy{}), newStubKMS(nil, nil), log)
 	dialer := testdialer.NewBufconnDialer()
 	listener := dialer.GetListener("192.0.2.1:1234")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -49,7 +53,7 @@ func TestServe(t *testing.T) {
 	cancel()
 	wg.Wait()
 
-	server = New(atls.NewFakeIssuer(oid.Dummy{}), log)
+	server = New(atls.NewFakeIssuer(oid.Dummy{}), newStubKMS(nil, nil), log)
 	dialer = testdialer.NewBufconnDialer()
 	listener = dialer.GetListener("192.0.2.1:1234")
 
@@ -71,59 +75,26 @@ func TestServe(t *testing.T) {
 
 func TestRecover(t *testing.T) {
 	testCases := map[string]struct {
-		initialMsg message
-		keyMsg     message
+		kmsURI     string
+		storageURI string
+		factory    kmsFactory
 		wantErr    bool
 	}{
 		"success": {
-			initialMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_MeasurementSecret{
-						MeasurementSecret: []byte("measurementSecret"),
-					},
-				},
-			},
-			keyMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_StateDiskKey{
-						StateDiskKey: []byte("diskKey"),
-					},
-				},
-			},
+			// base64 encoded: key=masterkey&salt=somesalt
+			kmsURI:     "kms://cluster-kms?key=bWFzdGVya2V5&salt=c29tZXNhbHQ=",
+			storageURI: "storage://no-store",
+			factory:    newStubKMS(nil, nil),
 		},
-		"first message is not a measurement secret": {
-			initialMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_StateDiskKey{
-						StateDiskKey: []byte("diskKey"),
-					},
-				},
-				wantErr: true,
-			},
-			keyMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_StateDiskKey{
-						StateDiskKey: []byte("diskKey"),
-					},
-				},
-			},
+		"kms init fails": {
+			factory: newStubKMS(errors.New("setup failed"), nil),
+			wantErr: true,
 		},
-		"second message is not a state disk key": {
-			initialMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_MeasurementSecret{
-						MeasurementSecret: []byte("measurementSecret"),
-					},
-				},
-			},
-			keyMsg: message{
-				recoverMsg: &recoverproto.RecoverMessage{
-					Request: &recoverproto.RecoverMessage_MeasurementSecret{
-						MeasurementSecret: []byte("measurementSecret"),
-					},
-				},
-				wantErr: true,
-			},
+		"GetDEK fails": {
+			kmsURI:     "kms://cluster-kms?key=bWFzdGVya2V5&salt=c29tZXNhbHQ=",
+			storageURI: "storage://no-store",
+			factory:    newStubKMS(nil, errors.New("GetDEK failed")),
+			wantErr:    true,
 		},
 	}
 
@@ -134,7 +105,7 @@ func TestRecover(t *testing.T) {
 
 			ctx := context.Background()
 			serverUUID := "uuid"
-			server := New(atls.NewFakeIssuer(oid.Dummy{}), logger.NewTest(t))
+			server := New(atls.NewFakeIssuer(oid.Dummy{}), tc.factory, logger.NewTest(t))
 			netDialer := testdialer.NewBufconnDialer()
 			listener := netDialer.GetListener("192.0.2.1:1234")
 
@@ -154,41 +125,46 @@ func TestRecover(t *testing.T) {
 			conn, err := dialer.New(nil, nil, netDialer).Dial(ctx, "192.0.2.1:1234")
 			require.NoError(err)
 			defer conn.Close()
-			client, err := recoverproto.NewAPIClient(conn).Recover(ctx)
-			require.NoError(err)
 
-			// Send initial message
-			err = client.Send(tc.initialMsg.recoverMsg)
-			require.NoError(err)
+			req := recoverproto.RecoverMessage{
+				KmsUri:     tc.kmsURI,
+				StorageUri: tc.storageURI,
+			}
+			_, err = recoverproto.NewAPIClient(conn).Recover(ctx, &req)
 
-			// Receive uuid
-			uuid, err := client.Recv()
-			if tc.initialMsg.wantErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
-			assert.Equal(serverUUID, uuid.DiskUuid)
-
-			// Send key message
-			err = client.Send(tc.keyMsg.recoverMsg)
-			require.NoError(err)
-
-			_, err = client.Recv()
-			if tc.keyMsg.wantErr {
-				assert.Error(err)
-				return
-			}
-			assert.ErrorIs(io.EOF, err)
-
 			wg.Wait()
-			assert.NoError(serveErr)
-			assert.Equal(tc.initialMsg.recoverMsg.GetMeasurementSecret(), measurementSecret)
-			assert.Equal(tc.keyMsg.recoverMsg.GetStateDiskKey(), diskKey)
+			require.NoError(serveErr)
+			assert.NoError(err)
+			assert.NotNil(measurementSecret)
+			assert.NotNil(diskKey)
 		})
 	}
 }
 
-type message struct {
-	recoverMsg *recoverproto.RecoverMessage
-	wantErr    bool
+func newStubKMS(setupErr, getDEKErr error) kmsFactory {
+	return func(ctx context.Context, storageURI string, kmsURI string) (kms.CloudKMS, error) {
+		if setupErr != nil {
+			return nil, setupErr
+		}
+		return &stubKMS{getDEKErr: getDEKErr}, nil
+	}
+}
+
+type stubKMS struct {
+	getDEKErr error
+}
+
+func (s *stubKMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
+	return nil
+}
+
+func (s *stubKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+	if s.getDEKErr != nil {
+		return nil, s.getDEKErr
+	}
+	return []byte("someDEK"), nil
 }

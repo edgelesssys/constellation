@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"flag"
 	"path/filepath"
@@ -53,17 +52,14 @@ func main() {
 	if len(salt) < crypto.RNGLengthDefault {
 		log.With(zap.Error(errors.New("invalid salt length"))).Fatalf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
 	}
-	keyURI := setup.ClusterKMSURI + "?salt=" + base64.URLEncoding.EncodeToString(salt)
+	masterSecret := setup.MasterSecret{Key: masterKey, Salt: salt}
 
 	// set up Key Management Service
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	conKMS, err := setup.KMS(ctx, setup.NoStoreURI, keyURI)
+	conKMS, err := setup.KMS(ctx, setup.NoStoreURI, masterSecret.EncodeToURI())
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
-	}
-	if err := conKMS.CreateKEK(ctx, "Constellation", masterKey); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create KMS KEK from MasterKey")
 	}
 
 	if err := server.New(log.Named("keyservice"), conKMS).Run(*port); err != nil {

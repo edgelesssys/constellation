@@ -30,8 +30,10 @@ const (
 	MasterSecretLengthMin = 16
 	// RNGLengthDefault is the number of bytes used for generating nonces.
 	RNGLengthDefault = 32
-	// HKDFInfoPrefix is the prefix used for the info parameter in HKDF.
-	HKDFInfoPrefix = "key-"
+	// DEKPrefix is the prefix used to prefix DEK IDs. Originally introduced as a requirement for the HKDF info parameter.
+	DEKPrefix = "key-"
+	// MeasurementSecretKeyID is name used for the measurementSecret DEK.
+	MeasurementSecretKeyID = "measurementSecret"
 )
 
 // DeriveKey derives a key from a secret.

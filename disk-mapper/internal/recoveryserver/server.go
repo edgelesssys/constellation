@@ -13,14 +13,18 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+type kmsFactory func(ctx context.Context, storageURI string, kmsURI string) (kms.CloudKMS, error)
 
 // RecoveryServer is a gRPC server that can be used by an admin to recover a restarting node.
 type RecoveryServer struct {
@@ -30,6 +34,7 @@ type RecoveryServer struct {
 	stateDiskKey      []byte
 	measurementSecret []byte
 	grpcServer        server
+	factory           kmsFactory
 
 	log *logger.Logger
 
@@ -37,9 +42,10 @@ type RecoveryServer struct {
 }
 
 // New returns a new RecoveryServer.
-func New(issuer atls.Issuer, log *logger.Logger) *RecoveryServer {
+func New(issuer atls.Issuer, factory kmsFactory, log *logger.Logger) *RecoveryServer {
 	server := &RecoveryServer{
-		log: log,
+		log:     log,
+		factory: factory,
 	}
 
 	grpcServer := grpc.NewServer(
@@ -87,47 +93,32 @@ func (s *RecoveryServer) Serve(ctx context.Context, listener net.Listener, diskU
 }
 
 // Recover is a bidirectional streaming RPC that is used to send recovery keys to a restarting node.
-func (s *RecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
+func (s *RecoveryServer) Recover(ctx context.Context, req *recoverproto.RecoverMessage) (*recoverproto.RecoverResponse, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 
 	log.Infof("Received recover call")
 
-	msg, err := stream.Recv()
+	cloudKms, err := s.factory(ctx, req.StorageUri, req.KmsUri)
 	if err != nil {
-		return status.Error(codes.Internal, "failed to receive message")
+		return nil, status.Errorf(codes.Internal, "creating kms client: %s", err)
 	}
 
-	measurementSecret, ok := msg.GetRequest().(*recoverproto.RecoverMessage_MeasurementSecret)
-	if !ok {
-		log.Errorf("Received invalid first message: not a measurement secret")
-		return status.Error(codes.InvalidArgument, "first message is not a measurement secret")
-	}
-
-	if err := stream.Send(&recoverproto.RecoverResponse{DiskUuid: s.diskUUID}); err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to send disk UUID")
-		return status.Error(codes.Internal, "failed to send response")
-	}
-
-	msg, err = stream.Recv()
+	measurementSecret, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+crypto.MeasurementSecretKeyID, crypto.DerivedKeyLengthDefault)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to receive disk key")
-		return status.Error(codes.Internal, "failed to receive message")
+		return nil, status.Errorf(codes.Internal, "requesting measurementSecret: %s", err)
 	}
-
-	stateDiskKey, ok := msg.GetRequest().(*recoverproto.RecoverMessage_StateDiskKey)
-	if !ok {
-		log.Errorf("Received invalid second message: not a state disk key")
-		return status.Error(codes.InvalidArgument, "second message is not a state disk key")
+	stateDiskKey, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+s.diskUUID, crypto.StateDiskKeyLength)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "requesting stateDiskKey: %s", err)
 	}
-
-	s.stateDiskKey = stateDiskKey.StateDiskKey
-	s.measurementSecret = measurementSecret.MeasurementSecret
+	s.stateDiskKey = stateDiskKey
+	s.measurementSecret = measurementSecret
 	log.Infof("Received state disk key and measurement secret, shutting down server")
 
 	go s.grpcServer.GracefulStop()
-	return nil
+	return &recoverproto.RecoverResponse{}, nil
 }
 
 // StubServer implements the RecoveryServer interface but does not actually start a server.

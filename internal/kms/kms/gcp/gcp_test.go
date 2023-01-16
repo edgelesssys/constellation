@@ -321,7 +321,7 @@ func TestGetDEK(t *testing.T) {
 				storage:          tc.storage,
 			}
 
-			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
+			dek, err := client.GetDEK(context.Background(), "volume-01", 32)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

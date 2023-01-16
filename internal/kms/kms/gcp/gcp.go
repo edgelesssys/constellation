@@ -50,11 +50,12 @@ type KMSClient struct {
 	waitBackoffLimit int
 	storage          kmsInterface.Storage
 	protectionLevel  kmspb.ProtectionLevel
+	kekID            string
 	opts             []gax.CallOption
 }
 
 // New initializes a KMS client for Google Cloud Platform.
-func New(ctx context.Context, projectID, locationID, keyRingID string, store kmsInterface.Storage, protectionLvl kmspb.ProtectionLevel, opts ...gax.CallOption) (*KMSClient, error) {
+func New(ctx context.Context, projectID, locationID, keyRingID string, store kmsInterface.Storage, protectionLvl kmspb.ProtectionLevel, kekID string, opts ...gax.CallOption) (*KMSClient, error) {
 	if store == nil {
 		store = storage.NewMemMapStorage()
 	}
@@ -71,6 +72,7 @@ func New(ctx context.Context, projectID, locationID, keyRingID string, store kms
 		waitBackoffLimit: 10,
 		storage:          store,
 		protectionLevel:  protectionLvl,
+		kekID:            kekID,
 		opts:             opts,
 	}
 
@@ -108,7 +110,7 @@ func (c *KMSClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 }
 
 // GetDEK fetches an encrypted Data Encryption Key from storage and decrypts it using a KEK stored in Google's KMS.
-func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int) ([]byte, error) {
+func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
 	client, err := c.newClient(ctx)
 	if err != nil {
 		return nil, err
@@ -126,11 +128,11 @@ func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int
 		if err != nil {
 			return nil, fmt.Errorf("key generation: %w", err)
 		}
-		return newDEK, c.putDEK(ctx, client, kekID, keyID, newDEK)
+		return newDEK, c.putDEK(ctx, client, c.kekID, keyID, newDEK)
 	}
 
 	request := &kmspb.DecryptRequest{
-		Name:       fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", c.projectID, c.locationID, c.keyRingID, kekID),
+		Name:       fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", c.projectID, c.locationID, c.keyRingID, c.kekID),
 		Ciphertext: encryptedDEK,
 	}
 

@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -156,7 +157,7 @@ func TestRecover(t *testing.T) {
 
 			require.NoError(fileHandler.WriteJSON(
 				"constellation-mastersecret.json",
-				masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
+				kmssetup.MasterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
 				file.OptNone,
 			))
 
@@ -244,101 +245,16 @@ func TestParseRecoverFlags(t *testing.T) {
 }
 
 func TestDoRecovery(t *testing.T) {
-	someErr := errors.New("error")
 	testCases := map[string]struct {
 		recoveryServer *stubRecoveryServer
 		wantErr        bool
 	}{
 		"success": {
-			recoveryServer: &stubRecoveryServer{
-				actions: [][]func(stream recoverproto.API_RecoverServer) error{{
-					func(stream recoverproto.API_RecoverServer) error {
-						_, err := stream.Recv()
-						return err
-					},
-					func(stream recoverproto.API_RecoverServer) error {
-						return stream.Send(&recoverproto.RecoverResponse{
-							DiskUuid: "00000000-0000-0000-0000-000000000000",
-						})
-					},
-					func(stream recoverproto.API_RecoverServer) error {
-						_, err := stream.Recv()
-						return err
-					},
-				}},
-			},
+			recoveryServer: &stubRecoveryServer{},
 		},
-		"error on first recv": {
-			recoveryServer: &stubRecoveryServer{
-				actions: [][]func(stream recoverproto.API_RecoverServer) error{
-					{
-						func(stream recoverproto.API_RecoverServer) error {
-							return someErr
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		"error on send": {
-			recoveryServer: &stubRecoveryServer{
-				actions: [][]func(stream recoverproto.API_RecoverServer) error{
-					{
-						func(stream recoverproto.API_RecoverServer) error {
-							_, err := stream.Recv()
-							return err
-						},
-						func(stream recoverproto.API_RecoverServer) error {
-							return someErr
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		"error on second recv": {
-			recoveryServer: &stubRecoveryServer{
-				actions: [][]func(stream recoverproto.API_RecoverServer) error{
-					{
-						func(stream recoverproto.API_RecoverServer) error {
-							_, err := stream.Recv()
-							return err
-						},
-						func(stream recoverproto.API_RecoverServer) error {
-							return stream.Send(&recoverproto.RecoverResponse{
-								DiskUuid: "00000000-0000-0000-0000-000000000000",
-							})
-						},
-						func(stream recoverproto.API_RecoverServer) error {
-							return someErr
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		"final message is an error": {
-			recoveryServer: &stubRecoveryServer{
-				actions: [][]func(stream recoverproto.API_RecoverServer) error{{
-					func(stream recoverproto.API_RecoverServer) error {
-						_, err := stream.Recv()
-						return err
-					},
-					func(stream recoverproto.API_RecoverServer) error {
-						return stream.Send(&recoverproto.RecoverResponse{
-							DiskUuid: "00000000-0000-0000-0000-000000000000",
-						})
-					},
-					func(stream recoverproto.API_RecoverServer) error {
-						_, err := stream.Recv()
-						return err
-					},
-					func(stream recoverproto.API_RecoverServer) error {
-						return someErr
-					},
-				}},
-			},
-			wantErr: true,
+		"server responds with error": {
+			recoveryServer: &stubRecoveryServer{recoverError: errors.New("someErr")},
+			wantErr:        true,
 		},
 	}
 
@@ -357,13 +273,9 @@ func TestDoRecovery(t *testing.T) {
 
 			r := &recoverCmd{log: logger.NewTest(t)}
 			recoverDoer := &recoverDoer{
-				dialer:            dialer.New(nil, nil, netDialer),
-				endpoint:          addr,
-				measurementSecret: []byte("measurement-secret"),
-				getDiskKey: func(string) ([]byte, error) {
-					return []byte("disk-key"), nil
-				},
-				log: r.log,
+				dialer:   dialer.New(nil, nil, netDialer),
+				endpoint: addr,
+				log:      r.log,
 			}
 
 			err := recoverDoer.Do(context.Background())
@@ -402,23 +314,15 @@ func TestDeriveStateDiskKey(t *testing.T) {
 }
 
 type stubRecoveryServer struct {
-	actions [][]func(recoverproto.API_RecoverServer) error
-	calls   int
+	recoverError error
 	recoverproto.UnimplementedAPIServer
 }
 
-func (s *stubRecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
-	if s.calls >= len(s.actions) {
-		return status.Error(codes.Unavailable, "server is unavailable")
+func (s *stubRecoveryServer) Recover(context.Context, *recoverproto.RecoverMessage) (*recoverproto.RecoverResponse, error) {
+	if s.recoverError != nil {
+		return nil, s.recoverError
 	}
-	s.calls++
-
-	for _, action := range s.actions[s.calls-1] {
-		if err := action(stream); err != nil {
-			return err
-		}
-	}
-	return nil
+	return &recoverproto.RecoverResponse{}, nil
 }
 
 type stubDoer struct {
@@ -437,4 +341,4 @@ func (d *stubDoer) Do(context.Context) error {
 
 func (d *stubDoer) setDialer(grpcDialer, string) {}
 
-func (d *stubDoer) setSecrets(func(string) ([]byte, error), []byte) {}
+func (d *stubDoer) setURIs(kmsURI, storageURI string) {}

@@ -253,22 +253,23 @@ func TestAWSKMSClient(t *testing.T) {
 
 	awsClient := &fakeAWSClient{kekPool: make(map[string][]byte, 2)}
 
-	client := &KMSClient{
-		awsClient:      awsClient,
-		policyProducer: &stubKeyPolicyProducer{},
-		storage:        storage.NewMemMapStorage(),
-	}
-
-	awsClient.keyIDCount = -1
-
 	testKEK1ID := "testKEK1"
 	testKEK1 := []byte("test KEK")
 	testKEK2ID := "testKEK2"
 	testKEK2 := []byte("more test KEK")
+	client := &KMSClient{
+		awsClient:      awsClient,
+		policyProducer: &stubKeyPolicyProducer{},
+		storage:        storage.NewMemMapStorage(),
+		kekID:          testKEK1ID,
+	}
+
+	awsClient.keyIDCount = -1
+
 	ctx := context.Background()
 
 	// try to get a DEK before setting the KEK
-	_, err := client.GetDEK(ctx, testKEK1ID, "volume01", config.SymmetricKeyLength)
+	_, err := client.GetDEK(ctx, "volume01", config.SymmetricKeyLength)
 	assert.Error(err)
 	assert.ErrorIs(err, kmsInterface.ErrKEKUnknown)
 
@@ -285,16 +286,16 @@ func TestAWSKMSClient(t *testing.T) {
 	assert.Equal(testKEK2, awsClient.kekPool[strconv.Itoa(awsClient.keyIDCount)])
 
 	// test GetDEK method
-	dek1, err := client.GetDEK(ctx, testKEK1ID, "volume01", config.SymmetricKeyLength)
+	dek1, err := client.GetDEK(ctx, "volume01", config.SymmetricKeyLength)
 	assert.NoError(err)
-	dek2, err := client.GetDEK(ctx, testKEK2ID, "volume02", config.SymmetricKeyLength)
+	dek2, err := client.GetDEK(ctx, "volume02", config.SymmetricKeyLength)
 	assert.NoError(err)
 
 	// make sure that GetDEK is idempotent
-	dek1Copy, err := client.GetDEK(ctx, testKEK1ID, "volume01", config.SymmetricKeyLength)
+	dek1Copy, err := client.GetDEK(ctx, "volume01", config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(dek1, dek1Copy)
-	dek2Copy, err := client.GetDEK(ctx, testKEK2ID, "volume02", config.SymmetricKeyLength)
+	dek2Copy, err := client.GetDEK(ctx, "volume02", config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(dek2, dek2Copy)
 }

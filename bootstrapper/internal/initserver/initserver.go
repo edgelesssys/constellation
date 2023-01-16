@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
-	kmsSetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -110,8 +110,13 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
+	cloudKms, err := kmssetup.KMS(ctx, req.StorageUri, req.KmsUri)
+	if err != nil {
+		return nil, fmt.Errorf("creating kms client: %w", err)
+	}
+
 	// generate values for cluster attestation
-	measurementSalt, clusterID, err := deriveMeasurementValues(req.MasterSecret, req.Salt)
+	measurementSalt, clusterID, err := deriveMeasurementValues(ctx, cloudKms)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "deriving measurement values: %s", err)
 	}
@@ -130,7 +135,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
 
-	if err := s.setupDisk(req.MasterSecret, req.Salt); err != nil {
+	if err := s.setupDisk(ctx, cloudKms); err != nil {
 		return nil, status.Errorf(codes.Internal, "setting up disk: %s", err)
 	}
 
@@ -177,7 +182,7 @@ func (s *Server) Stop() {
 	s.log.Infof("Stopped")
 }
 
-func (s *Server) setupDisk(masterSecret, salt []byte) error {
+func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
 	if err := s.disk.Open(); err != nil {
 		return fmt.Errorf("opening encrypted disk: %w", err)
 	}
@@ -189,7 +194,7 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	}
 	uuid = strings.ToLower(uuid)
 
-	diskKey, err := crypto.DeriveKey(masterSecret, salt, []byte(crypto.HKDFInfoPrefix+uuid), crypto.DerivedKeyLengthDefault)
+	diskKey, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+uuid, crypto.StateDiskKeyLength)
 	if err != nil {
 		return err
 	}
@@ -197,12 +202,12 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
-func deriveMeasurementValues(masterSecret, hkdfSalt []byte) (salt, clusterID []byte, err error) {
+func deriveMeasurementValues(ctx context.Context, cloudKms kms.CloudKMS) (salt, clusterID []byte, err error) {
 	salt, err = crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return nil, nil, err
 	}
-	secret, err := attestation.DeriveMeasurementSecret(masterSecret, hkdfSalt)
+	secret, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+crypto.MeasurementSecretKeyID, crypto.DerivedKeyLengthDefault)
 	if err != nil {
 		return nil, nil, err
 	}

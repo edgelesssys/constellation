@@ -24,16 +24,31 @@ import (
 
 // Well known endpoints for KMS services.
 const (
-	AWSKMSURI     = "kms://aws?keyPolicy=%s"
-	AzureKMSURI   = "kms://azure-kms?name=%s&type=%s"
-	AzureHSMURI   = "kms://azure-hsm?name=%s"
-	GCPKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&protectionLvl=%s"
+	AWSKMSURI     = "kms://aws?keyPolicy=%s&kekID=%s"
+	AzureKMSURI   = "kms://azure-kms?name=%s&type=%s&kekID=%s"
+	AzureHSMURI   = "kms://azure-hsm?name=%s&kekID=%s"
+	GCPKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&protectionLvl=%s&kekID=%s"
 	ClusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	AWSS3URI      = "storage://aws?bucket=%s"
 	AzureBlobURI  = "storage://azure?container=%s&connectionString=%s"
 	GCPStorageURI = "storage://gcp?projects=%s&bucket=%s"
 	NoStoreURI    = "storage://no-store"
 )
+
+// MasterSecret holds the master key and salt for deriving keys.
+type MasterSecret struct {
+	Key  []byte `json:"key"`
+	Salt []byte `json:"salt"`
+}
+
+// EncodeToURI returns an URI encoding the master secret.
+func (m *MasterSecret) EncodeToURI() string {
+	return fmt.Sprintf(
+		ClusterKMSURI,
+		base64.URLEncoding.EncodeToString(m.Key),
+		base64.URLEncoding.EncodeToString(m.Salt),
+	)
+}
 
 // KMSInformation about an existing KMS.
 type KMSInformation struct {
@@ -104,39 +119,39 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 
 	switch uri.Host {
 	case "aws":
-		poliyProducer, err := getAWSKMSConfig(uri)
+		poliyProducer, kekID, err := getAWSKMSConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return aws.New(ctx, poliyProducer, store)
+		return aws.New(ctx, poliyProducer, store, kekID)
 
 	case "azure-kms":
-		vaultName, vaultType, err := getAzureKMSConfig(uri)
+		vaultName, vaultType, kekID, err := getAzureKMSConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return azure.New(ctx, vaultName, azure.VaultSuffix(vaultType), store, nil)
+		return azure.New(ctx, vaultName, azure.VaultSuffix(vaultType), store, kekID, nil)
 
 	case "azure-hsm":
-		vaultName, err := getAzureHSMConfig(uri)
+		vaultName, kekID, err := getAzureHSMConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewHSM(ctx, vaultName, store, nil)
+		return azure.NewHSM(ctx, vaultName, store, kekID, nil)
 
 	case "gcp":
-		project, location, keyRing, protectionLvl, err := getGCPKMSConfig(uri)
+		project, location, keyRing, protectionLvl, kekID, err := getGCPKMSConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl))
+		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl), kekID)
 
 	case "cluster-kms":
-		salt, err := getClusterKMSConfig(uri)
+		masterSecret, err := getClusterKMSConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return cluster.New(salt), nil
+		return cluster.New(masterSecret.Key, masterSecret.Salt)
 
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", uri.Host)
@@ -156,22 +171,56 @@ func getAWSS3Config(uri *url.URL) (string, error) {
 	return r[0], err
 }
 
-func getAWSKMSConfig(uri *url.URL) (*defaultPolicyProducer, error) {
-	r, err := getConfig(uri.Query(), []string{"keyPolicy"})
+func getAWSKMSConfig(uri *url.URL) (*defaultPolicyProducer, string, error) {
+	r, err := getConfig(uri.Query(), []string{"keyPolicy", "kekID"})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return &defaultPolicyProducer{policy: r[0]}, err
+
+	if len(r) != 2 {
+		return nil, "", fmt.Errorf("expected 2 KmsURI args, got %d", len(r))
+	}
+
+	kekID, err := base64.URLEncoding.DecodeString(r[1])
+	if err != nil {
+		return nil, "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
+	}
+
+	return &defaultPolicyProducer{policy: r[0]}, string(kekID), err
 }
 
-func getAzureKMSConfig(uri *url.URL) (string, string, error) {
-	r, err := getConfig(uri.Query(), []string{"name", "type"})
-	return r[0], r[1], err
+func getAzureKMSConfig(uri *url.URL) (string, string, string, error) {
+	r, err := getConfig(uri.Query(), []string{"name", "type", "kekID"})
+	if err != nil {
+		return "", "", "", fmt.Errorf("getting config: %w", err)
+	}
+	if len(r) != 3 {
+		return "", "", "", fmt.Errorf("expected 3 KmsURI args, got %d", len(r))
+	}
+
+	kekID, err := base64.URLEncoding.DecodeString(r[2])
+	if err != nil {
+		return "", "", "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
+	}
+
+	return r[0], r[1], string(kekID), err
 }
 
-func getAzureHSMConfig(uri *url.URL) (string, error) {
-	r, err := getConfig(uri.Query(), []string{"name"})
-	return r[0], err
+func getAzureHSMConfig(uri *url.URL) (string, string, error) {
+	r, err := getConfig(uri.Query(), []string{"name", "kekID"})
+	if err != nil {
+		return "", "", fmt.Errorf("getting config: %w", err)
+	}
+	if len(r) != 2 {
+		return "", "", fmt.Errorf("expected 2 KmsURI args, got %d", len(r))
+	}
+
+	kekID, err := base64.URLEncoding.DecodeString(r[1])
+	if err != nil {
+		return "", "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
+	}
+
+	return r[0], string(kekID), err
 }
 
 func getAzureBlobConfig(uri *url.URL) (string, string, error) {
@@ -182,16 +231,26 @@ func getAzureBlobConfig(uri *url.URL) (string, string, error) {
 	return r[0], r[1], nil
 }
 
-func getGCPKMSConfig(uri *url.URL) (string, string, string, int32, error) {
-	r, err := getConfig(uri.Query(), []string{"project", "location", "keyRing", "protectionLvl"})
+func getGCPKMSConfig(uri *url.URL) (project string, location string, keyRing string, protectionLvl int32, kekID string, err error) {
+	r, err := getConfig(uri.Query(), []string{"project", "location", "keyRing", "protectionLvl", "kekID"})
 	if err != nil {
-		return "", "", "", 0, err
+		return "", "", "", 0, "", err
 	}
-	protectionLvl, err := strconv.ParseInt(r[3], 10, 32)
+
+	if len(r) != 5 {
+		return "", "", "", 0, "", fmt.Errorf("expected 5 KmsURI args, got %d", len(r))
+	}
+
+	kekIDByte, err := base64.URLEncoding.DecodeString(r[4])
 	if err != nil {
-		return "", "", "", 0, err
+		return "", "", "", 0, "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
 	}
-	return r[0], r[1], r[2], int32(protectionLvl), nil
+
+	protectionLvl32, err := strconv.ParseInt(r[3], 10, 32)
+	if err != nil {
+		return "", "", "", 0, "", err
+	}
+	return r[0], r[1], r[2], int32(protectionLvl32), string(kekIDByte), nil
 }
 
 func getGCPStorageConfig(uri *url.URL) (string, string, error) {
@@ -199,12 +258,26 @@ func getGCPStorageConfig(uri *url.URL) (string, string, error) {
 	return r[0], r[1], err
 }
 
-func getClusterKMSConfig(uri *url.URL) ([]byte, error) {
-	r, err := getConfig(uri.Query(), []string{"salt"})
+func getClusterKMSConfig(uri *url.URL) (MasterSecret, error) {
+	r, err := getConfig(uri.Query(), []string{"key", "salt"})
 	if err != nil {
-		return nil, err
+		return MasterSecret{}, err
 	}
-	return base64.URLEncoding.DecodeString(r[0])
+
+	if len(r) != 2 {
+		return MasterSecret{}, fmt.Errorf("expected 2 KmsURI args, got %d", len(r))
+	}
+
+	key, err := base64.URLEncoding.DecodeString(r[0])
+	if err != nil {
+		return MasterSecret{}, fmt.Errorf("parsing key from kmsUri: %w", err)
+	}
+	salt, err := base64.URLEncoding.DecodeString(r[1])
+	if err != nil {
+		return MasterSecret{}, fmt.Errorf("parsing salt from kmsUri: %w", err)
+	}
+
+	return MasterSecret{Key: key, Salt: salt}, nil
 }
 
 // getConfig parses url query values, returning a map of the requested values.

@@ -5,16 +5,19 @@ package recoverproto;
 option go_package = "github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto";
 
 service API {
-    rpc Recover(stream RecoverMessage) returns (stream RecoverResponse) {}
+    // Recover sends the necessary information to the recoveryserver to start recovering the cluster.
+    rpc Recover(RecoverMessage) returns (RecoverResponse) {}
 }
 
 message RecoverMessage {
-    oneof request {
-        bytes state_disk_key = 1;
-        bytes measurement_secret = 2;
-    }
+    // bytes state_disk_key = 1; removed
+    // bytes measurement_secret = 2; removed
+    // kms_uri is the URI of the KMS the recoveryserver should use to decrypt DEKs.
+    string kms_uri = 3;
+    // storage_uri is the URI of the storage location the recoveryserver should use to fetch DEKs.
+    string storage_uri = 4;
 }
 
 message RecoverResponse {
-    string disk_uuid = 1;
+    // string disk_uuid = 1; removed
 }

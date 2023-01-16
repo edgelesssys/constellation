@@ -24,19 +24,12 @@ func TestMain(m *testing.M) {
 func TestClusterKMS(t *testing.T) {
 	testVector := testvector.HKDF0xFF
 	assert := assert.New(t)
-	kms := New(testVector.Salt)
-
-	key, err := kms.GetDEK(context.Background(), "", "key-1", 32)
-	assert.Error(err)
-	assert.Nil(key)
-
-	err = kms.CreateKEK(context.Background(), "", testVector.Secret)
-	assert.NoError(err)
-	assert.Equal(testVector.Secret, kms.masterKey)
+	require := require.New(t)
+	kms, err := New(testVector.Secret, testVector.Salt)
+	require.NoError(err)
 
 	keyLower, err := kms.GetDEK(
 		context.Background(),
-		"",
 		strings.ToLower(testVector.InfoPrefix+testVector.Info),
 		int(testVector.Length),
 	)
@@ -46,12 +39,11 @@ func TestClusterKMS(t *testing.T) {
 	// output of the KMS should be case sensitive
 	keyUpper, err := kms.GetDEK(
 		context.Background(),
-		"",
 		strings.ToUpper(testVector.InfoPrefix+testVector.Info),
 		int(testVector.Length),
 	)
 	assert.NoError(err)
-	assert.NotEqual(key, keyUpper)
+	assert.NotEqual(keyLower, keyUpper)
 }
 
 func TestVectorsHKDF(t *testing.T) {
@@ -61,6 +53,7 @@ func TestVectorsHKDF(t *testing.T) {
 		dekID   string
 		dekSize uint
 		wantKey []byte
+		wantErr bool
 	}{
 		"rfc Test Case 1": {
 			kek:     testvector.HKDFrfc1.Secret,
@@ -82,6 +75,7 @@ func TestVectorsHKDF(t *testing.T) {
 			dekID:   testvector.HKDFrfc3.Info,
 			dekSize: testvector.HKDFrfc3.Length,
 			wantKey: testvector.HKDFrfc3.Output,
+			wantErr: true,
 		},
 		"HKDF zero": {
 			kek:     testvector.HKDFZero.Secret,
@@ -104,10 +98,15 @@ func TestVectorsHKDF(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			kms := New(tc.salt)
+			kms, err := New(tc.kek, tc.salt)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
 			require.NoError(kms.CreateKEK(context.Background(), "", tc.kek))
 
-			out, err := kms.GetDEK(context.Background(), "", tc.dekID, int(tc.dekSize))
+			out, err := kms.GetDEK(context.Background(), tc.dekID, int(tc.dekSize))
 			require.NoError(err)
 			assert.Equal(tc.wantKey, out)
 		})

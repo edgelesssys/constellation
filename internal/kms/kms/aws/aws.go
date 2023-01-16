@@ -56,13 +56,14 @@ type KMSClient struct {
 	awsClient      ClientAPI
 	policyProducer KeyPolicyProducer
 	storage        kmsInterface.Storage
+	kekID          string
 }
 
 // New creates and initializes a new KMSClient for AWS.
 //
 // The parameter client needs to be initialized with valid AWS credentials (https://aws.github.io/aws-sdk-go-v2/docs/getting-started).
 // If storage is nil, the default MemMapStorage is used.
-func New(ctx context.Context, policyProducer KeyPolicyProducer, store kmsInterface.Storage, optFns ...func(*awsconfig.LoadOptions) error) (*KMSClient, error) {
+func New(ctx context.Context, policyProducer KeyPolicyProducer, store kmsInterface.Storage, kekID string, optFns ...func(*awsconfig.LoadOptions) error) (*KMSClient, error) {
 	if store == nil {
 		store = storage.NewMemMapStorage()
 	}
@@ -77,6 +78,7 @@ func New(ctx context.Context, policyProducer KeyPolicyProducer, store kmsInterfa
 		awsClient:      client,
 		policyProducer: policyProducer,
 		storage:        store,
+		kekID:          kekID,
 	}, nil
 }
 
@@ -206,9 +208,9 @@ func (c *KMSClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 }
 
 // GetDEK returns the DEK for dekID and kekID from the KMS.
-func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int) ([]byte, error) {
+func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
 	// The KEK should be identified by its alias. The alias always has the same scheme: 'alias/<kekId>'
-	kekID = "alias/" + kekID
+	kekID := "alias/" + c.kekID
 
 	// If a key for keyID exists in the storage, decrypt the key using the KEK.
 	dek, err := c.decryptDEKFromStorage(ctx, kekID, keyID)
