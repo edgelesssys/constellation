@@ -11,15 +11,14 @@ on:
         required: false
         default: false
       stream:
-        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images, 'console' for images with serial console access and 'debug' for debug builds)"
         type: choice
         required: true
         options:
           - "stable"
           - "nightly"
+          - "console"
           - "debug"
-          # TODO: implement console access enabled image
-          # - "console"
       ref:
         type: string
         description: "Git ref to checkout"
@@ -149,6 +148,8 @@ jobs:
         run: |
           if  [[ "${{ inputs.stream }}" == "debug" ]]; then
             echo "imageType=debug" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ inputs.stream }}" == "console" ]]; then
+            echo "imageType=console" >> "$GITHUB_OUTPUT"
           else
             echo "imageType=default" >> "$GITHUB_OUTPUT"
           fi
@@ -266,13 +267,14 @@ jobs:
         shell: bash
         run: |
           echo "::group::Build"
-          sudo make IMAGE_VERSION="${IMAGE_VERSION}" "${CSP}"
+          sudo make IMAGE_VERSION="${IMAGE_VERSION}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
           UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
+          AUTOLOGIN: ${{ (inputs.stream == 'console' || inputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
 

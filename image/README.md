@@ -70,6 +70,8 @@ After that, you can build the image with:
 ```sh
 # OPTIONAL: to create a debug image, export the following line
 # export BOOTSTRAPPER_BINARY=$(realpath ${PWD}/../../build/debugd)
+# OPTIONAL: to enable the serial console, export the following line
+# export AUTOLOGIN=true
 # OPTIONAL: symlink custom path to secure boot PKI to ./pki
 # ln -s /path/to/pki/folder ./pki
 sudo make -j $(nproc)
