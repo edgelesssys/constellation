@@ -157,7 +157,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
-	i.log.Debugf("Got initialization response")
 	spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
@@ -167,7 +166,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		}
 		return err
 	}
-	i.log.Debugf("Writing Constellation id file")
+	i.log.Debugf("Initialization request succeeded")
+	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 	if err := i.writeOutput(idFile, resp, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
