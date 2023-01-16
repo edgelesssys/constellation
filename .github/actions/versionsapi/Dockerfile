@@ -15,12 +15,8 @@ COPY . .
 WORKDIR /workspace/internal/versionsapi/cli
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o versionsapi .
 
-FROM alpine:3.17.1@sha256:f271e74b17ced29b915d351685fd4644785c6d1559dd1f2d4189a5e851ef753a as release
+FROM scratch as release
 
-RUN apk add --no-cache bash
-
-WORKDIR /
 COPY --from=builder /workspace/internal/versionsapi/cli/versionsapi .
-COPY .github/actions/versionsapi/entrypoint.sh .
 
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/notIntendedToBeExecuted"]
