@@ -48,7 +48,8 @@ func (e *vcekError) Error() string {
 }
 
 type idKeyError struct {
-	expectedValue []byte
+	encounteredValue []byte
+	expectedValue    []byte
 }
 
 func (e *idKeyError) Unwrap() error {
@@ -56,7 +57,7 @@ func (e *idKeyError) Unwrap() error {
 }
 
 func (e *idKeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
+	return fmt.Sprintf("configured idkeydigest %x does not match reported idkeydigest %x", e.expectedValue, e.encounteredValue)
 }
 
 type versionError struct {

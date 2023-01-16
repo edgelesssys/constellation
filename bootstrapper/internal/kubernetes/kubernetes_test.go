@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -257,7 +258,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, []byte("{}"), false, nil, logger.NewTest(t),
+				nil, nil, false, idkeydigest.IDKeyDigests{}, true, []byte("{}"), false, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {

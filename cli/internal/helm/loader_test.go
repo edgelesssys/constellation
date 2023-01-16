@@ -356,7 +356,7 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["idkeydigest"] = "baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad"
+	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
 	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
 	mJSON, err := json.Marshal(m)
 	if err != nil {

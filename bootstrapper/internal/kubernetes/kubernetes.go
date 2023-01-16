@@ -9,7 +9,6 @@ package kubernetes
 import (
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -89,7 +89,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
+	enforceIDKeyDigest bool, idKeyDigest idkeydigest.IDKeyDigests, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -488,7 +488,12 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		if !ok {
 			return nil, errors.New("invalid join-service values")
 		}
-		joinVals["idkeydigest"] = hex.EncodeToString(serviceConfig.idkeydigest)
+
+		marshalledDigests, err := json.Marshal(serviceConfig.idkeydigest)
+		if err != nil {
+			return nil, fmt.Errorf("marshalling idkeydigests: %w", err)
+		}
+		joinVals["idkeydigests"] = string(marshalledDigests)
 
 		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 		if err != nil {
@@ -532,7 +537,7 @@ type ccmConfigGetter interface {
 
 type constellationServicesConfig struct {
 	initialMeasurementsJSON []byte
-	idkeydigest             []byte
+	idkeydigest             idkeydigest.IDKeyDigests
 	measurementSalt         []byte
 	subnetworkPodCIDR       string
 	cloudServiceAccountURI  string

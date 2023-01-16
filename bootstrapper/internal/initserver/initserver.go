@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -146,7 +147,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
-		s.issuerWrapper.IDKeyDigest(),
+		idkeydigest.NewIDKeyDigests(req.Idkeydigests),
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
@@ -247,7 +248,7 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIDKeyDigest bool,
-		idKeyDigest []byte,
+		idKeyDigest idkeydigest.IDKeyDigests,
 		azureCVM bool,
 		helmDeployments []byte,
 		conformanceMode bool,

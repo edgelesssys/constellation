@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -301,7 +302,7 @@ type stubClusterInitializer struct {
 }
 
 func (i *stubClusterInitializer) InitCluster(
-	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
+	context.Context, string, string, []byte, []uint32, bool, idkeydigest.IDKeyDigests, bool,
 	[]byte, bool, components.Components, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
