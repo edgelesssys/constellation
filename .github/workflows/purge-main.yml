@@ -1,0 +1,67 @@
+name: Purge old images from main branch
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */2 * * *"
+
+jobs:
+  find-version:
+    name: Delete version from main ref
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.find.outputs.version }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: List versions
+        id: list
+        uses: ./.github/actions/versionsapi
+        with:
+          command: list
+          ref: main
+          stream: debug
+
+      - name: Find version to delete
+        id: find
+        shell: bash
+        run: |
+          versions=$(cat versionsapi_output.txt)
+          echo "Found versions:"
+          echo "${versions}"
+
+          echo "Newest 10 versions shouldn't be deleted"
+          deletable=$(echo "${versions}" | head -n -10)
+          if [ -z "${deletable}" ]; then
+            echo "No deletable versions found"
+            exit 0
+          fi
+          echo "Found deletable versions:"
+          echo "${deletable}"
+
+          ver=$(echo "${deletable}" | head -n 1)
+          echo "Deleting oldest version: ${ver}"
+          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+
+  delete:
+    name: Delete version
+    if: needs.find-version.outputs.version != ''
+    uses: ./.github/workflows/versionsapi.yml
+    needs: find-version
+    secrets: inherit
+    with:
+      command: remove
+      dryrun: true
+      version_path: ${{ needs.find-version.outputs.version }}
