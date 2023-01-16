@@ -78,7 +78,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	c.log.Debugf("Checking configuration for warnings")
+	c.log.Debugf("Checking config for warnings")
 	var printedAWarning bool
 	if !conf.IsReleaseImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
@@ -221,7 +221,7 @@ type createFlags struct {
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
 func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
-	c.log.Debugf("Checking admin configuration file")
+	c.log.Debugf("Checking admin config file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}
