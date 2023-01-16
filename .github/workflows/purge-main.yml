@@ -3,9 +3,9 @@ name: Purge old images from main branch
 on:
   workflow_dispatch:
   schedule:
+    - cron: "0 0/3 * * *"
     - cron: "0 1/3 * * *"
     - cron: "0 2/3 * * *"
-    - cron: "0 3/3 * * *"
 
 jobs:
   find-version:
