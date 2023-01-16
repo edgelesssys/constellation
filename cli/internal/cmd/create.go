@@ -169,7 +169,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 
 	workerCount, err := cmd.Flags().GetInt("worker-nodes")
-	c.log.Debugf("Worker nodes falg is %d", workerCount)
+	c.log.Debugf("Worker nodes flag is %d", workerCount)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
 	}
