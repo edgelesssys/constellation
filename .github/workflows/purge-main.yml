@@ -3,7 +3,9 @@ name: Purge old images from main branch
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"
+    - cron: "0 1/3 * * *"
+    - cron: "0 2/3 * * *"
+    - cron: "0 3/3 * * *"
 
 jobs:
   find-version:
@@ -26,13 +28,32 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
           aws-region: eu-central-1
 
+      - name: Determine stream
+        id: stream
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 0/3 * * *")
+              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "0 1/3 * * *")
+              echo "stream=console" >> "$GITHUB_OUTPUT"
+              ;;
+            "0 2/3 * * *")
+              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown schedule: ${{ github.event.schedule }}"
+              exit 1
+              ;;
+          esac
+
       - name: List versions
         id: list
         uses: ./.github/actions/versionsapi
         with:
           command: list
           ref: main
-          stream: debug
+          stream: ${{ steps.stream.outputs.stream }}
 
       - name: Find version to delete
         id: find
