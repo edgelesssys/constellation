@@ -56,7 +56,10 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	spinner := newSpinner(cmd.ErrOrStderr())
+	spinner, err := newSpinnerOrStderr(cmd)
+	if err != nil {
+		return err
+	}
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
