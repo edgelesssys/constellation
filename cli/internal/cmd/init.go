@@ -131,9 +131,9 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
-	i.log.Debugf("Created new helm loader")
+	i.log.Debugf("Created new Helm loader")
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
-	i.log.Debugf("Loaded helm heployments")
+	i.log.Debugf("Loaded Helm heployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
