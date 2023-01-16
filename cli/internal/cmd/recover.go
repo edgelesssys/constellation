@@ -119,17 +119,19 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 	for {
 		once := sync.Once{}
 		retryOnceOnFailure := func(err error) bool {
+			var retry bool
 			// retry transient GCP LB errors
 			if grpcRetry.LoadbalancerIsNotReady(err) {
-				return true
+				retry = true
+			} else {
+				// retry connection errors once
+				// this is necessary because Azure's LB takes a while to remove unhealthy instances
+				once.Do(func() {
+					retry = grpcRetry.ServiceIsUnavailable(err)
+				})
 			}
-			retry := false
 
-			// retry connection errors once
-			// this is necessary because Azure's LB takes a while to remove unhealthy instances
-			once.Do(func() {
-				retry = grpcRetry.ServiceIsUnavailable(err)
-			})
+			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err.Error())
 			return retry
 		}
 

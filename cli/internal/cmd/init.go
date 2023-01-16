@@ -183,8 +183,16 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		req:      req,
 		log:      i.log,
 	}
+
+	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
+	serviceIsUnavailable := func(err error) bool {
+		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
+		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err.Error())
+		return isServiceUnavailable
+	}
+
 	i.log.Debugf("Making initialization call, doer is %+v", doer)
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, grpcRetry.ServiceIsUnavailable)
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
 		return nil, err
 	}
