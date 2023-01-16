@@ -120,7 +120,7 @@ jobs:
           controlNodesCount: 1
           cloudProvider: ${{ matrix.provider }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}

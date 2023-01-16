@@ -170,7 +170,7 @@ jobs:
         if: steps.check-rights.outputs.auth == 'true'
         uses: ./.github/actions/login_gcp
         with:
-          gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
+          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
 
       - name: Execute versionsapi CLI
         id: run
