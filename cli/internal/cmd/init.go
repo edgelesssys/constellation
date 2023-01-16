@@ -231,7 +231,7 @@ func (i *initCmd) writeOutput(idFile clusterid.File, resp *initproto.InitRespons
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := hex.EncodeToString(resp.OwnerId)
-	i.log.Debugf("Owner id is %s", ownerID)
+	// i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(resp.ClusterId)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
