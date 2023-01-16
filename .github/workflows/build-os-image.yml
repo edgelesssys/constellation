@@ -1,5 +1,9 @@
 name: Build and Upload OS image
 on:
+  schedule:
+    - cron: "0 21 * * 5" # At 21:00 on Friday.
+    - cron: "10 21 * * 5" # At 21:10 on Friday.
+    - cron: "20 21 * * 5" # At 21:20 on Friday.
   workflow_dispatch:
     inputs:
       imageVersion:
@@ -15,10 +19,10 @@ on:
         type: choice
         required: true
         options:
-          - "stable"
-          - "nightly"
-          - "console"
           - "debug"
+          - "console"
+          - "nightly"
+          - "stable"
       ref:
         type: string
         description: "Git ref to checkout"
@@ -106,13 +110,13 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       ref: ${{ steps.ref.outputs.ref }}
+      stream: ${{ steps.stream.outputs.stream }}
       imageType: ${{ steps.image-type.outputs.imageType }}
       pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
       imageVersion: ${{ steps.image-version.outputs.imageVersion }}
       imageName: ${{ steps.image-version.outputs.imageName }}
       imageNameShort: ${{ steps.image-version.outputs.imageNameShort }}
       imageApiBasePath: ${{ steps.image-version.outputs.imageApiBasePath }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -132,7 +136,8 @@ jobs:
             echo "ref=${{ steps.version.outputs.branchName }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate stream
+      - name: Determine and validate stream
+        id: stream
         run: |
           if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "nightly" ]]; then
             echo "Nightly builds are not allowed for releases"
@@ -142,23 +147,42 @@ jobs:
             exit 1
           fi
 
+          case "${{ github.event.schedule }}" in
+            "0 21 * * 5")
+              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "10 21 * * 5")
+              echo "stream=console" >> "$GITHUB_OUTPUT"
+              ;;
+            "20 21 * * 5")
+              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "stream=${{ inputs.stream }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
       - name: Determine type of image build
         shell: bash
         id: image-type
         run: |
-          if  [[ "${{ inputs.stream }}" == "debug" ]]; then
-            echo "imageType=debug" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ inputs.stream }}" == "console" ]]; then
-            echo "imageType=console" >> "$GITHUB_OUTPUT"
-          else
-            echo "imageType=default" >> "$GITHUB_OUTPUT"
-          fi
+          case "${{ steps.stream.outputs.stream }}" in
+            "debug")
+              echo "imageType=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "console")
+              echo "imageType=console" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "imageType=default" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
       - name: Determine PKI set
         id: pki-set
         shell: bash
         run: |
-          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ steps.stream.outputs.stream }}" == "stable" ]]; then
              echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
            else
              echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
@@ -169,7 +193,7 @@ jobs:
         shell: bash
         env:
           REF: ${{ steps.ref.outputs.ref }}
-          STREAM: ${{ inputs.stream }}
+          STREAM: ${{ steps.stream.outputs.stream }}
           IMAGE_VERSION: ${{ inputs.imageVersion || steps.version.outputs.pseudoVersion }}
         run: |
           {
@@ -274,7 +298,7 @@ jobs:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
           UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
-          AUTOLOGIN: ${{ (inputs.stream == 'console' || inputs.stream == 'debug' ) && 'true' || 'false' }}
+          AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
 
@@ -362,7 +386,7 @@ jobs:
           uploadVariant: ${{ matrix.upload-variant }}
           basePath: ${{ github.workspace }}/image
           ref: ${{ needs.build-settings.outputs.ref }}
-          stream: ${{ inputs.stream }}
+          stream: ${{ needs.build-settings.outputs.stream }}
           imageVersion: ${{ needs.build-settings.outputs.imageVersion }}
           imageType: ${{ needs.build-settings.outputs.imageType }}
           debug: ${{ needs.build-settings.outputs.imageType == 'debug' }}
@@ -509,7 +533,7 @@ jobs:
           QEMU_BASE_URL: ${{ steps.vars.outputs.qemuBaseUrl }}
           QEMU_IMAGE_PATH: ${{ steps.vars.outputs.qemuImagePath }}
           REF: ${{needs.build-settings.outputs.ref }}
-          STREAM: ${{inputs.stream }}
+          STREAM: ${{needs.build-settings.outputs.stream }}
           IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
 
       - name: Upload image lookup table as artifact
@@ -725,7 +749,7 @@ jobs:
           jq '.ref = "${{  needs.build-settings.outputs.ref }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
-          jq '.stream = "${{ inputs.stream }}"' intermediate.json > lookup-table.json
+          jq '.stream = "${{ needs.build-settings.outputs.stream }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
           jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' intermediate.json > lookup-table.json
@@ -761,6 +785,6 @@ jobs:
     with:
       command: add
       ref: ${{ needs.build-settings.outputs.ref }}
-      stream: ${{ inputs.stream }}
+      stream: ${{ needs.build-settings.outputs.stream }}
       version: ${{ needs.build-settings.outputs.imageVersion }}
       add_latest: true
