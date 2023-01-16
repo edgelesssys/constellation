@@ -5,9 +5,9 @@ baseImageOverrides:
   github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api: ghcr.io/edgelesssys/apko-alpine-qemu-metadata-api
 
 builds:
-- id: kms
+- id: keyservice
   dir: .
-  main: ./kms/cmd
+  main: ./keyservice/cmd
   env:
   - CGO_ENABLED=0
   - GOOS=linux
