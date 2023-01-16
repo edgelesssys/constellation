@@ -4,6 +4,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package fetcher implements a client for the versions API.
+
+The fetcher is used to get information from the versions API without having to
+authenticate with AWS, where the API is currently hosted. This package should be
+used in user-facing application code most of the time, like the CLI.
+*/
 package fetcher
 
 import (
@@ -15,11 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
-// Fetcher fetches versions API resources.
-//
-// The fetcher is used to get information from the versions API without having to
-// authenticate with AWS. It is the interface that should be used in user-facing
-// application code most of the time.
+// Fetcher fetches versions API resources without authentication.
 type Fetcher struct {
 	httpc httpc
 }
