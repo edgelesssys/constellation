@@ -32,7 +32,7 @@ inputs:
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
-  gcp_service_account_json:
+  gcp_service_account:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
   gcpClusterServiceAccountKey:
@@ -129,7 +129,7 @@ runs:
       if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/login_gcp
       with:
-        gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
+        service_account: ${{ inputs.gcp_service_account }}
 
     - name: Login to AWS
       if: inputs.cloudProvider == 'aws'

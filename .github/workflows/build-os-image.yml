@@ -422,7 +422,7 @@ jobs:
         uses: ./.github/actions/login_gcp
         if: matrix.csp == 'gcp'
         with:
-          gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
+          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
 
       - name: Prepare PKI for image upload
         id: prepare-pki

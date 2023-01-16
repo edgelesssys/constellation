@@ -1,8 +1,8 @@
 name: GCP login
 description: "Login to GCP & configure gcloud CLI."
 inputs:
-  gcp_service_account_json:
-    description: "Service account with permissions to create Constellation on GCP."
+  service_account:
+    description: "GCP service account name. Format: <account-name>@<project-name>.iam.gserviceaccount.com"
     required: true
 runs:
   using: "composite"
@@ -12,7 +12,8 @@ runs:
     - name: Authorize GCP access
       uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d # v1.0.0
       with:
-        credentials_json: ${{ inputs.gcp_service_account_json }}
+        workload_identity_provider: projects/796962942582/locations/global/workloadIdentityPools/constellation-ci-pool/providers/constellation-ci-provider
+        service_account: ${{ inputs.service_account }}
 
     # Even if preinstalled in Github Actions runner image, this setup does some magic authentication required for gsutil.
     - name: Set up Cloud SDK

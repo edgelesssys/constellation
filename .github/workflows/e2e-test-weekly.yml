@@ -131,7 +131,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ matrix.test }}
 
