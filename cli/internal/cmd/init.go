@@ -266,7 +266,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
 	}
 	configPath, err := cmd.Flags().GetString("config")
-	i.log.Debugf("Config path flag is %s", conformance)
+	i.log.Debugf("Config path flag is %s", configPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
