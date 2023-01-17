@@ -7,7 +7,7 @@
 package config
 
 import (
-	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
+	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 )
 
 var (
