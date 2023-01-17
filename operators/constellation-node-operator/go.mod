@@ -29,6 +29,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
+require github.com/onsi/ginkgo/v2 v2.7.0 // indirect
+
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
