@@ -137,7 +137,7 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	v.log.Debugf("Node endpoint flag is %q", endpoint)
+	v.log.Debugf("'node-endpoint' flag is %q", endpoint)
 
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
