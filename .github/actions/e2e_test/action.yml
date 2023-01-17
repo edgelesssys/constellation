@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "nop"]'), inputs.test) }}
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "nop"]'), inputs.test))
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
