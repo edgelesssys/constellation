@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package cluster implements a KMS backend for in cluster key management.
+
+The cluster backend holds a master key, and corresponding salt.
+Data Encryption Keys (DEK) are derived from master key and salt using HKDF.
+
+This backend does not require a storage backend, as keys are derived on demand and not stored anywhere.
+For that purpose the special NoStoreURI can be used during KMS initialization.
+*/
 package cluster
 
 import (

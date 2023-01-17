@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package setup provides functions to create a KMS and key store from a given URI.
+
+This package does not provide any functionality to interact with the KMS or key store,
+but only to create them.
+
+Adding support for a new KMS or storage backend requires adding a new URI for that backend,
+and implementing the corresponding get*Config function.
+*/
 package setup
 
 import (
