@@ -265,20 +265,20 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 // reading the content from file path flags and deriving other values from flag combinations.
 func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
-	i.log.Debugf("Master secret path flag value is %s", masterSecretPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
+	i.log.Debugf("Master secret path flag value is %s", masterSecretPath)
 	conformance, err := cmd.Flags().GetBool("conformance")
-	i.log.Debugf("Conformance flag is %t", conformance)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
 	}
+	i.log.Debugf("Conformance flag is %t", conformance)
 	configPath, err := cmd.Flags().GetString("config")
-	i.log.Debugf("Config path flag is %s", configPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
+	i.log.Debugf("Config path flag is %s", configPath)
 
 	return initFlags{
 		configPath:       configPath,

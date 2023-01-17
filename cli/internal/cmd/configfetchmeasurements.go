@@ -71,10 +71,10 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	fileHandler file.Handler, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
-	cfm.log.Debugf("Using flags %v", flags)
 	if err != nil {
 		return err
 	}
+	cfm.log.Debugf("Using flags %v", flags)
 
 	cfm.log.Debugf("Loading config file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
