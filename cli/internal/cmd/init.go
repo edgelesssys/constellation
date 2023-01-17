@@ -128,6 +128,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	if err != nil {
 		return err
 	}
+	i.log.Debugf("Successfully marshaled service account URI")
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
