@@ -69,7 +69,7 @@ runs:
 
     - name: Upload original benchmark results
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-      if: ${{ !env.ACT }}
+      if: (!env.ACT)
       with:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
         name: "k-bench-constellation-${{ inputs.cloudProvider }}"
@@ -114,7 +114,7 @@ runs:
 
     - name: Upload benchmark results and graphs to action run
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-      if: ${{ !env.ACT }}
+      if: (!env.ACT)
       with:
         path: |
           benchmarks/*_perf.png

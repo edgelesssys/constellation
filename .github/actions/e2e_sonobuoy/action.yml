@@ -44,14 +44,14 @@ runs:
       run: sonobuoy retrieve --kubeconfig constellation-admin.conf
 
     - name: Upload test results
-      if: ${{ always() && !env.ACT }}
+      if: always() && !env.ACT
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: "sonobuoy_logs_${{ inputs.cloudProvider}}.tar.gz"
         path: "*_sonobuoy_*.tar.gz"
 
     - name: Publish test results
-      if: ${{ !env.ACT }}
+      if: (!env.ACT)
       uses: mikepenz/action-junit-report@7210fead7f92f6395c37241964df3b0f730f5e4e # v3.7.1
       with:
         report_paths: "**/junit_01.xml"

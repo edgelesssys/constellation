@@ -76,4 +76,4 @@ runs:
         cosignPublicKey: ${{ inputs.cosignPublicKey }}
         cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
         cosignPassword: ${{ inputs.cosignPassword }}
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' && inputs.generateKoSBOM == 'false' }}
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' && inputs.generateKoSBOM == 'false'

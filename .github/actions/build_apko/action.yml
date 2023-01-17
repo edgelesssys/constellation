@@ -55,7 +55,7 @@ runs:
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # v2.8.1
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
 
     - name: Build apko images and sign them
       run: |
@@ -156,7 +156,7 @@ runs:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
 
     - name: Upload SBOMs
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2

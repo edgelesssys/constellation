@@ -105,7 +105,7 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Notify teams channel
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        if: failure() && github.ref == 'refs/heads/main'
         continue-on-error: true
         shell: bash
         working-directory: .github/actions/e2e_test
