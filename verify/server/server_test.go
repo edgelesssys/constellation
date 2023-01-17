@@ -11,7 +11,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -83,30 +82,19 @@ func TestGetAttestationGRPC(t *testing.T) {
 		"success": {
 			issuer: stubIssuer{attestation: []byte("quote")},
 			request: &verifyproto.GetAttestationRequest{
-				Nonce:    []byte("nonce"),
-				UserData: []byte("userData"),
+				Nonce: []byte("nonce"),
 			},
 		},
 		"issuer fails": {
 			issuer: stubIssuer{issueErr: errors.New("issuer error")},
 			request: &verifyproto.GetAttestationRequest{
-				Nonce:    []byte("nonce"),
-				UserData: []byte("userData"),
+				Nonce: []byte("nonce"),
 			},
 			wantErr: true,
 		},
 		"no nonce": {
-			issuer: stubIssuer{attestation: []byte("quote")},
-			request: &verifyproto.GetAttestationRequest{
-				UserData: []byte("userData"),
-			},
-			wantErr: true,
-		},
-		"no userData": {
-			issuer: stubIssuer{attestation: []byte("quote")},
-			request: &verifyproto.GetAttestationRequest{
-				Nonce: []byte("nonce"),
-			},
+			issuer:  stubIssuer{attestation: []byte("quote")},
+			request: &verifyproto.GetAttestationRequest{},
 			wantErr: true,
 		},
 	}
@@ -138,67 +126,26 @@ func TestGetAttestationHTTP(t *testing.T) {
 		wantErr bool
 	}{
 		"success": {
-			request: fmt.Sprintf(
-				"?nonce=%s&userData=%s",
-				base64.URLEncoding.EncodeToString([]byte("nonce")),
-				base64.URLEncoding.EncodeToString([]byte("userData")),
-			),
-			issuer: stubIssuer{attestation: []byte("quote")},
+			request: "?nonce=" + base64.URLEncoding.EncodeToString([]byte("nonce")),
+			issuer:  stubIssuer{attestation: []byte("quote")},
 		},
 		"invalid nonce in query": {
-			request: fmt.Sprintf(
-				"?nonce=not-base-64&userData=%s",
-				base64.URLEncoding.EncodeToString([]byte("userData")),
-			),
+			request: "?nonce=not-base-64",
 			issuer:  stubIssuer{attestation: []byte("quote")},
 			wantErr: true,
 		},
 		"no nonce in query": {
-			request: fmt.Sprintf(
-				"?userData=%s",
-				base64.URLEncoding.EncodeToString([]byte("userData")),
-			),
+			request: "?foo=bar",
 			issuer:  stubIssuer{attestation: []byte("quote")},
 			wantErr: true,
 		},
 		"empty nonce in query": {
-			request: fmt.Sprintf(
-				"?nonce=&userData=%s",
-				base64.URLEncoding.EncodeToString([]byte("userData")),
-			),
-			issuer:  stubIssuer{attestation: []byte("quote")},
-			wantErr: true,
-		},
-		"invalid userData in query": {
-			request: fmt.Sprintf(
-				"?nonce=%s&userData=not-base-64",
-				base64.URLEncoding.EncodeToString([]byte("nonce")),
-			),
-			issuer:  stubIssuer{attestation: []byte("quote")},
-			wantErr: true,
-		},
-		"no userData in query": {
-			request: fmt.Sprintf(
-				"?nonce=%s",
-				base64.URLEncoding.EncodeToString([]byte("nonce")),
-			),
-			issuer:  stubIssuer{attestation: []byte("quote")},
-			wantErr: true,
-		},
-		"empty userData in query": {
-			request: fmt.Sprintf(
-				"?nonce=%s&userData=",
-				base64.URLEncoding.EncodeToString([]byte("nonce")),
-			),
+			request: "?nonce=",
 			issuer:  stubIssuer{attestation: []byte("quote")},
 			wantErr: true,
 		},
 		"issuer fails": {
-			request: fmt.Sprintf(
-				"?nonce=%s&userData=%s",
-				base64.URLEncoding.EncodeToString([]byte("nonce")),
-				base64.URLEncoding.EncodeToString([]byte("userData")),
-			),
+			request: "?nonce=" + base64.URLEncoding.EncodeToString([]byte("nonce")),
 			issuer:  stubIssuer{issueErr: errors.New("errors")},
 			wantErr: true,
 		},

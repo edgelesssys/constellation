@@ -9,7 +9,7 @@ service API {
 }
 
 message GetAttestationRequest {
-    bytes user_data = 1;
+    // bytes user_data = 1; removed
     bytes nonce = 2;
 }
 
