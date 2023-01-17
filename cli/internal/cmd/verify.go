@@ -97,18 +97,12 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return err
 	}
 	v.log.Debugf("Generated random nonce: %x", nonce)
-	userData, err := crypto.GenerateRandomBytes(32)
-	if err != nil {
-		return err
-	}
-	v.log.Debugf("Generated random user data: %x", userData)
 
 	if err := verifyClient.Verify(
 		cmd.Context(),
 		flags.endpoint,
 		&verifyproto.GetAttestationRequest{
-			Nonce:    nonce,
-			UserData: userData,
+			Nonce: nonce,
 		},
 		validators.V(cmd),
 	); err != nil {
@@ -231,8 +225,8 @@ func (v *constellationVerifier) Verify(
 		return fmt.Errorf("validating attestation: %w", err)
 	}
 
-	if !bytes.Equal(signedData, req.UserData) {
-		return errors.New("signed data in attestation does not match provided user data")
+	if !bytes.Equal(signedData, []byte(constants.ConstellationVerifyServiceUserData)) {
+		return errors.New("signed data in attestation does not match expected user data")
 	}
 	return nil
 }

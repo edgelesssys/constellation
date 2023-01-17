@@ -27,6 +27,8 @@ const (
 	ConstellationMasterSecretKey = "mastersecret"
 	// ConstellationSaltKey is the name of the key for the salt in the master secret kubernetes secret.
 	ConstellationSaltKey = "salt"
+	// ConstellationVerifyServiceUserData is the user data that the verification service includes in the attestation.
+	ConstellationVerifyServiceUserData = "VerifyService"
 
 	//
 	// Ports.
