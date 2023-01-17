@@ -190,7 +190,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 		}
 		return conf, nil
 	}
-	m.log.Debugf("Configuration path is %s", configPath)
+	m.log.Debugf("Configuration path is %q", configPath)
 	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
 		return nil, err
 	}

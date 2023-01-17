@@ -91,7 +91,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %s", flags.configPath)
+	i.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -269,11 +269,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
-	debugPrintMasterSecretArgument := masterSecretPath
-	if debugPrintMasterSecretArgument == "" {
-		debugPrintMasterSecretArgument = "not specified"
-	}
-	i.log.Debugf("Master secret path flag value is %s", debugPrintMasterSecretArgument)
+	i.log.Debugf("Master secret path flag value is %q", masterSecretPath)
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
@@ -283,7 +279,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
-	i.log.Debugf("Configuration path flag is %s", configPath)
+	i.log.Debugf("Configuration path flag is %q", configPath)
 
 	return initFlags{
 		configPath:       configPath,
@@ -308,7 +304,7 @@ type masterSecret struct {
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
-		i.log.Debugf("Reading master secret from file %s", filename)
+		i.log.Debugf("Reading master secret from file %q", filename)
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
 			return masterSecret{}, err

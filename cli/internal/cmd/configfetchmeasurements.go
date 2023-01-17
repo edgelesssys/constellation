@@ -76,7 +76,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 	cfm.log.Debugf("Using flags %v", flags)
 
-	cfm.log.Debugf("Loading configuration file from %s", flags.configPath)
+	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -146,19 +146,19 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements URL")
+	cfm.log.Debugf("Parsed measurements URL as %q", measurementsURL.String())
 
 	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements signature URL")
+	cfm.log.Debugf("Parsed measurements signature URL as %q", measurementsSignatureURL.String())
 
 	config, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	cfm.log.Debugf("Configuration path is %s", config)
+	cfm.log.Debugf("Configuration path is %q", config)
 
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,

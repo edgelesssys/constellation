@@ -79,7 +79,7 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %s", flags.configPath)
+	r.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)

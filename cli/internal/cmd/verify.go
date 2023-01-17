@@ -81,7 +81,7 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 
 	provider := conf.GetProvider()
-	v.log.Debugf("Creating aTLS Validator for %q", provider)
+	v.log.Debugf("Creating aTLS Validator for %s", provider)
 	validators, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	v.log.Debugf("'node-endpoint' flag is %s", endpoint)
+	v.log.Debugf("'node-endpoint' flag is %q", endpoint)
 
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
