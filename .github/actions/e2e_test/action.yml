@@ -215,7 +215,6 @@ runs:
 
     - name: Run recover test
       if: inputs.test == 'recover'
-      id: constellation-recover
       uses: ./.github/actions/constellation_recover
       with:
         controlNodesCount: ${{ inputs.controlNodesCount }}
