@@ -6,6 +6,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package test provides integration tests for KMS and storage backends.
 package test
 
 import (
