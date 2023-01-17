@@ -166,7 +166,7 @@ type AzureConfig struct {
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
-	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
+	//   List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
 	IDKeyDigests Digests `yaml:"idKeyDigests" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
@@ -235,8 +235,6 @@ type QEMUConfig struct {
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
-var azureIDKeyDigests = idkeydigest.MustGetDefaultIDKeyDigests()
-
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
@@ -262,7 +260,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				IDKeyDigests:         azureIDKeyDigests,
+				IDKeyDigests:         idkeydigest.DefaultsFor(cloudprovider.Azure),
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),

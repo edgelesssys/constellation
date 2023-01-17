@@ -14,7 +14,6 @@ import (
 	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
@@ -32,7 +31,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -68,7 +66,7 @@ func main() {
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
-	var issuer initserver.IssuerWrapper
+	var issuer atls.Issuer
 	var openTPM vtpm.TPMOpenFunc
 	var fs afero.Fs
 
@@ -84,7 +82,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = initserver.NewIssuerWrapper(aws.NewIssuer(), vmtype.Unknown, nil)
+		issuer = aws.NewIssuer()
 
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
@@ -110,7 +108,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = initserver.NewIssuerWrapper(gcp.NewIssuer(), vmtype.Unknown, nil)
+		issuer = gcp.NewIssuer()
 
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
@@ -138,11 +136,11 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		if idkeydigest, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
-			issuer = initserver.NewIssuerWrapper(snp.NewIssuer(), vmtype.AzureCVM, idkeydigest)
+		if _, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
+			issuer = snp.NewIssuer()
 		} else {
 			// assume we are running in a trusted-launch VM
-			issuer = initserver.NewIssuerWrapper(trustedlaunch.NewIssuer(), vmtype.AzureTrustedLaunch, idkeydigest)
+			issuer = trustedlaunch.NewIssuer()
 		}
 
 		metadata, err := azurecloud.New(ctx)
@@ -168,7 +166,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = initserver.NewIssuerWrapper(qemu.NewIssuer(), vmtype.Unknown, nil)
+		issuer = qemu.NewIssuer()
 
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
@@ -181,7 +179,7 @@ func main() {
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
-		issuer = initserver.NewIssuerWrapper(atls.NewFakeIssuer(oid.Dummy{}), vmtype.Unknown, nil)
+		issuer = atls.NewFakeIssuer(oid.Dummy{})
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}

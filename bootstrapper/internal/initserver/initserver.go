@@ -17,8 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
@@ -39,13 +39,13 @@ import (
 // The server handles initialization calls from the CLI and initializes the
 // Kubernetes cluster.
 type Server struct {
-	nodeLock      locker
-	initializer   ClusterInitializer
-	disk          encryptedDisk
-	fileHandler   file.Handler
-	grpcServer    serveStopper
-	cleaner       cleaner
-	issuerWrapper IssuerWrapper
+	nodeLock    locker
+	initializer ClusterInitializer
+	disk        encryptedDisk
+	fileHandler file.Handler
+	grpcServer  serveStopper
+	cleaner     cleaner
+	issuer      atls.Issuer
 
 	initSecretHash []byte
 
@@ -55,7 +55,7 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(ctx context.Context, lock locker, kube ClusterInitializer, issuerWrapper IssuerWrapper, fh file.Handler, metadata MetadataAPI, log *logger.Logger) (*Server, error) {
+func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, metadata MetadataAPI, log *logger.Logger) (*Server, error) {
 	log = log.Named("initServer")
 
 	initSecretHash, err := metadata.InitSecretHash(ctx)
@@ -71,13 +71,13 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuerWrappe
 		disk:           diskencryption.New(),
 		initializer:    kube,
 		fileHandler:    fh,
-		issuerWrapper:  issuerWrapper,
+		issuer:         issuer,
 		log:            log,
 		initSecretHash: initSecretHash,
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.Creds(atlscredentials.New(issuerWrapper, nil)),
+		grpc.Creds(atlscredentials.New(issuer, nil)),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 		log.Named("gRPC").GetServerUnaryInterceptor(),
 	)
@@ -141,6 +141,9 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
 	}
 
+	// Check if we are running on a CVM
+	_, isCVM := s.issuer.(*snp.Issuer)
+
 	kubeconfig, err := s.initializer.InitCluster(ctx,
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
@@ -148,7 +151,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
 		idkeydigest.NewIDKeyDigests(req.Idkeydigests),
-		s.issuerWrapper.VMType() == vmtype.AzureCVM,
+		isCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
 		components.NewComponentsFromInitProto(req.KubernetesComponents),
@@ -192,33 +195,6 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	}
 
 	return s.disk.UpdatePassphrase(string(diskKey))
-}
-
-// IssuerWrapper adds VM type context to an issuer to distinguish between
-// confidential and trusted launch VMs.
-type IssuerWrapper struct {
-	atls.Issuer
-	vmType      vmtype.VMType
-	idkeydigest []byte
-}
-
-// NewIssuerWrapper creates a new issuer with VM type context.
-func NewIssuerWrapper(issuer atls.Issuer, vmType vmtype.VMType, idkeydigest []byte) IssuerWrapper {
-	return IssuerWrapper{
-		Issuer:      issuer,
-		vmType:      vmType,
-		idkeydigest: idkeydigest,
-	}
-}
-
-// VMType returns the VM type.
-func (i *IssuerWrapper) VMType() vmtype.VMType {
-	return i.vmType
-}
-
-// IDKeyDigest returns the ID key digest.
-func (i *IssuerWrapper) IDKeyDigest() []byte {
-	return i.idkeydigest
 }
 
 func deriveMeasurementValues(masterSecret, hkdfSalt []byte) (salt, clusterID []byte, err error) {
