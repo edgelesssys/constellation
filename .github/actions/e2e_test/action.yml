@@ -208,7 +208,7 @@ runs:
 
     - name: Run constellation verify test
       if: inputs.test == 'verify'
-      uses: ./.github/actions/constellation_verify
+      uses: ./.github/actions/e2e_verify
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         osImage: ${{ inputs.osImage }}
