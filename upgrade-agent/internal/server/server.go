@@ -4,7 +4,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package upgradeagent
+/*
+Package server implements the gRPC server for the upgrade agent.
+
+The server is responsible for using kubeadm to upgrade the Kubernetes
+release of a Constellation node.
+*/
+package server
 
 import (
 	"context"
