@@ -29,7 +29,8 @@ func newIAMCreateAWSCmd() *cobra.Command {
 	cmd.Flags().String("prefix", "", "name prefix for all resources (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "prefix"))
 	cmd.Flags().String("zone", "", "AWS availability zone the resources will be created in, e.g. us-east-2a (required)\n"+
-		"Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
+		"Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. "+
+		"Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
 	cmd.Flags().Bool("yes", false, "create the IAM configuration without further confirmation")
 
