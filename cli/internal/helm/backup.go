@@ -48,7 +48,7 @@ func (c *Client) backupCRDs(ctx context.Context) ([]apiextensionsv1.CustomResour
 			return nil, err
 		}
 
-		c.log.Debugf("Created backup crd: %s", path)
+		c.log.Debugf("Created backup crd: %q", path)
 	}
 	return crds, nil
 }
@@ -74,7 +74,7 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 			}
 		}
 
-		c.log.Debugf("Created backups for resource type: %s", crd.Name)
+		c.log.Debugf("Created backups for resource type: %q", crd.Name)
 	}
 	return nil
 }

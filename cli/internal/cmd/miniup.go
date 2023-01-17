@@ -90,7 +90,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 	}
 	cmd.Println("Cluster successfully created.")
 	connectURI := config.Provider.QEMU.LibvirtURI
-	m.log.Debugf("Using connect URI %s", connectURI)
+	m.log.Debugf("Using connect URI %q", connectURI)
 	if connectURI == "" {
 		connectURI = libvirt.LibvirtTCPConnectURI
 	}
@@ -190,7 +190,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 		}
 		return conf, nil
 	}
-	m.log.Debugf("Configuration path is %s", configPath)
+	m.log.Debugf("Configuration path is %q", configPath)
 	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
 		return nil, err
 	}

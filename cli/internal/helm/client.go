@@ -126,8 +126,8 @@ func (c *Client) upgradeRelease(
 	if err != nil {
 		return fmt.Errorf("getting current version: %w", err)
 	}
-	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
-	c.log.Debugf("New %s version: %s", releaseName, chart.Metadata.Version)
+	c.log.Debugf("Current %s version: %q", releaseName, currentVersion)
+	c.log.Debugf("New %s version: %q", releaseName, chart.Metadata.Version)
 
 	if !isUpgrade(currentVersion, chart.Metadata.Version) {
 		c.log.Debugf(
@@ -151,7 +151,7 @@ func (c *Client) upgradeRelease(
 		return fmt.Errorf("preparing values: %w", err)
 	}
 
-	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
+	c.log.Debugf("Upgrading %q from %q to %q", releaseName, currentVersion, chart.Metadata.Version)
 	err = c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
 	if err != nil {
 		return err
@@ -196,7 +196,7 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
-				c.log.Debugf("Updating crd: %s", crdFile.Name)
+				c.log.Debugf("Updating crd: %q", crdFile.Name)
 				err := c.kubectl.ApplyCRD(ctx, crdFile.Data)
 				if err != nil {
 					return err

@@ -121,7 +121,7 @@ func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsap
 	} else if err != nil {
 		return fmt.Errorf("failed to list minor versions: %w", err)
 	}
-	log.Debugf("%s version list: %v", gran.String(), verList)
+	log.Debugf("%q version list: %v", gran.String(), verList)
 
 	insertGran := gran + 1
 	insertVersion := ver.WithGranularity(insertGran)
@@ -133,7 +133,7 @@ func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsap
 	log.Infof("Inserting %s version %q into list.", insertGran.String(), insertVersion)
 
 	verList.Versions = append(verList.Versions, insertVersion)
-	log.Debugf("New %s version list: %v.", gran.String(), verList)
+	log.Debugf("New %q version list: %v.", gran.String(), verList)
 
 	if err := client.UpdateVersionList(ctx, verList); err != nil {
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
