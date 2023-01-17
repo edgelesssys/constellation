@@ -34,7 +34,7 @@ import (
 func NewRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
-		Short: "Recover a completely stopped Constellation cluster",
+		Short: "recover a completely stopped Constellation cluster",
 		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage.\n" +
 			"This is only required if instances restart without other instances available for bootstrapping.",
 		Args: cobra.ExactArgs(0),

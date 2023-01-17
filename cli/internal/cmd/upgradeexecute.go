@@ -25,7 +25,7 @@ import (
 func newUpgradeExecuteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "execute",
-		Short: "Execute an upgrade of a Constellation cluster",
+		Short: "execute an upgrade of a Constellation cluster",
 		Long:  "Execute an upgrade of a Constellation cluster by applying the chosen configuration.",
 		Args:  cobra.NoArgs,
 		RunE:  runUpgradeExecute,

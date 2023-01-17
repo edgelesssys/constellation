@@ -31,7 +31,7 @@ var (
 func newIAMCreateGCPCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gcp",
-		Short: "Create IAM configuration on GCP for your Constellation cluster",
+		Short: "create IAM configuration on GCP for your Constellation cluster",
 		Long:  "Create IAM configuration on GCP for your Constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runIAMCreateGCP,

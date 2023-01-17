@@ -23,7 +23,7 @@ import (
 func newMiniDownCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "down",
-		Short: "Destroy a MiniConstellation cluster",
+		Short: "destroy a MiniConstellation cluster",
 		Long:  "Destroy a MiniConstellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runDown,

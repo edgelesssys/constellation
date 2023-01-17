@@ -24,7 +24,7 @@ import (
 func NewTerminateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate",
-		Short: "Terminate a Constellation cluster",
+		Short: "terminate a Constellation cluster",
 		Long: "Terminate a Constellation cluster.\n" +
 			"The cluster can't be started again, and all persistent storage will be lost.",
 		Args: cobra.NoArgs,

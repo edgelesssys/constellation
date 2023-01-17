@@ -12,7 +12,7 @@ import "github.com/spf13/cobra"
 func NewMiniCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mini",
-		Short: "Manage MiniConstellation clusters",
+		Short: "manage MiniConstellation clusters",
 		Long:  "Manage MiniConstellation clusters.",
 		Args:  cobra.ExactArgs(0),
 	}

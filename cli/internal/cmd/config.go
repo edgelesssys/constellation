@@ -15,7 +15,7 @@ import (
 func NewConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Work with the Constellation configuration file",
+		Short: "work with the Constellation configuration file",
 		Long:  "Work with the Constellation configuration file.",
 		Args:  cobra.ExactArgs(0),
 	}

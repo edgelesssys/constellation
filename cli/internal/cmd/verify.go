@@ -34,7 +34,7 @@ import (
 func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify",
-		Short: "Verify the confidential properties of a Constellation cluster",
+		Short: "verify the confidential properties of a Constellation cluster",
 		Long: `Verify the confidential properties of a Constellation cluster.
 
 If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",

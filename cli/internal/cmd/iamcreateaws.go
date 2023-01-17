@@ -20,7 +20,7 @@ import (
 func newIAMCreateAWSCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
-		Short: "Create IAM configuration on AWS for your Constellation cluster",
+		Short: "create IAM configuration on AWS for your Constellation cluster",
 		Long:  "Create IAM configuration on AWS for your Constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runIAMCreateAWS,
