@@ -185,7 +185,7 @@ func TestGetGCPKMSConfig(t *testing.T) {
 	assert.Equal(project, rProject)
 	assert.Equal(location, rLocation)
 	assert.Equal(keyRing, rKeyRing)
-	assert.Equal(2, rProtectionLvl)
+	assert.Equal(int32(2), rProtectionLvl)
 
 	uri, err = url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, "invalid"))
 	require.NoError(err)

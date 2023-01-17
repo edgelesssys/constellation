@@ -182,16 +182,16 @@ func getAzureBlobConfig(uri *url.URL) (string, string, error) {
 	return r[0], r[1], nil
 }
 
-func getGCPKMSConfig(uri *url.URL) (string, string, string, int, error) {
+func getGCPKMSConfig(uri *url.URL) (string, string, string, int32, error) {
 	r, err := getConfig(uri.Query(), []string{"project", "location", "keyRing", "protectionLvl"})
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	protectionLvl, err := strconv.Atoi(r[3])
+	protectionLvl, err := strconv.ParseInt(r[3], 10, 32)
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	return r[0], r[1], r[2], protectionLvl, nil
+	return r[0], r[1], r[2], int32(protectionLvl), nil
 }
 
 func getGCPStorageConfig(uri *url.URL) (string, string, error) {
