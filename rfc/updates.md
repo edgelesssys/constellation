@@ -267,3 +267,28 @@ Upgrading Constellation microservices to 2.2.0:
 Warning: Please backup any important components before upgrading Kubernetes
 Apply change [yes/No]?
 ```
+
+# Compatibility
+`constellation-upgrade` has to handle the version of four components: CLI, image, microservices and Kubernetes.
+To do this correctly and keep the cluster in a working condition some constraints are required.
+
+- Microservice, image and CLI are versioned in lockstep, i.e. each release a new version of all componentes is released.
+  Each of these version numbers is one Constellation version.
+- Each Constellation version is compatible to three or four Kubernetes versions.
+  When a new Kubernetes version is released Constellation will support four versions for one release cycle; before phasing out the oldest Kubernetes version.
+  To learn if microserviceVersion A.B.C is compatible with Kubernetes version X.Y, one has to check whether the Constellation version is compatible with the Kubernetes version X.Y.
+  The Constellation version will be the same as the microserviceVersion: A.B.C. Same goes for the image and CLI.
+- Each Constellation version X.Y.Z is compatible with all patch versions of another Constellation version X.Y+1.
+- The individual versions of Microservice, image and CLI all have to be compatible with the targeted Kubernetes version.
+  Without loss of generality, this means that during a Kubernetes upgrade the oldest Constellation component has to be compatible with the new Kubernetes version.
+  If not, this oldest component has to be updated first.
+- For Kubernetes versions the version-target of an upgrade has to be supported by the current Constellation version.
+  The currently running Kubernetes version is not relevant for the Kubernetes upgrade.
+
+These constraints are enforced by the CLI.
+If users decide to change specific versions on their own nothing is stopping them.
+
+The compatibility information should be separated from the enforcement code.
+This way a minimal implemention can be created where the compatibility information is embedded into the CLI.
+As a next step the information can be served through the [Constellation API](./apis.md).
+By serving the compatibility information dynamically, faulty versions can be excluded from upgrade paths even after they have been released.
