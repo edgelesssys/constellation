@@ -44,7 +44,7 @@ func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize the Constellation cluster",
-		Long: "Initialize the Constellation cluster.\n" +
+		Long: "Initialize the Constellation cluster.\n\n" +
 			"Start your confidential Kubernetes.",
 		Args: cobra.ExactArgs(0),
 		RunE: runInitialize,
