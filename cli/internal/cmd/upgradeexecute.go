@@ -31,9 +31,12 @@ func newUpgradeExecuteCmd() *cobra.Command {
 		RunE:  runUpgradeExecute,
 	}
 
-	cmd.Flags().Bool("helm", false, "Execute helm upgrade. This feature is still in development an may change without anounncement. Upgrades all helm charts deployed during constellation-init.")
-	cmd.Flags().BoolP("yes", "y", false, "Run upgrades without further confirmation. WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.")
-	cmd.Flags().Duration("timeout", 3*time.Minute, "Change helm upgrade timeout. This feature is still in development an may change without anounncement. Might be useful for slow connections or big clusters.")
+	cmd.Flags().Bool("helm", false, "execute helm upgrade\n"+
+		"This feature is still in development an may change without announcement. Upgrades all helm charts deployed during constellation-init.")
+	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
+		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.")
+	cmd.Flags().Duration("timeout", 3*time.Minute, "change helm upgrade timeout\n"+
+		"This feature is still in development an may change without announcement. Might be useful for slow connections or big clusters.")
 	if err := cmd.Flags().MarkHidden("helm"); err != nil {
 		panic(err)
 	}

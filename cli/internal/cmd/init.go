@@ -44,9 +44,10 @@ func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize the Constellation cluster",
-		Long:  "Initialize the Constellation cluster. Start your confidential Kubernetes.",
-		Args:  cobra.ExactArgs(0),
-		RunE:  runInitialize,
+		Long: "Initialize the Constellation cluster.\n\n" +
+			"Start your confidential Kubernetes.",
+		Args: cobra.ExactArgs(0),
+		RunE: runInitialize,
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")

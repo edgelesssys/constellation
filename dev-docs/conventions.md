@@ -77,7 +77,7 @@ Further we try to adhere to the following guidelines:
   ```
 
 * Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
-  
+
   Example:
 
   ```Go
@@ -168,6 +168,16 @@ In case the scope of your PR is too wide, use the alternative format.
 ```
 
 and `<Title>` starts with a capital letter.
+
+## CLI reference
+
+The command reference within the CLI should follow the following conventions:
+
+- Short description: Starts with a capital letter, beginnings of sentences, names and acronyms are capitalized, ends without a period. It should be a single sentence.
+- Long description: Starts with a capital letter, beginnings of sentences, names and acronyms are capitalized, ends with a period.
+  - If the long description contains multiple sentences, the first sentence is formatted as a long description, followed by 2 newlines and the rest of the sentences. The rest of the sentences start with a capital letter, beginnings of sentences, names and acronyms are capitalized and each sentence ends with a period.
+- Flag: Starts with a lowercase letter, beginnings of sentences, names and acronyms are capitalized, ends without a period.
+  - If a flag contains multiple sentences, the first sentence is formatted as a normal flag, followed by a newline and the rest of the sentences. The rest of the sentences start with a capital letter, beginnings of sentences, names and acronyms are capitalized and each sentence ends with a period.
 
 ## Naming convention
 
