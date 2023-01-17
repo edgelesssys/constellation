@@ -124,20 +124,20 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	v.log.Debugf("configuration: %s", configPath)
+	v.log.Debugf("Configuration file flag is %s", configPath)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing cluster-id argument: %w", err)
 	}
-	v.log.Debugf("cluster-id: %s", clusterID)
+	v.log.Debugf("Cluster ID flag is %s", clusterID)
 
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	v.log.Debugf("node-endpoint: %s", endpoint)
+	v.log.Debugf("Node endpoint flag is %s", endpoint)
 
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
