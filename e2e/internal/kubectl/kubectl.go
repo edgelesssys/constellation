@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Provides functionality to easily interact with the K8s API, which can be used
+// from any e2e test.
 package kubectl
 
 import (

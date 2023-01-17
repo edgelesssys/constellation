@@ -6,6 +6,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// End-to-end tests for our cloud load balancer functionality.
 package test
 
 import (
