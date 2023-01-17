@@ -30,7 +30,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fetch-measurements",
 		Short: "Fetch measurements for configured cloud provider and image",
-		Long:  "Fetch measurements for configured cloud provider and image. A config needs to be generated first!",
+		Long:  "Fetch measurements for configured cloud provider and image. A config needs to be generated first.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runConfigFetchMeasurements,
 	}

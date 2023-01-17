@@ -34,14 +34,13 @@ func newMiniUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "up",
 		Short: "Create and initialize a new MiniConstellation cluster",
-		Long: "Create and initialize a new MiniConstellation cluster.\n" +
-			"A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.\n",
+		Long: "Create and initialize a new MiniConstellation cluster. A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.",
 		Args: cobra.ExactArgs(0),
 		RunE: runUp,
 	}
 
 	// override global flag so we don't have a default value for the config
-	cmd.Flags().String("config", "", "path to the config file to use for the cluster")
+	cmd.Flags().String("config", "", "path to the configuration file to use for the cluster")
 
 	return cmd
 }

@@ -32,7 +32,7 @@ func newIAMCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 	}
 
-	cmd.PersistentFlags().Bool("generate-config", false, "Automatically generate a config file and fill in the required fields")
+	cmd.PersistentFlags().Bool("generate-config", false, "automatically generate a configuration file and fill in the required fields")
 
 	cmd.AddCommand(newIAMCreateAWSCmd())
 	cmd.AddCommand(newIAMCreateAzureCmd())

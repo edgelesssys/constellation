@@ -43,7 +43,7 @@ func newIAMCreateGCPCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
 	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in. Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
-	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation.")
+	cmd.Flags().Bool("yes", false, "create the IAM configuration without further confirmation")
 
 	return cmd
 }

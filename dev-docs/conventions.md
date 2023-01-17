@@ -77,7 +77,7 @@ Further we try to adhere to the following guidelines:
   ```
 
 * Use the `With()` method to add structured context to your log messages. The context tags should be easily searchable to allow for easy log filtering. Try to keep consistent tag naming!
-  
+
   Example:
 
   ```Go
@@ -168,6 +168,14 @@ In case the scope of your PR is too wide, use the alternative format.
 ```
 
 and `<Title>` starts with a capital letter.
+
+## CLI reference
+
+The command reference within the CLI should follow the [Cobra](https://github.com/spf13/cobra) style which features the following:
+
+- Short description: Starts with a capital letter, beginnings of sentences, names and acronyms are capitalized, ends without a period.
+- Long description: Starts with a capital letter, beginnings of sentences, names and acronyms are capitalized, ends with a period.
+- Flag: Starts with a lowercase letter, beginnings of sentences, names and acronyms are capitalized, ends without a period.
 
 ## Naming convention
 
