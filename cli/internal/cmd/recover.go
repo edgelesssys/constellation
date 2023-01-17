@@ -131,7 +131,7 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 				})
 			}
 
-			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err.Error())
+			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err)
 			return retry
 		}
 
