@@ -76,7 +76,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 	cfm.log.Debugf("Using flags %v", flags)
 
-	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
+	cfm.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -111,7 +111,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return err
 	}
 
-	cfm.log.Debugf("Fetched and verified measurements, hash is %q", hash)
+	cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
 	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
 		cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
@@ -133,9 +133,9 @@ func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag str
 	if err != nil {
 		return nil, fmt.Errorf("parsing config generate flags '%s': %w", flag, err)
 	}
-	cfm.log.Debugf("Flag %q has raw URL %q", flag, rawURL)
+	cfm.log.Debugf("Flag %s has raw URL %s", flag, rawURL)
 	if rawURL != "" {
-		cfm.log.Debugf("Parsing raw URL %q", rawURL)
+		cfm.log.Debugf("Parsing raw URL %s", rawURL)
 		return url.Parse(rawURL)
 	}
 	return nil, nil
@@ -158,7 +158,7 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	cfm.log.Debugf("Configuration path is %q", config)
+	cfm.log.Debugf("Configuration path is %s", config)
 
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,

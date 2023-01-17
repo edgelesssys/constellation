@@ -72,7 +72,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 
-	c.log.Debugf("Loading configuration file from %q", flags.configPath)
+	c.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -124,7 +124,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		cpus := conf.Provider.QEMU.VCPUs
 		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
-	c.log.Debugf("Configured with instance type %q", instanceType)
+	c.log.Debugf("Configured with instance type %s", instanceType)
 
 	if !flags.yes {
 		// Ask user to confirm action.
@@ -181,7 +181,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing name argument: %w", err)
 	}
-	c.log.Debugf("Name flag is %q", name)
+	c.log.Debugf("Name flag is %s", name)
 	if len(name) > constants.ConstellationNameLength {
 		return createFlags{}, fmt.Errorf(
 			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
@@ -199,7 +199,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Configuration path flag is %q", configPath)
+	c.log.Debugf("Configuration path flag is %s", configPath)
 
 	return createFlags{
 		controllerCount: controllerCount,

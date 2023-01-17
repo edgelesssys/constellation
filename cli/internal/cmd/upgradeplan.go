@@ -83,16 +83,16 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
-	up.log.Debugf("Read configuration from %q", flags.configPath)
+	up.log.Debugf("Read configuration from %s", flags.configPath)
 	// get current image version of the cluster
 	csp := conf.GetProvider()
-	up.log.Debugf("Using provider %q", csp.String())
+	up.log.Debugf("Using provider %s", csp.String())
 
 	version, err := getCurrentImageVersion(cmd.Context(), planner)
 	if err != nil {
 		return fmt.Errorf("checking current image version: %w", err)
 	}
-	up.log.Debugf("Using image version %q", version)
+	up.log.Debugf("Using image version %s", version)
 
 	// find compatible images
 	// image updates should always be possible for the current minor version of the cluster
@@ -105,9 +105,9 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	if err != nil {
 		return fmt.Errorf("calculating next image minor version: %w", err)
 	}
-	up.log.Debugf("Current image minor version is %q", currentImageMinorVer)
-	up.log.Debugf("Current CLI minor version is %q", currentCLIMinorVer)
-	up.log.Debugf("Next image minor version is %q", nextImageMinorVer)
+	up.log.Debugf("Current image minor version is %s", currentImageMinorVer)
+	up.log.Debugf("Current CLI minor version is %s", currentCLIMinorVer)
+	up.log.Debugf("Next image minor version is %s", nextImageMinorVer)
 	var allowedMinorVersions []string
 
 	cliImageCompare := semver.Compare(currentCLIMinorVer, currentImageMinorVer)

@@ -91,7 +91,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %q", flags.configPath)
+	i.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -107,13 +107,13 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	if err != nil {
 		return fmt.Errorf("validating kubernetes version: %w", err)
 	}
-	i.log.Debugf("Validated k8s version as %q", k8sVersion)
+	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
 	provider := conf.GetProvider()
-	i.log.Debugf("Got provider %q", provider.String())
+	i.log.Debugf("Got provider %s", provider.String())
 	checker := license.NewChecker(quotaChecker, fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), provider, conf.Provider, cmd.Printf); err != nil {
 		cmd.PrintErrf("License check failed: %v", err)
@@ -190,7 +190,7 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
 	serviceIsUnavailable := func(err error) bool {
 		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
-		i.log.Debugf("Encountered error (retriable: %t): %v", isServiceUnavailable, err)
+		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err.Error())
 		return isServiceUnavailable
 	}
 
@@ -269,7 +269,11 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
-	i.log.Debugf("Master secret path flag value is %q", masterSecretPath)
+	debugPrintMasterSecretArgument := masterSecretPath
+	if debugPrintMasterSecretArgument == "" {
+		debugPrintMasterSecretArgument = "not specified"
+	}
+	i.log.Debugf("Master secret path flag value is %s", debugPrintMasterSecretArgument)
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
@@ -279,7 +283,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
-	i.log.Debugf("Configuration path flag is %q", configPath)
+	i.log.Debugf("Configuration path flag is %s", configPath)
 
 	return initFlags{
 		configPath:       configPath,
@@ -304,7 +308,7 @@ type masterSecret struct {
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
-		i.log.Debugf("Reading master secret from file %q", filename)
+		i.log.Debugf("Reading master secret from file %s", filename)
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
 			return masterSecret{}, err
@@ -358,7 +362,7 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 	case cloudprovider.GCP:
 		i.log.Debugf("Handling case for GCP")
 		path := config.Provider.GCP.ServiceAccountKeyPath
-		i.log.Debugf("GCP service account key path %q", path)
+		i.log.Debugf("GCP service account key path %s", path)
 
 		var key gcpshared.ServiceAccountKey
 		if err := fileHandler.ReadJSON(path, &key); err != nil {

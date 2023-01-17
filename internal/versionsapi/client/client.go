@@ -160,18 +160,18 @@ func (c *Client) DeleteRef(ctx context.Context, ref string) error {
 func (c *Client) DeleteVersion(ctx context.Context, ver versionsapi.Version) error {
 	var retErr error
 
-	c.log.Debugf("Deleting version %q from minor version list", ver.Version)
+	c.log.Debugf("Deleting version %s from minor version list", ver.Version)
 	possibleNewLatest, err := c.deleteVersionFromMinorVersionList(ctx, ver)
 	if err != nil {
 		retErr = multierr.Append(retErr, fmt.Errorf("removing from minor version list: %w", err))
 	}
 
-	c.log.Debugf("Checking latest version for %q", ver.Version)
+	c.log.Debugf("Checking latest version for %s", ver.Version)
 	if err := c.deleteVersionFromLatest(ctx, ver, possibleNewLatest); err != nil {
 		retErr = multierr.Append(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
-	c.log.Debugf("Deleting artifact path %q for %q", ver.ArtifactPath(), ver.Version)
+	c.log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(), ver.Version)
 	if err := c.deletePath(ctx, ver.ArtifactPath()); err != nil {
 		retErr = multierr.Append(retErr, fmt.Errorf("deleting artifact path: %w", err))
 	}
@@ -209,7 +209,7 @@ func (c *Client) InvalidateCache(ctx context.Context) error {
 		return fmt.Errorf("creating invalidation: %w", err)
 	}
 
-	c.log.Debugf("Waiting for invalidation %q to complete.", *invalidation.Invalidation.Id)
+	c.log.Debugf("Waiting for invalidation %s to complete.", *invalidation.Invalidation.Id)
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cloudfrontClient)
 	waitIn := &cloudfront.GetInvalidationInput{
 		DistributionId: &c.distributionID,
@@ -238,7 +238,7 @@ func fetch[T apiObject](ctx context.Context, c *Client, obj T) (T, error) {
 		Key:    ptr(obj.JSONPath()),
 	}
 
-	c.log.Debugf("Fetching %T from s3: %q", obj, obj.JSONPath())
+	c.log.Debugf("Fetching %T from s3: %s", obj, obj.JSONPath())
 	out, err := c.s3Client.GetObject(ctx, in)
 	var noSuchkey *s3types.NoSuchKey
 	if errors.As(err, &noSuchkey) {
@@ -300,7 +300,7 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver vers
 		Base:        ver.WithGranularity(versionsapi.GranularityMinor),
 		Kind:        versionsapi.VersionKindImage,
 	}
-	c.log.Debugf("Fetching minor version list for version %q", ver.Version)
+	c.log.Debugf("Fetching minor version list for version %s", ver.Version)
 	minorList, err := c.FetchVersionList(ctx, minorList)
 	var notFoundErr *NotFoundError
 	if errors.As(err, &notFoundErr) {
@@ -337,16 +337,16 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver vers
 	}
 
 	if c.dryRun {
-		c.log.Debugf("DryRun: Updating minor version list %q to %v", minorList.JSONPath(), minorList)
+		c.log.Debugf("DryRun: Updating minor version list %s to %v", minorList.JSONPath(), minorList)
 		return latest, nil
 	}
 
-	c.log.Debugf("Updating minor version list %q", minorList.JSONPath())
+	c.log.Debugf("Updating minor version list %s", minorList.JSONPath())
 	if err := c.UpdateVersionList(ctx, minorList); err != nil {
 		return latest, fmt.Errorf("updating minor version list %s: %w", minorList.JSONPath(), err)
 	}
 
-	c.log.Debugf("Removed version %q from minor version list %q", ver.Version, minorList.JSONPath())
+	c.log.Debugf("Removed version %s from minor version list %s", ver.Version, minorList.JSONPath())
 	return latest, nil
 }
 
@@ -357,7 +357,7 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver versionsapi.Ve
 		Stream: ver.Stream,
 		Kind:   versionsapi.VersionKindImage,
 	}
-	c.log.Debugf("Fetching latest version from %q.", latest.JSONPath())
+	c.log.Debugf("Fetching latest version from %s.", latest.JSONPath())
 	latest, err := c.FetchVersionLatest(ctx, latest)
 	var notFoundErr *NotFoundError
 	if errors.As(err, &notFoundErr) {
@@ -368,7 +368,7 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver versionsapi.Ve
 	}
 
 	if latest.Version != ver.Version {
-		c.log.Debugf("Latest version is %q, not the deleted version %q.", latest.Version, ver.Version)
+		c.log.Debugf("Latest version is %s, not the deleted version %s.", latest.Version, ver.Version)
 		return nil
 	}
 
@@ -379,7 +379,7 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver versionsapi.Ve
 	}
 
 	if c.dryRun {
-		c.log.Debugf("Would update latest version from %q to %q", latest.Version, possibleNewLatest.Version)
+		c.log.Debugf("Would update latest version from %s to %s", latest.Version, possibleNewLatest.Version)
 		return nil
 	}
 
@@ -396,7 +396,7 @@ func (c *Client) deletePath(ctx context.Context, path string) error {
 		Bucket: &c.bucket,
 		Prefix: &path,
 	}
-	c.log.Debugf("Listing objects in %q", path)
+	c.log.Debugf("Listing objects in %s", path)
 	objs := []s3types.Object{}
 	out := &s3.ListObjectsV2Output{IsTruncated: true}
 	for out.IsTruncated {
@@ -407,7 +407,7 @@ func (c *Client) deletePath(ctx context.Context, path string) error {
 		}
 		objs = append(objs, out.Contents...)
 	}
-	c.log.Debugf("Found %d objects in %q", len(objs), path)
+	c.log.Debugf("Found %d objects in %s", len(objs), path)
 
 	if len(objs) == 0 {
 		c.log.Warnf("Path %s is already empty", path)
@@ -432,7 +432,7 @@ func (c *Client) deletePath(ctx context.Context, path string) error {
 			Objects: objIDs,
 		},
 	}
-	c.log.Debugf("Deleting %d objects in %q", len(objs), path)
+	c.log.Debugf("Deleting %d objects in %s", len(objs), path)
 	if _, err := c.s3Client.DeleteObjects(ctx, deleteIn); err != nil {
 		return fmt.Errorf("deleting objects in %s: %w", path, err)
 	}

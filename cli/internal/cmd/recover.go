@@ -74,18 +74,18 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret masterSecret
-	r.log.Debugf("Loading master secret file from %q", flags.secretPath)
+	r.log.Debugf("Loading master secret file from %s", flags.secretPath)
 	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", flags.configPath)
+	r.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 	provider := conf.GetProvider()
-	r.log.Debugf("Got provider %q", provider.String())
+	r.log.Debugf("Got provider %s", provider.String())
 	if provider == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
@@ -96,7 +96,7 @@ func (r *recoverCmd) recover(
 	}
 	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)
-	r.log.Debugf("Set dialer for endpoint %q", flags.endpoint)
+	r.log.Debugf("Set dialer for endpoint %s", flags.endpoint)
 	measurementSecret, err := attestation.DeriveMeasurementSecret(masterSecret.Key, masterSecret.Salt)
 	r.log.Debugf("Derived measurementSecret")
 	if err != nil {
@@ -131,7 +131,7 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 				})
 			}
 
-			r.log.Debugf("Encountered error (retriable: %t): %v", retry, err.Error())
+			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err.Error())
 			return retry
 		}
 
@@ -246,7 +246,7 @@ type recoverFlags struct {
 
 func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
 	endpoint, err := cmd.Flags().GetString("endpoint")
-	r.log.Debugf("Endpoint flag is %q", endpoint)
+	r.log.Debugf("Endpoint flag is %s", endpoint)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
@@ -260,17 +260,17 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
-	r.log.Debugf("Endpoint value after parsing is %q", endpoint)
+	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
-	r.log.Debugf("Master secret flag is %q", masterSecretPath)
+	r.log.Debugf("Master secret flag is %s", masterSecretPath)
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	r.log.Debugf("Configuration path flag is %q", configPath)
+	r.log.Debugf("Configuration path flag is %s", configPath)
 
 	return recoverFlags{
 		endpoint:   endpoint,
