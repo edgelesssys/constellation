@@ -13,7 +13,7 @@ import (
 func NewIAMCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iam",
-		Short: "work with the IAM configuration on your cloud provider",
+		Short: "Work with the IAM configuration on your cloud provider",
 		Long:  "Work with the IAM configuration on your cloud provider.",
 		Args:  cobra.ExactArgs(0),
 	}
@@ -27,7 +27,7 @@ func NewIAMCmd() *cobra.Command {
 func newIAMCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "create IAM configuration on a cloud platform for your Constellation cluster",
+		Short: "Create IAM configuration on a cloud platform for your Constellation cluster",
 		Long:  "Create IAM configuration on a cloud platform for your Constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 	}

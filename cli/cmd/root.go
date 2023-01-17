@@ -30,7 +30,7 @@ func Execute() error {
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:              "constellation",
-		Short:            "manage your Constellation cluster",
+		Short:            "Manage your Constellation cluster",
 		Long:             "Manage your Constellation cluster.",
 		PersistentPreRun: preRunRoot,
 	}

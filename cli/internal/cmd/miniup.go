@@ -33,7 +33,7 @@ import (
 func newMiniUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "up",
-		Short: "create and initialize a new MiniConstellation cluster",
+		Short: "Create and initialize a new MiniConstellation cluster",
 		Long: "Create and initialize a new MiniConstellation cluster.\n" +
 			"A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.",
 		Args: cobra.ExactArgs(0),

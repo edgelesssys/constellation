@@ -43,7 +43,7 @@ import (
 func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "initialize the Constellation cluster",
+		Short: "Initialize the Constellation cluster",
 		Long: "Initialize the Constellation cluster.\n" +
 			"Start your confidential Kubernetes.",
 		Args: cobra.ExactArgs(0),

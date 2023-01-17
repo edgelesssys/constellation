@@ -25,7 +25,7 @@ import (
 func NewCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "create instances on a cloud platform for your Constellation cluster",
+		Short: "Create instances on a cloud platform for your Constellation cluster",
 		Long:  "Create instances on a cloud platform for your Constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runCreate,

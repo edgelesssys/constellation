@@ -33,7 +33,7 @@ import (
 func newUpgradePlanCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plan",
-		Short: "plan an upgrade of a Constellation cluster",
+		Short: "Plan an upgrade of a Constellation cluster",
 		Long:  "Plan an upgrade of a Constellation cluster by fetching compatible image versions and their measurements.",
 		Args:  cobra.NoArgs,
 		RunE:  runUpgradePlan,
