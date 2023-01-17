@@ -35,9 +35,10 @@ func NewRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
 		Short: "Recover a completely stopped Constellation cluster",
-		Long:  "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage. This is only required if instances restart without other instances available for bootstrapping.",
-		Args:  cobra.ExactArgs(0),
-		RunE:  runRecover,
+		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage.\n" +
+			"This is only required if instances restart without other instances available for bootstrapping.",
+		Args: cobra.ExactArgs(0),
+		RunE: runRecover,
 	}
 	cmd.Flags().StringP("endpoint", "e", "", "endpoint of the instance, passed as HOST[:PORT]")
 	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to master secret file")

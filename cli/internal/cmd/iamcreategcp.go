@@ -37,11 +37,14 @@ func newIAMCreateGCPCmd() *cobra.Command {
 		RunE:  runIAMCreateGCP,
 	}
 
-	cmd.Flags().String("zone", "", "GCP zone the cluster will be deployed in. Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available")
+	cmd.Flags().String("zone", "", "GCP zone the cluster will be deployed in\n"+
+		"Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
-	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$")
+	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created\n"+
+		"Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
-	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in. Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
+	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in\n"+
+		"Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
 	cmd.Flags().Bool("yes", false, "create the IAM configuration without further confirmation")
 

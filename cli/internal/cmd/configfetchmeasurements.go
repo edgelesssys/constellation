@@ -30,9 +30,10 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fetch-measurements",
 		Short: "Fetch measurements for configured cloud provider and image",
-		Long:  "Fetch measurements for configured cloud provider and image. A config needs to be generated first.",
-		Args:  cobra.ExactArgs(0),
-		RunE:  runConfigFetchMeasurements,
+		Long: "Fetch measurements for configured cloud provider and image.\n" +
+			"A config needs to be generated first.",
+		Args: cobra.ExactArgs(0),
+		RunE: runConfigFetchMeasurements,
 	}
 	cmd.Flags().StringP("url", "u", "", "alternative URL to fetch measurements from")
 	cmd.Flags().StringP("signature-url", "s", "", "alternative URL to fetch measurements' signature from")
