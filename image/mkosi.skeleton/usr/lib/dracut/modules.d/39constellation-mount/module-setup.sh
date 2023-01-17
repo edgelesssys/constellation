@@ -43,7 +43,8 @@ install() {
   # aws nvme disks
   inst_multiple \
     tail \
-    tr
+    tr \
+    head
 
   # azure scsi disks
   inst_multiple \
