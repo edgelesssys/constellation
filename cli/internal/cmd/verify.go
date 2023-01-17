@@ -74,7 +74,7 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	v.log.Debugf("Using flags: %+v", flags)
 
-	v.log.Debugf("Loading config file from %s", flags.configPath)
+	v.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -124,7 +124,7 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	v.log.Debugf("config: %s", configPath)
+	v.log.Debugf("configuration: %s", configPath)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")

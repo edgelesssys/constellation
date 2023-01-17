@@ -91,7 +91,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading config file from %s", flags.configPath)
+	i.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -282,7 +282,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
-	i.log.Debugf("Config path flag is %s", configPath)
+	i.log.Debugf("Configuration path flag is %s", configPath)
 
 	return initFlags{
 		configPath:       configPath,

@@ -83,7 +83,7 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
-	up.log.Debugf("Read config from %s", flags.configPath)
+	up.log.Debugf("Read configuration from %s", flags.configPath)
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 	up.log.Debugf("Using provider %s", csp.String())

@@ -75,7 +75,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return err
 	}
 
-	cg.log.Debugf("Writing YAML data to config file")
+	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
 		return err
 	}

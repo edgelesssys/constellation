@@ -79,7 +79,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 	if err != nil {
 		return fmt.Errorf("preparing config: %w", err)
 	}
-	m.log.Debugf("Prepared config")
+	m.log.Debugf("Prepared configuration")
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
@@ -174,7 +174,7 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 
 // prepareConfig reads a given config, or creates a new minimal QEMU config.
 func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config, error) {
-	m.log.Debugf("Preparing config")
+	m.log.Debugf("Preparing configuration")
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 		}
 		return conf, nil
 	}
-	m.log.Debugf("Config path is %s", configPath)
+	m.log.Debugf("Configuration path is %s", configPath)
 	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 	config := config.Default()
 	config.RemoveProviderExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8
-	m.log.Debugf("Prepared config")
+	m.log.Debugf("Prepared configuration")
 
 	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
 }

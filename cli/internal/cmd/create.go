@@ -72,13 +72,13 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 
-	c.log.Debugf("Loading config file from %s", flags.configPath)
+	c.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	c.log.Debugf("Checking config for warnings")
+	c.log.Debugf("Checking configuration for warnings")
 	var printedAWarning bool
 	if !conf.IsReleaseImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
@@ -199,7 +199,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Config path flag is %s", configPath)
+	c.log.Debugf("Configuration path flag is %s", configPath)
 
 	return createFlags{
 		controllerCount: controllerCount,
@@ -221,7 +221,7 @@ type createFlags struct {
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
 func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
-	c.log.Debugf("Checking admin config file")
+	c.log.Debugf("Checking admin configuration file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}

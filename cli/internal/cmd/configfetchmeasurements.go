@@ -76,7 +76,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 	cfm.log.Debugf("Using flags %v", flags)
 
-	cfm.log.Debugf("Loading config file from %s", flags.configPath)
+	cfm.log.Debugf("Loading configuration file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -117,12 +117,12 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
-	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in config")
+	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Wrote config to YAML")
+	cfm.log.Debugf("Wrote configuration to YAML")
 	return nil
 }
 
@@ -158,7 +158,7 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	cfm.log.Debugf("Config path is %s", config)
+	cfm.log.Debugf("Configuration path is %s", config)
 
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
