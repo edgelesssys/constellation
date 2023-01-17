@@ -224,7 +224,7 @@
     },
     {
       "fileMatch": [
-        "(^|\\/)versions.go$"
+        "versions.go$"
       ],
       "matchStrings": [
         " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\""
@@ -232,6 +232,16 @@
       "depNameTemplate": "containernetworking/plugins",
       "datasourceTemplate": "github-releases",
       "autoReplaceStringTemplate": " \"https://github.com/containernetworking/plugins/releases/download/{{{newValue}}}/cni-plugins-linux-amd64-{{{newValue}}}.tgz\""
+    },
+    {
+      "fileMatch": [
+        "\\.yaml$",
+        "\\.yml$"
+      ],
+      "matchStrings": [
+        "go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})"
+      ],
+      "datasourceTemplate": "go"
     }
   ]
 }

@@ -573,7 +573,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "::group::Install dependencies"
-          python -m pip install --user lief==0.12.2
+          python -m pip install --user --require-hashes -r .github/workflows/build-os-image-requirements.txt
           sudo apt-get update
           sudo apt-get install -y systemd-container # for systemd-dissect
           echo "::endgroup::"
