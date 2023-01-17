@@ -268,7 +268,11 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
-	i.log.Debugf("Master secret path flag value is %s", masterSecretPath)
+	debugPrintMasterSecretArgument := masterSecretPath
+	if debugPrintMasterSecretArgument == "" {
+		debugPrintMasterSecretArgument = "not specified"
+	}
+	i.log.Debugf("Master secret path flag value is %s", debugPrintMasterSecretArgument)
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
