@@ -5,17 +5,12 @@ on:
     branches:
       - main
       - release/v*
-      - feat/ci/codeql-and-scorecard
   pull_request:
-    branches:
-      - main
-      - release/v*
-      - feat/ci/codeql-and-scorecard
 
 jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-22.04
     permissions:
       actions: read
       contents: read
@@ -42,11 +37,16 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          echo "::group::Install apt dependencies"
           sudo apt-get update && sudo apt-get install -y libcryptsetup12 libcryptsetup-dev libvirt-dev
+          echo "::endgroup::"
+
+          echo "::group::Install go dependencies"
           mods=$(go list -f '{{.Dir}}' -m | xargs)
           for mod in $mods; do
-            (cd $mod; go mod tidy)
+            (cd "$mod" || exit; go mod tidy)
           done
+          echo "::endgroup::"
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@515828d97454b8354517688ddc5b48402b723750 # v2.1.38
