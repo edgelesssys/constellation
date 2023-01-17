@@ -128,7 +128,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	if err != nil {
 		return err
 	}
-	i.log.Debugf("Loading master secret file from %s", flags.masterSecretPath)
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
@@ -273,7 +272,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	conformance, err := cmd.Flags().GetBool("conformance")
 	i.log.Debugf("Conformance flag is %t", conformance)
 	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
+		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
 	}
 	configPath, err := cmd.Flags().GetString("config")
 	i.log.Debugf("Config path flag is %s", configPath)
@@ -304,7 +303,7 @@ type masterSecret struct {
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
-		i.log.Debugf("Reading master secret from file")
+		i.log.Debugf("Reading master secret from file %s", filename)
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
 			return masterSecret{}, err
