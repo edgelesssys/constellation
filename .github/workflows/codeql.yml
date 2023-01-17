@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["go"]
+        language: ["go", "python"]
 
     steps:
       - name: Checkout repository
@@ -29,13 +29,14 @@ jobs:
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.5"
+        if: ${{ matrix.language == 'go' }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@515828d97454b8354517688ddc5b48402b723750 # v2.1.38
         with:
           languages: ${{ matrix.language }}
 
-      - name: Install Dependencies
+      - name: Install Go Dependencies
         run: |
           echo "::group::Install apt dependencies"
           sudo apt-get update && sudo apt-get install -y libcryptsetup12 libcryptsetup-dev libvirt-dev
@@ -47,6 +48,7 @@ jobs:
             (cd "$mod" || exit; go mod tidy)
           done
           echo "::endgroup::"
+        if: ${{ matrix.language == 'go' }}
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@515828d97454b8354517688ddc5b48402b723750 # v2.1.38
