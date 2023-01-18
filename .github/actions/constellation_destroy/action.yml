@@ -40,5 +40,5 @@ runs:
         echo "::endgroup::"
 
     - name: Constellation terminate
-      run: constellation terminate --yes
       shell: bash
+      run: constellation terminate --yes

@@ -70,10 +70,10 @@ runs:
         echo CONTAINER_FULL=$container_full >> $GITHUB_ENV
 
     - name: Generate SBOM
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' && inputs.generateKoSBOM == 'false'
       uses: ./.github/actions/container_sbom
       with:
         containerReference: ${{ env.CONTAINER_FULL }}
         cosignPublicKey: ${{ inputs.cosignPublicKey }}
         cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
         cosignPassword: ${{ inputs.cosignPassword }}
-      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' && inputs.generateKoSBOM == 'false'

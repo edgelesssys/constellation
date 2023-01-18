@@ -106,8 +106,8 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
-        if: matrix.provider == 'azure'
         id: az_resource_group_gen
+        if: matrix.provider == 'azure'
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)

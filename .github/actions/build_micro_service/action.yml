@@ -68,10 +68,10 @@ runs:
           PROJECT_VERSION=${{ inputs.projectVersion }}
 
     - name: Generate SBOM
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
       uses: ./.github/actions/container_sbom
       with:
         containerReference: ghcr.io/${{ github.repository }}/${{ inputs.name }}@${{ steps.build-micro-service.outputs.digest }}
         cosignPublicKey: ${{ inputs.cosignPublicKey }}
         cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
         cosignPassword: ${{ inputs.cosignPassword }}
-      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''

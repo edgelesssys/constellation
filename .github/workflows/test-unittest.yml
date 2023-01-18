@@ -40,10 +40,10 @@ jobs:
         run: mkdir build && cd build && cmake ..
 
       - name: Unit Tests
-        run: ctest -R unit
         working-directory: build
         env:
           TMPDIR: ${{ runner.temp }}
+        run: ctest -R unit
 
   test-darwin:
     runs-on: macos-12
