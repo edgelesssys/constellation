@@ -43,7 +43,7 @@ type spinner struct {
 	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool)
 }
 
-func newSpinnerOrStdout(cmd *cobra.Command) (spinnerInterf, error) {
+func newSpinnerOrStderr(cmd *cobra.Command) (spinnerInterf, error) {
 	debug, err := cmd.Flags().GetBool("debug")
 	if err != nil {
 		return nil, err

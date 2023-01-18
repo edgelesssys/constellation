@@ -49,7 +49,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	spinner, err := newSpinnerOrStdout(cmd)
+	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return fmt.Errorf("creating spinner: %w", err)
 	}
@@ -72,7 +72,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 
-	c.log.Debugf("Loading config file from %s", flags.configPath)
+	c.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -124,7 +124,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		cpus := conf.Provider.QEMU.VCPUs
 		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
-	c.log.Debugf("Configured with instance type %s", instanceType)
+	c.log.Debugf("Configured with instance type %q", instanceType)
 
 	if !flags.yes {
 		// Ask user to confirm action.
@@ -160,28 +160,28 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 // parseCreateFlags parses the flags of the create command.
 func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	controllerCount, err := cmd.Flags().GetInt("control-plane-nodes")
-	c.log.Debugf("Control-plane nodes flag is %d", controllerCount)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of control-plane nodes: %w", err)
 	}
+	c.log.Debugf("Control-plane nodes flag is %d", controllerCount)
 	if controllerCount < constants.MinControllerCount {
 		return createFlags{}, fmt.Errorf("number of control-plane nodes must be at least %d", constants.MinControllerCount)
 	}
 
 	workerCount, err := cmd.Flags().GetInt("worker-nodes")
-	c.log.Debugf("Worker nodes falg is %d", workerCount)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
 	}
+	c.log.Debugf("Worker nodes flag is %d", workerCount)
 	if workerCount < constants.MinWorkerCount {
 		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
 	}
 
 	name, err := cmd.Flags().GetString("name")
-	c.log.Debugf("Name flag is %s", name)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing name argument: %w", err)
 	}
+	c.log.Debugf("Name flag is %q", name)
 	if len(name) > constants.ConstellationNameLength {
 		return createFlags{}, fmt.Errorf(
 			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
@@ -190,16 +190,16 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 
 	yes, err := cmd.Flags().GetBool("yes")
-	c.log.Debugf("Yes flag is %t", yes)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
 	}
+	c.log.Debugf("Yes flag is %t", yes)
 
 	configPath, err := cmd.Flags().GetString("config")
-	c.log.Debugf("Config path flag is %s", configPath)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
+	c.log.Debugf("Configuration path flag is %q", configPath)
 
 	return createFlags{
 		controllerCount: controllerCount,

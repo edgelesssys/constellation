@@ -70,7 +70,10 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 
-	spinner := newSpinner(cmd.ErrOrStderr())
+	spinner, err := newSpinnerOrStderr(cmd)
+	if err != nil {
+		return err
+	}
 	defer spinner.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
@@ -89,7 +92,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading config file from %s", flags.configPath)
+	i.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -126,16 +129,15 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	if err != nil {
 		return err
 	}
-	i.log.Debugf("Got service account uri %s", serviceAccURI)
-	i.log.Debugf("Loading master secret file from %s", flags.masterSecretPath)
+	i.log.Debugf("Successfully marshaled service account URI")
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
-	i.log.Debugf("Created new helm loader")
+	i.log.Debugf("Created new Helm loader")
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
-	i.log.Debugf("Loaded helm heployments")
+	i.log.Debugf("Loaded Helm heployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -159,7 +161,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
-	i.log.Debugf("Got initialization response")
 	spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
@@ -169,7 +170,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		}
 		return err
 	}
-	i.log.Debugf("Writing Constellation id file")
+	i.log.Debugf("Initialization request succeeded")
+	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 	if err := i.writeOutput(idFile, resp, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
@@ -185,8 +187,16 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		req:      req,
 		log:      i.log,
 	}
+
+	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
+	serviceIsUnavailable := func(err error) bool {
+		isServiceUnavailable := grpcRetry.ServiceIsUnavailable(err)
+		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
+		return isServiceUnavailable
+	}
+
 	i.log.Debugf("Making initialization call, doer is %+v", doer)
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, grpcRetry.ServiceIsUnavailable)
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
 		return nil, err
 	}
@@ -222,7 +232,7 @@ func (i *initCmd) writeOutput(idFile clusterid.File, resp *initproto.InitRespons
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := hex.EncodeToString(resp.OwnerId)
-	i.log.Debugf("Owner id is %s", ownerID)
+	// i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(resp.ClusterId)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
@@ -257,20 +267,20 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 // reading the content from file path flags and deriving other values from flag combinations.
 func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
-	i.log.Debugf("Master secret path flag value is %s", masterSecretPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
+	i.log.Debugf("Master secret path flag value is %q", masterSecretPath)
 	conformance, err := cmd.Flags().GetBool("conformance")
-	i.log.Debugf("Conformance flag is %t", conformance)
 	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
+		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
 	}
+	i.log.Debugf("Conformance flag is %t", conformance)
 	configPath, err := cmd.Flags().GetString("config")
-	i.log.Debugf("Config path flag is %s", conformance)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
+	i.log.Debugf("Configuration path flag is %q", configPath)
 
 	return initFlags{
 		configPath:       configPath,
@@ -295,7 +305,7 @@ type masterSecret struct {
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
-		i.log.Debugf("Reading master secret from file")
+		i.log.Debugf("Reading master secret from file %q", filename)
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
 			return masterSecret{}, err

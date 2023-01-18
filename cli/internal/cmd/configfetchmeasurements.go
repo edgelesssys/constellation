@@ -72,12 +72,12 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	fileHandler file.Handler, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
-	cfm.log.Debugf("Using flags %v", flags)
 	if err != nil {
 		return err
 	}
+	cfm.log.Debugf("Using flags %v", flags)
 
-	cfm.log.Debugf("Loading config file from %s", flags.configPath)
+	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -118,7 +118,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
-	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in config")
+	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
@@ -134,9 +134,9 @@ func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag str
 	if err != nil {
 		return nil, fmt.Errorf("parsing config generate flags '%s': %w", flag, err)
 	}
-	cfm.log.Debugf("Flag %s has raw URL %s", flag, rawURL)
+	cfm.log.Debugf("Flag %s has raw URL %q", flag, rawURL)
 	if rawURL != "" {
-		cfm.log.Debugf("Parsing raw URL %s", rawURL)
+		cfm.log.Debugf("Parsing raw URL")
 		return url.Parse(rawURL)
 	}
 	return nil, nil
@@ -147,19 +147,19 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements URL")
+	cfm.log.Debugf("Parsed measurements URL as %v", measurementsURL)
 
 	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements signature URL")
+	cfm.log.Debugf("Parsed measurements signature URL as %v", measurementsSignatureURL)
 
 	config, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	cfm.log.Debugf("Config path is %s", config)
+	cfm.log.Debugf("Configuration path is %q", config)
 
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,

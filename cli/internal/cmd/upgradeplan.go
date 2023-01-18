@@ -83,7 +83,7 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
-	up.log.Debugf("Read config from %s", flags.configPath)
+	up.log.Debugf("Read configuration from %q", flags.configPath)
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 	up.log.Debugf("Using provider %s", csp.String())
@@ -140,7 +140,7 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 
 	// filter out versions that are not compatible with the current cluster
 	compatibleImages := getCompatibleImages(version, updateCandidates)
-	up.log.Debugf("Of those images, these ones are compaitble %v", compatibleImages)
+	up.log.Debugf("Of those images, these ones are compatible %v", compatibleImages)
 
 	// get expected measurements for each image
 	upgrades, err := getCompatibleImageMeasurements(cmd.Context(), cmd, client, rekor, []byte(flags.cosignPubKey), csp, compatibleImages)
