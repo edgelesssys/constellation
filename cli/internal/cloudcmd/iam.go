@@ -24,7 +24,9 @@ func DestroyIAMUser(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.Destroy(ctx)
+	if err = c.Destroy(ctx); err != nil {
+		return err
+	}
 	return c.CleanUpWorkspace()
 }
 
