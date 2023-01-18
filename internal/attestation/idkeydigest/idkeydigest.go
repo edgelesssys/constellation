@@ -20,6 +20,9 @@ type IDKeyDigests [][]byte
 
 type encodedIDKeyDigests []string
 
+// encodedDigestLength is the length of a digest in hex encoding.
+const encodedDigestLength = 2 * 48
+
 // NewIDKeyDigests creates a new IDKeyDigests from a list of digests.
 func NewIDKeyDigests(digests [][]byte) IDKeyDigests {
 	idKeyDigests := make(IDKeyDigests, len(digests))
@@ -108,6 +111,9 @@ func (d *IDKeyDigests) UnmarshalJSON(b []byte) error {
 // unmarshal is a helper function for unmarshalling encodedIDKeyDigests into IDKeyDigests.
 func (d *IDKeyDigests) unmarshal(encodedDigests encodedIDKeyDigests) error {
 	for _, encodedDigest := range encodedDigests {
+		if len(encodedDigest) != encodedDigestLength {
+			return fmt.Errorf("invalid digest length: %d", len(encodedDigest))
+		}
 		digest, err := hex.DecodeString(encodedDigest)
 		if err != nil {
 			return fmt.Errorf("decoding digest: %w", err)
