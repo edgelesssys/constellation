@@ -18,16 +18,29 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
+type IAMDestroyer struct {
+	newTerraformClient func(ctx context.Context) (terraformClient, error)
+}
+
+// NewIAMDestroyer creates a new IAM Destroyer
+func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
+	return &IAMDestroyer{
+		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+			return terraform.New(ctx, constants.TerraformIAMWorkingDir)
+		},
+	}
+}
+
 // DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files.
-func DestroyIAMUser(ctx context.Context) error {
-	c, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
+func (d *IAMDestroyer) DestroyIAMUser(ctx context.Context) error {
+	cl, err := d.newTerraformClient(ctx)
 	if err != nil {
 		return err
 	}
-	if err = c.Destroy(ctx); err != nil {
+	if err := cl.Destroy(ctx); err != nil {
 		return err
 	}
-	return c.CleanUpWorkspace()
+	return cl.CleanUpWorkspace()
 }
 
 // IAMCreator creates the IAM configuration on the cloud provider.

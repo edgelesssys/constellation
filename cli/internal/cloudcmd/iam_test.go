@@ -150,6 +150,44 @@ func TestIAMCreator(t *testing.T) {
 }
 
 func TestDestroyIAMUser(t *testing.T) {
-	assert := assert.New(t)
-	assert.NoError(DestroyIAMUser(context.Background()))
+	someError := errors.New("failed")
+
+	testCases := map[string]struct {
+		tfClient       terraformClient
+		newTfClientErr error
+		wantErr        bool
+	}{
+		"new terraform client error": {
+			tfClient:       &stubTerraformClient{},
+			newTfClientErr: someError,
+			wantErr:        true,
+		},
+		"destroy error": {
+			tfClient: &stubTerraformClient{destroyClusterErr: someError},
+			wantErr:  true,
+		},
+		"destroy": {
+			tfClient: &stubTerraformClient{},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			destroyer := &IAMDestroyer{
+				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+					return tc.tfClient, tc.newTfClientErr
+				},
+			}
+
+			err := destroyer.DestroyIAMUser(context.Background())
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
 }
