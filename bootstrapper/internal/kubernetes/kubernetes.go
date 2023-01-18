@@ -20,7 +20,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -89,7 +88,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest idkeydigest.IDKeyDigests, azureCVM bool,
+	enforceIDKeyDigest bool, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -216,7 +215,6 @@ func (k *KubeWrapper) InitCluster(
 	}
 	serviceConfig := constellationServicesConfig{
 		initialMeasurementsJSON: measurementsJSON,
-		idkeydigest:             idKeyDigest,
 		measurementSalt:         measurementSalt,
 		subnetworkPodCIDR:       subnetworkPodCIDR,
 		cloudServiceAccountURI:  cloudServiceAccountURI,
@@ -484,17 +482,6 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
 		}
 
-		joinVals, ok := extraVals["join-service"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid join-service values")
-		}
-
-		marshalledDigests, err := json.Marshal(serviceConfig.idkeydigest)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling idkeydigests: %w", err)
-		}
-		joinVals["idkeydigests"] = string(marshalledDigests)
-
 		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 		if err != nil {
 			return nil, err
@@ -537,7 +524,6 @@ type ccmConfigGetter interface {
 
 type constellationServicesConfig struct {
 	initialMeasurementsJSON []byte
-	idkeydigest             idkeydigest.IDKeyDigests
 	measurementSalt         []byte
 	subnetworkPodCIDR       string
 	cloudServiceAccountURI  string

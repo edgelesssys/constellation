@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
@@ -150,7 +149,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
-		idkeydigest.NewIDKeyDigests(req.Idkeydigests),
 		isCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
@@ -224,7 +222,6 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIDKeyDigest bool,
-		idKeyDigest idkeydigest.IDKeyDigests,
 		azureCVM bool,
 		helmDeployments []byte,
 		conformanceMode bool,
