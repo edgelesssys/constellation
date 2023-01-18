@@ -578,11 +578,23 @@ func newIAMDestroyCmd() *cobra.Command {
 
 func destroyIAMUserHandler(cmd *cobra.Command, _args []string) error {
 	spinner := newSpinner(cmd.ErrOrStderr())
+
+	// Confirmation
+	ok, err := askToConfirm(cmd, "Do you really want to destroy your IAM user?")
+	if err != nil {
+		return err
+	}
+	if !ok {
+		fmt.Println("The destruction of the IAM user was aborted")
+		return nil
+	}
+
 	spinner.Start("Destroying IAM User", false)
 	defer spinner.Stop()
 
 	if err := cloudcmd.NewIAMDestroyer(cmd.Context()).DestroyIAMUser(cmd.Context()); err != nil {
 		return fmt.Errorf("Couldn't destroy IAM User: %w", err)
 	}
+	fmt.Println("Successfully destroyed IAM User")
 	return nil
 }
