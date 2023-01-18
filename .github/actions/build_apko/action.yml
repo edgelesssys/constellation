@@ -64,79 +64,11 @@ runs:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
-      run: |
-        if [[ -z "${{ inputs.apkoConfig }}" ]]; then
-          echo "Building all images in image"
-          mkdir sboms
-          for imageConfig in apko/*.yaml; do
-            echo "Building image for $imageConfig"
-
-            imageName=$(basename $imageConfig | cut -d. -f1 )
-            registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
-            outTar="${imageName}.tar"
-
-            mkdir -p sboms/$imageName
-
-            # build the image
-            docker run \
-              -v "$PWD":/work \
-              cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
-              build \
-              "${imageConfig}" \
-              --build-arch ${{ inputs.apkoArch }} \
-              --sbom \
-              "${registry}" \
-              "${outTar}"
-
-            # push container
-            docker load < $outTar
-            docker push $registry
-            imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
-            echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
-
-            # cosign the container and push to registry
-            cosign sign \
-              --key env://COSIGN_PRIVATE_KEY \
-               $imageDigest \
-              -y
-
-            # move sboms to folder
-            mv sbom-*.* sboms/$imageName/
-          done
-        else
-          echo "Building image for ${{ inputs.apkoConfig }}"
-
-          imageName=$(basename ${{ inputs.apkoConfig }} | cut -d. -f1 )
-          registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
-          outTar="${imageName}.tar"
-
-          mkdir -p sboms/$imageName
-
-          # build the image
-          docker run \
-            -v "$PWD":/work \
-            cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
-            build \
-            "${imageConfig}" \
-            --build-arch ${{ inputs.apkoArch }} \
-            --sbom \
-            "${registry}" \
-            "${outTar}"
-
-          # push container
-          docker load < $outTar
-          docker push $registry
-          imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
-          echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
-
-          # cosign the container and push to registry
-          cosign sign \
-              --key env://COSIGN_PRIVATE_KEY \
-              $imageDigest \
-              -y
-
-          mv sbom-*.* sboms/$imageName/
-        fi
+        APKO_CONFIG: ${{ inputs.apkoConfig }}
+        APKO_TAG: ${{ inputs.apkoTag }}
+        APKO_ARCH: ${{ inputs.apkoArch }}
+        REGISTRY: ${{ inputs.registry }}
+      run: .github/actions/build_apko/build_and_sign.sh
 
     - name: Sign sboms
       if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
