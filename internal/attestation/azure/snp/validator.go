@@ -202,7 +202,9 @@ func validateSNPReport(
 		if enforceIDKeyDigest {
 			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigests}
 		}
-		log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
+		if log != nil {
+			log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
+		}
 	}
 
 	return nil
