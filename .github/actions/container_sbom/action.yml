@@ -24,8 +24,8 @@ runs:
     - name: Download syft & grype
       shell: bash
       run: |
-        SYFT_VERSION=0.59.0
-        GRYPE_VERSION=0.51.0
+        SYFT_VERSION=0.66.2
+        GRYPE_VERSION=0.55.0
         curl -LO https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz
         tar -xzf syft_${SYFT_VERSION}_linux_amd64.tar.gz
         ./syft version
