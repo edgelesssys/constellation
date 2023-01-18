@@ -49,7 +49,7 @@ jobs:
         run: |
           mods="${{ steps.submods.outputs.submods }}"
           for mod in $mods; do
-              go generate $mod/...
+              go generate "$mod/..."
           done
           git diff --exit-code
 
