@@ -133,9 +133,9 @@ func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag str
 	if err != nil {
 		return nil, fmt.Errorf("parsing config generate flags '%s': %w", flag, err)
 	}
-	cfm.log.Debugf("Flag %s has raw URL %s", flag, rawURL)
+	cfm.log.Debugf("Flag %s has raw URL %q", flag, rawURL)
 	if rawURL != "" {
-		cfm.log.Debugf("Parsing raw URL %s", rawURL)
+		cfm.log.Debugf("Parsing raw URL")
 		return url.Parse(rawURL)
 	}
 	return nil, nil
@@ -146,13 +146,13 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements URL as %q", measurementsURL.String())
+	cfm.log.Debugf("Parsed measurements URL as %v", measurementsURL)
 
 	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-	cfm.log.Debugf("Parsed measurements signature URL as %q", measurementsSignatureURL.String())
+	cfm.log.Debugf("Parsed measurements signature URL as %v", measurementsSignatureURL)
 
 	config, err := cmd.Flags().GetString("config")
 	if err != nil {
