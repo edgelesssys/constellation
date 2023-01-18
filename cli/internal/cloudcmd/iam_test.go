@@ -163,7 +163,7 @@ func TestDestroyIAMUser(t *testing.T) {
 			wantErr:        true,
 		},
 		"destroy error": {
-			tfClient: &stubTerraformClient{destroyClusterErr: someError},
+			tfClient: &stubTerraformClient{destroyErr: someError},
 			wantErr:  true,
 		},
 		"destroy": {
