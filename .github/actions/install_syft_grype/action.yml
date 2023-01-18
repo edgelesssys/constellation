@@ -1,0 +1,36 @@
+name: Install Syft & Grype
+description: |
+  Installs Syft & Grype.
+inputs:
+  versionSyft:
+    description: "Version of the operator-sdk to install"
+    default: "0.66.2"
+    required: false
+  versionGrype:
+    description: "Version of Grype to install"
+    default: "0.55.0"
+    required: false
+  os:
+    description: "Download build of Syft & Grype for operating system [linux, darwin]"
+    default: "linux"
+    required: false
+  arch:
+    description: "Download build of Syft & Grype for architecture [amd64, arm64]"
+    default: "amd64"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Syft & Grype
+      shell: bash
+      working-directory: /tmp
+      run: |
+        curl -Lo syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/syft/releases/download/v${{ inputs.versionSyft }}/syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        tar -xzf syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        sudo install syft /usr/bin/syft
+        syft version
+        curl -Lo grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/grype/releases/download/v${{ inputs.versionGrype }}/grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        tar -xzf grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        sudo install grype /usr/bin/grype
+        grype version
