@@ -9,6 +9,8 @@ package snp
 import (
 	"errors"
 	"fmt"
+
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 )
 
 type signatureError struct {
@@ -49,7 +51,7 @@ func (e *vcekError) Error() string {
 
 type idKeyError struct {
 	encounteredValue []byte
-	expectedValue    []byte
+	expectedValues   idkeydigest.IDKeyDigests
 }
 
 func (e *idKeyError) Unwrap() error {
@@ -57,7 +59,7 @@ func (e *idKeyError) Unwrap() error {
 }
 
 func (e *idKeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigest %x does not match reported idkeydigest %x", e.expectedValue, e.encounteredValue)
+	return fmt.Sprintf("configured idkeydigests %x doesn't contain reported idkeydigest %x", e.expectedValues, e.encounteredValue)
 }
 
 type versionError struct {

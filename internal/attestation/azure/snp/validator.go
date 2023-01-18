@@ -25,7 +25,6 @@ import (
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
-	"go.uber.org/multierr"
 )
 
 const (
@@ -97,15 +96,7 @@ func getTrustedKey(
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		validated := false
-		for _, digest := range idKeyDigest {
-			if err = validateSNPReport(vcek, digest, enforceIDKeyDigest, report, log); err == nil {
-				validated = true
-				break
-			}
-			err = multierr.Append(err, err)
-		}
-		if !validated {
+		if err := validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
@@ -153,7 +144,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 }
 
 func validateSNPReport(
-	cert *x509.Certificate, expectedIDKeyDigest []byte, enforceIDKeyDigest bool,
+	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool,
 	report snpAttestationReport, log vtpm.AttestationLogger,
 ) error {
 	if report.Policy.Debug() {
@@ -199,13 +190,19 @@ func validateSNPReport(
 		return &signatureError{err}
 	}
 
-	if !bytes.Equal(expectedIDKeyDigest, report.IDKeyDigest[:]) {
+	hasExpectedIDKeyDigest := false
+	for _, digest := range expectedIDKeyDigests {
+		if bytes.Equal(digest, report.IDKeyDigest[:]) {
+			hasExpectedIDKeyDigest = true
+			break
+		}
+	}
+
+	if !hasExpectedIDKeyDigest {
 		if enforceIDKeyDigest {
-			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigest}
+			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigests}
 		}
-		if log != nil {
-			log.Warnf("Encountered different than configured IDKeyDigest value: Encountered %x, expected %x", report.IDKeyDigest[:], expectedIDKeyDigest)
-		}
+		log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
 	}
 
 	return nil
