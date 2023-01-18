@@ -18,7 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
-// DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files
+// DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files.
 func DestroyIAMUser(ctx context.Context) error {
 	c, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
 	if err != nil {
