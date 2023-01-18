@@ -2,14 +2,6 @@ name: Install Syft & Grype
 description: |
   Installs Syft & Grype.
 inputs:
-  versionSyft:
-    description: "Version of Syft to install"
-    default: "0.66.2"
-    required: false
-  versionGrype:
-    description: "Version of Grype to install"
-    default: "0.55.0"
-    required: false
   os:
     description: "Download build of Syft & Grype for operating system [linux, darwin]"
     default: "linux"
@@ -25,12 +17,15 @@ runs:
     - name: Install Syft & Grype
       shell: bash
       working-directory: /tmp
+      env:
+        SYFT_VERSION: "0.66.2"
+        GRYPE_VRSION: "0.55.0"
       run: |
-        curl -Lo syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/syft/releases/download/v${{ inputs.versionSyft }}/syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
-        tar -xzf syft_${{ inputs.versionSyft }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        curl -Lo syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        tar -xzf syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
         sudo install syft /usr/bin/syft
         syft version
-        curl -Lo grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/grype/releases/download/v${{ inputs.versionGrype }}/grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
-        tar -xzf grype_${{ inputs.versionGrype }}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        curl -Lo grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        tar -xzf grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
         sudo install grype /usr/bin/grype
         grype version
