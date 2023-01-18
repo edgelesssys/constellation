@@ -1,16 +1,5 @@
 name: Install Syft & Grype
-description: |
-  Installs Syft & Grype.
-inputs:
-  os:
-    description: "Download build of Syft & Grype for operating system [linux, darwin]"
-    default: "linux"
-    required: false
-  arch:
-    description: "Download build of Syft & Grype for architecture [amd64, arm64]"
-    default: "amd64"
-    required: false
-
+description: Installs Syft & Grype.
 runs:
   using: "composite"
   steps:
@@ -19,13 +8,31 @@ runs:
       working-directory: /tmp
       env:
         SYFT_VERSION: "0.66.2"
-        GRYPE_VRSION: "0.55.0"
+        GRYPE_VERSION: "0.55.0"
+        OS: ${{ runner.os }}
+        ARCH: ${{ runner.arch }}
       run: |
-        curl -Lo syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
-        tar -xzf syft_${SYFT_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        echo "::group::Download and Install Syft & Grype"
+        # Translate GitHub runner naming conventions to GOOS / GOARCH conventions
+        if [[ "${OS}" = "macOS" ]]; then
+          OS="darwin"
+        else
+          OS=${OS,,}
+        fi
+  
+        if [[ "${ARCH}" = "X64" ]]; then
+          ARCH="amd64"
+        else
+          ARCH=${ARCH,,}
+        fi
+        
+        echo "Downloading for ${OS}/${ARCH}"
+        
+        curl -Lo syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
+        tar -xzf syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
         sudo install syft /usr/bin/syft
         syft version
-        curl -Lo grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
-        tar -xzf grype_${GRYPE_VERSION}_${{ inputs.os }}_${{ inputs.arch }}.tar.gz
+        curl -Lo grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
+        tar -xzf grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
         sudo install grype /usr/bin/grype
         grype version
