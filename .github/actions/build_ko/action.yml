@@ -51,7 +51,7 @@ runs:
       uses: ./.github/actions/pseudo_version
 
     - name: Set up ko
-      uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
+      uses: imjasonh/setup-ko@ace48d793556083a76f1e3e6068850c1f4a369aa # v0.6
 
     - name: Build and upload ko container image
       id: build
