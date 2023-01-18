@@ -17,22 +17,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      with:
+        ref: ${{ inputs.ref || github.head_ref }}
+
     - name: Install Cosign
       if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
       uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
 
-    - name: Download syft & grype
-      shell: bash
-      run: |
-        SYFT_VERSION=0.59.0
-        GRYPE_VERSION=0.51.0
-        curl -LO https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz
-        tar -xzf syft_${SYFT_VERSION}_linux_amd64.tar.gz
-        ./syft version
-        curl -LO https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz
-        tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
-        ./grype version
-        echo $(pwd) >> $GITHUB_PATH
+    - name: Download Syft & Grype
+      uses: ./.github/actions/install_syft_grype
 
     - name: Generate SBOM
       shell: bash
