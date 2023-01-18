@@ -148,3 +148,8 @@ func TestIAMCreator(t *testing.T) {
 		})
 	}
 }
+
+func TestDestroyIAMUser(t *testing.T) {
+	assert := assert.New(t)
+	assert.NoError(DestroyIAMUser(context.Background()))
+}
