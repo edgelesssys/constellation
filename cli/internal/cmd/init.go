@@ -155,7 +155,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
-		Idkeydigests:           conf.IDKeyDigests().ToProto(),
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)

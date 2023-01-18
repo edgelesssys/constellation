@@ -43,13 +43,6 @@ func DefaultsFor(csp cloudprovider.Provider) IDKeyDigests {
 	}
 }
 
-// ToProto converts the IDKeyDigests to a protobuf compatible format.
-func (d IDKeyDigests) ToProto() [][]byte {
-	digests := make([][]byte, len(d))
-	copy(digests, d)
-	return digests
-}
-
 // MarshalYAML implements the yaml.Marshaler interface.
 func (d IDKeyDigests) MarshalYAML() (any, error) {
 	encodedIDKeyDigests := []string{}
