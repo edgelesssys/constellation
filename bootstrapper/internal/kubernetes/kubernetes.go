@@ -9,7 +9,6 @@ package kubernetes
 import (
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -89,7 +88,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
+	enforceIDKeyDigest bool, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -216,7 +215,6 @@ func (k *KubeWrapper) InitCluster(
 	}
 	serviceConfig := constellationServicesConfig{
 		initialMeasurementsJSON: measurementsJSON,
-		idkeydigest:             idKeyDigest,
 		measurementSalt:         measurementSalt,
 		subnetworkPodCIDR:       subnetworkPodCIDR,
 		cloudServiceAccountURI:  cloudServiceAccountURI,
@@ -484,12 +482,6 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
 		}
 
-		joinVals, ok := extraVals["join-service"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid join-service values")
-		}
-		joinVals["idkeydigest"] = hex.EncodeToString(serviceConfig.idkeydigest)
-
 		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 		if err != nil {
 			return nil, err
@@ -532,7 +524,6 @@ type ccmConfigGetter interface {
 
 type constellationServicesConfig struct {
 	initialMeasurementsJSON []byte
-	idkeydigest             []byte
 	measurementSalt         []byte
 	subnetworkPodCIDR       string
 	cloudServiceAccountURI  string

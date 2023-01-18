@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -30,7 +31,7 @@ import (
 type Validator struct {
 	provider           cloudprovider.Provider
 	pcrs               measurements.M
-	idkeydigest        []byte
+	idkeydigests       idkeydigest.IDKeyDigests
 	enforceIDKeyDigest bool
 	azureCVM           bool
 	validator          atls.Validator
@@ -50,12 +51,8 @@ func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Valida
 	if v.provider == cloudprovider.Azure {
 		v.azureCVM = *conf.Provider.Azure.ConfidentialVM
 		if v.azureCVM {
-			idkeydigest, err := hex.DecodeString(conf.Provider.Azure.IDKeyDigest)
-			if err != nil {
-				return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
-			}
 			v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
-			v.idkeydigest = idkeydigest
+			v.idkeydigests = conf.Provider.Azure.IDKeyDigests
 		}
 	}
 
@@ -153,7 +150,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 		v.validator = gcp.NewValidator(v.pcrs, log)
 	case cloudprovider.Azure:
 		if v.azureCVM {
-			v.validator = snp.NewValidator(v.pcrs, v.idkeydigest, v.enforceIDKeyDigest, log)
+			v.validator = snp.NewValidator(v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
 		} else {
 			v.validator = trustedlaunch.NewValidator(v.pcrs, log)
 		}

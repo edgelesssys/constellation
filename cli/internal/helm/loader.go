@@ -405,6 +405,12 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 		}
 		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
 
+		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
+		if err != nil {
+			return nil, fmt.Errorf("marshalling id key digests: %w", err)
+		}
+		joinServiceVals["idkeydigests"] = string(marshalledDigests)
+
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
 			return nil, errors.New("invalid ccm values")

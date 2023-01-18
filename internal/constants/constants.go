@@ -111,7 +111,7 @@ const (
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
 	MeasurementSecretFilename = "measurementSecret"
 	// IDKeyDigestFilename is the name of the file holding the currently enforced idkeydigest.
-	IDKeyDigestFilename = "idkeydigest"
+	IDKeyDigestFilename = "idkeydigests"
 	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.

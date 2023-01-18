@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -39,7 +40,7 @@ func TestNewValidator(t *testing.T) {
 		config             *config.Config
 		pcrs               measurements.M
 		enforceIDKeyDigest bool
-		idKeyDigest        string
+		digest             idkeydigest.IDKeyDigests
 		azureCVM           bool
 		wantErr            bool
 	}{
@@ -74,16 +75,8 @@ func TestNewValidator(t *testing.T) {
 		"set idkeydigest": {
 			provider:           cloudprovider.Azure,
 			pcrs:               testPCRs,
-			idKeyDigest:        "414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141",
+			digest:             idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
 			enforceIDKeyDigest: true,
-		},
-		"invalid idkeydigest": {
-			provider:           cloudprovider.Azure,
-			pcrs:               testPCRs,
-			idKeyDigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
-			enforceIDKeyDigest: true,
-			azureCVM:           true,
-			wantErr:            true,
 		},
 	}
 
@@ -96,7 +89,7 @@ func TestNewValidator(t *testing.T) {
 				conf.Provider.GCP = &config.GCPConfig{Measurements: tc.pcrs}
 			}
 			if tc.provider == cloudprovider.Azure {
-				conf.Provider.Azure = &config.AzureConfig{Measurements: tc.pcrs, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigest: tc.idKeyDigest, ConfidentialVM: &tc.azureCVM}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: tc.pcrs, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigests: tc.digest, ConfidentialVM: &tc.azureCVM}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				conf.Provider.QEMU = &config.QEMUConfig{Measurements: tc.pcrs}
@@ -148,7 +141,7 @@ func TestValidatorV(t *testing.T) {
 		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   snp.NewValidator(newTestPCRs(), nil, false, nil),
+			wantVs:   snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
 			azureCVM: true,
 		},
 		"azure trusted launch": {

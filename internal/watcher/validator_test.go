@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -125,7 +126,7 @@ func TestUpdate(t *testing.T) {
 		defer oidLock.Unlock()
 		oid = newOID
 	}
-	newValidator := func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
+	newValidator := func(m measurements.M, digest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 		oidLock.Lock()
 		defer oidLock.Unlock()
 		return fakeValidator{fakeOID: oid}
@@ -225,7 +226,7 @@ func TestOIDConcurrency(t *testing.T) {
 		[]byte{},
 	))
 
-	newValidator := func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
+	newValidator := func(m measurements.M, digest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 		return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}
 	}
 	// create server
@@ -261,7 +262,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		newValidator: func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
+		newValidator: func(m measurements.M, digest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 			return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}
 		},
 	}
