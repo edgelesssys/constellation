@@ -3,7 +3,7 @@ description: |
   Installs Syft & Grype.
 inputs:
   versionSyft:
-    description: "Version of the operator-sdk to install"
+    description: "Version of Syft to install"
     default: "0.66.2"
     required: false
   versionGrype:
