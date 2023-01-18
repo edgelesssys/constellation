@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: keyservice
+  name: key-service
   namespace: testNamespace
 spec:
   ports:
-  - name: grpc
-    port: 9000
-    protocol: TCP
-    targetPort: 9000
+    - name: grpc
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
   selector:
-    k8s-app: keyservice
+    k8s-app: key-service
   type: ClusterIP
 status:
   loadBalancer: {}

@@ -35,11 +35,11 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: type
-                operator: NotIn
-                values:
-                - virtual-kubelet
+              - matchExpressions:
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
       priorityClassName: system-node-critical
       tolerations:
         - operator: Exists
@@ -107,7 +107,7 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--support-zone=true"
             - "--get-node-info-from-labels=false"
-            - "--kms-addr=keyservice.testNamespace:9000"
+            - "--kms-addr=key-service.testNamespace:9000"
           ports:
             - containerPort: 29603
               name: healthz

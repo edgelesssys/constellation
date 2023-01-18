@@ -38,7 +38,7 @@ spec:
           image: joinServiceImage
           args:
             - --cloud-provider=GCP
-            - --keyservice-endpoint=keyservice.testNamespace:9000
+            - --key-service-endpoint=key-service.testNamespace:9000
           volumeMounts:
             - mountPath: /var/config
               name: config

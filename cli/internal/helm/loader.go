@@ -52,7 +52,7 @@ const (
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
 	joinServiceImage             string
-	keyserviceImage              string
+	keyServiceImage              string
 	ccmImage                     string
 	cnmImage                     string
 	autoscalerImage              string
@@ -78,7 +78,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 
 	return &ChartLoader{
 		joinServiceImage:             versions.JoinImage,
-		keyserviceImage:              versions.KeyServiceImage,
+		keyServiceImage:              versions.KeyServiceImage,
 		ccmImage:                     ccmImage,
 		cnmImage:                     cnmImage,
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
@@ -359,14 +359,14 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 	csp := config.GetProvider()
 	values := map[string]any{
 		"global": map[string]any{
-			"keyservicePort":      constants.KeyservicePort,
-			"keyserviceNamespace": "", // empty namespace means we use the release namespace
+			"keyServicePort":      constants.KeyServicePort,
+			"keyServiceNamespace": "", // empty namespace means we use the release namespace
 			"serviceBasePath":     constants.ServiceBasePath,
 			"joinConfigCMName":    constants.JoinConfigMap,
 			"internalCMName":      constants.InternalConfigMap,
 		},
-		"keyservice": map[string]any{
-			"image":                i.keyserviceImage,
+		"key-service": map[string]any{
+			"image":                i.keyServiceImage,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
 			"saltKeyName":          constants.ConstellationSaltKey,

@@ -40,7 +40,7 @@ const vpcIPTimeout = 30 * time.Second
 
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
-	keyserviceEndpoint := flag.String("keyservice-endpoint", "", "endpoint of Constellations key management service")
+	keyServiceEndpoint := flag.String("key-service-endpoint", "", "endpoint of Constellations key management service")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
@@ -78,7 +78,7 @@ func main() {
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create kubeadm")
 	}
-	keyserviceClient := kms.New(log.Named("keyserviceClient"), *keyserviceEndpoint)
+	keyServiceClient := kms.New(log.Named("keyServiceClient"), *keyServiceEndpoint)
 
 	measurementSalt, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.MeasurementSaltFilename))
 	if err != nil {
@@ -89,7 +89,7 @@ func main() {
 		measurementSalt,
 		kubernetesca.New(log.Named("certificateAuthority"), handler),
 		kubeadm,
-		keyserviceClient,
+		keyServiceClient,
 		log.Named("server"),
 	)
 	if err != nil {

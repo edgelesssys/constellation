@@ -124,9 +124,9 @@ node:
   livenessProbe:
     healthPort: 29603
 global:
-  keyserviceName: "keyservice"
-  keyservicePort: 9000
-  keyserviceNamespace: "kube-system"
+  keyServiceName: "key-service"
+  keyServicePort: 9000
+  keyServiceNamespace: "kube-system"
 
 snapshot:
   enabled: false

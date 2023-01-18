@@ -30,8 +30,8 @@ csiController:
   runOnControlPlane: true
 
 global:
-  keyserviceName: "keyservice"
-  keyservicePort: 9000
-  keyserviceNamespace: "kube-system"
+  keyServiceName: "key-service"
+  keyServicePort: 9000
+  keyServiceNamespace: "kube-system"
 
 createStorageClass: true
