@@ -32,6 +32,10 @@ runs:
 
     - name: MiniConstellation E2E
       shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.azureClientID }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
+        ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         echo "::group::Terraform"
         cd .github/actions/e2e_mini
@@ -46,20 +50,16 @@ runs:
         # Copy locally build Constellation CLI and run e2e script.
         scp -i id_rsa ../../../build/constellation adminuser@${AZURE_VM_IP}:.
         ssh -i id_rsa adminuser@${AZURE_VM_IP} 'bash -s' < run-e2e.sh
-      env:
-        ARM_CLIENT_ID: ${{ inputs.azureClientID }}
-        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
-        ARM_TENANT_ID: ${{ inputs.azureTenantID }}
 
     - name: Delete deployment
       if: always()
       shell: bash
+      env:
+        ARM_CLIENT_ID: ${{ inputs.azureClientID }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
+        ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
         echo "::group::Terminate"
         cd .github/actions/e2e_mini
         terraform destroy -auto-approve
         echo "::endgroup::"
-      env:
-        ARM_CLIENT_ID: ${{ inputs.azureClientID }}
-        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
-        ARM_TENANT_ID: ${{ inputs.azureTenantID }}

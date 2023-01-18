@@ -18,9 +18,11 @@ runs:
   using: "composite"
   steps:
     - name: Install Cosign
-      uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
       if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+
     - name: Download syft & grype
+      shell: bash
       run: |
         SYFT_VERSION=0.59.0
         GRYPE_VERSION=0.51.0
@@ -31,9 +33,14 @@ runs:
         tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
         ./grype version
         echo $(pwd) >> $GITHUB_PATH
-      shell: bash
 
     - name: Generate SBOM
+      shell: bash
+      env:
+        # COSIGN_EXPERIMENTAL: 1 # This breaks verification with HTTP 404
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
         set -ex
         echo "$COSIGN_PRIVATE_KEY" > cosign.key
@@ -43,9 +50,3 @@ runs:
         # https://github.com/sigstore/cosign/issues/2264
         cosign verify-attestation ${{ inputs.containerReference }} --type 'https://cyclonedx.org/bom' --key env://COSIGN_PUBLIC_KEY
         grype ${{ inputs.containerReference }} --fail-on high --only-fixed
-      shell: bash
-      env:
-        # COSIGN_EXPERIMENTAL: 1 # This breaks verification with HTTP 404
-        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
-        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
-        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}

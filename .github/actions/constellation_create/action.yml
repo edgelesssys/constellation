@@ -99,8 +99,8 @@ runs:
         fi
 
     - name: Remove embedded measurements
-      shell: bash
       if: inputs.keepMeasurements == 'false'
+      shell: bash
       run: |
         yq eval -i \
           "(.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \

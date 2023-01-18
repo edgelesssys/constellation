@@ -28,8 +28,8 @@ runs:
         install sonobuoy /usr/local/bin
 
     - name: Sonobuoy version
-      run: sonobuoy version
       shell: bash
+      run: sonobuoy version
 
     - name: Run e2e test
       shell: bash

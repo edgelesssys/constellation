@@ -16,13 +16,15 @@ jobs:
           - version: "20220927.00"
             latest: true
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout GoogleCloudPlatform/guest-agent
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           repository: "GoogleCloudPlatform/guest-agent"
           ref: refs/tags/${{ matrix.version }}
           path: "guest-agent"
 
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout Constellation
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: "constellation"
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}

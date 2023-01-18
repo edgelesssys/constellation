@@ -16,7 +16,8 @@ jobs:
           - version: v25.2.0
             latest: true
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout kubernetes/cloud-provider-gcp
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           repository: "kubernetes/cloud-provider-gcp"
           ref: refs/tags/ccm/${{ matrix.version }}
@@ -45,17 +46,20 @@ jobs:
       - name: Build CCM
         run: |
           "${GITHUB_WORKSPACE}/bin/bazel" build //cmd/cloud-controller-manager:cloud-controller-manager
+
       - name: Copy CCM
         run: |
           # support new and old bazel output paths
           cp ./bazel-bin/cmd/cloud-controller-manager/cloud-controller-manager_/cloud-controller-manager ./cloud-controller-manager || \
           cp ./bazel-bin/cmd/cloud-controller-manager/linux_amd64_pure_stripped/cloud-controller-manager ./cloud-controller-manager
+
       - name: Prepare Dockerfile
         run: |
           cat > Dockerfile <<EOF
           FROM scratch
           COPY ./cloud-controller-manager /cloud-controller-manager
           EOF
+
       - name: Build and push container image
         id: build
         uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0

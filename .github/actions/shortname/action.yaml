@@ -21,8 +21,8 @@ runs:
   using: "composite"
   steps:
     - name: Extract ref, stream and version
-      shell: bash
       id: extract
+      shell: bash
       run: |
         ref="-"
         stream="stable"

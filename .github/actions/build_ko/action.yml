@@ -41,7 +41,6 @@ outputs:
     description: "Container tag"
     value: ${{ steps.build.container_tag }}
 
-
 # Linux runner only
 runs:
   using: "composite"
@@ -55,8 +54,8 @@ runs:
       uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
 
     - name: Build and upload ko container image
-      shell: bash
       id: build
+      shell: bash
       env:
         KO_USER: ${{ github.actor }}
         KO_CONFIG_PATH: ${{ inputs.koConfig }}

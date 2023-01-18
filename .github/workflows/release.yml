@@ -35,6 +35,7 @@ jobs:
             echo "Version must be in the form of vX.Y.Z"
             exit 1
           fi
+
       - name: Extract version info
         id: version-info
         run: |
@@ -109,9 +110,11 @@ jobs:
     env:
       BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ github.head_ref }}
+
       - name: Create release branch
         if: inputs.kind == 'minor'
         run: |
@@ -154,7 +157,8 @@ jobs:
       VERSION: ${{ inputs.version }}
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
@@ -235,7 +239,8 @@ jobs:
       VERSION: ${{ inputs.version }}
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
@@ -298,7 +303,8 @@ jobs:
     env:
       VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
@@ -326,7 +332,8 @@ jobs:
       VERSION: ${{ inputs.version }}
       NEW_BRANCH: feat/release/${{ inputs.version }}/changes-to-main
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkot
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
