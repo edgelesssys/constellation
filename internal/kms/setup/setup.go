@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"cloud.google.com/go/kms/apiv1/kmspb"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
@@ -149,11 +148,11 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 		return azure.NewHSM(ctx, vaultName, store, kekID, nil)
 
 	case "gcp":
-		project, location, keyRing, protectionLvl, kekID, err := getGCPKMSConfig(uri)
+		project, location, keyRing, _, kekID, err := getGCPKMSConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl), kekID)
+		return gcp.New(ctx, kekID, store, project, location, keyRing)
 
 	case "cluster-kms":
 		masterSecret, err := getClusterKMSConfig(uri)
