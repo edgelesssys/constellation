@@ -72,3 +72,13 @@ func (c *stubIAMCreator) Create(
 	c.id.CloudProvider = provider
 	return c.id, c.createErr
 }
+
+type stubIAMDestroyer struct {
+	destroyCalled bool
+	destroyErr    error
+}
+
+func (d *stubIAMDestroyer) DestroyIAMUser(ctx context.Context) error {
+	d.destroyCalled = true
+	return d.destroyErr
+}

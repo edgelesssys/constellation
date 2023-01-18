@@ -34,6 +34,12 @@ type cloudIAMCreator interface {
 	) (iamid.File, error)
 }
 
+type iamDestroyer interface {
+	DestroyIAMUser(
+		ctx context.Context,
+	) error
+}
+
 type cloudTerminator interface {
 	Terminate(context.Context) error
 }
