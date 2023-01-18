@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package gcp
+package internal
 
 import (
 	"context"
@@ -130,8 +130,8 @@ func TestGetDEK(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &KMSClient{
-				wrapper: tc.wrapper,
-				storage: tc.storage,
+				Wrapper: tc.wrapper,
+				Storage: tc.storage,
 			}
 
 			dek, err := client.GetDEK(context.Background(), "volume-01", 32)
