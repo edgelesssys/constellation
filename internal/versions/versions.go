@@ -104,7 +104,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.23.15", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
@@ -150,7 +150,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.24.9", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
@@ -196,7 +196,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.25.5", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
@@ -245,7 +245,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterVersion: "v1.26.0", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
-				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
 				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
