@@ -105,7 +105,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -151,7 +151,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -197,7 +197,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
@@ -246,7 +246,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz", // renovate:cni-plugins-release
-				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				Hash:        "sha256:f3a841324845ca6bf0d4091b4fc7f97e18a623172158b72fc3fdcdb9d42d2d37",
 				InstallPath: constants.CniPluginsDir,
 				Extract:     true,
 			},
