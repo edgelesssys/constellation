@@ -18,8 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	kmsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms"
-	"github.com/edgelesssys/constellation/v2/internal/kms/kms/util"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	wrapping "github.com/hashicorp/go-kms-wrapping/v2"
 )
@@ -46,7 +46,7 @@ func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]by
 		}
 
 		// If the DEK does not exist we generate a new random DEK and save it to storage
-		newDEK, err := util.GetRandomKey(dekSize)
+		newDEK, err := crypto.GenerateRandomBytes(dekSize)
 		if err != nil {
 			return nil, fmt.Errorf("key generation: %w", err)
 		}

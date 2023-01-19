@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/kms/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,38 +25,28 @@ func TestGCPKMS(t *testing.T) {
 	if !*runGcpKms {
 		t.Skip("Skipping Google KMS key creation test")
 	}
-	assert := assert.New(t)
-	require := require.New(t)
-	store := storage.NewMemMapStorage()
-
 	if *gcpProjectID == "" || *gcpLocation == "" || *gcpKeyRing == "" || *gcpKEKID == "" {
 		flag.Usage()
 		t.Fatal("Required flags not set")
 	}
+	require := require.New(t)
 
-	dekName := "test-dek"
-
+	store := storage.NewMemMapStorage()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	kmsClient, err := gcp.New(ctx, *gcpKEKID, store, *gcpProjectID, *gcpLocation, *gcpKeyRing)
+	cfg := uri.GCPConfig{
+		CredentialsPath: *gcpCredentialsPath,
+		ProjectID:       *gcpProjectID,
+		Location:        *gcpLocation,
+		KeyRing:         *gcpKeyRing,
+		KeyName:         *gcpKEKID,
+	}
+	kmsClient, err := gcp.New(ctx, store, cfg)
 	require.NoError(err)
 	defer kmsClient.Close()
 
-	res, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
-	require.NoError(err)
-	t.Logf("DEK 1: %x\n", res)
-
-	res2, err := kmsClient.GetDEK(ctx, dekName, config.SymmetricKeyLength)
-	require.NoError(err)
-	assert.Equal(res, res2)
-	t.Logf("DEK 2: %x\n", res2)
-
-	res3, err := kmsClient.GetDEK(ctx, addSuffix(dekName), config.SymmetricKeyLength)
-	require.NoError(err)
-	assert.Len(res3, config.SymmetricKeyLength)
-	assert.NotEqual(res, res3)
-	t.Logf("DEK 3: %x\n", res3)
+	runKMSTest(t, kmsClient)
 }
 
 func TestGcpStorage(t *testing.T) {

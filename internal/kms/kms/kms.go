@@ -17,6 +17,8 @@ type CloudKMS interface {
 	// GetDEK returns the DEK for dekID and kekID from the KMS.
 	// If the DEK does not exist, a new one is created and saved to storage.
 	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
+	// Close closes any open connection on the KMS client.
+	Close()
 }
 
 // Storage provides an abstract interface for the storage backend used for DEKs.

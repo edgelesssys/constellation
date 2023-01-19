@@ -40,12 +40,6 @@ func New(key []byte, salt []byte) (*KMS, error) {
 	return &KMS{masterKey: key, salt: salt}, nil
 }
 
-// CreateKEK sets the ClusterKMS masterKey.
-func (c *KMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
-	c.masterKey = kek
-	return nil
-}
-
 // GetDEK derives a key from the KMS masterKey.
 func (c *KMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	if len(c.masterKey) == 0 {
@@ -53,3 +47,6 @@ func (c *KMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, er
 	}
 	return crypto.DeriveKey(c.masterKey, c.salt, []byte(dekID), uint(dekSize))
 }
+
+// Close is a no-op for cKMS.
+func (c *KMS) Close() {}

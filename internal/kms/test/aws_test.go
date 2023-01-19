@@ -149,21 +149,8 @@ func TestAwsKms(t *testing.T) {
 	client, err := awsInterface.New(context.Background(), &keyPolicyProducer, nil, newKEKId1)
 	require.NoError(err)
 
-	privateKEK1 := []byte(strings.Repeat("1234", 8))
-	privateKEK2 := []byte(strings.Repeat("5678", 8))
-	privateKEK3 := make([]byte, 0)
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-
-	// test setting first KEK
-	assert.NoError(client.CreateKEK(ctx, newKEKId1, privateKEK1))
-
-	// make sure that CreateKEK is idempotent
-	assert.NoError(client.CreateKEK(ctx, newKEKId1, privateKEK1))
-
-	// make sure you can not overwrite KEK with different key material
-	assert.NoError(client.CreateKEK(ctx, newKEKId1, privateKEK2))
 
 	// make sure that GetDEK is idempotent
 	volumeKey1, err := client.GetDEK(ctx, "volume01", kmsconfig.SymmetricKeyLength)
@@ -176,12 +163,6 @@ func TestAwsKms(t *testing.T) {
 	volumeKey2, err := client.GetDEK(ctx, "volume02", kmsconfig.SymmetricKeyLength)
 	require.NoError(err)
 	assert.NotEqual(volumeKey1, volumeKey2)
-
-	// make sure AWS KMS generates KEK when calling CreateKEK with empty key
-	assert.NoError(client.CreateKEK(ctx, newKEKId2, privateKEK3))
-
-	// make sure that CreateKEK is idempotent
-	assert.NoError(client.CreateKEK(ctx, newKEKId2, privateKEK3))
 
 	// test setting a DEK with AWS KMS generated KEK
 	volumeKey3, err := client.GetDEK(ctx, "volume03", kmsconfig.SymmetricKeyLength)
