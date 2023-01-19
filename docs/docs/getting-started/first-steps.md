@@ -21,7 +21,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --generate-config
     ```
 
-    This command creates the configuration file `constellation-conf.yaml` in your current directory. It then creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest` and fills the values into the configuration file.
+    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
     * `westus`
@@ -37,7 +37,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --generate-config
     ```
 
-    This command creates the configuration file `constellation-conf.yaml` in your current directory. It then creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test` and fills the values into the configuration file.
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that only regions offering CVMs of the `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `N2D`.
 
@@ -49,7 +49,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create aws --zone=eu-central-1a --prefix=constellTest --generate-config
     ```
 
-    This command creates the configuration file `constellation-conf.yaml` in your current directory. It then creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created and fills the values into the configuration file.
+    This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Constellation OS images are currently replicated to the following regions:
      * `eu-central-1`
@@ -64,7 +64,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     </tabs>
 
     :::tip
-    To learn how to create a configuration file without automatic IAM creation and how to delete your IAM configuration and to get more detailed information on the IAM process and the VM types supported by Constellation, see the [Configuration workflow](../workflows/config.md).
+    To learn about all options you have for managing IAM resources and Constellation configuration, see the [Configuration workflow](../workflows/config.md).
     :::
 
 <!--
@@ -75,7 +75,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     :::
 -->
 
-1. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+2. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
 
     :::tip
 
@@ -94,7 +94,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Your Constellation cluster was created successfully.
     ```
 
-2. Initialize the cluster
+3. Initialize the cluster
 
     ```bash
     constellation init
@@ -125,7 +125,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::
 
-3. Configure kubectl
+4. Configure kubectl
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"

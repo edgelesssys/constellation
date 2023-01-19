@@ -64,7 +64,7 @@ Fill the desired VM type into the **instanceType** field in the `constellation-c
 ## Creating an IAM configuration
 
 You can create an IAM configuration for your cluster automatically using the `constellation iam create` command.
-If you did not generate a configuration file yet, you can do so by adding the `--generate-config` flag to the command, which will create a configuration file and populate it with the created IAM values automatically, or by [manually creating a configuration file](#creating-the-configuration-file).
+If you haven't generated a configuration file yet, you can do so by adding the `--generate-config` flag to the command. This creates a configuration file and populates it with the created IAM values.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
