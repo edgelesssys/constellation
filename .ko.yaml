@@ -1,7 +1,7 @@
 defaultBaseImage: ghcr.io/edgelesssys/apko-alpine-base@sha256:17b0f5320d2755f79956df5f4609b5e20f821eb54c10fca93e4564a558929b56
 
 baseImageOverrides:
-  github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532@@sha256:ba90dd0fc05c2a7860f5395de26e66c149023b141ad3607e5b241ae9e11df289
+  github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532@sha256:ba90dd0fc05c2a7860f5395de26e66c149023b141ad3607e5b241ae9e11df289
   github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api: ghcr.io/edgelesssys/apko-alpine-qemu-metadata-api@sha256:971f5534f9fa9bff3459278d79b35cc8d87407f7cbcdea680804ec7547772b47
 
 builds:
