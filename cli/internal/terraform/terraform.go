@@ -74,39 +74,59 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context) (string, string, error) {
+func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
 	if err := c.tf.Init(ctx); err != nil {
-		return "", "", err
+		return CreateOutput{}, err
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return "", "", err
+		return CreateOutput{}, err
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return "", "", err
+		return CreateOutput{}, err
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {
-		return "", "", errors.New("no IP output found")
+		return CreateOutput{}, errors.New("no IP output found")
 	}
 	ip, ok := ipOutput.Value.(string)
 	if !ok {
-		return "", "", errors.New("invalid type in IP output: not a string")
+		return CreateOutput{}, errors.New("invalid type in IP output: not a string")
 	}
 
 	secretOutput, ok := tfState.Values.Outputs["initSecret"]
 	if !ok {
-		return "", "", errors.New("no initSecret output found")
+		return CreateOutput{}, errors.New("no initSecret output found")
 	}
 	secret, ok := secretOutput.Value.(string)
 	if !ok {
-		return "", "", errors.New("invalid type in initSecret output: not a string")
+		return CreateOutput{}, errors.New("invalid type in initSecret output: not a string")
 	}
 
-	return ip, secret, nil
+	uidOutput, ok := tfState.Values.Outputs["uid"]
+	if !ok {
+		return CreateOutput{}, errors.New("no uid output found")
+	}
+	uid, ok := uidOutput.Value.(string)
+	if !ok {
+		return CreateOutput{}, errors.New("invalid type in uid output: not a string")
+	}
+
+	return CreateOutput{
+		IP:     ip,
+		Secret: secret,
+		UID:    uid,
+	}, nil
+}
+
+// CreateOutput contains the Terraform output values of a cluster creation.
+type CreateOutput struct {
+	IP     string
+	Secret string
+	UID    string
 }
 
 // IAMOutput contains the output information of the Terraform IAM operations.

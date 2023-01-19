@@ -37,6 +37,7 @@ on:
           - "lb"
           - "k-bench"
           - "verify"
+          - "recover"
           - "nop"
         required: true
       kubernetesVersion:
