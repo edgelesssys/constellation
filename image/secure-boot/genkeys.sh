@@ -37,7 +37,7 @@ gen_pki() {
   done
 
   for key in MicWinProPCA2011_2011-10-19.crt MicCorUEFCA2011_2011-06-27.crt MicCorKEKCA2011_2011-06-24.crt; do
-    curl -sL "https://www.microsoft.com/pkiops/certs/${key}" --output "${key}"
+    curl -fsSL "https://www.microsoft.com/pkiops/certs/${key}" --output "${key}"
     sbsiglist --owner 77fa9abd-0359-4d32-bd60-28f4e78f784b --type x509 --output "${key%crt}esl" "${key}"
   done
 

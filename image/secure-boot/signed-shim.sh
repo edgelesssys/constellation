@@ -21,7 +21,7 @@ TMPDIR=$(mktemp -d)
 
 pushd "${TMPDIR}"
 
-curl -sL -o shim.rpm "${SOURCE}"
+curl -fsSL -o shim.rpm "${SOURCE}"
 echo "Checking SHA512 checksum of signed shim..."
 sha512sum -c <<< "${EXPECTED_SHA512}  shim.rpm"
 rpm2cpio shim.rpm | cpio -idmv

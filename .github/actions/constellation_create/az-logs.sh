@@ -29,7 +29,7 @@ for scaleset in ${scalesetslist}; do
         jq '.serialConsoleLogBlobUri' -r
     )
     sleep 4
-    curl -sL -o "./${scaleset}-${instanceid}.log" "${bloburi}"
+    curl -fsSL -o "./${scaleset}-${instanceid}.log" "${bloburi}"
     realpath "./${scaleset}-${instanceid}.log"
   done
 done

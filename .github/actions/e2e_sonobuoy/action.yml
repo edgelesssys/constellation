@@ -23,7 +23,7 @@ runs:
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
-        curl -sLO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_${HOSTOS}_${HOSTARCH}.tar.gz
+        curl -fsSLO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_${HOSTOS}_${HOSTARCH}.tar.gz
         tar -xzf sonobuoy_${{ inputs.sonobuoyVersion }}_${HOSTOS}_${HOSTARCH}.tar.gz
         install sonobuoy /usr/local/bin
 

@@ -68,7 +68,7 @@ runs:
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
-        curl -sLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-${HOSTOS}-${HOSTARCH}
+        curl -fsSLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-${HOSTOS}-${HOSTARCH}
         sudo install rekor-cli-${HOSTOS}-${HOSTARCH} /usr/local/bin/rekor-cli
         rm rekor-cli-${HOSTOS}-${HOSTARCH}
 

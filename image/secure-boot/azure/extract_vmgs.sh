@@ -57,7 +57,7 @@ sleep 10
 ACCESS=$(az rest --method get --url "${ASYNC_OPERATION_URI}")
 VMGS_URL=$(echo "${ACCESS}" | jq -r '.properties.output.securityDataAccessSAS')
 
-curl -L -o "${AZURE_VMGS_FILENAME}" "${VMGS_URL}"
+curl -fsSL -o "${AZURE_VMGS_FILENAME}" "${VMGS_URL}"
 
 az snapshot revoke-access \
   --name "${AZURE_SNAPSHOT_NAME}" \
