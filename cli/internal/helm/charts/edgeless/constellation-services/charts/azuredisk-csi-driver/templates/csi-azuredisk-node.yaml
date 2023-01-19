@@ -121,7 +121,7 @@ spec:
             - "--allow-empty-cloud-config={{ .Values.node.allowEmptyCloudConfig }}"
             - "--support-zone={{ .Values.node.supportZone }}"
             - "--get-node-info-from-labels={{ .Values.linux.getNodeInfoFromLabels }}"
-            - "--kms-addr=kms.{{ .Values.node.kmsNamespace | default .Release.Namespace }}:{{ .Values.node.kmsPort }}"
+            - "--kms-addr={{ .Values.global.keyserviceName }}.{{ .Values.global.keyserviceNamespace | default .Release.Namespace }}:{{ .Values.global.keyservicePort }}"
           ports:
             - containerPort: {{ .Values.node.livenessProbe.healthPort }}
               name: healthz

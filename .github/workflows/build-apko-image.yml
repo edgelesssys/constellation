@@ -1,0 +1,33 @@
+name: Build and upload all apko container images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/**"
+
+jobs:
+  build-apko-image:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build and upload apko image
+        uses: ./.github/actions/build_apko
+        with:
+          apkoConfig: ""
+          apkoTag: "latest"
+          apkoArch: "amd64"
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}

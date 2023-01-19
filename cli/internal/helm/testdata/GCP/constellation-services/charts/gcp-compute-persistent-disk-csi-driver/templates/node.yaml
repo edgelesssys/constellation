@@ -41,7 +41,7 @@ spec:
             - "--v=5"
             - "--endpoint=unix:/csi/csi.sock"
             - "--run-controller-service=false"
-            - "--kms-addr=kms.testNamespace:9000"
+            - "--kms-addr=keyservice.testNamespace:9000"
           securityContext:
             privileged: true
           volumeMounts:

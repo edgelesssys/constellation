@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -42,11 +43,11 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
-			getTrustedKey(&azureInstanceInfo{}, idKeyDigest, enforceIDKeyDigest, log),
+			getTrustedKey(&azureInstanceInfo{}, idKeyDigests, enforceIDKeyDigest, log),
 			validateCVM,
 			vtpm.VerifyPKCS1v15,
 			log,
@@ -77,7 +78,7 @@ func reverseEndian(b []byte) {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
 func getTrustedKey(
-	hclAk HCLAkValidator, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
+	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
 ) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
@@ -95,7 +96,7 @@ func getTrustedKey(
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		if err = validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
+		if err := validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
@@ -143,7 +144,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 }
 
 func validateSNPReport(
-	cert *x509.Certificate, expectedIDKeyDigest []byte, enforceIDKeyDigest bool,
+	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool,
 	report snpAttestationReport, log vtpm.AttestationLogger,
 ) error {
 	if report.Policy.Debug() {
@@ -189,12 +190,20 @@ func validateSNPReport(
 		return &signatureError{err}
 	}
 
-	if !bytes.Equal(expectedIDKeyDigest, report.IDKeyDigest[:]) {
+	hasExpectedIDKeyDigest := false
+	for _, digest := range expectedIDKeyDigests {
+		if bytes.Equal(digest, report.IDKeyDigest[:]) {
+			hasExpectedIDKeyDigest = true
+			break
+		}
+	}
+
+	if !hasExpectedIDKeyDigest {
 		if enforceIDKeyDigest {
-			return &idKeyError{report.IDKeyDigest[:]}
+			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigests}
 		}
 		if log != nil {
-			log.Warnf("Encountered different than configured IDKeyDigest value: %x", report.IDKeyDigest[:])
+			log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
 		}
 	}
 

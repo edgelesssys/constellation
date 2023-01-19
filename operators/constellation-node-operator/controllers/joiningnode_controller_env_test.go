@@ -92,23 +92,6 @@ var _ = Describe("JoiningNode controller", func() {
 	})
 	It("Should annotate the corresponding node when creating the node first", func() {
 		ctx := context.Background()
-		By("creating a node")
-		node := &corev1.Node{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "update.edgeless.systems/v1alpha1",
-				Kind:       "Node",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeName2,
-			},
-			Spec: corev1.NodeSpec{},
-		}
-		Expect(k8sClient.Create(ctx, node)).Should(Succeed())
-		createdNode := &corev1.Node{}
-		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: nodeName2}, createdNode)
-		}, timeout, interval).Should(Succeed())
-		Expect(createdNode.ObjectMeta.Name).Should(Equal(nodeName2))
 
 		By("creating a joining node resource")
 		joiningNode := &updatev1alpha1.JoiningNode{
@@ -131,6 +114,24 @@ var _ = Describe("JoiningNode controller", func() {
 		}, timeout, interval).Should(Succeed())
 		Expect(createdJoiningNode.Spec.Name).Should(Equal(nodeName2))
 		Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference2))
+
+		By("creating a node")
+		node := &corev1.Node{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "update.edgeless.systems/v1alpha1",
+				Kind:       "Node",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeName2,
+			},
+			Spec: corev1.NodeSpec{},
+		}
+		Expect(k8sClient.Create(ctx, node)).Should(Succeed())
+		createdNode := &corev1.Node{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, types.NamespacedName{Name: nodeName2}, createdNode)
+		}, timeout, interval).Should(Succeed())
+		Expect(createdNode.ObjectMeta.Name).Should(Equal(nodeName2))
 
 		By("annotating the node")
 		Eventually(func() string {
@@ -169,8 +170,13 @@ var _ = Describe("JoiningNode controller", func() {
 		Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference3))
 
 		By("setting the deadline to the past")
-		createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
-		Expect(k8sClient.Update(ctx, createdJoiningNode)).Should(Succeed())
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode); err != nil {
+				return err
+			}
+			createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
+			return k8sClient.Update(ctx, createdJoiningNode)
+		}, timeout, interval).Should(Succeed())
 
 		By("deleting the joining node resource")
 		Eventually(func() error {

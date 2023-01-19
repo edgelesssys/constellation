@@ -33,11 +33,12 @@ runs:
   steps:
     # https://github.blog/2022-04-12-git-security-vulnerability-announced/
     - name: Mark repository safe
+      shell: bash
       run: |
         git config --global --add safe.directory /__w/constellation/constellation
-      shell: bash
 
     - name: Build CLI
+      shell: bash
       run: |
         echo "::group::Build CLI"
         mkdir -p build
@@ -53,26 +54,32 @@ runs:
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
         echo "::endgroup::"
-      shell: bash
 
     # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
     # once it has the functionality
     - name: Install Cosign
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
       uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
     - name: Install Rekor
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      shell: bash
+      working-directory: build
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
         curl -sLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-${HOSTOS}-${HOSTARCH}
         sudo install rekor-cli-${HOSTOS}-${HOSTARCH} /usr/local/bin/rekor-cli
         rm rekor-cli-${HOSTOS}-${HOSTARCH}
-      shell: bash
-      working-directory: build
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
     - name: Sign CLI
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      shell: bash
+      working-directory: build
+      env:
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
         SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
@@ -85,10 +92,3 @@ runs:
         uuid=$(rekor-cli search --artifact ${SIGN_TARGET} | tail -n 1)
         sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
         cosign verify-blob --key cosign.pub --signature <(echo $sig) ${SIGN_TARGET}
-      shell: bash
-      working-directory: build
-      env:
-        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
-        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
-        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
-      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}

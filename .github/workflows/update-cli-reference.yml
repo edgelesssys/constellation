@@ -22,12 +22,12 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
       - name: Generate reference docs
-        run: go run . | cat header.md - > ../../cli.md
         working-directory: hack/clidocgen
+        run: go run . | cat header.md - > ../../cli.md
 
       - name: Get commit sha
         run: |
@@ -39,10 +39,8 @@ jobs:
           echo "EXISTS=$(if [[ -z "$ex" ]]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
 
       - name: Publish new reference (create new branch)
-        if: ${{ env.EXISTS == 0 }}
+        if: env.EXISTS == 0
         uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
           source_file: "cli.md"
           destination_repo: "edgelesssys/constellation"
@@ -51,12 +49,12 @@ jobs:
           user_name: "${{ github.actor }}"
           user_email: "${{ github.actor }}@users.noreply.github.com"
           commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
-
-      - name: Publish new reference (update branch)
-        if: ${{ env.EXISTS == 1 }}
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
+
+      - name: Publish new reference (update branch)
+        if: env.EXISTS == 1
+        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
         with:
           source_file: "cli.md"
           destination_repo: "edgelesssys/constellation"
@@ -65,3 +63,5 @@ jobs:
           user_name: "${{ github.actor }}"
           user_email: "${{ github.actor }}@users.noreply.github.com"
           commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}

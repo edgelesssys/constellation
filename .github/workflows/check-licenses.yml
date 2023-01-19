@@ -25,11 +25,11 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
       - name: Install go-licenses
-        run: go install github.com/google/go-licenses@latest
+        run: go install github.com/google/go-licenses@0e0ec3a03d2277ffa8161963486f03bb58a6358c # v1.5.0
 
       - name: Check licenses
         run: hack/check-licenses.sh

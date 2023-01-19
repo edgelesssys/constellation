@@ -74,7 +74,7 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	v.log.Debugf("Using flags: %+v", flags)
 
-	v.log.Debugf("Loading config file from %s", flags.configPath)
+	v.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -97,18 +97,12 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return err
 	}
 	v.log.Debugf("Generated random nonce: %x", nonce)
-	userData, err := crypto.GenerateRandomBytes(32)
-	if err != nil {
-		return err
-	}
-	v.log.Debugf("Generated random user data: %x", userData)
 
 	if err := verifyClient.Verify(
 		cmd.Context(),
 		flags.endpoint,
 		&verifyproto.GetAttestationRequest{
-			Nonce:    nonce,
-			UserData: userData,
+			Nonce: nonce,
 		},
 		validators.V(cmd),
 	); err != nil {
@@ -124,26 +118,26 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	v.log.Debugf("config: %s", configPath)
+	v.log.Debugf("Configuration file flag is %q", configPath)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing cluster-id argument: %w", err)
 	}
-	v.log.Debugf("cluster-id: %s", clusterID)
+	v.log.Debugf("Cluster ID flag is %q", clusterID)
 
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	v.log.Debugf("node-endpoint: %s", endpoint)
+	v.log.Debugf("'node-endpoint' flag is %q", endpoint)
 
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		v.log.Debugf("Trying to supplement empty flag values from %s", constants.ClusterIDsFileName)
+		v.log.Debugf("Trying to supplement empty flag values from %q", constants.ClusterIDsFileName)
 		var idFile clusterid.File
 		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err == nil {
 			if emptyEndpoint {
@@ -210,7 +204,7 @@ type constellationVerifier struct {
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
 ) error {
-	v.log.Debugf("Dialing endpoint: %s", endpoint)
+	v.log.Debugf("Dialing endpoint: %q", endpoint)
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("dialing init server: %w", err)
@@ -231,8 +225,8 @@ func (v *constellationVerifier) Verify(
 		return fmt.Errorf("validating attestation: %w", err)
 	}
 
-	if !bytes.Equal(signedData, req.UserData) {
-		return errors.New("signed data in attestation does not match provided user data")
+	if !bytes.Equal(signedData, []byte(constants.ConstellationVerifyServiceUserData)) {
+		return errors.New("signed data in attestation does not match expected user data")
 	}
 	return nil
 }

@@ -7,6 +7,9 @@ UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 IMAGE_VERSION                    ?= v0.0.0
+AUTOLOGIN                        ?= false
+AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
+export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
 csps := aws qemu gcp azure
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
@@ -33,7 +36,7 @@ prebuilt/rpms/azure/%.rpm:
 	@curl -sL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.4/300.fc37/x86_64/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
-	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) build
+	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) $(AUTOLOGIN_ARGS) --environment=CONSOLE_MOTD build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \
 		chown -R $(SUDO_UID):$(SUDO_GID) mkosi.output.$*; \

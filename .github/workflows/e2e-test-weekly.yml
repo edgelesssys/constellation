@@ -19,17 +19,24 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.image }}
+      image: ${{ steps.find-latest-image.outputs.output }}
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
       - name: Find latest image
         id: find-latest-image
-        uses: ./.github/actions/find_latest_image
+        uses: ./.github/actions/versionsapi
         with:
+          command: latest
           ref: main
           stream: debug
 
@@ -97,7 +104,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -106,8 +113,8 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
-        if: matrix.provider == 'azure'
         id: az_resource_group_gen
+        if: matrix.provider == 'azure'
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -131,7 +138,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ matrix.test }}
 
@@ -143,7 +150,7 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Notify teams channel
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        if: failure() && github.ref == 'refs/heads/main'
         continue-on-error: true
         shell: bash
         working-directory: .github/actions/e2e_test

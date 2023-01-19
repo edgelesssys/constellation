@@ -1,5 +1,9 @@
 name: Build and Upload OS image
 on:
+  schedule:
+    - cron: "0 21 * * 5" # At 21:00 on Friday.
+    - cron: "10 21 * * 5" # At 21:10 on Friday.
+    - cron: "20 21 * * 5" # At 21:20 on Friday.
   workflow_dispatch:
     inputs:
       imageVersion:
@@ -11,15 +15,37 @@ on:
         required: false
         default: false
       stream:
-        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images, 'console' for images with serial console access and 'debug' for debug builds)"
         type: choice
         required: true
         options:
-          - "stable"
-          - "nightly"
           - "debug"
-          # TODO: implement console access enabled image
-          # - "console"
+          - "console"
+          - "nightly"
+          - "stable"
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      imageVersion:
+        description: "Semantic version including patch e.g. v<major>.<minor>.<patch> (only used for releases)"
+        required: false
+        type: string
+      isRelease:
+        description: 'Is this a release? (sets "ref" to special value "-")'
+        type: boolean
+        required: false
+        default: false
+      stream:
+        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+        type: string
+        required: true
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
 
 jobs:
   build-dependencies:
@@ -36,7 +62,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Build bootstrapper
         if: inputs.stream != 'debug'
@@ -71,31 +97,31 @@ jobs:
 
       - name: Collect hashes
         id: collect-hashes
+        working-directory: ${{ github.workspace }}/build
         run: |
           {
             echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
             echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
             echo "upgrade-agent-sha256=$(sha256sum upgrade-agent | head -c 64)"
           } >> "$GITHUB_OUTPUT"
-        working-directory: ${{ github.workspace }}/build
 
   build-settings:
     name: "Determine build settings"
     runs-on: ubuntu-22.04
     outputs:
       ref: ${{ steps.ref.outputs.ref }}
+      stream: ${{ steps.stream.outputs.stream }}
       imageType: ${{ steps.image-type.outputs.imageType }}
       pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
       imageVersion: ${{ steps.image-version.outputs.imageVersion }}
       imageName: ${{ steps.image-version.outputs.imageName }}
       imageNameShort: ${{ steps.image-version.outputs.imageNameShort }}
       imageApiBasePath: ${{ steps.image-version.outputs.imageApiBasePath }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Determine version
         id: version
@@ -110,7 +136,8 @@ jobs:
             echo "ref=${{ steps.version.outputs.branchName }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate stream
+      - name: Determine and validate stream
+        id: stream
         run: |
           if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "nightly" ]]; then
             echo "Nightly builds are not allowed for releases"
@@ -120,21 +147,42 @@ jobs:
             exit 1
           fi
 
+          case "${{ github.event.schedule }}" in
+            "0 21 * * 5")
+              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "10 21 * * 5")
+              echo "stream=console" >> "$GITHUB_OUTPUT"
+              ;;
+            "20 21 * * 5")
+              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "stream=${{ inputs.stream }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
       - name: Determine type of image build
         shell: bash
         id: image-type
         run: |
-          if  [[ "${{ inputs.stream }}" == "debug" ]]; then
-            echo "imageType=debug" >> "$GITHUB_OUTPUT"
-          else
-            echo "imageType=default" >> "$GITHUB_OUTPUT"
-          fi
+          case "${{ steps.stream.outputs.stream }}" in
+            "debug")
+              echo "imageType=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "console")
+              echo "imageType=console" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "imageType=default" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
       - name: Determine PKI set
         id: pki-set
         shell: bash
         run: |
-          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ steps.stream.outputs.stream }}" == "stable" ]]; then
              echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
            else
              echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
@@ -145,7 +193,7 @@ jobs:
         shell: bash
         env:
           REF: ${{ steps.ref.outputs.ref }}
-          STREAM: ${{ inputs.stream }}
+          STREAM: ${{ steps.stream.outputs.stream }}
           IMAGE_VERSION: ${{ inputs.imageVersion || steps.version.outputs.pseudoVersion }}
         run: |
           {
@@ -209,7 +257,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Download build dependencies
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -231,30 +279,33 @@ jobs:
       - name: Prepare PKI for secure boot signing
         id: prepare-pki
         shell: bash
-        run: |
-          echo "${DB_KEY}" > "${PKI_SET}/db.key"
-          ln -s "${PKI_SET}" pki
         working-directory: ${{ github.workspace }}/image
         env:
           PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
           DB_KEY: ${{ ((needs.build-settings.outputs.pkiSet == 'pki_prod') && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
+        run: |
+          echo "${DB_KEY}" > "${PKI_SET}/db.key"
+          ln -s "${PKI_SET}" pki
 
       - name: Build
         shell: bash
-        run: |
-          echo "::group::Build"
-          sudo make IMAGE_VERSION="${IMAGE_VERSION}" "${CSP}"
-          echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
           UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
+          AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
+        run: |
+          echo "::group::Build"
+          sudo make IMAGE_VERSION="${IMAGE_VERSION}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}"
+          echo "::endgroup::"
 
       - name: Collect hashes
         id: collect-hashes
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
         run: |
           {
             echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)"
@@ -266,18 +317,18 @@ jobs:
             echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)"
             echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)"
           } >> "$GITHUB_OUTPUT"
-        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
-        continue-on-error: true
 
       - name: Upload raw OS image as artifact
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw
-        if: always()
-        continue-on-error: true
 
       - name: Upload individual OS parts as artifacts
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: parts-${{ matrix.csp }}
@@ -289,18 +340,16 @@ jobs:
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.roothash
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.verity
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.vmlinuz
-        if: always()
-        continue-on-error: true
 
       - name: Upload manifest as artifact
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: manifest-${{ matrix.csp }}
           path: |
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.changelog
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.manifest
-        if: always()
-        continue-on-error: true
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -321,7 +370,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -337,7 +386,7 @@ jobs:
           uploadVariant: ${{ matrix.upload-variant }}
           basePath: ${{ github.workspace }}/image
           ref: ${{ needs.build-settings.outputs.ref }}
-          stream: ${{ inputs.stream }}
+          stream: ${{ needs.build-settings.outputs.stream }}
           imageVersion: ${{ needs.build-settings.outputs.imageVersion }}
           imageType: ${{ needs.build-settings.outputs.imageType }}
           debug: ${{ needs.build-settings.outputs.imageType == 'debug' }}
@@ -354,11 +403,11 @@ jobs:
           echo "::endgroup::"
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
         # on AWS, login is required to upload the image as AMI
         # on Azure, login is done to download the VMGS from S3
         # on QEMU, login is done to upload the image to S3
         if: matrix.csp == 'aws' || matrix.csp == 'azure' || matrix.csp == 'qemu'
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
@@ -370,42 +419,36 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to GCP
-        uses: ./.github/actions/login_gcp
         if: matrix.csp == 'gcp'
+        uses: ./.github/actions/login_gcp
         with:
-          gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
+          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
 
       - name: Prepare PKI for image upload
         id: prepare-pki
         shell: bash
+        working-directory: ${{ github.workspace }}/image
         run: |
           ln -s ${{ needs.build-settings.outputs.pkiSet }} pki
-        working-directory: ${{ github.workspace }}/image
 
       - name: Download VMGS blob
+        if: matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported')
+        working-directory: ${{ github.workspace }}/image
+        env:
+          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
+          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
+          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
         run: |
           aws s3 cp \
             --region "${AZURE_VMGS_REGION}" \
             "s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
             "${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
             --no-progress
-        working-directory: ${{ github.workspace }}/image
-        if: matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported')
-        env:
-          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
-          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
-          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
 
       - name: Upload AWS image
-        shell: bash
-        run: |
-          echo "::group::Upload AWS image"
-          secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
-          upload/upload_aws.sh
-          echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${AWS_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image
         if: matrix.csp == 'aws'
+        shell: bash
+        working-directory: ${{ github.workspace }}/image
         env:
           PKI: ${{ github.workspace }}/image/pki
           AWS_JSON_OUTPUT: ${{ steps.vars.outputs.awsJsonOutput }}
@@ -417,17 +460,17 @@ jobs:
           AWS_REGION: ${{ steps.vars.outputs.awsRegion }}
           AWS_REPLICATION_REGIONS: ${{ steps.vars.outputs.awsReplicationRegions }}
           AWS_PUBLISH: ${{ steps.vars.outputs.awsPublish }}
+        run: |
+          echo "::group::Upload AWS image"
+          secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
+          upload/upload_aws.sh
+          echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${AWS_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
 
       - name: Upload GCP image
-        shell: bash
-        run: |
-          echo "::group::Upload GCP image"
-          upload/pack.sh gcp "${GCP_RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
-          upload/upload_gcp.sh
-          echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${GCP_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image
         if: matrix.csp == 'gcp'
+        shell: bash
+        working-directory: ${{ github.workspace }}/image
         env:
           PKI: ${{ github.workspace }}/image/pki
           GCP_JSON_OUTPUT: ${{ steps.vars.outputs.gcpJsonOutput }}
@@ -439,17 +482,17 @@ jobs:
           GCP_PROJECT: ${{ steps.vars.outputs.gcpProject }}
           GCP_RAW_IMAGE_PATH: ${{ steps.vars.outputs.gcpRawImagePath }}
           GCP_REGION: ${{ steps.vars.outputs.gcpRegion }}
+        run: |
+          echo "::group::Upload GCP image"
+          upload/pack.sh gcp "${GCP_RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
+          upload/upload_gcp.sh
+          echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${GCP_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
 
       - name: Upload Azure image
-        shell: bash
-        run: |
-          echo "::group::Upload Azure image"
-          upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-          upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
-          echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image
         if: matrix.csp == 'azure'
+        shell: bash
+        working-directory: ${{ github.workspace }}/image
         env:
           PKI: ${{ github.workspace }}/image/pki
           AZURE_JSON_OUTPUT: ${{ steps.vars.outputs.azureJsonOutput }}
@@ -468,15 +511,16 @@ jobs:
           AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
           AZURE_SKU: ${{ steps.vars.outputs.azureSku }}
           AZURE_VMGS_PATH: ${{ steps.vars.outputs.azureVmgsPath }}
+        run: |
+          echo "::group::Upload Azure image"
+          upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
+          upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
+          echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
 
       - name: Upload QEMU image
-        shell: bash
         if: matrix.csp == 'qemu'
-        run: |
-          echo "::group::Upload QEMU image"
-          upload/upload_qemu.sh
-          echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${QEMU_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
-          echo "::endgroup::"
+        shell: bash
         working-directory: ${{ github.workspace }}/image
         env:
           QEMU_JSON_OUTPUT: ${{ steps.vars.outputs.qemuJsonOutput }}
@@ -484,8 +528,13 @@ jobs:
           QEMU_BASE_URL: ${{ steps.vars.outputs.qemuBaseUrl }}
           QEMU_IMAGE_PATH: ${{ steps.vars.outputs.qemuImagePath }}
           REF: ${{needs.build-settings.outputs.ref }}
-          STREAM: ${{inputs.stream }}
+          STREAM: ${{needs.build-settings.outputs.stream }}
           IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
+        run: |
+          echo "::group::Upload QEMU image"
+          upload/upload_qemu.sh
+          echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${QEMU_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
 
       - name: Upload image lookup table as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
@@ -508,7 +557,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
@@ -524,12 +573,13 @@ jobs:
       - name: Install dependencies
         run: |
           echo "::group::Install dependencies"
-          python -m pip install --user lief==0.12.2
+          python -m pip install --user --require-hashes -r .github/workflows/build-os-image-requirements.txt
           sudo apt-get update
           sudo apt-get install -y systemd-container # for systemd-dissect
           echo "::endgroup::"
 
       - name: Calculate expected PCRs
+        working-directory: ${{ github.workspace }}/image/measured-boot
         run: |
           echo "::group::Calculate expected PCRs"
           {
@@ -540,7 +590,6 @@ jobs:
           cp pcr-stable.json ${{ github.workspace }}/
           jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image/measured-boot
 
       - name: Upload expected PCRs as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
@@ -597,21 +646,24 @@ jobs:
           unsquashfs -user-xattrs -d image.root.tree image.root.raw
           echo "::endgroup::"
 
-      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
+      - name: Create SBOM in SPDX fromat
+        uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
           output-file: sbom.spdx.json
           format: spdx-json
 
-      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
+      - name: Create SBOM in CycloneDX fromat
+        uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
           output-file: sbom.cyclonedx.json
           format: cyclonedx-json
 
-      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
+      - name: Create SBOM in  Syft fromat
+        uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
@@ -700,7 +752,7 @@ jobs:
           jq '.ref = "${{  needs.build-settings.outputs.ref }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
-          jq '.stream = "${{ inputs.stream }}"' intermediate.json > lookup-table.json
+          jq '.stream = "${{ needs.build-settings.outputs.stream }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
           jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' intermediate.json > lookup-table.json
@@ -736,6 +788,6 @@ jobs:
     with:
       command: add
       ref: ${{ needs.build-settings.outputs.ref }}
-      stream: ${{ inputs.stream }}
+      stream: ${{ needs.build-settings.outputs.stream }}
       version: ${{ needs.build-settings.outputs.imageVersion }}
       add_latest: true

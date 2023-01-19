@@ -2,6 +2,17 @@ name: Build CLI and prepare release
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: true
 
 jobs:
   build-cli:
@@ -16,11 +27,13 @@ jobs:
         id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
+
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
+
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
@@ -30,6 +43,7 @@ jobs:
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+
       - name: Upload CLI as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
@@ -48,22 +62,27 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-amd64
+
       - name: Download CLI binaries darwin-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-arm64
+
       - name: Download CLI binaries linux-amd64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-amd64
+
       - name: Download CLI binaries linux-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-arm64
+
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
+
       - name: Generate provenance subjects
         id: provenance-subjects
         run: |
@@ -85,36 +104,48 @@ jobs:
         id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-      - name: Download syft & grype
-        run: |
-          SYFT_VERSION=0.62.1
-          GRYPE_VERSION=0.53.1
-          curl -LO https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz
-          tar -xzf syft_${SYFT_VERSION}_linux_amd64.tar.gz
-          ./syft version
-          curl -LO https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz
-          tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
-          ./grype version
-          pwd >> "$GITHUB_PATH"
-        shell: bash
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.19.5"
+
+      - name: Download Syft & Grype
+        uses: ./.github/actions/install_syft_grype
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+
+      # Build one CLI since Syft's go-module catalog will default to binary parsing.
+      # Binary parsing has the advantage that it will not include other dependencies from our repo not included in the CLI.
+      # This seems to work fine for one OS & one arch as long as we don't have OS specific imports.
+      # Luckily, so far this does not seem to be the case.
+      # As of v2.4.0, all SBOMs seem to have the same packages for [linux|darwin] & [amd64|arm64].
+      # If this changes, this should be split up into multiple builds & multiple SBOMs.
+      - name: Build CLI (amd64, linux)
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: "linux"
+          targetArch: "amd64"
+
       - name: Build signed SBOM
         run: |
-          syft . --catalogers go-module --file constellation.spdx.sbom -o spdx-json
+          syft build/constellation-linux-amd64 --catalogers go-module --file constellation.spdx.sbom -o spdx-json
           cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation.spdx.sbom > constellation.spdx.sbom.sig
-          grype constellation.spdx.sbom --fail-on high --only-fixed
+          grype constellation.spdx.sbom --fail-on high --only-fixed --add-cpes-if-none
         env:
           COSIGN_EXPERIMENTAL: 1
           COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+
       - name: Upload Constellation CLI SBOM
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: constellation.spdx.sbom
           path: constellation.spdx.sbom
+
       - name: Upload Constellation CLI SBOM's signature
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
@@ -146,30 +177,37 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-amd64
+
       - name: Download CLI binaries darwin-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-arm64
+
       - name: Download CLI binaries linux-amd64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-amd64
+
       - name: Download CLI binaries linux-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-arm64
+
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
+
       - name: Download provenance
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
+
       - name: Install slsa-verifier
         run: |
           curl -LO https://github.com/slsa-framework/slsa-verifier/releases/download/v${{ env.SLSA_VERIFIER_VERSION }}/slsa-verifier-linux-amd64
           install slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
+
       - name: Verify provenance
         run: |
           slsa-verifier verify-artifact constellation-darwin-amd64 \
@@ -190,7 +228,7 @@ jobs:
 
   release:
     runs-on: ubuntu-22.04
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(inputs.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/v')
     needs:
       - build-cli
       - provenance
@@ -200,50 +238,56 @@ jobs:
         run: echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         env:
           COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+
       - name: Download CLI binaries darwin-amd64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-amd64
+
       - name: Download CLI binaries darwin-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-darwin-arm64
+
       - name: Download CLI binaries linux-amd64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-amd64
+
       - name: Download CLI binaries linux-arm64
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-arm64
-      - name: Download versions-manifest.json
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
-        with:
-          name: versions-manifest.json
+
       - name: Download Constellation CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom
+
       - name: Download Constellation CLI SBOM's signature
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation.spdx.sbom.sig
+
       - name: Download Constellation provenance
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
+
       - name: Rename provenance file
         run: |
           mv ${{ needs.provenance.outputs.provenance-name }} constellation.intoto.jsonl
+
       - name: Create release with artifacts
         # GitHub endorsed release project. See: https://github.com/actions/create-release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         with:
           draft: true
+          generate_release_notes: true
+          tag_name: ${{ inputs.ref }}
           files: |
             constellation-*
             cosign.pub
-            versions-manifest.json
             constellation.spdx.sbom
             constellation.spdx.sbom.sig
             constellation.intoto.jsonl

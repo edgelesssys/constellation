@@ -14,13 +14,13 @@ runs:
 
   steps:
     - name: Setup python
-      uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912 # v4.4.0
+      uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435 # v4.5.0
       with:
         python-version: "3.10"
 
     - name: Install evaluation dependencies
       shell: bash
-      run: pip install -r .github/actions/e2e_kbench/evaluate/requirements.txt
+      run: pip install --require-hashes -r .github/actions/e2e_kbench/evaluate/requirements.txt
 
     - name: Checkout patched K-Bench
       uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -32,12 +32,14 @@ runs:
 
     - name: Install patched K-Bench
       working-directory: "k-bench"
-      run: ./install.sh
       shell: bash
+      run: ./install.sh
 
     - name: Run K-Bench
       shell: bash
       working-directory: k-bench
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         mkdir -p ./out
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml | kubectl apply -f -
@@ -55,12 +57,10 @@ runs:
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml |  kubectl apply -f -
         kubectl apply -f ../.github/actions/e2e_kbench/encrypted_storage.yml
         ./run.sh -r "kbench-constellation-${{ inputs.cloudProvider }}" -t "dp_network_intranode" -o "./out/"
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
 
     - name: Merge K-Bench results
-      working-directory: k-bench
       shell: bash
+      working-directory: k-bench
       run: |
         mkdir -p "./out/kbench-constellation-${{ inputs.cloudProvider }}"
         mv ./out/results_kbench-constellation-${{ inputs.cloudProvider }}_*m/* "./out/kbench-constellation-${{ inputs.cloudProvider }}/"
@@ -68,8 +68,8 @@ runs:
         cat ./out/kbench-constellation-${{ inputs.cloudProvider }}/*/kbench.log
 
     - name: Upload original benchmark results
+      if: (!env.ACT)
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-      if: ${{ !env.ACT }}
       with:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
         name: "k-bench-constellation-${{ inputs.cloudProvider }}"
@@ -82,26 +82,22 @@ runs:
 
     - name: Set S3 artifact store
       shell: bash
-      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
       env:
         ARTIFACT_BUCKET_CONSTELLATION: "edgeless-artifact-store/constellation"
+      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
 
     - name: Get previous benchmark records from S3
       shell: bash
+      env:
+        KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
+        CSP: ${{ inputs.cloudProvider }}
       run: |
         mkdir -p benchmarks
         aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
         mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
-      env:
-        KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
-        CSP: ${{ inputs.cloudProvider }}
 
     - name: Parse K-Bench results, create diagrams and post the progression summary
       shell: bash
-      run: |
-        python .github/actions/e2e_kbench/evaluate/parse.py
-        python .github/actions/e2e_kbench/evaluate/graph.py
-        python .github/actions/e2e_kbench/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
       env:
         # Original K-Bench result directory
         KBENCH_RESULTS: k-bench/out/
@@ -111,10 +107,14 @@ runs:
         PREV_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}-previous.json
         CURR_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}.json
         CSP: ${{ inputs.cloudProvider }}
+      run: |
+        python .github/actions/e2e_kbench/evaluate/parse.py
+        python .github/actions/e2e_kbench/evaluate/graph.py
+        python .github/actions/e2e_kbench/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
 
     - name: Upload benchmark results and graphs to action run
+      if: (!env.ACT)
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-      if: ${{ !env.ACT }}
       with:
         path: |
           benchmarks/*_perf.png
@@ -122,9 +122,9 @@ runs:
         name: "benchmarks"
 
     - name: Update benchmark records in S3
+      if: github.ref == 'refs/heads/main'
       shell: bash
-      run: |
-        aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
       env:
         CSP: ${{ inputs.cloudProvider }}
-      if: github.ref == 'refs/heads/main'
+      run: |
+        aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json

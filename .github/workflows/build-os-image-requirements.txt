@@ -1,0 +1,2 @@
+lief==0.12.2 \
+    --hash=sha256:8e97f109cf4a24ad37d8227b52cf878a58723abe7d88f0f3d5867c02d8ead49b

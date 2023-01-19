@@ -104,7 +104,7 @@ func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 	}
 
 	client := verifyproto.NewAPIClient(conn)
-	res, err := client.GetAttestation(ctx, &verifyproto.GetAttestationRequest{Nonce: nonce, UserData: nonce})
+	res, err := client.GetAttestation(ctx, &verifyproto.GetAttestationRequest{Nonce: nonce})
 	if err != nil {
 		return nil, err
 	}

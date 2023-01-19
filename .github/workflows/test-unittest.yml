@@ -30,7 +30,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
       - name: Install Dependencies
@@ -40,10 +40,10 @@ jobs:
         run: mkdir build && cd build && cmake ..
 
       - name: Unit Tests
-        run: ctest -R unit
         working-directory: build
         env:
           TMPDIR: ${{ runner.temp }}
+        run: ctest -R unit
 
   test-darwin:
     runs-on: macos-12
@@ -58,7 +58,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
       - name: CLI Unit Tests

@@ -2,8 +2,13 @@
 # The Python Worker is managed by Azure Functions platform
 # Manually managing azure-functions-worker may cause unexpected issues
 
-azure-functions
-azure-mgmt-resource==21.2.1
-azure-identity==1.12.0
-azure-mgmt-subscription==3.1.1
-azure-keyvault==4.2.0
+azure-functions==1.12.0 \
+    --hash=sha256:443b049652ede41e57a698230cc3848d20e5b53dff52bc4a636ee0820813f1b5
+azure-mgmt-resource==21.2.1 \
+    --hash=sha256:c6f6987e6f61f0cb23abc3fb3658770bae8d299a46834d43d4b20251495d3806
+azure-identity==1.12.0 \
+    --hash=sha256:2a58ce4a209a013e37eaccfd5937570ab99e9118b3e1acf875eed3a85d541b92
+azure-mgmt-subscription==3.1.1 \
+    --hash=sha256:38d4574a8d47fa17e3587d756e296cb63b82ad8fb21cd8543bcee443a502bf48
+azure-keyvault==4.2.0 \
+    --hash=sha256:16b29039244cbe8b940c98a0d795626d76d2a579cb9b8c559983ad208082c0de

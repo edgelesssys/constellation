@@ -12,7 +12,7 @@ AWS_STATE_DISK_SYMLINK="/dev/${AWS_STATE_DISK_DEVICENAME}"
 # hack: aws nvme udev rules are never executed. Create symlinks for the nvme devices manually.
 while [[ ! -L ${AWS_STATE_DISK_SYMLINK} ]]; do
   for nvmedisk in /dev/nvme*n1; do
-    linkname=$(nvme amzn id-ctrl -b "${nvmedisk}" | tail -c +3072 | tr -d ' ') || true
+    linkname=$(nvme amzn id-ctrl -b "${nvmedisk}" | tail -c +3073 | head -c 32 | tr -d ' ') || true
     if [[ -n ${linkname} ]] && [[ ${linkname} == "${AWS_STATE_DISK_DEVICENAME}" ]]; then
       ln -s "${nvmedisk}" "${AWS_STATE_DISK_SYMLINK}"
     fi

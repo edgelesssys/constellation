@@ -5,7 +5,7 @@ Core components:
 * [cli](/cli): The CLI is used to manage a Constellation cluster
 * [bootstrapper](/bootstrapper): The bootstrapper is a node agent whose most important task is to bootstrap a node
 * [image](/image): Build files for the Constellation disk image
-* [kms](/kms): Constellation's key management client and server
+* [keyservice](/keyservice): Constellation's key management client and server
 * [csi](/csi): Package used by CSI plugins to create and mount encrypted block devices
 * [disk-mapper](/disk-mapper): Contains the disk-mapper that maps the encrypted node data disk during boot
 

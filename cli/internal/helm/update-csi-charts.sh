@@ -48,8 +48,8 @@ download_chart() {
 
 ## GCP CSI Driver
 # TODO: clone from main branch once we rebase on upstream
-download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.1.0" "charts" "gcp-compute-persistent-disk-csi-driver"
+download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.1.1" "charts" "gcp-compute-persistent-disk-csi-driver"
 
 ## Azure CSI Driver
 # TODO: clone from main branch once we rebase on upstream
-download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "v1.1.0" "charts/edgeless" "azuredisk-csi-driver"
+download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "v1.1.1" "charts/edgeless" "azuredisk-csi-driver"

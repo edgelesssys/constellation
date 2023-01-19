@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -32,6 +33,10 @@ import (
 // Measurements is a required alias since docgen is not able to work with
 // types in other packages.
 type Measurements = measurements.M
+
+// Digests is a required alias since docgen is not able to work with
+// types in other packages.
+type Digests = idkeydigest.IDKeyDigests
 
 const (
 	// Version2 is the second version number for Constellation config file.
@@ -161,8 +166,8 @@ type AzureConfig struct {
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
-	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
-	IDKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
+	//   List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
+	IDKeyDigests Digests `yaml:"idKeyDigests" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
 	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
@@ -255,7 +260,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
+				IDKeyDigests:         idkeydigest.DefaultsFor(cloudprovider.Azure),
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
@@ -426,6 +431,14 @@ func (c *Config) EnforcedPCRs() []uint32 {
 	default:
 		return nil
 	}
+}
+
+// IDKeyDigests returns the ID Key Digests for the configured cloud provider.
+func (c *Config) IDKeyDigests() idkeydigest.IDKeyDigests {
+	if c.Provider.Azure != nil {
+		return c.Provider.Azure.IDKeyDigests
+	}
+	return nil
 }
 
 // DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.

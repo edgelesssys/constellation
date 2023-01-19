@@ -5,7 +5,7 @@ go 1.19
 replace github.com/edgelesssys/constellation/v2 => ./../..
 
 require (
-	cloud.google.com/go/compute v1.14.0
+	cloud.google.com/go/compute v1.15.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.0
@@ -20,7 +20,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.6
 	go.uber.org/multierr v1.9.0
 	golang.org/x/mod v0.7.0
-	google.golang.org/api v0.106.0
+	google.golang.org/api v0.107.0
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
@@ -28,6 +28,8 @@ require (
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	sigs.k8s.io/controller-runtime v0.13.1
 )
+
+require github.com/onsi/ginkgo/v2 v2.7.0 // indirect
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -86,7 +88,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/oauth2 v0.3.0 // indirect
+	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect

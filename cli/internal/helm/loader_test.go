@@ -90,7 +90,7 @@ func TestConstellationServices(t *testing.T) {
 
 			chartLoader := ChartLoader{
 				joinServiceImage:         "joinServiceImage",
-				kmsImage:                 "kmsImage",
+				keyserviceImage:          "keyserviceImage",
 				ccmImage:                 tc.ccmImage,
 				cnmImage:                 tc.cnmImage,
 				autoscalerImage:          "autoscalerImage",
@@ -159,7 +159,7 @@ func TestOperators(t *testing.T) {
 
 			chartLoader := ChartLoader{
 				joinServiceImage:             "joinServiceImage",
-				kmsImage:                     "kmsImage",
+				keyserviceImage:              "keyserviceImage",
 				ccmImage:                     "ccmImage",
 				cnmImage:                     "cnmImage",
 				autoscalerImage:              "autoscalerImage",
@@ -301,40 +301,38 @@ func prepareGCPValues(values map[string]any) error {
 
 	testTag := "v0.0.0"
 	pullPolicy := "IfNotPresent"
-	csiVals, ok := values["gcp-compute-persistent-disk-csi-driver"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'gcp-compute-persistent-disk-csi-driver' key")
-	}
-	csiVals["image"] = map[string]any{
-		"csiProvisioner": map[string]any{
-			"repo":       "csi-provisioner",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
-		},
-		"csiAttacher": map[string]any{
-			"repo":       "csi-attacher",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
-		},
-		"csiResizer": map[string]any{
-			"repo":       "csi-resizer",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
-		},
-		"csiSnapshotter": map[string]any{
-			"repo":       "csi-snapshotter",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
-		},
-		"csiNodeRegistrar": map[string]any{
-			"repo":       "csi-registrar",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
-		},
-		"gcepdDriver": map[string]any{
-			"repo":       "csi-driver",
-			"tag":        testTag,
-			"pullPolicy": pullPolicy,
+	values["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
+		"image": map[string]any{
+			"csiProvisioner": map[string]any{
+				"repo":       "csi-provisioner",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
+			"csiAttacher": map[string]any{
+				"repo":       "csi-attacher",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
+			"csiResizer": map[string]any{
+				"repo":       "csi-resizer",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
+			"csiSnapshotter": map[string]any{
+				"repo":       "csi-snapshotter",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
+			"csiNodeRegistrar": map[string]any{
+				"repo":       "csi-registrar",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
+			"gcepdDriver": map[string]any{
+				"repo":       "csi-driver",
+				"tag":        testTag,
+				"pullPolicy": pullPolicy,
+			},
 		},
 	}
 
@@ -358,7 +356,7 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["idkeydigest"] = "baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad"
+	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
 	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
 	mJSON, err := json.Marshal(m)
 	if err != nil {

@@ -36,7 +36,7 @@
 /internal/versions @katexochen
 /internal/versionsapi @katexochen
 /joinservice @daniel-weisse
-/kms @daniel-weisse
+/keyservice @daniel-weisse
 /operators @malt3
 /upgrade-agent @3u13r
 /verify @daniel-weisse

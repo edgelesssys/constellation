@@ -17,7 +17,9 @@ jobs:
         uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
         with:
           destination_branch: "main"
-          pr_title: "Update CLI reference"
+          pr_title: "docs: update cli reference"
           pr_body: |
             :robot: *This is an automated PR.* :robot:
+
+            Changes in the CLI triggered this PR, it updates the corresponding documentation page.
           github_token: ${{ secrets.GITHUB_TOKEN }}

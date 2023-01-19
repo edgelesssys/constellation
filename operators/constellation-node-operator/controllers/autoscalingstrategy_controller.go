@@ -216,9 +216,6 @@ func (r *AutoscalingStrategyReconciler) tryUpdateStatus(ctx context.Context, nam
 			return err
 		}
 		autoscalingStrategy.Status = *status.DeepCopy()
-		if err := r.Status().Update(ctx, &autoscalingStrategy); err != nil {
-			return err
-		}
-		return nil
+		return r.Status().Update(ctx, &autoscalingStrategy)
 	})
 }

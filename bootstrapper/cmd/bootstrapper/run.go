@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/joinclient"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -24,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
+func run(issuer atls.Issuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
 	cloudLogger logging.CloudLogger,
@@ -56,12 +57,12 @@ func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandl
 	}
 
 	nodeLock := nodelock.New(tpm)
-	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuerWrapper, fileHandler, metadata, log)
+	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create init server")
 	}
 
-	dialer := dialer.New(issuerWrapper, nil, &net.Dialer{})
+	dialer := dialer.New(issuer, nil, &net.Dialer{})
 	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
 
 	cleaner := clean.New().With(initServer).With(joinClient)

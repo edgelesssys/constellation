@@ -20,6 +20,13 @@ on:
           - "aws"
         default: "azure"
         required: true
+      runner:
+        description: "Architecture of the runner that executes the CLI"
+        type: choice
+        options:
+          - "ubuntu-22.04"
+          - "macos-12"
+        default: "ubuntu-22.04"
       test:
         description: "The test to run."
         type: choice
@@ -47,11 +54,6 @@ on:
         type: string
         default: ""
         required: false
-      isDebugImage:
-        description: "Is OS image a debug image?"
-        type: boolean
-        default: true
-        required: false
       machineType:
         description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
         type: string
@@ -62,6 +64,48 @@ on:
         type: string
         default: "head"
         required: false
+  workflow_call:
+    inputs:
+      workerNodesCount:
+        description: "Number of worker nodes to spawn."
+        type: number
+        required: true
+      controlNodesCount:
+        description: "Number of control-plane nodes to spawn."
+        type: number
+        required: true
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: string
+        required: true
+      runner:
+        description: "Architecture of the runner that executes the CLI"
+        type: string
+        required: true
+      test:
+        description: "The test to run."
+        type: string
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        type: string
+        required: true
+      keepMeasurements:
+        description: "Keep measurements embedded in the CLI."
+        type: boolean
+        required: true
+      osImage:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        required: true
+      machineType:
+        description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
+        type: string
+        required: true
+      git-ref:
+        description: "Git ref to checkout."
+        type: string
+        required: true
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -77,7 +121,8 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.image }}${{ steps.check-input.outputs.image }}
+      image: ${{ steps.find-latest-image.outputs.output }}${{ steps.check-input.outputs.image }}
+      isDebugImage: ${{ steps.isDebugImage.outputs.isDebugImage }}
     steps:
       - name: Check input
         id: check-input
@@ -91,31 +136,112 @@ jobs:
             exit 0
           fi
 
-      - name: Checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Find latest image
-        id: find-latest-image
-        if: steps.check-input.outputs.image == ''
-        uses: ./.github/actions/find_latest_image
-        with:
-          ref: main
-          stream: debug
-
-  e2e-test-manual:
-    runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
-    needs: [find-latest-image]
-    steps:
       - name: Checkout head
         if: inputs.git-ref == 'head'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.git-ref != 'head'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ inputs.git-ref }}
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: Find latest image
+        id: find-latest-image
+        if: steps.check-input.outputs.image == ''
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          ref: main
+          stream: debug
+
+      - name: Is debug image?
+        id: isDebugImage
+        shell: bash
+        run: |
+          case "${{ inputs.osImage }}" in
+            "")
+              echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
+              echo "Image is debug image."
+              ;;
+            *"/stream/debug/"*)
+              echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
+              echo "Image is debug image."
+              ;;
+            *)
+              echo "isDebugImage=false" >> "$GITHUB_OUTPUT"
+              echo "Image is not debug image."
+              ;;
+          esac
+
+  build-bootstrapper:
+    name: "Build bootstrapper for macOS runner"
+    runs-on: ubuntu-22.04
+    if: inputs.runner == 'macos-12' && needs.find-latest-image.outputs.isDebugImage == 'true'
+    needs: [find-latest-image]
+    steps:
+      - name: Setup Go environment
+        if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true'
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.19.5"
+
+      - name: Checkout head
+        if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true' && inputs.git-ref == 'head'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true' && inputs.git-ref != 'head'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ inputs.git-ref }}
+
+      - name: Build bootstrapper
+        if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true'
+        uses: ./.github/actions/build_bootstrapper
+
+      - name: Upload bootstrapper to cache
+        if: github.event.steps.check-bootstrapper-cache.cache-hit != 'true'
+        uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+        with:
+          key: bootstrapper-${{ github.sha }}
+          path: "build/bootstrapper"
+
+  e2e-test-manual:
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      id-token: write
+      contents: read
+    needs: [find-latest-image, build-bootstrapper]
+    if: |
+      always() &&
+      !cancelled() &&
+      (
+        needs.build-bootstrapper.result == 'success' ||
+        needs.build-bootstrapper.result == 'skipped'
+      )
+    steps:
+      - name: Install the basics tools (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: brew install coreutils kubectl bash
+
+      - name: Checkout head
+        if: inputs.git-ref == 'head'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
       - name: Checkout ref
         if: inputs.git-ref != 'head'
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -125,20 +251,24 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
+
+      - name: Set up gcloud CLI (macOS)
+        if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
+        uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # v1.0.1
 
       - name: Login to Azure
-        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        if: inputs.cloudProvider == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
         id: az_resource_group_gen
-        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        if: inputs.cloudProvider == 'azure'
         shell: bash
         run: |
-          uuid=$(cat /proc/sys/kernel/random/uuid)
+          uuid=$(uuidgen)
           name=e2e-test-${uuid%%-*}
           az group create --location westus --name "$name" --tags e2e
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
@@ -147,16 +277,16 @@ jobs:
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
-          workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
-          controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
-          cloudProvider: ${{ github.event.inputs.cloudProvider }}
-          machineType: ${{ github.event.inputs.machineType }}
+          workerNodesCount: ${{ inputs.workerNodesCount }}
+          controlNodesCount: ${{ inputs.controlNodesCount }}
+          cloudProvider: ${{ inputs.cloudProvider }}
+          machineType: ${{ inputs.machineType }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          test: ${{ github.event.inputs.test }}
-          kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
-          keepMeasurements: ${{ github.event.inputs.keepMeasurements }}
+          test: ${{ inputs.test }}
+          kubernetesVersion: ${{ inputs.kubernetesVersion }}
+          keepMeasurements: ${{ inputs.keepMeasurements }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -164,7 +294,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
-          isDebugImage: ${{ github.event.inputs.isDebugImage }}
+          isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
 
       - name: Always terminate cluster
         if: always()
@@ -173,22 +303,8 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
-      - name: Notify teams channel
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        run: |
-          sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME="${{ github.event.inputs.cloudProvider }} (manual)"
-          export TEAMS_RUN_ID=${{ github.run_id }}
-          envsubst < teams-payload.json > to-be-send.json
-          curl                                          \
-            -H "Content-Type: application/json"         \
-            -d @to-be-send.json                         \
-            "${{  secrets.MS_TEAMS_WEBHOOK_URI }}"
-        shell: bash
-        working-directory: .github/actions/e2e_test
-
       - name: Always destroy Azure resource group
-        if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}
+        if: always() && inputs.cloudProvider == 'azure'
         shell: bash
         run: |
           az group delete \

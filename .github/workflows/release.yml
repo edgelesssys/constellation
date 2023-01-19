@@ -1,0 +1,360 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. v1.2.3)"
+        required: true
+      kind:
+        description: "Release kind"
+        type: choice
+        options: [minor, patch]
+        required: true
+        default: "minor"
+
+jobs:
+  verify-inputs:
+    name: Verify inputs
+    runs-on: ubuntu-22.04
+    env:
+      FULL_VERSION: ${{ inputs.version }}
+    outputs:
+      WITHOUT_V: ${{ steps.version-info.outputs.WITHOUT_V }}
+      PART_MAJOR: ${{ steps.version-info.outputs.PART_MAJOR }}
+      PART_MINOR: ${{ steps.version-info.outputs.PART_MINOR }}
+      PART_PATCH: ${{ steps.version-info.outputs.PART_PATCH }}
+      MAJOR: ${{ steps.version-info.outputs.MAJOR }}
+      MAJOR_MINOR: ${{ steps.version-info.outputs.MAJOR_MINOR }}
+      MAJOR_MINOR_PATCH: ${{ steps.version-info.outputs.MAJOR_MINOR_PATCH }}
+      RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
+    steps:
+      - name: Verify version
+        run: |
+          if [[ ! "${FULL_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be in the form of vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Extract version info
+        id: version-info
+        run: |
+          WITHOUT_V=${FULL_VERSION#v}
+          PART_MAJOR=${WITHOUT_V%%.*}
+          PART_MINOR=${WITHOUT_V#*.}
+          PART_MINOR=${PART_MINOR%%.*}
+          PART_PATCH=${WITHOUT_V##*.}
+          {
+            echo "WITHOUT_V=${WITHOUT_V}"
+            echo "PART_MAJOR=${PART_MAJOR}"
+            echo "PART_MINOR=${PART_MINOR}"
+            echo "PART_PATCH=${PART_PATCH}"
+            echo "MAJOR=${PART_MAJOR}"
+            echo "MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}"
+            echo "MAJOR_MINOR_PATCH=${PART_MAJOR}.${PART_MINOR}.${PART_PATCH}"
+            echo "RELEASE_BRANCH=release/v${PART_MAJOR}.${PART_MINOR}"
+          } | tee "$GITHUB_OUTPUT"
+
+  docs:
+    name: Create docs release
+    runs-on: ubuntu-22.04
+    if: inputs.kind == 'minor'
+    needs: verify-inputs
+    env:
+      VERSION: ${{ inputs.version }}
+      MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
+      BRANCH: docs/${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Create docs branch
+        run: |
+          git fetch
+          git pull
+          git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
+
+      - name: Create docs release
+        working-directory: docs
+        run: |
+          npm install
+          npm run docusaurus docs:version "${MAJOR_MINOR}"
+
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git add docs
+          git commit -m "docs: generate docs for ${VERSION}"
+          git push --set-upstream origin "${BRANCH}"
+
+      - name: Create docs pull request
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
+        with:
+          source_branch: ${{env.BRANCH}}
+          destination_branch: "main"
+          pr_title: "docs: add release ${VERSION}"
+          pr_body: |
+            :robot: *This is an automated PR.* :robot:
+
+            The PR is triggered as part of the automated release process of version ${VERSION}.
+            It releases a new version of the documentation.
+          pr_label: "no-changelog"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  prepare-release-branch:
+    name: Prepare release branch
+    runs-on: ubuntu-22.04
+    needs: verify-inputs
+    env:
+      BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Create release branch
+        if: inputs.kind == 'minor'
+        run: |
+          git fetch
+          git pull
+          git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
+          git push origin "${BRANCH}"
+
+  micro-services:
+    name: Build micro services
+    needs: [verify-inputs, prepare-release-branch]
+    uses: ./.github/workflows/build-micro-service-manual.yml
+    secrets: inherit
+    strategy:
+      matrix:
+        service:
+          [join-service, keyservice, verification-service, qemu-metadata-api]
+    with:
+      microService: ${{ matrix.service }}
+      imageTag: ${{ inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  constellation-node-operator:
+    name: Build Constellation node-operator
+    needs: [verify-inputs, prepare-release-branch]
+    secrets: inherit
+    uses: ./.github/workflows/build-operator-manual.yml
+    with:
+      imageTag: ${{ inputs.version }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  update-versions:
+    name: Update container image versions
+    needs: [verify-inputs, micro-services, constellation-node-operator]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ inputs.version }}
+      WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Install crane
+        uses: ./.github/actions/setup_crane
+
+      - name: Update enterprise image version
+        run: |
+          sed -i "s/defaultImage = \"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/defaultImage = \"${VERSION}\"/" internal/config/images_enterprise.go
+          git add internal/config/images_enterprise.go
+
+      - name: Update CMakeLists.txt
+        run: |
+          sed -i "s/project(constellation LANGUAGES C VERSION [0-9]\+\.[0-9]\+\.[0-9]\+)/project(constellation LANGUAGES C VERSION ${WITHOUT_V})/" CMakeLists.txt
+          git add CMakeLists.txt
+
+      - name: Update Helm Charts
+        run: |
+          yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+          for service in keyservice join-service ccm cnm autoscaler verification-service konnectivity gcp-guest-agent; do
+            yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+            yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
+            git add "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
+          done
+          git add cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+          yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
+          for service in node-maintenance-operator constellation-operator; do
+            yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
+            yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/operators/charts/${service}/Chart.yaml"
+            git add "cli/internal/helm/charts/edgeless/operators/charts/${service}/Chart.yaml"
+          done
+          git add cli/internal/helm/charts/edgeless/operators/Chart.yaml
+
+      - name: Update micro service versions
+        run: |
+          for service in node-operator join-service keyservice verification-service qemu-metadata-api; do
+            name=ghcr.io/edgelesssys/constellation/${service}
+            digest=$(crane digest "${name}:${VERSION}")
+            sed -i "s#\"${name}:v[0-9]\+\.[0-9]\+\.[0-9]\+[^@]*@sha256:[0-9a-f]\+\"#\"${name}:${VERSION}@${digest}\"#" internal/versions/versions.go
+          done
+          git add internal/versions/versions.go
+
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git commit -m "deps: update version to ${VERSION}"
+          git push
+
+  os-image:
+    name: Build OS image
+    needs: [verify-inputs, update-versions]
+    uses: ./.github/workflows/build-os-image.yml
+    secrets: inherit
+    with:
+      imageVersion: ${{ inputs.version }}
+      isRelease: true
+      stream: "stable"
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  generate-measurements:
+    name: Generate OS image measurements
+    needs: [verify-inputs, os-image]
+    uses: ./.github/workflows/generate-measurements.yml
+    secrets: inherit
+    with:
+      osImage: ${{ inputs.version }}
+      isDebugImage: false
+      signMeasurements: true
+      isRelease: true
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  update-hardcoded-measurements:
+    name: Update hardcoded measurements (in the CLI)
+    needs: [verify-inputs, generate-measurements]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ inputs.version }}
+      WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.19.5"
+          cache: true
+
+      - name: Build generateMeasurements tool
+        working-directory: internal/attestation/measurements/measurement-generator
+        run: go build -o generate -tags=enterprise .
+
+      - name: Update hardcoded measurements
+        working-directory: internal/attestation/measurements
+        run: |
+          ./measurement-generator/generate
+          git add measurements_enterprise.go
+
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git commit -m "attestation: hardcode measurements for ${VERSION}"
+          git push
+
+  e2e-tests:
+    name: Run E2E tests
+    needs: [verify-inputs, update-hardcoded-measurements]
+    secrets: inherit
+    strategy:
+      matrix:
+        runner: [ubuntu-22.04, macos-12]
+        csp: [aws, azure, gcp]
+    uses: ./.github/workflows/e2e-test-manual.yml
+    with:
+      workerNodesCount: 2
+      controlNodesCount: 3
+      cloudProvider: ${{ matrix.csp }}
+      runner: ${{ matrix.runner }}
+      test: "sonobuoy full"
+      kubernetesVersion: "1.25"
+      keepMeasurements: true
+      osImage: ${{ inputs.version }}
+      machineType: "default"
+      git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  e2e-mini:
+    name: Run E2E tests for mini Constellation
+    needs: [verify-inputs, update-hardcoded-measurements]
+    uses: ./.github/workflows/e2e-mini.yml
+    secrets: inherit
+    with:
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  tag-release:
+    name: Tag release
+    needs: [verify-inputs, e2e-tests, e2e-mini]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Tag release
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push origin "refs/tags/${VERSION}"
+
+  draft-release-cli:
+    name: Draft release (CLI)
+    needs: [verify-inputs, tag-release]
+    uses: ./.github/workflows/release-cli.yml
+    secrets: inherit
+    with:
+      ref: "refs/tags/${{ inputs.version }}"
+
+  pr-get-changes-back-into-main:
+    name: PR to Merge changes from release branch into main
+    if: inputs.kind == 'minor'
+    runs-on: ubuntu-22.04
+    needs: [verify-inputs, tag-release]
+    env:
+      VERSION: ${{ inputs.version }}
+      NEW_BRANCH: feat/release/${{ inputs.version }}/changes-to-main
+    steps:
+      - name: Checkot
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Create branch with changes
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git fetch
+          git checkout -b "${NEW_BRANCH}"
+          git push --set-upstream origin "${NEW_BRANCH}"
+
+      - name: Create pull request
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
+        with:
+          source_branch: ${{ env.NEW_BRANCH }}
+          destination_branch: "main"
+          pr_title: "release: bring back changes from ${VERSION}"
+          pr_body: |
+            :robot: *This is an automated PR.* :robot:
+
+            This PR is triggered as part of the release process of version ${VERSION}.
+            It brings back changes from the release branch into the main branch.
+          pr_label: "no-changelog"
+          github_token: ${{ secrets.GITHUB_TOKEN }}

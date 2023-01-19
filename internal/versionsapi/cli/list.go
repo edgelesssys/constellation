@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -80,6 +81,20 @@ func runList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if flags.json {
+		log.Debugf("Printing versions as JSON.")
+		var vers []string
+		for _, v := range patchVersions {
+			vers = append(vers, v.Version)
+		}
+		raw, err := json.Marshal(vers)
+		if err != nil {
+			return fmt.Errorf("marshaling versions: %w", err)
+		}
+		fmt.Println(string(raw))
+		return nil
+	}
+
 	log.Debugf("Printing versions.")
 	for _, v := range patchVersions {
 		fmt.Println(v.ShortPath())
@@ -139,6 +154,7 @@ type listFlags struct {
 	region         string
 	bucket         string
 	distributionID string
+	json           bool
 	logLevel       zapcore.Level
 }
 
@@ -184,6 +200,10 @@ func parseListFlags(cmd *cobra.Command) (listFlags, error) {
 	if err != nil {
 		return listFlags{}, err
 	}
+	json, err := cmd.Flags().GetBool("json")
+	if err != nil {
+		return listFlags{}, err
+	}
 	verbose, err := cmd.Flags().GetBool("verbose")
 	if err != nil {
 		return listFlags{}, err
@@ -200,6 +220,7 @@ func parseListFlags(cmd *cobra.Command) (listFlags, error) {
 		region:         region,
 		bucket:         bucket,
 		distributionID: distributionID,
+		json:           json,
 		logLevel:       logLevel,
 	}, nil
 }

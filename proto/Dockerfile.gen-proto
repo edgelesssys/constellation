@@ -1,6 +1,6 @@
 FROM ubuntu:22.04@sha256:965fbcae990b0467ed5657caceaec165018ef44a4d2d46c7cdea80a9dff0d1ea as build
 
-ARG GO_VER=1.19.4
+ARG GO_VER=1.19.5
 ARG GEN_GO_VER=1.28.1
 ARG GEN_GO_GRPC_VER=1.2.0
 ARG PB_VER=21.8
@@ -35,8 +35,8 @@ COPY debugd/service/*.proto /service
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 ## key management
-WORKDIR /kms
-COPY kms/kmsproto/*.proto /kms
+WORKDIR /keyservice
+COPY keyservice/keyserviceproto/*.proto /keyservice
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 ## join service
@@ -62,7 +62,7 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 FROM scratch as export
 COPY --from=build /disk-mapper/*.go disk-mapper/recoverproto/
 COPY --from=build /service/*.go debugd/service/
-COPY --from=build /kms/*.go kms/kmsproto/
+COPY --from=build /keyservice/*.go keyservice/keyserviceproto/
 COPY --from=build /joinservice/*.go joinservice/joinproto/
 COPY --from=build /verify/*.go verify/verifyproto/
 COPY --from=build /init/*.go bootstrapper/initproto/

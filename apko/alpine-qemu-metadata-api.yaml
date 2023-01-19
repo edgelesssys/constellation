@@ -1,0 +1,14 @@
+contents:
+  repositories:
+    - https://dl-cdn.alpinelinux.org/alpine/edge/main
+    - https://dl-cdn.alpinelinux.org/alpine/edge/community
+  packages:
+    - alpine-base
+    - libvirt-dev
+    - bash
+environment:
+  PATH: /usr/sbin:/sbin:/usr/bin:/bin
+
+archs:
+  - amd64
+  - 386

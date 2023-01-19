@@ -15,6 +15,36 @@ on:
         description: "Sign and upload the measurements?"
         type: boolean
         required: true
+      isRelease:
+        description: "Is this a release?"
+        type: boolean
+        default: false
+        required: false
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      osImage:
+        description: "Full name of OS image (CSP independent image version UID)."
+        type: string
+        required: true
+      isDebugImage:
+        description: "Is OS image a debug image?"
+        type: boolean
+        required: true
+      signMeasurements:
+        description: "Sign and upload the measurements?"
+        type: boolean
+        required: true
+      isRelease:
+        description: "Is this a release?"
+        type: boolean
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
 
 jobs:
   calculate-measurements-on-csp:
@@ -23,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
@@ -40,30 +70,30 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Extract ref, stream and version
         id: extract
         uses: ./.github/actions/shortname
         with:
-          shortname: ${{ github.event.inputs.osImage }}
+          shortname: ${{ inputs.osImage }}
 
       - name: Check if image definition from build pipeline exists
+        shell: bash
         run: |
           wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/${{ steps.extract.outputs.version }}/image/info.json"
-        shell: bash
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Build hack/pcr-reader
+        shell: bash
+        working-directory: hack/pcr-reader
         run: |
           go build .
           pwd >> "$GITHUB_PATH"
-        working-directory: hack/pcr-reader
-        shell: bash
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -72,8 +102,8 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
-        if: matrix.provider == 'azure'
         id: az_resource_group_gen
+        if: matrix.provider == 'azure'
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -83,13 +113,14 @@ jobs:
 
       - name: Create Cluster in E2E Test environment
         id: create_cluster
+        if: matrix.provider != 'qemu'
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: 1
           controlNodesCount: 1
           cloudProvider: ${{ matrix.provider }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
@@ -97,16 +128,20 @@ jobs:
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          osImage: ${{ github.event.inputs.osImage }}
-          isDebugImage: ${{ github.event.inputs.isDebugImage }}
+          osImage: ${{ inputs.osImage }}
+          isDebugImage: ${{ inputs.isDebugImage }}
           test: "nop"
 
       - name: Fetch PCRs from running cluster
+        if: matrix.provider != 'qemu'
+        shell: bash
+        env:
+          CSP: ${{ matrix.provider }}
         run: |
           KUBECONFIG="${PWD}/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
           CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
           mkdir -p "${{ github.workspace }}/generated-measurements"
-          pcr-reader -constell-ip "${CONSTELL_IP}" -format json -metadata -csp "${{ matrix.provider }}" -image "${{ github.event.inputs.osImage }}" > "${{ github.workspace }}/generated-measurements/measurements.json"
+          pcr-reader -constell-ip "${CONSTELL_IP}" -format json -metadata -csp "${{ matrix.provider }}" -image "${{ inputs.osImage }}" > "${{ github.workspace }}/generated-measurements/measurements.json"
           echo "All PCRs of current boot:"
           cat "${{ github.workspace }}/generated-measurements/measurements.json"
           case ${CSP} in
@@ -155,9 +190,33 @@ jobs:
           echo "PCRs to be published after removing known variable ones:"
           cat "${{ github.workspace }}/generated-measurements/measurements.json"
           mv "${{ github.workspace }}/generated-measurements/measurements.json" "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
+
+      - name: Set PCRs for QEMU
+        if: matrix.provider == 'qemu'
         shell: bash
         env:
-          CSP: ${{ matrix.provider }}
+          ref: ${{ steps.extract.outputs.ref }}
+          stream: ${{ steps.extract.outputs.stream }}
+          version: ${{ steps.extract.outputs.version }}
+        run: |
+          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
+          mkdir -p "${{ github.workspace }}/generated-measurements"
+          wget -O ${{ github.workspace }}/generated-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
+          jq '.measurements' < ${{ github.workspace }}/generated-measurements/measurements.image.json | jq '{"measurements": .}' > ${{ github.workspace }}/generated-measurements/measurements.json
+          cat "${{ github.workspace }}/generated-measurements/measurements.json"
+          yq '
+          .csp = "QEMU" |
+          .image = "${{ steps.extract.outputs.version }}" |
+          .measurements.4.warnOnly = false |
+          .measurements.8.warnOnly = false |
+          .measurements.9.warnOnly = false |
+          .measurements.11.warnOnly = false |
+          .measurements.12.warnOnly = false |
+          .measurements.13.warnOnly = false |
+          .measurements.15.warnOnly = false |
+          .measurements.15.expected = "0000000000000000000000000000000000000000000000000000000000000000"' \
+          -I 0 -o json -i "${{ github.workspace }}/generated-measurements/measurements.json"
+          mv "${{ github.workspace }}/generated-measurements/measurements.json" "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
 
       - name: Upload measurements as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
@@ -166,7 +225,7 @@ jobs:
           path: "${{ github.workspace }}/generated-measurements"
 
       - name: Always terminate cluster
-        if: always()
+        if: always() && matrix.provider != 'qemu'
         continue-on-error: true
         uses: ./.github/actions/constellation_destroy
         with:
@@ -190,24 +249,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     steps:
       - name: Check out repository
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Build hack/pcr-compare
+        shell: bash
+        working-directory: hack/pcr-compare
         run: |
           go build .
           pwd >> "$GITHUB_PATH"
-        working-directory: hack/pcr-compare
-        shell: bash
 
       - name: Download calculated measurements from artifact
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.1.1
@@ -216,21 +275,21 @@ jobs:
           path: "${{ github.workspace }}/generated-measurements"
 
       - name: Download expected measurements from build pipeline for image
-        run: |
-          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
-          mkdir -p ${{ github.workspace }}/expected-measurements
-          wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
-          cat ${{ github.workspace }}/expected-measurements/measurements.image.json
         shell: bash
         env:
           ref: ${{ needs.calculate-measurements-on-csp.outputs.ref }}
           stream: ${{ needs.calculate-measurements-on-csp.outputs.stream }}
           version: ${{ needs.calculate-measurements-on-csp.outputs.version }}
+        run: |
+          path="constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}/measurements.image.json"
+          mkdir -p ${{ github.workspace }}/expected-measurements
+          wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
+          cat ${{ github.workspace }}/expected-measurements/measurements.image.json
 
       - name: Check if expected measurements == actual measurements from running cluster
+        shell: bash
         run: |
           pcr-compare ${{ github.workspace }}/expected-measurements/measurements.image.json ${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json
-        shell: bash
 
   sign-measurements:
     name: "Sign Measurements"
@@ -240,7 +299,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
@@ -264,9 +323,9 @@ jobs:
       - name: Sign measurements
         shell: bash
         env:
-          COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+          COSIGN_PUBLIC_KEY: ${{ inputs.isRelease && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          COSIGN_PRIVATE_KEY: ${{ inputs.isRelease && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ inputs.isRelease && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
         run: |
           echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
           # Enabling experimental mode also publishes signature to Rekor
@@ -294,7 +353,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: ["aws", "azure", "gcp"]
+        provider: ["aws", "azure", "gcp", "qemu"]
     permissions:
       id-token: write
       contents: read
@@ -318,10 +377,6 @@ jobs:
           aws-region: eu-central-1
 
       - name: Upload to S3
-        run: |
-          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}
-          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
-          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
         shell: bash
         env:
           IMAGE_UID: ${{ inputs.osImage }}
@@ -330,3 +385,7 @@ jobs:
           ref: ${{ needs.calculate-measurements-on-csp.outputs.ref }}
           stream: ${{ needs.calculate-measurements-on-csp.outputs.stream }}
           version: ${{ needs.calculate-measurements-on-csp.outputs.version }}
+        run: |
+          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/${version}/image/csp/${{ matrix.provider }}
+          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
+          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"

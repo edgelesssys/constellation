@@ -16,14 +16,15 @@ jobs:
           - version: v25.2.0
             latest: true
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Checkout kubernetes/cloud-provider-gcp
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           repository: "kubernetes/cloud-provider-gcp"
           ref: refs/tags/ccm/${{ matrix.version }}
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea # tag=v4.1.1
+        uses: docker/metadata-action@507c2f2dc502c992ad446e3d7a5dfbe311567a96 # v4.3.0
         with:
           images: |
             ${{ env.REGISTRY }}/edgelesssys/cloud-provider-gcp
@@ -45,20 +46,23 @@ jobs:
       - name: Build CCM
         run: |
           "${GITHUB_WORKSPACE}/bin/bazel" build //cmd/cloud-controller-manager:cloud-controller-manager
+
       - name: Copy CCM
         run: |
           # support new and old bazel output paths
           cp ./bazel-bin/cmd/cloud-controller-manager/cloud-controller-manager_/cloud-controller-manager ./cloud-controller-manager || \
           cp ./bazel-bin/cmd/cloud-controller-manager/linux_amd64_pure_stripped/cloud-controller-manager ./cloud-controller-manager
+
       - name: Prepare Dockerfile
         run: |
           cat > Dockerfile <<EOF
           FROM scratch
           COPY ./cloud-controller-manager /cloud-controller-manager
           EOF
+
       - name: Build and push container image
         id: build
-        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0
+        uses: docker/build-push-action@37abcedcc1da61a57767b7588cb9d03eb57e28b3 # v3.3.0
         with:
           context: .
           push: true

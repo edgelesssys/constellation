@@ -13,6 +13,10 @@ on:
         type: boolean
         default: false
 
+env:
+  REPO: edgelesssys/constellation
+  TAG: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
+
 jobs:
   update:
     runs-on: ubuntu-22.04
@@ -25,10 +29,32 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Override latest
+        id: override
+        if: github.event.inputs.latest == 'true'
+        run: echo "LATEST=true" >> "$GITHUB_ENV"
+
+      - name: Check if should mark latest
+        if: github.event.inputs.latest != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_release_tag=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${REPO}/releases/latest" \
+            | jq -r '.tag_name')
+          echo "Latest release tag: ${latest_release_tag}"
+          echo "Current tag: ${TAG}"
+          if [[ "${latest_release_tag}" == "${TAG}" ]]; then
+            echo "LATEST=true" >> "$GITHUB_ENV"
+          else
+            echo "LATEST=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
       - name: Login to AWS
@@ -44,9 +70,9 @@ jobs:
       - name: Add version to versionsapi
         working-directory: internal/versionsapi/cli
         run: |
-          latest=$([[ "${{ inputs.latest }}" = "true" ]] && echo "--latest" || echo "")
+          latest_flag=$([[ "${LATEST}" = "true" ]] && echo "--latest" || echo "")
           ./versionsapi add \
             --release \
             --stream "stable" \
-            --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
-            "${latest}"
+            --version "${TAG}" \
+            "${latest_flag}"

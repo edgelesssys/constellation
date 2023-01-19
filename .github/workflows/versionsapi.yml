@@ -8,9 +8,9 @@ on:
         required: true
         type: choice
         options:
-          - add
           - latest
           - list
+          - add
           - remove
       ref:
         description: --ref flag
@@ -22,6 +22,10 @@ on:
         type: string
       version:
         description: --version flag
+        required: false
+        type: string
+      version_path:
+        description: --version-path flag
         required: false
         type: string
       add_latest:
@@ -62,6 +66,10 @@ on:
         description: --version flag
         required: false
         type: string
+      version_path:
+        description: --version-path flag
+        required: false
+        type: string
       add_latest:
         description: --latest flag
         required: false
@@ -97,7 +105,8 @@ jobs:
     outputs:
       output: ${{ steps.run.outputs.output }}
     steps:
-      - name: Checkout
+      - name: Check out repository
+        id: checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
@@ -161,43 +170,18 @@ jobs:
         if: steps.check-rights.outputs.auth == 'true'
         uses: ./.github/actions/login_gcp
         with:
-          gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
-
-      - name: Setup Go environment
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "1.19.4"
-          cache: true
-
-      - name: Build versionsapi CLI
-        working-directory: internal/versionsapi/cli
-        run: go build -o versionsapi
+          service_account: "constellation-cos-builder@constellation-331613.iam.gserviceaccount.com"
 
       - name: Execute versionsapi CLI
         id: run
-        working-directory: internal/versionsapi/cli
-        run: |
-          set -x
-
-          ref=$([[ -n "${{ inputs.ref }}" ]] && echo "--ref ${{ inputs.ref }}" || echo "")
-          stream=$([[ -n "${{ inputs.stream }}" ]] && echo "--stream ${{ inputs.stream }}" || echo "")
-          version=$([[ -n "${{ inputs.version }}" ]] && echo "--version ${{ inputs.version }}" || echo "")
-          add_latest=$([[ "${{ inputs.add_latest }}" == "true" ]] && echo "--latest" || echo "")
-          add_release=$([[ "${{ inputs.add_release }}" == "true" ]] && echo "--release" || echo "")
-          rm_all=$([[ "${{ inputs.rm_all }}" == "true" ]] && echo "--all" || echo "")
-          dryrun=$([[ "${{ inputs.dryrun }}" == "true" ]] && echo "--dryrun" || echo "")
-
-          # shellcheck disable=SC2086
-          out=$(
-            ./versionsapi "${{ inputs.command }}" \
-              ${ref} \
-              ${stream} \
-              ${version} \
-              ${add_latest} \
-              ${add_release} \
-              ${rm_all} \
-              ${dryrun} \
-              --verbose
-          )
-          echo "$out"
-          echo "output=$out" >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/versionsapi
+        with:
+          command: ${{ inputs.command }}
+          ref: ${{ inputs.ref }}
+          stream: ${{ inputs.stream }}
+          version: ${{ inputs.version }}
+          version_path: ${{ inputs.version_path }}
+          add_latest: ${{ inputs.add_latest }}
+          add_release: ${{ inputs.add_release }}
+          rm_all: ${{ inputs.rm_all }}
+          dryrun: ${{ inputs.dryrun }}

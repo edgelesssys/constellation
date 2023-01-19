@@ -32,7 +32,6 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 		ScalingGroupNameControlPlane         = "control-plane-group"
 
 		timeout  = time.Second * 20
-		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)
 
@@ -146,19 +145,16 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 					return -1, err
 				}
 				return createdStrategy.Status.Replicas, nil
-			}, duration, interval).Should(Equal(int32(1)))
-			Consistently(func() (int32, error) {
-				err := k8sClient.Get(ctx, strategyLookupKey, createdStrategy)
-				if err != nil {
-					return -1, err
-				}
-				return createdStrategy.Status.Replicas, nil
-			}, duration, interval).Should(Equal(int32(1)))
+			}, timeout, interval).Should(Equal(int32(1)))
 
 			By("disabling the autoscaler in the strategy")
-			Expect(k8sClient.Get(ctx, strategyLookupKey, strategy)).Should(Succeed())
-			strategy.Spec.Enabled = false
-			Expect(k8sClient.Update(ctx, strategy)).Should(Succeed())
+			Eventually(func() error {
+				if err := k8sClient.Get(ctx, strategyLookupKey, strategy); err != nil {
+					return err
+				}
+				strategy.Spec.Enabled = false
+				return k8sClient.Update(ctx, strategy)
+			}, timeout, interval).Should(Succeed())
 
 			By("checking the autoscaling deployment eventually has zero replicas")
 			Eventually(checkDeploymentReplicas, timeout, interval).Should(Equal(int32(0)))

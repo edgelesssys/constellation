@@ -24,7 +24,7 @@ We use SHA-256 as the hash function.
 
 Constellation's master secret is used as *IKM* for HKDF.
 The master secret is either provided by the admin, or a randomly generated 32 byte value.
-It is supplied to the cluster during `constellation init` and in the following used by [Constellation's KMS](../kms/) and managed by Kubernetes as a [secret](https://kubernetes.io/docs/concepts/configuration/secret/).
+It is supplied to the cluster during `constellation init` and in the following used by [Constellation's keyservice](../keyservice/) and managed by Kubernetes as a [secret](https://kubernetes.io/docs/concepts/configuration/secret/).
 
 ## Salt
 

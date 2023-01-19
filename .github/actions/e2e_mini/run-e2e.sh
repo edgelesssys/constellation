@@ -37,9 +37,6 @@ chmod u+x constellation
 
 sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
-mkdir -p "$HOME"/.docker
-touch "$HOME"/.docker/config.json
-
 ./constellation mini up
 
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -59,7 +56,7 @@ kubectl -n kube-system wait --for=condition=Available=True --timeout=180s deploy
 # Wait for daemon sets
 kubectl -n kube-system rollout status --timeout 180s daemonset cilium
 kubectl -n kube-system rollout status --timeout 180s daemonset join-service
-kubectl -n kube-system rollout status --timeout 180s daemonset kms
+kubectl -n kube-system rollout status --timeout 180s daemonset keyservice
 kubectl -n kube-system rollout status --timeout 180s daemonset konnectivity-agent
 kubectl -n kube-system rollout status --timeout 180s daemonset verification-service
 echo "::endgroup::"

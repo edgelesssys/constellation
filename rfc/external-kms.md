@@ -43,11 +43,11 @@ After successful attestation the CLI will provide a disk decryption key and meas
 The measurement secret, together with a measurement salt (not secret) is used to derive the clusterID.
 
 *Changes for eKMS; regarding disk decryption:*
-* Recovery server accepts one KMS URI and one storage URI instead of a masterSecret.
+* Recovery server accepts KMS URI, storage URI and kms/storage IAM secret instead of a masterSecret. During normal operation the KMS service has access to the IAM secrets through a mounted k8s secret. This secret is not available during initramfs.
 * For eKMS backends the two URIs can be used directly to request new DEKs.
 * For the cKMS backend the KMS URI can include an optional parameter that holds the masterSecret: `kms://cluster-kms?masterSecret=<masterSecret>`.
 
-The above approach allows us to integrate with the existing setup code in `kms/setup/setup.go` with only minimal changes (parse masterSecret in case of cluster-kms).
+The above approach allows us to integrate with the existing setup code in `keyservice/setup/setup.go` with only minimal changes (parse masterSecret in case of cluster-kms).
 This code is used to setup CloudKMS objects.
 The `setup.go` code will have to be refactored to live in `internal` so that the disk-mapper pkg can directly communicate with the respective external KMS.
 

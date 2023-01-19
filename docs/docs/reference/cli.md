@@ -86,7 +86,9 @@ Fetch measurements for configured cloud provider and image
 
 ### Synopsis
 
-Fetch measurements for configured cloud provider and image. A config needs to be generated first!
+Fetch measurements for configured cloud provider and image.
+
+A config needs to be generated first.
 
 ```
 constellation config fetch-measurements [flags]
@@ -167,7 +169,9 @@ Initialize the Constellation cluster
 
 ### Synopsis
 
-Initialize the Constellation cluster. Start your confidential Kubernetes.
+Initialize the Constellation cluster.
+
+Start your confidential Kubernetes.
 
 ```
 constellation init [flags]
@@ -216,8 +220,8 @@ Create and initialize a new MiniConstellation cluster
 ### Synopsis
 
 Create and initialize a new MiniConstellation cluster.
-A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.
 
+A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.
 
 ```
 constellation mini up [flags]
@@ -226,7 +230,7 @@ constellation mini up [flags]
 ### Options
 
 ```
-      --config string   path to the config file to use for the cluster
+      --config string   path to the configuration file to use for the cluster
   -h, --help            help for up
 ```
 
@@ -354,7 +358,8 @@ constellation upgrade execute [flags]
 
 ```
   -h, --help   help for execute
-  -y, --yes    Run upgrades without further confirmation. WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
+  -y, --yes    run upgrades without further confirmation
+               WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
 ```
 
 ### Options inherited from parent commands
@@ -371,6 +376,7 @@ Recover a completely stopped Constellation cluster
 ### Synopsis
 
 Recover a Constellation cluster by sending a recovery key to an instance in the boot stage.
+
 This is only required if instances restart without other instances available for bootstrapping.
 
 ```
@@ -398,7 +404,9 @@ Terminate a Constellation cluster
 
 ### Synopsis
 
-Terminate a Constellation cluster. The cluster can't be started again, and all persistent storage will be lost.
+Terminate a Constellation cluster.
+
+The cluster can't be started again, and all persistent storage will be lost.
 
 ```
 constellation terminate [flags]
@@ -475,7 +483,8 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ### Options
 
 ```
-  -h, --help   help for create
+      --generate-config   automatically generate a configuration file and fill in the required fields
+  -h, --help              help for create
 ```
 
 ### Options inherited from parent commands
@@ -501,16 +510,18 @@ constellation iam create aws [flags]
 
 ```
   -h, --help            help for aws
-      --prefix string   Name prefix for all resources.
-      --yes             Create the IAM configuration without further confirmation
-      --zone string     AWS availability zone the resources will be created in (e.g. us-east-2a). Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.
+      --prefix string   name prefix for all resources (required)
+      --yes             create the IAM configuration without further confirmation
+      --zone string     AWS availability zone the resources will be created in, e.g. us-east-2a (required)
+                        Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   automatically generate a configuration file and fill in the required fields
 ```
 
 ## constellation iam create azure
@@ -529,17 +540,18 @@ constellation iam create azure [flags]
 
 ```
   -h, --help                      help for azure
-      --region string             Region the resources will be created in. (e.g. westus)
-      --resourceGroup string      Name of the resource group your IAM resources will be created in.
-      --servicePrincipal string   Name of the service principal that will be created.
-      --yes                       Create the IAM configuration without further confirmation
+      --region string             region the resources will be created in, e.g. westus (required)
+      --resourceGroup string      name prefix of the two resource groups your cluster / IAM resources will be created in (required)
+      --servicePrincipal string   name of the service principal that will be created (required)
+      --yes                       create the IAM configuration without further confirmation
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   automatically generate a configuration file and fill in the required fields
 ```
 
 ## constellation iam create gcp
@@ -558,16 +570,20 @@ constellation iam create gcp [flags]
 
 ```
   -h, --help                      help for gcp
-      --projectID string          ID of the GCP project the configuration will be created in. Find it on the welcome screen of your project: https://console.cloud.google.com/welcome
-      --serviceAccountID string   ID for the service account that will be created. Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$
-      --yes                       Create the IAM configuration without further confirmation
-      --zone string               GCP zone the cluster will be deployed in. Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available
+      --projectID string          ID of the GCP project the configuration will be created in (required)
+                                  Find it on the welcome screen of your project: https://console.cloud.google.com/welcome.
+      --serviceAccountID string   ID for the service account that will be created (required)
+                                  Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$.
+      --yes                       create the IAM configuration without further confirmation
+      --zone string               GCP zone the cluster will be deployed in (required)
+                                  Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available.
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
+      --config string     path to the configuration file (default "constellation-conf.yaml")
+      --debug             enable debug logging
+      --generate-config   automatically generate a configuration file and fill in the required fields
 ```
 

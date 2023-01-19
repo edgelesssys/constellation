@@ -29,8 +29,9 @@ csiController:
   replicas: 1
   runOnControlPlane: true
 
-csiNode:
-  kmsPort: "9000"
-  kmsNamespace: "kube-system"
+global:
+  keyserviceName: "keyservice"
+  keyservicePort: 9000
+  keyserviceNamespace: "kube-system"
 
 createStorageClass: true

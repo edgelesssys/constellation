@@ -8,7 +8,7 @@ package watcher
 
 import (
 	"encoding/asn1"
-	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -45,25 +46,25 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler, azur
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.AWS:
-		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+		newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
 			return aws.NewValidator(m, log)
 		}
 	case cloudprovider.Azure:
 		if azureCVM {
-			newValidator = func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+			newValidator = func(m measurements.M, idkeydigest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
 				return snp.NewValidator(m, idkeydigest, enforceIdKeyDigest, log)
 			}
 		} else {
-			newValidator = func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+			newValidator = func(m measurements.M, idkeydigest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
 				return trustedlaunch.NewValidator(m, log)
 			}
 		}
 	case cloudprovider.GCP:
-		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+		newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
 			return gcp.NewValidator(m, log)
 		}
 	case cloudprovider.QEMU:
-		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+		newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
 			return qemu.NewValidator(m, log)
 		}
 	default:
@@ -124,7 +125,7 @@ func (u *Updatable) Update() error {
 		return err
 	}
 
-	var idkeydigest []byte
+	var digest idkeydigest.IDKeyDigests
 	var enforceIDKeyDigest bool
 	if u.csp == cloudprovider.Azure && u.azureCVM {
 		u.log.Infof("Updating encforceIdKeyDigest value")
@@ -143,16 +144,15 @@ func (u *Updatable) Update() error {
 		if err != nil {
 			return err
 		}
-		idkeydigest, err = hex.DecodeString(string(idkeydigestRaw))
-		if err != nil {
-			return fmt.Errorf("parsing hexstring: %s: %w", idkeydigestRaw, err)
+		if err = json.Unmarshal(idkeydigestRaw, &digest); err != nil {
+			return fmt.Errorf("unmarshaling content of IDKeyDigestFilename: %s: %w", idkeydigestRaw, err)
 		}
-		u.log.Debugf("New idkeydigest: %x", idkeydigest)
+		u.log.Debugf("New idkeydigest: %v", digest)
 	}
 
-	u.Validator = u.newValidator(measurements, idkeydigest, enforceIDKeyDigest, u.log)
+	u.Validator = u.newValidator(measurements, digest, enforceIDKeyDigest, u.log)
 
 	return nil
 }
 
-type newValidatorFunc func(measurements measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator
+type newValidatorFunc func(measurements measurements.M, idkeydigest idkeydigest.IDKeyDigests, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator

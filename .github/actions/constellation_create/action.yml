@@ -92,7 +92,7 @@ runs:
 
         yq eval -i \
           "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-central-1\" |
-            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-central-1a\" |
+            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-central-1c\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
@@ -102,8 +102,8 @@ runs:
         fi
 
     - name: Remove embedded measurements
+      if: inputs.keepMeasurements == 'false'
       shell: bash
-      if: ${{ inputs.keepMeasurements == 'false' }}
       run: |
         yq eval -i \
           "(.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
@@ -128,7 +128,7 @@ runs:
       run: yq eval -i "(.image) = \"${image}\"" constellation-conf.yaml
 
     - name: Set instanceType
-      if: ${{ inputs.machineType && inputs.machineType != 'default' }}
+      if: inputs.machineType && inputs.machineType != 'default'
       shell: bash
       run: |
         yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
@@ -136,7 +136,7 @@ runs:
         yq eval -i "(.provider | select(. | has(\"aws\")).aws.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Create serviceAccountKey.json
-      if: ${{ inputs.cloudProvider == 'gcp' }}
+      if: inputs.cloudProvider == 'gcp'
       shell: bash
       env:
         GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
@@ -144,7 +144,7 @@ runs:
         echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
 
     - name: Enable debugCluster flag
-      if: ${{ inputs.isDebugImage == 'true' }}
+      if: inputs.isDebugImage == 'true'
       shell: bash
       run: |
         yq eval -i '(.debugCluster) = true' constellation-conf.yaml
@@ -158,7 +158,7 @@ runs:
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
 
     - name: Cdbg deploy
-      if: ${{ inputs.isDebugImage == 'true' }}
+      if: inputs.isDebugImage == 'true'
       shell: bash
       run: |
         echo "::group::cdbg deploy"
@@ -207,7 +207,7 @@ runs:
         echo "::endgroup::"
 
     - name: Download boot logs
-      if: ${{ always() }}
+      if: always()
       continue-on-error: true
       shell: bash
       env:
@@ -229,7 +229,7 @@ runs:
         echo "::endgroup::"
 
     - name: Upload boot logs
-      if: ${{ always() && !env.ACT }}
+      if: always() && !env.ACT
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: serial-logs-${{ inputs.cloudProvider }}

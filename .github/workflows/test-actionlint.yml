@@ -13,7 +13,7 @@ on:
       - ".github/**.yml"
 
 jobs:
-  integration-test:
+  actionlint:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -24,17 +24,17 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
           cache: true
 
-      - name: Install shellcheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
+      - name: Install ShellCheck
+        uses: ludeeus/action-shellcheck@6d3f514f44620b9d4488e380339edc0d9bbe2fba # master
+        with:
+          ignore_paths: "*"
 
       - name: Install Actionlint
         shell: bash
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@7fdc9630cc360ea1a469eed64ac6d78caeda1234 # v1.6.22
 
       - name: Run Actionlint
         shell: bash

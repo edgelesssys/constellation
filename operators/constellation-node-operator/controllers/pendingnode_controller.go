@@ -240,10 +240,7 @@ func (r *PendingNodeReconciler) tryUpdateStatus(ctx context.Context, name types.
 			return err
 		}
 		pendingNode.Status = *status.DeepCopy()
-		if err := r.Status().Update(ctx, pendingNode); err != nil {
-			return err
-		}
-		return nil
+		return r.Status().Update(ctx, pendingNode)
 	})
 }
 

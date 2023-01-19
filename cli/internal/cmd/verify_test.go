@@ -181,25 +181,22 @@ func TestVerify(t *testing.T) {
 func TestVerifyClient(t *testing.T) {
 	testCases := map[string]struct {
 		attestationDoc atls.FakeAttestationDoc
-		userData       []byte
 		nonce          []byte
 		attestationErr error
 		wantErr        bool
 	}{
 		"success": {
 			attestationDoc: atls.FakeAttestationDoc{
-				UserData: []byte("user data"),
+				UserData: []byte(constants.ConstellationVerifyServiceUserData),
 				Nonce:    []byte("nonce"),
 			},
-			userData: []byte("user data"),
-			nonce:    []byte("nonce"),
+			nonce: []byte("nonce"),
 		},
 		"attestation error": {
 			attestationDoc: atls.FakeAttestationDoc{
-				UserData: []byte("user data"),
+				UserData: []byte(constants.ConstellationVerifyServiceUserData),
 				Nonce:    []byte("nonce"),
 			},
-			userData:       []byte("user data"),
 			nonce:          []byte("nonce"),
 			attestationErr: errors.New("error"),
 			wantErr:        true,
@@ -209,18 +206,16 @@ func TestVerifyClient(t *testing.T) {
 				UserData: []byte("wrong user data"),
 				Nonce:    []byte("nonce"),
 			},
-			userData: []byte("user data"),
-			nonce:    []byte("nonce"),
-			wantErr:  true,
+			nonce:   []byte("nonce"),
+			wantErr: true,
 		},
 		"nonce does not match": {
 			attestationDoc: atls.FakeAttestationDoc{
-				UserData: []byte("user data"),
+				UserData: []byte(constants.ConstellationVerifyServiceUserData),
 				Nonce:    []byte("wrong nonce"),
 			},
-			userData: []byte("user data"),
-			nonce:    []byte("nonce"),
-			wantErr:  true,
+			nonce:   []byte("nonce"),
+			wantErr: true,
 		},
 	}
 
@@ -248,8 +243,7 @@ func TestVerifyClient(t *testing.T) {
 
 			verifier := &constellationVerifier{dialer: dialer, log: logger.NewTest(t)}
 			request := &verifyproto.GetAttestationRequest{
-				UserData: tc.userData,
-				Nonce:    tc.nonce,
+				Nonce: tc.nonce,
 			}
 
 			err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(oid.Dummy{}))

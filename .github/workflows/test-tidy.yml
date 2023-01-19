@@ -31,7 +31,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Get Go submodules
         id: submods
@@ -61,7 +61,7 @@ jobs:
         run: |
           mods="${{ steps.submods.outputs.submods }}"
           for mod in $mods; do
-            (cd $mod; go mod tidy)
+            (cd "$mod"; go mod tidy)
           done
 
       - name: Push changes
@@ -74,5 +74,5 @@ jobs:
         run: |
           git config --global user.name "renovate[bot]"
           git config --global user.email "29139614+renovate[bot]@users.noreply.github.com"
-          git commit -am "[bot] Tidy all modules"
+          git commit -am "deps: tidy all modules"
           git push

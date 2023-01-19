@@ -24,6 +24,8 @@ runs:
   steps:
     - name: get pseudo version
       id: pseudo-version
+      shell: bash
+      working-directory: hack/pseudo-version
       run: |
         if $(git rev-parse --is-shallow-repository); then
           git fetch --prune --unshallow --tags -v
@@ -44,5 +46,3 @@ runs:
         echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
         echo "branchName=${branchName}" >> $GITHUB_OUTPUT
         echo "releaseVersion=${releaseVersion}" >> $GITHUB_OUTPUT
-      working-directory: hack/pseudo-version
-      shell: bash

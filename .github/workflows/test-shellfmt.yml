@@ -8,10 +8,12 @@ on:
     paths:
       - "**.sh"
       - "**.bash"
+      - "image/**"
   pull_request:
     paths:
       - "**.sh"
       - "**.bash"
+      - "image/**"
 
 jobs:
   shellcheck:
@@ -26,12 +28,12 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Install shellfmt
         shell: bash
         run: |
-          go install github.com/katexochen/sh/v3/cmd/shfmt@latest
+          go install github.com/katexochen/sh/v3/cmd/shfmt@faf7f58964998201d22efe41fef41ae4e1953f3b # v3.6.0
 
       - name: Run shellfmt
         shell: bash

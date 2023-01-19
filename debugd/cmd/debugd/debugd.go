@@ -51,10 +51,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := deploy.EnableAutoLogin(ctx, fs, serviceManager); err != nil {
-		log.Errorf("root login: %w")
-	}
-
 	wg := &sync.WaitGroup{}
 
 	csp := os.Getenv("CONSTEL_CSP")

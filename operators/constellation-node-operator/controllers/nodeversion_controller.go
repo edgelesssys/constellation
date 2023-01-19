@@ -743,10 +743,7 @@ func (r *NodeVersionReconciler) tryUpdateStatus(ctx context.Context, name types.
 			return err
 		}
 		nodeVersion.Status = *status.DeepCopy()
-		if err := r.Status().Update(ctx, &nodeVersion); err != nil {
-			return err
-		}
-		return nil
+		return r.Status().Update(ctx, &nodeVersion)
 	})
 }
 

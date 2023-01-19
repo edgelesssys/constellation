@@ -1,0 +1,38 @@
+name: Install Syft & Grype
+description: Installs Syft & Grype.
+runs:
+  using: "composite"
+  steps:
+    - name: Install Syft & Grype
+      shell: bash
+      working-directory: /tmp
+      env:
+        SYFT_VERSION: "0.65.0" # Before upgrading, check if this has been fixed: https://github.com/anchore/syft/issues/1465
+        GRYPE_VERSION: "0.55.0"
+        OS: ${{ runner.os }}
+        ARCH: ${{ runner.arch }}
+      run: |
+        echo "::group::Download and Install Syft & Grype"
+        # Translate GitHub runner naming conventions to GOOS / GOARCH conventions
+        if [[ "${OS}" = "macOS" ]]; then
+          OS="darwin"
+        else
+          OS=${OS,,}
+        fi
+  
+        if [[ "${ARCH}" = "X64" ]]; then
+          ARCH="amd64"
+        else
+          ARCH=${ARCH,,}
+        fi
+        
+        echo "Downloading for ${OS}/${ARCH}"
+        
+        curl -fsSLo syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
+        tar -xzf syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
+        sudo install syft /usr/bin/syft
+        syft version
+        curl -fsSLo grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
+        tar -xzf grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
+        sudo install grype /usr/bin/grype
+        grype version

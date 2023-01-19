@@ -1,0 +1,167 @@
+name: Build container images using apko
+description: Build one or multiple apko images based on supplied .yaml files
+
+inputs:
+  apkoConfig:
+    description: "Path to the apko .yaml config file. If left empty, all images will be built."
+    required: false
+  apkoTag:
+    description: "Use this image tag"
+    required: false
+    default: latest
+  apkoArch:
+    description: "Use this image architecture"
+    required: false
+    default: amd64
+  registry:
+    description: "Container registry to use"
+    default: "ghcr.io"
+    required: true
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+    default: ""
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+    default: ""
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
+    default: ""
+
+# Linux runner only (docker required)
+runs:
+  using: "composite"
+  steps:
+    - name: Install deps
+      shell: bash
+      run: |
+        echo "::group::Install dependencies"
+        sudo apt-get update
+        sudo apt-get install -y zip
+        echo "::endgroup::"
+
+    - name: Log in to the Container registry
+      id: docker-login
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
+    - name: Install Cosign
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # v2.8.1
+
+    - name: Build apko images and sign them
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+      run: |
+        if [[ -z "${{ inputs.apkoConfig }}" ]]; then
+          echo "Building all images in image"
+          mkdir sboms
+          for imageConfig in apko/*.yaml; do
+            echo "Building image for $imageConfig"
+
+            imageName=$(basename $imageConfig | cut -d. -f1 )
+            registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
+            outTar="${imageName}.tar"
+
+            mkdir -p sboms/$imageName
+
+            # build the image
+            docker run \
+              -v "$PWD":/work \
+              cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
+              build \
+              "${imageConfig}" \
+              --build-arch ${{ inputs.apkoArch }} \
+              --sbom \
+              "${registry}" \
+              "${outTar}"
+
+            # push container
+            docker load < $outTar
+            docker push $registry
+            imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
+            echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
+
+            # cosign the container and push to registry
+            cosign sign \
+              --key env://COSIGN_PRIVATE_KEY \
+               $imageDigest \
+              -y
+
+            # move sboms to folder
+            mv sbom-*.* sboms/$imageName/
+          done
+        else
+          echo "Building image for ${{ inputs.apkoConfig }}"
+
+          imageName=$(basename ${{ inputs.apkoConfig }} | cut -d. -f1 )
+          registry="${{ inputs.registry }}/edgelesssys/apko-${imageName}"
+          outTar="${imageName}.tar"
+
+          mkdir -p sboms/$imageName
+
+          # build the image
+          docker run \
+            -v "$PWD":/work \
+            cgr.dev/chainguard/apko:${{ inputs.apkoTag }} \
+            build \
+            "${imageConfig}" \
+            --build-arch ${{ inputs.apkoArch }} \
+            --sbom \
+            "${registry}" \
+            "${outTar}"
+
+          # push container
+          docker load < $outTar
+          docker push $registry
+          imageDigest=$(docker inspect --format='{{index .RepoDigests 0}}' $registry)
+          echo "$imageDigest" >> "$GITHUB_STEP_SUMMARY"
+
+          # cosign the container and push to registry
+          cosign sign \
+              --key env://COSIGN_PRIVATE_KEY \
+              $imageDigest \
+              -y
+
+          mv sbom-*.* sboms/$imageName/
+        fi
+
+    - name: Sign sboms
+      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      shell: bash
+      env:
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+      run: |
+        for dir in sboms/*; do
+          for file in $dir/*; do
+            cosign sign-blob \
+              --key env://COSIGN_PRIVATE_KEY \
+              $file \
+              -y \
+              > $file.sig
+          done
+        done
+
+        zip -r sboms.zip sboms
+
+    - name: Upload SBOMs
+      if: always()
+      continue-on-error: true
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      with:
+        name: sboms
+        path: sboms.zip

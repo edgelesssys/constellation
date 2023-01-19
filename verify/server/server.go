@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"go.uber.org/zap"
@@ -107,13 +108,9 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 		log.Errorf("Received attestation request with empty nonce")
 		return nil, status.Error(codes.InvalidArgument, "nonce is required to issue attestation")
 	}
-	if len(req.UserData) == 0 {
-		log.Errorf("Received attestation request with empty user data")
-		return nil, status.Error(codes.InvalidArgument, "user data is required to issue attestation")
-	}
 
 	log.Infof("Creating attestation")
-	statement, err := s.issuer.Issue(req.UserData, req.Nonce)
+	statement, err := s.issuer.Issue([]byte(constants.ConstellationVerifyServiceUserData), req.Nonce)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "issuing attestation statement: %v", err)
 	}
@@ -132,12 +129,6 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "nonce parameter is required exactly once", http.StatusBadRequest)
 		return
 	}
-	userDataB64 := r.URL.Query()["userData"]
-	if len(userDataB64) != 1 || userDataB64[0] == "" {
-		log.Errorf("Received attestation request with empty or multiple user data parameter")
-		http.Error(w, "userData parameter is required exactly once", http.StatusBadRequest)
-		return
-	}
 
 	nonce, err := base64.URLEncoding.DecodeString(nonceB64[0])
 	if err != nil {
@@ -145,15 +136,9 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("invalid base64 encoding for nonce: %v", err), http.StatusBadRequest)
 		return
 	}
-	userData, err := base64.URLEncoding.DecodeString(userDataB64[0])
-	if err != nil {
-		log.With(zap.Error(err)).Errorf("Received attestation request with invalid user data")
-		http.Error(w, fmt.Sprintf("invalid base64 encoding for userData: %v", err), http.StatusBadRequest)
-		return
-	}
 
 	log.Infof("Creating attestation")
-	quote, err := s.issuer.Issue(userData, nonce)
+	quote, err := s.issuer.Issue([]byte(constants.ConstellationVerifyServiceUserData), nonce)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("issuing attestation statement: %v", err), http.StatusInternalServerError)
 		return

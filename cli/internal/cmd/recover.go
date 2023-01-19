@@ -35,8 +35,8 @@ func NewRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
 		Short: "Recover a completely stopped Constellation cluster",
-		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage." +
-			"\nThis is only required if instances restart without other instances available for bootstrapping.",
+		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage.\n\n" +
+			"This is only required if instances restart without other instances available for bootstrapping.",
 		Args: cobra.ExactArgs(0),
 		RunE: runRecover,
 	}
@@ -79,7 +79,7 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %s", flags.configPath)
+	r.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -119,17 +119,19 @@ func (r *recoverCmd) recoverCall(ctx context.Context, out io.Writer, interval ti
 	for {
 		once := sync.Once{}
 		retryOnceOnFailure := func(err error) bool {
+			var retry bool
 			// retry transient GCP LB errors
 			if grpcRetry.LoadbalancerIsNotReady(err) {
-				return true
+				retry = true
+			} else {
+				// retry connection errors once
+				// this is necessary because Azure's LB takes a while to remove unhealthy instances
+				once.Do(func() {
+					retry = grpcRetry.ServiceIsUnavailable(err)
+				})
 			}
-			retry := false
 
-			// retry connection errors once
-			// this is necessary because Azure's LB takes a while to remove unhealthy instances
-			once.Do(func() {
-				retry = grpcRetry.ServiceIsUnavailable(err)
-			})
+			r.log.Debugf("Encountered error (retriable: %t): %s", retry, err)
 			return retry
 		}
 
@@ -268,7 +270,7 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	r.log.Debugf("Config path flag is %s", configPath)
+	r.log.Debugf("Configuration path flag is %s", configPath)
 
 	return recoverFlags{
 		endpoint:   endpoint,

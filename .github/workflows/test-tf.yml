@@ -53,10 +53,10 @@ jobs:
           git diff --exit-code
 
       - name: Push changes on renovate
-        if: ${{ failure() && (steps.hcl-lock.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
+        if: failure() && (steps.hcl-lock.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/')
         shell: bash
         run: |
           git config --global user.name "renovate[bot]"
           git config --global user.email "29139614+renovate[bot]@users.noreply.github.com"
-          git commit -am "[bot] Update HCL lock files"
+          git commit -am "deps: update HCL lock files"
           git push

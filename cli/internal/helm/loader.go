@@ -52,7 +52,7 @@ const (
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
 	joinServiceImage             string
-	kmsImage                     string
+	keyserviceImage              string
 	ccmImage                     string
 	cnmImage                     string
 	autoscalerImage              string
@@ -78,7 +78,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 
 	return &ChartLoader{
 		joinServiceImage:             versions.JoinImage,
-		kmsImage:                     versions.KmsImage,
+		keyserviceImage:              versions.KeyServiceImage,
 		ccmImage:                     ccmImage,
 		cnmImage:                     cnmImage,
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
@@ -359,13 +359,14 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 	csp := config.GetProvider()
 	values := map[string]any{
 		"global": map[string]any{
-			"kmsPort":          constants.KMSPort,
-			"serviceBasePath":  constants.ServiceBasePath,
-			"joinConfigCMName": constants.JoinConfigMap,
-			"internalCMName":   constants.InternalConfigMap,
+			"keyservicePort":      constants.KeyservicePort,
+			"keyserviceNamespace": "", // empty namespace means we use the release namespace
+			"serviceBasePath":     constants.ServiceBasePath,
+			"joinConfigCMName":    constants.JoinConfigMap,
+			"internalCMName":      constants.InternalConfigMap,
 		},
-		"kms": map[string]any{
-			"image":                i.kmsImage,
+		"keyservice": map[string]any{
+			"image":                i.keyserviceImage,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
 			"saltKeyName":          constants.ConstellationSaltKey,
@@ -404,6 +405,12 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 		}
 		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
 
+		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
+		if err != nil {
+			return nil, fmt.Errorf("marshalling id key digests: %w", err)
+		}
+		joinServiceVals["idkeydigests"] = string(marshalledDigests)
+
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
 			return nil, errors.New("invalid ccm values")
@@ -418,13 +425,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 
 		values["azure"] = map[string]any{
 			"deployCSIDriver": config.DeployCSIDriver(),
-		}
-
-		values["azuredisk-csi-driver"] = map[string]any{
-			"node": map[string]any{
-				"kmsPort":      constants.KMSPort,
-				"kmsNamespace": "", // empty namespace means we use the release namespace
-			},
 		}
 
 		values["tags"] = map[string]any{
@@ -442,13 +442,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 
 		values["gcp"] = map[string]any{
 			"deployCSIDriver": config.DeployCSIDriver(),
-		}
-
-		values["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
-			"csiNode": map[string]any{
-				"kmsPort":      constants.KMSPort,
-				"kmsNamespace": "", // empty namespace means we use the release namespace
-			},
 		}
 
 		values["tags"] = map[string]any{

@@ -32,7 +32,7 @@ inputs:
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
-  gcp_service_account_json:
+  gcp_service_account:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
   gcpClusterServiceAccountKey:
@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "recover", "nop"]'), inputs.test) }}
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "recover", "nop"]'), inputs.test))
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -129,7 +129,7 @@ runs:
       if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/login_gcp
       with:
-        gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
+        service_account: ${{ inputs.gcp_service_account }}
 
     - name: Login to AWS
       if: inputs.cloudProvider == 'aws'
@@ -208,7 +208,7 @@ runs:
 
     - name: Run constellation verify test
       if: inputs.test == 'verify'
-      uses: ./.github/actions/constellation_verify
+      uses: ./.github/actions/e2e_verify
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         osImage: ${{ inputs.osImage }}

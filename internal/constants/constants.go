@@ -27,6 +27,8 @@ const (
 	ConstellationMasterSecretKey = "mastersecret"
 	// ConstellationSaltKey is the name of the key for the salt in the master secret kubernetes secret.
 	ConstellationSaltKey = "salt"
+	// ConstellationVerifyServiceUserData is the user data that the verification service includes in the attestation.
+	ConstellationVerifyServiceUserData = "VerifyService"
 
 	//
 	// Ports.
@@ -44,8 +46,8 @@ const (
 	VerifyServiceNodePortHTTP = 30080
 	// VerifyServiceNodePortGRPC GRPC node port for verification service.
 	VerifyServiceNodePortGRPC = 30081
-	// KMSPort is the port the KMS server listens on.
-	KMSPort = 9000
+	// KeyservicePort is the port the KMS server listens on.
+	KeyservicePort = 9000
 	// BootstrapperPort port of bootstrapper.
 	BootstrapperPort = 9000
 	// KubernetesPort port for Kubernetes API.
@@ -109,7 +111,7 @@ const (
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
 	MeasurementSecretFilename = "measurementSecret"
 	// IDKeyDigestFilename is the name of the file holding the currently enforced idkeydigest.
-	IDKeyDigestFilename = "idkeydigest"
+	IDKeyDigestFilename = "idkeydigests"
 	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
