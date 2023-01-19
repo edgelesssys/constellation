@@ -40,10 +40,16 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	sort.Sort(validVersionsSorted)
 
 	var errorMsg string
-	configured := fe.Value().(string)
+	configured, ok := fe.Value().(string)
+	if !ok {
+		errorMsg = "The configured version is not a valid string"
+	}
+
 	maxVersion := validVersionsSorted[len(validVersionsSorted)-1]
-	if configured < validVersionsSorted[0] {
-		errorMsg = fmt.Sprintf("You can upgrade to these versions with your current Constellation CLI: %s.", validVersionsSorted)
+	minVersion := validVersionsSorted[0]
+
+	if configured < minVersion {
+		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s.", configured, minVersion)
 	}
 	if configured > maxVersion {
 		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s.", configured, maxVersion)
