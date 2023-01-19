@@ -9,7 +9,7 @@
 /csi @daniel-weisse
 /debugd @malt3
 /disk-mapper @daniel-weisse
-/docs/**/*.md @flxflx
+/docs @thomasten
 /e2e @datosh
 /hack/azure-jump-host @malt3
 /hack/azure-snp-report-verify @derpsteb
