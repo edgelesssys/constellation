@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package image provides helping wrappers around a versionsapi fetcher.
+
+It also enables local image overrides and download of raw images.
+*/
 package image
 
 import (

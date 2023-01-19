@@ -4,6 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package cmd is the entrypoint of the Constellation CLI.
+
+Business logic of the CLI shall be implemented in the internal/cmd package.
+*/
 package cmd
 
 import (
