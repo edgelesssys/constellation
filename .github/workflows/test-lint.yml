@@ -10,11 +10,13 @@ on:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
+      - "./github/workflows/test-lint.yml"
   pull_request:
     paths:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
+      - "./github/workflows/test-lint.yml"
 
 permissions:
   contents: read

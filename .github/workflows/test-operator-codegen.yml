@@ -9,9 +9,11 @@ on:
       - "release/**"
     paths:
       - "operators/**"
+      - "./.github/workflows/test-operator-codegen.yml"
   pull_request:
     paths:
       - "operators/**"
+      - "./.github/workflows/test-operator-codegen.yml"
 
 jobs:
   govulncheck:

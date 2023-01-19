@@ -8,9 +8,11 @@ on:
       - "release/**"
     paths:
       - "**.tf"
+      - "./github/workflows/test-tfsec.yml"
   pull_request:
     paths:
       - "**.tf"
+      - "./github/workflows/test-tfsec.yml"
 
 permissions:
   contents: read
