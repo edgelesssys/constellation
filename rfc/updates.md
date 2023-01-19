@@ -267,6 +267,7 @@ Upgrading Constellation microservices to 2.2.0:
 
 Warning: Please backup any important components before upgrading Kubernetes
 Apply change [yes/No]?
+
 ```
 
 # Compatibility
@@ -278,7 +279,6 @@ To do this correctly and keep the cluster in a working condition some constraint
 - Each Constellation version is compatible with three or four Kubernetes versions.
   When a new Kubernetes version is released, Constellation will support four versions for one release cycle; before phasing out the oldest Kubernetes version.
   To learn if microserviceVersion A.B.C is compatible with Kubernetes version X.Y, one has to check whether the Constellation version is compatible with the Kubernetes version X.Y.
-  The Constellation version will be the same as the microserviceVersion: A.B.C. Same goes for the image and CLI.
 - Each Constellation version X.Y.Z is compatible with all patch versions of the next Constellation version X.Y+1.
 - The individual versions of Microservice, image and CLI all have to be compatible with the targeted Kubernetes version.
   Each component can be upgraded independently.
