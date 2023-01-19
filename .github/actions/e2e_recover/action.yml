@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         WORKER_NODE=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o json | jq '.items[0].metadata.name' -r)
-        kubectl debug node/$WORKER_NODE --image=ubuntu -- bash -c "echo reboot > temp.txt && chroot /host < temp.txt"
+        kubectl debug node/$WORKER_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
         kubectl wait --for=condition=Ready=false --timeout=10m node/$WORKER_NODE
         kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
       env:
@@ -38,7 +38,7 @@ runs:
       run: |
         CONTROL_PLANE_NODES=$(kubectl get nodes --selector='node-role.kubernetes.io/control-plane' -o json | jq '.items[].metadata.name' -r)
         for CONTROL_PLANE_NODE in ${CONTROL_PLANE_NODES}; do
-          kubectl debug node/$CONTROL_PLANE_NODE --image=ubuntu -- bash -c "echo reboot > temp.txt && chroot /host < temp.txt"
+          kubectl debug node/$CONTROL_PLANE_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
         done
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
