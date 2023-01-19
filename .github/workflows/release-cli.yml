@@ -205,7 +205,7 @@ jobs:
 
       - name: Install slsa-verifier
         run: |
-          curl -LO https://github.com/slsa-framework/slsa-verifier/releases/download/v${{ env.SLSA_VERIFIER_VERSION }}/slsa-verifier-linux-amd64
+          curl -fsSLO https://github.com/slsa-framework/slsa-verifier/releases/download/v${{ env.SLSA_VERIFIER_VERSION }}/slsa-verifier-linux-amd64
           install slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
 
       - name: Verify provenance

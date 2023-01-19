@@ -28,12 +28,12 @@ $(csps): %: mkosi.output.%/fedora~37/image.raw
 prebuilt/rpms/gcp/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -sL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.17/300.fc37/x86_64/$*.rpm
+	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.17/300.fc37/x86_64/$*.rpm
 
 prebuilt/rpms/azure/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -sL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.7/200.fc37/x86_64/$*.rpm
+	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.7/200.fc37/x86_64/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) $(AUTOLOGIN_ARGS) --environment=CONSOLE_MOTD build

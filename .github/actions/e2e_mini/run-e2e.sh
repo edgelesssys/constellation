@@ -39,7 +39,7 @@ sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
 ./constellation mini up
 
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+curl -fsSLO "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install kubectl /usr/local/bin/kubectl
 
 export KUBECONFIG="$PWD/constellation-admin.conf"
