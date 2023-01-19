@@ -18,6 +18,9 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
+<tabs groupId="provider">
+<tabItem value="cli" label="CLI">
+
 Choose the initial size of your cluster.
 The following command creates a cluster with one control-plane and two worker nodes:
 
@@ -28,6 +31,51 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 For details on the flags, consult the command help via `constellation create -h`.
 
 *create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your workspace.
+
+</tabItem>
+<tabItem value="terraform" label="Terraform">
+
+:::caution
+
+There is no extensive input validation with Terraform. If unsure, please use the Constellation CLI instead.
+
+:::
+
+Constellation also supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
+Since the Constellation CLI also uses Terraform under the hood, the same Terraform files can be reused.
+For now, please try to refrain from changing the Terraform resource definitions, as Constellation depends on certain components.
+
+Download the Terraform files for the selected CSP from our [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+
+Create a `terraform.tfvars` file.
+There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
+
+To find the image reference for your CSP and region, execute:
+
+```bash
+CONSTELL_VER=vX.Y.Z
+curl -s https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/$CONSTELL_VER/image/info.json | jq
+```
+
+Now, initialize and apply Terraform to create the configured infrastructure:
+
+```bash
+terraform init
+terraform apply
+```
+
+The initialization depends on the already created `constellation-config.yaml` and the `constellation-id.json`.
+Therefore, create the `constellation-id.json` using the output from the Terraform state and the `constellation-conf.yaml`:
+
+```bash
+CONSTELL_IP=$(terraform output ip)
+CONSTELL_INIT_SECRET=$(terraform output initSecret | jq -r | tr -d '\n' | base64)
+CONSTELL_CSP=$(cat constellation-conf.yaml | yq ".provider | keys | .[0]")
+jq --null-input --arg cloudprovider "$CONSTELL_CSP" --arg ip "$CONSTELL_IP" --arg initsecret "$CONSTELL_INIT_SECRET" '{"cloudprovider":$cloudprovider,"ip":$ip,"initsecret":$initsecret}' > constellation-id.json
+```
+
+</tabItem>
+</tabs>
 
 ## The *init* step
 
