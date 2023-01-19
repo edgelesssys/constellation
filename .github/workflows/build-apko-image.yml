@@ -1,4 +1,4 @@
-name: Build and upload all apko container images
+name: Build and upload all apko container base images
 
 on:
   workflow_dispatch:
@@ -6,6 +6,9 @@ on:
     branches:
       - main
       - "release/**"
+    paths:
+      - "/apko/**"
+      - "/.github/workflows/build-apko-image.yml"
 
 jobs:
   build-apko-image:

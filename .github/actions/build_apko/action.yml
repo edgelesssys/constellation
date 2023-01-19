@@ -1,5 +1,5 @@
-name: Build container images using apko
-description: Build one or multiple apko images based on supplied .yaml files
+name: Build container base images using apko
+description: Build one or multiple apko base images based on supplied .yaml files
 
 inputs:
   apkoConfig:
