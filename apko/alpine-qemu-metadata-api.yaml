@@ -1,7 +1,7 @@
 contents:
   repositories:
-    - https://dl-cdn.alpinelinux.org/alpine/edge/main
-    - https://dl-cdn.alpinelinux.org/alpine/edge/community
+    - https://dl-cdn.alpinelinux.org/alpine/v3.17/main
+    - https://dl-cdn.alpinelinux.org/alpine/v3.17/community
   packages:
     - alpine-base
     - libvirt-dev
