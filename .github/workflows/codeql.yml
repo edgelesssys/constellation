@@ -12,14 +12,6 @@ on:
       - "**.py"
       - "**requirements.txt"
       - "./github/workflows/codeql.yml"
-  pull_request:
-    paths:
-      - "**.go"
-      - "**/go.mod"
-      - "**/go.sum"
-      - "**.py"
-      - "**requirements.txt"
-      - "./github/workflows/codeql.yml"
 
 jobs:
   codeql:
