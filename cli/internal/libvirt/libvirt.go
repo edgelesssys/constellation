@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package libvirt is used to start and stop containerized libvirt instances.
 package libvirt
 
 import (

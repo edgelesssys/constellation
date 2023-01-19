@@ -8,6 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 // https://github.com/siderolabs/talos/tree/master/hack/docgen
 //
 //go:generate docgen ./config.go ./config_doc.go Configuration
+
+/*
+Definitions for  Constellation's user config file.
+
+The config file is used by the CLI to create and manage a Constellation cluster.
+
+All config relevant definitions, parsing and validation functions should go here.
+*/
 package config
 
 import (

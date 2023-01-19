@@ -12,7 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	upgradeagent "github.com/edgelesssys/constellation/v2/upgrade-agent"
+	"github.com/edgelesssys/constellation/v2/upgrade-agent/internal/server"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	handler := file.NewHandler(afero.NewOsFs())
-	server, err := upgradeagent.New(log, handler)
+	server, err := server.New(log, handler)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create update server")
 	}

@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kms provides an abstract interface for Key Management Services.
 package kms
 
 import (

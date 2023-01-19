@@ -4,6 +4,25 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package gcp implements a KMS backend for Google Cloud KMS.
+
+The following permissions are required for the service account used to authenticate with GCP:
+
+  - cloudkms.cryptoKeyVersions.create
+
+  - cloudkms.cryptoKeyVersions.update
+
+  - cloudkms.cryptoKeyVersions.useToDecrypt
+
+  - cloudkms.cryptoKeyVersions.useToEncrypt
+
+  - cloudkms.importJobs.create
+
+  - cloudkms.importJobs.get
+
+  - cloudkms.importJobs.useToImport
+*/
 package gcp
 
 import (

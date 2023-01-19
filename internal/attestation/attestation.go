@@ -4,6 +4,28 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+This package deals with the low level attestation and verification logic of Constellation nodes.
+
+General tpm attestation code that is not subjective to a single platform should go into the vtpm package.
+Since attestation capabilities can differ between platforms, the attestation code should go into a subpackage for that respective platform.
+
+We commonly implement the following two interfaces for a platform:
+
+	// Issuer issues an attestation document.
+	type Issuer interface {
+	    oid.Getter
+	    Issue(userData []byte, nonce []byte) (quote []byte, err error)
+	}
+
+	// Validator is able to validate an attestation document.
+	type Validator interface {
+	    oid.Getter
+	    Validate(attDoc []byte, nonce []byte) ([]byte, error)
+	}
+
+Attestation code for new platforms needs to implement these two interfaces.
+*/
 package attestation
 
 import (

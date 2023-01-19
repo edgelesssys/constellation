@@ -394,7 +394,7 @@ func (_ QEMUConfig) Doc() *encoder.Doc {
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
 		Name:        "Configuration",
-		Description: "This binary can be build from siderolabs/talos projects. Located at:\nhttps://github.com/siderolabs/talos/tree/master/hack/docgen\n",
+		Description: "Definitions for  Constellation's user config file.\n\nThe config file is used by the CLI to create and manage a Constellation cluster.\n\nAll config relevant definitions, parsing and validation functions should go here.\n",
 		Structs: []*encoder.Doc{
 			&ConfigDoc,
 			&UpgradeConfigDoc,

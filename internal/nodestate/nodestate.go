@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package nodestate is used to persist the state of a Constellation node to disk.
 package nodestate
 
 import (

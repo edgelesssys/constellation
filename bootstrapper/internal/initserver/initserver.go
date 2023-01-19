@@ -4,6 +4,17 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+# InitServer
+
+The InitServer is one of the two main components of the bootstrapper.
+It is responsible for the initial setup of a node, and the initialization of the Kubernetes cluster.
+
+The InitServer is started on each node, and waits for either a call from the CLI,
+or for the JoinClient to connect to an existing cluster.
+
+If a call from the CLI is received, the InitServer bootstraps the Kubernetes cluster, and stops the JoinClient.
+*/
 package initserver
 
 import (

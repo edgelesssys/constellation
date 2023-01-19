@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kubeadm handles joining of new nodes by creating Kubernetes Join Tokens.
 package kubeadm
 
 import (

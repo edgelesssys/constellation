@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package systemd configures systemd units for encrypted volumes.
 package systemd
 
 import (

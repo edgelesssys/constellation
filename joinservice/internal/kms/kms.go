@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package kms handles communication with Constellation's key service to request data encryption keys for new or rejoining nodes.
 package kms
 
 import (

@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package helm provides types and functions shared across services.
 package helm
 
 // Release bundles all information necessary to create a helm release.
@@ -23,7 +24,7 @@ type Releases struct {
 }
 
 // MergeMaps returns a new map that is the merger of it's inputs.
-// Key colissions are resolved by taking the value of the second argument (map b).
+// Key collisions are resolved by taking the value of the second argument (map b).
 // Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
 func MergeMaps(a, b map[string]any) map[string]any {
 	out := make(map[string]any, len(a))

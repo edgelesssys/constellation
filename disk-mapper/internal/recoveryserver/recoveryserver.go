@@ -4,6 +4,15 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package recoveryserver implements the gRPC endpoints for recovering a restarting node.
+
+The endpoint is only available for control-plane nodes,
+worker nodes should only rejoin the cluster using Constellation's JoinService.
+
+This endpoint can be used by an admin in case of a complete cluster shutdown,
+in which case a node is unable to rejoin the cluster automatically.
+*/
 package recoveryserver
 
 import (

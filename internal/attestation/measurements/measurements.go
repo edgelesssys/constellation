@@ -4,6 +4,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+# Measurements
+
+Defines default expected measurements for the current release, as well as functions for comparing, updating and marshalling measurements.
+
+This package should not include TPM specific code.
+*/
 package measurements
 
 import (

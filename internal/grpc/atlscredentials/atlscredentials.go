@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package atlscredentials handles creation of TLS credentials for attested TLS (ATLS).
 package atlscredentials
 
 import (

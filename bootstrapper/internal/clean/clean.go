@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package clean provides functionality to stop a list of services gracefully and synchronously.
 package clean
 
 import (
