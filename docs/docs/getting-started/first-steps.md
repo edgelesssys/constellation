@@ -76,7 +76,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 -->
 
 2. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
-If you want to use Terraform for managing the cloud resources instead, follow our [Terraform guide](../workflows/create.md).
+    If you want to use Terraform for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
 

@@ -8,6 +8,8 @@ All ephemeral storage and state of your cluster will be lost. Make sure any data
 
 :::
 
+<tabs groupId="provider">
+<tabItem value="cli" label="CLI">
 Terminate the cluster by running:
 
 ```bash
@@ -29,3 +31,22 @@ Termination can fail if additional resources have been created that depend on th
 resources manually. Just run the `terminate` command again afterward to continue the termination process of the cluster.
 
 :::
+
+</tabItem>
+<tabItem value="terraform" label="Terraform">
+Terminate the cluster by running:
+
+```bash
+terraform destroy
+```
+
+Delete all files which are no longer needed:
+
+```bash
+rm constellation-id.json constellation-admin.conf
+```
+
+Only the `constellation-mastersecret.json` and the configuration file remain.
+
+</tabItem>
+</tabs>

@@ -41,9 +41,9 @@ There is no extensive input validation with Terraform. If unsure, please use the
 
 :::
 
-Constellation also supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
-Since the Constellation CLI also uses Terraform under the hood, the same Terraform files can be reused.
-For now, please try to refrain from changing the Terraform resource definitions, as Constellation depends on certain components.
+Constellation supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
+Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
+For now, please refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
 
 Download the Terraform files for the selected CSP from our [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
 
@@ -57,15 +57,15 @@ CONSTELL_VER=vX.Y.Z
 curl -s https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/$CONSTELL_VER/image/info.json | jq
 ```
 
-Now, initialize and apply Terraform to create the configured infrastructure:
+Initialize and apply Terraform to create the configured infrastructure:
 
 ```bash
 terraform init
 terraform apply
 ```
 
-The initialization depends on the already created `constellation-config.yaml` and the `constellation-id.json`.
-Therefore, create the `constellation-id.json` using the output from the Terraform state and the `constellation-conf.yaml`:
+The Constellation [init step](#the-init-step) requires the already created `constellation-config.yaml` and the `constellation-id.json`.
+Create the `constellation-id.json` using the output from the Terraform state and the `constellation-conf.yaml`:
 
 ```bash
 CONSTELL_IP=$(terraform output ip)
