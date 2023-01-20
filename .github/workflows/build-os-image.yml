@@ -71,7 +71,7 @@ jobs:
         if: inputs.stream == 'debug'
         uses: ./.github/actions/build_debugd
         with:
-          outputPath: ${{ github.workspace }}/build/bootstrapper
+          outputPath: ${{ github.workspace }}/build/debugd
 
       - name: Build disk-mapper
         uses: ./.github/actions/build_disk_mapper
@@ -85,10 +85,12 @@ jobs:
 
       - name: Upload dependencies
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        env:
+          MAIN_BINARY: ${{ inputs.stream == 'debug' && 'debugd' || 'bootstrapper' }}
         with:
           name: dependencies
           path: |
-            ${{ github.workspace }}/build/bootstrapper
+            ${{ github.workspace }}/build/${{ env.MAIN_BINARY }}
             ${{ github.workspace }}/build/disk-mapper
             ${{ github.workspace }}/build/upgrade-agent
 
@@ -250,9 +252,10 @@ jobs:
           name: dependencies
           path: ${{ github.workspace }}/build
 
-      - name: Mark bootstrapper, disk-mapper, and upgrade-agent as executable
+      - name: Mark bootstrapper, debugd, disk-mapper, and upgrade-agent as executable
         run: |
-          chmod +x ${{ github.workspace }}/build/bootstrapper
+          chmod +x ${{ github.workspace }}/build/bootstrapper || true
+          chmod +x ${{ github.workspace }}/build/debugd || true
           chmod +x ${{ github.workspace }}/build/disk-mapper
           chmod +x ${{ github.workspace }}/build/upgrade-agent
 
@@ -277,14 +280,16 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
+          DEBUGD_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
           UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
+          DEBUG: ${{ (needs.build-settings.outputs.stream == 'debug') && 'true' || 'false' }}
           AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
         run: |
           echo "::group::Build"
-          sudo make IMAGE_VERSION="${IMAGE_VERSION}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}"
+          sudo make IMAGE_VERSION="${IMAGE_VERSION}" DEBUG="${DEBUG}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}"
           echo "::endgroup::"
 
       - name: Collect hashes
