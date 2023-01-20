@@ -126,7 +126,7 @@ jobs:
   micro-services:
     name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
-    uses: ./.github/actions/build-micro-service-ko.yml
+    uses: ./.github/actions/build_micro_service_ko/action.yml
     secrets: inherit
     strategy:
       matrix:
@@ -152,6 +152,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/build-micro-service-manual.yml
     with:
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
       microService: qemu-metadata
       imageTag: ${{ inputs.version }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
@@ -159,7 +160,7 @@ jobs:
 
   update-versions:
     name: Update container image versions
-    needs: [verify-inputs, micro-services, constellation-node-operator]
+    needs: [verify-inputs, micro-services]
     runs-on: ubuntu-22.04
     env:
       VERSION: ${{ inputs.version }}
