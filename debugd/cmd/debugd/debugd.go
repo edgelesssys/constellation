@@ -14,7 +14,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
@@ -22,6 +21,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/server"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	platform "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -45,7 +46,8 @@ func main() {
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
-	streamer := bootstrapper.NewFileStreamer(fs)
+	streamer := streamer.New(fs)
+	filetransferer := filetransfer.New(log.Named("filetransfer"), streamer, filetransfer.DontShowProgress)
 	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -92,13 +94,10 @@ func main() {
 		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.Named("logcollector")),
 	)
 
-	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer, infoMap)
+	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, filetransferer, infoMap)
 
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
-	serv := server.New(log.Named("server"), serviceManager, streamer, infoMap)
-	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to create default service unit")
-	}
+	serv := server.New(log.Named("server"), serviceManager, filetransferer, infoMap)
 
 	writeDebugBanner(log)
 

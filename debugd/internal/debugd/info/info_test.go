@@ -284,6 +284,10 @@ func TestConcurrency(t *testing.T) {
 		_, _ = i.GetProto()
 	}
 
+	received := func() {
+		_ = i.Received()
+	}
+
 	go get()
 	go get()
 	go get()
@@ -300,4 +304,8 @@ func TestConcurrency(t *testing.T) {
 	go getProto()
 	go getProto()
 	go getProto()
+	go received()
+	go received()
+	go received()
+	go received()
 }

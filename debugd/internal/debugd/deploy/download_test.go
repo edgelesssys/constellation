@@ -9,14 +9,11 @@ package deploy
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
@@ -33,41 +30,72 @@ func TestMain(m *testing.M) {
 	)
 }
 
-func TestDownloadBootstrapper(t *testing.T) {
-	filename := "/run/state/bin/bootstrapper"
-	someErr := errors.New("failed")
-
+func TestDownloadDeployment(t *testing.T) {
 	testCases := map[string]struct {
-		server            fakeDownloadServer
-		serviceManager    stubServiceManager
-		wantChunks        [][]byte
-		wantDownloadErr   bool
-		wantFile          bool
-		wantSystemdAction bool
-		wantDeployed      bool
+		files                  []filetransfer.FileStat
+		recvFilesErr           error
+		overrideServiceUnitErr error
+		wantErr                bool
+		wantOverrideCalls      []struct{ UnitName, ExecStart string }
 	}{
 		"download works": {
-			server: fakeDownloadServer{
-				chunks: [][]byte{[]byte("test")},
+			files: []filetransfer.FileStat{
+				{
+					SourcePath:          "source/testfileA",
+					TargetPath:          "target/testfileA",
+					Mode:                0o644,
+					OverrideServiceUnit: "unitA",
+				},
+				{
+					SourcePath: "source/testfileB",
+					TargetPath: "target/testfileB",
+					Mode:       0o644,
+				},
 			},
-			wantChunks:        [][]byte{[]byte("test")},
-			wantDownloadErr:   false,
-			wantFile:          true,
-			wantSystemdAction: true,
-			wantDeployed:      true,
+			wantOverrideCalls: []struct{ UnitName, ExecStart string }{
+				{"unitA", "target/testfileA"},
+			},
 		},
-		"download rpc call error is detected": {
-			server:          fakeDownloadServer{downladErr: someErr},
-			wantDownloadErr: true,
+		"recv files error is detected": {
+			recvFilesErr: errors.New("some error"),
+			wantErr:      true,
 		},
-		"service restart error is detected": {
-			server:            fakeDownloadServer{chunks: [][]byte{[]byte("test")}},
-			serviceManager:    stubServiceManager{systemdActionErr: someErr},
-			wantChunks:        [][]byte{[]byte("test")},
-			wantDownloadErr:   true,
-			wantFile:          true,
-			wantDeployed:      true,
-			wantSystemdAction: false,
+		"recv already running": {
+			recvFilesErr: filetransfer.ErrReceiveRunning,
+			wantErr:      true,
+		},
+		"recv already finished": {
+			files: []filetransfer.FileStat{
+				{
+					SourcePath:          "source/testfileA",
+					TargetPath:          "target/testfileA",
+					Mode:                0o644,
+					OverrideServiceUnit: "unitA",
+				},
+			},
+			recvFilesErr: filetransfer.ErrReceiveFinished,
+			wantErr:      false,
+		},
+		"service unit fail does not stop further tries": {
+			files: []filetransfer.FileStat{
+				{
+					SourcePath:          "source/testfileA",
+					TargetPath:          "target/testfileA",
+					Mode:                0o644,
+					OverrideServiceUnit: "unitA",
+				},
+				{
+					SourcePath:          "source/testfileB",
+					TargetPath:          "target/testfileB",
+					Mode:                0o644,
+					OverrideServiceUnit: "unitB",
+				},
+			},
+			overrideServiceUnitErr: errors.New("some error"),
+			wantOverrideCalls: []struct{ UnitName, ExecStart string }{
+				{"unitA", "target/testfileA"},
+				{"unitB", "target/testfileB"},
+			},
 		},
 	}
 
@@ -76,11 +104,13 @@ func TestDownloadBootstrapper(t *testing.T) {
 			assert := assert.New(t)
 
 			ip := "192.0.2.0"
-			writer := &fakeStreamToFileWriter{}
+			transfer := &stubTransfer{recvFilesErr: tc.recvFilesErr, files: tc.files}
+			serviceMgr := &stubServiceManager{overrideServiceUnitExecStartErr: tc.overrideServiceUnitErr}
 			dialer := testdialer.NewBufconnDialer()
 
+			server := &stubDownloadServer{}
 			grpcServ := grpc.NewServer()
-			pb.RegisterDebugdServer(grpcServ, &tc.server)
+			pb.RegisterDebugdServer(grpcServ, server)
 			lis := dialer.GetListener(net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)))
 			go grpcServ.Serve(lis)
 			defer grpcServ.GracefulStop()
@@ -88,30 +118,19 @@ func TestDownloadBootstrapper(t *testing.T) {
 			download := &Download{
 				log:            logger.NewTest(t),
 				dialer:         dialer,
-				writer:         writer,
-				serviceManager: &tc.serviceManager,
+				transfer:       transfer,
+				serviceManager: serviceMgr,
 			}
 
 			err := download.DownloadDeployment(context.Background(), ip)
 
-			if tc.wantDownloadErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 			}
 
-			if tc.wantFile {
-				assert.Equal(tc.wantChunks, writer.chunks)
-				assert.Equal(filename, writer.filename)
-			}
-			if tc.wantSystemdAction {
-				assert.ElementsMatch(
-					[]ServiceManagerRequest{
-						{Unit: debugd.BootstrapperSystemdUnitName, Action: Restart},
-					},
-					tc.serviceManager.requests,
-				)
-			}
+			assert.Equal(tc.wantOverrideCalls, serviceMgr.overrideCalls)
 		})
 	}
 }
@@ -189,6 +208,9 @@ func TestDownloadInfo(t *testing.T) {
 type stubServiceManager struct {
 	requests         []ServiceManagerRequest
 	systemdActionErr error
+
+	overrideCalls                   []struct{ UnitName, ExecStart string }
+	overrideServiceUnitExecStartErr error
 }
 
 func (s *stubServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
@@ -196,39 +218,34 @@ func (s *stubServiceManager) SystemdAction(ctx context.Context, request ServiceM
 	return s.systemdActionErr
 }
 
-type fakeStreamToFileWriter struct {
-	chunks   [][]byte
-	filename string
+func (s *stubServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error {
+	s.overrideCalls = append(s.overrideCalls, struct {
+		UnitName, ExecStart string
+	}{UnitName: unitName, ExecStart: execStart})
+	return s.overrideServiceUnitExecStartErr
 }
 
-func (f *fakeStreamToFileWriter) WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error {
-	f.filename = filename
-	for {
-		chunk, err := stream.Recv()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil
-			}
-			return fmt.Errorf("reading stream: %w", err)
-		}
-		f.chunks = append(f.chunks, chunk.Content)
-	}
+type stubTransfer struct {
+	recvFilesErr error
+	files        []filetransfer.FileStat
 }
 
-// fakeDownloadServer implements DebugdServer; only fakes DownloadBootstrapper, panics on every other rpc.
-type fakeDownloadServer struct {
-	chunks     [][]byte
+func (t *stubTransfer) RecvFiles(_ filetransfer.RecvFilesStream) error {
+	return t.recvFilesErr
+}
+
+func (t *stubTransfer) GetFiles() []filetransfer.FileStat {
+	return t.files
+}
+
+// stubDownloadServer implements DebugdServer; only stubs DownloadFiles, panics on every other rpc.
+type stubDownloadServer struct {
 	downladErr error
 
 	pb.UnimplementedDebugdServer
 }
 
-func (s *fakeDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
-	for _, chunk := range s.chunks {
-		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
-			return fmt.Errorf("sending chunk: %w", err)
-		}
-	}
+func (s *stubDownloadServer) DownloadFiles(request *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
 	return s.downladErr
 }
 
@@ -244,10 +261,15 @@ func (s *stubDebugdServer) GetInfo(ctx context.Context, request *pb.GetInfoReque
 
 type stubInfoSetter struct {
 	info        []*pb.Info
+	received    bool
 	setProtoErr error
 }
 
 func (s *stubInfoSetter) SetProto(infos []*pb.Info) error {
 	s.info = infos
 	return s.setProtoErr
+}
+
+func (s *stubInfoSetter) Received() bool {
+	return s.received
 }

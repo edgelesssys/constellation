@@ -9,9 +9,12 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -20,6 +23,10 @@ import (
 const (
 	systemdUnitFolder = "/run/systemd/system"
 )
+
+// systemdUnitNameRegexp is a regular expression that matches valid systemd unit names.
+// This is only the unit name, without the .service suffix.
+var systemdUnitNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9@._\-\\]+$`)
 
 // SystemdAction encodes the available actions.
 //
@@ -73,7 +80,7 @@ func NewServiceManager(log *logger.Logger) *ServiceManager {
 type dbusClient interface {
 	// NewSystemConnectionContext establishes a connection to the system bus and authenticates.
 	// Callers should call Close() when done with the connection.
-	NewSystemdConnectionContext(ctx context.Context) (dbusConn, error)
+	NewSystemConnectionContext(ctx context.Context) (dbusConn, error)
 }
 
 type dbusConn interface {
@@ -89,15 +96,18 @@ type dbusConn interface {
 	// ReloadContext instructs systemd to scan for and reload unit files. This is
 	// an equivalent to systemctl daemon-reload.
 	ReloadContext(ctx context.Context) error
+	// Close closes the connection.
+	Close()
 }
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
 func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
 	log := s.log.With(zap.String("unit", request.Unit), zap.String("action", request.Action.String()))
-	conn, err := s.dbus.NewSystemdConnectionContext(ctx)
+	conn, err := s.dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
+	defer conn.Close()
 
 	resultChan := make(chan string, 1)
 	switch request.Action {
@@ -149,28 +159,41 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 	}
 
 	log.Infof("Wrote systemd unit file and performed daemon-reload")
-
 	return nil
 }
 
-// DefaultServiceUnit will write the default "bootstrapper.service" unit file.
-func DefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) error {
-	if err := serviceManager.WriteSystemdUnitFile(ctx, SystemdUnit{
-		Name:     debugd.BootstrapperSystemdUnitName,
-		Contents: debugd.BootstrapperSystemdUnitContents,
-	}); err != nil {
-		return fmt.Errorf("writing systemd unit file %q: %w", debugd.BootstrapperSystemdUnitName, err)
+// OverrideServiceUnitExecStart will override the ExecStart of a systemd unit.
+func (s *ServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName, execStart string) error {
+	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unitName)))
+	log.Infof("Overriding systemd unit file execStart")
+	if !systemdUnitNameRegexp.MatchString(unitName) {
+		return fmt.Errorf("unit name %q is invalid", unitName)
+	}
+	// validate execStart (no newlines)
+	if strings.Contains(execStart, "\n") || strings.Contains(execStart, "\r") {
+		return fmt.Errorf("execStart must not contain newlines")
+	}
+	overrideUnitContents := fmt.Sprintf("[Service]\nExecStart=\nExecStart=%s\n", execStart)
+	s.systemdUnitFilewriteLock.Lock()
+	defer s.systemdUnitFilewriteLock.Unlock()
+	path := filepath.Join(systemdUnitFolder, unitName+".service.d", "override.conf")
+	if err := s.fs.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		return fmt.Errorf("creating systemd unit file override directory %q: %w", filepath.Dir(path), err)
+	}
+	if err := afero.WriteFile(s.fs, path, []byte(overrideUnitContents), 0o644); err != nil {
+		return fmt.Errorf("writing systemd unit override file %q: %w", unitName, err)
+	}
+	if err := s.SystemdAction(ctx, ServiceManagerRequest{Unit: unitName, Action: Reload}); err != nil {
+		// do not return early here
+		// the "daemon-reload" command may return an unrelated error
+		// and there is no way to know if the override was successful
+		log.Warnf("Failed to perform systemd daemon-reload: %v", err)
+	}
+	if err := s.SystemdAction(ctx, ServiceManagerRequest{Unit: unitName + ".service", Action: Restart}); err != nil {
+		log.Warnf("Failed to perform unit restart: %v", err)
+		return fmt.Errorf("performing systemd unit restart: %w", err)
 	}
 
-	// try to start the default service if the binary exists but ignore failure.
-	// this is meant to start the bootstrapper after a reboot
-	// if a bootstrapper binary was uploaded before.
-	if ok, err := afero.Exists(serviceManager.fs, debugd.BootstrapperDeployFilename); ok && err == nil {
-		_ = serviceManager.SystemdAction(ctx, ServiceManagerRequest{
-			Unit:   debugd.BootstrapperSystemdUnitName,
-			Action: Start,
-		})
-	}
-
+	log.Infof("Overrode systemd unit file execStart, performed daemon-reload and restarted unit %v", unitName)
 	return nil
 }

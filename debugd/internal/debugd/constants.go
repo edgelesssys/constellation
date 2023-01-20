@@ -14,7 +14,9 @@ const (
 	GRPCTimeout                     = 5 * time.Minute
 	DiscoverDebugdInterval          = 30 * time.Second
 	DownloadRetryBackoff            = 1 * time.Minute
+	BinaryAccessMode                = 0o755 // -rwxr-xr-x
 	BootstrapperDeployFilename      = "/run/state/bin/bootstrapper"
+	UpgradeAgentDeployFilename      = "/run/state/bin/upgrade-agent"
 	Chunksize                       = 1024
 	BootstrapperSystemdUnitName     = "bootstrapper.service"
 	BootstrapperSystemdUnitContents = `[Unit]

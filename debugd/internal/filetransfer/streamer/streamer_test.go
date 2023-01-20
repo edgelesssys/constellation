@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package bootstrapper
+package streamer
 
 import (
 	"errors"
@@ -82,7 +82,7 @@ func TestWriteStream(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			writer := NewFileStreamer(tc.fs)
+			writer := New(tc.fs)
 			err := writer.WriteStream(filename, &tc.readChunkStream, tc.showProgress)
 
 			if tc.wantErr {
@@ -99,6 +99,7 @@ func TestWriteStream(t *testing.T) {
 
 func TestReadStream(t *testing.T) {
 	correctFilename := "testfile"
+	eof := []byte{}
 
 	testCases := map[string]struct {
 		writeChunkStream stubWriteChunkStream
@@ -114,6 +115,7 @@ func TestReadStream(t *testing.T) {
 			chunksize:        4,
 			wantChunks: [][]byte{
 				[]byte("test"),
+				eof,
 			},
 			wantErr: false,
 		},
@@ -124,6 +126,7 @@ func TestReadStream(t *testing.T) {
 			wantChunks: [][]byte{
 				[]byte("te"),
 				[]byte("st"),
+				eof,
 			},
 			wantErr: false,
 		},
@@ -140,6 +143,7 @@ func TestReadStream(t *testing.T) {
 			showProgress:     true,
 			wantChunks: [][]byte{
 				[]byte("test"),
+				eof,
 			},
 			wantErr: false,
 		},
@@ -165,7 +169,7 @@ func TestReadStream(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			assert.NoError(afero.WriteFile(fs, correctFilename, []byte("test"), 0o755))
-			reader := NewFileStreamer(fs)
+			reader := New(fs)
 			err := reader.ReadStream(tc.filename, &tc.writeChunkStream, tc.chunksize, tc.showProgress)
 
 			if tc.wantErr {
@@ -189,8 +193,10 @@ func (s *fakeReadChunkStream) Recv() (*pb.Chunk, error) {
 		return nil, s.recvErr
 	}
 
+	isLastChunk := s.pos == len(s.chunks)-1
+
 	if s.pos < len(s.chunks) {
-		result := &pb.Chunk{Content: s.chunks[s.pos]}
+		result := &pb.Chunk{Content: s.chunks[s.pos], Last: isLastChunk}
 		s.pos++
 		return result, nil
 	}

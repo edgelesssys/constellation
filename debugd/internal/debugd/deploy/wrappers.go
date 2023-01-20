@@ -15,8 +15,8 @@ import (
 // wraps go-systemd dbus.
 type dbusWrapper struct{}
 
-func (d *dbusWrapper) NewSystemdConnectionContext(ctx context.Context) (dbusConn, error) {
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
+func (d *dbusWrapper) NewSystemConnectionContext(ctx context.Context) (dbusConn, error) {
+	conn, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -43,4 +43,8 @@ func (c *dbusConnWrapper) RestartUnitContext(ctx context.Context, name string, m
 
 func (c *dbusConnWrapper) ReloadContext(ctx context.Context) error {
 	return c.conn.ReloadContext(ctx)
+}
+
+func (c *dbusConnWrapper) Close() {
+	c.conn.Close()
 }

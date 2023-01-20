@@ -9,15 +9,14 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strconv"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
@@ -40,21 +39,23 @@ func TestSetInfo(t *testing.T) {
 		info         *info.Map
 		infoReceived bool
 		setInfo      []*pb.Info
-		wantErr      bool
+		wantStatus   pb.SetInfoStatus
 	}{
 		"set info works": {
-			setInfo: []*pb.Info{{Key: "foo", Value: "bar"}},
-			info:    info.NewMap(),
+			setInfo:    []*pb.Info{{Key: "foo", Value: "bar"}},
+			info:       info.NewMap(),
+			wantStatus: pb.SetInfoStatus_SET_INFO_SUCCESS,
 		},
 		"set empty info works": {
-			setInfo: []*pb.Info{},
-			info:    info.NewMap(),
+			setInfo:    []*pb.Info{},
+			info:       info.NewMap(),
+			wantStatus: pb.SetInfoStatus_SET_INFO_SUCCESS,
 		},
 		"set fails when info already set": {
 			info:         info.NewMap(),
 			infoReceived: true,
 			setInfo:      []*pb.Info{{Key: "foo", Value: "bar"}},
-			wantErr:      true,
+			wantStatus:   pb.SetInfoStatus_SET_INFO_ALREADY_SET,
 		},
 	}
 
@@ -78,19 +79,16 @@ func TestSetInfo(t *testing.T) {
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
 
-			_, err = client.SetInfo(context.Background(), &pb.SetInfoRequest{Info: tc.setInfo})
+			setInfoStatus, err := client.SetInfo(context.Background(), &pb.SetInfoRequest{Info: tc.setInfo})
 			grpcServ.GracefulStop()
 
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
+			assert.NoError(err)
+			assert.Equal(tc.wantStatus, setInfoStatus.Status)
+			for i := range tc.setInfo {
+				value, ok, err := tc.info.Get(tc.setInfo[i].Key)
 				assert.NoError(err)
-				for i := range tc.setInfo {
-					value, ok, err := tc.info.Get(tc.setInfo[i].Key)
-					assert.NoError(err)
-					assert.True(ok)
-					assert.Equal(tc.setInfo[i].Value, value)
-				}
+				assert.True(ok)
+				assert.Equal(tc.setInfo[i].Value, value)
 			}
 		})
 	}
@@ -152,35 +150,36 @@ func TestGetInfo(t *testing.T) {
 	}
 }
 
-func TestUploadBootstrapper(t *testing.T) {
+func TestUploadFiles(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
-		serviceManager     stubServiceManager
-		streamer           fakeStreamer
-		uploadChunks       [][]byte
-		wantErr            bool
-		wantResponseStatus pb.UploadBootstrapperStatus
-		wantFile           bool
-		wantChunks         [][]byte
+		files              []filetransfer.FileStat
+		recvFilesErr       error
+		wantResponseStatus pb.UploadFilesStatus
+		wantOverrideCalls  []struct{ UnitName, ExecStart string }
 	}{
 		"upload works": {
-			uploadChunks:       [][]byte{[]byte("test")},
-			wantFile:           true,
-			wantChunks:         [][]byte{[]byte("test")},
-			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS,
+			files: []filetransfer.FileStat{
+				{SourcePath: "source/testA", TargetPath: "target/testA", Mode: 0o644, OverrideServiceUnit: "testA"},
+				{SourcePath: "source/testB", TargetPath: "target/testB", Mode: 0o644},
+			},
+			wantOverrideCalls: []struct{ UnitName, ExecStart string }{
+				{"testA", "target/testA"},
+			},
+			wantResponseStatus: pb.UploadFilesStatus_UPLOAD_FILES_SUCCESS,
 		},
 		"recv fails": {
-			streamer:           fakeStreamer{writeStreamErr: errors.New("recv error")},
-			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED,
-			wantErr:            true,
+			recvFilesErr:       errors.New("recv error"),
+			wantResponseStatus: pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED,
 		},
-		"starting bootstrapper fails": {
-			uploadChunks:       [][]byte{[]byte("test")},
-			serviceManager:     stubServiceManager{systemdActionErr: errors.New("starting bootstrapper error")},
-			wantFile:           true,
-			wantChunks:         [][]byte{[]byte("test")},
-			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_START_FAILED,
+		"upload in progress": {
+			recvFilesErr:       filetransfer.ErrReceiveRunning,
+			wantResponseStatus: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED,
+		},
+		"upload already finished": {
+			recvFilesErr:       filetransfer.ErrReceiveFinished,
+			wantResponseStatus: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED,
 		},
 	}
 
@@ -189,60 +188,49 @@ func TestUploadBootstrapper(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			serviceMgr := &stubServiceManager{}
+			transfer := &stubTransfer{files: tc.files, recvFilesErr: tc.recvFilesErr}
+
 			serv := debugdServer{
 				log:            logger.NewTest(t),
-				serviceManager: &tc.serviceManager,
-				streamer:       &tc.streamer,
+				serviceManager: serviceMgr,
+				transfer:       transfer,
 			}
 
 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.UploadBootstrapper(context.Background())
+			stream, err := client.UploadFiles(context.Background())
 			require.NoError(err)
-			require.NoError(fakeWrite(stream, tc.uploadChunks))
 			resp, err := stream.CloseAndRecv()
 
 			grpcServ.GracefulStop()
 
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
 			require.NoError(err)
 			assert.Equal(tc.wantResponseStatus, resp.Status)
-			if tc.wantFile {
-				assert.Equal(tc.wantChunks, tc.streamer.writeStreamChunks)
-				assert.Equal("/run/state/bin/bootstrapper", tc.streamer.writeStreamFilename)
-			} else {
-				assert.Empty(tc.streamer.writeStreamChunks)
-				assert.Empty(tc.streamer.writeStreamFilename)
-			}
+			assert.Equal(tc.wantOverrideCalls, serviceMgr.overrideCalls)
 		})
 	}
 }
 
-func TestDownloadBootstrapper(t *testing.T) {
+func TestDownloadFiles(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
-		serviceManager stubServiceManager
-		request        *pb.DownloadBootstrapperRequest
-		streamer       fakeStreamer
-		wantErr        bool
-		wantChunks     [][]byte
+		request           *pb.DownloadFilesRequest
+		canSend           bool
+		wantRecvErr       bool
+		wantSendFileCalls int
 	}{
 		"download works": {
-			request:    &pb.DownloadBootstrapperRequest{},
-			streamer:   fakeStreamer{readStreamChunks: [][]byte{[]byte("test")}},
-			wantErr:    false,
-			wantChunks: [][]byte{[]byte("test")},
+			request:           &pb.DownloadFilesRequest{},
+			canSend:           true,
+			wantSendFileCalls: 1,
 		},
-		"download fails": {
-			request:  &pb.DownloadBootstrapperRequest{},
-			streamer: fakeStreamer{readStreamErr: errors.New("read bootstrapper fails")},
-			wantErr:  true,
+		"transfer is not ready for sending": {
+			request:     &pb.DownloadFilesRequest{},
+			wantRecvErr: true,
 		},
 	}
 
@@ -251,28 +239,29 @@ func TestDownloadBootstrapper(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			transfer := &stubTransfer{canSend: tc.canSend}
 			serv := debugdServer{
-				log:            logger.NewTest(t),
-				serviceManager: &tc.serviceManager,
-				streamer:       &tc.streamer,
+				log:      logger.NewTest(t),
+				transfer: transfer,
 			}
 
 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.DownloadBootstrapper(context.Background(), tc.request)
+			stream, err := client.DownloadFiles(context.Background(), tc.request)
 			require.NoError(err)
-			chunks, err := fakeRead(stream)
-			grpcServ.GracefulStop()
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
+			_, recvErr := stream.Recv()
+			if tc.wantRecvErr {
+				require.Error(recvErr)
+			} else {
+				require.ErrorIs(recvErr, io.EOF)
 			}
+			require.NoError(stream.CloseSend())
+			grpcServ.GracefulStop()
 			require.NoError(err)
-			assert.Equal(tc.wantChunks, chunks)
-			assert.Equal("/run/state/bin/bootstrapper", tc.streamer.readStreamFilename)
+
+			assert.Equal(tc.wantSendFileCalls, transfer.sendFilesCount)
 		})
 	}
 }
@@ -334,7 +323,6 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			serv := debugdServer{
 				log:            logger.NewTest(t),
 				serviceManager: &tc.serviceManager,
-				streamer:       &fakeStreamer{},
 			}
 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
 			require.NoError(err)
@@ -357,10 +345,13 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 }
 
 type stubServiceManager struct {
-	requests                []deploy.ServiceManagerRequest
-	unitFiles               []deploy.SystemdUnit
-	systemdActionErr        error
-	writeSystemdUnitFileErr error
+	requests      []deploy.ServiceManagerRequest
+	unitFiles     []deploy.SystemdUnit
+	overrideCalls []struct{ UnitName, ExecStart string }
+
+	systemdActionErr                error
+	writeSystemdUnitFileErr         error
+	overrideServiceUnitExecStartErr error
 }
 
 func (s *stubServiceManager) SystemdAction(ctx context.Context, request deploy.ServiceManagerRequest) error {
@@ -371,6 +362,13 @@ func (s *stubServiceManager) SystemdAction(ctx context.Context, request deploy.S
 func (s *stubServiceManager) WriteSystemdUnitFile(ctx context.Context, unit deploy.SystemdUnit) error {
 	s.unitFiles = append(s.unitFiles, unit)
 	return s.writeSystemdUnitFileErr
+}
+
+func (s *stubServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error {
+	s.overrideCalls = append(s.overrideCalls, struct {
+		UnitName, ExecStart string
+	}{UnitName: unitName, ExecStart: execStart})
+	return s.overrideServiceUnitExecStartErr
 }
 
 type netDialer interface {
@@ -386,37 +384,31 @@ func dial(ctx context.Context, dialer netDialer, target string) (*grpc.ClientCon
 	)
 }
 
-type fakeStreamer struct {
-	writeStreamChunks   [][]byte
-	writeStreamFilename string
-	writeStreamErr      error
-	readStreamChunks    [][]byte
-	readStreamFilename  string
-	readStreamErr       error
+type stubTransfer struct {
+	recvFilesCount int
+	sendFilesCount int
+	files          []filetransfer.FileStat
+	canSend        bool
+	recvFilesErr   error
+	sendFilesErr   error
 }
 
-func (f *fakeStreamer) WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error {
-	f.writeStreamFilename = filename
-	for {
-		chunk, err := stream.Recv()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return f.writeStreamErr
-			}
-			return fmt.Errorf("reading stream: %w", err)
-		}
-		f.writeStreamChunks = append(f.writeStreamChunks, chunk.Content)
-	}
+func (t *stubTransfer) RecvFiles(_ filetransfer.RecvFilesStream) error {
+	t.recvFilesCount++
+	return t.recvFilesErr
 }
 
-func (f *fakeStreamer) ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error {
-	f.readStreamFilename = filename
-	for _, chunk := range f.readStreamChunks {
-		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
-			panic(err)
-		}
-	}
-	return f.readStreamErr
+func (t *stubTransfer) SendFiles(_ filetransfer.SendFilesStream) error {
+	t.sendFilesCount++
+	return t.sendFilesErr
+}
+
+func (t *stubTransfer) GetFiles() []filetransfer.FileStat {
+	return t.files
+}
+
+func (t *stubTransfer) CanSend() bool {
+	return t.canSend
 }
 
 func setupServerWithConn(endpoint string, serv *debugdServer) (*grpc.Server, *grpc.ClientConn, error) {
@@ -432,30 +424,4 @@ func setupServerWithConn(endpoint string, serv *debugdServer) (*grpc.Server, *gr
 	}
 
 	return grpcServ, conn, nil
-}
-
-func fakeWrite(stream bootstrapper.WriteChunkStream, chunks [][]byte) error {
-	for _, chunk := range chunks {
-		err := stream.Send(&pb.Chunk{
-			Content: chunk,
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func fakeRead(stream bootstrapper.ReadChunkStream) ([][]byte, error) {
-	var chunks [][]byte
-	for {
-		chunk, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				return chunks, nil
-			}
-			return nil, err
-		}
-		chunks = append(chunks, chunk.Content)
-	}
 }

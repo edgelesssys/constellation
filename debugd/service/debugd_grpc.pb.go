@@ -24,8 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type DebugdClient interface {
 	SetInfo(ctx context.Context, in *SetInfoRequest, opts ...grpc.CallOption) (*SetInfoResponse, error)
 	GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*GetInfoResponse, error)
-	UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error)
-	DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error)
+	UploadFiles(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadFilesClient, error)
+	DownloadFiles(ctx context.Context, in *DownloadFilesRequest, opts ...grpc.CallOption) (Debugd_DownloadFilesClient, error)
 	UploadSystemServiceUnits(ctx context.Context, in *UploadSystemdServiceUnitsRequest, opts ...grpc.CallOption) (*UploadSystemdServiceUnitsResponse, error)
 }
 
@@ -55,46 +55,46 @@ func (c *debugdClient) GetInfo(ctx context.Context, in *GetInfoRequest, opts ...
 	return out, nil
 }
 
-func (c *debugdClient) UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[0], "/debugd.Debugd/UploadBootstrapper", opts...)
+func (c *debugdClient) UploadFiles(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[0], "/debugd.Debugd/UploadFiles", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &debugdUploadBootstrapperClient{stream}
+	x := &debugdUploadFilesClient{stream}
 	return x, nil
 }
 
-type Debugd_UploadBootstrapperClient interface {
-	Send(*Chunk) error
-	CloseAndRecv() (*UploadBootstrapperResponse, error)
+type Debugd_UploadFilesClient interface {
+	Send(*FileTransferMessage) error
+	CloseAndRecv() (*UploadFilesResponse, error)
 	grpc.ClientStream
 }
 
-type debugdUploadBootstrapperClient struct {
+type debugdUploadFilesClient struct {
 	grpc.ClientStream
 }
 
-func (x *debugdUploadBootstrapperClient) Send(m *Chunk) error {
+func (x *debugdUploadFilesClient) Send(m *FileTransferMessage) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *debugdUploadBootstrapperClient) CloseAndRecv() (*UploadBootstrapperResponse, error) {
+func (x *debugdUploadFilesClient) CloseAndRecv() (*UploadFilesResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(UploadBootstrapperResponse)
+	m := new(UploadFilesResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *debugdClient) DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[1], "/debugd.Debugd/DownloadBootstrapper", opts...)
+func (c *debugdClient) DownloadFiles(ctx context.Context, in *DownloadFilesRequest, opts ...grpc.CallOption) (Debugd_DownloadFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[1], "/debugd.Debugd/DownloadFiles", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &debugdDownloadBootstrapperClient{stream}
+	x := &debugdDownloadFilesClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -104,17 +104,17 @@ func (c *debugdClient) DownloadBootstrapper(ctx context.Context, in *DownloadBoo
 	return x, nil
 }
 
-type Debugd_DownloadBootstrapperClient interface {
-	Recv() (*Chunk, error)
+type Debugd_DownloadFilesClient interface {
+	Recv() (*FileTransferMessage, error)
 	grpc.ClientStream
 }
 
-type debugdDownloadBootstrapperClient struct {
+type debugdDownloadFilesClient struct {
 	grpc.ClientStream
 }
 
-func (x *debugdDownloadBootstrapperClient) Recv() (*Chunk, error) {
-	m := new(Chunk)
+func (x *debugdDownloadFilesClient) Recv() (*FileTransferMessage, error) {
+	m := new(FileTransferMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -136,8 +136,8 @@ func (c *debugdClient) UploadSystemServiceUnits(ctx context.Context, in *UploadS
 type DebugdServer interface {
 	SetInfo(context.Context, *SetInfoRequest) (*SetInfoResponse, error)
 	GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error)
-	UploadBootstrapper(Debugd_UploadBootstrapperServer) error
-	DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error
+	UploadFiles(Debugd_UploadFilesServer) error
+	DownloadFiles(*DownloadFilesRequest, Debugd_DownloadFilesServer) error
 	UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error)
 	mustEmbedUnimplementedDebugdServer()
 }
@@ -152,11 +152,11 @@ func (UnimplementedDebugdServer) SetInfo(context.Context, *SetInfoRequest) (*Set
 func (UnimplementedDebugdServer) GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInfo not implemented")
 }
-func (UnimplementedDebugdServer) UploadBootstrapper(Debugd_UploadBootstrapperServer) error {
-	return status.Errorf(codes.Unimplemented, "method UploadBootstrapper not implemented")
+func (UnimplementedDebugdServer) UploadFiles(Debugd_UploadFilesServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadFiles not implemented")
 }
-func (UnimplementedDebugdServer) DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error {
-	return status.Errorf(codes.Unimplemented, "method DownloadBootstrapper not implemented")
+func (UnimplementedDebugdServer) DownloadFiles(*DownloadFilesRequest, Debugd_DownloadFilesServer) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadFiles not implemented")
 }
 func (UnimplementedDebugdServer) UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadSystemServiceUnits not implemented")
@@ -210,50 +210,50 @@ func _Debugd_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Debugd_UploadBootstrapper_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DebugdServer).UploadBootstrapper(&debugdUploadBootstrapperServer{stream})
+func _Debugd_UploadFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DebugdServer).UploadFiles(&debugdUploadFilesServer{stream})
 }
 
-type Debugd_UploadBootstrapperServer interface {
-	SendAndClose(*UploadBootstrapperResponse) error
-	Recv() (*Chunk, error)
+type Debugd_UploadFilesServer interface {
+	SendAndClose(*UploadFilesResponse) error
+	Recv() (*FileTransferMessage, error)
 	grpc.ServerStream
 }
 
-type debugdUploadBootstrapperServer struct {
+type debugdUploadFilesServer struct {
 	grpc.ServerStream
 }
 
-func (x *debugdUploadBootstrapperServer) SendAndClose(m *UploadBootstrapperResponse) error {
+func (x *debugdUploadFilesServer) SendAndClose(m *UploadFilesResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *debugdUploadBootstrapperServer) Recv() (*Chunk, error) {
-	m := new(Chunk)
+func (x *debugdUploadFilesServer) Recv() (*FileTransferMessage, error) {
+	m := new(FileTransferMessage)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func _Debugd_DownloadBootstrapper_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(DownloadBootstrapperRequest)
+func _Debugd_DownloadFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadFilesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(DebugdServer).DownloadBootstrapper(m, &debugdDownloadBootstrapperServer{stream})
+	return srv.(DebugdServer).DownloadFiles(m, &debugdDownloadFilesServer{stream})
 }
 
-type Debugd_DownloadBootstrapperServer interface {
-	Send(*Chunk) error
+type Debugd_DownloadFilesServer interface {
+	Send(*FileTransferMessage) error
 	grpc.ServerStream
 }
 
-type debugdDownloadBootstrapperServer struct {
+type debugdDownloadFilesServer struct {
 	grpc.ServerStream
 }
 
-func (x *debugdDownloadBootstrapperServer) Send(m *Chunk) error {
+func (x *debugdDownloadFilesServer) Send(m *FileTransferMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -297,13 +297,13 @@ var Debugd_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UploadBootstrapper",
-			Handler:       _Debugd_UploadBootstrapper_Handler,
+			StreamName:    "UploadFiles",
+			Handler:       _Debugd_UploadFiles_Handler,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "DownloadBootstrapper",
-			Handler:       _Debugd_DownloadBootstrapper_Handler,
+			StreamName:    "DownloadFiles",
+			Handler:       _Debugd_DownloadFiles_Handler,
 			ServerStreams: true,
 		},
 	},
