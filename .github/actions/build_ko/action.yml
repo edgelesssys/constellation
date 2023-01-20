@@ -62,6 +62,7 @@ runs:
         KO_PASSWORD: ${{ inputs.githubToken }}
         KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}
       run: |
+        set -x
         tags=""
         sbom=""
 
@@ -91,6 +92,7 @@ runs:
           sbom="--sbom=none"
         fi
 
+        echo "Building container image with tags: ${tags}"
         container_full=$(ko build ${{ inputs.koTarget }} --bare --tags ${tags} ${sbom})
         container_image=$(echo $container_full | cut -d@ -f1)
         container_sha256=$(echo $container_full | cut -d: -f2)
