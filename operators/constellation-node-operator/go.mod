@@ -6,9 +6,9 @@ replace github.com/edgelesssys/constellation/v2 => ./../..
 
 require (
 	cloud.google.com/go/compute v1.15.1
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.1.0
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/medik8s/node-maintenance-operator v0.14.0
 	github.com/onsi/ginkgo v1.16.5
