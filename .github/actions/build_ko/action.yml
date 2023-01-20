@@ -21,7 +21,7 @@ inputs:
     required: true
   pushTag:
     description: "Use this image tag"
-    required: false
+    required: true
   githubToken:
     description: "GitHub authorization token"
     required: true
@@ -61,13 +61,10 @@ runs:
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
         KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}
-        PUSH_TAG: ${{ inputs.pushTag }}
       run: |
-        set -x
         tags=""
         sbom=""
 
-        echo "PUSH_TAG: $PUSH_TAG"
         if [[ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]]; then
           tags="latest"
         else:
@@ -95,7 +92,7 @@ runs:
         fi
 
         echo "Building container image with tags: ${tags}"
-        container_full=$(ko build ${{ inputs.koTarget }} --bare --tags ${tags} ${sbom})
+        container_full=$(ko build ${{ inputs.koTarget }} --bare --tags "${tags}" ${sbom})
         container_image=$(echo $container_full | cut -d@ -f1)
         container_sha256=$(echo $container_full | cut -d: -f2)
 
