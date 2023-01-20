@@ -27,10 +27,10 @@ inputs:
     default: "false"
   cosignPublicKey:
     description: "Cosign public key"
-    required: false
+    required: true
   cosignPrivateKey:
     description: "Cosign private key"
-    required: false
+    required: true
   cosignPassword:
     description: "Password for Cosign private key"
     required: false
