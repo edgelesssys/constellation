@@ -38,6 +38,7 @@ rules:
     verbs: ["get", "watch", "list", "delete", "update", "create", "patch"]
 
 ---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -58,6 +59,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -87,7 +89,9 @@ rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "watch", "list", "delete", "update", "create", "patch"]
+
 ---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -108,6 +112,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -137,7 +142,9 @@ rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["get", "watch", "list", "delete", "update", "create", "patch"]
+
 ---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -158,6 +165,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -187,7 +195,9 @@ rules:
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
+
 ---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -208,6 +218,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 ---
+
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -218,6 +229,7 @@ rules:
     verbs: ["get"]
 
 ---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
