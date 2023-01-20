@@ -11,9 +11,12 @@ jobs:
       packages: write
     strategy:
       matrix:
-        version: [v25.2.0, v24.0.0, v23.0.0]
+        version: [v26.0.1]
+        # TODO: Once issue is closed upgrade older versions, rebuild, and update versions.go
+        # https://github.com/kubernetes/cloud-provider-gcp/issues/451
+        # version: [v26.0.1, v25.5.0, v24.0.0]
         include:
-          - version: v25.2.0
+          - version: v26.0.1
             latest: true
     steps:
       - name: Checkout kubernetes/cloud-provider-gcp
@@ -45,7 +48,7 @@ jobs:
 
       - name: Build CCM
         run: |
-          "${GITHUB_WORKSPACE}/bin/bazel" build //cmd/cloud-controller-manager:cloud-controller-manager
+          bazelisk build //cmd/cloud-controller-manager:cloud-controller-manager
 
       - name: Copy CCM
         run: |
