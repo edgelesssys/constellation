@@ -152,7 +152,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
 	},
 	V1_24: {
-		ClusterVersion: "v1.24.9", // renovate:kubernetes-release
+		ClusterVersion: "v1.24.10", // renovate:kubernetes-release
 		KubernetesComponents: components.Components{
 			{
 				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
@@ -167,19 +167,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.9/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubelet", // renovate:kubernetes-release
 				Hash:        "sha256:8753b9ae0c3e22f09dafdb4178492582c28874f70844de38dc43eb3fad5ca8bb",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.9/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
 				Hash:        "sha256:20406971ae71886f7f8ee7b9a33c885391ae64da561fb679d5819f2ccc19ac9f",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
-				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.9/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:7e13f33b7379b6c25c3ae055e4389eb3eef168e563f37b5c5f1be672e46b686e",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
