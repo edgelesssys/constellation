@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
 spec:
   updateStrategy:
     rollingUpdate:
@@ -24,7 +24,7 @@ spec:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "azuredisk-csi-driver"
         app.kubernetes.io/version: "v1.1.0"
-        helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+        helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
         app: csi-azuredisk-node
     spec:
       serviceAccountName: csi-azuredisk-node-sa
