@@ -33,14 +33,8 @@ With `cdbg` and `yq` installed in your path:
 
    ```shell-session
    yq -i \
-       "(.provider | select(. | has(\"azure\")).azure.image) = \"${IMAGE_URI}\"" \
-        constellation-conf.yaml
-   yq -i \
-       "(.provider | select(. | has(\"gcp\")).gcp.image) = \"${IMAGE_URI}\"" \
-       constellation-conf.yaml
-
-   yq -i \
-       "(.debugCluster) = true" \
+       ".image = \"${IMAGE_URI}\" | \
+       .debugCluster = true" \
        constellation-conf.yaml
    ```
 
