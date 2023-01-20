@@ -14,7 +14,7 @@ import (
 )
 
 func startSystemdUnit(ctx context.Context, unit string) error {
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
+	conn, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
@@ -38,7 +38,7 @@ func startSystemdUnit(ctx context.Context, unit string) error {
 }
 
 func enableSystemdUnit(ctx context.Context, unitPath string) error {
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
+	conn, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
