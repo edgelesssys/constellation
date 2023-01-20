@@ -61,11 +61,13 @@ runs:
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
         KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}
+        PUSH_TAG: ${{ inputs.pushTag }}
       run: |
         set -x
         tags=""
         sbom=""
 
+        echo "PUSH_TAG: $PUSH_TAG"
         if [[ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]]; then
           tags="latest"
         else:
