@@ -168,19 +168,19 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			},
 			{
 				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubelet", // renovate:kubernetes-release
-				Hash:        "sha256:8753b9ae0c3e22f09dafdb4178492582c28874f70844de38dc43eb3fad5ca8bb",
+				Hash:        "sha256:34b1731df37d1762662bd91f1cba57a9d2ee86296813c48c4e52a9d7955a1b9e",
 				InstallPath: constants.KubeletPath,
 				Extract:     false,
 			},
 			{
 				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
-				Hash:        "sha256:20406971ae71886f7f8ee7b9a33c885391ae64da561fb679d5819f2ccc19ac9f",
+				Hash:        "sha256:5e29917dc277a8bc4b90bf9dbed8d3dca903fd7cbf7f12c2e256fe22e9f2a1f9",
 				InstallPath: constants.KubeadmPath,
 				Extract:     false,
 			},
 			{
 				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.24.10/bin/linux/amd64/kubectl", // renovate:kubernetes-release
-				Hash:        "sha256:7e13f33b7379b6c25c3ae055e4389eb3eef168e563f37b5c5f1be672e46b686e",
+				Hash:        "sha256:d8e9cd9bb073ff09e2f2a74cf48e94a9b9d4f2fa2e2dd91b68b01f64e7061a3b",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
