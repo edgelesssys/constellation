@@ -125,8 +125,8 @@ jobs:
 
   micro-services:
     name: Build micro services
+    runs-on: ubuntu-22.04
     needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
     strategy:
       matrix:
         koTarget:
@@ -144,12 +144,15 @@ jobs:
             name: node-operator
     steps:
       - name: Build ${{ matrix.name }} micro service
-        uses: ./.github/actions/build_micro_service_ko/action.yml
+        uses: ./.github/actions/build_micro_service_ko/
         with:
           koTarget: ${{ matrix.koTarget }}
-          version: ${{ inputs.version }}
-          release: true
+          name: ${{ matrix.name }}
           pushTag: ${{ inputs.version }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
 
   constellation-qemu-metadata:
     name: Build Constellation meta-data
