@@ -9,6 +9,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,12 +51,101 @@ func TestDestroyIAMUser(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			cmd.Flags().Set("yes", tc.yes)
 
-			err := destroyIAMUser(cmd, &nopSpinner{}, tc.iamDestroyer)
+			fsh := file.NewHandler(afero.NewMemMapFs())
+
+			err := destroyIAMUser(cmd, &nopSpinner{}, tc.iamDestroyer, fsh)
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
+			}
+		})
+	}
+}
+
+func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
+	someError := errors.New("failed")
+
+	fsExist := file.NewHandler(afero.NewMemMapFs())
+	fsNoExist := file.NewHandler(afero.NewMemMapFs())
+	fsExist.Write(constants.GCPServiceAccountKeyFile, []byte("{}"))
+
+	testCases := map[string]struct {
+		destroyer   iamDestroyer
+		fsHandler   file.Handler
+		yes         string
+		stdin       string
+		wantErr     bool
+		wantProceed bool
+	}{
+		"file doesn't exist": {
+			destroyer:   &stubIAMDestroyer{},
+			fsHandler:   fsNoExist,
+			wantProceed: true,
+			wantErr:     true,
+		},
+		"confirm delete flag": {
+			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
+			fsHandler:   fsExist,
+			wantProceed: true,
+			yes:         "true",
+		},
+		"confirm delete stdin": {
+			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
+			fsHandler:   fsExist,
+			wantProceed: true,
+			stdin:       "y\n",
+		},
+		"deny delete stdin": {
+			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
+			fsHandler:   fsExist,
+			wantProceed: true,
+			stdin:       "n\n",
+		},
+		"unsuccessful destroy confirm": {
+			destroyer:   &stubIAMDestroyer{},
+			fsHandler:   fsExist,
+			yes:         "true",
+			stdin:       "y\n",
+			wantProceed: true,
+		},
+		"unsuccessful destroy deny": {
+			destroyer:   &stubIAMDestroyer{},
+			fsHandler:   fsExist,
+			yes:         "true",
+			stdin:       "n\n",
+			wantProceed: false,
+		},
+		"error deleting file": {
+			destroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
+			fsHandler: fsExist,
+			yes:       "true",
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cmd := newIAMDestroyCmd()
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetIn(bytes.NewBufferString(tc.stdin))
+			cmd.Flags().Set("yes", tc.yes)
+
+			proceed, err := deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+
+			if tc.wantProceed {
+				assert.True(proceed)
+			} else {
+				assert.False(proceed)
 			}
 		})
 	}

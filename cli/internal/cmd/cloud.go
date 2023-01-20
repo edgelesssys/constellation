@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
 type cloudCreator interface {
@@ -36,7 +37,7 @@ type cloudIAMCreator interface {
 
 type iamDestroyer interface {
 	DestroyIAMUser(ctx context.Context) error
-	DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool, error)
+	DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHandler file.Handler) (bool, error)
 }
 
 type cloudTerminator interface {

@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/spf13/afero"
 )
 
 type IAMDestroyer struct {
@@ -37,7 +36,7 @@ func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 }
 
 // DeleteGCPServiceAccountKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up
-func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool, error) {
+func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHandler file.Handler) (bool, error) {
 	cl, err := d.newTerraformClient(ctx)
 	if err != nil {
 		return false, err
@@ -58,12 +57,11 @@ func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool
 
 	var tfSaKey gcpshared.ServiceAccountKey
 	var fileSaKey gcpshared.ServiceAccountKey
-	fsHandler := file.NewHandler(afero.NewOsFs())
 
 	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
 		return false, err
 	}
-	if err := fsHandler.ReadJSON("gcpServiceAccountKey.json", &fileSaKey); err != nil {
+	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFile, &fileSaKey); err != nil {
 		return false, err
 	}
 
@@ -71,7 +69,7 @@ func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool
 		return false, nil
 	}
 
-	if err := fsHandler.Remove("gcpServiceAccountKey.json"); err != nil {
+	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
 		return false, err
 	}
 	return true, nil
