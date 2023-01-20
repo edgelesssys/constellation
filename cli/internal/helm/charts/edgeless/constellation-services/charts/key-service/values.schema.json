@@ -4,7 +4,7 @@
         "image": {
             "description": "Container image to use for the spawned pods.",
             "type": "string",
-            "examples": ["ghcr.io/edgelesssys/constellation/keyservice:latest"]
+            "examples": ["ghcr.io/edgelesssys/constellation/key-service:latest"]
         },
         "masterSecret": {
             "description": "Secret used to derive key material within the cluster",

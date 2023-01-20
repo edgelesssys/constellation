@@ -41,7 +41,7 @@ spec:
             - "--v=5"
             - "--endpoint=unix:/csi/csi.sock"
             - "--run-controller-service=false"
-            - "--kms-addr=keyservice.testNamespace:9000"
+            - "--kms-addr=key-service.testNamespace:9000"
           securityContext:
             privileged: true
           volumeMounts:
@@ -109,4 +109,4 @@ spec:
       # See "special case". This will tolerate everything. Node component should
       # be scheduled on all nodes.
       tolerations:
-      - operator: Exists
+        - operator: Exists

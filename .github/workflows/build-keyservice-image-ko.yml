@@ -34,7 +34,7 @@ jobs:
         id: build-and-upload
         uses: ./.github/actions/build_micro_service_ko
         with:
-          name: keyservice
+          name: key-service
           koConfig: .ko.yaml
           koTarget: ./keyservice/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}

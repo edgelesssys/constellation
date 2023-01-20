@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
 spec:
   updateStrategy:
     rollingUpdate:
@@ -24,7 +24,7 @@ spec:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "azuredisk-csi-driver"
         app.kubernetes.io/version: "v1.1.0"
-        helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+        helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
         app: csi-azuredisk-node
     spec:
       serviceAccountName: csi-azuredisk-node-sa
@@ -35,11 +35,11 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: type
-                operator: NotIn
-                values:
-                - virtual-kubelet
+              - matchExpressions:
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
       priorityClassName: system-node-critical
       tolerations:
         - operator: Exists
@@ -107,7 +107,7 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--support-zone=true"
             - "--get-node-info-from-labels=false"
-            - "--kms-addr=keyservice.testNamespace:9000"
+            - "--kms-addr=key-service.testNamespace:9000"
           ports:
             - containerPort: 29603
               name: healthz

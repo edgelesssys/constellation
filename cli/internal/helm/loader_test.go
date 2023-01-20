@@ -90,7 +90,7 @@ func TestConstellationServices(t *testing.T) {
 
 			chartLoader := ChartLoader{
 				joinServiceImage:         "joinServiceImage",
-				keyserviceImage:          "keyserviceImage",
+				keyServiceImage:          "keyServiceImage",
 				ccmImage:                 tc.ccmImage,
 				cnmImage:                 tc.cnmImage,
 				autoscalerImage:          "autoscalerImage",
@@ -159,7 +159,7 @@ func TestOperators(t *testing.T) {
 
 			chartLoader := ChartLoader{
 				joinServiceImage:             "joinServiceImage",
-				keyserviceImage:              "keyserviceImage",
+				keyServiceImage:              "keyServiceImage",
 				ccmImage:                     "ccmImage",
 				cnmImage:                     "cnmImage",
 				autoscalerImage:              "autoscalerImage",
@@ -338,7 +338,7 @@ func prepareGCPValues(values map[string]any) error {
 
 	verificationVals, ok := values["verification-service"].(map[string]any)
 	if !ok {
-		return errors.New("missing 'verification-service' key")
+		return fmt.Errorf("missing 'verification-service' key %v", values)
 	}
 	verificationVals["loadBalancerIP"] = "127.0.0.1"
 

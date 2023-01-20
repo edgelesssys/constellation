@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: keyservice
+  name: key-service
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: keyservice
+  name: key-service
 subjects:
-- kind: ServiceAccount
-  name: keyservice
-  namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: key-service
+    namespace: {{ .Release.Namespace }}

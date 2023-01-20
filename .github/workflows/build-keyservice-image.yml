@@ -33,7 +33,7 @@ jobs:
         id: build-and-upload
         uses: ./.github/actions/build_micro_service
         with:
-          name: keyservice
+          name: key-service
           projectVersion: "0.0.0"
           dockerfile: keyservice/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}

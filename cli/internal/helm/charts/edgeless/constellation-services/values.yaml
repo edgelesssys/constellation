@@ -1,6 +1,6 @@
 global:
   # Port on which the KeyService will listen. Global since join-service also uses the value.
-  keyservicePort: 9000
+  keyServicePort: 9000
   # Path to which secrets/CMs are mounted.
   serviceBasePath: /var/config
   # Name of the ConfigMap that holds measurements and other info.

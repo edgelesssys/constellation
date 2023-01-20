@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	port := flag.String("port", strconv.Itoa(constants.KeyservicePort), "Port gRPC server listens on")
+	port := flag.String("port", strconv.Itoa(constants.KeyServicePort), "Port gRPC server listens on")
 	masterSecretPath := flag.String("master-secret", filepath.Join(constants.ServiceBasePath, constants.ConstellationMasterSecretKey), "Path to the Constellation master secret")
 	saltPath := flag.String("salt", filepath.Join(constants.ServiceBasePath, constants.ConstellationSaltKey), "Path to the Constellation salt")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
@@ -62,7 +62,7 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
 	}
 
-	if err := server.New(log.Named("keyservice"), conKMS).Run(*port); err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to run keyservice server")
+	if err := server.New(log.Named("keyService"), conKMS).Run(*port); err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to run key-service server")
 	}
 }

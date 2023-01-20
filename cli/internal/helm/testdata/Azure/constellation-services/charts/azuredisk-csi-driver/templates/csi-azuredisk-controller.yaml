@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
 spec:
   replicas: 1
   selector:
@@ -21,7 +21,7 @@ spec:
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "azuredisk-csi-driver"
         app.kubernetes.io/version: "v1.1.0"
-        helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
+        helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
         app: csi-azuredisk-controller
     spec:
       serviceAccountName: csi-azuredisk-controller-sa
@@ -88,8 +88,8 @@ spec:
             - name: ADDRESS
               value: /csi/csi.sock
           volumeMounts:
-          - mountPath: /csi
-            name: socket-dir
+            - mountPath: /csi
+              name: socket-dir
           resources:
             limits:
               memory: 500Mi
@@ -122,8 +122,8 @@ spec:
             - "-v=2"
             - "-leader-election"
             - "--leader-election-namespace=testNamespace"
-            - '-handle-volume-inuse-error=false'
-            - '-feature-gates=RecoverVolumeExpansionFailure=true'
+            - "-handle-volume-inuse-error=false"
+            - "-feature-gates=RecoverVolumeExpansionFailure=true"
             - "-timeout=240s"
           env:
             - name: ADDRESS
