@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type terraformClient interface {
@@ -22,6 +23,7 @@ type terraformClient interface {
 	Destroy(ctx context.Context) error
 	CleanUpWorkspace() error
 	RemoveInstaller()
+	Show(ctx context.Context) (*tfjson.State, error)
 }
 
 type libvirtRunner interface {

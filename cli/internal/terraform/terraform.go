@@ -68,6 +68,11 @@ func New(ctx context.Context, workingDir string) (*Client, error) {
 	}, nil
 }
 
+// Show reads the default state path and outputs the state.
+func (c *Client) Show(ctx context.Context) (*tfjson.State, error) {
+	return c.tf.Show(ctx)
+}
+
 // PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
 func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {

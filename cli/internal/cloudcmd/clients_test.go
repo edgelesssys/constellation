@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	tfjson "github.com/hashicorp/terraform-json"
 
 	"go.uber.org/goleak"
 )
@@ -30,6 +31,7 @@ type stubTerraformClient struct {
 	initSecret             string
 	iamOutput              terraform.IAMOutput
 	uid                    string
+	tfjsonState            *tfjson.State
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyCalled          bool
@@ -38,6 +40,7 @@ type stubTerraformClient struct {
 	prepareWorkspaceErr    error
 	cleanUpWorkspaceErr    error
 	iamOutputErr           error
+	showErr                error
 }
 
 func (c *stubTerraformClient) CreateCluster(ctx context.Context) (terraform.CreateOutput, error) {
@@ -68,6 +71,10 @@ func (c *stubTerraformClient) CleanUpWorkspace() error {
 
 func (c *stubTerraformClient) RemoveInstaller() {
 	c.removeInstallerCalled = true
+}
+
+func (c *stubTerraformClient) Show(ctx context.Context) (*tfjson.State, error) {
+	return c.tfjsonState, c.showErr
 }
 
 type stubLibvirtRunner struct {
