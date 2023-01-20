@@ -126,25 +126,33 @@ jobs:
   micro-services:
     name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
-    uses: ./.github/workflows/build-micro-service-manual.yml
+    uses: ./.github/actions/build-micro-service-ko.yml
     secrets: inherit
     strategy:
       matrix:
-        service:
-          [join-service, key-service, verification-service, qemu-metadata-api]
+        koTarget:
+          [./join-service/cmd, ./kms/cmd, ./verify/cmd, ./operators/constellation-node-operator]
+        include:
+          - koTarget: ./join-service/cmd
+            name: joinservice
+          - koTarget: ./kms/cmd
+            name: kmsserver
+          - koTarget: verification-service
+            name: verification-service
+          - koTarget: qemu-metadata-api
+            name: qemu-metadata
+          - koTarget: ./operators/constellation-node-operator
+            name: node-operator
     with:
-      microService: ${{ matrix.service }}
-      imageTag: ${{ inputs.version }}
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
+      pushTag: ${{ inputs.version }}
 
-  constellation-node-operator:
-    name: Build Constellation node-operator
+  constellation-qemu-metadata::
+    name: Build Constellation meta-data
     needs: [verify-inputs, prepare-release-branch]
     secrets: inherit
-    uses: ./.github/workflows/build-operator-manual.yml
+    uses: ./.github/workflows/build-micro-service-manual.yml
     with:
+      microService: qemu-metadata
       imageTag: ${{ inputs.version }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       release: true
