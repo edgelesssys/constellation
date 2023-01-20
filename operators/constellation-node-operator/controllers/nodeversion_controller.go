@@ -86,7 +86,7 @@ func NewNodeVersionReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover
 //+kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=list;get
 
-// Reconcile replaces outdated nodes (using an old image) with new nodes (using a new image) as specified in the NodeVersion spec.
+// Reconcile replaces outdated nodes with new nodes as specified in the NodeVersion spec.
 func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logr := log.FromContext(ctx)
 	logr.Info("Reconciling NodeVersion")
