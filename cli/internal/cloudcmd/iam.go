@@ -7,6 +7,8 @@ package cloudcmd
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
@@ -15,7 +17,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/spf13/afero"
 )
 
 type IAMDestroyer struct {
@@ -29,6 +34,47 @@ func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 			return terraform.New(ctx, constants.TerraformIAMWorkingDir)
 		},
 	}
+}
+
+// DeleteGCPServiceAccountKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up
+func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool, error) {
+	cl, err := d.newTerraformClient(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	tfState, err := cl.Show(ctx)
+	if err != nil {
+		return false, err
+	}
+	saKeyJSON, containsKey := tfState.Values.Outputs["sa_key"]
+	if !containsKey {
+		return false, nil
+	}
+	saKey, err := base64.StdEncoding.DecodeString(fmt.Sprintf("%v", saKeyJSON.Value))
+	if err != nil {
+		return false, err
+	}
+
+	var tfSaKey gcpshared.ServiceAccountKey
+	var fileSaKey gcpshared.ServiceAccountKey
+	fsHandler := file.NewHandler(afero.NewOsFs())
+
+	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
+		return false, err
+	}
+	if err := fsHandler.ReadJSON("gcpServiceAccountKey.json", &fileSaKey); err != nil {
+		return false, err
+	}
+
+	if tfSaKey != fileSaKey {
+		return false, nil
+	}
+
+	if err := fsHandler.Remove("gcpServiceAccountKey.json"); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files.

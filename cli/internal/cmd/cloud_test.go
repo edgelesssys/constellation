@@ -74,11 +74,19 @@ func (c *stubIAMCreator) Create(
 }
 
 type stubIAMDestroyer struct {
-	destroyCalled bool
-	destroyErr    error
+	destroyCalled       bool
+	deleteGCPFileCalled bool
+	deletedGCPFile      bool
+	destroyErr          error
+	deleteGCPFileErr    error
 }
 
 func (d *stubIAMDestroyer) DestroyIAMUser(ctx context.Context) error {
 	d.destroyCalled = true
 	return d.destroyErr
+}
+
+func (d *stubIAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool, error) {
+	d.deleteGCPFileCalled = true
+	return d.deletedGCPFile, d.deleteGCPFileErr
 }

@@ -35,9 +35,8 @@ type cloudIAMCreator interface {
 }
 
 type iamDestroyer interface {
-	DestroyIAMUser(
-		ctx context.Context,
-	) error
+	DestroyIAMUser(ctx context.Context) error
+	DeleteGCPServiceAccountKeyFile(ctx context.Context) (bool, error)
 }
 
 type cloudTerminator interface {
