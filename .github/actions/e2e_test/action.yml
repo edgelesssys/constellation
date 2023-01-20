@@ -117,6 +117,21 @@ runs:
       if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
       uses: ./.github/actions/build_bootstrapper
 
+    # macOS runners don't have Docker preinstalled, so they cannot build the upgrade-agent.
+    # But we can use a Linux runner to build it and store/retrieve it from the action cache.
+    - name: Download the upgrade-agent from cache
+      id: download-upgrade-agent-cache
+      if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
+      uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+      with:
+        key: upgrade-agent-${{ github.sha }}
+        path: "build/upgrade-agent"
+
+    - name: Build the upgrade-agent
+      id: build-upgrade-agent
+      if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
+      uses: ./.github/actions/build_upgrade_agent
+
     - name: Build cdbg
       id: build-cdbg
       if: inputs.isDebugImage == 'true'

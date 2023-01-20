@@ -165,6 +165,7 @@ runs:
         chmod +x $GITHUB_WORKSPACE/build/cdbg
         cdbg deploy \
           --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
+          --upgrade-agent "${{ github.workspace }}/build/upgrade-agent" \
           --info logcollect=true \
           --info logcollect.github.actor="${{ github.triggering_actor }}" \
           --info logcollect.github.workflow="${{ github.workflow }}" \
