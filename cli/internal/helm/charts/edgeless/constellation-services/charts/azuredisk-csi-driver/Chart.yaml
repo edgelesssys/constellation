@@ -2,4 +2,4 @@ apiVersion: v2
 appVersion: "v1.1.0"
 description: Azure disk Container Storage Interface (CSI) Storage Plugin with on-node encryption support
 name: azuredisk-csi-driver
-version: v1.1.0
+version: v1.1.2
