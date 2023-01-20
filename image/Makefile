@@ -4,11 +4,14 @@ BASE_PATH                        ?= $(SRC_PATH)
 BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
+DEBUGD_BINARY                    ?= $(BASE_PATH)/../build/debugd
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 IMAGE_VERSION                    ?= v0.0.0
+DEBUG                            ?= false
 AUTOLOGIN                        ?= false
 AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
+export INSTALL_DEBUGD			 ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
 csps := aws qemu gcp azure
@@ -36,7 +39,12 @@ prebuilt/rpms/azure/%.rpm:
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.7/200.fc37/x86_64/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
-	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) $(AUTOLOGIN_ARGS) --environment=CONSOLE_MOTD build
+	mkosi --config mkosi.files/mkosi.$*.conf \
+		--image-version=$(IMAGE_VERSION) \
+		$(AUTOLOGIN_ARGS) \
+		--environment=INSTALL_DEBUGD \
+		--environment=CONSOLE_MOTD \
+		build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \
 		chown -R $(SUDO_UID):$(SUDO_GID) mkosi.output.$*; \
@@ -46,9 +54,15 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 inject-bins: $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
-	cp $(BOOTSTRAPPER_BINARY) $(MKOSI_EXTRA)/usr/bin/bootstrapper
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
 	cp $(DISK_MAPPER_BINARY) $(MKOSI_EXTRA)/usr/sbin/disk-mapper
+	if [ "$(DEBUG)" = "true" ]; then \
+		cp $(DEBUGD_BINARY) $(MKOSI_EXTRA)/usr/bin/debugd; \
+		rm -f $(MKOSI_EXTRA)/usr/bin/bootstrapper; \
+	else \
+		cp $(BOOTSTRAPPER_BINARY) $(MKOSI_EXTRA)/usr/bin/bootstrapper; \
+		rm -f $(MKOSI_EXTRA)/usr/bin/debugd; \
+	fi
 
 inject-certs: $(certs)
 	# for auto enrollment using systemd-boot (not working yet)
