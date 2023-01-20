@@ -157,17 +157,18 @@ jobs:
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
-  constellation-qemu-metadata:
-    name: Build Constellation meta-data
+  micro-services-metadata:
+    name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
     uses: ./.github/workflows/build-micro-service-manual.yml
+    secrets: inherit
     with:
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      microService: qemu-metadata
+      microService: qemu-metadata-api
       imageTag: ${{ inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       release: true
+
 
   update-versions:
     name: Update container image versions
