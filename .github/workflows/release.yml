@@ -126,7 +126,6 @@ jobs:
   micro-services:
     name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
-    uses: ./.github/actions/build_micro_service_ko/action.yml
     secrets: inherit
     strategy:
       matrix:
@@ -143,10 +142,16 @@ jobs:
             name: qemu-metadata
           - koTarget: ./operators/constellation-node-operator
             name: node-operator
-    with:
-      pushTag: ${{ inputs.version }}
+    steps:
+      - name: Build ${{ matrix.name }} micro service
+        uses: ./.github/actions/build_micro_service_ko/action.yml
+        with:
+          koTarget: ${{ matrix.koTarget }}
+          version: ${{ inputs.version }}
+          release: true
+          pushTag: ${{ inputs.version }}
 
-  constellation-qemu-metadata::
+  constellation-qemu-metadata:
     name: Build Constellation meta-data
     needs: [verify-inputs, prepare-release-branch]
     secrets: inherit
