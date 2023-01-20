@@ -4,8 +4,9 @@
 
 azure-functions==1.12.0 \
     --hash=sha256:443b049652ede41e57a698230cc3848d20e5b53dff52bc4a636ee0820813f1b5
-azure-mgmt-resource==21.2.1 \
-    --hash=sha256:c6f6987e6f61f0cb23abc3fb3658770bae8d299a46834d43d4b20251495d3806
+azure-mgmt-resource==22.0.0 \
+    --hash=sha256:5c9712aacb230c7dde59cd7b43a734ed88a326140042ae02746d095fe779ae20 \
+    --hash=sha256:feb5d979e18b52f2cfd023b4a0a33e54a6f76cc6a252dc8cd75ece2c63298e94
 azure-identity==1.12.0 \
     --hash=sha256:2a58ce4a209a013e37eaccfd5937570ab99e9118b3e1acf875eed3a85d541b92
 azure-mgmt-subscription==3.1.1 \
