@@ -50,9 +50,10 @@ runs:
       uses: ./.github/actions/build_ko
       with:
         name: ${{ inputs.name }}
-        koConfig: ${{ inputs.koConfig }}
         pseudoVersion: ${{ inputs.pseudoVersion }}
+        koConfig: ${{ inputs.koConfig }}
         koTarget: ${{ inputs.koTarget }}
+        pushTag: ${{ inputs.pushTag }}
         githubToken: ${{ inputs.GITHUB_TOKEN }}
 
     - name: Download ko Container Data
