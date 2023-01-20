@@ -7,8 +7,8 @@ package debugd;
 service Debugd {
     rpc SetInfo (SetInfoRequest) returns (SetInfoResponse) {}
     rpc GetInfo (GetInfoRequest) returns (GetInfoResponse) {}
-    rpc UploadBootstrapper(stream Chunk) returns (UploadBootstrapperResponse) {}
-    rpc DownloadBootstrapper(DownloadBootstrapperRequest) returns (stream Chunk) {}
+    rpc UploadFiles(stream FileTransferMessage) returns (UploadFilesResponse) {}
+    rpc DownloadFiles(DownloadFilesRequest) returns (stream FileTransferMessage) {}
     rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
 }
 
@@ -16,7 +16,14 @@ message SetInfoRequest {
     repeated Info info = 1;
 }
 
-message SetInfoResponse {}
+message SetInfoResponse {
+    SetInfoStatus status = 1;
+}
+
+enum SetInfoStatus {
+    SET_INFO_SUCCESS = 0;
+    SET_INFO_ALREADY_SET = 1;
+}
 
 message GetInfoRequest {}
 
@@ -29,22 +36,36 @@ message Info {
     string value = 2;
 }
 
+message DownloadFilesRequest {}
 
-message DownloadBootstrapperRequest {}
+message FileTransferMessage {
+    oneof kind {
+        FileTransferHeader header = 1; // start of transfer
+        Chunk chunk = 2; // file content as chunks
+    }
+}
+
+message FileTransferHeader {
+    string targetPath = 1;
+    uint32 mode = 3;
+    optional string overrideServiceUnit = 4;
+}
 
 message Chunk {
     bytes content = 1;
+    bool last = 2;
 }
 
-message UploadBootstrapperResponse {
-    UploadBootstrapperStatus status = 1;
+message UploadFilesResponse {
+    UploadFilesStatus status = 1;
 }
 
-enum UploadBootstrapperStatus {
-    UPLOAD_BOOTSTRAPPER_SUCCESS = 0;
-    UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED = 1;
-    UPLOAD_BOOTSTRAPPER_START_FAILED = 2;
-    UPLOAD_BOOTSTRAPPER_FILE_EXISTS = 3;
+enum UploadFilesStatus {
+    UPLOAD_FILES_SUCCESS = 0;
+    UPLOAD_FILES_UPLOAD_FAILED = 1;
+    UPLOAD_FILES_ALREADY_STARTED = 2;
+    UPLOAD_FILES_ALREADY_FINISHED = 3;
+    UPLOAD_FILES_START_FAILED = 4;
 }
 
 message ServiceUnit {

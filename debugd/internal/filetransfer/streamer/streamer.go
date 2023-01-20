@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package bootstrapper
+package streamer
 
 import (
 	"errors"
@@ -34,8 +34,8 @@ type WriteChunkStream interface {
 	Send(chunk *pb.Chunk) error
 }
 
-// NewFileStreamer creates a new FileStreamer.
-func NewFileStreamer(fs afero.Fs) *FileStreamer {
+// New creates a new FileStreamer.
+func New(fs afero.Fs) *FileStreamer {
 	return &FileStreamer{
 		fs:  fs,
 		mux: sync.RWMutex{},
@@ -44,52 +44,25 @@ func NewFileStreamer(fs afero.Fs) *FileStreamer {
 
 // WriteStream opens a file to write to and streams chunks from a gRPC stream into the file.
 func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, showProgress bool) error {
-	// try to read from stream once before acquiring write lock
-	chunk, err := stream.Recv()
-	if err != nil {
-		return fmt.Errorf("reading stream: %w", err)
-	}
-
 	f.mux.Lock()
 	defer f.mux.Unlock()
-	file, err := f.fs.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
+	file, err := f.fs.OpenFile(filename, os.O_WRONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("open %v for writing: %w", filename, err)
 	}
 	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("performing stat on %v to get the file size: %w", filename, err)
+	}
 
 	var bar *progressbar.ProgressBar
 	if showProgress {
-		bar = progressbar.NewOptions64(
-			-1,
-			progressbar.OptionSetDescription("receiving bootstrapper"),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionClearOnFinish(),
-		)
+		bar = newProgressBar(stat.Size())
 		defer bar.Close()
 	}
 
-	for {
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			_ = file.Close()
-			_ = f.fs.Remove(filename)
-			return fmt.Errorf("reading stream: %w", err)
-		}
-		if _, err := file.Write(chunk.Content); err != nil {
-			_ = file.Close()
-			_ = f.fs.Remove(filename)
-			return fmt.Errorf("writing chunk to disk: %w", err)
-		}
-		if showProgress {
-			_ = bar.Add(len(chunk.Content))
-		}
-		chunk, err = stream.Recv()
-	}
-
-	return nil
+	return writeInner(file, stream, bar)
 }
 
 // ReadStream opens a file to read from and streams its contents chunkwise over gRPC.
@@ -101,44 +74,73 @@ func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chun
 	if f.mux.TryRLock() {
 		defer f.mux.RUnlock()
 	} else {
-		return errors.New("file is opened for writing cannot be read at this time")
+		return errors.New("a file is opened for writing so cannot read at this time")
 	}
 	file, err := f.fs.OpenFile(filename, os.O_RDONLY, 0o755)
 	if err != nil {
 		return fmt.Errorf("open %v for reading: %w", filename, err)
 	}
 	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("performing stat on %v to get the file size: %w", filename, err)
+	}
 
 	var bar *progressbar.ProgressBar
 	if showProgress {
-		stat, err := file.Stat()
-		if err != nil {
-			return fmt.Errorf("performing stat on %v to get the file size: %w", filename, err)
-		}
-		bar = progressbar.NewOptions64(
-			stat.Size(),
-			progressbar.OptionSetDescription("uploading bootstrapper"),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionClearOnFinish(),
-		)
+		bar = newProgressBar(stat.Size())
 		defer bar.Close()
 	}
 
+	return readInner(file, stream, chunksize, bar)
+}
+
+// readInner reads from a an io.Reader and sends chunks over a gRPC stream.
+func readInner(fp io.Reader, stream WriteChunkStream, chunksize uint, bar *progressbar.ProgressBar) error {
 	buf := make([]byte, chunksize)
 	for {
-		n, err := file.Read(buf)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil
-			}
-			return fmt.Errorf("reading file chunk: %w", err)
+		n, readErr := fp.Read(buf)
+		isLast := errors.Is(readErr, io.EOF)
+		if readErr != nil && !isLast {
+			return fmt.Errorf("reading file chunk: %w", readErr)
 		}
-
-		if err = stream.Send(&pb.Chunk{Content: buf[:n]}); err != nil {
+		if err := stream.Send(&pb.Chunk{Content: buf[:n], Last: isLast}); err != nil {
 			return fmt.Errorf("sending chunk: %w", err)
 		}
-		if showProgress {
+		if bar != nil {
 			_ = bar.Add(n)
 		}
+		if isLast {
+			return nil
+		}
 	}
+}
+
+// writeInner writes chunks from a gRPC stream to an io.Writer.
+func writeInner(fp io.Writer, stream ReadChunkStream, bar *progressbar.ProgressBar) error {
+	for {
+		chunk, recvErr := stream.Recv()
+		if recvErr != nil {
+			return fmt.Errorf("reading stream: %w", recvErr)
+		}
+		if _, err := fp.Write(chunk.Content); err != nil {
+			return fmt.Errorf("writing chunk to disk: %w", err)
+		}
+		if bar != nil {
+			_ = bar.Add(len(chunk.Content))
+		}
+		if chunk.Last {
+			return nil
+		}
+	}
+}
+
+// newProgressBar creates a new progress bar.
+func newProgressBar(size int64) *progressbar.ProgressBar {
+	return progressbar.NewOptions64(
+		size,
+		progressbar.OptionSetDescription("transferring file"),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionClearOnFinish(),
+	)
 }

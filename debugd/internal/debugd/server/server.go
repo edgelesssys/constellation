@@ -9,20 +9,18 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io/fs"
 	"net"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -31,18 +29,18 @@ import (
 type debugdServer struct {
 	log            *logger.Logger
 	serviceManager serviceManager
-	streamer       streamer
+	transfer       fileTransferer
 	info           *info.Map
 
 	pb.UnimplementedDebugdServer
 }
 
 // New creates a new debugdServer according to the gRPC spec.
-func New(log *logger.Logger, serviceManager serviceManager, streamer streamer, infos *info.Map) pb.DebugdServer {
+func New(log *logger.Logger, serviceManager serviceManager, transfer fileTransferer, infos *info.Map) pb.DebugdServer {
 	return &debugdServer{
 		log:            log,
 		serviceManager: serviceManager,
-		streamer:       streamer,
+		transfer:       transfer,
 		info:           infos,
 	}
 }
@@ -55,13 +53,23 @@ func (s *debugdServer) SetInfo(ctx context.Context, req *pb.SetInfoRequest) (*pb
 		s.log.Infof("Info is empty")
 	}
 
-	if err := s.info.SetProto(req.Info); err != nil {
-		s.log.With(zap.Error(err)).Errorf("Setting info failed")
-		return &pb.SetInfoResponse{}, err
+	setProtoErr := s.info.SetProto(req.Info)
+	if errors.Is(setProtoErr, info.ErrInfoAlreadySet) {
+		s.log.Warnf("Setting info failed (already set)")
+		return &pb.SetInfoResponse{
+			Status: pb.SetInfoStatus_SET_INFO_ALREADY_SET,
+		}, nil
+	}
+
+	if setProtoErr != nil {
+		s.log.With(zap.Error(setProtoErr)).Errorf("Setting info failed")
+		return nil, setProtoErr
 	}
 	s.log.Infof("Info set")
 
-	return &pb.SetInfoResponse{}, nil
+	return &pb.SetInfoResponse{
+		Status: pb.SetInfoStatus_SET_INFO_SUCCESS,
+	}, nil
 }
 
 // GetInfo returns the info of the debugd instance.
@@ -76,46 +84,66 @@ func (s *debugdServer) GetInfo(ctx context.Context, req *pb.GetInfoRequest) (*pb
 	return &pb.GetInfoResponse{Info: info}, nil
 }
 
-// UploadBootstrapper receives a bootstrapper binary in a stream of chunks and writes to a file.
-func (s *debugdServer) UploadBootstrapper(stream pb.Debugd_UploadBootstrapperServer) error {
-	startAction := deploy.ServiceManagerRequest{
-		Unit:   debugd.BootstrapperSystemdUnitName,
-		Action: deploy.Start,
-	}
-	var responseStatus pb.UploadBootstrapperStatus
-	defer func() {
-		if err := s.serviceManager.SystemdAction(stream.Context(), startAction); err != nil {
-			s.log.With(zap.Error(err)).Errorf("Starting uploaded bootstrapper failed")
-			if responseStatus == pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS {
-				responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_START_FAILED
-			}
-		}
-		stream.SendAndClose(&pb.UploadBootstrapperResponse{
-			Status: responseStatus,
+// UploadFiles receives a stream of files (each consisting of a header and a stream of chunks) and writes them to the filesystem.
+func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
+	s.log.Infof("Received UploadFiles request")
+	err := s.transfer.RecvFiles(stream)
+	switch {
+	case err == nil:
+		s.log.Infof("Uploading files succeeded")
+	case errors.Is(err, filetransfer.ErrReceiveRunning):
+		s.log.Warnf("Upload already in progress")
+		return stream.SendAndClose(&pb.UploadFilesResponse{
+			Status: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED,
 		})
-	}()
-	s.log.Infof("Starting bootstrapper upload")
-	if err := s.streamer.WriteStream(debugd.BootstrapperDeployFilename, stream, true); err != nil {
-		if errors.Is(err, fs.ErrExist) {
-			// bootstrapper was already uploaded
-			s.log.Warnf("Bootstrapper already uploaded")
-			responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_FILE_EXISTS
-			return nil
-		}
-		s.log.With(zap.Error(err)).Errorf("Uploading bootstrapper failed")
-		responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED
-		return fmt.Errorf("uploading bootstrapper: %w", err)
+	case errors.Is(err, filetransfer.ErrReceiveFinished):
+		s.log.Warnf("Upload already finished")
+		return stream.SendAndClose(&pb.UploadFilesResponse{
+			Status: pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED,
+		})
+	default:
+		s.log.With(zap.Error(err)).Errorf("Uploading files failed")
+		return stream.SendAndClose(&pb.UploadFilesResponse{
+			Status: pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED,
+		})
 	}
 
-	s.log.Infof("Successfully uploaded bootstrapper")
-	responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS
-	return nil
+	files := s.transfer.GetFiles()
+	var overrideUnitErr error
+	for _, file := range files {
+		if file.OverrideServiceUnit == "" {
+			continue
+		}
+		// continue on error to allow other units to be overridden
+		// TODO: switch to native go multierror once 1.20 is released
+		// err = s.serviceManager.OverrideServiceUnitExecStart(stream.Context(), file.OverrideServiceUnit, file.TargetPath)
+		// if err != nil {
+		// 	overrideUnitErr = errors.Join(overrideUnitErr, err)
+		// }
+		err = s.serviceManager.OverrideServiceUnitExecStart(stream.Context(), file.OverrideServiceUnit, file.TargetPath)
+		if err != nil {
+			overrideUnitErr = multierr.Append(overrideUnitErr, err)
+		}
+	}
+
+	if overrideUnitErr != nil {
+		s.log.With(zap.Error(overrideUnitErr)).Errorf("Overriding service units failed")
+		return stream.SendAndClose(&pb.UploadFilesResponse{
+			Status: pb.UploadFilesStatus_UPLOAD_FILES_START_FAILED,
+		})
+	}
+	return stream.SendAndClose(&pb.UploadFilesResponse{
+		Status: pb.UploadFilesStatus_UPLOAD_FILES_SUCCESS,
+	})
 }
 
-// DownloadBootstrapper streams the local bootstrapper binary to other instances.
-func (s *debugdServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
-	s.log.Infof("Sending bootstrapper to other instance")
-	return s.streamer.ReadStream(debugd.BootstrapperDeployFilename, stream, debugd.Chunksize, true)
+// DownloadFiles streams the previously received files to other instances.
+func (s *debugdServer) DownloadFiles(request *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
+	s.log.Infof("Sending files to other instance")
+	if !s.transfer.CanSend() {
+		return errors.New("cannot send files at this time")
+	}
+	return s.transfer.SendFiles(stream)
 }
 
 // UploadSystemServiceUnits receives systemd service units, writes them to a service file and schedules a daemon-reload.
@@ -157,9 +185,12 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 type serviceManager interface {
 	SystemdAction(ctx context.Context, request deploy.ServiceManagerRequest) error
 	WriteSystemdUnitFile(ctx context.Context, unit deploy.SystemdUnit) error
+	OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error
 }
 
-type streamer interface {
-	WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error
-	ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error
+type fileTransferer interface {
+	RecvFiles(stream filetransfer.RecvFilesStream) error
+	SendFiles(stream filetransfer.SendFilesStream) error
+	GetFiles() []filetransfer.FileStat
+	CanSend() bool
 }

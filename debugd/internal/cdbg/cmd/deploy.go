@@ -10,18 +10,19 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -41,38 +42,52 @@ func newDeployCmd() *cobra.Command {
 	}
 	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
 	deployCmd.Flags().String("bootstrapper", "./bootstrapper", "override the path to the bootstrapper binary uploaded to instances")
+	deployCmd.Flags().String("upgrade-agent", "./upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
 	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
+	deployCmd.Flags().Int("verbosity", 0, logger.CmdLineVerbosityDescription)
 	return deployCmd
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
+	verbosity, err := cmd.Flags().GetInt("verbosity")
+	if err != nil {
+		return err
+	}
+	log := logger.New(logger.PlainLog, logger.VerbosityFromInt(verbosity))
 	configName, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return fmt.Errorf("parsing config path argument: %w", err)
 	}
-	fileHandler := file.NewHandler(afero.NewOsFs())
+	fs := afero.NewOsFs()
+	fileHandler := file.NewHandler(fs)
+	streamer := streamer.New(fs)
+	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
 	constellationConfig, err := config.FromFile(fileHandler, configName)
 	if err != nil {
 		return err
 	}
 
-	return deploy(cmd, fileHandler, constellationConfig, bootstrapper.NewFileStreamer(afero.NewOsFs()))
+	return deploy(cmd, fileHandler, constellationConfig, transfer, log)
 }
 
-func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, reader fileToStreamReader) error {
+func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, transfer fileTransferer, log *logger.Logger) error {
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
+	if err != nil {
+		return err
+	}
+	upgradeAgentPath, err := cmd.Flags().GetString("upgrade-agent")
 	if err != nil {
 		return err
 	}
 
 	if constellationConfig.IsReleaseImage() {
-		log.Println("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
+		log.Infof("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
 	}
 
 	if !constellationConfig.IsDebugCluster() {
-		log.Println("WARNING: The Constellation config has debugCluster set to false.")
-		log.Println("cdbg will likely not work unless you manually adjust the firewall / load balancing rules.")
-		log.Println("If you create the cluster with a debug image, you should also set debugCluster to true.")
+		log.Infof("WARNING: The Constellation config has debugCluster set to false.")
+		log.Infof("cdbg will likely not work unless you manually adjust the firewall / load balancing rules.")
+		log.Infof("If you create the cluster with a debug image, you should also set debugCluster to true.")
 	}
 
 	ips, err := cmd.Flags().GetStringSlice("ips")
@@ -95,13 +110,28 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		return err
 	}
 
-	for _, ip := range ips {
+	files := []filetransfer.FileStat{
+		{
+			SourcePath:          bootstrapperPath,
+			TargetPath:          debugd.BootstrapperDeployFilename,
+			Mode:                debugd.BinaryAccessMode,
+			OverrideServiceUnit: "constellation-bootstrapper",
+		},
+		{
+			SourcePath:          upgradeAgentPath,
+			TargetPath:          debugd.UpgradeAgentDeployFilename,
+			Mode:                debugd.BinaryAccessMode,
+			OverrideServiceUnit: "constellation-upgrade-agent",
+		},
+	}
 
+	for _, ip := range ips {
 		input := deployOnEndpointInput{
-			debugdEndpoint:   ip,
-			infos:            info,
-			bootstrapperPath: bootstrapperPath,
-			reader:           reader,
+			debugdEndpoint: ip,
+			infos:          info,
+			files:          files,
+			transfer:       transfer,
+			log:            log,
 		}
 		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
 			return err
@@ -112,15 +142,16 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 }
 
 type deployOnEndpointInput struct {
-	debugdEndpoint   string
-	bootstrapperPath string
-	infos            map[string]string
-	reader           fileToStreamReader
+	debugdEndpoint string
+	files          []filetransfer.FileStat
+	infos          map[string]string
+	transfer       fileTransferer
+	log            *logger.Logger
 }
 
 // deployOnEndpoint deploys a custom built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
-	log.Printf("Deploying on %v\n", in.debugdEndpoint)
+	in.log.Infof("Deploying on %v", in.debugdEndpoint)
 
 	client, closer, err := newDebugdClient(ctx, in.debugdEndpoint)
 	if err != nil {
@@ -128,11 +159,11 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	}
 	defer closer.Close()
 
-	if err := setInfo(ctx, client, in.infos); err != nil {
+	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
 	}
 
-	if err := uploadBootstrapper(ctx, client, in); err != nil {
+	if err := uploadFiles(ctx, client, in); err != nil {
 		return fmt.Errorf("uploading bootstrapper: %w", err)
 	}
 
@@ -152,8 +183,8 @@ func newDebugdClient(ctx context.Context, ip string) (pb.DebugdClient, io.Closer
 	return pb.NewDebugdClient(conn), conn, nil
 }
 
-func setInfo(ctx context.Context, client pb.DebugdClient, infos map[string]string) error {
-	log.Printf("Setting info with length %d", len(infos))
+func setInfo(ctx context.Context, log *logger.Logger, client pb.DebugdClient, infos map[string]string) error {
+	log.Infof("Setting info with length %d", len(infos))
 
 	var infosPb []*pb.Info
 	for key, value := range infos {
@@ -162,36 +193,52 @@ func setInfo(ctx context.Context, client pb.DebugdClient, infos map[string]strin
 
 	req := &pb.SetInfoRequest{Info: infosPb}
 
-	if _, err := client.SetInfo(ctx, req, grpc.WaitForReady(true)); err != nil {
+	status, err := client.SetInfo(ctx, req, grpc.WaitForReady(true))
+	if err != nil {
 		return fmt.Errorf("setting info: %w", err)
 	}
 
-	log.Println("Info set")
+	switch status.Status {
+	case pb.SetInfoStatus_SET_INFO_SUCCESS:
+		log.Infof("Info set")
+	case pb.SetInfoStatus_SET_INFO_ALREADY_SET:
+		log.Infof("Info already set")
+	default:
+		log.Warnf("Unknown status %v", status.Status)
+	}
 	return nil
 }
 
-func uploadBootstrapper(ctx context.Context, client pb.DebugdClient, in deployOnEndpointInput) error {
-	log.Println("Uploading bootstrapper")
+func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpointInput) error {
+	in.log.Infof("Uploading files")
 
-	stream, err := client.UploadBootstrapper(ctx, grpc.WaitForReady(true))
+	stream, err := client.UploadFiles(ctx, grpc.WaitForReady(true))
 	if err != nil {
 		return fmt.Errorf("starting bootstrapper upload to instance %v: %w", in.debugdEndpoint, err)
 	}
-	streamErr := in.reader.ReadStream(in.bootstrapperPath, stream, debugd.Chunksize, true)
+
+	in.transfer.SetFiles(in.files)
+	if err := in.transfer.SendFiles(stream); err != nil {
+		return fmt.Errorf("sending files to %v: %w", in.debugdEndpoint, err)
+	}
 
 	uploadResponse, closeErr := stream.CloseAndRecv()
 	if closeErr != nil {
-		return fmt.Errorf("closing upload stream after uploading bootstrapper to %v: %w", in.debugdEndpoint, closeErr)
+		return fmt.Errorf("closing upload stream after uploading files to %v: %w", in.debugdEndpoint, closeErr)
 	}
-	if uploadResponse.Status == pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_FILE_EXISTS {
-		log.Println("Bootstrapper was already uploaded")
-		return nil
-	}
-	if uploadResponse.Status != pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS || streamErr != nil {
-		return fmt.Errorf("uploading bootstrapper to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, streamErr)
+	switch uploadResponse.Status {
+	case pb.UploadFilesStatus_UPLOAD_FILES_SUCCESS:
+		in.log.Infof("Upload successful")
+	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_FINISHED:
+		in.log.Infof("Files already uploaded")
+	case pb.UploadFilesStatus_UPLOAD_FILES_UPLOAD_FAILED:
+		return fmt.Errorf("uploading files to %v failed: %v", in.debugdEndpoint, uploadResponse)
+	case pb.UploadFilesStatus_UPLOAD_FILES_ALREADY_STARTED:
+		return fmt.Errorf("upload already started on %v", in.debugdEndpoint)
+	default:
+		return fmt.Errorf("unknown upload status %v", uploadResponse.Status)
 	}
 
-	log.Println("Uploaded bootstrapper")
 	return nil
 }
 
@@ -211,8 +258,9 @@ func checkInfoMap(info map[string]string) error {
 	return nil
 }
 
-type fileToStreamReader interface {
-	ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error
+type fileTransferer interface {
+	SendFiles(stream filetransfer.SendFilesStream) error
+	SetFiles(files []filetransfer.FileStat)
 }
 
 type clusterIDsFile struct {

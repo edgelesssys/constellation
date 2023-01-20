@@ -29,6 +29,13 @@ func NewMap() *Map {
 	}
 }
 
+// Received returns true if the info map has been set.
+func (i *Map) Received() bool {
+	i.mux.RLock()
+	defer i.mux.RUnlock()
+	return i.received
+}
+
 // Get returns the value of the info with the given key.
 func (i *Map) Get(key string) (string, bool, error) {
 	i.mux.RLock()
@@ -67,7 +74,7 @@ func (i *Map) SetProto(infos []*servicepb.Info) error {
 	defer i.mux.Unlock()
 
 	if i.received {
-		return errors.New("info already set")
+		return ErrInfoAlreadySet
 	}
 
 	infoMap := make(map[string]string)
@@ -114,3 +121,6 @@ func (i *Map) GetProto() ([]*servicepb.Info, error) {
 	}
 	return infos, nil
 }
+
+// ErrInfoAlreadySet is returned if the info map has already been set.
+var ErrInfoAlreadySet = errors.New("info already set")

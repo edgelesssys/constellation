@@ -158,7 +158,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 		"systemd reload fails": {
 			dbus: stubDbus{
 				conn: &fakeDbusConn{
-					actionErr: errors.New("reload error"),
+					reloadErr: errors.New("reload error"),
 				},
 			},
 			unit: SystemdUnit{
@@ -200,12 +200,127 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 	}
 }
 
+func TestOverrideServiceUnitExecStart(t *testing.T) {
+	testCases := map[string]struct {
+		dbus                stubDbus
+		unitName, execStart string
+		readonly            bool
+		wantErr             bool
+		wantFileContents    string
+		wantActionCalls     []dbusConnActionInput
+		wantReloads         int
+	}{
+		"override works": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result: "done",
+				},
+			},
+			unitName:         "test",
+			execStart:        "/run/state/bin/test",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
+			wantActionCalls: []dbusConnActionInput{
+				{name: "test.service", mode: "replace"},
+			},
+			wantReloads: 1,
+		},
+		"unit name invalid": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result: "done",
+				},
+			},
+			unitName:  "invalid name",
+			execStart: "/run/state/bin/test",
+			wantErr:   true,
+		},
+		"exec start invalid": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result: "done",
+				},
+			},
+			unitName:  "test",
+			execStart: "/run/state/bin/\r\ntest",
+			wantErr:   true,
+		},
+		"write fails": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result: "done",
+				},
+			},
+			unitName:  "test",
+			execStart: "/run/state/bin/test",
+			readonly:  true,
+			wantErr:   true,
+		},
+		"reload fails but restart is still attempted": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result:    "done",
+					reloadErr: errors.New("reload error"),
+				},
+			},
+			unitName:         "test",
+			execStart:        "/run/state/bin/test",
+			wantFileContents: "[Service]\nExecStart=\nExecStart=/run/state/bin/test\n",
+			wantActionCalls: []dbusConnActionInput{
+				{name: "test.service", mode: "replace"},
+			},
+			wantReloads: 1,
+		},
+		"restart fails": {
+			dbus: stubDbus{
+				conn: &fakeDbusConn{
+					result:    "done",
+					actionErr: errors.New("action error"),
+				},
+			},
+			unitName:  "test",
+			execStart: "/run/state/bin/test",
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fs := afero.NewMemMapFs()
+			assert.NoError(fs.MkdirAll(systemdUnitFolder, 0o755))
+			if tc.readonly {
+				fs = afero.NewReadOnlyFs(fs)
+			}
+			manager := ServiceManager{
+				log:                      logger.NewTest(t),
+				dbus:                     &tc.dbus,
+				fs:                       fs,
+				systemdUnitFilewriteLock: sync.Mutex{},
+			}
+			err := manager.OverrideServiceUnitExecStart(context.Background(), tc.unitName, tc.execStart)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			fileContents, err := afero.ReadFile(fs, "/run/systemd/system/test.service.d/override.conf")
+			assert.NoError(err)
+			assert.Equal(tc.wantFileContents, string(fileContents))
+			assert.Equal(tc.wantActionCalls, tc.dbus.conn.(*fakeDbusConn).inputs)
+			assert.Equal(tc.wantReloads, tc.dbus.conn.(*fakeDbusConn).reloadCalls)
+		})
+	}
+}
+
 type stubDbus struct {
 	conn    dbusConn
 	connErr error
 }
 
-func (s *stubDbus) NewSystemdConnectionContext(ctx context.Context) (dbusConn, error) {
+func (s *stubDbus) NewSystemConnectionContext(ctx context.Context) (dbusConn, error) {
 	return s.conn, s.connErr
 }
 
@@ -215,11 +330,13 @@ type dbusConnActionInput struct {
 }
 
 type fakeDbusConn struct {
-	inputs []dbusConnActionInput
-	result string
+	inputs      []dbusConnActionInput
+	result      string
+	reloadCalls int
 
 	jobID     int
 	actionErr error
+	reloadErr error
 }
 
 func (c *fakeDbusConn) StartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
@@ -244,5 +361,9 @@ func (c *fakeDbusConn) RestartUnitContext(ctx context.Context, name string, mode
 }
 
 func (c *fakeDbusConn) ReloadContext(ctx context.Context) error {
-	return c.actionErr
+	c.reloadCalls++
+
+	return c.reloadErr
 }
+
+func (c *fakeDbusConn) Close() {}

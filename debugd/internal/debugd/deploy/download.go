@@ -8,13 +8,13 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -27,19 +27,19 @@ import (
 type Download struct {
 	log            *logger.Logger
 	dialer         NetDialer
-	writer         streamToFileWriter
+	transfer       fileTransferer
 	serviceManager serviceManager
 	info           infoSetter
 }
 
 // New creates a new Download.
 func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager,
-	writer streamToFileWriter, info infoSetter,
+	transfer fileTransferer, info infoSetter,
 ) *Download {
 	return &Download{
 		log:            log,
 		dialer:         dialer,
-		writer:         writer,
+		transfer:       transfer,
 		info:           info,
 		serviceManager: serviceManager,
 	}
@@ -47,6 +47,10 @@ func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager,
 
 // DownloadInfo will try to download the info from another instance.
 func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
+	if d.info.Received() {
+		return nil
+	}
+
 	log := d.log.With(zap.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
@@ -66,7 +70,7 @@ func (d *Download) DownloadInfo(ctx context.Context, ip string) error {
 	return d.info.SetProto(resp.Info)
 }
 
-// DownloadDeployment will open a new grpc connection to another instance, attempting to download a bootstrapper from that instance.
+// DownloadDeployment will open a new grpc connection to another instance, attempting to download files from that instance.
 func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	log := d.log.With(zap.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
@@ -77,23 +81,38 @@ func (d *Download) DownloadDeployment(ctx context.Context, ip string) error {
 	}
 	defer closer.Close()
 
-	log.Infof("Trying to download bootstrapper")
-	stream, err := client.DownloadBootstrapper(ctx, &pb.DownloadBootstrapperRequest{})
+	log.Infof("Trying to download files")
+	stream, err := client.DownloadFiles(ctx, &pb.DownloadFilesRequest{})
 	if err != nil {
-		return fmt.Errorf("starting bootstrapper download from other instance: %w", err)
+		return fmt.Errorf("starting file download from other instance: %w", err)
 	}
-	if err := d.writer.WriteStream(debugd.BootstrapperDeployFilename, stream, true); err != nil {
-		return fmt.Errorf("streaming bootstrapper from other instance: %w", err)
-	}
-	log.Infof("Successfully downloaded bootstrapper")
 
-	// after the upload succeeds, try to restart the bootstrapper
-	restartAction := ServiceManagerRequest{
-		Unit:   debugd.BootstrapperSystemdUnitName,
-		Action: Restart,
+	err = d.transfer.RecvFiles(stream)
+	switch {
+	case err == nil:
+		d.log.Infof("Downloading files succeeded")
+	case errors.Is(err, filetransfer.ErrReceiveRunning):
+		d.log.Warnf("Download already in progress")
+		return err
+	case errors.Is(err, filetransfer.ErrReceiveFinished):
+		d.log.Warnf("Download already finished")
+		return nil
+	default:
+		d.log.With(zap.Error(err)).Errorf("Downloading files failed")
+		return err
 	}
-	if err := d.serviceManager.SystemdAction(ctx, restartAction); err != nil {
-		return fmt.Errorf("restarting bootstrapper: %w", err)
+
+	files := d.transfer.GetFiles()
+	for _, file := range files {
+		if file.OverrideServiceUnit == "" {
+			continue
+		}
+		if err := d.serviceManager.OverrideServiceUnitExecStart(
+			ctx, file.OverrideServiceUnit, file.TargetPath,
+		); err != nil {
+			// continue on error to allow other units to be overridden
+			d.log.With(zap.Error(err)).Errorf("Failed to override service unit %s", file.OverrideServiceUnit)
+		}
 	}
 
 	return nil
@@ -123,14 +142,17 @@ func (d *Download) grpcWithDialer() grpc.DialOption {
 
 type infoSetter interface {
 	SetProto(infos []*pb.Info) error
+	Received() bool
 }
 
 type serviceManager interface {
 	SystemdAction(ctx context.Context, request ServiceManagerRequest) error
+	OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error
 }
 
-type streamToFileWriter interface {
-	WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error
+type fileTransferer interface {
+	RecvFiles(stream filetransfer.RecvFilesStream) error
+	GetFiles() []filetransfer.FileStat
 }
 
 // NetDialer can open a net.Conn.
