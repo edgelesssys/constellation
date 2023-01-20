@@ -125,31 +125,37 @@ jobs:
 
   micro-services:
     name: Build micro services
+    runs-on: ubuntu-22.04
     needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
     strategy:
       matrix:
         koTarget:
-          [./join-service/cmd, ./kms/cmd, ./verify/cmd, ./operators/constellation-node-operator]
+          [./joinservice/cmd, ./keyservice/cmd, ./verify/cmd, ./operators/constellation-node-operator]
         include:
-          - koTarget: ./join-service/cmd
+          - koTarget: ./joinservice/cmd
             name: joinservice
-          - koTarget: ./kms/cmd
-            name: kmsserver
-          - koTarget: verification-service
+          - koTarget: ./keyservice/cmd
+            name: keyservice
+          - koTarget: ./verify/cmd
             name: verification-service
-          - koTarget: qemu-metadata-api
-            name: qemu-metadata
           - koTarget: ./operators/constellation-node-operator
             name: node-operator
     steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
       - name: Build ${{ matrix.name }} micro service
-        uses: ./.github/actions/build_micro_service_ko/action.yml
+        uses: ./.github/actions/build_micro_service_ko
         with:
           koTarget: ${{ matrix.koTarget }}
-          version: ${{ inputs.version }}
-          release: true
+          name: ${{ matrix.name }}
           pushTag: ${{ inputs.version }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
 
   constellation-qemu-metadata:
     name: Build Constellation meta-data
@@ -346,7 +352,7 @@ jobs:
       VERSION: ${{ inputs.version }}
       NEW_BRANCH: feat/release/${{ inputs.version }}/changes-to-main
     steps:
-      - name: Checkot
+      - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
