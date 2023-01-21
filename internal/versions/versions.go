@@ -64,7 +64,7 @@ const (
 	// JoinImage image of Constellation join service.
 	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.5.0-pre.0.20230119145750-690b50b29de5@sha256:f534bd9a6c063f0da24fa85b12b7cdabb61360955864f38f479709e538fe5365" // renovate:container
 	// KeyServiceImage image of Constellation KMS server.
-	KeyServiceImage = "ghcr.io/edgelesssys/constellation/keyservice:v2.5.0-pre.0.20230119145750-690b50b29de5@sha256:1afa9e549498372a2c888e6a7cbd344099c6bc3a9970e33336df5b7104f764c5" // renovate:container
+	KeyServiceImage = "ghcr.io/edgelesssys/constellation/key-service:v2.5.0-pre.0.20230120175959-b8648261e3a8@sha256:c0fb914a9b9ff5efa563fb7033ad47c16a72d03483f5ffc9e3eda83f1f70c4d3" // renovate:container
 	// VerificationImage image of Constellation verification service.
 	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.5.0-pre.0.20230119145750-690b50b29de5@sha256:520e784770222e3ff8d8f2fffc35ee41184a85b19fc9ef274254992ae5d9d4c7" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
