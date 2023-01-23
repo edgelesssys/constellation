@@ -24,15 +24,20 @@ import (
 )
 
 var (
-	runAwsStorage = flag.Bool("awsStorage", false, "set to run AWS S3 Bucket Storage test")
-	runAwsKms     = flag.Bool("awsKms", false, "set to run AWS KMS test")
+	kekID = flag.String("kekID", "", "ID of the key to use for KMS test.")
+
+	runAwsStorage  = flag.Bool("awsStorage", false, "set to run AWS S3 Bucket Storage test")
+	runAwsKms      = flag.Bool("awsKms", false, "set to run AWS KMS test")
+	awsRegion      = flag.String("awsRegion", "us-east-1", "Region to use for AWS tests. Required for AWS KMS test.")
+	awsAccessKeyID = flag.String("awsAccessKeyID", "", "ID of the Access key to use for AWS tests. Required for AWS KMS test.")
+	awsAccessKey   = flag.String("awsAccessKey", "", "Access key to use for AWS tests. Required for AWS KMS test.")
 
 	azConnectionString = flag.String("azStorageConn", "", "Connection string for Azure storage account. Required for Azure storage test.")
 	azContainer        = flag.String("azContainer", "constellation-test-storage", "Container to save test data to. Required for Azure storage test.")
 	runAzStorage       = flag.Bool("azStorage", false, "set to run Azure Storage test")
 	runAzKms           = flag.Bool("azKms", false, "set to run Azure KMS test")
+	runAzHsm           = flag.Bool("azHsm", false, "set to run Azure HSM test")
 	azVaultName        = flag.String("azVaultName", "", "Name of the Azure Key Vault to use. Required for Azure KMS/HSM test.")
-	azKEKID            = flag.String("azKEKID", "", "ID of the key to use for Azure KMS test. Required for Azure KMS/HSM test.")
 	azTenantID         = flag.String("azTenantID", "", "Tenant ID to use for Azure tests. Required for Azure KMS/HSM test.")
 	azClientID         = flag.String("azClientID", "", "Client ID to use for Azure tests. Required for Azure KMS/HSM test.")
 	azClientSecret     = flag.String("azClientSecret", "", "Client secret to use for Azure tests. Required for Azure KMS/HSM test.")
@@ -44,7 +49,6 @@ var (
 	gcpProjectID       = flag.String("gcpProjectID", "", "Project ID to use for Google tests. Required for Google KMS and Google storage test.")
 	gcpKeyRing         = flag.String("gcpKeyRing", "", "Key ring to use for Google KMS test. Required for Google KMS test.")
 	gcpLocation        = flag.String("gcpLocation", "global", "Location of the keyring. Required for Google KMS test.")
-	gcpKEKID           = flag.String("gcpKEKID", "", "ID of the key to use for Google KMS test. Required for Google KMS test.")
 )
 
 func TestMain(m *testing.M) {

@@ -126,23 +126,23 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 
 	switch url.Host {
 	case "aws":
-		poliyProducer, kekID, err := getAWSKMSConfig(url)
+		cfg, err := uri.DecodeAWSConfigFromURI(kmsURI)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid AWS KMS URI: %w", err)
 		}
-		return aws.New(ctx, poliyProducer, store, kekID)
+		return aws.New(ctx, store, cfg)
 
 	case "azure":
 		cfg, err := uri.DecodeAzureConfigFromURI(kmsURI)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid Azure Key Vault URI: %w", err)
 		}
 		return azure.New(ctx, store, cfg)
 
 	case "gcp":
 		cfg, err := uri.DecodeGCPConfigFromURI(kmsURI)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid GCP KMS URI: %w", err)
 		}
 		return gcp.New(ctx, store, cfg)
 

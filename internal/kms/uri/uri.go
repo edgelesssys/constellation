@@ -44,9 +44,9 @@ type VaultBaseURL string
 
 // Well known endpoints for KMS services.
 const (
-	awsKMSURI     = "kms://aws?keyPolicy=%s&kekID=%s"
+	awsKMSURI     = "kms://aws?region=%s&accessKeyID=%s&acccessKey=%skeyName=%s"
 	azureKMSURI   = "kms://azure?tenantID=%s&clientID=%s&clientSecret=%s&vaultName=%s&vaultType=%s&keyName=%s"
-	gcpKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&keyName=%s&credentialsPath=%s"
+	gcpKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&credentialsPath=%s&keyName=%s"
 	clusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	awsS3URI      = "storage://aws?bucket=%s"
 	azureBlobURI  = "storage://azure?container=%s&connectionString=%s"
@@ -60,7 +60,7 @@ type MasterSecret struct {
 	Salt []byte `json:"salt"`
 }
 
-// EncodeToURI returns an URI encoding the master secret.
+// EncodeToURI returns a URI encoding the master secret.
 func (m MasterSecret) EncodeToURI() string {
 	return fmt.Sprintf(
 		clusterKMSURI,
@@ -69,7 +69,7 @@ func (m MasterSecret) EncodeToURI() string {
 	)
 }
 
-// DecodeMasterSecretFromURI decodes a master secret from an URI.
+// DecodeMasterSecretFromURI decodes a master secret from a URI.
 func DecodeMasterSecretFromURI(uri string) (MasterSecret, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -98,6 +98,65 @@ func DecodeMasterSecretFromURI(uri string) (MasterSecret, error) {
 	}, nil
 }
 
+// AWSConfig is the configuration to authenticate with AWS KMS.
+type AWSConfig struct {
+	KeyName     string
+	Region      string
+	AccessKeyID string
+	AccessKey   string
+}
+
+// DecodeAWSConfigFromURI decodes an AWS configuration from a URI.
+func DecodeAWSConfigFromURI(uri string) (AWSConfig, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return AWSConfig{}, err
+	}
+
+	if u.Scheme != "kms" {
+		return AWSConfig{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
+	}
+	if u.Host != "aws" {
+		return AWSConfig{}, fmt.Errorf("invalid host: %q", u.Host)
+	}
+
+	q := u.Query()
+	keyName, err := getQueryParameter(q, "keyName")
+	if err != nil {
+		return AWSConfig{}, err
+	}
+	region, err := getQueryParameter(q, "region")
+	if err != nil {
+		return AWSConfig{}, err
+	}
+	accessKeyID, err := getQueryParameter(q, "accessKeyID")
+	if err != nil {
+		return AWSConfig{}, err
+	}
+	accessKey, err := getQueryParameter(q, "accessKey")
+	if err != nil {
+		return AWSConfig{}, err
+	}
+
+	return AWSConfig{
+		KeyName:     keyName,
+		Region:      region,
+		AccessKeyID: accessKeyID,
+		AccessKey:   accessKey,
+	}, nil
+}
+
+// EncodeToURI returns a URI encoding the AWS configuration.
+func (c AWSConfig) EncodeToURI() string {
+	return fmt.Sprintf(
+		awsKMSURI,
+		c.Region,
+		c.AccessKeyID,
+		c.AccessKey,
+		c.KeyName,
+	)
+}
+
 // AzureConfig is the configuration to authenticate with Azure Key Vault.
 type AzureConfig struct {
 	TenantID     string
@@ -108,7 +167,7 @@ type AzureConfig struct {
 	VaultType    VaultBaseURL
 }
 
-// DecodeAzureConfigFromURI decodes an Azure configuration from an URI.
+// DecodeAzureConfigFromURI decodes an Azure configuration from a URI.
 func DecodeAzureConfigFromURI(uri string) (AzureConfig, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -158,7 +217,7 @@ func DecodeAzureConfigFromURI(uri string) (AzureConfig, error) {
 	}, nil
 }
 
-// EncodeToURI returns an URI encoding the Azure configuration.
+// EncodeToURI returns a URI encoding the Azure configuration.
 func (a AzureConfig) EncodeToURI() string {
 	return fmt.Sprintf(
 		azureKMSURI,
@@ -181,7 +240,7 @@ type GCPConfig struct {
 	KeyName         string
 }
 
-// DecodeGCPConfigFromURI decodes a GCP configuration from an URI.
+// DecodeGCPConfigFromURI decodes a GCP configuration from a URI.
 func DecodeGCPConfigFromURI(uri string) (GCPConfig, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -226,15 +285,15 @@ func DecodeGCPConfigFromURI(uri string) (GCPConfig, error) {
 	}, nil
 }
 
-// EncodeToURI returns an URI encoding the GCP configuration.
+// EncodeToURI returns a URI encoding the GCP configuration.
 func (g GCPConfig) EncodeToURI() string {
 	return fmt.Sprintf(
 		gcpKMSURI,
 		url.QueryEscape(g.ProjectID),
 		url.QueryEscape(g.Location),
 		url.QueryEscape(g.KeyRing),
-		url.QueryEscape(g.KeyName),
 		url.QueryEscape(g.CredentialsPath),
+		url.QueryEscape(g.KeyName),
 	)
 }
 

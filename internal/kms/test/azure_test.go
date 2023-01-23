@@ -52,12 +52,12 @@ func TestAzureStorage(t *testing.T) {
 	assert.ErrorIs(err, storage.ErrDEKUnset)
 }
 
-func TestAzureKeyVault(t *testing.T) {
+func TestAzureKeyKMS(t *testing.T) {
 	if !*runAzKms {
 		t.Skip("Skipping Azure Key Vault test")
 	}
 
-	if *azKEKID == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" || *azVaultName == "" {
+	if *kekID == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" || *azVaultName == "" {
 		flag.Usage()
 		t.Fatal("Required flags not set")
 	}
@@ -73,7 +73,36 @@ func TestAzureKeyVault(t *testing.T) {
 		ClientSecret: *azClientSecret,
 		VaultName:    *azVaultName,
 		VaultType:    uri.DefaultCloud,
-		KeyName:      *azKEKID,
+		KeyName:      *kekID,
+	}
+	kmsClient, err := azure.New(ctx, store, cfg)
+	require.NoError(err)
+
+	runKMSTest(t, kmsClient)
+}
+
+func TestAzureKeyHSM(t *testing.T) {
+	if !*runAzHsm {
+		t.Skip("Skipping Azure HSM test")
+	}
+
+	if *kekID == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" || *azVaultName == "" {
+		flag.Usage()
+		t.Fatal("Required flags not set")
+	}
+	require := require.New(t)
+
+	store := storage.NewMemMapStorage()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	cfg := uri.AzureConfig{
+		TenantID:     *azTenantID,
+		ClientID:     *azClientID,
+		ClientSecret: *azClientSecret,
+		VaultName:    *azVaultName,
+		VaultType:    uri.HSMDefaultCloud,
+		KeyName:      *kekID,
 	}
 	kmsClient, err := azure.New(ctx, store, cfg)
 	require.NoError(err)

@@ -23,9 +23,9 @@ import (
 
 func TestGCPKMS(t *testing.T) {
 	if !*runGcpKms {
-		t.Skip("Skipping Google KMS key creation test")
+		t.Skip("Skipping Google KMS test")
 	}
-	if *gcpProjectID == "" || *gcpLocation == "" || *gcpKeyRing == "" || *gcpKEKID == "" {
+	if *gcpProjectID == "" || *gcpLocation == "" || *gcpKeyRing == "" || *kekID == "" {
 		flag.Usage()
 		t.Fatal("Required flags not set")
 	}
@@ -40,7 +40,7 @@ func TestGCPKMS(t *testing.T) {
 		ProjectID:       *gcpProjectID,
 		Location:        *gcpLocation,
 		KeyRing:         *gcpKeyRing,
-		KeyName:         *gcpKEKID,
+		KeyName:         *kekID,
 	}
 	kmsClient, err := gcp.New(ctx, store, cfg)
 	require.NoError(err)

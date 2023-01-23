@@ -54,7 +54,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.24.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.1
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.83.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.20.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.30.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.18.2
 	github.com/aws/smithy-go v1.13.5
@@ -68,6 +67,7 @@ require (
 	github.com/google/go-tpm-tools v0.3.10
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.1
 	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.1
 	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.2
 	github.com/hashicorp/go-version v1.6.0
@@ -110,6 +110,11 @@ require (
 	k8s.io/kubernetes v1.25.4
 	k8s.io/mount-utils v0.25.4
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
+)
+
+require (
+	github.com/aws/aws-sdk-go v1.44.180 // indirect
+	github.com/hashicorp/go-secure-stdlib/awsutil v0.1.6 // indirect
 )
 
 require (

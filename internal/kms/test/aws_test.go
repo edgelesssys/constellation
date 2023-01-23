@@ -10,49 +10,20 @@ package test
 
 import (
 	"context"
+	"flag"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	kmsconfig "github.com/edgelesssys/constellation/v2/internal/kms/config"
-	awsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var defaultPolicyWithDecryption = `{
-	"Version" : "2012-10-17",
-	"Id" : "updated-policy",
-	"Statement" : [ {
-	  "Sid" : "Enable IAM User Permissions",
-	  "Effect" : "Allow",
-	  "Principal" : {
-		"AWS" : "*"
-	  },
-	  "Action" : [
-		  "kms:CreateAlias",
-		  "kms:CreateKey",
-		  "kms:Decrypt",
-		  "kms:DeleteAlias",
-		  "kms:DescribeKey",
-		  "kms:Encrypt",
-		  "kms:GenerateDataKey",
-		  "kms:GenerateDataKeyWithoutPlaintext",
-		  "kms:GetKeyPolicy",
-		  "kms:GetParametersForImport",
-		  "kms:ImportKeyMaterial",
-		  "kms:PutKeyPolicy",
-		  "kms:ScheduleKeyDeletion"
-		],
-	  "Resource" : "*"
-	} ]
-  }`
 
 func TestAwsStorage(t *testing.T) {
 	if !*runAwsStorage {
@@ -124,7 +95,7 @@ func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID st
 func cleanUpObjects(ctx context.Context, client *s3.Client, bucketID string, objectsToDelete []string) error {
 	var objectsIdentifier []types.ObjectIdentifier
 	for _, object := range objectsToDelete {
-		objectsIdentifier = append(objectsIdentifier, types.ObjectIdentifier{Key: aws.String(object)})
+		objectsIdentifier = append(objectsIdentifier, types.ObjectIdentifier{Key: func(s string) *string { return &s }(object)})
 	}
 	deleteObjectsInput := &s3.DeleteObjectsInput{
 		Bucket: &bucketID,
@@ -138,69 +109,26 @@ func TestAwsKms(t *testing.T) {
 	if !*runAwsKms {
 		t.Skip("Skipping AWS KMS test")
 	}
+
+	if *kekID == "" || *awsAccessKeyID == "" || *awsAccessKey == "" || *awsRegion == "" {
+		flag.Usage()
+		t.Fatal("Required flags not set")
+	}
+
 	require := require.New(t)
-	assert := assert.New(t)
 
-	newKEKId1 := addSuffix("test-key-")
-	newKEKId2 := addSuffix("test-key-")
-	require.NotEqual(newKEKId1, newKEKId2)
-	var keyPolicyProducer createKeyPolicyFunc
-
-	client, err := awsInterface.New(context.Background(), &keyPolicyProducer, nil, newKEKId1)
-	require.NoError(err)
-
+	store := storage.NewMemMapStorage()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	// make sure that GetDEK is idempotent
-	volumeKey1, err := client.GetDEK(ctx, "volume01", kmsconfig.SymmetricKeyLength)
-	require.NoError(err)
-	volumeKey1Copy, err := client.GetDEK(ctx, "volume01", kmsconfig.SymmetricKeyLength)
-	require.NoError(err)
-	assert.Equal(volumeKey1, volumeKey1Copy)
-
-	// test setting a second DEK
-	volumeKey2, err := client.GetDEK(ctx, "volume02", kmsconfig.SymmetricKeyLength)
-	require.NoError(err)
-	assert.NotEqual(volumeKey1, volumeKey2)
-
-	// test setting a DEK with AWS KMS generated KEK
-	volumeKey3, err := client.GetDEK(ctx, "volume03", kmsconfig.SymmetricKeyLength)
-	require.NoError(err)
-	assert.NotEqual(volumeKey1, volumeKey3)
-
-	cleanUp(ctx, assert, require, newKEKId1)
-	cleanUp(ctx, assert, require, newKEKId2)
-}
-
-func cleanUp(ctx context.Context, assert *assert.Assertions, require *require.Assertions, alias string) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	require.NoError(err)
-	awsClient := kms.NewFromConfig(cfg)
-	require.NotNil(awsClient)
-
-	describeKeyInput := &kms.DescribeKeyInput{
-		KeyId: aws.String("alias/" + alias),
+	cfg := uri.AWSConfig{
+		KeyName:     *kekID,
+		Region:      *awsRegion,
+		AccessKeyID: *awsAccessKeyID,
+		AccessKey:   *awsAccessKey,
 	}
-	describeKeyOutput, err := awsClient.DescribeKey(ctx, describeKeyInput)
-	assert.NoError(err)
-	deleteAliasInput := &kms.DeleteAliasInput{
-		AliasName: aws.String("alias/" + alias),
-	}
-	_, err = awsClient.DeleteAlias(ctx, deleteAliasInput)
-	assert.NoError(err)
-	scheduleKeyDeletionInput := &kms.ScheduleKeyDeletionInput{
-		KeyId:               describeKeyOutput.KeyMetadata.KeyId,
-		PendingWindowInDays: aws.Int32(7),
-	}
-	_, err = awsClient.ScheduleKeyDeletion(ctx, scheduleKeyDeletionInput)
-	assert.NoError(err)
-}
+	kmsClient, err := aws.New(ctx, store, cfg)
+	require.NoError(err)
 
-type createKeyPolicyFunc struct{}
-
-func (fn *createKeyPolicyFunc) CreateKeyPolicy(keyID string) (string, error) {
-	policy := defaultPolicyWithDecryption
-	policy = strings.Replace(policy, "<AWSAccountId>", "795746500882", 2)
-	return policy, nil
+	runKMSTest(t, kmsClient)
 }
