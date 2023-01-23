@@ -69,7 +69,7 @@ const (
 	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v0.0.0@sha256:884eaaf0b4ae0bcca7da8bf4b8d886f7069aa7912c34f6360a957b3cbd9aacff" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
-	GcpGuestImage = "leongross/guest-agent-config:latest@sha256:98bf4f7639d52d0ee5798fafd7ed74b5b7126da24d70aee0f6f434cb8ab2cd6e" // manual
+	GcpGuestImage = "ghcr.io/edgelesssys/constellation/gcp-guest-agent-ko:latest@sha256:d8dc6245246f6bea4a6fe504388eb9d069bbd32e6e227bbf12a12dce27cd7440" // manual
 	// ConstellationOperatorImage is the image for the constellation node operator.
 	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v0.0.0@sha256:7588b447ed449b0cccf82d15af79bcdb6b3083306a8e93c2da69eee3da9a141a" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
