@@ -133,7 +133,7 @@ jobs:
           [./joinservice/cmd, ./keyservice/cmd, ./verify/cmd, ./operators/constellation-node-operator]
         include:
           - koTarget: ./joinservice/cmd
-            name: joinservice
+            name: join-service
           - koTarget: ./keyservice/cmd
             name: keyservice
           - koTarget: ./verify/cmd
