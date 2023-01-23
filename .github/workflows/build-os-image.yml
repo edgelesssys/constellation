@@ -287,6 +287,15 @@ jobs:
           echo "${DB_KEY}" > "${PKI_SET}/db.key"
           ln -s "${PKI_SET}" pki
 
+      - name: Download pinned RPMs
+        shell: bash
+        working-directory: ${{ github.workspace }}/image/packages
+        run: |
+          echo "::group::Download pinned RPMs"
+          sudo make pull
+          sudo make repo
+          echo "::endgroup::"
+
       - name: Build
         shell: bash
         working-directory: ${{ github.workspace }}/image

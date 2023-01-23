@@ -65,6 +65,12 @@
 
 When building your first image, prepare the secure boot PKI (see `secure-boot/genkeys.sh`) for self-signed, locally built images.
 
+Second, you need to prepare the local RPM repository. This is only necessary for the first build, or when you want to update the packages in the repository.
+
+```sh:
+make -C ./packages pull repo
+```
+
 After that, you can build the image with:
 
 ```sh

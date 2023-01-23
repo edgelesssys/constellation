@@ -1,0 +1,39 @@
+[amzn2-core]
+name=Amazon Linux 2 core repository
+#mirrorlist=$awsproto://$amazonlinux.$awsregion.$awsdomain/$releasever/$product/$target/$basearch/mirror.list
+mirrorlist=https://amazonlinux-2-repos-us-east-2.s3.dualstack.us-east-2.amazonaws.com/2/core/latest/x86_64/mirror.list
+priority=10
+gpgcheck=1
+#gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-amazon-linux-2
+gpgkey=https://cdn.amazonlinux.com/_assets/11CF1F95C87F5B1A.asc
+enabled=1
+metadata_expire=300
+mirrorlist_expire=300
+report_instanceid=yes
+includepkgs=ec2-utils
+
+# [amzn2-core-source]
+# name=Amazon Linux 2 core repository - source packages
+# mirrorlist=$awsproto://$amazonlinux.$awsregion.$awsdomain/$releasever/$product/$target/SRPMS/mirror.list
+# priority=10
+# gpgcheck=1
+# #gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-amazon-linux-2
+# gpgkey=https://cdn.amazonlinux.com/_assets/11CF1F95C87F5B1A.asc
+# enabled=0
+# metadata_expire=300
+# mirrorlist_expire=300
+# report_instanceid=yes
+# includepkgs=ec2-utils
+
+# [amzn2-core-debuginfo]
+# name=Amazon Linux 2 core repository - debuginfo packages
+# mirrorlist=$awsproto://$amazonlinux.$awsregion.$awsdomain/$releasever/$product/$target/debuginfo/$basearch/mirror.list
+# priority=10
+# gpgcheck=1
+# #gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-amazon-linux-2
+# gpgkey=https://cdn.amazonlinux.com/_assets/11CF1F95C87F5B1A.asc
+# enabled=0
+# metadata_expire=300
+# mirrorlist_expire=300
+# report_instanceid=yes
+# includepkgs=ec2-utils
