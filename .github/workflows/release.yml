@@ -130,11 +130,11 @@ jobs:
     strategy:
       matrix:
         koTarget:
-          [./joinservice/cmd, ./keyservice/cmd, ./verify/cmd, ./operators/constellation-node-operator]
+          [./joinservice/cmd, ./key-service/cmd, ./verify/cmd, ./operators/constellation-node-operator]
         include:
           - koTarget: ./joinservice/cmd
             name: join-service
-          - koTarget: ./keyservice/cmd
+          - koTarget: ./key-service/cmd
             name: key-service
           - koTarget: ./verify/cmd
             name: verification-service
