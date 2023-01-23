@@ -1,0 +1,17 @@
+name: Delete IAM configuration
+description: Delete previously created IAM configuration.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Delete IAM configuration
+      shell: bash
+      run: |
+        if [ -f constellation-iam-terraform/terraform.tfstate ]; then
+          echo "IAM Terraform state file exists, deleting..."
+          cd constellation-iam-terraform
+          terraform destroy -auto-approve
+        else
+          echo "IAM Terraform state file does not exist, exiting..."
+          exit 0
+        fi
