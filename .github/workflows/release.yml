@@ -135,7 +135,7 @@ jobs:
           - koTarget: ./joinservice/cmd
             name: join-service
           - koTarget: ./keyservice/cmd
-            name: keyservice
+            name: key-service
           - koTarget: ./verify/cmd
             name: verification-service
           - koTarget: ./operators/constellation-node-operator
