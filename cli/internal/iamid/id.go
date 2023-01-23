@@ -3,6 +3,9 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+/*
+Package iamid contains the output information of IAM resource creation.
+*/
 package iamid
 
 import (
