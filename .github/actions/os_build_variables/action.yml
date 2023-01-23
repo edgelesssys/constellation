@@ -261,8 +261,8 @@ runs:
         echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~37/image.raw" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.gcp/fedora~37/image.tar.gz" >> $GITHUB_OUTPUT
         echo "jsonOutput=${basePath}/mkosi.output.gcp/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
-        echo "imageName=constellation-${imageVersion//./-}" >> $GITHUB_OUTPUT
-        echo "imageFilename=constellation-${imageVersion//./-}.tar.gz" >> $GITHUB_OUTPUT
+        echo "imageName=${imageVersion//./-}-${stream}" >> $GITHUB_OUTPUT
+        echo "imageFilename=${imageVersion//./-}-${stream}.tar.gz" >> $GITHUB_OUTPUT
         if [[ "${stream}" = "stable" ]]
         then
           echo "imageFamily=constellation" >> $GITHUB_OUTPUT
