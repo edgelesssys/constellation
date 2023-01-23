@@ -27,7 +27,9 @@ type RecoverMessage struct {
 
 	// bytes state_disk_key = 1; removed
 	// bytes measurement_secret = 2; removed
-	KmsUri     string `protobuf:"bytes,3,opt,name=kms_uri,json=kmsUri,proto3" json:"kms_uri,omitempty"`
+	// kms_uri is the URI of the KMS the recoveryserver should use to decrypt DEKs.
+	KmsUri string `protobuf:"bytes,3,opt,name=kms_uri,json=kmsUri,proto3" json:"kms_uri,omitempty"`
+	// storage_uri is the URI of the storage location the recoveryserver should use to fetch DEKs.
 	StorageUri string `protobuf:"bytes,4,opt,name=storage_uri,json=storageUri,proto3" json:"storage_uri,omitempty"`
 }
 

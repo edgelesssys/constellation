@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
+	// GetAttestation returns an attestation for the given user data and nonce.
 	GetAttestation(ctx context.Context, in *GetAttestationRequest, opts ...grpc.CallOption) (*GetAttestationResponse, error)
 }
 
@@ -46,6 +47,7 @@ func (c *aPIClient) GetAttestation(ctx context.Context, in *GetAttestationReques
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
+	// GetAttestation returns an attestation for the given user data and nonce.
 	GetAttestation(context.Context, *GetAttestationRequest) (*GetAttestationResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }

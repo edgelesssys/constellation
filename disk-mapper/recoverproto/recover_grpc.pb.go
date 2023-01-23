@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
+	// Recover sends the necessary information to the recoveryserver to initiate recovery of a node.
 	Recover(ctx context.Context, in *RecoverMessage, opts ...grpc.CallOption) (*RecoverResponse, error)
 }
 
@@ -46,6 +47,7 @@ func (c *aPIClient) Recover(ctx context.Context, in *RecoverMessage, opts ...grp
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
+	// Recover sends the necessary information to the recoveryserver to initiate recovery of a node.
 	Recover(context.Context, *RecoverMessage) (*RecoverResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
