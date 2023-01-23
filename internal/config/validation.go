@@ -9,6 +9,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -17,10 +18,46 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/mod/semver"
 )
 
 func validateK8sVersion(fl validator.FieldLevel) bool {
 	return versions.IsSupportedK8sVersion(fl.Field().String())
+}
+
+func registerInvalidK8sVersionError(ut ut.Translator) error {
+	return ut.Add("invalid_k8s_version", "{0} specifies an unsupported Kubernetes version. {1}", true)
+}
+
+func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) string {
+	validVersions := make([]string, len(versions.VersionConfigs))
+	i := 0
+	for k := range versions.VersionConfigs {
+		validVersions[i] = string(k)
+		i++
+	}
+	validVersionsSorted := semver.ByVersion(validVersions)
+	sort.Sort(validVersionsSorted)
+
+	var errorMsg string
+	configured, ok := fe.Value().(string)
+	if !ok {
+		errorMsg = "The configured version is not a valid string"
+	}
+
+	maxVersion := validVersionsSorted[len(validVersionsSorted)-1]
+	minVersion := validVersionsSorted[0]
+
+	if configured < minVersion {
+		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s.", configured, minVersion)
+	}
+	if configured > maxVersion {
+		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s.", configured, maxVersion)
+	}
+
+	t, _ := ut.T("invalid_k8s_version", fe.Field(), errorMsg)
+
+	return t
 }
 
 func validateAWSInstanceType(fl validator.FieldLevel) bool {
