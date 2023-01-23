@@ -25,9 +25,12 @@ type IssueJoinTicketRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	DiskUuid           string `protobuf:"bytes,1,opt,name=disk_uuid,json=diskUuid,proto3" json:"disk_uuid,omitempty"`
+	// disk_uuid is the UUID of a node's state disk.
+	DiskUuid string `protobuf:"bytes,1,opt,name=disk_uuid,json=diskUuid,proto3" json:"disk_uuid,omitempty"`
+	// certificate_request is a certificate request for the node's kubelet certificate.
 	CertificateRequest []byte `protobuf:"bytes,2,opt,name=certificate_request,json=certificateRequest,proto3" json:"certificate_request,omitempty"`
-	IsControlPlane     bool   `protobuf:"varint,3,opt,name=is_control_plane,json=isControlPlane,proto3" json:"is_control_plane,omitempty"`
+	// is_control_plane indicates whether the node is a control-plane node.
+	IsControlPlane bool `protobuf:"varint,3,opt,name=is_control_plane,json=isControlPlane,proto3" json:"is_control_plane,omitempty"`
 }
 
 func (x *IssueJoinTicketRequest) Reset() {
@@ -88,16 +91,28 @@ type IssueJoinTicketResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	StateDiskKey             []byte                   `protobuf:"bytes,1,opt,name=state_disk_key,json=stateDiskKey,proto3" json:"state_disk_key,omitempty"`
-	MeasurementSalt          []byte                   `protobuf:"bytes,2,opt,name=measurement_salt,json=measurementSalt,proto3" json:"measurement_salt,omitempty"`
-	MeasurementSecret        []byte                   `protobuf:"bytes,3,opt,name=measurement_secret,json=measurementSecret,proto3" json:"measurement_secret,omitempty"`
-	KubeletCert              []byte                   `protobuf:"bytes,4,opt,name=kubelet_cert,json=kubeletCert,proto3" json:"kubelet_cert,omitempty"`
-	ApiServerEndpoint        string                   `protobuf:"bytes,5,opt,name=api_server_endpoint,json=apiServerEndpoint,proto3" json:"api_server_endpoint,omitempty"`
-	Token                    string                   `protobuf:"bytes,6,opt,name=token,proto3" json:"token,omitempty"`
-	DiscoveryTokenCaCertHash string                   `protobuf:"bytes,7,opt,name=discovery_token_ca_cert_hash,json=discoveryTokenCaCertHash,proto3" json:"discovery_token_ca_cert_hash,omitempty"`
-	ControlPlaneFiles        []*ControlPlaneCertOrKey `protobuf:"bytes,8,rep,name=control_plane_files,json=controlPlaneFiles,proto3" json:"control_plane_files,omitempty"`
-	KubernetesVersion        string                   `protobuf:"bytes,9,opt,name=kubernetes_version,json=kubernetesVersion,proto3" json:"kubernetes_version,omitempty"`
-	KubernetesComponents     []*KubernetesComponent   `protobuf:"bytes,10,rep,name=kubernetes_components,json=kubernetesComponents,proto3" json:"kubernetes_components,omitempty"`
+	// state_disk_key is the key used to encrypt the state disk.
+	StateDiskKey []byte `protobuf:"bytes,1,opt,name=state_disk_key,json=stateDiskKey,proto3" json:"state_disk_key,omitempty"`
+	// measurement_salt is a salt used to derive the node's ClusterID.
+	// This value is persisted on the state disk.
+	MeasurementSalt []byte `protobuf:"bytes,2,opt,name=measurement_salt,json=measurementSalt,proto3" json:"measurement_salt,omitempty"`
+	// measurement_secret is a secret used to derive the node's ClusterID.
+	// This value is NOT persisted on the state disk.
+	MeasurementSecret []byte `protobuf:"bytes,3,opt,name=measurement_secret,json=measurementSecret,proto3" json:"measurement_secret,omitempty"`
+	// kubelet_cert is the certificate to be used by the kubelet.
+	KubeletCert []byte `protobuf:"bytes,4,opt,name=kubelet_cert,json=kubeletCert,proto3" json:"kubelet_cert,omitempty"`
+	// api_server_endpoint is the endpoint of Constellation's API server.
+	ApiServerEndpoint string `protobuf:"bytes,5,opt,name=api_server_endpoint,json=apiServerEndpoint,proto3" json:"api_server_endpoint,omitempty"`
+	// token is the Kubernetes Join Token to be used by the node to join the cluster.
+	Token string `protobuf:"bytes,6,opt,name=token,proto3" json:"token,omitempty"`
+	// discovery_token_ca_cert_hash is a hash of the root certificate authority presented by the Kubernetes control-plane.
+	DiscoveryTokenCaCertHash string `protobuf:"bytes,7,opt,name=discovery_token_ca_cert_hash,json=discoveryTokenCaCertHash,proto3" json:"discovery_token_ca_cert_hash,omitempty"`
+	// control_plane_files is a list of control-plane certificates and keys.
+	ControlPlaneFiles []*ControlPlaneCertOrKey `protobuf:"bytes,8,rep,name=control_plane_files,json=controlPlaneFiles,proto3" json:"control_plane_files,omitempty"`
+	// kubernetes_version is the Kubernetes version to install on the node.
+	KubernetesVersion string `protobuf:"bytes,9,opt,name=kubernetes_version,json=kubernetesVersion,proto3" json:"kubernetes_version,omitempty"`
+	// kubernetes_components is a list of components to install on the node.
+	KubernetesComponents []*KubernetesComponent `protobuf:"bytes,10,rep,name=kubernetes_components,json=kubernetesComponents,proto3" json:"kubernetes_components,omitempty"`
 }
 
 func (x *IssueJoinTicketResponse) Reset() {
@@ -207,7 +222,9 @@ type ControlPlaneCertOrKey struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// name of the certificate or key.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// data of the certificate or key.
 	Data []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 }
 
@@ -262,6 +279,7 @@ type IssueRejoinTicketRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// disk_uuid is the UUID of a node's state disk.
 	DiskUuid string `protobuf:"bytes,1,opt,name=disk_uuid,json=diskUuid,proto3" json:"disk_uuid,omitempty"`
 }
 
@@ -309,7 +327,10 @@ type IssueRejoinTicketResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	StateDiskKey      []byte `protobuf:"bytes,1,opt,name=state_disk_key,json=stateDiskKey,proto3" json:"state_disk_key,omitempty"`
+	// state_disk_key is the key to decrypt the state disk.
+	StateDiskKey []byte `protobuf:"bytes,1,opt,name=state_disk_key,json=stateDiskKey,proto3" json:"state_disk_key,omitempty"`
+	// measurement_secret is a secret used to derive the node's ClusterID.
+	// This value is NOT persisted on the state disk.
 	MeasurementSecret []byte `protobuf:"bytes,2,opt,name=measurement_secret,json=measurementSecret,proto3" json:"measurement_secret,omitempty"`
 }
 
@@ -365,10 +386,14 @@ type KubernetesComponent struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Url         string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	Hash        string `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	// url to download the component from.
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	// hash of the component.
+	Hash string `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+	// install_path is the path to install the component to.
 	InstallPath string `protobuf:"bytes,3,opt,name=install_path,json=installPath,proto3" json:"install_path,omitempty"`
-	Extract     bool   `protobuf:"varint,4,opt,name=extract,proto3" json:"extract,omitempty"`
+	// extract indicates whether the component is an archive and needs to be extracted.
+	Extract bool `protobuf:"varint,4,opt,name=extract,proto3" json:"extract,omitempty"`
 }
 
 func (x *KubernetesComponent) Reset() {

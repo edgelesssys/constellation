@@ -26,6 +26,7 @@ type GetAttestationRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// bytes user_data = 1; removed
+	// nonce is a random nonce to prevent replay attacks.
 	Nonce []byte `protobuf:"bytes,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
@@ -73,6 +74,7 @@ type GetAttestationResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// attestation is the attestation for the given user data and nonce.
 	Attestation []byte `protobuf:"bytes,1,opt,name=attestation,proto3" json:"attestation,omitempty"`
 }
 

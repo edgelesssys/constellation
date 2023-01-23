@@ -22,7 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
+	// IssueJoinTicket issues a join ticket for a new node.
 	IssueJoinTicket(ctx context.Context, in *IssueJoinTicketRequest, opts ...grpc.CallOption) (*IssueJoinTicketResponse, error)
+	// IssueRejoinTicket issues a join ticket for a node that has previously joined the cluster.
 	IssueRejoinTicket(ctx context.Context, in *IssueRejoinTicketRequest, opts ...grpc.CallOption) (*IssueRejoinTicketResponse, error)
 }
 
@@ -56,7 +58,9 @@ func (c *aPIClient) IssueRejoinTicket(ctx context.Context, in *IssueRejoinTicket
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
+	// IssueJoinTicket issues a join ticket for a new node.
 	IssueJoinTicket(context.Context, *IssueJoinTicketRequest) (*IssueJoinTicketResponse, error)
+	// IssueRejoinTicket issues a join ticket for a node that has previously joined the cluster.
 	IssueRejoinTicket(context.Context, *IssueRejoinTicketRequest) (*IssueRejoinTicketResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
