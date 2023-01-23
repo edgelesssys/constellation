@@ -1,0 +1,40 @@
+name: Build and Upload OS image
+
+on:
+  schedule:
+    - cron: "0 21 * * 5" # At 21:00 on Friday.
+    - cron: "10 21 * * 5" # At 21:10 on Friday.
+    - cron: "20 21 * * 5" # At 21:20 on Friday.
+
+jobs:
+  stream:
+    runs-on: ubuntu-22.04
+    outputs:
+      stream: ${{ steps.stream.outputs.stream }}
+    steps:
+      - name: Determine stream
+        id: stream
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 21 * * 5")
+              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            "10 21 * * 5")
+              echo "stream=console" >> "$GITHUB_OUTPUT"
+              ;;
+            "20 21 * * 5")
+              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unknown stream for schedule '${{ github.event.schedule }}'"
+              exit 1
+              ;;
+          esac
+
+  build-image:
+    needs: stream
+    uses: ./.github/workflows/build-os-image.yml
+    secrets: inherit
+    with:
+      stream: ${{ needs.stream.outputs.stream }}
+      ref: main

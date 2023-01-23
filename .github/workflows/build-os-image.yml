@@ -1,9 +1,6 @@
 name: Build and Upload OS image
+
 on:
-  schedule:
-    - cron: "0 21 * * 5" # At 21:00 on Friday.
-    - cron: "10 21 * * 5" # At 21:10 on Friday.
-    - cron: "20 21 * * 5" # At 21:20 on Friday.
   workflow_dispatch:
     inputs:
       imageVersion:
@@ -142,25 +139,13 @@ jobs:
           if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "nightly" ]]; then
             echo "Nightly builds are not allowed for releases"
             exit 1
-          elif [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+          fi
+          if [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
             echo "Stable builds are only allowed for releases"
             exit 1
           fi
 
-          case "${{ github.event.schedule }}" in
-            "0 21 * * 5")
-              echo "stream=debug" >> "$GITHUB_OUTPUT"
-              ;;
-            "10 21 * * 5")
-              echo "stream=console" >> "$GITHUB_OUTPUT"
-              ;;
-            "20 21 * * 5")
-              echo "stream=nightly" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "stream=${{ inputs.stream }}" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
+          echo "stream=${{ inputs.stream }}" >> "$GITHUB_OUTPUT"
 
       - name: Determine type of image build
         shell: bash
