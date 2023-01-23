@@ -198,13 +198,18 @@ jobs:
 
       - name: Update Helm Charts
         run: |
+          sudo apt update && sudo apt install -y tree
+          tree cli/internal/helm/charts/edgeless/constellation-services/charts
+
           yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
           for service in key-service join-service ccm cnm autoscaler verification-service konnectivity gcp-guest-agent; do
             yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
             yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
             git add "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
           done
+
           git add cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+
           yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
           for service in node-maintenance-operator constellation-operator; do
             yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
