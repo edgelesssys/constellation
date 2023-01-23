@@ -139,14 +139,14 @@ func runRemove(cmd *cobra.Command, args []string) (retErr error) {
 func deleteSingleVersion(ctx context.Context, clients rmImageClients, ver versionsapi.Version, dryrun bool, log *logger.Logger) error {
 	var retErr error
 
-	log.Debugf("Deleting version %s from versions API", ver.Version)
-	if err := clients.version.DeleteVersion(ctx, ver); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("deleting version from versions API: %w", err))
-	}
-
 	log.Debugf("Deleting images for %s", ver.Version)
 	if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
 		retErr = multierr.Append(retErr, fmt.Errorf("deleting images: %w", err))
+	}
+
+	log.Debugf("Deleting version %s from versions API", ver.Version)
+	if err := clients.version.DeleteVersion(ctx, ver); err != nil {
+		retErr = multierr.Append(retErr, fmt.Errorf("deleting version from versions API: %w", err))
 	}
 
 	return retErr
