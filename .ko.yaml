@@ -7,7 +7,7 @@ baseImageOverrides:
 builds:
   - id: keyservice
     dir: .
-    main: ./keyservice/cmd
+    main: ./key-service/cmd
     env:
       - CGO_ENABLED=0
       - GOOS=linux

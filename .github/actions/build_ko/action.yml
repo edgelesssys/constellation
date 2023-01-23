@@ -21,7 +21,7 @@ inputs:
     required: true
   pushTag:
     description: "Use this image tag"
-    required: false
+    required: true
   githubToken:
     description: "GitHub authorization token"
     required: true
@@ -50,6 +50,12 @@ runs:
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
 
+    - name: Setup Go environment
+      uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+      with:
+        go-version: "1.19.5"
+        cache: true
+
     - name: Set up ko
       uses: imjasonh/setup-ko@ace48d793556083a76f1e3e6068850c1f4a369aa # v0.6
 
@@ -60,7 +66,7 @@ runs:
         KO_USER: ${{ github.actor }}
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
-        KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/${{ inputs.name }}-ko
+        KO_DOCKER_REPO: ${{ inputs.registry }}/edgelesssys/constellation/${{ inputs.name }}
       run: |
         tags=""
         sbom=""
@@ -91,7 +97,8 @@ runs:
           sbom="--sbom=none"
         fi
 
-        container_full=$(ko build ${{ inputs.koTarget }} --bare --tags ${tags} ${sbom})
+        echo "Building container image with tags: ${tags}"
+        container_full=$(ko build ${{ inputs.koTarget }} --bare --tags "${tags}" ${sbom})
         container_image=$(echo $container_full | cut -d@ -f1)
         container_sha256=$(echo $container_full | cut -d: -f2)
 

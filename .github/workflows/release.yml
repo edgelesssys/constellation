@@ -116,18 +116,48 @@ jobs:
 
   micro-services:
     name: Build micro services
+    runs-on: ubuntu-22.04
+    needs: [verify-inputs, prepare-release-branch]
+    strategy:
+      matrix:
+        koTarget:
+          [./joinservice/cmd, ./key-service/cmd, ./verify/cmd, ./operators/constellation-node-operator]
+        include:
+          - koTarget: ./joinservice/cmd
+            name: join-service
+          - koTarget: ./key-service/cmd
+            name: key-service
+          - koTarget: ./verify/cmd
+            name: verification-service
+          - koTarget: ./operators/constellation-node-operator
+            name: node-operator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build ${{ matrix.name }} micro service
+        uses: ./.github/actions/build_micro_service_ko
+        with:
+          koTarget: ${{ matrix.koTarget }}
+          name: ${{ matrix.name }}
+          pushTag: ${{ inputs.version }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+
+  micro-services-metadata:
+    name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
     uses: ./.github/workflows/build-micro-service-manual.yml
     permissions:
       contents: read
       packages: write
     secrets: inherit
-    strategy:
-      matrix:
-        service:
-          [join-service, key-service, verification-service, qemu-metadata-api]
     with:
-      microService: ${{ matrix.service }}
+      microService: qemu-metadata-api
       imageTag: ${{ inputs.version }}
       version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
@@ -148,7 +178,7 @@ jobs:
 
   update-versions:
     name: Update container image versions
-    needs: [verify-inputs, micro-services, constellation-node-operator]
+    needs: [verify-inputs, micro-services]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -182,7 +212,9 @@ jobs:
             yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
             git add "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
           done
+
           git add cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+
           yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
           for service in node-maintenance-operator constellation-operator; do
             yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
