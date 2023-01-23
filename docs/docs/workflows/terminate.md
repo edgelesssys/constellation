@@ -40,7 +40,7 @@ Terminate the cluster by running:
 terraform destroy
 ```
 
-Delete all files which are no longer needed:
+Delete all files that are no longer needed:
 
 ```bash
 rm constellation-id.json constellation-admin.conf

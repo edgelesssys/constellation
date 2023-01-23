@@ -151,6 +151,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 ## Terminate your cluster
 
+Use the CLI to terminate your cluster. If you used Terraform to manage your cloud resources, follow the corresponding instructions in the [Terminate workflow](../workflows/terminate.md).
+
 ```bash
 constellation terminate
 ```

@@ -35,17 +35,11 @@ For details on the flags, consult the command help via `constellation create -h`
 </tabItem>
 <tabItem value="terraform" label="Terraform">
 
-:::caution
-
-There is no extensive input validation with Terraform. If unsure, please use the Constellation CLI instead.
-
-:::
-
 Constellation supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
 Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
 For now, please refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
 
-Download the Terraform files for the selected CSP from our [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
+Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
 
 Create a `terraform.tfvars` file.
 There, define all needed variables found in `variables.tf` using the values from the `constellation-config.yaml`.
