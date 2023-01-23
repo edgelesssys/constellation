@@ -9,7 +9,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 ## Create a cluster
 
-1.  Create the configuration file and IAM resources for your selected cloud provider
+1. Create the configuration file and IAM resources for your selected cloud provider
 
     First, you need to create a [configuration file](../workflows/config.md) and an [IAM configuration](../workflows/config.md#creating-an-iam-configuration). The easiest way to do this is the following CLI command:
 
@@ -76,6 +76,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 -->
 
 2. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+    If you want to use Terraform for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
 
@@ -149,6 +150,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```
 
 ## Terminate your cluster
+
+Use the CLI to terminate your cluster. If you used Terraform to manage your cloud resources, follow the corresponding instructions in the [Terminate workflow](../workflows/terminate.md).
 
 ```bash
 constellation terminate
