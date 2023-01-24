@@ -14,10 +14,9 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Run apk hasher
-        working-directory: apko
         env:
           DOCKER_BUILDKIT: 1
-        run: docker build -o . -f hack/package-hasher/Containerfile.hasher.apk .
+        run: docker build -o apko -f hack/package-hasher/Containerfile.hasher.apk .
 
       - name: Create new PR
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
