@@ -1,0 +1,39 @@
+version: v2
+image: "v2.5.0"
+stateDiskSizeGB: 16
+kubernetesVersion: "1.23"
+debugCluster: false
+provider:
+  gcp:
+    project: "project-12345"
+    region: "europe-west3"
+    zone: "europe-west3-b"
+    serviceAccountKeyPath: "serviceAccountKey.json"
+    instanceType: n2d-standard-4
+    stateDiskType: pd-ssd
+    deployCSIDriver: true
+    measurements:
+      0:
+        expected: 0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf
+        warnOnly: false
+      4:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      8:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      9:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      11:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      12:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      13:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      15:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false

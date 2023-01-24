@@ -175,7 +175,7 @@ type AzureConfig struct {
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
 	//   List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
-	IDKeyDigests Digests `yaml:"idKeyDigests" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
+	IDKeyDigest Digests `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
 	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
@@ -268,7 +268,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				IDKeyDigests:         idkeydigest.DefaultsFor(cloudprovider.Azure),
+				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
@@ -444,7 +444,7 @@ func (c *Config) EnforcedPCRs() []uint32 {
 // IDKeyDigests returns the ID Key Digests for the configured cloud provider.
 func (c *Config) IDKeyDigests() idkeydigest.IDKeyDigests {
 	if c.Provider.Azure != nil {
-		return c.Provider.Azure.IDKeyDigests
+		return c.Provider.Azure.IDKeyDigest
 	}
 	return nil
 }

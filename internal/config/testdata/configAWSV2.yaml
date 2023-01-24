@@ -1,0 +1,35 @@
+version: v2
+stateDiskSizeGB: 16
+kubernetesVersion: "1.23"
+debugCluster: false
+image: v2.5.0
+provider:
+  aws:
+    region: "us-east-2"
+    zone: "us-east-2a"
+    instanceType: c5.xlarge
+    stateDiskType: gp2
+    iamProfileControlPlane: "control_plane_instance_profile"
+    iamProfileWorkerNodes: "node_instance_profile"
+    measurements:
+      4:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      8:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      9:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      11:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      12:
+        expected: "1234123412341234123412341234123412341234123412341234123412341234"
+        warnOnly: false
+      13:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      15:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false

@@ -52,7 +52,7 @@ func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Valida
 		v.azureCVM = *conf.Provider.Azure.ConfidentialVM
 		if v.azureCVM {
 			v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
-			v.idkeydigests = conf.Provider.Azure.IDKeyDigests
+			v.idkeydigests = conf.Provider.Azure.IDKeyDigest
 		}
 	}
 
