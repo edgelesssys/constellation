@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package logcollector uses podman to deploy logstash and filebeat containers
+// in order to collect logs centrally for debugging purposes.
 package logcollector
 
 import (

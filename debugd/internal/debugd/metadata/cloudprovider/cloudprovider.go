@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package cloudprovider implements a metadata service for cloud providers.
 package cloudprovider
 
 import (

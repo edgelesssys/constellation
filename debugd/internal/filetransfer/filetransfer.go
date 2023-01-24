@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package filetransfer implements the exchange of files between cdgb <-> debugd
+// and between debugd <-> debugd pairs.
 package filetransfer
 
 import (
