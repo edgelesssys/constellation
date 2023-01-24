@@ -291,6 +291,6 @@ These constraints are enforced by the CLI.
 If users decide to change specific versions by changing the Kubernetes resources, nothing is stopping them.
 
 The compatibility information should be separated from the enforcement code.
-This way a minimal implemention can be created where the compatibility information is embedded into the CLI.
+This way a minimal implementation can be created where the compatibility information is embedded into the CLI.
 As a next step the information can be served through the [Constellation API](./apis.md).
 By serving the compatibility information dynamically, faulty versions can be excluded from upgrade paths even after they have been released.
