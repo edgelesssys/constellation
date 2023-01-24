@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -683,4 +684,301 @@ func TestValidateProvider(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigVersionCompatibility(t *testing.T) {
+	const configAzureV2SingleidKeyDigest = `
+version: v2
+stateDiskSizeGB: 16
+debugCluster: false
+image: v2.5.0
+kubernetesVersion: "1.23"
+provider:
+    azure:
+        subscription: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        tenant: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        location: "West Europe"
+        resourceGroup: "resourceGroup"
+        userAssignedIdentity: /subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/resourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ConstellationUAMI
+        appClientID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        clientSecretValue: "aaaaaaaaaaaaaaaaaaaa"
+        stateDiskType: Premium_LRS
+        confidentialVM: true
+        instanceType: Standard_DC4as_v5
+        idKeyDigest: "0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3"
+        enforceIdKeyDigest: false
+        secureBoot: false
+        deployCSIDriver: true
+        measurements:
+            4:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            8:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            9:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            11:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            12:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            13:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            15:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false`
+	const configAzureV2MultipleKeyDigest = `
+version: v2
+stateDiskSizeGB: 16
+debugCluster: false
+image: v2.5.0
+kubernetesVersion: "1.23"
+provider:
+    azure:
+        tenant: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        subscription: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        location: "West Europe"
+        resourceGroup: "resourceGroup"
+        userAssignedIdentity: /subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/resourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ConstellationUAMI
+        appClientID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        clientSecretValue: "aaaaaaaaaaaaaaaaaaaa"
+        stateDiskType: Premium_LRS
+        confidentialVM: true
+        instanceType: Standard_DC4as_v5
+        idKeyDigest:
+            - 57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696
+            - 0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3
+        enforceIdKeyDigest: false
+        secureBoot: false
+        deployCSIDriver: true
+        measurements:
+            4:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            8:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            9:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            11:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            12:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            13:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            15:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false`
+	const configGCPV2 = `
+version: v2
+image: "v2.5.0"
+stateDiskSizeGB: 16
+kubernetesVersion: "1.23"
+debugCluster: false
+provider:
+    gcp:
+        project: "project-12345"
+        region: "europe-west3"
+        zone: "europe-west3-b"
+        serviceAccountKeyPath: "serviceAccountKey.json"
+        instanceType: n2d-standard-4
+        stateDiskType: pd-ssd
+        deployCSIDriver: true
+        measurements:
+            0:
+                expected: 0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf
+                warnOnly: false
+            4:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            8:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            9:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            11:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            12:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            13:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            15:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false`
+	const configAWSV2 = `
+version: v2
+stateDiskSizeGB: 16
+kubernetesVersion: "1.23"
+debugCluster: false
+image: v2.5.0
+provider:
+    aws:
+        region: "us-east-2"
+        zone: "us-east-2a"
+        instanceType: c5.xlarge
+        stateDiskType: gp2
+        iamProfileControlPlane: "control_plane_instance_profile"
+        iamProfileWorkerNodes: "node_instance_profile"
+        measurements:
+            4:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            8:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            9:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            11:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            12:
+                expected: "1234123412341234123412341234123412341234123412341234123412341234"
+                warnOnly: false
+            13:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false
+            15:
+                expected: "0000000000000000000000000000000000000000000000000000000000000000"
+                warnOnly: false`
+	testCases := map[string]struct {
+		config         string
+		expectedConfig *Config
+	}{
+		"config v2 azure with singular idkeydigest": {
+			config: configAzureV2SingleidKeyDigest,
+			expectedConfig: &Config{
+				Version:           "v2",
+				Image:             "v2.5.0",
+				StateDiskSizeGB:   16,
+				KubernetesVersion: "1.23",
+				DebugCluster:      toPtr(false),
+				Provider: ProviderConfig{
+					Azure: &AzureConfig{
+						SubscriptionID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						TenantID:             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						Location:             "West Europe",
+						ResourceGroup:        "resourceGroup",
+						UserAssignedIdentity: "/subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/resourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ConstellationUAMI",
+						AppClientID:          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						ClientSecretValue:    "aaaaaaaaaaaaaaaaaaaa",
+						StateDiskType:        "Premium_LRS",
+						ConfidentialVM:       toPtr(true),
+						InstanceType:         "Standard_DC4as_v5",
+						IDKeyDigest:          idkeydigest.IDKeyDigests{{0x03, 0x56, 0x21, 0x58, 0x82, 0xa8, 0x25, 0x27, 0x9a, 0x85, 0xb3, 0x00, 0xb0, 0xb7, 0x42, 0x93, 0x1d, 0x11, 0x3b, 0xf7, 0xe3, 0x2d, 0xde, 0x2e, 0x50, 0xff, 0xde, 0x7e, 0xc7, 0x43, 0xca, 0x49, 0x1e, 0xcd, 0xd7, 0xf3, 0x36, 0xdc, 0x28, 0xa6, 0xe0, 0xb2, 0xbb, 0x57, 0xaf, 0x7a, 0x44, 0xa3}},
+						EnforceIDKeyDigest:   toPtr(false),
+						SecureBoot:           toPtr(false),
+						DeployCSIDriver:      toPtr(true),
+						Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
+					},
+				},
+			},
+		},
+		"config v2 azure with multiple idkeydigest": {
+			config: configAzureV2MultipleKeyDigest,
+			expectedConfig: &Config{
+				Version:           "v2",
+				Image:             "v2.5.0",
+				StateDiskSizeGB:   16,
+				KubernetesVersion: "1.23",
+				DebugCluster:      toPtr(false),
+				Provider: ProviderConfig{
+					Azure: &AzureConfig{
+						SubscriptionID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						TenantID:             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						Location:             "West Europe",
+						ResourceGroup:        "resourceGroup",
+						UserAssignedIdentity: "/subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/resourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ConstellationUAMI",
+						AppClientID:          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+						ClientSecretValue:    "aaaaaaaaaaaaaaaaaaaa",
+						StateDiskType:        "Premium_LRS",
+						ConfidentialVM:       toPtr(true),
+						InstanceType:         "Standard_DC4as_v5",
+						IDKeyDigest: idkeydigest.IDKeyDigests{
+							{0x57, 0x48, 0x6a, 0x44, 0x7e, 0xc0, 0xf1, 0x95, 0x80, 0x02, 0xa2, 0x2a, 0x06, 0xb7, 0x67, 0x3b, 0x9f, 0xd2, 0x7d, 0x11, 0xe1, 0xc6, 0x52, 0x74, 0x98, 0x05, 0x60, 0x54, 0xc5, 0xfa, 0x92, 0xd2, 0x3c, 0x50, 0xf9, 0xde, 0x44, 0x07, 0x27, 0x60, 0xfe, 0x2b, 0x6f, 0xb8, 0x97, 0x40, 0xb6, 0x96},
+							{0x03, 0x56, 0x21, 0x58, 0x82, 0xa8, 0x25, 0x27, 0x9a, 0x85, 0xb3, 0x00, 0xb0, 0xb7, 0x42, 0x93, 0x1d, 0x11, 0x3b, 0xf7, 0xe3, 0x2d, 0xde, 0x2e, 0x50, 0xff, 0xde, 0x7e, 0xc7, 0x43, 0xca, 0x49, 0x1e, 0xcd, 0xd7, 0xf3, 0x36, 0xdc, 0x28, 0xa6, 0xe0, 0xb2, 0xbb, 0x57, 0xaf, 0x7a, 0x44, 0xa3},
+						},
+						EnforceIDKeyDigest: toPtr(false),
+						SecureBoot:         toPtr(false),
+						DeployCSIDriver:    toPtr(true),
+						Measurements:       measurements.DefaultsFor(cloudprovider.Azure),
+					},
+				},
+			},
+		},
+		"config v2 gcp": {
+			config: configGCPV2,
+			expectedConfig: &Config{
+				Version:           "v2",
+				Image:             "v2.5.0",
+				StateDiskSizeGB:   16,
+				KubernetesVersion: "1.23",
+				DebugCluster:      toPtr(false),
+				Provider: ProviderConfig{
+					GCP: &GCPConfig{
+						Project:               "project-12345",
+						Region:                "europe-west3",
+						Zone:                  "europe-west3-b",
+						ServiceAccountKeyPath: "serviceAccountKey.json",
+						InstanceType:          "n2d-standard-4",
+						StateDiskType:         "pd-ssd",
+						DeployCSIDriver:       toPtr(true),
+						Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
+					},
+				},
+			},
+		},
+		"config v2 aws": {
+			config: configAWSV2,
+			expectedConfig: &Config{
+				Version:           "v2",
+				Image:             "v2.5.0",
+				StateDiskSizeGB:   16,
+				KubernetesVersion: "1.23",
+				DebugCluster:      toPtr(false),
+				Provider: ProviderConfig{
+					AWS: &AWSConfig{
+						Region:                 "us-east-2",
+						Zone:                   "us-east-2a",
+						InstanceType:           "c5.xlarge",
+						StateDiskType:          "gp2",
+						IAMProfileControlPlane: "control_plane_instance_profile",
+						IAMProfileWorkerNodes:  "node_instance_profile",
+						Measurements:           measurements.DefaultsFor(cloudprovider.AWS),
+					},
+				},
+			},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			const configName = "config"
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+			require.NoError(fileHandler.Write(configName, []byte(tc.config), file.OptNone))
+			config, err := FromFile(fileHandler, configName)
+
+			assert.NoError(err)
+			assert.Equal(tc.expectedConfig, config)
+		})
+	}
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
