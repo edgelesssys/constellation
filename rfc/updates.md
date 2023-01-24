@@ -198,9 +198,10 @@ Image patch versions are forward compatible within one minor version.
 Lastly, the CLI checks if a newer CLI version is available via the update API (see: rfc/update-api.json). If this is the case, it will print the latest CLI version instead of the output described above.
 If the current version and latest version diverge more than one minor version, it will also show the latest CLI of the next minor version, and suggest a way to download it.
 An example:
-current CLI version: `2.3.2`
-available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`
-latest CLI version: `2.5.0`
+- current CLI version: `2.3.2`
+- available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`
+- latest CLI version: `2.5.0`
+
 `constellation upgrade check` will show `2.5.0` as latest, and suggest that the next step in the upgrade process is `2.4.3`.
 Since any CLI can only upgrade from one minor version below to its own version, we need to perform the upgrade to `2.4.3` before upgrading to `2.5.0`.
 If there are still microservice updates needed with the current CLI, we need to prompt the user to first install those before continuing with the next minor release.
@@ -266,4 +267,30 @@ Upgrading Constellation microservices to 2.2.0:
 
 Warning: Please backup any important components before upgrading Kubernetes
 Apply change [yes/No]?
+
 ```
+
+# Compatibility
+`constellation upgrade` has to handle the version of four components: CLI, image, microservices and Kubernetes.
+To do this correctly and keep the cluster in a working condition some constraints are required.
+
+- Constellation microservices, VM image and the CLI are versioned in lockstep, i.e. each release a new version of all components is released.
+  The Constellation version references all of these components.
+- Each Constellation version is compatible with three or four Kubernetes versions.
+  When a new Kubernetes version is released, Constellation will support four versions for one release cycle; before phasing out the oldest Kubernetes version.
+  To learn if microserviceVersion A.B.C is compatible with Kubernetes version X.Y, one has to check whether the Constellation version is compatible with the Kubernetes version X.Y.
+- Each Constellation version X.Y.Z is compatible with all patch versions of the next Constellation version X.Y+1.
+- The individual versions of Microservice, image and CLI all have to be compatible with the targeted Kubernetes version.
+  Each component can be upgraded independently.
+  This means that during a Kubernetes upgrade the oldest Constellation component has to be compatible with the new Kubernetes version.
+  If not, this oldest component has to be updated first.
+- For Kubernetes versions the version-target of an upgrade has to be supported by the current Constellation version.
+  The currently running Kubernetes version is not relevant for the Kubernetes upgrade.
+
+These constraints are enforced by the CLI.
+If users decide to change specific versions by changing the Kubernetes resources, nothing is stopping them.
+
+The compatibility information should be separated from the enforcement code.
+This way a minimal implementation can be created where the compatibility information is embedded into the CLI.
+As a next step the information can be served through the [Constellation API](./apis.md).
+By serving the compatibility information dynamically, faulty versions can be excluded from upgrade paths even after they have been released.
