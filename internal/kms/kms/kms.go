@@ -9,7 +9,6 @@ package kms
 
 import (
 	"context"
-	"errors"
 )
 
 // CloudKMS enables using cloud base Key Management Services.
@@ -28,6 +27,3 @@ type Storage interface {
 	// Put saves a DEK to the storage by key ID.
 	Put(context.Context, string, []byte) error
 }
-
-// ErrKEKUnknown is an error raised by unknown KEK in the KMS.
-var ErrKEKUnknown = errors.New("requested KEK not found")

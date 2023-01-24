@@ -25,9 +25,6 @@ type KMSClient struct {
 }
 
 // New creates and initializes a new KMSClient for AWS.
-//
-// The parameter client needs to be initialized with valid AWS credentials (https://aws.github.io/aws-sdk-go-v2/docs/getting-started).
-// If storage is nil, the default MemMapStorage is used.
 func New(ctx context.Context, store kmsInterface.Storage, cfg uri.AWSConfig) (*KMSClient, error) {
 	if store == nil {
 		store = storage.NewMemMapStorage()
@@ -51,7 +48,7 @@ func New(ctx context.Context, store kmsInterface.Storage, cfg uri.AWSConfig) (*K
 	}, nil
 }
 
-// GetDEK returns the DEK for dekID and kekID from the KMS.
+// GetDEK fetches an encrypted Data Encryption Key from storage and decrypts it using a KEK stored in AWS KMS.
 func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
 	return c.kms.GetDEK(ctx, keyID, dekSize)
 }

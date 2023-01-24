@@ -66,7 +66,7 @@ func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]by
 	return dek, nil
 }
 
-// putDEK saves an encrypted Data Encryption Key to storage.
+// putDEK encrypts a Data Encryption Key and saves it to storage.
 func (c *KMSClient) putDEK(ctx context.Context, keyID string, plainDEK []byte) error {
 	wrappedKey, err := c.Wrapper.Encrypt(ctx, plainDEK)
 	if err != nil {

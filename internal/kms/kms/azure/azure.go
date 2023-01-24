@@ -50,7 +50,7 @@ func New(ctx context.Context, store kms.Storage, cfg uri.AzureConfig) (*KMSClien
 	}, nil
 }
 
-// GetDEK fetches an encrypted Data Encryption Key from storage and decrypts it using a KEK stored in Google's KMS.
+// GetDEK fetches an encrypted Data Encryption Key from storage and decrypts it using a KEK stored in Azure Key Vault.
 func (c *KMSClient) GetDEK(ctx context.Context, keyID string, dekSize int) ([]byte, error) {
 	return c.kms.GetDEK(ctx, keyID, dekSize)
 }
