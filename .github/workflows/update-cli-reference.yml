@@ -1,4 +1,5 @@
-name: Publish CLI reference to documentation
+name: Update the CLI reference page of the documentation
+
 on:
   workflow_dispatch:
   push:
@@ -10,9 +11,8 @@ on:
       - "hack/clidocgen/**"
 
 jobs:
-  publish-to-docs:
+  update-docs:
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout Constellation
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -25,43 +25,25 @@ jobs:
           go-version: "1.19.5"
           cache: true
 
-      - name: Generate reference docs
+      - name: Regenerate CLI reference of the documentation
         working-directory: hack/clidocgen
         run: go run . | cat header.md - > ../../cli.md
 
-      - name: Get commit sha
-        run: |
-          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> "$GITHUB_ENV"
-
-      - name: Check if action branch exists
-        run: |
-          ex="$(git ls-remote --heads origin action/constellation/update-cli-reference)"
-          echo "EXISTS=$(if [[ -z "$ex" ]]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
-
-      - name: Publish new reference (create new branch)
-        if: env.EXISTS == 0
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
+      - name: Create PR (if there are changes)
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
         with:
-          source_file: "cli.md"
-          destination_repo: "edgelesssys/constellation"
-          destination_branch_create: "action/constellation/update-cli-reference"
-          destination_folder: "docs/docs/reference"
-          user_name: "${{ github.actor }}"
-          user_email: "${{ github.actor }}@users.noreply.github.com"
-          commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
+          branch: ci/cli-ref/update
+          base: main
+          title: "docs: update cli reference"
+          body: |
+            :robot: *This is an automated PR.* :robot:
 
-      - name: Publish new reference (update branch)
-        if: env.EXISTS == 1
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
-        with:
-          source_file: "cli.md"
-          destination_repo: "edgelesssys/constellation"
-          destination_branch: "action/constellation/update-cli-reference"
-          destination_folder: "docs/docs/reference"
-          user_name: "${{ github.actor }}"
-          user_email: "${{ github.actor }}@users.noreply.github.com"
-          commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
+            Changes in the CLI triggered this PR, it updates the corresponding documentation page.
+
+            If there is anything wrong with the content of this PR, **please don't do changes on this PR**,
+            rather make the changes in the CLI code and open a separate PR.
+            You can leave this PR open (it will be updated, use a "hold" label) or close it (a new PR will
+            be created automatically on new changes on main).
+          commit-message: "docs: update cli reference"
+          committer: edgelessci <edgelessci@users.noreply.github.com>
+          labels: no-changelog
