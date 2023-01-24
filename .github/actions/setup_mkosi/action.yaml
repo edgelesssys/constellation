@@ -15,11 +15,13 @@ runs:
         sudo apt-get update
         sudo apt-get install --assume-yes --no-install-recommends \
           dnf \
-          systemd-container \
-          qemu-system-x86 \
-          ovmf \
           e2fsprogs \
-          squashfs-tools
+          libfdisk-dev \
+          mtools \
+          ovmf \
+          qemu-system-x86 \
+          squashfs-tools \
+          systemd-container
         echo "::endgroup::"
 
     # Try to eliminate "Failed to dissect image: Connection timed out" errors from nspawn by compiling
@@ -30,11 +32,19 @@ runs:
       run: |
         echo "::group::Update systemd-nspawn"
         sudo apt-get build-dep systemd
-        git clone https://github.com/systemd/systemd-stable --branch v251.2 --depth=1
-        meson systemd-stable/build systemd-stable
-        ninja -C systemd-stable/build systemd-nspawn
-        sudo ln -svf $PWD/systemd-stable/build/systemd-nspawn $(which systemd-nspawn)
+        git clone https://github.com/systemd/systemd --depth=1
+        meson systemd/build systemd -Drepart=true -Defi=true
+        ninja -C systemd/build systemd-nspawn systemd-dissect systemd-repart systemd-analyze bootctl ukify
+        sudo ln -svf $PWD/systemd/build/systemd-nspawn /usr/bin/systemd-nspawn
+        sudo ln -svf $PWD/systemd/build/systemd-dissect /usr/bin/systemd-dissect
+        sudo ln -svf $PWD/systemd/build/systemd-repart /usr/bin/systemd-repart
+        sudo ln -svf $PWD/systemd/build/systemd-analyze /usr/bin/systemd-analyze
+        sudo ln -svf $PWD/systemd/build/bootctl /usr/bin/bootctl
+        sudo ln -svf $PWD/systemd/build/ukify /usr/bin/ukify
         systemd-nspawn --version
+        systemd-dissect --version
+        systemd-repart --version
+        bootctl --version
         echo "::endgroup::"
 
     - name: Install
