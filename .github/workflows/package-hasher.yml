@@ -3,11 +3,6 @@ name: Package hasher
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/package-hasher.yml"
-      - "hack/package-hasher/Containerfile.hasher.apk"
 
 jobs:
   hash:
