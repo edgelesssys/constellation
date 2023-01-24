@@ -4,6 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package server implements the gRPC endpoint of Constellation's debugd.
 package server
 
 import (

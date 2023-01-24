@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package info implements the info map that is
+// used to distribute key–value pair between debugd instances.
 package info
 
 import (
