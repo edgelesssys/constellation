@@ -89,7 +89,7 @@ func TestNewValidator(t *testing.T) {
 				conf.Provider.GCP = &config.GCPConfig{Measurements: tc.pcrs}
 			}
 			if tc.provider == cloudprovider.Azure {
-				conf.Provider.Azure = &config.AzureConfig{Measurements: tc.pcrs, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigests: tc.digest, ConfidentialVM: &tc.azureCVM}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: tc.pcrs, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigest: tc.digest, ConfidentialVM: &tc.azureCVM}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				conf.Provider.QEMU = &config.QEMUConfig{Measurements: tc.pcrs}

@@ -238,7 +238,7 @@ func init() {
 	AzureConfigDoc.Fields[11].Note = ""
 	AzureConfigDoc.Fields[11].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 	AzureConfigDoc.Fields[11].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
-	AzureConfigDoc.Fields[12].Name = "idKeyDigests"
+	AzureConfigDoc.Fields[12].Name = "idKeyDigest"
 	AzureConfigDoc.Fields[12].Type = "Digests"
 	AzureConfigDoc.Fields[12].Note = ""
 	AzureConfigDoc.Fields[12].Description = "List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
