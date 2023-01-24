@@ -10,12 +10,14 @@ on:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
+      - "**/testdata/**"
       - "./github/workflows/test-unittest.yml"
   pull_request:
     paths:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
+      - "**/testdata/**"
       - "./github/workflows/test-unittest.yml"
 
 jobs:
