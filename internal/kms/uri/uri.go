@@ -50,7 +50,7 @@ const (
 	clusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	awsS3URI      = "storage://aws?bucket=%s&region=%s&accessKeyID=%s&accessKey=%s"
 	azureBlobURI  = "storage://azure?account=%s&container=%s&clientID=%s&clientSecret=%s&vaultName=%s"
-	gcpStorageURI = "storage://gcp?projects=%s&bucket=%s"
+	gcpStorageURI = "storage://gcp?project=%s&bucket=%s&credentialsPath=%s"
 	NoStoreURI    = "storage://no-store"
 )
 
@@ -380,7 +380,7 @@ func DecodeGCPConfigFromURI(uri string) (GCPConfig, error) {
 	}
 
 	q := u.Query()
-	credentials, err := getQueryParameter(q, "credentials")
+	credentials, err := getQueryParameter(q, "credentialsPath")
 	if err != nil {
 		return GCPConfig{}, err
 	}
@@ -419,6 +419,58 @@ func (g GCPConfig) EncodeToURI() string {
 		url.QueryEscape(g.KeyRing),
 		url.QueryEscape(g.CredentialsPath),
 		url.QueryEscape(g.KeyName),
+	)
+}
+
+// GoogleCloudStorageConfig is the configuration to authenticate with Google Cloud Storage.
+type GoogleCloudStorageConfig struct {
+	CredentialsPath string
+	ProjectID       string
+	Bucket          string
+}
+
+// DecodeGoogleCloudStorageConfigFromURI decodes a Google Cloud Storage configuration from a URI.
+func DecodeGoogleCloudStorageConfigFromURI(uri string) (GoogleCloudStorageConfig, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return GoogleCloudStorageConfig{}, err
+	}
+
+	if u.Scheme != "storage" {
+		return GoogleCloudStorageConfig{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
+	}
+	if u.Host != "google" {
+		return GoogleCloudStorageConfig{}, fmt.Errorf("invalid host: %q", u.Host)
+	}
+
+	q := u.Query()
+	credentials, err := getQueryParameter(q, "credentialsPath")
+	if err != nil {
+		return GoogleCloudStorageConfig{}, err
+	}
+	projectID, err := getQueryParameter(q, "projectID")
+	if err != nil {
+		return GoogleCloudStorageConfig{}, err
+	}
+	bucket, err := getQueryParameter(q, "bucket")
+	if err != nil {
+		return GoogleCloudStorageConfig{}, err
+	}
+
+	return GoogleCloudStorageConfig{
+		CredentialsPath: credentials,
+		ProjectID:       projectID,
+		Bucket:          bucket,
+	}, nil
+}
+
+// EncodeToURI returns a URI encoding the Google Cloud Storage configuration.
+func (g GoogleCloudStorageConfig) EncodeToURI() string {
+	return fmt.Sprintf(
+		gcpStorageURI,
+		url.QueryEscape(g.ProjectID),
+		url.QueryEscape(g.Bucket),
+		url.QueryEscape(g.CredentialsPath),
 	)
 }
 

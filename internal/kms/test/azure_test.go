@@ -15,11 +15,9 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/azureblob"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,8 +29,6 @@ func TestAzureStorage(t *testing.T) {
 		flag.Usage()
 		t.Fatal("Required flags not set: --az-storage-account, --az-container, --az-tenant-id, --az-client-id, --az-client-secret")
 	}
-
-	assert := assert.New(t)
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -48,18 +44,7 @@ func TestAzureStorage(t *testing.T) {
 	store, err := azureblob.New(ctx, cfg)
 	require.NoError(err)
 
-	testData := []byte("Constellation test data")
-	testName := "constellation-test"
-
-	err = store.Put(ctx, testName, testData)
-	require.NoError(err)
-
-	got, err := store.Get(ctx, testName)
-	require.NoError(err)
-	assert.Equal(testData, got)
-
-	_, err = store.Get(ctx, addSuffix("does-not-exist"))
-	assert.ErrorIs(err, storage.ErrDEKUnset)
+	runStorageTest(t, store)
 }
 
 func TestAzureKeyKMS(t *testing.T) {

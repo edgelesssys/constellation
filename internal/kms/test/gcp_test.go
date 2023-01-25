@@ -15,11 +15,9 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,29 +53,22 @@ func TestGcpStorage(t *testing.T) {
 	if !*runGcpStorage {
 		t.Skip("Skipping Google Storage test")
 	}
-
-	if *gcpProjectID == "" || *gcpBucket == "" {
+	if *gcpProjectID == "" || *gcpBucket == "" || *gcpCredentialsPath == "" {
 		flag.Usage()
 		t.Fatal("Required flags not set: --gcp-project, --gcp-bucket ")
 	}
-
-	assert := assert.New(t)
+	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	store, err := gcs.New(ctx, *gcpProjectID, *gcpBucket, nil)
-	assert.NoError(err)
 
-	testData := []byte("Constellation test data")
-	testName := "constellation-test"
+	cfg := uri.GoogleCloudStorageConfig{
+		CredentialsPath: *gcpCredentialsPath,
+		ProjectID:       *gcpProjectID,
+		Bucket:          *gcpBucket,
+	}
+	store, err := gcs.New(ctx, cfg)
+	require.NoError(err)
 
-	err = store.Put(ctx, testName, testData)
-	assert.NoError(err)
-
-	got, err := store.Get(ctx, testName)
-	assert.NoError(err)
-	assert.Equal(testData, got)
-
-	_, err = store.Get(ctx, addSuffix("does-not-exist"))
-	assert.ErrorIs(err, storage.ErrDEKUnset)
+	runStorageTest(t, store)
 }

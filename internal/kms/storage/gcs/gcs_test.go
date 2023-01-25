@@ -16,7 +16,6 @@ import (
 	gcstorage "cloud.google.com/go/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/api/option"
 )
 
 type stubGCPStorageAPI struct {
@@ -29,7 +28,7 @@ type stubGCPStorageAPI struct {
 	writer             *stubWriteCloser
 }
 
-func (s *stubGCPStorageAPI) stubClientFactory(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error) {
+func (s *stubGCPStorageAPI) stubClientFactory(ctx context.Context) (gcpStorageAPI, error) {
 	return s, s.newClientErr
 }
 
@@ -101,7 +100,6 @@ func TestGCPGet(t *testing.T) {
 
 			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
-				projectID:  "test",
 				bucketName: "test",
 			}
 
@@ -158,7 +156,6 @@ func TestGCPPut(t *testing.T) {
 
 			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
-				projectID:  "test",
 				bucketName: "test",
 			}
 			testData := []byte{0x1, 0x2, 0x3}
@@ -211,11 +208,10 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 
 			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
-				projectID:  "test",
 				bucketName: "test",
 			}
 
-			err := client.createContainerOrContinue(context.Background(), nil)
+			err := client.createContainerOrContinue(context.Background(), "project")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

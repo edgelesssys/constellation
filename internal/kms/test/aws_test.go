@@ -18,11 +18,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/awss3"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,13 +28,10 @@ func TestAwsStorage(t *testing.T) {
 	if !*runAwsStorage {
 		t.Skip("Skipping AWS storage test")
 	}
-
 	if *awsAccessKey == "" || *awsAccessKeyID == "" || *awsBucket == "" || *awsRegion == "" {
 		flag.Usage()
 		t.Fatal("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region")
 	}
-
-	assert := assert.New(t)
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -52,28 +47,7 @@ func TestAwsStorage(t *testing.T) {
 	store, err := awss3.New(ctx, cfg)
 	require.NoError(err)
 
-	testDEK1 := []byte("test DEK")
-	testDEK2 := []byte("more test DEK")
-
-	// request unset value
-	_, err = store.Get(ctx, "test:input")
-	assert.Error(err)
-
-	// test Put method
-	require.NoError(store.Put(ctx, "volume01", testDEK1))
-	require.NoError(store.Put(ctx, "volume02", testDEK2))
-
-	// make sure values have been set
-	val, err := store.Get(ctx, "volume01")
-	require.NoError(err)
-	assert.Equal(testDEK1, val)
-	val, err = store.Get(ctx, "volume02")
-	require.NoError(err)
-	assert.Equal(testDEK2, val)
-
-	_, err = store.Get(ctx, "invalid:key")
-	assert.Error(err)
-	assert.ErrorIs(err, storage.ErrDEKUnset)
+	runStorageTest(t, store)
 
 	cleanUpBucket(ctx, require, *awsBucket, func(*s3.Options) {})
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,8 +51,6 @@ var (
 	gcpProjectID       = flag.String("gcp-project", "", "Project ID to use for Google tests. Required for Google KMS and Google storage test.")
 	gcpKeyRing         = flag.String("gcp-keyring", "", "Key ring to use for Google KMS test. Required for Google KMS test.")
 	gcpLocation        = flag.String("gcp-location", "global", "Location of the keyring. Required for Google KMS test.")
-
-	runGcsStorageTestBench = flag.Bool("gcp-storage-testbench", false, "set to run Google Storage test against testbench")
 )
 
 func TestMain(m *testing.M) {
@@ -82,6 +81,27 @@ func runKMSTest(t *testing.T, kms kms.CloudKMS) {
 	assert.Len(res3, config.SymmetricKeyLength)
 	assert.NotEqual(res, res3)
 	t.Logf("DEK 3: %x\n", res3)
+}
+
+func runStorageTest(t *testing.T, store storage.Storage) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	testData := []byte("Constellation test data")
+	testName := "constellation-test"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	err := store.Put(ctx, testName, testData)
+	require.NoError(err)
+
+	got, err := store.Get(ctx, testName)
+	require.NoError(err)
+	assert.Equal(testData, got)
+
+	_, err = store.Get(ctx, addSuffix("does-not-exist"))
+	assert.ErrorIs(err, storage.ErrDEKUnset)
 }
 
 func addSuffix(s string) string {

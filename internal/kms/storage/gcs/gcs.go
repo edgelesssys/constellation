@@ -14,6 +14,7 @@ import (
 
 	gcstorage "cloud.google.com/go/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"google.golang.org/api/option"
 )
 
@@ -47,25 +48,21 @@ func (c *wrappedGCPClient) NewReader(ctx context.Context, bucketName, objectName
 
 // Storage is an implementation of the Storage interface, storing keys in Google Cloud Storage buckets.
 type Storage struct {
-	newClient  func(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error)
-	projectID  string
+	newClient  func(ctx context.Context) (gcpStorageAPI, error)
 	bucketName string
-	opts       []option.ClientOption
 }
 
 // New creates a Storage client for Google Cloud Storage: https://cloud.google.com/storage/docs/
 //
 // The parameter bucketOptions is optional, if not present default options will be created.
-func New(ctx context.Context, projectID, bucketName string, bucketOptions *gcstorage.BucketAttrs, opts ...option.ClientOption) (*Storage, error) {
+func New(ctx context.Context, cfg uri.GoogleCloudStorageConfig) (*Storage, error) {
 	s := &Storage{
-		newClient:  gcpStorageClientFactory,
-		projectID:  projectID,
-		bucketName: bucketName,
-		opts:       opts,
+		newClient:  newGCPStorageClientFactory(cfg.CredentialsPath),
+		bucketName: cfg.Bucket,
 	}
 
 	// Make sure the storage bucket exists, if not create it
-	if err := s.createContainerOrContinue(ctx, bucketOptions); err != nil {
+	if err := s.createContainerOrContinue(ctx, cfg.ProjectID); err != nil {
 		return nil, err
 	}
 
@@ -74,7 +71,7 @@ func New(ctx context.Context, projectID, bucketName string, bucketOptions *gcsto
 
 // Get returns a DEK from Google Cloud Storage by key ID.
 func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
-	client, err := s.newClient(ctx, s.opts...)
+	client, err := s.newClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +91,7 @@ func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 
 // Put saves a DEK to Google Cloud Storage by key ID.
 func (s *Storage) Put(ctx context.Context, keyID string, data []byte) error {
-	client, err := s.newClient(ctx, s.opts...)
+	client, err := s.newClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -107,15 +104,15 @@ func (s *Storage) Put(ctx context.Context, keyID string, data []byte) error {
 	return err
 }
 
-func (s *Storage) createContainerOrContinue(ctx context.Context, bucketOptions *gcstorage.BucketAttrs) error {
-	client, err := s.newClient(ctx, s.opts...)
+func (s *Storage) createContainerOrContinue(ctx context.Context, projectID string) error {
+	client, err := s.newClient(ctx)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
 	if _, err := client.Attrs(ctx, s.bucketName); errors.Is(err, gcstorage.ErrBucketNotExist) {
-		return client.CreateBucket(ctx, s.bucketName, s.projectID, bucketOptions)
+		return client.CreateBucket(ctx, s.bucketName, projectID, nil)
 	} else if err != nil {
 		return err
 	}
@@ -123,10 +120,12 @@ func (s *Storage) createContainerOrContinue(ctx context.Context, bucketOptions *
 	return nil
 }
 
-func gcpStorageClientFactory(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error) {
-	client, err := gcstorage.NewClient(ctx, opts...)
-	if err != nil {
-		return nil, err
+func newGCPStorageClientFactory(credPath string) func(context.Context) (gcpStorageAPI, error) {
+	return func(ctx context.Context) (gcpStorageAPI, error) {
+		client, err := gcstorage.NewClient(ctx, option.WithCredentialsFile(credPath))
+		if err != nil {
+			return nil, err
+		}
+		return &wrappedGCPClient{client}, nil
 	}
-	return &wrappedGCPClient{client}, nil
 }

@@ -102,11 +102,11 @@ func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
 		return azureblob.New(ctx, cfg)
 
 	case "gcp":
-		project, bucket, err := getGCPStorageConfig(url)
+		cfg, err := uri.DecodeGoogleCloudStorageConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return gcs.New(ctx, project, bucket, nil)
+		return gcs.New(ctx, cfg)
 
 	case "no-store":
 		return nil, nil
@@ -158,11 +158,6 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", url.Host)
 	}
-}
-
-func getGCPStorageConfig(uri *url.URL) (string, string, error) {
-	r, err := getConfig(uri.Query(), []string{"project", "bucket"})
-	return r[0], r[1], err
 }
 
 // getConfig parses url query values, returning a map of the requested values.
