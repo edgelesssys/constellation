@@ -6,6 +6,7 @@ DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
+EXTRA_SEARCH_PATHS               ?=
 IMAGE_VERSION                    ?= v0.0.0
 AUTOLOGIN                        ?= false
 AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
@@ -36,7 +37,7 @@ prebuilt/rpms/azure/%.rpm:
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.7/200.fc37/x86_64/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
-	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) $(AUTOLOGIN_ARGS) --environment=CONSOLE_MOTD build
+	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) $(AUTOLOGIN_ARGS) --environment=CONSOLE_MOTD --extra-search-paths "$(EXTRA_SEARCH_PATHS)" build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \
 		chown -R $(SUDO_UID):$(SUDO_GID) mkosi.output.$*; \

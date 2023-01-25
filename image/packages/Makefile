@@ -2,8 +2,9 @@ SHELL                             = /bin/bash
 SRC_PATH                          = $(CURDIR)
 BASE_PATH                        ?= $(SRC_PATH)
 MKOSI_CACHE                      ?= $(BASE_PATH)/mkosi.cache
-REPODIR						     ?= $(BASE_PATH)/repo
-ORAS_IMAGE						 ?= ghcr.io/edgelesssys/constellation-rpms
+REPODIR                          ?= $(BASE_PATH)/repo
+ORAS_IMAGE                       ?= ghcr.io/edgelesssys/constellation-rpms
+EXTRA_SEARCH_PATHS               ?=
 MKOSI                            ?= mkosi
 
 .PHONY: all clean update repo testrepo
