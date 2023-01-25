@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - "release/**"
     paths:
       - "/apko/**"
       - "/.github/workflows/build-apko-image.yml"
