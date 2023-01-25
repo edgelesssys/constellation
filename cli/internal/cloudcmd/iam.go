@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -48,7 +49,7 @@ func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHan
 	}
 
 	if tfState.Values == nil {
-		return false, nil
+		return false, errors.New("No Values field in terraform state")
 	}
 
 	saKeyJSON, containsKey := tfState.Values.Outputs["sa_key"]
