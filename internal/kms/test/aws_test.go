@@ -112,7 +112,7 @@ func TestAwsKms(t *testing.T) {
 
 	if *kekID == "" || *awsAccessKeyID == "" || *awsAccessKey == "" || *awsRegion == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --aws-access-key-id, --aws-access-key, --aws-region, --kek-id")
 	}
 
 	require := require.New(t)

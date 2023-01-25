@@ -27,7 +27,7 @@ func TestAzureStorage(t *testing.T) {
 	}
 	if *azConnectionString == "" || *azContainer == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --az-connection-string, --az-container")
 	}
 
 	assert := assert.New(t)
@@ -59,7 +59,7 @@ func TestAzureKeyKMS(t *testing.T) {
 
 	if *kekID == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" || *azVaultName == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --az-tenant-id, --az-client-id, --az-client-secret, --az-vault-name, --kek-id")
 	}
 	require := require.New(t)
 
@@ -88,7 +88,7 @@ func TestAzureKeyHSM(t *testing.T) {
 
 	if *kekID == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" || *azVaultName == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --az-tenant-id, --az-client-id, --az-client-secret, --az-vault-name, --kek-id")
 	}
 	require := require.New(t)
 

@@ -27,7 +27,7 @@ func TestGCPKMS(t *testing.T) {
 	}
 	if *gcpProjectID == "" || *gcpLocation == "" || *gcpKeyRing == "" || *kekID == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --gcp-project, --gcp-location, --gcp-keyring, --kek-id")
 	}
 	require := require.New(t)
 
@@ -56,7 +56,7 @@ func TestGcpStorage(t *testing.T) {
 
 	if *gcpProjectID == "" || *gcpBucket == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set")
+		t.Fatal("Required flags not set: --gcp-project, --gcp-bucket ")
 	}
 
 	assert := assert.New(t)
