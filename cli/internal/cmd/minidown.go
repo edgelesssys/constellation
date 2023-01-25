@@ -52,7 +52,7 @@ func checkForMiniCluster(fileHandler file.Handler) error {
 	if idFile.CloudProvider != cloudprovider.QEMU {
 		return errors.New("cluster is not a QEMU based Constellation")
 	}
-	if idFile.UID != "mini" {
+	if idFile.UID != constants.MiniConstellationUID {
 		return errors.New("cluster is not a MiniConstellation cluster")
 	}
 
