@@ -46,6 +46,11 @@ func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHan
 	if err != nil {
 		return false, err
 	}
+
+	if tfState.Values == nil {
+		return false, nil
+	}
+
 	saKeyJSON, containsKey := tfState.Values.Outputs["sa_key"]
 	if !containsKey {
 		return false, nil
