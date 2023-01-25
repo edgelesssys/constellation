@@ -29,8 +29,9 @@ var (
 	runAwsStorage  = flag.Bool("aws-storage", false, "set to run AWS S3 Bucket Storage test")
 	runAwsKms      = flag.Bool("aws-kms", false, "set to run AWS KMS test")
 	awsRegion      = flag.String("aws-region", "us-east-1", "Region to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS test.")
+	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsBucket      = flag.String("aws-bucket", "", "Name of the S3 bucket to use for AWS storage test. Required for AWS storage test.")
 
 	azConnectionString = flag.String("az-storage-conn", "", "Connection string for Azure storage account. Required for Azure storage test.")
 	azContainer        = flag.String("az-container", "constellation-test-storage", "Container to save test data to. Required for Azure storage test.")
@@ -49,6 +50,8 @@ var (
 	gcpProjectID       = flag.String("gcp-project", "", "Project ID to use for Google tests. Required for Google KMS and Google storage test.")
 	gcpKeyRing         = flag.String("gcp-keyring", "", "Key ring to use for Google KMS test. Required for Google KMS test.")
 	gcpLocation        = flag.String("gcp-location", "global", "Location of the keyring. Required for Google KMS test.")
+
+	runGcsStorageTestBench = flag.Bool("gcp-storage-testbench", false, "set to run Google Storage test against testbench")
 )
 
 func TestMain(m *testing.M) {

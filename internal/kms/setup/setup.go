@@ -78,31 +78,31 @@ func KMS(ctx context.Context, storageURI, kmsURI string) (kms.CloudKMS, error) {
 
 // getStore creates a key store depending on the given parameters.
 func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
-	uri, err := url.Parse(storageURI)
+	url, err := url.Parse(storageURI)
 	if err != nil {
 		return nil, err
 	}
-	if uri.Scheme != "storage" {
-		return nil, fmt.Errorf("invalid storage URI: invalid scheme: %s", uri.Scheme)
+	if url.Scheme != "storage" {
+		return nil, fmt.Errorf("invalid storage URI: invalid scheme: %s", url.Scheme)
 	}
 
-	switch uri.Host {
+	switch url.Host {
 	case "aws":
-		bucket, err := getAWSS3Config(uri)
+		cfg, err := uri.DecodeAWSS3ConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return awss3.New(ctx, bucket, "", "")
+		return awss3.New(ctx, cfg)
 
 	case "azure":
-		container, connString, err := getAzureBlobConfig(uri)
+		container, connString, err := getAzureBlobConfig(url)
 		if err != nil {
 			return nil, err
 		}
 		return azureblob.New(ctx, connString, container, nil)
 
 	case "gcp":
-		project, bucket, err := getGCPStorageConfig(uri)
+		project, bucket, err := getGCPStorageConfig(url)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
 		return nil, nil
 
 	default:
-		return nil, fmt.Errorf("unknown storage type: %s", uri.Host)
+		return nil, fmt.Errorf("unknown storage type: %s", url.Host)
 	}
 }
 
@@ -158,37 +158,6 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", url.Host)
 	}
-}
-
-type defaultPolicyProducer struct {
-	policy string
-}
-
-func (p *defaultPolicyProducer) CreateKeyPolicy(keyID string) (string, error) {
-	return p.policy, nil
-}
-
-func getAWSS3Config(uri *url.URL) (string, error) {
-	r, err := getConfig(uri.Query(), []string{"bucket"})
-	return r[0], err
-}
-
-func getAWSKMSConfig(uri *url.URL) (*defaultPolicyProducer, string, error) {
-	r, err := getConfig(uri.Query(), []string{"keyPolicy", "kekID"})
-	if err != nil {
-		return nil, "", err
-	}
-
-	if len(r) != 2 {
-		return nil, "", fmt.Errorf("expected 2 KmsURI args, got %d", len(r))
-	}
-
-	kekID, err := base64.URLEncoding.DecodeString(r[1])
-	if err != nil {
-		return nil, "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
-	}
-
-	return &defaultPolicyProducer{policy: r[0]}, string(kekID), err
 }
 
 func getAzureBlobConfig(uri *url.URL) (string, string, error) {

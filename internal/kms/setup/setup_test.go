@@ -18,8 +18,6 @@ import (
 	"go.uber.org/goleak"
 )
 
-const constellationKekID = "Constellation"
-
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
@@ -137,23 +135,6 @@ func TestSetUpKMS(t *testing.T) {
 	kms, err = KMS(context.Background(), "storage://no-store", masterSecret.EncodeToURI())
 	assert.NoError(err)
 	assert.NotNil(kms)
-}
-
-func TestGetAWSKMSConfig(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	policy := "{keyPolicy: keyPolicy}"
-	escapedPolicy := url.QueryEscape(policy)
-	kekID := base64.URLEncoding.EncodeToString([]byte(constellationKekID))
-	uri, err := url.Parse(fmt.Sprintf(AWSKMSURI, escapedPolicy, kekID))
-	require.NoError(err)
-	policyProducer, rKekID, err := getAWSKMSConfig(uri)
-	require.NoError(err)
-	keyPolicy, err := policyProducer.CreateKeyPolicy("")
-	require.NoError(err)
-	assert.Equal(policy, keyPolicy)
-	assert.Equal(constellationKekID, rKekID)
 }
 
 func TestGetAzureBlobConfig(t *testing.T) {

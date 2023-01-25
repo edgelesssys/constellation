@@ -44,11 +44,11 @@ type VaultBaseURL string
 
 // Well known endpoints for KMS services.
 const (
-	awsKMSURI     = "kms://aws?region=%s&accessKeyID=%s&acccessKey=%skeyName=%s"
+	awsKMSURI     = "kms://aws?region=%s&accessKeyID=%s&accessKey=%skeyName=%s"
 	azureKMSURI   = "kms://azure?tenantID=%s&clientID=%s&clientSecret=%s&vaultName=%s&vaultType=%s&keyName=%s"
 	gcpKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&credentialsPath=%s&keyName=%s"
 	clusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
-	awsS3URI      = "storage://aws?bucket=%s"
+	awsS3URI      = "storage://aws?bucket=%s&region=%s&accessKeyID=%s&accessKey=%s"
 	azureBlobURI  = "storage://azure?container=%s&connectionString=%s"
 	gcpStorageURI = "storage://gcp?projects=%s&bucket=%s"
 	NoStoreURI    = "storage://no-store"
@@ -294,6 +294,65 @@ func (g GCPConfig) EncodeToURI() string {
 		url.QueryEscape(g.KeyRing),
 		url.QueryEscape(g.CredentialsPath),
 		url.QueryEscape(g.KeyName),
+	)
+}
+
+// AWSS3Config is the configuration to authenticate with AWS S3 storage bucket.
+type AWSS3Config struct {
+	Bucket      string
+	Region      string
+	AccessKeyID string
+	AccessKey   string
+}
+
+// DecodeAWSS3ConfigFromURI decodes an S3 configuration from a URI.
+func DecodeAWSS3ConfigFromURI(uri string) (AWSS3Config, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+
+	if u.Scheme != "storage" {
+		return AWSS3Config{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
+	}
+	if u.Host != "aws" {
+		return AWSS3Config{}, fmt.Errorf("invalid host: %q", u.Host)
+	}
+
+	q := u.Query()
+	bucket, err := getQueryParameter(q, "bucket")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	region, err := getQueryParameter(q, "region")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	accessKeyID, err := getQueryParameter(q, "accessKeyID")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	accessKey, err := getQueryParameter(q, "accessKey")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+
+	return AWSS3Config{
+		Bucket:      bucket,
+		Region:      region,
+		AccessKeyID: accessKeyID,
+		AccessKey:   accessKey,
+	}, nil
+}
+
+// EncodeToURI returns a URI encoding the S3 configuration.
+func (s AWSS3Config) EncodeToURI() string {
+	return fmt.Sprintf(
+		awsS3URI,
+		url.QueryEscape(s.Bucket),
+		url.QueryEscape(s.Region),
+		url.QueryEscape(s.AccessKeyID),
+		url.QueryEscape(s.AccessKey),
 	)
 }
 

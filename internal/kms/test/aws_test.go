@@ -11,7 +11,6 @@ package test
 import (
 	"context"
 	"flag"
-	"strings"
 	"testing"
 	"time"
 
@@ -32,9 +31,9 @@ func TestAwsStorage(t *testing.T) {
 		t.Skip("Skipping AWS storage test")
 	}
 
-	if *awsAccessKey == "" || *awsAccessKeyID == "" {
+	if *awsAccessKey == "" || *awsAccessKeyID == "" || *awsBucket == "" || *awsRegion == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set: --aws-access-key, --aws-access-key-id")
+		t.Fatal("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region")
 	}
 
 	assert := assert.New(t)
@@ -42,10 +41,15 @@ func TestAwsStorage(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	bucketID := strings.ToLower(addSuffix("test-bucket"))
 
 	// create bucket
-	store, err := awss3.New(ctx, bucketID, "", "")
+	cfg := uri.AWSS3Config{
+		Bucket:      *awsBucket,
+		AccessKeyID: *awsAccessKey,
+		AccessKey:   *awsAccessKeyID,
+		Region:      *awsRegion,
+	}
+	store, err := awss3.New(ctx, cfg)
 	require.NoError(err)
 
 	testDEK1 := []byte("test DEK")
@@ -56,22 +60,22 @@ func TestAwsStorage(t *testing.T) {
 	assert.Error(err)
 
 	// test Put method
-	assert.NoError(store.Put(ctx, "volume01", testDEK1))
-	assert.NoError(store.Put(ctx, "volume02", testDEK2))
+	require.NoError(store.Put(ctx, "volume01", testDEK1))
+	require.NoError(store.Put(ctx, "volume02", testDEK2))
 
 	// make sure values have been set
 	val, err := store.Get(ctx, "volume01")
-	assert.NoError(err)
+	require.NoError(err)
 	assert.Equal(testDEK1, val)
 	val, err = store.Get(ctx, "volume02")
-	assert.NoError(err)
+	require.NoError(err)
 	assert.Equal(testDEK2, val)
 
 	_, err = store.Get(ctx, "invalid:key")
 	assert.Error(err)
 	assert.ErrorIs(err, storage.ErrDEKUnset)
 
-	cleanUpBucket(ctx, require, bucketID, func(*s3.Options) {})
+	cleanUpBucket(ctx, require, *awsBucket, func(*s3.Options) {})
 }
 
 func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID string, optFns ...func(*s3.Options)) {

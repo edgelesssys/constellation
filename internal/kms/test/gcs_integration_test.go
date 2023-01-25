@@ -28,6 +28,9 @@ import (
 const storageEmulator = "gcr.io/cloud-devrel-public-resources/storage-testbench"
 
 func TestGoogleCloudStorage(t *testing.T) {
+	if !*runGcsStorageTestBench {
+		t.Skip("Skipping GCS storage-testbench test")
+	}
 	assert := assert.New(t)
 	require := require.New(t)
 
