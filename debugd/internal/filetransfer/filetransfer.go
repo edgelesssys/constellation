@@ -68,6 +68,8 @@ func (s *FileTransferer) SendFiles(stream SendFilesStream) error {
 
 // RecvFiles receives files from the given stream.
 func (s *FileTransferer) RecvFiles(stream RecvFilesStream) (err error) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
 	if err := s.startRecv(); err != nil {
 		return err
 	}
@@ -170,8 +172,6 @@ func (s *FileTransferer) handleFileRecv(stream RecvFilesStream) (bool, error) {
 
 // startRecv marks the file receive as started. It returns an error if receiving has already started.
 func (s *FileTransferer) startRecv() error {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 	switch {
 	case s.receiveFinished:
 		return ErrReceiveFinished
@@ -185,8 +185,6 @@ func (s *FileTransferer) startRecv() error {
 // abortRecv marks the file receive as failed.
 // This allows for a retry of the file receive.
 func (s *FileTransferer) abortRecv() {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 	s.receiveStarted = false
 	s.files = nil
 }
@@ -194,16 +192,12 @@ func (s *FileTransferer) abortRecv() {
 // finishRecv marks the file receive as completed.
 // This allows other debugd instances to request files from this server.
 func (s *FileTransferer) finishRecv() {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 	s.receiveStarted = false
 	s.receiveFinished = true
 }
 
 // addFile adds a file to the list of received files.
 func (s *FileTransferer) addFile(file FileStat) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 	s.files = append(s.files, file)
 }
 
