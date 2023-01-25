@@ -14,6 +14,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -193,4 +197,139 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
+	someError := errors.New("failed")
+	destroyer := NewIAMDestroyer(context.Background())
+
+	testFsValid := file.NewHandler(afero.NewMemMapFs())
+	testFsValid.Write(constants.GCPServiceAccountKeyFile, []byte(`
+	{
+		"auth_provider_x509_cert_url": "",
+		"auth_uri": "",
+		"client_email": "",
+		"client_id": "",
+		"client_x509_cert_url": "",
+		"private_key": "",
+		"private_key_id": "",
+		"project_id": "",
+		"token_uri": "",
+		"type": ""
+	}
+	`))
+	testFsInvalid := file.NewHandler(afero.NewMemMapFs())
+	testFsInvalid.Write(constants.GCPServiceAccountKeyFile, []byte(`
+	asdf
+	`))
+
+	validTfClient := &stubTerraformClient{
+		tfjsonState: &tfjson.State{
+			Values: &tfjson.StateValues{
+				Outputs: map[string]*tfjson.StateOutput{
+					"sa_key": {
+						Value: "ewoJCSJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiIiwKCQkiYXV0aF91cmkiOiAiIiwKCQkiY2xpZW50X2VtYWlsIjogIiIsCgkJImNsaWVudF9pZCI6ICIiLAoJCSJjbGllbnRfeDUwOV9jZXJ0X3VybCI6ICIiLAoJCSJwcml2YXRlX2tleSI6ICIiLAoJCSJwcml2YXRlX2tleV9pZCI6ICIiLAoJCSJwcm9qZWN0X2lkIjogIiIsCgkJInRva2VuX3VyaSI6ICIiLAoJCSJ0eXBlIjogIiIKCX0=",
+					},
+				},
+			},
+		},
+	}
+
+	testCases := map[string]struct {
+		fsHandler   file.Handler
+		cl          terraformClient
+		wantErr     bool
+		wantDeleted bool
+	}{
+		"valid delete": {
+			fsHandler:   testFsValid,
+			cl:          validTfClient,
+			wantDeleted: true,
+		},
+		"show error": {
+			cl: &stubTerraformClient{
+				showErr: someError,
+			},
+			wantErr: true,
+		},
+		"nil tfstate values": {
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: nil,
+				},
+			},
+			wantErr: true,
+		},
+		"no key": {
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: &tfjson.StateValues{},
+				},
+			},
+		},
+		"invalid base64": {
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{
+							"sa_key": {
+								Value: "iamnotvalid",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"valid base64 invalid json": {
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{
+							"sa_key": {
+								Value: "YXNkZg==",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"invalid gcp file": {
+			cl:        validTfClient,
+			fsHandler: testFsInvalid,
+			wantErr:   true,
+		},
+		"not same": {
+			fsHandler: testFsValid,
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{
+							"sa_key": {
+								Value: "ewoJCSJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiIiwKCQkiYXV0aF91cmkiOiAiIiwKCQkiY2xpZW50X2VtYWlsIjogIiIsCgkJImNsaWVudF9pZCI6ICIiLAoJCSJjbGllbnRfeDUwOV9jZXJ0X3VybCI6ICIiLAoJCSJwcml2YXRlX2tleSI6ICJOT1RUSEVTQU1FIiwKCQkicHJpdmF0ZV9rZXlfaWQiOiAiIiwKCQkicHJvamVjdF9pZCI6ICIiLAoJCSJ0b2tlbl91cmkiOiAiIiwKCQkidHlwZSI6ICIiCgl9",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			deleted, err := destroyer.deleteGCPKeyFile(context.Background(), tc.fsHandler, tc.cl)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+
+			if tc.wantDeleted {
+				assert.True(deleted)
+			} else {
+				assert.False(deleted)
+			}
+		})
+	}
 }
