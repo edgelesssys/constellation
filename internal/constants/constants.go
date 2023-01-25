@@ -141,6 +141,8 @@ const (
 	// EnvVarAzureClientSecretValue is environment variable to overwrite
 	// provider.azure.clientSecretValue .
 	EnvVarAzureClientSecretValue = EnvVarPrefix + "AZURE_CLIENT_SECRET_VALUE"
+	// MiniConstellationUID is a sentinel value for the UID of a mini constellation.
+	MiniConstellationUID = "mini"
 
 	//
 	// Kubernetes.
