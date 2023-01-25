@@ -4,7 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+// Package memfs implements a storage backend for the KMS using AWS S3: https://aws.amazon.com/s3/
+package awss3
 
 import (
 	"bytes"
@@ -14,9 +15,11 @@ import (
 	"io"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/kms/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 )
 
 type awsS3ClientAPI interface {
@@ -25,44 +28,44 @@ type awsS3ClientAPI interface {
 	CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error)
 }
 
-// AWSS3Storage is an implementation of the Storage interface, storing keys in AWS S3 buckets.
-type AWSS3Storage struct {
+// Storage is an implementation of the Storage interface, storing keys in AWS S3 buckets.
+type Storage struct {
 	bucketID string
 	client   awsS3ClientAPI
-	optFns   []func(*s3.Options)
 }
 
-// NewAWSS3Storage creates a Storage client for AWS S3: https://aws.amazon.com/s3/
+// New creates a Storage client for AWS S3: https://aws.amazon.com/s3/
 //
 // You need to provide credentials to authenticate to AWS using the cfg parameter.
-func NewAWSS3Storage(ctx context.Context, bucketID string, optFns ...func(*s3.Options)) (*AWSS3Storage, error) {
-	// Create S3 client
-	cfg, err := awsconfig.LoadDefaultConfig(ctx)
+func New(ctx context.Context, bucketID string, accessKey, accessKeyID string) (*Storage, error) {
+	credProvider := credentials.NewStaticCredentialsProvider(accessKeyID, accessKey, "")
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithCredentialsProvider(credProvider))
 	if err != nil {
 		return nil, err
 	}
-	client := s3.NewFromConfig(cfg, optFns...)
 
-	store := &AWSS3Storage{client: client, bucketID: bucketID, optFns: optFns}
+	client := s3.NewFromConfig(cfg)
+
+	store := &Storage{client: client, bucketID: bucketID}
 
 	// Try to create new bucket, continue if bucket already exists
-	if err := store.createBucket(ctx, bucketID, cfg.Region, optFns...); err != nil {
+	if err := store.createBucket(ctx, bucketID, cfg.Region); err != nil {
 		return nil, err
 	}
 	return store, nil
 }
 
 // Get returns a DEK from from AWS S3 Storage by key ID.
-func (s *AWSS3Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
+func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 	getObjectInput := &s3.GetObjectInput{
 		Bucket: &s.bucketID,
 		Key:    &keyID,
 	}
-	output, err := s.client.GetObject(ctx, getObjectInput, s.optFns...)
+	output, err := s.client.GetObject(ctx, getObjectInput)
 	if err != nil {
 		var nsk *types.NoSuchKey
 		if errors.As(err, &nsk) {
-			return nil, ErrDEKUnset
+			return nil, storage.ErrDEKUnset
 		}
 		return nil, fmt.Errorf("downloading DEK from storage: %w", err)
 	}
@@ -70,20 +73,20 @@ func (s *AWSS3Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 }
 
 // Put saves a DEK to AWS S3 Storage by key ID.
-func (s *AWSS3Storage) Put(ctx context.Context, keyID string, data []byte) error {
+func (s *Storage) Put(ctx context.Context, keyID string, data []byte) error {
 	putObjectInput := &s3.PutObjectInput{
 		Bucket:  &s.bucketID,
 		Key:     &keyID,
 		Body:    bytes.NewReader(data),
 		Tagging: &config.AWSS3Tag,
 	}
-	if _, err := s.client.PutObject(ctx, putObjectInput, s.optFns...); err != nil {
+	if _, err := s.client.PutObject(ctx, putObjectInput); err != nil {
 		return fmt.Errorf("uploading DEK to storage: %w", err)
 	}
 	return nil
 }
 
-func (s *AWSS3Storage) createBucket(ctx context.Context, bucketID, region string, optFns ...func(*s3.Options)) error {
+func (s *Storage) createBucket(ctx context.Context, bucketID, region string, optFns ...func(*s3.Options)) error {
 	createBucketInput := &s3.CreateBucketInput{
 		Bucket: &bucketID,
 		CreateBucketConfiguration: &types.CreateBucketConfiguration{

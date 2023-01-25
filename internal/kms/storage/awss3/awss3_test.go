@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+package awss3
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,7 +72,7 @@ func TestAWSS3Get(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			store := &AWSS3Storage{
+			store := &Storage{
 				client: tc.client,
 			}
 
@@ -80,9 +81,9 @@ func TestAWSS3Get(t *testing.T) {
 				assert.Error(err)
 
 				if tc.unsetError {
-					assert.ErrorIs(err, ErrDEKUnset)
+					assert.ErrorIs(err, storage.ErrDEKUnset)
 				} else {
-					assert.False(errors.Is(err, ErrDEKUnset))
+					assert.False(errors.Is(err, storage.ErrDEKUnset))
 				}
 
 			} else {
@@ -111,7 +112,7 @@ func TestAWSS3Put(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			store := &AWSS3Storage{
+			store := &Storage{
 				client: tc.client,
 			}
 
@@ -154,7 +155,7 @@ func TestAWSS3CreateBucket(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			store := &AWSS3Storage{
+			store := &Storage{
 				client: tc.client,
 			}
 

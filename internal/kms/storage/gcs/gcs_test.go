@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+package gcs
 
 import (
 	"bytes"
@@ -13,7 +13,8 @@ import (
 	"io"
 	"testing"
 
-	"cloud.google.com/go/storage"
+	gcstorage "cloud.google.com/go/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/option"
 )
@@ -32,15 +33,15 @@ func (s *stubGCPStorageAPI) stubClientFactory(ctx context.Context, opts ...optio
 	return s, s.newClientErr
 }
 
-func (s *stubGCPStorageAPI) Attrs(ctx context.Context, bucketName string) (*storage.BucketAttrs, error) {
-	return &storage.BucketAttrs{}, s.attrsErr
+func (s *stubGCPStorageAPI) Attrs(ctx context.Context, bucketName string) (*gcstorage.BucketAttrs, error) {
+	return &gcstorage.BucketAttrs{}, s.attrsErr
 }
 
 func (s *stubGCPStorageAPI) Close() error {
 	return nil
 }
 
-func (s *stubGCPStorageAPI) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *storage.BucketAttrs) error {
+func (s *stubGCPStorageAPI) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *gcstorage.BucketAttrs) error {
 	s.createBucketCalled = true
 	return s.createBucketErr
 }
@@ -88,7 +89,7 @@ func TestGCPGet(t *testing.T) {
 			wantErr: true,
 		},
 		"ErrObjectNotExist error": {
-			client:     &stubGCPStorageAPI{newReaderErr: storage.ErrObjectNotExist},
+			client:     &stubGCPStorageAPI{newReaderErr: gcstorage.ErrObjectNotExist},
 			unsetError: true,
 			wantErr:    true,
 		},
@@ -98,7 +99,7 @@ func TestGCPGet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := &GoogleCloudStorage{
+			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
 				projectID:  "test",
 				bucketName: "test",
@@ -109,9 +110,9 @@ func TestGCPGet(t *testing.T) {
 				assert.Error(err)
 
 				if tc.unsetError {
-					assert.ErrorIs(err, ErrDEKUnset)
+					assert.ErrorIs(err, storage.ErrDEKUnset)
 				} else {
-					assert.False(errors.Is(err, ErrDEKUnset))
+					assert.False(errors.Is(err, storage.ErrDEKUnset))
 				}
 
 			} else {
@@ -155,7 +156,7 @@ func TestGCPPut(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := &GoogleCloudStorage{
+			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
 				projectID:  "test",
 				bucketName: "test",
@@ -184,7 +185,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 			client: &stubGCPStorageAPI{},
 		},
 		"container does not exist": {
-			client:          &stubGCPStorageAPI{attrsErr: storage.ErrBucketNotExist},
+			client:          &stubGCPStorageAPI{attrsErr: gcstorage.ErrBucketNotExist},
 			createNewBucket: true,
 		},
 		"creating client fails": {
@@ -197,7 +198,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 		},
 		"CreateBucket fails": {
 			client: &stubGCPStorageAPI{
-				attrsErr:        storage.ErrBucketNotExist,
+				attrsErr:        gcstorage.ErrBucketNotExist,
 				createBucketErr: someErr,
 			},
 			wantErr: true,
@@ -208,7 +209,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := &GoogleCloudStorage{
+			client := &Storage{
 				newClient:  tc.client.stubClientFactory,
 				projectID:  "test",
 				bucketName: "test",

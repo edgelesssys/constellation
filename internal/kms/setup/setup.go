@@ -26,7 +26,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/awss3"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/azureblob"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
@@ -90,21 +92,21 @@ func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewAWSS3Storage(ctx, bucket, nil)
+		return awss3.New(ctx, bucket, "", "")
 
 	case "azure":
 		container, connString, err := getAzureBlobConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewAzureStorage(ctx, connString, container, nil)
+		return azureblob.New(ctx, connString, container, nil)
 
 	case "gcp":
 		project, bucket, err := getGCPStorageConfig(uri)
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewGoogleCloudStorage(ctx, project, bucket, nil)
+		return gcs.New(ctx, project, bucket, nil)
 
 	case "no-store":
 		return nil, nil

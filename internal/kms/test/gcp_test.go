@@ -16,6 +16,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +33,7 @@ func TestGCPKMS(t *testing.T) {
 	}
 	require := require.New(t)
 
-	store := storage.NewMemMapStorage()
+	store := memfs.New()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
@@ -63,7 +65,7 @@ func TestGcpStorage(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	store, err := storage.NewGoogleCloudStorage(ctx, *gcpProjectID, *gcpBucket, nil)
+	store, err := gcs.New(ctx, *gcpProjectID, *gcpBucket, nil)
 	assert.NoError(err)
 
 	testData := []byte("Constellation test data")

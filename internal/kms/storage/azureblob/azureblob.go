@@ -4,7 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+// Package azureblob implements a storage backend for the KMS using Azure Blob Storage.
+package azureblob
 
 import (
 	"bytes"
@@ -17,6 +18,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/edgelesssys/constellation/v2/internal/kms/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 )
 
 type azureBlobAPI interface {
@@ -25,8 +27,8 @@ type azureBlobAPI interface {
 	UploadStream(context.Context, string, string, io.Reader, *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
 }
 
-// AzureStorage is an implementation of the Storage interface, storing keys in the Azure Blob Store.
-type AzureStorage struct {
+// Storage is an implementation of the Storage interface, storing keys in the Azure Blob Store.
+type Storage struct {
 	client           azureBlobAPI
 	connectionString string
 	containerName    string
@@ -40,12 +42,12 @@ type AzureOpts struct {
 	upload   *azblob.UploadStreamOptions
 }
 
-// NewAzureStorage initializes a storage client using Azure's Blob Storage: https://azure.microsoft.com/en-us/services/storage/blobs/
+// New initializes a storage client using Azure's Blob Storage: https://azure.microsoft.com/en-us/services/storage/blobs/
 //
 // A connections string is required to connect to the Storage Account, see https://docs.microsoft.com/en-us/azure/storage/common/storage-configure-connection-string
 // If the container does not exists, a new one is created automatically.
 // Connect options for the Client, Downloader and Uploader can be configured using opts.
-func NewAzureStorage(ctx context.Context, connectionString, containerName string, opts *AzureOpts) (*AzureStorage, error) {
+func New(ctx context.Context, connectionString, containerName string, opts *AzureOpts) (*Storage, error) {
 	if opts == nil {
 		opts = &AzureOpts{}
 	}
@@ -55,7 +57,7 @@ func NewAzureStorage(ctx context.Context, connectionString, containerName string
 		return nil, fmt.Errorf("creating storage client from connection string: %w", err)
 	}
 
-	s := &AzureStorage{
+	s := &Storage{
 		client:           client,
 		connectionString: connectionString,
 		containerName:    containerName,
@@ -71,11 +73,11 @@ func NewAzureStorage(ctx context.Context, connectionString, containerName string
 }
 
 // Get returns a DEK from from Azure Blob Storage by key ID.
-func (s *AzureStorage) Get(ctx context.Context, keyID string) ([]byte, error) {
+func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 	res, err := s.client.DownloadStream(ctx, s.containerName, keyID, s.opts.download)
 	if err != nil {
 		if bloberror.HasCode(err, bloberror.BlobNotFound) {
-			return nil, ErrDEKUnset
+			return nil, storage.ErrDEKUnset
 		}
 		return nil, fmt.Errorf("downloading DEK from storage: %w", err)
 	}
@@ -84,7 +86,7 @@ func (s *AzureStorage) Get(ctx context.Context, keyID string) ([]byte, error) {
 }
 
 // Put saves a DEK to Azure Blob Storage by key ID.
-func (s *AzureStorage) Put(ctx context.Context, keyID string, encDEK []byte) error {
+func (s *Storage) Put(ctx context.Context, keyID string, encDEK []byte) error {
 	if _, err := s.client.UploadStream(ctx, s.containerName, keyID, bytes.NewReader(encDEK), s.opts.upload); err != nil {
 		return fmt.Errorf("uploading DEK to storage: %w", err)
 	}
@@ -93,7 +95,7 @@ func (s *AzureStorage) Put(ctx context.Context, keyID string, encDEK []byte) err
 }
 
 // createContainerOrContinue creates a new storage container if necessary, or continues if it already exists.
-func (s *AzureStorage) createContainerOrContinue(ctx context.Context) error {
+func (s *Storage) createContainerOrContinue(ctx context.Context) error {
 	_, err := s.client.CreateContainer(ctx, s.containerName, &azblob.CreateContainerOptions{
 		Metadata: config.StorageTags,
 	})

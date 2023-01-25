@@ -4,34 +4,36 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+// Package gcs implements a storage backend for the KMS using Google Cloud Storage (GCS).
+package gcs
 
 import (
 	"context"
 	"errors"
 	"io"
 
-	"cloud.google.com/go/storage"
+	gcstorage "cloud.google.com/go/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"google.golang.org/api/option"
 )
 
 type gcpStorageAPI interface {
-	Attrs(ctx context.Context, bucketName string) (*storage.BucketAttrs, error)
+	Attrs(ctx context.Context, bucketName string) (*gcstorage.BucketAttrs, error)
 	Close() error
-	CreateBucket(ctx context.Context, bucketName, projectID string, attrs *storage.BucketAttrs) error
+	CreateBucket(ctx context.Context, bucketName, projectID string, attrs *gcstorage.BucketAttrs) error
 	NewWriter(ctx context.Context, bucketName, objectName string) io.WriteCloser
 	NewReader(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error)
 }
 
 type wrappedGCPClient struct {
-	*storage.Client
+	*gcstorage.Client
 }
 
-func (c *wrappedGCPClient) Attrs(ctx context.Context, bucketName string) (*storage.BucketAttrs, error) {
+func (c *wrappedGCPClient) Attrs(ctx context.Context, bucketName string) (*gcstorage.BucketAttrs, error) {
 	return c.Client.Bucket(bucketName).Attrs(ctx)
 }
 
-func (c *wrappedGCPClient) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *storage.BucketAttrs) error {
+func (c *wrappedGCPClient) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *gcstorage.BucketAttrs) error {
 	return c.Client.Bucket(bucketName).Create(ctx, projectID, attrs)
 }
 
@@ -43,19 +45,19 @@ func (c *wrappedGCPClient) NewReader(ctx context.Context, bucketName, objectName
 	return c.Client.Bucket(bucketName).Object(objectName).NewReader(ctx)
 }
 
-// GoogleCloudStorage is an implementation of the Storage interface, storing keys in Google Cloud Storage buckets.
-type GoogleCloudStorage struct {
+// Storage is an implementation of the Storage interface, storing keys in Google Cloud Storage buckets.
+type Storage struct {
 	newClient  func(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error)
 	projectID  string
 	bucketName string
 	opts       []option.ClientOption
 }
 
-// NewGoogleCloudStorage creates a Storage client for Google Cloud Storage: https://cloud.google.com/storage/docs/
+// New creates a Storage client for Google Cloud Storage: https://cloud.google.com/storage/docs/
 //
 // The parameter bucketOptions is optional, if not present default options will be created.
-func NewGoogleCloudStorage(ctx context.Context, projectID, bucketName string, bucketOptions *storage.BucketAttrs, opts ...option.ClientOption) (*GoogleCloudStorage, error) {
-	s := &GoogleCloudStorage{
+func New(ctx context.Context, projectID, bucketName string, bucketOptions *gcstorage.BucketAttrs, opts ...option.ClientOption) (*Storage, error) {
+	s := &Storage{
 		newClient:  gcpStorageClientFactory,
 		projectID:  projectID,
 		bucketName: bucketName,
@@ -71,7 +73,7 @@ func NewGoogleCloudStorage(ctx context.Context, projectID, bucketName string, bu
 }
 
 // Get returns a DEK from Google Cloud Storage by key ID.
-func (s *GoogleCloudStorage) Get(ctx context.Context, keyID string) ([]byte, error) {
+func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 	client, err := s.newClient(ctx, s.opts...)
 	if err != nil {
 		return nil, err
@@ -80,8 +82,8 @@ func (s *GoogleCloudStorage) Get(ctx context.Context, keyID string) ([]byte, err
 
 	reader, err := client.NewReader(ctx, s.bucketName, keyID)
 	if err != nil {
-		if errors.Is(err, storage.ErrObjectNotExist) {
-			return nil, ErrDEKUnset
+		if errors.Is(err, gcstorage.ErrObjectNotExist) {
+			return nil, storage.ErrDEKUnset
 		}
 		return nil, err
 	}
@@ -91,7 +93,7 @@ func (s *GoogleCloudStorage) Get(ctx context.Context, keyID string) ([]byte, err
 }
 
 // Put saves a DEK to Google Cloud Storage by key ID.
-func (s *GoogleCloudStorage) Put(ctx context.Context, keyID string, data []byte) error {
+func (s *Storage) Put(ctx context.Context, keyID string, data []byte) error {
 	client, err := s.newClient(ctx, s.opts...)
 	if err != nil {
 		return err
@@ -105,14 +107,14 @@ func (s *GoogleCloudStorage) Put(ctx context.Context, keyID string, data []byte)
 	return err
 }
 
-func (s *GoogleCloudStorage) createContainerOrContinue(ctx context.Context, bucketOptions *storage.BucketAttrs) error {
+func (s *Storage) createContainerOrContinue(ctx context.Context, bucketOptions *gcstorage.BucketAttrs) error {
 	client, err := s.newClient(ctx, s.opts...)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	if _, err := client.Attrs(ctx, s.bucketName); errors.Is(err, storage.ErrBucketNotExist) {
+	if _, err := client.Attrs(ctx, s.bucketName); errors.Is(err, gcstorage.ErrBucketNotExist) {
 		return client.CreateBucket(ctx, s.bucketName, s.projectID, bucketOptions)
 	} else if err != nil {
 		return err
@@ -122,7 +124,7 @@ func (s *GoogleCloudStorage) createContainerOrContinue(ctx context.Context, buck
 }
 
 func gcpStorageClientFactory(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error) {
-	client, err := storage.NewClient(ctx, opts...)
+	client, err := gcstorage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -20,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/aws"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/awss3"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,6 +31,12 @@ func TestAwsStorage(t *testing.T) {
 	if !*runAwsStorage {
 		t.Skip("Skipping AWS storage test")
 	}
+
+	if *awsAccessKey == "" || *awsAccessKeyID == "" {
+		flag.Usage()
+		t.Fatal("Required flags not set: --aws-access-key, --aws-access-key-id")
+	}
+
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -37,7 +45,7 @@ func TestAwsStorage(t *testing.T) {
 	bucketID := strings.ToLower(addSuffix("test-bucket"))
 
 	// create bucket
-	store, err := storage.NewAWSS3Storage(ctx, bucketID, func(*s3.Options) {})
+	store, err := awss3.New(ctx, bucketID, "", "")
 	require.NoError(err)
 
 	testDEK1 := []byte("test DEK")
@@ -117,7 +125,7 @@ func TestAwsKms(t *testing.T) {
 
 	require := require.New(t)
 
-	store := storage.NewMemMapStorage()
+	store := memfs.New()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 

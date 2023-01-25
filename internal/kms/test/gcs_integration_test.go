@@ -6,7 +6,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+package test
 
 import (
 	"context"
@@ -18,6 +18,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
@@ -48,7 +50,7 @@ func TestGoogleCloudStorage(t *testing.T) {
 	t.Log("Running test...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
 	defer cancel()
-	store, err := NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
+	store, err := gcs.New(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
 	require.NoError(err)
 
 	testDEK1 := []byte("test DEK")
@@ -72,7 +74,7 @@ func TestGoogleCloudStorage(t *testing.T) {
 
 	_, err = store.Get(ctx, "invalid:key")
 	assert.Error(err)
-	assert.ErrorIs(err, ErrDEKUnset)
+	assert.ErrorIs(err, storage.ErrDEKUnset)
 }
 
 func setupEmulator(ctx context.Context, cli *client.Client, imageName string) (container.ContainerCreateCreatedBody, error) {
