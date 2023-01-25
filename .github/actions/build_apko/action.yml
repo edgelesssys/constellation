@@ -5,14 +5,13 @@ inputs:
   apkoConfig:
     description: "Path to the apko .yaml config file. If left empty, all images will be built."
     required: false
-  apkoTag:
-    description: "Use this image tag"
-    required: false
-    default: latest
   apkoArch:
     description: "Use this image architecture"
     required: false
     default: amd64
+  containerTags:
+    description: "Tags for the resulting container image, space separated"
+    required: true
   registry:
     description: "Container registry to use"
     default: "ghcr.io"
@@ -35,7 +34,7 @@ inputs:
 
 # Linux runner only (docker required)
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install deps
       shell: bash
@@ -54,7 +53,10 @@ runs:
         password: ${{ inputs.githubToken }}
 
     - name: Install Cosign
-      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      if: |
+        inputs.cosignPublicKey != '' &&
+        inputs.cosignPrivateKey != '' &&
+        inputs.cosignPassword != ''
       uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # v2.8.1
 
     - name: Build apko images and sign them
@@ -65,13 +67,16 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
         APKO_CONFIG: ${{ inputs.apkoConfig }}
-        APKO_TAG: ${{ inputs.apkoTag }}
         APKO_ARCH: ${{ inputs.apkoArch }}
+        CONTAINER_TAGS: ${{ inputs.containerTags }}
         REGISTRY: ${{ inputs.registry }}
       run: .github/actions/build_apko/build_and_sign.sh
 
     - name: Sign sboms
-      if: inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != ''
+      if: |
+        inputs.cosignPublicKey != '' &&
+        inputs.cosignPrivateKey != '' &&
+        inputs.cosignPassword != ''
       shell: bash
       env:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
@@ -91,8 +96,6 @@ runs:
         zip -r sboms.zip sboms
 
     - name: Upload SBOMs
-      if: always()
-      continue-on-error: true
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: sboms

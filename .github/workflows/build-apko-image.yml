@@ -22,12 +22,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Get pseudo version
+        id: pseudo-version
+        uses: ./.github/actions/pseudo_version
+
       - name: Build and upload apko image
         uses: ./.github/actions/build_apko
         with:
-          apkoConfig: ""
-          apkoTag: "latest"
-          apkoArch: "amd64"
+          containerTags: |
+            ${{ steps.pseudo-version.outputs.pseudoVersion }}
+            ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
