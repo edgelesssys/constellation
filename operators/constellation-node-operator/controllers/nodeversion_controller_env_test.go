@@ -307,8 +307,12 @@ var _ = Describe("NodeVersion controller", func() {
 				}
 				return firstNode.Annotations
 			}, timeout, interval).Should(HaveKeyWithValue(heirAnnotation, secondNodeName))
-			Expect(k8sClient.Get(ctx, secondNodeLookupKey, secondNode)).Should(Succeed())
-			Expect(secondNode.Annotations).Should(HaveKeyWithValue(donorAnnotation, firstNodeName))
+			Eventually(func() map[string]string {
+				if err := k8sClient.Get(ctx, secondNodeLookupKey, secondNode); err != nil {
+					return nil
+				}
+				return secondNode.Annotations
+			}, timeout, interval).Should(HaveKeyWithValue(donorAnnotation, firstNodeName))
 
 			Eventually(func() error {
 				if err := k8sClient.Get(ctx, nodeVersionLookupKey, nodeVersion); err != nil {
