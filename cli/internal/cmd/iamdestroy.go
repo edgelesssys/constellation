@@ -47,7 +47,7 @@ func destroyIAMUser(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDest
 	spinner.Start("Destroying IAM User", false)
 
 	if err := destroyer.DestroyIAMUser(cmd.Context()); err != nil {
-		return fmt.Errorf("Couldn't destroy IAM User: %w", err)
+		return fmt.Errorf("couldn't destroy IAM User: %w", err)
 	}
 	spinner.Stop()
 	fmt.Println("Successfully destroyed IAM User")
@@ -74,7 +74,7 @@ func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, 
 		}
 	}
 
-	destroyed, err := destroyer.DeleteGCPServiceAccountKeyFile(cmd.Context(), fsHandler)
+	destroyed, err := destroyer.RunDeleteGCPKeyFile(cmd.Context())
 	if err != nil {
 		return false, err
 	}

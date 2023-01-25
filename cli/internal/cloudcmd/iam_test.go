@@ -14,8 +14,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/hashicorp/terraform-exec/tfexec"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -195,28 +193,4 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
-}
-
-type stubTerraform struct {
-	applyErr   error
-	destroyErr error
-	initErr    error
-	showErr    error
-	showState  *tfjson.State
-}
-
-func (s *stubTerraform) Apply(context.Context, ...tfexec.ApplyOption) error {
-	return s.applyErr
-}
-
-func (s *stubTerraform) Destroy(context.Context, ...tfexec.DestroyOption) error {
-	return s.destroyErr
-}
-
-func (s *stubTerraform) Init(context.Context, ...tfexec.InitOption) error {
-	return s.initErr
-}
-
-func (s *stubTerraform) Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error) {
-	return s.showState, s.showErr
 }

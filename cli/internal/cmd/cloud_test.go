@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"go.uber.org/goleak"
 )
 
@@ -87,7 +86,7 @@ func (d *stubIAMDestroyer) DestroyIAMUser(ctx context.Context) error {
 	return d.destroyErr
 }
 
-func (d *stubIAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHandler file.Handler) (bool, error) {
+func (d *stubIAMDestroyer) RunDeleteGCPKeyFile(ctx context.Context) (bool, error) {
 	d.deleteGCPFileCalled = true
 	return d.deletedGCPFile, d.deleteGCPFileErr
 }

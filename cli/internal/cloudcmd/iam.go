@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/spf13/afero"
 )
 
 type IAMDestroyer struct {
@@ -35,21 +36,25 @@ func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 		},
 	}
 }
-
-// DeleteGCPServiceAccountKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up
-func (d *IAMDestroyer) DeleteGCPServiceAccountKeyFile(ctx context.Context, fsHandler file.Handler) (bool, error) {
+func (d *IAMDestroyer) RunDeleteGCPKeyFile(ctx context.Context) (bool, error) {
+	fsHandler := file.NewHandler(afero.NewOsFs())
 	cl, err := d.newTerraformClient(ctx)
 	if err != nil {
 		return false, err
 	}
 
+	return d.deleteGCPKeyFile(ctx, fsHandler, cl)
+}
+
+// DeleteGCPKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up
+func (d *IAMDestroyer) deleteGCPKeyFile(ctx context.Context, fsHandler file.Handler, cl terraformClient) (bool, error) {
 	tfState, err := cl.Show(ctx)
 	if err != nil {
 		return false, err
 	}
 
 	if tfState.Values == nil {
-		return false, errors.New("No Values field in terraform state")
+		return false, errors.New("no Values field in terraform state")
 	}
 
 	saKeyJSON, containsKey := tfState.Values.Outputs["sa_key"]
