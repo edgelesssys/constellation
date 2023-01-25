@@ -137,21 +137,6 @@ func TestSetUpKMS(t *testing.T) {
 	assert.NotNil(kms)
 }
 
-func TestGetAzureBlobConfig(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	connStr := "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=Q29uc3RlbGxhdGlvbg==;EndpointSuffix=core.windows.net"
-	escapedConnStr := url.QueryEscape(connStr)
-	container := "test"
-	uri, err := url.Parse(fmt.Sprintf(AzureBlobURI, container, escapedConnStr))
-	require.NoError(err)
-	rContainer, rConnStr, err := getAzureBlobConfig(uri)
-	require.NoError(err)
-	assert.Equal(container, rContainer)
-	assert.Equal(connStr, rConnStr)
-}
-
 func TestGetConfig(t *testing.T) {
 	const testURI = "test://config?name=test-name&data=test-data&value=test-value"
 

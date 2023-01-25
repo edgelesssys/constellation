@@ -95,11 +95,11 @@ func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
 		return awss3.New(ctx, cfg)
 
 	case "azure":
-		container, connString, err := getAzureBlobConfig(url)
+		cfg, err := uri.DecodeAzureBlobConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return azureblob.New(ctx, connString, container, nil)
+		return azureblob.New(ctx, cfg)
 
 	case "gcp":
 		project, bucket, err := getGCPStorageConfig(url)
@@ -158,14 +158,6 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", url.Host)
 	}
-}
-
-func getAzureBlobConfig(uri *url.URL) (string, string, error) {
-	r, err := getConfig(uri.Query(), []string{"container", "connectionString"})
-	if err != nil {
-		return "", "", err
-	}
-	return r[0], r[1], nil
 }
 
 func getGCPStorageConfig(uri *url.URL) (string, string, error) {

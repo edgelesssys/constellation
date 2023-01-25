@@ -49,7 +49,7 @@ const (
 	gcpKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&credentialsPath=%s&keyName=%s"
 	clusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	awsS3URI      = "storage://aws?bucket=%s&region=%s&accessKeyID=%s&accessKey=%s"
-	azureBlobURI  = "storage://azure?container=%s&connectionString=%s"
+	azureBlobURI  = "storage://azure?account=%s&container=%s&clientID=%s&clientSecret=%s&vaultName=%s"
 	gcpStorageURI = "storage://gcp?projects=%s&bucket=%s"
 	NoStoreURI    = "storage://no-store"
 )
@@ -157,6 +157,65 @@ func (c AWSConfig) EncodeToURI() string {
 	)
 }
 
+// AWSS3Config is the configuration to authenticate with AWS S3 storage bucket.
+type AWSS3Config struct {
+	Bucket      string
+	Region      string
+	AccessKeyID string
+	AccessKey   string
+}
+
+// DecodeAWSS3ConfigFromURI decodes an S3 configuration from a URI.
+func DecodeAWSS3ConfigFromURI(uri string) (AWSS3Config, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+
+	if u.Scheme != "storage" {
+		return AWSS3Config{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
+	}
+	if u.Host != "aws" {
+		return AWSS3Config{}, fmt.Errorf("invalid host: %q", u.Host)
+	}
+
+	q := u.Query()
+	bucket, err := getQueryParameter(q, "bucket")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	region, err := getQueryParameter(q, "region")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	accessKeyID, err := getQueryParameter(q, "accessKeyID")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+	accessKey, err := getQueryParameter(q, "accessKey")
+	if err != nil {
+		return AWSS3Config{}, err
+	}
+
+	return AWSS3Config{
+		Bucket:      bucket,
+		Region:      region,
+		AccessKeyID: accessKeyID,
+		AccessKey:   accessKey,
+	}, nil
+}
+
+// EncodeToURI returns a URI encoding the S3 configuration.
+func (s AWSS3Config) EncodeToURI() string {
+	return fmt.Sprintf(
+		awsS3URI,
+		url.QueryEscape(s.Bucket),
+		url.QueryEscape(s.Region),
+		url.QueryEscape(s.AccessKeyID),
+		url.QueryEscape(s.AccessKey),
+	)
+}
+
 // AzureConfig is the configuration to authenticate with Azure Key Vault.
 type AzureConfig struct {
 	TenantID     string
@@ -230,6 +289,72 @@ func (a AzureConfig) EncodeToURI() string {
 	)
 }
 
+// AzureBlobConfig is the configuration to authenticate with Azure Blob storage.
+type AzureBlobConfig struct {
+	StorageAccount string
+	Container      string
+	TenantID       string
+	ClientID       string
+	ClientSecret   string
+}
+
+// DecodeAzureBlobConfigFromURI decodes an Azure Blob configuration from a URI.
+func DecodeAzureBlobConfigFromURI(uri string) (AzureBlobConfig, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+
+	if u.Scheme != "storage" {
+		return AzureBlobConfig{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
+	}
+	if u.Host != "azure" {
+		return AzureBlobConfig{}, fmt.Errorf("invalid host: %q", u.Host)
+	}
+
+	q := u.Query()
+	storageAccount, err := getQueryParameter(q, "account")
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+	container, err := getQueryParameter(q, "container")
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+	tenantID, err := getQueryParameter(q, "tenantID")
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+	clientID, err := getQueryParameter(q, "clientID")
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+	clientSecret, err := getQueryParameter(q, "clientSecret")
+	if err != nil {
+		return AzureBlobConfig{}, err
+	}
+
+	return AzureBlobConfig{
+		StorageAccount: storageAccount,
+		Container:      container,
+		TenantID:       tenantID,
+		ClientID:       clientID,
+		ClientSecret:   clientSecret,
+	}, nil
+}
+
+// EncodeToURI returns a URI encoding the Azure Blob configuration.
+func (a AzureBlobConfig) EncodeToURI() string {
+	return fmt.Sprintf(
+		azureBlobURI,
+		url.QueryEscape(a.StorageAccount),
+		url.QueryEscape(a.Container),
+		url.QueryEscape(a.TenantID),
+		url.QueryEscape(a.ClientID),
+		url.QueryEscape(a.ClientSecret),
+	)
+}
+
 // GCPConfig is the configuration to authenticate with GCP KMS.
 type GCPConfig struct {
 	// CredentialsPath is the path to a credentials file of a service account used to authorize against the KMS.
@@ -294,65 +419,6 @@ func (g GCPConfig) EncodeToURI() string {
 		url.QueryEscape(g.KeyRing),
 		url.QueryEscape(g.CredentialsPath),
 		url.QueryEscape(g.KeyName),
-	)
-}
-
-// AWSS3Config is the configuration to authenticate with AWS S3 storage bucket.
-type AWSS3Config struct {
-	Bucket      string
-	Region      string
-	AccessKeyID string
-	AccessKey   string
-}
-
-// DecodeAWSS3ConfigFromURI decodes an S3 configuration from a URI.
-func DecodeAWSS3ConfigFromURI(uri string) (AWSS3Config, error) {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return AWSS3Config{}, err
-	}
-
-	if u.Scheme != "storage" {
-		return AWSS3Config{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
-	}
-	if u.Host != "aws" {
-		return AWSS3Config{}, fmt.Errorf("invalid host: %q", u.Host)
-	}
-
-	q := u.Query()
-	bucket, err := getQueryParameter(q, "bucket")
-	if err != nil {
-		return AWSS3Config{}, err
-	}
-	region, err := getQueryParameter(q, "region")
-	if err != nil {
-		return AWSS3Config{}, err
-	}
-	accessKeyID, err := getQueryParameter(q, "accessKeyID")
-	if err != nil {
-		return AWSS3Config{}, err
-	}
-	accessKey, err := getQueryParameter(q, "accessKey")
-	if err != nil {
-		return AWSS3Config{}, err
-	}
-
-	return AWSS3Config{
-		Bucket:      bucket,
-		Region:      region,
-		AccessKeyID: accessKeyID,
-		AccessKey:   accessKey,
-	}, nil
-}
-
-// EncodeToURI returns a URI encoding the S3 configuration.
-func (s AWSS3Config) EncodeToURI() string {
-	return fmt.Sprintf(
-		awsS3URI,
-		url.QueryEscape(s.Bucket),
-		url.QueryEscape(s.Region),
-		url.QueryEscape(s.AccessKeyID),
-		url.QueryEscape(s.AccessKey),
 	)
 }
 

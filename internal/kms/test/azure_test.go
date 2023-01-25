@@ -27,9 +27,9 @@ func TestAzureStorage(t *testing.T) {
 	if !*runAzStorage {
 		t.Skip("Skipping Azure storage test")
 	}
-	if *azConnectionString == "" || *azContainer == "" {
+	if *azStorageAccount == "" || *azContainer == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set: --az-connection-string, --az-container")
+		t.Fatal("Required flags not set: --az-storage-account, --az-container, --az-tenant-id, --az-client-id, --az-client-secret")
 	}
 
 	assert := assert.New(t)
@@ -37,17 +37,25 @@ func TestAzureStorage(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	store, err := azureblob.New(ctx, *azConnectionString, *azContainer, nil)
+
+	cfg := uri.AzureBlobConfig{
+		StorageAccount: *azStorageAccount,
+		Container:      *azContainer,
+		TenantID:       *azTenantID,
+		ClientID:       *azClientID,
+		ClientSecret:   *azClientSecret,
+	}
+	store, err := azureblob.New(ctx, cfg)
 	require.NoError(err)
 
 	testData := []byte("Constellation test data")
 	testName := "constellation-test"
 
 	err = store.Put(ctx, testName, testData)
-	assert.NoError(err)
+	require.NoError(err)
 
 	got, err := store.Get(ctx, testName)
-	assert.NoError(err)
+	require.NoError(err)
 	assert.Equal(testData, got)
 
 	_, err = store.Get(ctx, addSuffix("does-not-exist"))

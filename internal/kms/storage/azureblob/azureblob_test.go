@@ -47,10 +47,8 @@ func TestAzureGet(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &Storage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+				client:    &tc.client,
+				container: "test",
 			}
 
 			out, err := client.Get(context.Background(), "test-key")
@@ -91,10 +89,8 @@ func TestAzurePut(t *testing.T) {
 			testData := []byte{0x1, 0x2, 0x3}
 
 			client := &Storage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+				client:    &tc.client,
+				container: "test",
 			}
 
 			err := client.Put(context.Background(), "test-key", testData)
@@ -130,10 +126,8 @@ func TestCreateContainerOrContinue(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &Storage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+				client:    &tc.client,
+				container: "test",
 			}
 
 			err := client.createContainerOrContinue(context.Background())

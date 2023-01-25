@@ -13,12 +13,15 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/edgelesssys/constellation/v2/internal/kms/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
 type azureBlobAPI interface {
@@ -29,17 +32,8 @@ type azureBlobAPI interface {
 
 // Storage is an implementation of the Storage interface, storing keys in the Azure Blob Store.
 type Storage struct {
-	client           azureBlobAPI
-	connectionString string
-	containerName    string
-	opts             *AzureOpts
-}
-
-// AzureOpts are additional options to be used when interacting with the Azure API.
-type AzureOpts struct {
-	service  *azblob.ClientOptions
-	download *azblob.DownloadStreamOptions
-	upload   *azblob.UploadStreamOptions
+	client    azureBlobAPI
+	container string
 }
 
 // New initializes a storage client using Azure's Blob Storage: https://azure.microsoft.com/en-us/services/storage/blobs/
@@ -47,21 +41,27 @@ type AzureOpts struct {
 // A connections string is required to connect to the Storage Account, see https://docs.microsoft.com/en-us/azure/storage/common/storage-configure-connection-string
 // If the container does not exists, a new one is created automatically.
 // Connect options for the Client, Downloader and Uploader can be configured using opts.
-func New(ctx context.Context, connectionString, containerName string, opts *AzureOpts) (*Storage, error) {
-	if opts == nil {
-		opts = &AzureOpts{}
+func New(ctx context.Context, cfg uri.AzureBlobConfig) (*Storage, error) {
+	var creds azcore.TokenCredential
+	var err error
+
+	creds, err = azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, cfg.ClientSecret, nil)
+	if err != nil {
+		// Fallback: try to load default credentials
+		creds, err = azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, fmt.Errorf("invalid client-secret credentials. Trying to load default credentials: %w", err)
+		}
 	}
 
-	client, err := azblob.NewClientFromConnectionString(connectionString, opts.service)
+	client, err := azblob.NewClient(fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.StorageAccount), creds, nil)
 	if err != nil {
-		return nil, fmt.Errorf("creating storage client from connection string: %w", err)
+		return nil, fmt.Errorf("creating storage client: %w", err)
 	}
 
 	s := &Storage{
-		client:           client,
-		connectionString: connectionString,
-		containerName:    containerName,
-		opts:             opts,
+		client:    client,
+		container: cfg.Container,
 	}
 
 	// Try to create a new storage container, continue if it already exists
@@ -74,7 +74,7 @@ func New(ctx context.Context, connectionString, containerName string, opts *Azur
 
 // Get returns a DEK from from Azure Blob Storage by key ID.
 func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
-	res, err := s.client.DownloadStream(ctx, s.containerName, keyID, s.opts.download)
+	res, err := s.client.DownloadStream(ctx, s.container, keyID, nil)
 	if err != nil {
 		if bloberror.HasCode(err, bloberror.BlobNotFound) {
 			return nil, storage.ErrDEKUnset
@@ -87,7 +87,7 @@ func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 
 // Put saves a DEK to Azure Blob Storage by key ID.
 func (s *Storage) Put(ctx context.Context, keyID string, encDEK []byte) error {
-	if _, err := s.client.UploadStream(ctx, s.containerName, keyID, bytes.NewReader(encDEK), s.opts.upload); err != nil {
+	if _, err := s.client.UploadStream(ctx, s.container, keyID, bytes.NewReader(encDEK), nil); err != nil {
 		return fmt.Errorf("uploading DEK to storage: %w", err)
 	}
 
@@ -96,7 +96,7 @@ func (s *Storage) Put(ctx context.Context, keyID string, encDEK []byte) error {
 
 // createContainerOrContinue creates a new storage container if necessary, or continues if it already exists.
 func (s *Storage) createContainerOrContinue(ctx context.Context) error {
-	_, err := s.client.CreateContainer(ctx, s.containerName, &azblob.CreateContainerOptions{
+	_, err := s.client.CreateContainer(ctx, s.container, &azblob.CreateContainerOptions{
 		Metadata: config.StorageTags,
 	})
 	if (err == nil) || bloberror.HasCode(err, bloberror.ContainerAlreadyExists) {
