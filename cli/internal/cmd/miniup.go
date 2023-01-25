@@ -223,7 +223,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 		return err
 	}
 
-	idFile.UID = "mini" // use UID "mini" to identify MiniConstellation clusters.
+	idFile.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
 	m.log.Debugf("Cluster id file contains %v", idFile)
 	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
 }
