@@ -17,7 +17,6 @@ package setup
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 
@@ -31,33 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
-
-// Well known endpoints for KMS services.
-const (
-	AWSKMSURI     = "kms://aws?keyPolicy=%s&kekID=%s"
-	AzureKMSURI   = "kms://azure?tenantID=%s&clientID=%s&clientSecret=%s&name=%s&type=%s&kekID=%s"
-	GCPKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&protectionLvl=%s&kekID=%s"
-	ClusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
-	AWSS3URI      = "storage://aws?bucket=%s"
-	AzureBlobURI  = "storage://azure?container=%s&connectionString=%s"
-	GCPStorageURI = "storage://gcp?projects=%s&bucket=%s"
-	NoStoreURI    = "storage://no-store"
-)
-
-// MasterSecret holds the master key and salt for deriving keys.
-type MasterSecret struct {
-	Key  []byte `json:"key"`
-	Salt []byte `json:"salt"`
-}
-
-// EncodeToURI returns an URI encoding the master secret.
-func (m *MasterSecret) EncodeToURI() string {
-	return fmt.Sprintf(
-		ClusterKMSURI,
-		base64.URLEncoding.EncodeToString(m.Key),
-		base64.URLEncoding.EncodeToString(m.Salt),
-	)
-}
 
 // KMSInformation about an existing KMS.
 type KMSInformation struct {
@@ -158,25 +130,4 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", url.Host)
 	}
-}
-
-// getConfig parses url query values, returning a map of the requested values.
-// Returns an error if a key has no value.
-// This function MUST always return a slice of the same length as len(keys).
-func getConfig(values url.Values, keys []string) ([]string, error) {
-	res := make([]string, len(keys))
-
-	for idx, key := range keys {
-		val := values.Get(key)
-		if val == "" {
-			return res, fmt.Errorf("missing value for key: %q", key)
-		}
-		val, err := url.QueryUnescape(val)
-		if err != nil {
-			return res, fmt.Errorf("failed to unescape value for key: %q", key)
-		}
-		res[idx] = val
-	}
-
-	return res, nil
 }

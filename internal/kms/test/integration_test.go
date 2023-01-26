@@ -83,7 +83,7 @@ func runKMSTest(t *testing.T, kms kms.CloudKMS) {
 	t.Logf("DEK 3: %x\n", res3)
 }
 
-func runStorageTest(t *testing.T, store storage.Storage) {
+func runStorageTest(t *testing.T, store kms.Storage) {
 	assert := assert.New(t)
 	require := require.New(t)
 

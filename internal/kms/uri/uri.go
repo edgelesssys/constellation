@@ -51,12 +51,16 @@ const (
 	awsS3URI      = "storage://aws?bucket=%s&region=%s&accessKeyID=%s&accessKey=%s"
 	azureBlobURI  = "storage://azure?account=%s&container=%s&clientID=%s&clientSecret=%s&vaultName=%s"
 	gcpStorageURI = "storage://gcp?project=%s&bucket=%s&credentialsPath=%s"
-	NoStoreURI    = "storage://no-store"
+	// NoStoreURI is a URI that indicates that no storage is used.
+	// Should only be used with cluster KMS.
+	NoStoreURI = "storage://no-store"
 )
 
 // MasterSecret holds the master key and salt for deriving keys.
 type MasterSecret struct {
-	Key  []byte `json:"key"`
+	// Key is the secret value used in HKDF to derive keys.
+	Key []byte `json:"key"`
+	// Salt is the salt used in HKDF to derive keys.
 	Salt []byte `json:"salt"`
 }
 
@@ -100,10 +104,14 @@ func DecodeMasterSecretFromURI(uri string) (MasterSecret, error) {
 
 // AWSConfig is the configuration to authenticate with AWS KMS.
 type AWSConfig struct {
-	KeyName     string
-	Region      string
+	// KeyName is the name of the key in AWS KMS.
+	KeyName string
+	// Region is the region of the key in AWS KMS.
+	Region string
+	// AccessKeyID is the ID of the access key used for authentication with the AWS API.
 	AccessKeyID string
-	AccessKey   string
+	// AccessKey is the secret value used for authentication with the AWS API.
+	AccessKey string
 }
 
 // DecodeAWSConfigFromURI decodes an AWS configuration from a URI.
@@ -159,10 +167,14 @@ func (c AWSConfig) EncodeToURI() string {
 
 // AWSS3Config is the configuration to authenticate with AWS S3 storage bucket.
 type AWSS3Config struct {
-	Bucket      string
-	Region      string
+	// Bucket is the name of the S3 storage bucket to use.
+	Bucket string
+	// Region is the region storage bucket is located in.
+	Region string
+	// AccessKeyID is the ID of the access key used for authentication with the AWS API.
 	AccessKeyID string
-	AccessKey   string
+	// AccessKey is the secret value used for authentication with the AWS API.
+	AccessKey string
 }
 
 // DecodeAWSS3ConfigFromURI decodes an S3 configuration from a URI.
@@ -218,12 +230,19 @@ func (s AWSS3Config) EncodeToURI() string {
 
 // AzureConfig is the configuration to authenticate with Azure Key Vault.
 type AzureConfig struct {
-	TenantID     string
-	ClientID     string
+	// TenantID of the Azure Active Directory the Key Vault is located in.
+	TenantID string
+	// ClientID is the ID of the managed identity used to authenticate with the Azure API.
+	ClientID string
+	// ClientSecret is the secret-value/password of the managed identity used to authenticate with the Azure API.
 	ClientSecret string
-	KeyName      string
-	VaultName    string
-	VaultType    VaultBaseURL
+	// KeyName is the name of the key in Azure Key Vault.
+	KeyName string
+	// VaultName is the name of the vault.
+	VaultName string
+	// VaultType is the type of the vault.
+	// This defines whether or not the Key Vault is a managed HSM.
+	VaultType VaultBaseURL
 }
 
 // DecodeAzureConfigFromURI decodes an Azure configuration from a URI.
@@ -291,11 +310,16 @@ func (a AzureConfig) EncodeToURI() string {
 
 // AzureBlobConfig is the configuration to authenticate with Azure Blob storage.
 type AzureBlobConfig struct {
+	// StorageAccount is the name of the storage account to use.
 	StorageAccount string
-	Container      string
-	TenantID       string
-	ClientID       string
-	ClientSecret   string
+	// Container is the name of the container to use.
+	Container string
+	// TenantID of the Azure Active Directory the Key Vault is located in.
+	TenantID string
+	// ClientID is the ID of the managed identity used to authenticate with the Azure API.
+	ClientID string
+	// ClientSecret is the secret-value/password of the managed identity used to authenticate with the Azure API.
+	ClientSecret string
 }
 
 // DecodeAzureBlobConfigFromURI decodes an Azure Blob configuration from a URI.
@@ -357,12 +381,16 @@ func (a AzureBlobConfig) EncodeToURI() string {
 
 // GCPConfig is the configuration to authenticate with GCP KMS.
 type GCPConfig struct {
-	// CredentialsPath is the path to a credentials file of a service account used to authorize against the KMS.
+	// CredentialsPath is the path to a credentials file of a service account used to authorize against the GCP API.
 	CredentialsPath string
-	ProjectID       string
-	Location        string
-	KeyRing         string
-	KeyName         string
+	// ProjectID is the name of the GCP project the KMS is located in.
+	ProjectID string
+	// Location is the location of the KMS.
+	Location string
+	// KeyRing is the name of the keyring.
+	KeyRing string
+	// KeyName is the name of the key in the GCP KMS.
+	KeyName string
 }
 
 // DecodeGCPConfigFromURI decodes a GCP configuration from a URI.
@@ -424,9 +452,12 @@ func (g GCPConfig) EncodeToURI() string {
 
 // GoogleCloudStorageConfig is the configuration to authenticate with Google Cloud Storage.
 type GoogleCloudStorageConfig struct {
+	// CredentialsPath is the path to a credentials file of a service account used to authorize against the GCP API.
 	CredentialsPath string
-	ProjectID       string
-	Bucket          string
+	// ProjectID is the name of the GCP project the storage bucket is located in.
+	ProjectID string
+	// Bucket is the name of the bucket to use.
+	Bucket string
 }
 
 // DecodeGoogleCloudStorageConfigFromURI decodes a Google Cloud Storage configuration from a URI.

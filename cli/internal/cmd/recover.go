@@ -24,7 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
-	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -73,7 +73,7 @@ func (r *recoverCmd) recover(
 	}
 	r.log.Debugf("Using flags: %+v", flags)
 
-	var masterSecret kmssetup.MasterSecret
+	var masterSecret uri.MasterSecret
 	r.log.Debugf("Loading master secret file from %s", flags.secretPath)
 	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
 		return err
@@ -102,7 +102,7 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)
 	r.log.Debugf("Set dialer for endpoint %s", flags.endpoint)
-	doer.setURIs(masterSecret.EncodeToURI(), kmssetup.NoStoreURI)
+	doer.setURIs(masterSecret.EncodeToURI(), uri.NoStoreURI)
 	r.log.Debugf("Set secrets")
 	if err := r.recoverCall(cmd.Context(), cmd.OutOrStdout(), interval, doer); err != nil {
 		if grpcRetry.ServiceIsUnavailable(err) {

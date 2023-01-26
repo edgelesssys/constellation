@@ -33,7 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
-	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -164,7 +164,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		MasterSecret:           masterSecret.Key,
 		Salt:                   masterSecret.Salt,
 		KmsUri:                 masterSecret.EncodeToURI(),
-		StorageUri:             kmssetup.NoStoreURI,
+		StorageUri:             uri.NoStoreURI,
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,
@@ -351,19 +351,19 @@ type initFlags struct {
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (kmssetup.MasterSecret, error) {
+func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (uri.MasterSecret, error) {
 	if filename != "" {
 		i.log.Debugf("Reading master secret from file %q", filename)
-		var secret kmssetup.MasterSecret
+		var secret uri.MasterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
-			return kmssetup.MasterSecret{}, err
+			return uri.MasterSecret{}, err
 		}
 
 		if len(secret.Key) < crypto.MasterSecretLengthMin {
-			return kmssetup.MasterSecret{}, fmt.Errorf("provided master secret is smaller than the required minimum of %d Bytes", crypto.MasterSecretLengthMin)
+			return uri.MasterSecret{}, fmt.Errorf("provided master secret is smaller than the required minimum of %d Bytes", crypto.MasterSecretLengthMin)
 		}
 		if len(secret.Salt) < crypto.RNGLengthDefault {
-			return kmssetup.MasterSecret{}, fmt.Errorf("provided salt is smaller than the required minimum of %d Bytes", crypto.RNGLengthDefault)
+			return uri.MasterSecret{}, fmt.Errorf("provided salt is smaller than the required minimum of %d Bytes", crypto.RNGLengthDefault)
 		}
 		return secret, nil
 	}
@@ -372,19 +372,19 @@ func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler fi
 	i.log.Debugf("Generating new master secret")
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
-		return kmssetup.MasterSecret{}, err
+		return uri.MasterSecret{}, err
 	}
 	salt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
-		return kmssetup.MasterSecret{}, err
+		return uri.MasterSecret{}, err
 	}
-	secret := kmssetup.MasterSecret{
+	secret := uri.MasterSecret{
 		Key:  key,
 		Salt: salt,
 	}
 	i.log.Debugf("Generated master secret key and salt values")
 	if err := fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
-		return kmssetup.MasterSecret{}, err
+		return uri.MasterSecret{}, err
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return secret, nil
