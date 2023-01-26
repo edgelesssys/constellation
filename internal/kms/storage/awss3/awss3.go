@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// Package memfs implements a storage backend for the KMS using AWS S3: https://aws.amazon.com/s3/
+// Package awss3 implements a storage backend for the KMS using AWS S3: https://aws.amazon.com/s3/
 package awss3
 
 import (
