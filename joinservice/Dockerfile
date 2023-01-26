@@ -26,6 +26,6 @@ ARG PROJECT_VERSION=0.0.0
 RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o join-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
 # Use gcr.io/distroless/static here since we need CA certificates to be installed for aTLS operations on GCP.
-FROM gcr.io/distroless/static@sha256:ea2ed73931ecd5d70f0bf3fdaa481c84f556cc205d6ceec78dff335fc4a313b2 as release
+FROM gcr.io/distroless/static@sha256:2019e0c59d0292a74a9dbb6c178092a08e856c88f4c5bc1963fa829b50fc4b24 as release
 COPY --from=build /constellation/joinservice/join-service /joinservice
 ENTRYPOINT [ "/joinservice" ]
