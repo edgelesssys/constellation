@@ -44,13 +44,13 @@ type VaultBaseURL string
 
 // Well known endpoints for KMS services.
 const (
-	awsKMSURI     = "kms://aws?region=%s&accessKeyID=%s&accessKey=%skeyName=%s"
+	awsKMSURI     = "kms://aws?region=%s&accessKeyID=%s&accessKey=%s&keyName=%s"
 	azureKMSURI   = "kms://azure?tenantID=%s&clientID=%s&clientSecret=%s&vaultName=%s&vaultType=%s&keyName=%s"
-	gcpKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&credentialsPath=%s&keyName=%s"
+	gcpKMSURI     = "kms://gcp?projectID=%s&location=%s&keyRing=%s&credentialsPath=%s&keyName=%s"
 	clusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
 	awsS3URI      = "storage://aws?bucket=%s&region=%s&accessKeyID=%s&accessKey=%s"
-	azureBlobURI  = "storage://azure?account=%s&container=%s&clientID=%s&clientSecret=%s&vaultName=%s"
-	gcpStorageURI = "storage://gcp?project=%s&bucket=%s&credentialsPath=%s"
+	azureBlobURI  = "storage://azure?account=%s&container=%s&tenantID=%s&clientID=%s&clientSecret=%s"
+	gcpStorageURI = "storage://gcp?projectID=%s&bucket=%s&credentialsPath=%s"
 	// NoStoreURI is a URI that indicates that no storage is used.
 	// Should only be used with cluster KMS.
 	NoStoreURI = "storage://no-store"
@@ -470,7 +470,7 @@ func DecodeGoogleCloudStorageConfigFromURI(uri string) (GoogleCloudStorageConfig
 	if u.Scheme != "storage" {
 		return GoogleCloudStorageConfig{}, fmt.Errorf("invalid scheme: %q", u.Scheme)
 	}
-	if u.Host != "google" {
+	if u.Host != "gcp" {
 		return GoogleCloudStorageConfig{}, fmt.Errorf("invalid host: %q", u.Host)
 	}
 
