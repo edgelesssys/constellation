@@ -78,15 +78,15 @@ jobs:
       - name: Create docs pull request
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
         with:
-          branch: ${BRANCH}
+          branch: ${{ env.BRANCH }}
           base: main
-          title: "docs: add release ${VERSION}"
+          title: "docs: add release ${{ env.VERSION }}"
           body: |
             :robot: *This is an automated PR.* :robot:
 
-            The PR is triggered as part of the automated release process of version ${VERSION}.
+            The PR is triggered as part of the automated release process of version ${{ env.VERSION }}.
             It releases a new version of the documentation.
-          commit-message: "docs: add release ${VERSION}"
+          commit-message: "docs: add release ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: no-changelog
 
@@ -337,12 +337,12 @@ jobs:
         with:
           branch: ${{ env.NEW_BRANCH }}
           base: main
-          title: "release: bring back changes from ${VERSION}"
+          title: "release: bring back changes from ${{ env.VERSION }}"
           body: |
             :robot: *This is an automated PR.* :robot:
 
-            This PR is triggered as part of the release process of version ${VERSION}.
+            This PR is triggered as part of the release process of version ${{ env.VERSION }}.
             It brings back changes from the release branch into the main branch.
-          commit-message: "release: bring back changes from ${VERSION}"
+          commit-message: "release: bring back changes from ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: no-changelog
