@@ -1,8 +1,10 @@
 contents:
+  keyring:
+    - index-signing-key.rsa.pub
   repositories:
-    - https://dl-cdn.alpinelinux.org/alpine/v3.17/main
+    - "@local repository-apk"
   packages:
-    - alpine-base
+    - alpine-base@local
 
 entrypoint:
   command: /bin/sh -l
@@ -22,4 +24,3 @@ environment:
 
 archs:
   - amd64
-  - 386
