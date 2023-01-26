@@ -157,6 +157,9 @@ type Validator struct {
 func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
 	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
 ) *Validator {
+	if log == nil {
+		log = &nopAttestationLogger{}
+	}
 	return &Validator{
 		expected:       expected,
 		getTrustedKey:  getTrustedKey,
@@ -167,10 +170,13 @@ func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestatio
 }
 
 // Validate a TPM based attestation.
-func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
-	if v.log != nil {
-		v.log.Infof("Validating attestation document")
-	}
+func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, err error) {
+	v.log.Infof("Validating attestation document")
+	defer func() {
+		if err != nil {
+			v.log.Warnf("Failed to validate attestation document: %s", err)
+		}
+	}()
 
 	var attDoc AttestationDocument
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
@@ -210,9 +216,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 			if !pcr.WarnOnly {
 				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
 			}
-			if v.log != nil {
-				v.log.Warnf("Encountered untrusted PCR value at index %d", idx)
-			}
+			v.log.Warnf("Encountered untrusted PCR value at index %d", idx)
 		}
 	}
 
@@ -222,9 +226,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 		return nil, fmt.Errorf("verifying signed user data: %w", err)
 	}
 
-	if v.log != nil {
-		v.log.Infof("Successfully validated attestation document")
-	}
+	v.log.Infof("Successfully validated attestation document")
 	return attDoc.UserData, nil
 }
 
@@ -281,3 +283,12 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 
 	return m, nil
 }
+
+// nopAttestationLogger is a no-op implementation of AttestationLogger.
+type nopAttestationLogger struct{}
+
+// Infof is a no-op.
+func (nopAttestationLogger) Infof(string, ...interface{}) {}
+
+// Warnf is a no-op.
+func (nopAttestationLogger) Warnf(string, ...interface{}) {}

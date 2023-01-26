@@ -93,40 +93,43 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	log.Infof("Requesting measurement secret")
 	measurementSecret, err := s.dataKeyGetter.GetDataKey(ctx, attestation.MeasurementSecretContext, crypto.DerivedKeyLengthDefault)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to get measurement secret")
-		return nil, status.Errorf(codes.Internal, "unable to get measurement secret: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed to get measurement secret")
+		return nil, status.Errorf(codes.Internal, "getting measurement secret: %s", err)
 	}
 
 	log.Infof("Requesting disk encryption key")
 	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, crypto.StateDiskKeyLength)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to get key for stateful disk")
-		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed to get key for stateful disk")
+		return nil, status.Errorf(codes.Internal, "getting key for stateful disk: %s", err)
 	}
 
 	log.Infof("Creating Kubernetes join token")
 	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to generate Kubernetes join arguments")
-		return nil, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed to generate Kubernetes join arguments")
+		return nil, status.Errorf(codes.Internal, "generating Kubernetes join arguments: %s", err)
 	}
 
-	log.Infof("Querying NodeVersion CR for components ConfigMap name")
+	log.Infof("Querying NodeVersion custom resource for components ConfigMap name")
 	componentsConfigMapName, err := s.getK8sComponentsConfigMapName(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get components ConfigMap name: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed getting components ConfigMap name")
+		return nil, status.Errorf(codes.Internal, "getting components ConfigMap name: %s", err)
 	}
 
 	log.Infof("Querying %s ConfigMap for components", componentsConfigMapName)
 	components, err := s.kubeClient.GetComponents(ctx, componentsConfigMapName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get components: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed getting components from ConfigMap")
+		return nil, status.Errorf(codes.Internal, "getting components: %s", err)
 	}
 
 	log.Infof("Creating signed kubelet certificate")
 	kubeletCert, err := s.ca.GetCertificate(req.CertificateRequest)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed generating kubelet certificate")
+		return nil, status.Errorf(codes.Internal, "Generating kubelet certificate: %s", err)
 	}
 
 	var controlPlaneFiles []*joinproto.ControlPlaneCertOrKey
@@ -135,7 +138,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		filesMap, err := s.joinTokenGetter.GetControlPlaneCertificatesAndKeys()
 		if err != nil {
 			log.With(zap.Error(err)).Errorf("Failed to load control plane certificates and keys")
-			return nil, status.Errorf(codes.Internal, "ActivateControlPlane failed: %s", err)
+			return nil, status.Errorf(codes.Internal, "loading control-plane certificates and keys: %s", err)
 		}
 
 		for k, v := range filesMap {
@@ -148,11 +151,13 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 
 	nodeName, err := s.ca.GetNodeNameFromCSR(req.CertificateRequest)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get node name from CSR: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed getting node name from CSR")
+		return nil, status.Errorf(codes.Internal, "getting node name from CSR: %s", err)
 	}
 
 	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, componentsConfigMapName, req.IsControlPlane); err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to add node to joining nodes: %s", err)
+		log.With(zap.Error(err)).Errorf("Failed adding node to joining nodes")
+		return nil, status.Errorf(codes.Internal, "adding node to joining nodes: %s", err)
 	}
 
 	log.Infof("IssueJoinTicket successful")
@@ -188,6 +193,7 @@ func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejo
 		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
 	}
 
+	log.Infof("IssueRejoinTicket successful")
 	return &joinproto.IssueRejoinTicketResponse{
 		StateDiskKey:      stateDiskKey,
 		MeasurementSecret: measurementSecret,
