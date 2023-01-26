@@ -17,6 +17,12 @@ provider "google" {
   zone    = var.zone
 }
 
+provider "google-beta" {
+  project = var.project
+  region  = var.region
+  zone    = var.zone
+}
+
 locals {
   uid                   = random_id.uid.hex
   name                  = "${var.name}-${local.uid}"
