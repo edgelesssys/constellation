@@ -29,8 +29,8 @@ jobs:
       - name: Copy action and workflows
         id: copy-actions-and-workflows
         run: |
-          mkdir ${GITHUB_WORKSPACE}/constellation-actions
-          cp -r .github/* ${GITHUB_WORKSPACE}/constellation-actions/
+          mkdir "${GITHUB_WORKSPACE}"/constellation-actions
+          cp -r .github/* "${GITHUB_WORKSPACE}"/constellation-actions/
         shell: bash
 
       - name: Check out cloud-provider-gcp
@@ -43,7 +43,7 @@ jobs:
       - name: Overwrite .github folder with constellation .github
         id: overwrite-actions-and-workflows
         run: |
-          cp -r ${GITHUB_WORKSPACE}/.github/* .github/
+          cp -r "${GITHUB_WORKSPACE}"/.github/* .github/
         shell: bash
 
       - name: Log in to the Container registry
