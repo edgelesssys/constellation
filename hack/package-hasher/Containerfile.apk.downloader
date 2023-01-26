@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1.5-labs
+FROM alpine:3.17.1@sha256:93d5a28ff72d288d69b5997b8ba47396d2cbb62a72b5d87cd3351094b5d578a0 as builder
+
+ADD --checksum=sha256:11968a8b706095a081ac30168849b351b0263a6df5c224119aa914d7e5afb0c1 \
+    https://github.com/reproducible-containers/repro-get/releases/download/v0.3.0/repro-get-v0.3.0.linux-amd64 \
+    /usr/bin/repro-get
+RUN chmod +x /usr/bin/repro-get
+
+ADD --checksum=sha256:45ae2e1f566cdc26dd9ddf0ca37a494d3fa7db29946094ae2f0d91e16def827d \
+    https://github.com/oras-project/oras/releases/download/v0.16.0/oras_0.16.0_linux_amd64.tar.gz \
+    /tmp/oras.tar.gz
+RUN tar -C /usr/bin -xzf /tmp/oras.tar.gz oras
+RUN chmod +x /usr/bin/oras
+
+# needs pin
+RUN apk add abuild
+
+WORKDIR /workspace
+
+# TODO(katexochen): reenable when bug is fixed upstream,
+# see https://github.com/reproducible-containers/repro-get/issues/29
+
+# COPY SHA256SUMS-apk-amd64 /SHA256SUMS-apk-amd64
+
+# RUN repro-get \
+#     --provider=oci://ghcr.io/katexochen/apk-repo-test \
+#     --cache ./cache \
+#     --distro alpine \
+#     download /SHA256SUMS-apk-amd64
+
+# RUN repro-get \
+#     --cache ./cache \
+#     --distro alpine \
+#     cache export repository-apk
+
+RUN abuild-keygen -a -n
+
+RUN mv /root/.abuild/*.rsa /root/.abuild/index-signing-key.rsa
+RUN mv /root/.abuild/*.rsa.pub /root/.abuild/index-signing-key.rsa.pub
+RUN echo 'PACKAGER_PRIVKEY="/root/.abuild/index-signing-key.rsa"' > /root/.abuild/abuild.conf
+
+WORKDIR /workspace/repository-apk/x86_64
+
+RUN oras pull ghcr.io/edgelesssys/constellation/packages-apk:latest
+
+RUN apk index \
+    --rewrite-arch x86_64 \
+    -o APKINDEX.tar.gz \
+    *.apk
+
+RUN abuild-sign APKINDEX.tar.gz
+
+FROM scratch as output
+
+COPY --from=builder /workspace/repository-apk repository-apk
+COPY --from=builder /root/.abuild/*.rsa index-signing-key.rsa
+COPY --from=builder /root/.abuild/*.rsa.pub index-signing-key.rsa.pub

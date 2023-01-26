@@ -59,6 +59,14 @@ runs:
         inputs.cosignPassword != ''
       uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # v2.8.1
 
+    - name: Download apk repository
+      shell: bash
+      working-directory: apko
+      env:
+        DOCKER_BUILDKIT: "1"
+      run: |
+        docker build -o . -f ../hack/package-hasher/Containerfile.apk.downloader .
+
     - name: Build apko images and sign them
       shell: bash
       env:
