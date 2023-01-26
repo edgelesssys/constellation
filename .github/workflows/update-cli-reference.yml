@@ -9,6 +9,9 @@ on:
       - "cli/internal/cmd/**"
       - "hack/clidocgen/**"
 
+permissions:
+  contents: read
+
 jobs:
   publish-to-docs:
     runs-on: ubuntu-22.04

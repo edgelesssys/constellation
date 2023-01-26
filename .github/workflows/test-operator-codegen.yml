@@ -13,6 +13,9 @@ on:
     paths:
       - "operators/**"
 
+permissions:
+  contents: read
+
 jobs:
   govulncheck:
     name: check-codegen

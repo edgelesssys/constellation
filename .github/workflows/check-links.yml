@@ -13,6 +13,9 @@ on:
       - "**.md"
       - "**.html"
 
+permissions:
+  contents: read
+
 jobs:
   linkChecker:
     runs-on: ubuntu-22.04

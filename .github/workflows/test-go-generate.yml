@@ -8,6 +8,9 @@ on:
       - "release/**"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   go-generate:
     runs-on: ubuntu-22.04

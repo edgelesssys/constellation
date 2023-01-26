@@ -11,6 +11,9 @@ on:
     paths:
       - "docs/**"
 
+permissions:
+  contents: read
+
 jobs:
   prose:
     runs-on: ubuntu-22.04

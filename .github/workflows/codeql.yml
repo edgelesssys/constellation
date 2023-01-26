@@ -13,6 +13,9 @@ on:
       - "**requirements.txt"
       - "./github/workflows/codeql.yml"
 
+permissions:
+  contents: read
+
 jobs:
   codeql:
     name: CodeQL

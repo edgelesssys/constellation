@@ -3,6 +3,9 @@ env:
   REGISTRY: ghcr.io
 on: [workflow_dispatch]
 
+permissions:
+  contents: read
+
 jobs:
   build-gcp-guest-agent:
     runs-on: ubuntu-22.04

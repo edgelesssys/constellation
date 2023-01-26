@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "0 3 * * 6" # At 03:00 on Saturday.
 
+permissions:
+  contents: read
+
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}

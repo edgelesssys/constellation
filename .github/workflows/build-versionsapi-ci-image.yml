@@ -10,6 +10,9 @@ on:
       - ".github/workflows/build-versionsapi-ci-image.yml"
       - ".github/actions/versionsapi/**"
 
+permissions:
+  contents: read
+
 jobs:
   build-versionsapi-ci-cli:
     runs-on: ubuntu-22.04

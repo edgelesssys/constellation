@@ -11,6 +11,9 @@ on:
       - "debugd/internal/debugd/logcollector/logstash/**"
       - ".github/workflows/build-logcollector-images.yml"
 
+permissions:
+  contents: read
+
 jobs:
   build-logcollector-images:
     runs-on: ubuntu-22.04

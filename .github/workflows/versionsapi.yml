@@ -92,6 +92,9 @@ on:
         description: Output of the command
         value: ${{ jobs.versionsapi.outputs.output }}
 
+permissions:
+  contents: read
+
 concurrency:
   group: versionsapi
   cancel-in-progress: false

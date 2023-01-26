@@ -9,6 +9,9 @@ on:
       - main
       - "release/**"
 
+permissions:
+  contents: read
+
 jobs:
   build-join-service-ko:
     runs-on: ubuntu-22.04

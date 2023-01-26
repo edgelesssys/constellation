@@ -15,6 +15,9 @@ on:
       - "**.bash"
       - "image/**"
 
+permissions:
+  contents: read
+
 jobs:
   shellcheck:
     name: Shellcheck

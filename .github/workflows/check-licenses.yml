@@ -13,6 +13,9 @@ on:
       - "**/go.mod"
       - "**/go.sum"
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-22.04
