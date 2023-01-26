@@ -26,6 +26,11 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-actor: true
+
       - name: Copy action and workflows
         id: copy-actions-and-workflows
         run: |
