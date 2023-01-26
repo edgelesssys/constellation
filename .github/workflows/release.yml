@@ -88,7 +88,7 @@ jobs:
             It releases a new version of the documentation.
           commit-message: "docs: add release ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
-          labels: no-changelog
+          labels: no changelog
 
   prepare-release-branch:
     name: Prepare release branch
@@ -345,4 +345,4 @@ jobs:
             It brings back changes from the release branch into the main branch.
           commit-message: "release: bring back changes from ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
-          labels: no-changelog
+          labels: no changelog

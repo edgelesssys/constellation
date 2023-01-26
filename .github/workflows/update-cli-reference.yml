@@ -46,4 +46,4 @@ jobs:
             be created automatically on new changes on main).
           commit-message: "docs: update cli reference"
           committer: edgelessci <edgelessci@users.noreply.github.com>
-          labels: no-changelog
+          labels: no changelog
