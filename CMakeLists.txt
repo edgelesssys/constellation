@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(constellation LANGUAGES C VERSION 2.4.0)
+project(constellation LANGUAGES C VERSION 1.2.7)
 set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI.")
 
 enable_testing()
