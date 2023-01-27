@@ -19,6 +19,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIAMCreator(t *testing.T) {
@@ -197,11 +198,12 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
+	require := require.New(t)
 	someError := errors.New("failed")
 	destroyer := NewIAMDestroyer(context.Background())
 
 	testFsValid := file.NewHandler(afero.NewMemMapFs())
-	testFsValid.Write(constants.GCPServiceAccountKeyFile, []byte(`
+	require.NoError(testFsValid.Write(constants.GCPServiceAccountKeyFile, []byte(`
 	{
 		"auth_provider_x509_cert_url": "",
 		"auth_uri": "",
@@ -214,11 +216,11 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 		"token_uri": "",
 		"type": ""
 	}
-	`))
+	`)))
 	testFsInvalid := file.NewHandler(afero.NewMemMapFs())
-	testFsInvalid.Write(constants.GCPServiceAccountKeyFile, []byte(`
+	require.NoError(testFsInvalid.Write(constants.GCPServiceAccountKeyFile, []byte(`
 	asdf
-	`))
+	`)))
 
 	validTfClient := &stubTerraformClient{
 		tfjsonState: &tfjson.State{

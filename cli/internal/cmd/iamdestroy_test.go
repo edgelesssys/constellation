@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDestroyIAMUser(t *testing.T) {
@@ -49,7 +50,7 @@ func TestDestroyIAMUser(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().Set("yes", tc.yes)
+			assert.NoError(cmd.Flags().Set("yes", tc.yes))
 
 			fsh := file.NewHandler(afero.NewMemMapFs())
 
@@ -65,11 +66,12 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
+	require := require.New(t)
 	someError := errors.New("failed")
 
 	fsExist := file.NewHandler(afero.NewMemMapFs())
 	fsNoExist := file.NewHandler(afero.NewMemMapFs())
-	fsExist.Write(constants.GCPServiceAccountKeyFile, []byte("{}"))
+	require.NoError(fsExist.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
 
 	testCases := map[string]struct {
 		destroyer   iamDestroyer
@@ -84,6 +86,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			fsHandler:   fsNoExist,
 			wantProceed: true,
 			wantErr:     true,
+			yes:         "false",
 		},
 		"confirm delete flag": {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
@@ -95,12 +98,14 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
 			fsHandler:   fsExist,
 			wantProceed: true,
+			yes:         "false",
 			stdin:       "y\n",
 		},
 		"deny delete stdin": {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
 			fsHandler:   fsExist,
 			wantProceed: true,
+			yes:         "false",
 			stdin:       "n\n",
 		},
 		"unsuccessful destroy confirm": {
@@ -133,7 +138,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().Set("yes", tc.yes)
+			assert.NoError(cmd.Flags().Set("yes", tc.yes))
 
 			proceed, err := deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {
