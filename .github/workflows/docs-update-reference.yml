@@ -5,6 +5,9 @@ on:
     branches:
       - action/constellation/update-cli-reference
 
+permissions:
+  contents: read
+
 jobs:
   pull-request:
     runs-on: ubuntu-22.04

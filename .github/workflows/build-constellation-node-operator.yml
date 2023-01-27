@@ -11,6 +11,9 @@ on:
       - "internal/**"
       - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
 
+permissions:
+  contents: read
+
 jobs:
   build-constellation-node-operator:
     runs-on: ubuntu-22.04

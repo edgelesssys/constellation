@@ -30,6 +30,9 @@ on:
         description: "Is this a release build?"
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   build-operator-manual:
     runs-on: ubuntu-22.04

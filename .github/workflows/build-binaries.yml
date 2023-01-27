@@ -17,6 +17,9 @@ on:
       - "**/go.mod"
       - "**/go.sum"
 
+permissions:
+  contents: read
+
 jobs:
   build-bootstrapper:
     runs-on: ubuntu-22.04

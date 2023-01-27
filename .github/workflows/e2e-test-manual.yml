@@ -107,6 +107,9 @@ on:
         type: string
         required: true
 
+permissions:
+  contents: read
+
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}

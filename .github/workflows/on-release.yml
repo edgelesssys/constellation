@@ -13,6 +13,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 env:
   REPO: edgelesssys/constellation
   TAG: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}

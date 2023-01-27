@@ -12,6 +12,9 @@ on:
     paths:
       - ".github/**.yml"
 
+permissions:
+  contents: read
+
 jobs:
   actionlint:
     runs-on: ubuntu-22.04

@@ -46,6 +46,9 @@ on:
         description: "Git ref to checkout"
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   calculate-measurements-on-csp:
     name: "Calculate Measurements on CSP"

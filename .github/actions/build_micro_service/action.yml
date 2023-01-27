@@ -1,3 +1,8 @@
+# Required permissions:
+#
+# permissions:
+#   packages: write # for docker/build-push-action
+#
 name: Build micro service
 description: Build and upload a container image for a Constellation micro-service
 inputs:

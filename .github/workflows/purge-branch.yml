@@ -3,6 +3,9 @@ name: Purge branch
 on:
   delete:
 
+permissions:
+  contents: read
+
 jobs:
   purge:
     name: Delete ref from versions API

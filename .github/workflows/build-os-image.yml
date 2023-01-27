@@ -47,6 +47,9 @@ on:
         description: "Git ref to checkout"
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   build-dependencies:
     name: "Build binaries for embedding in the OS"
@@ -784,6 +787,9 @@ jobs:
     needs: [upload-image-lookup-table, build-settings]
     name: "Add version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/versionsapi.yml
     with:
       command: add
