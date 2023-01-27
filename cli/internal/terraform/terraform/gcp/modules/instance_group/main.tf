@@ -8,8 +8,9 @@ terraform {
 }
 
 locals {
-  role_dashed = var.role == "ControlPlane" ? "control-plane" : "worker"
-  name        = "${var.name}-${local.role_dashed}"
+  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
+  name            = "${var.name}-${local.role_dashed}"
+  state_disk_name = "state-disk"
 }
 
 resource "google_compute_instance_template" "template" {
@@ -34,7 +35,7 @@ resource "google_compute_instance_template" "template" {
     disk_size_gb = var.disk_size
     disk_type    = var.disk_type
     auto_delete  = true
-    device_name  = "state-disk" // This name is used by disk mapper to find the disk
+    device_name  = local.state_disk_name // This name is used by disk mapper to find the disk
     boot         = false
     mode         = "READ_WRITE"
     type         = "PERSISTENT"
@@ -80,10 +81,27 @@ resource "google_compute_instance_template" "template" {
 }
 
 resource "google_compute_instance_group_manager" "instance_group_manager" {
+  provider           = google-beta
   name               = local.name
   description        = "Instance group manager for Constellation"
   base_instance_name = local.name
   target_size        = var.instance_count
+
+  dynamic "stateful_disk" {
+    for_each = var.role == "ControlPlane" ? [1] : []
+    content {
+      device_name = local.state_disk_name
+      delete_rule = "ON_PERMANENT_INSTANCE_DELETION"
+    }
+  }
+
+  dynamic "stateful_internal_ip" {
+    for_each = var.role == "ControlPlane" ? [1] : []
+    content {
+      interface_name = "nic0"
+      delete_rule    = "ON_PERMANENT_INSTANCE_DELETION"
+    }
+  }
 
   version {
     instance_template = google_compute_instance_template.template.id
