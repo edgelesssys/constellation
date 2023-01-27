@@ -11,15 +11,6 @@ inputs:
   masterSecret:
     description: "The master-secret for the cluster."
     required: true
-  cloudProvider:
-    description: "Which cloud provider to use."
-    required: true
-  gcpProject:
-    description: "The GCP project Constellation is deployed in."
-    required: false
-  resourceGroup:
-    description: "The Azure resource group Constellation is deployed in."
-    required: false
 
 runs:
   using: "composite"
@@ -86,7 +77,7 @@ runs:
               exit 1
           fi
 
-          echo "Cannot reach control plane: $output, retrying in 10 seconds"
+          echo "Cannot reach control plane, retrying in 10 seconds"
           sleep 10
         done
       env:
