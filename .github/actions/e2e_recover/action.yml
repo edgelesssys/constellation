@@ -11,15 +11,6 @@ inputs:
   masterSecret:
     description: "The master-secret for the cluster."
     required: true
-  cloudProvider:
-    description: "Which cloud provider to use."
-    required: true
-  gcpProject:
-    description: "The GCP project Constellation is deployed in."
-    required: false
-  resourceGroup:
-    description: "The Azure resource group Constellation is deployed in."
-    required: false
 
 runs:
   using: "composite"
@@ -55,7 +46,7 @@ runs:
                 i=$(echo "$output" | grep -o "Pushed recovery key." | wc -l | sed 's/ //g')
                 recovered=$((recovered+i))
                 if [[ $recovered -eq ${{ inputs.controlNodesCount }} ]]; then
-                    exit 0
+                    break
                 fi
             fi
 
@@ -68,6 +59,26 @@ runs:
             echo "Did not recover all nodes yet, retrying in 5 seconds [$recovered/${{ inputs.controlNodesCount }}]"
             sleep 5
         done
-        kubectl wait --for=condition=Ready --timeout=10m --all nodes
+    - name: Wait for control plane to get back up
+      shell: bash
+      run: |
+        timeout=600
+        start_time=$(date +%s)
+        while true; do
+          output=$(kubectl wait --for=condition=Ready --timeout=10m --all nodes || true)
+          if echo "$output" | grep -q "condition met"; then
+              echo "$output"
+              exit 0
+          fi
+
+          current_time=$(date +%s)
+          if ((current_time - start_time > timeout)); then
+              echo "Waiting for control plane to get back up timed out after $timeout seconds."
+              exit 1
+          fi
+
+          echo "Cannot reach control plane, retrying in 10 seconds"
+          sleep 10
+        done
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}

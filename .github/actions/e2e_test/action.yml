@@ -233,8 +233,5 @@ runs:
       uses: ./.github/actions/e2e_recover
       with:
         controlNodesCount: ${{ inputs.controlNodesCount }}
-        cloudProvider: ${{ inputs.cloudProvider }}
-        gcpProject: ${{ inputs.gcpProject }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         masterSecret: ${{ steps.constellation-create.outputs.masterSecret }}
-        azureResourceGroup: ${{ inputs.azureResourceGroup }}
