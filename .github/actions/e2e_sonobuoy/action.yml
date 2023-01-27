@@ -5,10 +5,6 @@ inputs:
   cloudProvider:
     description: "CSP name necessary for artifact naming."
     required: true
-  sonobuoyVersion:
-    description: "Version of sonobuoy test CLI to use."
-    default: "0.56.14"
-    required: true
   sonobuoyTestSuiteCmd:
     description: "Which tests should be run?"
   kubeconfig:
@@ -20,11 +16,13 @@ runs:
   steps:
     - name: Install sonobuoy
       shell: bash
+      env:
+        SONOBUOY_VER: "0.56.15"
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
-        curl -fsSLO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_${HOSTOS}_${HOSTARCH}.tar.gz
-        tar -xzf sonobuoy_${{ inputs.sonobuoyVersion }}_${HOSTOS}_${HOSTARCH}.tar.gz
+        curl -fsSLO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${SONOBUOY_VER}/sonobuoy_${SONOBUOY_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
+        tar -xzf sonobuoy_${SONOBUOY_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
         install sonobuoy /usr/local/bin
 
     - name: Sonobuoy version
