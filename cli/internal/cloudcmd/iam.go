@@ -24,11 +24,12 @@ import (
 	"github.com/spf13/afero"
 )
 
+// IAMDestroyer destroys an IAM user and deletes their configuration.
 type IAMDestroyer struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 }
 
-// NewIAMDestroyer creates a new IAM Destroyer
+// NewIAMDestroyer creates a new IAM Destroyer.
 func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 	return &IAMDestroyer{
 		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
@@ -36,6 +37,8 @@ func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 		},
 	}
 }
+
+// RunDeleteGCPKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up.
 func (d *IAMDestroyer) RunDeleteGCPKeyFile(ctx context.Context) (bool, error) {
 	fsHandler := file.NewHandler(afero.NewOsFs())
 	cl, err := d.newTerraformClient(ctx)
@@ -46,7 +49,6 @@ func (d *IAMDestroyer) RunDeleteGCPKeyFile(ctx context.Context) (bool, error) {
 	return d.deleteGCPKeyFile(ctx, fsHandler, cl)
 }
 
-// DeleteGCPKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up
 func (d *IAMDestroyer) deleteGCPKeyFile(ctx context.Context, fsHandler file.Handler, cl terraformClient) (bool, error) {
 	tfState, err := cl.Show(ctx)
 	if err != nil {
