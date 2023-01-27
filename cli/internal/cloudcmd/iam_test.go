@@ -197,7 +197,7 @@ func TestDestroyIAMUser(t *testing.T) {
 	}
 }
 
-func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
+func TestDeleteGCPKeyFile(t *testing.T) {
 	require := require.New(t)
 	someError := errors.New("failed")
 	destroyer := NewIAMDestroyer(context.Background())
@@ -329,6 +329,20 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 			if tc.wantDeleted {
 				assert.True(deleted)
+				require.NoError(testFsValid.Write(constants.GCPServiceAccountKeyFile, []byte(`
+			{
+				"auth_provider_x509_cert_url": "",
+				"auth_uri": "",
+				"client_email": "",
+				"client_id": "",
+				"client_x509_cert_url": "",
+				"private_key": "",
+				"private_key_id": "",
+				"project_id": "",
+				"token_uri": "",
+				"type": ""
+			}
+			`)))
 			} else {
 				assert.False(deleted)
 			}
