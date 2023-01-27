@@ -364,20 +364,15 @@ func TestConcurrency(t *testing.T) {
 }
 
 type stubStreamReadWriter struct {
-	readStreamFilename string
-	readStreamErr      error
-
-	writeStreamFilename string
-	writeStreamErr      error
+	readStreamErr  error
+	writeStreamErr error
 }
 
 func (s *stubStreamReadWriter) ReadStream(filename string, _ streamer.WriteChunkStream, _ uint, _ bool) error {
-	s.readStreamFilename = filename
 	return s.readStreamErr
 }
 
 func (s *stubStreamReadWriter) WriteStream(filename string, _ streamer.ReadChunkStream, _ bool) error {
-	s.writeStreamFilename = filename
 	return s.writeStreamErr
 }
 
