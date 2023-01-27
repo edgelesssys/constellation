@@ -69,9 +69,15 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	require := require.New(t)
 	someError := errors.New("failed")
 
-	fsExist := file.NewHandler(afero.NewMemMapFs())
-	fsNoExist := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fsExist.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
+	newFsNoExist := func() file.Handler {
+		fs := file.NewHandler(afero.NewMemMapFs())
+		return fs
+	}
+	newFsExist := func() file.Handler {
+		fs := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
+		return fs
+	}
 
 	testCases := map[string]struct {
 		destroyer   iamDestroyer
@@ -83,48 +89,48 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	}{
 		"file doesn't exist": {
 			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   fsNoExist,
+			fsHandler:   newFsNoExist(),
 			wantProceed: true,
 			wantErr:     true,
 			yes:         "false",
 		},
 		"confirm delete flag": {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   fsExist,
+			fsHandler:   newFsExist(),
 			wantProceed: true,
 			yes:         "true",
 		},
 		"confirm delete stdin": {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   fsExist,
+			fsHandler:   newFsExist(),
 			wantProceed: true,
 			yes:         "false",
 			stdin:       "y\n",
 		},
 		"deny delete stdin": {
 			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   fsExist,
+			fsHandler:   newFsExist(),
 			wantProceed: true,
 			yes:         "false",
 			stdin:       "n\n",
 		},
 		"unsuccessful destroy confirm": {
 			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   fsExist,
+			fsHandler:   newFsExist(),
 			yes:         "true",
 			stdin:       "y\n",
 			wantProceed: true,
 		},
 		"unsuccessful destroy deny": {
 			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   fsExist,
+			fsHandler:   newFsExist(),
 			yes:         "true",
 			stdin:       "n\n",
 			wantProceed: false,
 		},
 		"error deleting file": {
 			destroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
-			fsHandler: fsExist,
+			fsHandler: newFsExist(),
 			yes:       "true",
 			wantErr:   true,
 		},
