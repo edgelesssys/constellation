@@ -637,7 +637,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Create SBOM in SPDX fromat
-        uses: anchore/sbom-action@54e36e45f34bc64728f51adb8044404daca492a6 # v0.13.2
+        uses: anchore/sbom-action@07978da4bdb4faa726e52dfc6b1bed63d4b56479 # v0.13.3
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
@@ -645,7 +645,7 @@ jobs:
           format: spdx-json
 
       - name: Create SBOM in CycloneDX fromat
-        uses: anchore/sbom-action@54e36e45f34bc64728f51adb8044404daca492a6 # v0.13.2
+        uses: anchore/sbom-action@07978da4bdb4faa726e52dfc6b1bed63d4b56479 # v0.13.3
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
@@ -653,7 +653,7 @@ jobs:
           format: cyclonedx-json
 
       - name: Create SBOM in  Syft fromat
-        uses: anchore/sbom-action@54e36e45f34bc64728f51adb8044404daca492a6 # v0.13.2
+        uses: anchore/sbom-action@07978da4bdb4faa726e52dfc6b1bed63d4b56479 # v0.13.3
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
