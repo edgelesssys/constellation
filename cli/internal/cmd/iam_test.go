@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestParseIDFile(t *testing.T) {
 	validIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.GCP,
 		GCPOutput: iamid.GCPFile{
-			ServiceAccountKey: "eyJwcml2YXRlX2tleV9pZCI6Im5vdF9hX3NlY3JldCJ9Cg==", // {"private_key_id":"not_a_secret"}
+			ServiceAccountKey: base64.RawStdEncoding.EncodeToString([]byte(`{"private_key_id":"not_a_secret"}`)),
 		},
 	}
 	invalidIAMIDFile := iamid.File{
