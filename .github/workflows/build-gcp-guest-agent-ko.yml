@@ -1,0 +1,61 @@
+name: Build and Upload GCP guest-agent container
+env:
+  REGISTRY: ghcr.io
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "feat/reproducible-builds-ko-gcp"
+
+jobs:
+  build-gcp-guest-agent:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        version: ["20220927.00"]
+        include:
+          - version: "20220927.00"
+            latest: true
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          repository: "GoogleCloudPlatform/guest-agent"
+          ref: refs/tags/${{ matrix.version }}
+          path: ./3rdparty/guest-agent
+
+      - name: Update go workspace
+        run: |
+          go work use ./3rdparty/gcp-guest-agent
+          go mod download
+
+      - name: Prepare guest agent
+        run: |
+          mkdir -p ./3rdparty/guest-agent/google_guest_agent/kodata/
+          mv ./3rdparty/gcp-guest-agent/instance_configs.cfg  ./3rdparty/guest-agent/google_guest_agent/kodata/
+
+      - name: Log in to the Container registry
+        id: docker-login
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload KMS server container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro_service_ko
+        with:
+          name: gcp-guest-agent-ko
+          koConfig: .ko.yaml
+          koTarget: ./3rdparty/guest-agent/google_guest_agent
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
