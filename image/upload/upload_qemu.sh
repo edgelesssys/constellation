@@ -11,7 +11,7 @@ if [[ -z ${CONFIG_FILE-} ]] && [[ -f ${CONFIG_FILE-} ]]; then
   . "${CONFIG_FILE}"
 fi
 
-path="constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}/csp/qemu/image.raw"
+path="constellation/v1/ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}/image/csp/qemu/image.raw"
 aws s3 cp "${QEMU_IMAGE_PATH}" "s3://${QEMU_BUCKET}/${path}" --no-progress
 
 image_url="${QEMU_BASE_URL}/${path}"
