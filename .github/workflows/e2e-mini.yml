@@ -14,14 +14,13 @@ on:
         description: "Git ref to checkout"
         required: true
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   e2e-mini:
     runs-on: ubuntu-22.04
     environment: e2e
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout
         id: checkout

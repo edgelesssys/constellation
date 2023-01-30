@@ -60,6 +60,8 @@ jobs:
     runs-on: ubuntu-22.04
     if: inputs.kind == 'minor'
     needs: verify-inputs
+    permissions:
+      contents: write
     env:
       VERSION: ${{ inputs.version }}
       MAJOR_MINOR: ${{ needs.verify-inputs.outputs.MAJOR_MINOR }}
@@ -107,6 +109,8 @@ jobs:
     name: Prepare release branch
     runs-on: ubuntu-22.04
     needs: verify-inputs
+    permissions:
+      contents: write
     env:
       BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
     steps:
@@ -127,6 +131,9 @@ jobs:
     name: Build micro services
     needs: [verify-inputs, prepare-release-branch]
     uses: ./.github/workflows/build-micro-service-manual.yml
+    permissions:
+      contents: read
+      packages: write
     secrets: inherit
     strategy:
       matrix:
@@ -144,6 +151,9 @@ jobs:
     needs: [verify-inputs, prepare-release-branch]
     secrets: inherit
     uses: ./.github/workflows/build-operator-manual.yml
+    permissions:
+      contents: read
+      packages: write
     with:
       imageTag: ${{ inputs.version }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
@@ -153,6 +163,8 @@ jobs:
     name: Update container image versions
     needs: [verify-inputs, micro-services, constellation-node-operator]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     env:
       VERSION: ${{ inputs.version }}
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
@@ -212,6 +224,10 @@ jobs:
     name: Build OS image
     needs: [verify-inputs, update-versions]
     uses: ./.github/workflows/build-os-image.yml
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     secrets: inherit
     with:
       imageVersion: ${{ inputs.version }}
@@ -223,6 +239,9 @@ jobs:
     name: Generate OS image measurements
     needs: [verify-inputs, os-image]
     uses: ./.github/workflows/generate-measurements.yml
+    permissions:
+      id-token: write
+      contents: read
     secrets: inherit
     with:
       osImage: ${{ inputs.version }}
@@ -234,6 +253,8 @@ jobs:
   update-hardcoded-measurements:
     name: Update hardcoded measurements (in the CLI)
     needs: [verify-inputs, generate-measurements]
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     env:
       VERSION: ${{ inputs.version }}
@@ -276,6 +297,9 @@ jobs:
         runner: [ubuntu-22.04, macos-12]
         csp: [aws, azure, gcp]
     uses: ./.github/workflows/e2e-test-manual.yml
+    permissions:
+      id-token: write
+      contents: read
     with:
       workerNodesCount: 2
       controlNodesCount: 3
@@ -292,6 +316,9 @@ jobs:
     name: Run E2E tests for mini Constellation
     needs: [verify-inputs, update-hardcoded-measurements]
     uses: ./.github/workflows/e2e-mini.yml
+    permissions:
+      id-token: write
+      contents: read
     secrets: inherit
     with:
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
@@ -300,6 +327,8 @@ jobs:
     name: Tag release
     needs: [verify-inputs, e2e-tests, e2e-mini]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     env:
       VERSION: ${{ inputs.version }}
     steps:
@@ -319,6 +348,10 @@ jobs:
     name: Draft release (CLI)
     needs: [verify-inputs, tag-release]
     uses: ./.github/workflows/release-cli.yml
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
     secrets: inherit
     with:
       ref: "refs/tags/${{ inputs.version }}"
@@ -327,6 +360,8 @@ jobs:
     name: PR to Merge changes from release branch into main
     if: inputs.kind == 'minor'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     needs: [verify-inputs, tag-release]
     env:
       VERSION: ${{ inputs.version }}

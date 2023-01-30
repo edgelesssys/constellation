@@ -14,14 +14,13 @@ on:
       - "**.tf"
       - "./github/workflows/test-tfsec.yml"
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   tfsec:
     name: tfsec
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
