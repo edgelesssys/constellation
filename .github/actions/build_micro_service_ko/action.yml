@@ -27,10 +27,10 @@ inputs:
     default: "false"
   cosignPublicKey:
     description: "Cosign public key"
-    required: false
+    required: true
   cosignPrivateKey:
     description: "Cosign private key"
-    required: false
+    required: true
   cosignPassword:
     description: "Password for Cosign private key"
     required: false
@@ -50,11 +50,11 @@ runs:
       uses: ./.github/actions/build_ko
       with:
         name: ${{ inputs.name }}
-        koConfig: ${{ inputs.koConfig }}
         pseudoVersion: ${{ inputs.pseudoVersion }}
+        koConfig: ${{ inputs.koConfig }}
         koTarget: ${{ inputs.koTarget }}
+        pushTag: ${{ inputs.pushTag }}
         githubToken: ${{ inputs.GITHUB_TOKEN }}
-        pushTag: ci-test
 
     - name: Download ko Container Data
       id: download_container_data

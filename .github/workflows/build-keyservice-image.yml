@@ -1,4 +1,6 @@
 name: Build and upload KeyService image
+env:
+  REGISTRY: ghcr.io
 
 on:
   workflow_dispatch:
@@ -29,13 +31,16 @@ jobs:
         with:
           go-version: "1.19.5"
 
+      - name: Set up ko
+        uses: imjasonh/setup-ko@9a31684920a610d5dbe8012888714d64706f9787 # tag=v0.6
+
       - name: Build and upload KeyService container image
         id: build-and-upload
-        uses: ./.github/actions/build_micro_service
+        uses: ./.github/actions/build_micro_service_ko
         with:
           name: key-service
-          projectVersion: "0.0.0"
-          dockerfile: keyservice/Dockerfile
+          koConfig: .ko.yaml
+          koTarget: ./kms/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
