@@ -1,0 +1,10 @@
+#!/bin/sh
+bazel run --config linux_amd64_static //:bazeldnf -- fetch \
+  --repofile rpm/repo.yaml
+bazel run --config linux_amd64_static //:bazeldnf -- rpmtree \
+  --workspace rpm/rpms.bzl \
+  --buildfile rpm/BUILD.bazel \
+  --repofile rpm/repo.yaml \
+  --name cryptsetup-devel \
+  cryptsetup-devel
+bazel run --config linux_amd64_static //rpm:ldd
