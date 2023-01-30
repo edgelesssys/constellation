@@ -28,13 +28,13 @@ jobs:
 
       - name: Install oras
         env:
-          ORAS_VERSION: 0.16.0
+          ORAS_VERSION: "0.16.0"
         run: |
           curl -fsSLO "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
           mkdir -p oras-install/
-          tar -zxf "oras_${ORAS_VERSION}_*.tar.gz" -C oras-install/
+          tar -zxf "oras_${ORAS_VERSION}_linux_amd64.tar.gz" -C oras-install/
           mv oras-install/oras /usr/local/bin/
-          rm -rf "oras_${ORAS_VERSION}_*.tar.gz" oras-install/
+          rm -rf "oras_${ORAS_VERSION}_linux_amd64.tar.gz" oras-install/
 
       - name: Run apk hasher
         env:
