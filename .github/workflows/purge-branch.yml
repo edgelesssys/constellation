@@ -7,6 +7,9 @@ jobs:
   purge:
     name: Delete ref from versions API
     uses: ./.github/workflows/versionsapi.yml
+    permissions:
+      id-token: write
+      contents: read
     secrets: inherit
     with:
       command: remove
