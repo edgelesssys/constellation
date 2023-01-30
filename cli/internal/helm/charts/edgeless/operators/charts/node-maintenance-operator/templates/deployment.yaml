@@ -48,7 +48,7 @@ spec:
         - --metrics-bind-address=:8080
         - --leader-elect
         command:
-        - /manager
+        -  /ko-app/v2
         env:
         - name: OPERATOR_NAMESPACE
           valueFrom:
