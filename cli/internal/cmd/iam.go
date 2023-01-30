@@ -178,70 +178,70 @@ type iamCreator struct {
 }
 
 // create IAM configuration on the iamCreator's cloud provider.
-func (iamCreator *iamCreator) create(ctx context.Context) error {
-	flags, err := iamCreator.parseFlagsAndSetupConfig()
+func (c *iamCreator) create(ctx context.Context) error {
+	flags, err := c.parseFlagsAndSetupConfig()
 	if err != nil {
 		return err
 	}
 
 	if !flags.yesFlag {
-		iamCreator.cmd.Printf("The following IAM configuration will be created:\n\n")
-		iamCreator.providerCreator.printConfirmValues(iamCreator.cmd, flags)
+		c.cmd.Printf("The following IAM configuration will be created:\n\n")
+		c.providerCreator.printConfirmValues(c.cmd, flags)
 		if flags.generateConfig {
-			iamCreator.cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", flags.configPath)
+			c.cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", flags.configPath)
 		}
-		ok, err := askToConfirm(iamCreator.cmd, "Do you want to create the configuration?")
+		ok, err := askToConfirm(c.cmd, "Do you want to create the configuration?")
 		if err != nil {
 			return err
 		}
 		if !ok {
-			iamCreator.cmd.Println("The creation of the configuration was aborted.")
+			c.cmd.Println("The creation of the configuration was aborted.")
 			return nil
 		}
 	}
 
-	iamCreator.spinner.Start("Creating", false)
+	c.spinner.Start("Creating", false)
 
-	conf := createConfig(iamCreator.provider)
+	conf := createConfig(c.provider)
 
-	iamFile, err := iamCreator.creator.Create(ctx, iamCreator.provider, iamCreator.iamConfig)
-	iamCreator.spinner.Stop()
+	iamFile, err := c.creator.Create(ctx, c.provider, c.iamConfig)
+	c.spinner.Stop()
 	if err != nil {
 		return err
 	}
-	iamCreator.cmd.Println() // Print empty line to separate after spinner ended.
+	c.cmd.Println() // Print empty line to separate after spinner ended.
 
-	err = iamCreator.providerCreator.parseAndWriteIDFile(iamFile, iamCreator.fileHandler)
+	err = c.providerCreator.parseAndWriteIDFile(iamFile, c.fileHandler)
 	if err != nil {
 		return err
 	}
 
 	if flags.generateConfig {
-		iamCreator.providerCreator.writeOutputValuesToConfig(conf, flags, iamFile)
-		if err := iamCreator.fileHandler.WriteYAML(flags.configPath, conf, file.OptMkdirAll); err != nil {
+		c.providerCreator.writeOutputValuesToConfig(conf, flags, iamFile)
+		if err := c.fileHandler.WriteYAML(flags.configPath, conf, file.OptMkdirAll); err != nil {
 			return err
 		}
-		iamCreator.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", flags.configPath)
+		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", flags.configPath)
 		return nil
 	}
 
-	iamCreator.providerCreator.printOutputValues(iamCreator.cmd, flags, iamFile)
-	iamCreator.cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
+	c.providerCreator.printOutputValues(c.cmd, flags, iamFile)
+	c.cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 
 	return nil
 }
 
 // parseFlagsAndSetupConfig parses the flags of the iam create command and fills the values into the IAM config (output values of the command).
-func (iamCreator *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
-	configPath, err := iamCreator.cmd.Flags().GetString("config")
+func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
+	configPath, err := c.cmd.Flags().GetString("config")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
-	generateConfig, err := iamCreator.cmd.Flags().GetBool("generate-config")
+	generateConfig, err := c.cmd.Flags().GetBool("generate-config")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing generate-config bool: %w", err)
 	}
-	yesFlag, err := iamCreator.cmd.Flags().GetBool("yes")
+	yesFlag, err := c.cmd.Flags().GetBool("yes")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
@@ -252,7 +252,7 @@ func (iamCreator *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 		yesFlag:        yesFlag,
 	}
 
-	flags, err = iamCreator.providerCreator.parseFlagsAndSetupConfig(iamCreator.cmd, flags, iamCreator.iamConfig)
+	flags, err = c.providerCreator.parseFlagsAndSetupConfig(c.cmd, flags, c.iamConfig)
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing provider-specific value: %w", err)
 	}
