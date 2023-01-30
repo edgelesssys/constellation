@@ -27,13 +27,15 @@ runs:
       with:
         fetch-depth: 0
         repository: "edgelesssys/k-bench"
-        ref: "feat/constellation"
+        ref: 836693d3136e5531b07f4ffd21cd6f4b47f7f2f1
         path: k-bench
 
     - name: Install patched K-Bench
-      working-directory: "k-bench"
+      working-directory: k-bench
       shell: bash
-      run: ./install.sh
+      run: |
+        go install github.com/kubernetes/kompose@c4137012e3d00051de45afacccf288e12b21d8e7
+        go install github.com/edgelesssys/k-bench/cmd/kbench@836693d3136e5531b07f4ffd21cd6f4b47f7f2f1
 
     - name: Run K-Bench
       shell: bash
