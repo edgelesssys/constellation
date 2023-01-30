@@ -1,0 +1,12 @@
+build --incompatible_enable_cc_toolchain_resolution
+build --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
+build --extra_toolchains @zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.34
+
+build:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
+build:linux_amd64 --extra_toolchains @zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.34
+build:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.34
+build:linux_arm64 --extra_toolchains @zig_sdk//libc_aware/toolchain:linux_arm64_gnu.2.34
+build:linux_amd64_static --platforms @zig_sdk//platform:linux_amd64
+build:linux_amd64_static --extra_toolchains @zig_sdk//toolchain:linux_amd64_musl
+build:linux_arm64_static --platforms @zig_sdk//platform:linux_arm64
+build:linux_arm64_static --extra_toolchains @zig_sdk//toolchain:linux_arm64_musl

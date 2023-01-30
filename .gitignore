@@ -58,3 +58,9 @@ shell.nix
 
 # Gitpod
 .gitpod.yml
+
+# Bazel
+bazel-*
+
+# bazeldnf
+.bazeldnf/

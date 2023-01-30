@@ -1,0 +1,34 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@bazeldnf//:def.bzl", "bazeldnf")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
+
+# gazelle:prefix github.com/edgelesssys/constellation
+gazelle(name = "gazelle")
+
+gazelle(
+    name = "gazelle-update-repos",
+    args = [
+        "-from_file=go.work",
+        "-to_macro=toolchains/go_module_deps.bzl%go_dependencies",
+        "-prune",
+    ],
+    command = "update-repos",
+)
+
+bazeldnf(name = "bazeldnf")
+
+buildifier(
+    name = "buildifier-check",
+    lint_mode = "warn",
+    lint_warnings = ["all"],
+    mode = "check",
+    verbose = True,
+)
+
+buildifier(
+    name = "buildifier-fix",
+    lint_mode = "fix",
+    lint_warnings = ["all"],
+    mode = "fix",
+    verbose = True,
+)

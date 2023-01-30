@@ -1,0 +1,94 @@
+# proto toolchain
+load("//toolchains:proto_deps.bzl", "proto_deps")
+
+proto_deps()
+
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
+rules_proto_dependencies()
+
+rules_proto_toolchains()
+
+# Go toolchain
+load("//toolchains:go_rules_deps.bzl", "go_deps")
+
+go_deps()
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("//toolchains:go_module_deps.bzl", "go_dependencies")
+
+# gazelle:repository_macro toolchains/go_module_deps.bzl%go_dependencies
+go_dependencies()
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.19.5")
+
+gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bazel")
+
+# gazelle:repo bazel_gazelle
+
+# dnf / rpm toolchain
+
+load("//toolchains:dnf_deps.bzl", "dnf_deps")
+
+dnf_deps()
+
+load("@bazeldnf//:deps.bzl", "bazeldnf_dependencies")
+
+bazeldnf_dependencies()
+
+load("//rpm:rpms.bzl", "rpms")
+
+rpms()
+
+# Buildifier
+load("//toolchains:buildifier_deps.bzl", "buildifier_deps")
+
+buildifier_deps()
+
+# C / C++ toolchains
+
+load("//toolchains:zig_cc_deps.bzl", "zig_cc_deps")
+
+zig_cc_deps()
+
+load("@bazel-zig-cc//toolchain:defs.bzl", zig_toolchains = "toolchains")
+
+zig_toolchains()
+
+register_toolchains(
+    "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.34",
+    "@zig_sdk//libc_aware/toolchain:linux_amd64_musl",
+    "@zig_sdk//libc_aware/toolchain:linux_arm64_musl",
+    "@zig_sdk//toolchain:darwin_amd64",
+    "@zig_sdk//toolchain:darwin_arm64",
+    "@zig_sdk//toolchain:windows_amd64",
+)
+
+# Packaging rules (tar)
+load("//toolchains:pkg_deps.bzl", "pkg_deps")
+
+pkg_deps()
+
+load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
+
+rules_pkg_dependencies()
+
+# OCI rules
+load("//toolchains:oci_deps.bzl", "oci_deps")
+
+oci_deps()
+
+load("@contrib_rules_oci//oci:dependencies.bzl", "rules_oci_dependencies")
+
+rules_oci_dependencies()
+
+load("@contrib_rules_oci//oci:repositories.bzl", "LATEST_CRANE_VERSION", "LATEST_ZOT_VERSION", "oci_register_toolchains")
+
+oci_register_toolchains(
+    name = "oci",
+    crane_version = LATEST_CRANE_VERSION,
+    zot_version = LATEST_ZOT_VERSION,
+)

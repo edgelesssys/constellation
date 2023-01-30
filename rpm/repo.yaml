@@ -1,0 +1,7 @@
+repositories:
+- arch: x86_64
+  metalink: https://mirrors.fedoraproject.org/metalink?repo=fedora-37&arch=x86_64
+  name: 37-x86_64-primary-repo
+- arch: x86_64
+  metalink: https://mirrors.fedoraproject.org/metalink?repo=updates-released-f37&arch=x86_64
+  name: 37-x86_64-update-repo
