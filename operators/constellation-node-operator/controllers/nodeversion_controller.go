@@ -153,6 +153,7 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		"heirNodes", len(groups.Heirs),
 		"mintNodes", len(groups.Mint),
 		"pendingNodes", len(pendingNodeList.Items),
+		"awaitingAnnotationNodes", len(groups.AwaitingAnnotation),
 		"obsoleteNodes", len(groups.Obsolete),
 		"invalidNodes", len(invalidNodes))
 
