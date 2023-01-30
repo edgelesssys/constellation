@@ -34,6 +34,10 @@ jobs:
   build-image:
     needs: stream
     uses: ./.github/workflows/build-os-image.yml
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     secrets: inherit
     with:
       stream: ${{ needs.stream.outputs.stream }}
