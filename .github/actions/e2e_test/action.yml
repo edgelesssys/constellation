@@ -107,7 +107,7 @@ runs:
     - name: Download the bootstrapper from cache
       id: download-bootstrapper-cache
       if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
-      uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+      uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
       with:
         key: bootstrapper-${{ github.sha }}
         path: "build/bootstrapper"
@@ -122,7 +122,7 @@ runs:
     - name: Download the upgrade-agent from cache
       id: download-upgrade-agent-cache
       if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
-      uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+      uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
       with:
         key: upgrade-agent-${{ github.sha }}
         path: "build/upgrade-agent"
