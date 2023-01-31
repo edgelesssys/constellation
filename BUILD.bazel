@@ -1,6 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazeldnf//:def.bzl", "bazeldnf")
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 
 # gazelle:prefix github.com/edgelesssys/constellation
 gazelle(name = "gazelle")
@@ -17,12 +17,14 @@ gazelle(
 
 bazeldnf(name = "bazeldnf")
 
-buildifier(
+buildifier_test(
     name = "buildifier-check",
     lint_mode = "warn",
     lint_warnings = ["all"],
-    mode = "check",
+    mode = "diff",
+    no_sandbox = True,
     verbose = True,
+    workspace = "WORKSPACE.bazel",
 )
 
 buildifier(
