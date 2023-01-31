@@ -7,8 +7,8 @@ runs:
       shell: bash
       working-directory: /tmp
       env:
-        SYFT_VERSION: "0.65.0" # Before upgrading, check if this has been fixed: https://github.com/anchore/syft/issues/1465
-        GRYPE_VERSION: "0.55.0"
+        SYFT_VERSION: "0.69.0"
+        GRYPE_VERSION: "0.56.0"
         OS: ${{ runner.os }}
         ARCH: ${{ runner.arch }}
       run: |
@@ -19,15 +19,15 @@ runs:
         else
           OS=${OS,,}
         fi
-  
+
         if [[ "${ARCH}" = "X64" ]]; then
           ARCH="amd64"
         else
           ARCH=${ARCH,,}
         fi
-        
+
         echo "Downloading for ${OS}/${ARCH}"
-        
+
         curl -fsSLo syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
         tar -xzf syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
         sudo install syft /usr/bin/syft
