@@ -1,3 +1,7 @@
+load("//toolchains:java_deps.bzl", "java_deps")
+
+java_deps()
+
 # proto toolchain
 load("//toolchains:proto_deps.bzl", "proto_deps")
 
