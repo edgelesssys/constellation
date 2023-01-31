@@ -38,7 +38,7 @@ jobs:
           go install github.com/katexochen/sh/v3/cmd/shfmt@faf7f58964998201d22efe41fef41ae4e1953f3b # v3.6.0
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # master
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # v2.0.0
         with:
           severity: info
           ignore_paths: charts/cilium
