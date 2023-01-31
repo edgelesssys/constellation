@@ -12,6 +12,7 @@ on:
       - "joinservice/**"
       - "internal/**"
       - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
+      - ".github/workflows/build-joinservice-image.yml"
 
 jobs:
   build-join-service:

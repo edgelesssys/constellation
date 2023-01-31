@@ -10,6 +10,7 @@ on:
       - "hack/qemu-metadata-api/**"
       - "internal/**"
       - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
+      - ".github/workflows/build-qemu-metadata-image.yml"
 
 jobs:
   build-qemu-metadata-api:

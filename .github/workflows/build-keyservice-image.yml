@@ -12,6 +12,7 @@ on:
       - "keyservice/**"
       - "internal/**"
       - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
+      - ".github/workflows/build-keyservice-image.yml"
 
 jobs:
   build-keyservice:

@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - "/apko/**"
-      - "/.github/workflows/build-apko-image.yml"
+      - ".github/workflows/build-apko-image.yml"
 
 jobs:
   build-apko-image:
