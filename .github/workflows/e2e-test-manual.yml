@@ -214,13 +214,13 @@ jobs:
           outputPath: ${{ github.workspace }}/build/upgrade-agent
 
       - name: Upload bootstrapper to cache
-        uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+        uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           key: bootstrapper-${{ github.sha }}
           path: "build/bootstrapper"
 
       - name: Upload upgrade-agent to cache
-        uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12 # v3.2.3
+        uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           key: upgrade-agent-${{ github.sha }}
           path: "build/upgrade-agent"
