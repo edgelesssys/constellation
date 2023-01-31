@@ -19,6 +19,7 @@ bazeldnf(name = "bazeldnf")
 
 buildifier_test(
     name = "buildifier-check",
+    timeout = "short",
     lint_mode = "warn",
     lint_warnings = ["all"],
     mode = "diff",
