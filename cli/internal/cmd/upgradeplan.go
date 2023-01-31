@@ -79,9 +79,9 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 	cliVersion string,
 ) error {
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, true)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 	up.log.Debugf("Read configuration from %q", flags.configPath)
 	// get current image version of the cluster

@@ -36,6 +36,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 		urlFlag          string
 		signatureURLFlag string
 		configFlag       string
+		forceFlag        bool
 		wantFlags        *fetchMeasurementsFlags
 		wantErr          bool
 	}{
@@ -74,6 +75,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 
 			cmd := newConfigFetchMeasurementsCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("force", false, "")                       // register persistent flag manually
 
 			if tc.urlFlag != "" {
 				require.NoError(cmd.Flags().Set("url", tc.urlFlag))
@@ -243,10 +245,12 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			cmd := newConfigFetchMeasurementsCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 			gcpConfig.Image = "v999.999.999"
+			constants.VersionInfo = "v999.999.999"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)

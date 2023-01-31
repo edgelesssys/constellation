@@ -79,9 +79,9 @@ func (r *recoverCmd) recover(
 	}
 
 	r.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 	provider := conf.GetProvider()
 	r.log.Debugf("Got provider %s", provider.String())
@@ -202,6 +202,7 @@ type recoverFlags struct {
 	endpoint   string
 	secretPath string
 	configPath string
+	force      bool
 }
 
 func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
@@ -232,10 +233,16 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	}
 	r.log.Debugf("Configuration path flag is %s", configPath)
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return recoverFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+
 	return recoverFlags{
 		endpoint:   endpoint,
 		secretPath: masterSecretPath,
 		configPath: configPath,
+		force:      force,
 	}, nil
 }
 

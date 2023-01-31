@@ -93,9 +93,9 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	i.log.Debugf("Using flags: %+v", flags)
 	i.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	i.log.Debugf("Checking cluster ID file")
@@ -282,10 +282,17 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	}
 	i.log.Debugf("Configuration path flag is %q", configPath)
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return initFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+	i.log.Debugf("force flag is %t", configPath)
+
 	return initFlags{
 		configPath:       configPath,
 		conformance:      conformance,
 		masterSecretPath: masterSecretPath,
+		force:            force,
 	}, nil
 }
 
@@ -294,6 +301,7 @@ type initFlags struct {
 	configPath       string
 	masterSecretPath string
 	conformance      bool
+	force            bool
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.

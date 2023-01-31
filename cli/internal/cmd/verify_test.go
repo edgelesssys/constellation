@@ -141,6 +141,7 @@ func TestVerify(t *testing.T) {
 
 			cmd := NewVerifyCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})

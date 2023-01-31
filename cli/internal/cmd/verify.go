@@ -75,9 +75,9 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	v.log.Debugf("Using flags: %+v", flags)
 
 	v.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	provider := conf.GetProvider()
@@ -133,6 +133,12 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 	v.log.Debugf("'node-endpoint' flag is %q", endpoint)
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return verifyFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+	v.log.Debugf("'force' flag is %t", force)
+
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
@@ -168,6 +174,7 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		configPath: configPath,
 		ownerID:    ownerID,
 		clusterID:  clusterID,
+		force:      force,
 	}, nil
 }
 
@@ -176,6 +183,7 @@ type verifyFlags struct {
 	ownerID    string
 	clusterID  string
 	configPath string
+	force      bool
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {

@@ -22,6 +22,8 @@ func newRootCmd() *cobra.Command {
 	It connects to Constellation instances running debugd and deploys a self-compiled version of the bootstrapper.`,
 	}
 	cmd.PersistentFlags().String("config", constants.ConfigFilename, "Constellation config file")
+	cmd.PersistentFlags().Bool("force", false, "disables version validation errors - might result in corrupted clusters")
+
 	cmd.AddCommand(newDeployCmd())
 	return cmd
 }

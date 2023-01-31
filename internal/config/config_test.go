@@ -173,7 +173,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(fileHandler, constants.ConfigFilename)
+			c, err := New(fileHandler, constants.ConfigFilename, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -279,7 +279,7 @@ func TestValidate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := tc.cnf.Validate()
+			err := tc.cnf.Validate(false)
 			if tc.wantErr {
 				assert.Error(err)
 				assert.Len(multierr.Errors(err), tc.wantErrCount)

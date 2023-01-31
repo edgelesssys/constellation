@@ -45,6 +45,7 @@ type fetchMeasurementsFlags struct {
 	measurementsURL *url.URL
 	signatureURL    *url.URL
 	configPath      string
+	force           bool
 }
 
 type configFetchMeasurementsCmd struct {
@@ -78,9 +79,9 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cfm.log.Debugf("Using flags %v", flags)
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	if !conf.IsReleaseImage() {
@@ -161,10 +162,16 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	}
 	cfm.log.Debugf("Configuration path is %q", config)
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
 		signatureURL:    measurementsSignatureURL,
 		configPath:      config,
+		force:           force,
 	}, nil
 }
 
