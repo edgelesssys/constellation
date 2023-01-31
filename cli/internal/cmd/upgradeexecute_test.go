@@ -51,6 +51,7 @@ func TestUpgradeExecute(t *testing.T) {
 			require := require.New(t)
 			cmd := newUpgradeExecuteCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)

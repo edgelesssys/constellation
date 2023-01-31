@@ -58,13 +58,18 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("parsing config path argument: %w", err)
 	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return fmt.Errorf("getting force flag: %w", err)
+	}
+
 	fs := afero.NewOsFs()
 	fileHandler := file.NewHandler(fs)
 	streamer := streamer.New(fs)
 	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
-	constellationConfig, err := config.FromFile(fileHandler, configName)
+	constellationConfig, err := config.New(fileHandler, configName, force)
 	if err != nil {
-		return err
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	return deploy(cmd, fileHandler, constellationConfig, transfer, log)

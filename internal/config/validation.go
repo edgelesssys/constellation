@@ -8,25 +8,41 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
-func validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.IsSupportedK8sVersion(fl.Field().String())
+// DisplayValidationErrors shows all validation errors inside configError as one formatted string.
+func DisplayValidationErrors(errWriter io.Writer, configError error) error {
+	errs := multierr.Errors(configError)
+	if errs != nil {
+		fmt.Fprintln(errWriter, "Problems validating config file:")
+		for _, err := range errs {
+			fmt.Fprintln(errWriter, "\t"+err.Error())
+		}
+		fmt.Fprintln(errWriter, "Fix the invalid entries or generate a new configuration using `constellation config generate`")
+		return errors.New("invalid configuration")
+	}
+	return nil
 }
 
 func registerInvalidK8sVersionError(ut ut.Translator) error {
-	return ut.Add("invalid_k8s_version", "{0} specifies an unsupported Kubernetes version. {1}", true)
+	return ut.Add("supported_k8s_version", "{0} specifies an unsupported Kubernetes version. {1}", true)
 }
 
 func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) string {
@@ -55,7 +71,7 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s.", configured, maxVersion)
 	}
 
-	t, _ := ut.T("invalid_k8s_version", fe.Field(), errorMsg)
+	t, _ := ut.T("supported_k8s_version", fe.Field(), errorMsg)
 
 	return t
 }
@@ -280,4 +296,57 @@ func getPlaceholderEntries(m Measurements) []uint32 {
 	}
 
 	return placeholders
+}
+
+func validateK8sVersion(fl validator.FieldLevel) bool {
+	return versions.IsSupportedK8sVersion(fl.Field().String())
+}
+
+func registerVersionCompatibilityError(ut ut.Translator) error {
+	return ut.Add("version_compatibility", "{0} specifies an invalid version: {1}", true)
+}
+
+func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldError) string {
+	err := validateVersionCompatibilityHelper(fe.Field(), fe.Value().(string))
+	var msg string
+
+	switch err {
+	case compatibility.ErrSemVer:
+		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
+	case compatibility.ErrMajorMismatch:
+		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s)", constants.VersionInfo, fe.Value().(string))
+	case compatibility.ErrMinorDrift:
+		msg = fmt.Sprintf("only the CLI (%s) can be up to one minor version newer than the configured version (%s)", constants.VersionInfo, fe.Value().(string))
+	default:
+		msg = err.Error()
+	}
+
+	t, _ := ut.T("version_compatibility", fe.Field(), msg)
+
+	return t
+}
+
+// Check that the validated field and the CLI version are not more than one minor version apart.
+func validateVersionCompatibility(fl validator.FieldLevel) bool {
+	if err := validateVersionCompatibilityHelper(fl.FieldName(), fl.Field().String()); err != nil {
+		return false
+	}
+
+	return true
+}
+
+func validateVersionCompatibilityHelper(fieldName string, configuredVersion string) error {
+	if fieldName == "Image" {
+		imageVersion, err := versionsapi.NewVersionFromShortPath(configuredVersion, versionsapi.VersionKindImage)
+		if err != nil {
+			return err
+		}
+		configuredVersion = imageVersion.Version
+	}
+
+	return compatibility.BinaryWith(configuredVersion)
+}
+
+func returnsTrue(fl validator.FieldLevel) bool {
+	return true
 }

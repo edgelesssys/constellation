@@ -140,6 +140,7 @@ func TestRecover(t *testing.T) {
 			cmd := NewRecoverCmd()
 			cmd.SetContext(context.Background())
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(out)
@@ -225,6 +226,7 @@ func TestParseRecoverFlags(t *testing.T) {
 
 			cmd := NewRecoverCmd()
 			cmd.Flags().String("config", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", false, "") // register persistent flag manually
 			require.NoError(cmd.ParseFlags(tc.args))
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())

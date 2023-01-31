@@ -179,11 +179,16 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 	if err != nil {
 		return nil, err
 	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return nil, fmt.Errorf("parsing force argument: %w", err)
+	}
+
 	// check for existing config
 	if configPath != "" {
-		conf, err := config.New(fileHandler, configPath)
+		conf, err := config.New(fileHandler, configPath, force)
 		if err != nil {
-			return nil, displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+			return nil, config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 		}
 		if conf.GetProvider() != cloudprovider.QEMU {
 			return nil, errors.New("invalid provider for MiniConstellation cluster")

@@ -73,9 +73,9 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	c.log.Debugf("Checking configuration for warnings")
@@ -201,11 +201,18 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	c.log.Debugf("Configuration path flag is %q", configPath)
 
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return createFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+	c.log.Debugf("force flag is %t", force)
+
 	return createFlags{
 		controllerCount: controllerCount,
 		workerCount:     workerCount,
 		name:            name,
 		configPath:      configPath,
+		force:           force,
 		yes:             yes,
 	}, nil
 }
@@ -216,6 +223,7 @@ type createFlags struct {
 	workerCount     int
 	name            string
 	configPath      string
+	force           bool
 	yes             bool
 }
 

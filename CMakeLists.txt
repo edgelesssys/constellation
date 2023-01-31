@@ -62,7 +62,7 @@ add_custom_target(debugd ALL
 # cdbg
 #
 add_custom_target(cdbg ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid=''"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/cdbg
   BYPRODUCTS cdbg
 )

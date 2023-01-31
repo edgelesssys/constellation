@@ -58,7 +58,7 @@ type Config struct {
 	Version string `yaml:"version" validate:"eq=v2"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required"`
+	Image string `yaml:"image" validate:"required,version_compatibility"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -317,7 +317,7 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 1. Reading config file via provided fileHandler from file with name.
 // 2. Read secrets from environment variables.
 // 3. Validate config.
-func New(fileHandler file.Handler, name string) (*Config, error) {
+func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	// Read config file
 	c, err := FromFile(fileHandler, name)
 	if err != nil {
@@ -330,7 +330,7 @@ func New(fileHandler file.Handler, name string) (*Config, error) {
 		c.Provider.Azure.ClientSecretValue = clientSecretValue
 	}
 
-	return c, c.Validate()
+	return c, c.Validate(force)
 }
 
 // HasProvider checks whether the config contains the provider.
@@ -456,7 +456,7 @@ func (c *Config) DeployCSIDriver() bool {
 }
 
 // Validate checks the config values and returns validation errors.
-func (c *Config) Validate() error {
+func (c *Config) Validate(force bool) error {
 	trans := ut.New(en.New()).GetFallback()
 	validate := validator.New()
 	if err := en_translations.RegisterDefaultTranslations(validate, trans); err != nil {
@@ -493,12 +493,28 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	if err := validate.RegisterTranslation("version_compatibility", trans, registerVersionCompatibilityError, translateVersionCompatibilityError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterTranslation("supported_k8s_version", trans, registerInvalidK8sVersionError, translateInvalidK8sVersionError); err != nil {
+		return err
+	}
+
 	if err := validate.RegisterValidation("no_placeholders", validateNoPlaceholder); err != nil {
 		return err
 	}
 
 	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
 	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
+		return err
+	}
+
+	versionCompatibilityValidator := validateVersionCompatibility
+	if force {
+		versionCompatibilityValidator = returnsTrue
+	}
+	if err := validate.RegisterValidation("version_compatibility", versionCompatibilityValidator); err != nil {
 		return err
 	}
 

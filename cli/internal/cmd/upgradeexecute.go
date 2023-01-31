@@ -69,9 +69,9 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	conf, err := config.New(fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath, flags.force)
 	if err != nil {
-		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
+		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	if flags.helmFlag {
@@ -130,7 +130,13 @@ func parseUpgradeExecuteFlags(cmd *cobra.Command) (upgradeExecuteFlags, error) {
 	if err != nil {
 		return upgradeExecuteFlags{}, err
 	}
-	return upgradeExecuteFlags{configPath: configPath, helmFlag: helmFlag, yes: yes, upgradeTimeout: timeout}, nil
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return upgradeExecuteFlags{}, fmt.Errorf("parsing force argument: %w", err)
+	}
+
+	return upgradeExecuteFlags{configPath: configPath, helmFlag: helmFlag, yes: yes, upgradeTimeout: timeout, force: force}, nil
 }
 
 type upgradeExecuteFlags struct {
@@ -138,6 +144,7 @@ type upgradeExecuteFlags struct {
 	helmFlag       bool
 	yes            bool
 	upgradeTimeout time.Duration
+	force          bool
 }
 
 type cloudUpgrader interface {
