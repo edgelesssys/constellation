@@ -163,19 +163,6 @@ jobs:
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       release: true
 
-  constellation-node-operator:
-    name: Build Constellation node-operator
-    needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
-    uses: ./.github/workflows/build-operator-manual.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      imageTag: ${{ inputs.version }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
-
   update-versions:
     name: Update container image versions
     needs: [verify-inputs, micro-services]

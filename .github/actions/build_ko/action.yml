@@ -8,10 +8,6 @@ inputs:
     description: "Name of the registry to use"
     required: false
     default: "ghcr.io"
-  pseudoVersion:
-    description: "Check if pseudo-version should be generated"
-    default: "false"
-    required: true
   koConfig:
     description: "Path to the .ko.yaml config file"
     required: false
@@ -46,7 +42,7 @@ runs:
   using: "composite"
   steps:
     - name: Determine pseudo version
-      if: inputs.pseudoVersion == 'true'
+      if: ${{ !inputs.pushTag}}
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
 

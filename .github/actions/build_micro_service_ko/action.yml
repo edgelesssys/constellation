@@ -8,10 +8,6 @@ inputs:
     description: "Path to the .ko.yaml config file"
     default: ".ko.yaml"
     required: false
-  pseudoVersion:
-    description: "Check if pseudo-version should be generated"
-    default: "false"
-    required: true
   koTarget:
     description: "Go package to build with ko"
     required: true
@@ -39,18 +35,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Determine pseudo version
-      if: inputs.pseudoVersion == 'true'
-      uses: ./.github/actions/pseudo_version
-      with:
-        constellationPath: ${{ inputs.constellationPath }}
-
     - name: Build and upload container image
       id: build-and-upload
       uses: ./.github/actions/build_ko
       with:
         name: ${{ inputs.name }}
-        pseudoVersion: ${{ inputs.pseudoVersion }}
         koConfig: ${{ inputs.koConfig }}
         koTarget: ${{ inputs.koTarget }}
         pushTag: ${{ inputs.pushTag }}
