@@ -24,11 +24,11 @@ var (
 	// ErrMinorDrift signals that the minor version of two compared versions are further apart than one.
 	ErrMinorDrift = errors.New("target version needs to be equal or up to one minor version higher")
 	// ErrSemVer signals that a given version does not adhere to the Semver syntax.
-	ErrSemVer = errors.New("invalid semver")
+	ErrSemVer = errors.New("invalid semantic version")
 )
 
-// ensurePrefixV returns the input string prefixed with the letter "v", if the string doesn't already start with that letter.
-func ensurePrefixV(str string) string {
+// EnsurePrefixV returns the input string prefixed with the letter "v", if the string doesn't already start with that letter.
+func EnsurePrefixV(str string) string {
 	if strings.HasPrefix(str, "v") {
 		return str
 	}
@@ -37,8 +37,8 @@ func ensurePrefixV(str string) string {
 
 // IsValidUpgrade checks that a and b adhere to a version drift of 1 and b is greater than a.
 func IsValidUpgrade(a, b string) error {
-	a = ensurePrefixV(a)
-	b = ensurePrefixV(b)
+	a = EnsurePrefixV(a)
+	b = EnsurePrefixV(b)
 
 	if !semver.IsValid(a) || !semver.IsValid(b) {
 		return ErrSemVer
@@ -70,8 +70,8 @@ func IsValidUpgrade(a, b string) error {
 
 // BinaryWith tests that this binarie's version is greater or equal than some target version, but not further away than one minor version.
 func BinaryWith(target string) error {
-	binaryVersion := ensurePrefixV(constants.VersionInfo)
-	target = ensurePrefixV(target)
+	binaryVersion := EnsurePrefixV(constants.VersionInfo)
+	target = EnsurePrefixV(target)
 	if !semver.IsValid(binaryVersion) || !semver.IsValid(target) {
 		return ErrSemVer
 	}
@@ -101,11 +101,11 @@ func BinaryWith(target string) error {
 
 // FilterNewerVersion filters the list of versions to only include versions newer than currentVersion.
 func FilterNewerVersion(currentVersion string, newVersions []string) []string {
-	currentVersion = ensurePrefixV(currentVersion)
+	currentVersion = EnsurePrefixV(currentVersion)
 	var result []string
 
 	for _, image := range newVersions {
-		image = ensurePrefixV(image)
+		image = EnsurePrefixV(image)
 		// check if image is newer than current version
 		if semver.Compare(image, currentVersion) <= 0 {
 			continue
@@ -118,7 +118,7 @@ func FilterNewerVersion(currentVersion string, newVersions []string) []string {
 // NextMinorVersion returns the next minor version for a given canonical semver.
 // The returned format is vMAJOR.MINOR.
 func NextMinorVersion(version string) (string, error) {
-	major, minor, err := parseCanonicalSemver(ensurePrefixV(version))
+	major, minor, err := parseCanonicalSemver(EnsurePrefixV(version))
 	if err != nil {
 		return "", err
 	}
@@ -126,13 +126,13 @@ func NextMinorVersion(version string) (string, error) {
 }
 
 func parseCanonicalSemver(version string) (major int, minor int, err error) {
-	version = semver.Canonical(version) // ensure version is in canonical form (vX.Y.Z)
-	num, err := fmt.Sscanf(version, "v%d.%d", &major, &minor)
+	version = semver.MajorMinor(version) // ensure version is in canonical form (vX.Y.Z)
+	if version == "" {
+		return 0, 0, fmt.Errorf("invalid semver: '%s'", version)
+	}
+	_, err = fmt.Sscanf(version, "v%d.%d", &major, &minor)
 	if err != nil {
 		return 0, 0, fmt.Errorf("parsing version: %w", err)
-	}
-	if num != 2 {
-		return 0, 0, fmt.Errorf("parsing version: expected 3 numbers, got %d", num)
 	}
 
 	return major, minor, nil

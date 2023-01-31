@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -89,6 +90,16 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 	}
 
 	return nil
+}
+
+// Versions queries the cluster for running versions and returns a map of releaseName -> version.
+func (c *Client) Versions() (string, error) {
+	serviceVersion, err := c.currentVersion(conServicesReleaseName)
+	if err != nil {
+		return "", fmt.Errorf("getting constellation-services version: %w", err)
+	}
+
+	return compatibility.EnsurePrefixV(serviceVersion), nil
 }
 
 // currentVersion returns the version of the currently installed helm release.

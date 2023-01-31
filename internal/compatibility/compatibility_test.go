@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFilterNewerVersion(t *testing.T) {
@@ -203,6 +203,63 @@ func TestIsValidUpgrade(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
+		})
+	}
+}
+
+func TestParseCanonicalSemver(t *testing.T) {
+	testCases := map[string]struct {
+		version   string
+		major     int
+		minor     int
+		wantError bool
+	}{
+		"canonical input": {
+			version: "v1.1.1",
+			major:   1,
+			minor:   1,
+		},
+		"vMAJOR.MINOR input": {
+			version: "v1.1",
+			major:   1,
+			minor:   1,
+		},
+		"vMAJOR input": {
+			version: "v1",
+			major:   1,
+			minor:   0,
+		},
+		"invalid (go)semver": {
+			version:   "1.1", // valid semver, but invalid according to go's semver
+			wantError: true,
+		},
+		"invalid (go)semver #2": {
+			version:   "asdf",
+			wantError: true,
+		},
+		"invalid (go)semver #3": {
+			version:   "v1.1.1.1.1",
+			wantError: true,
+		},
+		"pseudoversion": {
+			version: "v2.6.0-pre.0.20230125085856-aaaaaaaaaaaa",
+			major:   2,
+			minor:   6,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			major, minor, err := parseCanonicalSemver(tc.version)
+			if tc.wantError {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.major, major)
+			assert.Equal(tc.minor, minor)
 		})
 	}
 }

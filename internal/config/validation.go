@@ -55,7 +55,7 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	validVersionsSorted := semver.ByVersion(validVersions)
 	sort.Sort(validVersionsSorted)
 
-	var errorMsg string
+	errorMsg := fmt.Sprintf("Supported versions: %s", strings.Join(validVersionsSorted, " "))
 	configured, ok := fe.Value().(string)
 	if !ok {
 		errorMsg = "The configured version is not a valid string"
@@ -310,12 +310,12 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 	err := validateVersionCompatibilityHelper(fe.Field(), fe.Value().(string))
 	var msg string
 
-	switch err {
-	case compatibility.ErrSemVer:
+	switch {
+	case errors.Is(err, compatibility.ErrSemVer):
 		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
-	case compatibility.ErrMajorMismatch:
+	case errors.Is(err, compatibility.ErrMajorMismatch):
 		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s)", constants.VersionInfo, fe.Value().(string))
-	case compatibility.ErrMinorDrift:
+	case errors.Is(err, compatibility.ErrMinorDrift):
 		msg = fmt.Sprintf("only the CLI (%s) can be up to one minor version newer than the configured version (%s)", constants.VersionInfo, fe.Value().(string))
 	default:
 		msg = err.Error()
@@ -349,4 +349,9 @@ func validateVersionCompatibilityHelper(fieldName string, configuredVersion stri
 
 func returnsTrue(fl validator.FieldLevel) bool {
 	return true
+}
+
+// validateUpgradeConfig prints a warning to STDERR and validates the field successfully.
+func validateUpgradeConfig(sl validator.StructLevel) {
+	fmt.Printf("WARNING: the config key `upgrade` will be deprecated in an upcoming version. Please check the documentation for more information.\n")
 }

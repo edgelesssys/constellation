@@ -187,7 +187,7 @@ func (c *Client) DeleteVersion(ctx context.Context, ver versionsapi.Version) err
 // The function should be deferred after the client has been created.
 func (c *Client) InvalidateCache(ctx context.Context) error {
 	if len(c.dirtyPaths) == 0 {
-		c.log.Debugf("No dirty paths, skipping cache invalidation.")
+		c.log.Debugf("No dirty paths, skipping cache invalidation")
 		return nil
 	}
 
@@ -213,7 +213,7 @@ func (c *Client) InvalidateCache(ctx context.Context) error {
 		return fmt.Errorf("creating invalidation: %w", err)
 	}
 
-	c.log.Debugf("Waiting for invalidation %s to complete.", *invalidation.Invalidation.Id)
+	c.log.Debugf("Waiting for invalidation %s to complete", *invalidation.Invalidation.Id)
 	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cloudfrontClient)
 	waitIn := &cloudfront.GetInvalidationInput{
 		DistributionId: &c.distributionID,
@@ -361,23 +361,23 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver versionsapi.Ve
 		Stream: ver.Stream,
 		Kind:   versionsapi.VersionKindImage,
 	}
-	c.log.Debugf("Fetching latest version from %s.", latest.JSONPath())
+	c.log.Debugf("Fetching latest version from %s", latest.JSONPath())
 	latest, err := c.FetchVersionLatest(ctx, latest)
 	var notFoundErr *NotFoundError
 	if errors.As(err, &notFoundErr) {
-		c.log.Warnf("Latest version for %s not found.", latest.JSONPath())
+		c.log.Warnf("Latest version for %s not found", latest.JSONPath())
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
 	if latest.Version != ver.Version {
-		c.log.Debugf("Latest version is %s, not the deleted version %s.", latest.Version, ver.Version)
+		c.log.Debugf("Latest version is %s, not the deleted version %s", latest.Version, ver.Version)
 		return nil
 	}
 
 	if possibleNewLatest == nil {
-		c.log.Errorf("Latest version is %s, but no new latest version was found.", latest.Version)
+		c.log.Errorf("Latest version is %s, but no new latest version was found", latest.Version)
 		c.log.Errorf("A manual update of latest at %s might be needed", latest.JSONPath())
 		return fmt.Errorf("latest version is %s, but no new latest version was found", latest.Version)
 	}

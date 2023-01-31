@@ -82,30 +82,40 @@ func (u *Upgrader) Upgrade(ctx context.Context, imageReference, imageVersion str
 
 // GetCurrentImage returns the currently used image version of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
+	return u.getFromConstellationVersion(ctx, "imageVersion")
+}
+
+// GetCurrentKubernetesVersion returns the currently used Kubernetes version.
+func (u *Upgrader) GetCurrentKubernetesVersion(ctx context.Context) (*unstructured.Unstructured, string, error) {
+	return u.getFromConstellationVersion(ctx, "kubernetesClusterVersion")
+}
+
+// getFromConstellationVersion queries the constellation-version object for a given field.
+func (u *Upgrader) getFromConstellationVersion(ctx context.Context, fieldName string) (*unstructured.Unstructured, string, error) {
+	versionStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
 	if err != nil {
 		return nil, "", err
 	}
 
-	spec, ok := imageStruct.Object["spec"]
+	spec, ok := versionStruct.Object["spec"]
 	if !ok {
-		return nil, "", errors.New("image spec missing")
+		return nil, "", errors.New("spec missing")
 	}
-	retErr := errors.New("invalid image spec")
+	retErr := errors.New("invalid spec")
 	specMap, ok := spec.(map[string]any)
 	if !ok {
 		return nil, "", retErr
 	}
-	currentImageVersion, ok := specMap["imageVersion"]
+	fieldValue, ok := specMap[fieldName]
 	if !ok {
 		return nil, "", retErr
 	}
-	imageVersion, ok := currentImageVersion.(string)
+	fieldValueString, ok := fieldValue.(string)
 	if !ok {
 		return nil, "", retErr
 	}
 
-	return imageStruct, imageVersion, nil
+	return versionStruct, fieldValueString, nil
 }
 
 // UpgradeHelmServices upgrade helm services.

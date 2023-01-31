@@ -478,7 +478,7 @@ func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (
 func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, csp cloudprovider.Provider) *config.Config {
 	t.Helper()
 
-	conf.Image = "image"
+	conf.Image = constants.VersionInfo
 
 	switch csp {
 	case cloudprovider.Azure:

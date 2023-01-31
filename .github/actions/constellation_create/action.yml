@@ -149,6 +149,9 @@ runs:
       run: |
         yq eval -i '(.debugCluster) = true' constellation-conf.yaml
 
+    # Uses --force flag since the CLI currently does not have a pre-release version and is always on the latest released version.
+    # However, many of our pipelines work on prerelease images. Thus the used images are newer than the CLI's version.
+    # This makes the version validation in the CLI fail.
     - name: Constellation create
       shell: bash
       run: |

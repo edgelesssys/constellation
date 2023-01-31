@@ -14,12 +14,12 @@ import (
 func NewUpgradeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade",
-		Short: "Plan and perform an upgrade of a Constellation cluster",
-		Long:  "Plan and perform an upgrade of a Constellation cluster.",
+		Short: "Find and execute upgrades to your Constellation cluster",
+		Long:  "Find and execute upgrades to your Constellation cluster.",
 		Args:  cobra.ExactArgs(0),
 	}
 
-	cmd.AddCommand(newUpgradePlanCmd())
+	cmd.AddCommand(newUpgradeCheckCmd())
 	cmd.AddCommand(newUpgradeExecuteCmd())
 
 	return cmd
