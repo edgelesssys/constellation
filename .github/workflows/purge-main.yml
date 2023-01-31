@@ -79,6 +79,9 @@ jobs:
   delete:
     name: Delete version
     if: needs.find-version.outputs.version != ''
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/versionsapi.yml
     needs: find-version
     secrets: inherit
