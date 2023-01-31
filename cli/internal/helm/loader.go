@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -88,6 +89,16 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 		constellationOperatorImage:   versions.ConstellationOperatorImage,
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
 	}
+}
+
+// AvailableServiceVersions returns the chart version number of the bundled service versions.
+func AvailableServiceVersions() (string, error) {
+	servicesChart, err := loadChartsDir(helmFS, conServicesPath)
+	if err != nil {
+		return "", fmt.Errorf("loading constellation-services chart: %w", err)
+	}
+
+	return compatibility.EnsurePrefixV(servicesChart.Metadata.Version), nil
 }
 
 // Load the embedded helm charts.

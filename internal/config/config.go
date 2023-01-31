@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -63,8 +64,11 @@ type Config struct {
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
-	//   Kubernetes version to be installed in the cluster.
+	//   Kubernetes version to be installed into the cluster.
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
+	// description: |
+	//   Microservice version to be installed into the cluster. Setting this value is optional until v2.7. Defaults to the version of the CLI.
+	MicroserviceVersion string `yaml:"microserviceVersion" validate:"omitempty,version_compatibility"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
@@ -75,7 +79,7 @@ type Config struct {
 	//   Configuration to apply during constellation upgrade.
 	// examples:
 	//   - value: 'UpgradeConfig{ Image: "", Measurements: Measurements{} }'
-	Upgrade UpgradeConfig `yaml:"upgrade,omitempty"`
+	Upgrade UpgradeConfig `yaml:"upgrade,omitempty" validate:"required"`
 }
 
 // UpgradeConfig defines configuration used during constellation upgrade.
@@ -246,10 +250,12 @@ type QEMUConfig struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		Version:         Version2,
-		Image:           defaultImage,
-		StateDiskSizeGB: 30,
-		DebugCluster:    func() *bool { b := false; return &b }(),
+		Version:             Version2,
+		Image:               defaultImage,
+		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo),
+		KubernetesVersion:   string(versions.Default),
+		StateDiskSizeGB:     30,
+		DebugCluster:        func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",
@@ -295,14 +301,13 @@ func Default() *Config {
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 			},
 		},
-		KubernetesVersion: string(versions.Default),
 	}
 }
 
-// FromFile returns config file with `name` read from `fileHandler` by parsing
+// fromFile returns config file with `name` read from `fileHandler` by parsing
 // it as YAML. You should prefer config.New to read env vars and validate
 // config in a consistent manner.
-func FromFile(fileHandler file.Handler, name string) (*Config, error) {
+func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 	var conf Config
 	if err := fileHandler.ReadYAMLStrict(name, &conf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -316,10 +321,10 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 // New creates a new config by:
 // 1. Reading config file via provided fileHandler from file with name.
 // 2. Read secrets from environment variables.
-// 3. Validate config.
+// 3. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
 func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	// Read config file
-	c, err := FromFile(fileHandler, name)
+	c, err := fromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +334,10 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	if clientSecretValue != "" && c.Provider.Azure != nil {
 		c.Provider.Azure.ClientSecretValue = clientSecretValue
 	}
+
+	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.
+	// In case the field is not set in an old config we prefil it with the default value.
+	c.MicroserviceVersion = Default().MicroserviceVersion
 
 	return c, c.Validate(force)
 }
@@ -535,6 +544,9 @@ func (c *Config) Validate(force bool) error {
 
 	// Register provider validation
 	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
+
+	// register custom validator that prints a deprecation warning.
+	validate.RegisterStructValidation(validateUpgradeConfig, UpgradeConfig{})
 
 	err := validate.Struct(c)
 	if err == nil {

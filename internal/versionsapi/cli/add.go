@@ -54,12 +54,12 @@ func runAdd(cmd *cobra.Command, args []string) (retErr error) {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	log.Debugf("Validating flags.")
+	log.Debugf("Validating flags")
 	if err := flags.validate(log); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating version struct.")
+	log.Debugf("Creating version struct")
 	ver := versionsapi.Version{
 		Ref:     flags.ref,
 		Stream:  flags.stream,
@@ -70,19 +70,19 @@ func runAdd(cmd *cobra.Command, args []string) (retErr error) {
 		return err
 	}
 
-	log.Debugf("Creating versions API client.")
+	log.Debugf("Creating versions API client")
 	client, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	defer func(retErr *error) {
-		log.Infof("Invalidating cache. This may take some time.")
+		log.Infof("Invalidating cache. This may take some time")
 		if err := client.InvalidateCache(cmd.Context()); err != nil && retErr == nil {
 			*retErr = fmt.Errorf("invalidating cache: %w", err)
 		}
 	}(&retErr)
 
-	log.Infof("Adding version.")
+	log.Infof("Adding version")
 	if err := ensureVersion(cmd.Context(), client, ver, versionsapi.GranularityMajor, log); err != nil {
 		return err
 	}
@@ -127,19 +127,19 @@ func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsap
 	insertVersion := ver.WithGranularity(insertGran)
 
 	if verList.Contains(insertVersion) {
-		log.Infof("Version %q already exists in list %v.", insertVersion, verList.Versions)
+		log.Infof("Version %q already exists in list %v", insertVersion, verList.Versions)
 		return nil
 	}
-	log.Infof("Inserting %s version %q into list.", insertGran.String(), insertVersion)
+	log.Infof("Inserting %s version %q into list", insertGran.String(), insertVersion)
 
 	verList.Versions = append(verList.Versions, insertVersion)
-	log.Debugf("New %s version list: %v.", gran.String(), verList)
+	log.Debugf("New %s version list: %v", gran.String(), verList)
 
 	if err := client.UpdateVersionList(ctx, verList); err != nil {
 		return fmt.Errorf("failed to add %s version: %w", gran.String(), err)
 	}
 
-	log.Infof("Added %q to list.", insertVersion)
+	log.Infof("Added %q to list", insertVersion)
 	return nil
 }
 
@@ -162,7 +162,7 @@ func updateLatest(ctx context.Context, client *verclient.Client, ver versionsapi
 		return nil
 	}
 
-	log.Infof("Setting %q as latest version.", ver)
+	log.Infof("Setting %q as latest version", ver)
 	latest = versionsapi.Latest{
 		Ref:     ver.Ref,
 		Stream:  ver.Stream,

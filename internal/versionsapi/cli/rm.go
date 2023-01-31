@@ -78,36 +78,36 @@ func runRemove(cmd *cobra.Command, args []string) (retErr error) {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	log.Debugf("Validating flags.")
+	log.Debugf("Validating flags")
 	if err := flags.validate(); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating GCP client.")
+	log.Debugf("Creating GCP client")
 	gcpClient, err := newGCPClient(cmd.Context(), flags.gcpProject)
 	if err != nil {
 		return fmt.Errorf("creating GCP client: %w", err)
 	}
 
-	log.Debugf("Creating AWS client.")
+	log.Debugf("Creating AWS client")
 	awsClient, err := newAWSClient(cmd.Context(), flags.region)
 	if err != nil {
 		return fmt.Errorf("creating AWS client: %w", err)
 	}
 
-	log.Debugf("Creating Azure client.")
+	log.Debugf("Creating Azure client")
 	azClient, err := newAzureClient(flags.azSubscription, flags.azLocation, flags.azResourceGroup)
 	if err != nil {
 		return fmt.Errorf("creating Azure client: %w", err)
 	}
 
-	log.Debugf("Creating versions API client.")
+	log.Debugf("Creating versions API client")
 	verclient, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryrun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	defer func(retErr *error) {
-		log.Infof("Invalidating cache. This may take some time.")
+		log.Infof("Invalidating cache. This may take some time")
 		if err := verclient.InvalidateCache(cmd.Context()); err != nil && retErr == nil {
 			*retErr = fmt.Errorf("invalidating cache: %w", err)
 		}
@@ -205,8 +205,8 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 	imageInfo, err := clients.version.FetchImageInfo(ctx, imageInfo)
 	var notFound *verclient.NotFoundError
 	if errors.As(err, &notFound) {
-		log.Warnf("Image info for %s not found.", ver.Version)
-		log.Warnf("Skipping image deletion.")
+		log.Warnf("Image info for %s not found", ver.Version)
+		log.Warnf("Skipping image deletion")
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("fetching image info: %w", err)
@@ -550,7 +550,7 @@ func (g *gcpClient) deleteImage(ctx context.Context, image string, dryrun bool, 
 		return fmt.Errorf("deleting image %s: %w", image, err)
 	}
 
-	log.Debugf("Waiting for operation to finish.")
+	log.Debugf("Waiting for operation to finish")
 	if err := op.Wait(ctx); err != nil {
 		return fmt.Errorf("waiting for operation: %w", err)
 	}
@@ -643,7 +643,7 @@ func (a *azureClient) deleteImage(ctx context.Context, image string, dryrun bool
 		return fmt.Errorf("begin delete image version: %w", err)
 	}
 
-	log.Debugf("Waiting for operation to finish.")
+	log.Debugf("Waiting for operation to finish")
 	if _, err := poller.PollUntilDone(ctx, nil); err != nil {
 		return fmt.Errorf("waiting for operation: %w", err)
 	}
@@ -670,7 +670,7 @@ func (a *azureClient) deleteImage(ctx context.Context, image string, dryrun bool
 		return fmt.Errorf("deleting image definition %s: %w", azImage.imageDefinition, err)
 	}
 
-	log.Debugf("Waiting for operation to finish.")
+	log.Debugf("Waiting for operation to finish")
 	if _, err := op.PollUntilDone(ctx, nil); err != nil {
 		return fmt.Errorf("waiting for operation: %w", err)
 	}
@@ -688,7 +688,7 @@ type azImage struct {
 func (a *azureClient) parseImage(ctx context.Context, image string, log *logger.Logger) (azImage, error) {
 	if m := azImageRegex.FindStringSubmatch(image); len(m) == 5 {
 		log.Debugf(
-			"Image matches local image format, resource group: %s, gallery: %s, image definition: %s, version: %s.",
+			"Image matches local image format, resource group: %s, gallery: %s, image definition: %s, version: %s",
 			m[1], m[2], m[3], m[4],
 		)
 		return azImage{
@@ -709,7 +709,7 @@ func (a *azureClient) parseImage(ctx context.Context, image string, log *logger.
 	version := m[3]
 
 	log.Debugf(
-		"Image matches community image format, gallery public name: %s, image definition: %s, version: %s.",
+		"Image matches community image format, gallery public name: %s, image definition: %s, version: %s",
 		galleryPublicName, imageDefinition, version,
 	)
 
@@ -722,24 +722,24 @@ func (a *azureClient) parseImage(ctx context.Context, image string, log *logger.
 		}
 		for _, v := range nextResult.Value {
 			if v.Name == nil {
-				log.Debugf("Skipping gallery with nil name.")
+				log.Debugf("Skipping gallery with nil name")
 				continue
 			}
 			if v.Properties.SharingProfile == nil {
-				log.Debugf("Skipping gallery %s with nil sharing profile.", *v.Name)
+				log.Debugf("Skipping gallery %s with nil sharing profile", *v.Name)
 				continue
 			}
 			if v.Properties.SharingProfile.CommunityGalleryInfo == nil {
-				log.Debugf("Skipping gallery %s with nil community gallery info.", *v.Name)
+				log.Debugf("Skipping gallery %s with nil community gallery info", *v.Name)
 				continue
 			}
 			if v.Properties.SharingProfile.CommunityGalleryInfo.PublicNames == nil {
-				log.Debugf("Skipping gallery %s with nil public names.", *v.Name)
+				log.Debugf("Skipping gallery %s with nil public names", *v.Name)
 				continue
 			}
 			for _, publicName := range v.Properties.SharingProfile.CommunityGalleryInfo.PublicNames {
 				if publicName == nil {
-					log.Debugf("Skipping nil public name.")
+					log.Debugf("Skipping nil public name")
 					continue
 				}
 				if *publicName == galleryPublicName {

@@ -45,12 +45,12 @@ func runList(cmd *cobra.Command, args []string) error {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	log.Debugf("Validating flags.")
+	log.Debugf("Validating flags")
 	if err := flags.validate(); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating versions API client.")
+	log.Debugf("Creating versions API client")
 	client, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
@@ -60,7 +60,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	if flags.minorVersion != "" {
 		minorVersions = []string{flags.minorVersion}
 	} else {
-		log.Debugf("Getting minor versions.")
+		log.Debugf("Getting minor versions")
 		minorVersions, err = listMinorVersions(cmd.Context(), client, flags.ref, flags.stream)
 		var errNotFound *verclient.NotFoundError
 		if err != nil && errors.As(err, &errNotFound) {
@@ -71,7 +71,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	log.Debugf("Getting patch versions.")
+	log.Debugf("Getting patch versions")
 	patchVersions, err := listPatchVersions(cmd.Context(), client, flags.ref, flags.stream, minorVersions)
 	var errNotFound *verclient.NotFoundError
 	if err != nil && errors.As(err, &errNotFound) {
@@ -82,7 +82,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if flags.json {
-		log.Debugf("Printing versions as JSON.")
+		log.Debugf("Printing versions as JSON")
 		var vers []string
 		for _, v := range patchVersions {
 			vers = append(vers, v.Version)
@@ -95,7 +95,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	log.Debugf("Printing versions.")
+	log.Debugf("Printing versions")
 	for _, v := range patchVersions {
 		fmt.Println(v.ShortPath())
 	}

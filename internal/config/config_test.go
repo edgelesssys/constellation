@@ -99,7 +99,7 @@ func TestFromFile(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
 			}
 
-			result, err := FromFile(fileHandler, tc.configName)
+			result, err := fromFile(fileHandler, tc.configName)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -802,7 +802,7 @@ func TestConfigVersionCompatibility(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewOsFs())
 
-			config, err := FromFile(fileHandler, tc.config)
+			config, err := fromFile(fileHandler, tc.config)
 
 			assert.NoError(err)
 			assert.Equal(tc.expectedConfig, config)

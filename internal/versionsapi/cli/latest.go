@@ -41,18 +41,18 @@ func runLatest(cmd *cobra.Command, args []string) error {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	log.Debugf("Validating flags.")
+	log.Debugf("Validating flags")
 	if err := flags.validate(); err != nil {
 		return err
 	}
 
-	log.Debugf("Creating versions API client.")
+	log.Debugf("Creating versions API client")
 	client, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 
-	log.Debugf("Requesting latest version.")
+	log.Debugf("Requesting latest version")
 	latest := versionsapi.Latest{
 		Ref:    flags.ref,
 		Stream: flags.stream,
