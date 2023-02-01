@@ -22,13 +22,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newUpgradeExecuteCmd() *cobra.Command {
+func newUpgradeApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "execute",
-		Short: "Execute an upgrade of a Constellation cluster",
-		Long:  "Execute an upgrade of a Constellation cluster by applying the chosen configuration.",
+		Short: "Apply an upgrade to a Constellation cluster",
+		Long:  "Apply an upgrade to a Constellation cluster by applying the chosen configuration.",
 		Args:  cobra.NoArgs,
-		RunE:  runUpgradeExecute,
+		RunE:  runUpgradeApply,
 	}
 
 	cmd.Flags().Bool("helm", false, "execute helm upgrade\n"+
@@ -47,7 +47,7 @@ func newUpgradeExecuteCmd() *cobra.Command {
 	return cmd
 }
 
-func runUpgradeExecute(cmd *cobra.Command, args []string) error {
+func runUpgradeApply(cmd *cobra.Command, args []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
@@ -61,11 +61,11 @@ func runUpgradeExecute(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return upgradeExecute(cmd, imageFetcher, upgrader, fileHandler)
+	return upgradeApply(cmd, imageFetcher, upgrader, fileHandler)
 }
 
-func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader cloudUpgrader, fileHandler file.Handler) error {
-	flags, err := parseUpgradeExecuteFlags(cmd)
+func upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, upgrader cloudUpgrader, fileHandler file.Handler) error {
+	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
@@ -110,36 +110,36 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 	return upgrader.Upgrade(cmd.Context(), imageReference, conf.Upgrade.Image, conf.Upgrade.Measurements)
 }
 
-func parseUpgradeExecuteFlags(cmd *cobra.Command) (upgradeExecuteFlags, error) {
+func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return upgradeExecuteFlags{}, err
+		return upgradeApplyFlags{}, err
 	}
 
 	helmFlag, err := cmd.Flags().GetBool("helm")
 	if err != nil {
-		return upgradeExecuteFlags{}, err
+		return upgradeApplyFlags{}, err
 	}
 
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
-		return upgradeExecuteFlags{}, err
+		return upgradeApplyFlags{}, err
 	}
 
 	timeout, err := cmd.Flags().GetDuration("timeout")
 	if err != nil {
-		return upgradeExecuteFlags{}, err
+		return upgradeApplyFlags{}, err
 	}
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
-		return upgradeExecuteFlags{}, fmt.Errorf("parsing force argument: %w", err)
+		return upgradeApplyFlags{}, fmt.Errorf("parsing force argument: %w", err)
 	}
 
-	return upgradeExecuteFlags{configPath: configPath, helmFlag: helmFlag, yes: yes, upgradeTimeout: timeout, force: force}, nil
+	return upgradeApplyFlags{configPath: configPath, helmFlag: helmFlag, yes: yes, upgradeTimeout: timeout, force: force}, nil
 }
 
-type upgradeExecuteFlags struct {
+type upgradeApplyFlags struct {
 	configPath     string
 	helmFlag       bool
 	yes            bool
