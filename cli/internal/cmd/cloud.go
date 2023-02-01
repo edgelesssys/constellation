@@ -26,7 +26,7 @@ type cloudCreator interface {
 	) (clusterid.File, error)
 }
 
-type iamCreator interface {
+type cloudIAMCreator interface {
 	Create(
 		ctx context.Context,
 		provider cloudprovider.Provider,
