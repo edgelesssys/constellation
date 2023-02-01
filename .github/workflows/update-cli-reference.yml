@@ -13,6 +13,9 @@ on:
 jobs:
   update-docs:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout Constellation
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
