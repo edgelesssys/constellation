@@ -271,6 +271,12 @@ func (k *KubeadmInitYAML) SetNodeName(nodeName string) {
 	k.InitConfiguration.NodeRegistration.Name = nodeName
 }
 
+// SetClusterName sets the name of the Kubernetes cluster.
+// This name is reflected in the kubeconfig file and in the name of the default admin user.
+func (k *KubeadmInitYAML) SetClusterName(clusterName string) {
+	k.ClusterConfiguration.ClusterName = clusterName
+}
+
 // SetCertSANs sets the SANs for the certificate.
 func (k *KubeadmInitYAML) SetCertSANs(certSANs []string) {
 	for _, certSAN := range certSANs {
