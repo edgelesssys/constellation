@@ -343,6 +343,20 @@ func TestDeleteGCPKeyFile(t *testing.T) {
 				},
 			},
 		},
+		"not string": {
+			fsHandler: newValidTestFs(),
+			cl: &stubTerraformClient{
+				tfjsonState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{
+							"sa_key": {
+								Value: 1,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, tc := range testCases {

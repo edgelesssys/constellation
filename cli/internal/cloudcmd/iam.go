@@ -59,11 +59,16 @@ func (d *IAMDestroyer) deleteGCPKeyFile(ctx context.Context, fsHandler file.Hand
 		return false, errors.New("no Values field in terraform state")
 	}
 
-	saKeyJSON, containsKey := tfState.Values.Outputs["sa_key"]
-	if !containsKey {
+	saKeyJSON := tfState.Values.Outputs["sa_key"]
+	if saKeyJSON == nil {
 		return false, nil
 	}
-	saKey, err := base64.StdEncoding.DecodeString(fmt.Sprintf("%v", saKeyJSON.Value))
+
+	saKeyString, ok := saKeyJSON.Value.(string)
+	if !ok {
+		return false, nil
+	}
+	saKey, err := base64.StdEncoding.DecodeString(saKeyString)
 	if err != nil {
 		return false, err
 	}
