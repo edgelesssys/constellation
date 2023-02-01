@@ -34,41 +34,41 @@ func TestIAMDestroy(t *testing.T) {
 		iamDestroyer iamDestroyer
 		fh           file.Handler
 		stdin        string
-		yes          string
+		yesFlag      string
 		wantErr      bool
 	}{
 		"file missing abort": {
-			fh:    newFsMissing(),
-			stdin: "n\n",
-			yes:   "false",
+			fh:      newFsMissing(),
+			stdin:   "n\n",
+			yesFlag: "false",
 		},
 		"file missing": {
 			fh:           newFsMissing(),
 			stdin:        "y\n",
-			yes:          "false",
+			yesFlag:      "false",
 			iamDestroyer: &stubIAMDestroyer{},
 		},
 		"file exists abort": {
-			fh:    newFsExists(),
-			stdin: "n\n",
-			yes:   "false",
+			fh:      newFsExists(),
+			stdin:   "n\n",
+			yesFlag: "false",
 		},
 		"error destroying user": {
 			fh:           newFsMissing(),
 			stdin:        "y\n",
-			yes:          "false",
+			yesFlag:      "false",
 			iamDestroyer: &stubIAMDestroyer{destroyErr: someError},
 			wantErr:      true,
 		},
 		"gcp delete error": {
 			fh:           newFsExists(),
-			yes:          "true",
+			yesFlag:      "true",
 			iamDestroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
 			wantErr:      true,
 		},
 		"gcp no proceed": {
 			fh:           newFsExists(),
-			yes:          "true",
+			yesFlag:      "true",
 			stdin:        "n\n",
 			iamDestroyer: &stubIAMDestroyer{deletedGCPFile: false},
 		},
@@ -82,7 +82,7 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			assert.NoError(cmd.Flags().Set("yes", tc.yes))
+			assert.NoError(cmd.Flags().Set("yes", tc.yesFlag))
 
 			err := iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
 
