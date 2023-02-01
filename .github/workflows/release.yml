@@ -149,19 +149,33 @@ jobs:
           cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
   micro-services-metadata:
-    name: Build micro services
+    name: Build docker images
+    runs-on: ubuntu-22.04
     needs: [verify-inputs, prepare-release-branch]
-    uses: ./.github/workflows/build-micro-service-manual.yml
     permissions:
       contents: read
       packages: write
-    secrets: inherit
-    with:
-      microService: qemu-metadata-api
-      imageTag: ${{ inputs.version }}
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
+    strategy:
+      matrix:
+        appName:
+          [qemu-metadata-api, libvirt]
+        include:
+          - appName: qemu-metadata-api
+            dockerfile: ./hack/qemu-metadata-api/Dockerfile
+          - appName: libvirt
+            dockerfile: ./cli/internal/libvirt/Dockerfile
+    steps:
+      - name: Build docker image
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: ${{ matrix.appName }}
+          pushTag: ${{ inputs.version }}
+          projectVersion: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+          dockerfile: ${{ matrix.dockerfile }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
   update-versions:
     name: Update container image versions
