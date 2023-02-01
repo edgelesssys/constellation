@@ -570,7 +570,7 @@ func newIAMDestroyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy an IAM user and delete local terraform files for the IAM user",
-		Long:  "Destroy an IAM user and delete local terraform files for the IAM user",
+		Long:  "Destroy an IAM user and delete local terraform files for the IAM user.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runDestroyIAMUser,
 	}
