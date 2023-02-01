@@ -356,6 +356,7 @@ func TestDeleteGCPKeyFile(t *testing.T) {
 					},
 				},
 			},
+			wantErr: true,
 		},
 	}
 
