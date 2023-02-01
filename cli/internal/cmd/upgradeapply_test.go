@@ -72,7 +72,7 @@ type stubUpgrader struct {
 	helmErr error
 }
 
-func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) error {
+func (u stubUpgrader) UpgradeImage(context.Context, string, string, measurements.M) error {
 	return u.err
 }
 
