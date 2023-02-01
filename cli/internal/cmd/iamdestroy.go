@@ -80,7 +80,10 @@ func destroyIAMUser(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDest
 
 func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
 	if _, err := fsHandler.Stat(constants.GCPServiceAccountKeyFile); err != nil {
-		return true, err // file doesn't exist
+		if !errors.Is(err, os.ErrNotExist) {
+			return false, err
+		}
+		return true, err // file just doesn't exist
 	}
 
 	destroyed, err := destroyer.RunDeleteGCPKeyFile(cmd.Context())
