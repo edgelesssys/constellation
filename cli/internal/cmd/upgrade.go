@@ -20,7 +20,7 @@ func NewUpgradeCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newUpgradeCheckCmd())
-	cmd.AddCommand(newUpgradeExecuteCmd())
+	cmd.AddCommand(newUpgradeApplyCmd())
 
 	return cmd
 }

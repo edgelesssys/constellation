@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUpgradeExecute(t *testing.T) {
+func TestUpgradeApply(t *testing.T) {
 	testCases := map[string]struct {
 		upgrader     stubUpgrader
 		imageFetcher stubImageFetcher
@@ -49,7 +49,7 @@ func TestUpgradeExecute(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
-			cmd := newUpgradeExecuteCmd()
+			cmd := newUpgradeApplyCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 
@@ -57,7 +57,7 @@ func TestUpgradeExecute(t *testing.T) {
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
-			err := upgradeExecute(cmd, &tc.imageFetcher, tc.upgrader, handler)
+			err := upgradeApply(cmd, &tc.imageFetcher, tc.upgrader, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
