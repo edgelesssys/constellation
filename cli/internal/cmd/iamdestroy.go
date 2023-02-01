@@ -17,15 +17,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func runDestroyIAMUser(cmd *cobra.Command, _args []string) error {
+func runIAMDestroy(cmd *cobra.Command, _args []string) error {
 	spinner := newSpinner(cmd.ErrOrStderr())
 	destroyer := cloudcmd.NewIAMDestroyer(cmd.Context())
 	fsHandler := file.NewHandler(afero.NewOsFs())
 
-	return destroyIAMUser(cmd, spinner, destroyer, fsHandler)
+	return destroyIAM(cmd, spinner, destroyer, fsHandler)
 }
 
-func destroyIAMUser(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
+func destroyIAM(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return err

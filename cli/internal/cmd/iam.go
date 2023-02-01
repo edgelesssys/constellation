@@ -572,7 +572,7 @@ func newIAMDestroyCmd() *cobra.Command {
 		Short: "Destroy an IAM user and delete local terraform files for the IAM user",
 		Long:  "Destroy an IAM user and delete local terraform files for the IAM user.",
 		Args:  cobra.ExactArgs(0),
-		RunE:  runDestroyIAMUser,
+		RunE:  runIAMDestroy,
 	}
 
 	cmd.Flags().BoolP("yes", "y", false, "destroy the IAM configuration without asking for confirmation")
