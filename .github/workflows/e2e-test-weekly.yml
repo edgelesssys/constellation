@@ -75,6 +75,9 @@ jobs:
             version: "1.24"
           - test: "lb"
             version: "1.25"
+          # disable on AWS until cleanup is fixed: https://github.com/kubernetes/cloud-provider-aws/issues/566
+          - test: "lb"
+            provider: "aws"
           # Currently not supported on AWS.
           - test: "autoscaling"
             provider: "aws"
