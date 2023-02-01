@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -31,12 +32,14 @@ func newConfigGenerateCmd() *cobra.Command {
 		RunE:              runConfigGenerate,
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
+	cmd.Flags().String("name", "constell", "name to use for cluster creation and configuration")
 
 	return cmd
 }
 
 type generateFlags struct {
 	file string
+	name string
 }
 
 type configGenerateCmd struct {
@@ -61,9 +64,13 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return err
 	}
 
+	if provider == cloudprovider.AWS && len(flags.name) > 10 {
+		return errors.New("cluster name on AWS must not be longer than 10 characters")
+	}
+
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf := createConfig(provider)
+	conf := createConfig(provider, flags.name)
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
@@ -89,9 +96,10 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfig(provider cloudprovider.Provider) *config.Config {
+func createConfig(provider cloudprovider.Provider, name string) *config.Config {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
+	conf.Name = name
 
 	// set a lower default for QEMU's state disk
 	if provider == cloudprovider.QEMU {
@@ -106,9 +114,30 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing config generate flags: %w", err)
 	}
+	name, err := parseNameFlag(cmd)
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("parsing config generate flags: %w", err)
+	}
 	return generateFlags{
 		file: file,
+		name: name,
 	}, nil
+}
+
+func parseNameFlag(cmd *cobra.Command) (string, error) {
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return "", fmt.Errorf("parsing name argument: %w", err)
+	}
+
+	if len(name) > constants.ConstellationNameLength {
+		return "", fmt.Errorf(
+			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
+			constants.ConstellationNameLength, len(name), name,
+		)
+	}
+
+	return name, nil
 }
 
 // createCompletion handles the completion of the create command. It is frequently called

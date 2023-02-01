@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -16,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -27,6 +29,11 @@ func TestConfigGenerateDefault(t *testing.T) {
 
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
+	nameFlag := "constell"
+	require.NoError(cmd.Flags().Set("name", nameFlag))
+
+	wantConf := config.Default()
+	wantConf.Name = nameFlag
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
@@ -34,18 +41,21 @@ func TestConfigGenerateDefault(t *testing.T) {
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
-	assert.Equal(*config.Default(), readConfig)
+	assert.Equal(*wantConf, readConfig)
 }
 
 func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	wantConf := config.Default()
-	wantConf.RemoveProviderExcept(cloudprovider.GCP)
-
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
+	nameFlag := "constell"
+	require.NoError(cmd.Flags().Set("name", nameFlag))
+
+	wantConf := config.Default()
+	wantConf.RemoveProviderExcept(cloudprovider.GCP)
+	wantConf.Name = nameFlag
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
@@ -88,6 +98,8 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 	cmd.SetOut(&outBuffer)
 	require.NoError(cmd.Flags().Set("file", "-"))
+	nameFlag := "constell"
+	require.NoError(cmd.Flags().Set("name", nameFlag))
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
@@ -95,5 +107,31 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	var readConfig config.Config
 	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
 
-	assert.Equal(*config.Default(), readConfig)
+	wantConfig := config.Default()
+	wantConfig.Name = nameFlag
+	assert.Equal(*wantConfig, readConfig)
+}
+
+func TestParseNameFlag(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	wantName := "constell"
+	cmd := &cobra.Command{}
+	cmd.Flags().String("name", wantName, "")
+
+	// default name flag value
+	name, err := parseNameFlag(cmd)
+	require.NoError(err)
+	assert.Equal(wantName, name)
+
+	wantName = "kubernetes"
+	require.NoError(cmd.Flags().Set("name", wantName))
+	name, err = parseNameFlag(cmd)
+	require.NoError(err)
+	assert.Equal(wantName, name)
+
+	require.NoError(cmd.Flags().Set("name", strings.Repeat("a", constants.ConstellationNameLength+1)))
+	_, err = parseNameFlag(cmd)
+	assert.Error(err)
 }

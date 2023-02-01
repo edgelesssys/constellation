@@ -226,6 +226,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
 			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
+			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
@@ -446,7 +447,8 @@ func TestIAMCreateAzure(t *testing.T) {
 
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
-			cmd.Flags().Bool("yes", false, "")                         // register persistent flag
+			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
+			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
 
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
@@ -694,7 +696,8 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
-			cmd.Flags().Bool("yes", false, "")                         // register persistent flag
+			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
+			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))

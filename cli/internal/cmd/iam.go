@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -57,6 +58,7 @@ func newIAMCreateCmd() *cobra.Command {
 
 	cmd.PersistentFlags().Bool("generate-config", false, "automatically generate a configuration file and fill in the required fields")
 	cmd.PersistentFlags().Bool("yes", false, "create the IAM configuration without further confirmation")
+	cmd.PersistentFlags().String("name", "constell", "name to use for cluster creation and configuration")
 
 	cmd.AddCommand(newIAMCreateAWSCmd())
 	cmd.AddCommand(newIAMCreateAzureCmd())
@@ -215,7 +217,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	c.spinner.Start("Creating", false)
 
-	conf := createConfig(c.provider)
+	conf := createConfig(c.provider, flags.name)
 
 	iamFile, err := c.creator.Create(ctx, c.provider, c.iamConfig)
 	c.spinner.Stop()
@@ -260,11 +262,19 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
+	name, err := parseNameFlag(c.cmd)
+	if err != nil {
+		return iamFlags{}, fmt.Errorf("parsing name flag: %w", err)
+	}
+	if c.provider == cloudprovider.AWS && len(name) > 10 {
+		return iamFlags{}, errors.New("cluster name on AWS must not be longer than 10 characters")
+	}
 
 	flags := iamFlags{
 		generateConfig: generateConfig,
 		configPath:     configPath,
 		yesFlag:        yesFlag,
+		name:           name,
 	}
 
 	flags, err = c.providerCreator.parseFlagsAndSetupConfig(c.cmd, flags, c.iamConfig)
@@ -283,6 +293,7 @@ type iamFlags struct {
 	generateConfig bool
 	configPath     string
 	yesFlag        bool
+	name           string
 }
 
 // awsFlags contains the parsed flags of the iam create aws command.

@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"errors"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -42,7 +41,6 @@ func TestCreate(t *testing.T) {
 		controllerCountFlag *int
 		workerCountFlag     *int
 		configFlag          string
-		nameFlag            string
 		stdin               string
 		wantErr             bool
 		wantAbort           bool
@@ -79,15 +77,6 @@ func TestCreate(t *testing.T) {
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			stdin:               "foo\nfoo\nfoo\n",
-			wantErr:             true,
-		},
-		"flag name to long": {
-			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			nameFlag:            strings.Repeat("a", constants.ConstellationNameLength+1),
 			wantErr:             true,
 		},
 		"flag control-plane-count invalid": {
@@ -199,9 +188,6 @@ func TestCreate(t *testing.T) {
 
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.nameFlag != "" {
-				require.NoError(cmd.Flags().Set("name", tc.nameFlag))
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))

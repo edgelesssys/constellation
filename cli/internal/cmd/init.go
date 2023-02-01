@@ -137,10 +137,13 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	helmLoader := helm.NewLoader(provider, k8sVersion)
 	i.log.Debugf("Created new Helm loader")
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
-	i.log.Debugf("Loaded Helm heployments")
+	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
+
+	clusterName := conf.Name + "-" + idFile.UID
+	i.log.Debugf("Setting cluster name to %s", clusterName)
 
 	spinner.Start("Initializing cluster ", false)
 	req := &initproto.InitRequest{
@@ -158,7 +161,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
-		ClusterName:            "daniel-test-cluster",
+		ClusterName:            clusterName,
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)

@@ -58,8 +58,11 @@ type Config struct {
 	//   Schema version of this configuration file.
 	Version string `yaml:"version" validate:"eq=v2"`
 	// description: |
-	//   Machine image used to create Constellation nodes.
+	//   Machine image version used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required,version_compatibility"`
+	// description: |
+	//   Name of the cluster.
+	Name string `yaml:"name" validate:"required"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
