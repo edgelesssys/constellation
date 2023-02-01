@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -305,34 +306,16 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.
 // It returns the name of the ConfigMap.
 func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components components.Components, clusterVersion string) (string, error) {
-	componentsMarshalled, err := json.Marshal(components)
+	componentsConfig, err := kubernetes.ConstructK8sComponentsCM(components, clusterVersion)
 	if err != nil {
-		return "", fmt.Errorf("marshalling component versions: %w", err)
-	}
-	componentsHash := components.GetHash()
-	componentConfigMapName := fmt.Sprintf("k8s-components-%s", strings.ReplaceAll(componentsHash, ":", "-"))
-
-	componentsConfig := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		Immutable: toPtr(true),
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      componentConfigMapName,
-			Namespace: "kube-system",
-		},
-		Data: map[string]string{
-			constants.ComponentsListKey:   string(componentsMarshalled),
-			constants.K8sVersionFieldName: clusterVersion,
-		},
+		return "", fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
 	}
 
 	if err := k.client.CreateConfigMap(ctx, componentsConfig); err != nil {
 		return "", fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
 	}
 
-	return componentConfigMapName, nil
+	return componentsConfig.ObjectMeta.Name, nil
 }
 
 // setupInternalConfigMap applies a ConfigMap (cf. server-side apply) to store information that is not supposed to be user-editable.
@@ -515,8 +498,4 @@ type constellationServicesConfig struct {
 	subnetworkPodCIDR       string
 	cloudServiceAccountURI  string
 	loadBalancerIP          string
-}
-
-func toPtr[T any](v T) *T {
-	return &v
 }
