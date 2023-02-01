@@ -256,7 +256,7 @@ You can keep created IAM configurations and reuse them for new clusters. Alterna
 * [Terraform](https://developer.hashicorp.com/terraform/downloads) is installed on your machine.
 * Access to the `terraform.tfstate` file created by the `constellation iam create` command.
 
-You can delete the IAM configuration using the following command in the same directory where you used ```constellation iam create```:
+You can delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create`:
 ```bash
 constellation iam destroy
 ```
