@@ -35,17 +35,17 @@ rules_proto_toolchains()
 
 # dnf / rpm toolchain
 
-load("//toolchains:dnf_deps.bzl", "dnf_deps")
+# load("//toolchains:dnf_deps.bzl", "dnf_deps")
 
-dnf_deps()
+# dnf_deps()
 
-load("@bazeldnf//:deps.bzl", "bazeldnf_dependencies")
+# load("@bazeldnf//:deps.bzl", "bazeldnf_dependencies")
 
-bazeldnf_dependencies()
+# bazeldnf_dependencies()
 
-load("//rpm:rpms.bzl", "rpms")
+# load("//rpm:rpms.bzl", "rpms")
 
-rpms()
+# rpms()
 
 # Buildifier
 load("//toolchains:buildifier_deps.bzl", "buildifier_deps")
