@@ -1,0 +1,92 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "internal",
+    srcs = [
+        "doc.go",
+        "include.c",
+        "internal_cgo.go",
+        "internal_cross.go",
+    ],
+    cgo = True,
+    clinkopts = select({
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "-L/usr/local/opt/openssl/lib",
+        ],
+        "@io_bazel_rules_go//go/platform:ios": [
+            "-L/usr/local/opt/openssl/lib",
+        ],
+        "//conditions:default": [],
+    }),
+    copts = [
+        "-DALG_SHA512=ALG_YES",
+        "-DCERTIFYX509_DEBUG=NO",
+        "-DCOMPILER_CHECKS=DEBUG",
+        "-DDEBUG=YES",
+        "-DECC_NIST_P224=YES",
+        "-DECC_NIST_P521=YES",
+        "-DMAX_CONTEXT_SIZE=1360",
+        "-DRUNTIME_SIZE_CHECKS=DEBUG",
+        "-DSIMULATION=NO",
+        "-DUSE_DA_USED=NO",
+        "-DVTPM=NO -DSIMULATION=NO -DUSE_DA_USED=NO",
+        "-I simulator/ms-tpm-20-ref/Samples/Google",
+        "-I simulator/ms-tpm-20-ref/TPMCmd/tpm/include",
+        "-I simulator/ms-tpm-20-ref/TPMCmd/tpm/include/prototypes",
+        "-I simulator/ms-tpm-20-ref/TPMCmd/tpm/src",
+        "-Wno-deprecated-declarations",
+        "-Wno-missing-braces -Wno-empty-body -Wno-unused-variable -Wno-uninitialized",
+        "-std=gnu11 -Wall -Wformat-security -fPIC",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:aix": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:android": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "-I/usr/local/opt/openssl/include",
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:dragonfly": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:freebsd": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:illumos": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:ios": [
+            "-I/usr/local/opt/openssl/include",
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:js": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:netbsd": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:openbsd": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:plan9": [
+            "-fstack-protector-all",
+        ],
+        "@io_bazel_rules_go//go/platform:solaris": [
+            "-fstack-protector-all",
+        ],
+        "//conditions:default": [],
+    }),
+    importpath = "github.com/google/go-tpm-tools/simulator/internal",
+    visibility = ["//simulator:__subpackages__"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":internal",
+    visibility = ["//simulator:__subpackages__"],
+)

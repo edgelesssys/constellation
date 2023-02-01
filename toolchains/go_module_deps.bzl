@@ -2787,6 +2787,7 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tpm-tools",
+        patches = ["//3rdparty/com_github_google_go_tpm_tools:internal.BUILD.bazel.patch"], # keep
         replace = "github.com/daniel-weisse/go-tpm-tools",
         sum = "h1:cJp8NluCBP5idNdtfo2nauPeepn94/jIaeSqTTac9zc=",
         version = "v0.0.0-20230105122812-f7474d459dfc",

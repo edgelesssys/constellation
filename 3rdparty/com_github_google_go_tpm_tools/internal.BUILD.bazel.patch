@@ -1,0 +1,13 @@
+--- internal/BUILD.bazel
++++ internal/BUILD.bazel
+@@ -7,6 +7,10 @@
+         "include.c",
+         "internal_cgo.go",
+         "internal_cross.go",
++        "../ms-tpm-20-ref/Samples/Google/Platform.h",
++    ],
++    cdeps = [
++        @openssl//:openssl,
+     ],
+     cgo = True,
+     clinkopts = select({
