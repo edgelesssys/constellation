@@ -69,14 +69,14 @@ func destroyIAMUser(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDest
 		}
 	}
 
-	spinner.Start("Destroying IAM User", false)
+	spinner.Start("Destroying IAM user", false)
 	defer spinner.Stop()
 	if err := destroyer.DestroyIAMUser(cmd.Context()); err != nil {
-		return fmt.Errorf("couldn't destroy IAM User: %w", err)
+		return fmt.Errorf("destroying IAM user: %w", err)
 	}
 
 	spinner.Stop() // stop the spinner to print a new line
-	fmt.Println("Successfully destroyed IAM User")
+	fmt.Println("Successfully destroyed IAM user")
 	return nil
 }
 
