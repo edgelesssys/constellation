@@ -35,7 +35,7 @@ func destroyIAMUser(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDest
 			return err
 		}
 		if !ok {
-			fmt.Println("The destruction of the IAM user was aborted")
+			cmd.Println("The destruction of the IAM user was aborted")
 			return nil
 		}
 	}
