@@ -81,7 +81,7 @@ type stubIAMDestroyer struct {
 	deleteGCPFileErr    error
 }
 
-func (d *stubIAMDestroyer) DestroyIAMUser(ctx context.Context) error {
+func (d *stubIAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
 	d.destroyCalled = true
 	return d.destroyErr
 }

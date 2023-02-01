@@ -35,7 +35,7 @@ type cloudIAMCreator interface {
 }
 
 type iamDestroyer interface {
-	DestroyIAMUser(ctx context.Context) error
+	DestroyIAMConfiguration(ctx context.Context) error
 	RunDeleteGCPKeyFile(ctx context.Context) (bool, error)
 }
 

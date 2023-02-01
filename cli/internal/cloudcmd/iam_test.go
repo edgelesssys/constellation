@@ -189,7 +189,7 @@ func TestDestroyIAMUser(t *testing.T) {
 				},
 			}
 
-			err := destroyer.DestroyIAMUser(context.Background())
+			err := destroyer.DestroyIAMConfiguration(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)

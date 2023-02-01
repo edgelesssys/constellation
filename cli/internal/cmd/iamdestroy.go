@@ -44,7 +44,7 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 
 	if !yes {
 		// Confirmation
-		confirmString := "Do you really want to destroy your IAM user?"
+		confirmString := "Do you really want to destroy your IAM configuration?"
 		if gcpFileExists {
 			confirmString += " (This will also delete " + constants.GCPServiceAccountKeyFile + ")"
 		}
@@ -53,7 +53,7 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 			return err
 		}
 		if !ok {
-			cmd.Println("The destruction of the IAM user was aborted")
+			cmd.Println("The destruction of the IAM configuration was aborted")
 			return nil
 		}
 	}
@@ -69,14 +69,14 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 		}
 	}
 
-	spinner.Start("Destroying IAM user", false)
+	spinner.Start("Destroying IAM configuration", false)
 	defer spinner.Stop()
-	if err := destroyer.DestroyIAMUser(cmd.Context()); err != nil {
-		return fmt.Errorf("destroying IAM user: %w", err)
+	if err := destroyer.DestroyIAMConfiguration(cmd.Context()); err != nil {
+		return fmt.Errorf("destroying IAM configuration: %w", err)
 	}
 
 	spinner.Stop() // stop the spinner to print a new line
-	fmt.Println("Successfully destroyed IAM user")
+	fmt.Println("Successfully destroyed IAM configuration")
 	return nil
 }
 
@@ -93,7 +93,7 @@ func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, 
 		return false, err
 	}
 	if !destroyed {
-		ok, err := askToConfirm(cmd, "The file gcpServiceAccountKey.json could not be deleted. Either it does not exist or the file belongs to another IAM user. Do you want to proceed anyway?")
+		ok, err := askToConfirm(cmd, "The file gcpServiceAccountKey.json could not be deleted. Either it does not exist or the file belongs to another IAM configuration. Do you want to proceed anyway?")
 		if err != nil {
 			return false, err
 		}

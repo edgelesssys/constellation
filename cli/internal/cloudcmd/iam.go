@@ -93,8 +93,8 @@ func (d *IAMDestroyer) deleteGCPKeyFile(ctx context.Context, fsHandler file.Hand
 	return true, nil
 }
 
-// DestroyIAMUser destroys the previously created IAM User and deletes the local IAM terraform files.
-func (d *IAMDestroyer) DestroyIAMUser(ctx context.Context) error {
+// DestroyIAMConfiguration destroys the previously created IAM User and deletes the local IAM terraform files.
+func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
 	cl, err := d.newTerraformClient(ctx)
 	if err != nil {
 		return err
