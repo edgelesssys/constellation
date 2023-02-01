@@ -22,10 +22,10 @@ func runIAMDestroy(cmd *cobra.Command, _args []string) error {
 	destroyer := cloudcmd.NewIAMDestroyer(cmd.Context())
 	fsHandler := file.NewHandler(afero.NewOsFs())
 
-	return destroyIAM(cmd, spinner, destroyer, fsHandler)
+	return iamDestroy(cmd, spinner, destroyer, fsHandler)
 }
 
-func destroyIAM(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
+func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return err

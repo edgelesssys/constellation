@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDestroyIAM(t *testing.T) {
+func TestIAMDestroy(t *testing.T) {
 	require := require.New(t)
 	someError := errors.New("failed")
 
@@ -84,7 +84,7 @@ func TestDestroyIAM(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			assert.NoError(cmd.Flags().Set("yes", tc.yes))
 
-			err := destroyIAM(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
+			err := iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
 
 			if tc.wantErr {
 				assert.Error(err)
