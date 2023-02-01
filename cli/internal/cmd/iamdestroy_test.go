@@ -17,28 +17,60 @@ import (
 )
 
 func TestDestroyIAMUser(t *testing.T) {
+	require := require.New(t)
 	someError := errors.New("failed")
+
+	newFsExists := func() file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fh.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
+		return fh
+	}
+	newFsMissing := func() file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		return fh
+	}
 
 	testCases := map[string]struct {
 		iamDestroyer iamDestroyer
+		fh           file.Handler
 		stdin        string
 		yes          string
 		wantErr      bool
 	}{
-		"confirm okay": {
-			iamDestroyer: &stubIAMDestroyer{},
+		"file missing abort": {
+			fh:    newFsMissing(),
+			stdin: "n\n",
+			yes:   "false",
+		},
+		"file missing": {
+			fh:           newFsMissing(),
 			stdin:        "y\n",
 			yes:          "false",
-		},
-		"confirm abort": {
 			iamDestroyer: &stubIAMDestroyer{},
-			stdin:        "n\n",
-			yes:          "false",
 		},
-		"destroy fail": {
+		"file exists abort": {
+			fh:    newFsExists(),
+			stdin: "n\n",
+			yes:   "false",
+		},
+		"error destroying user": {
+			fh:           newFsMissing(),
+			stdin:        "y\n",
+			yes:          "false",
 			iamDestroyer: &stubIAMDestroyer{destroyErr: someError},
-			yes:          "true",
 			wantErr:      true,
+		},
+		"gcp delete error": {
+			fh:           newFsExists(),
+			yes:          "true",
+			iamDestroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
+			wantErr:      true,
+		},
+		"gcp no proceed": {
+			fh:           newFsExists(),
+			yes:          "true",
+			stdin:        "n\n",
+			iamDestroyer: &stubIAMDestroyer{deletedGCPFile: false},
 		},
 	}
 
@@ -52,9 +84,7 @@ func TestDestroyIAMUser(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			assert.NoError(cmd.Flags().Set("yes", tc.yes))
 
-			fsh := file.NewHandler(afero.NewMemMapFs())
-
-			err := destroyIAMUser(cmd, &nopSpinner{}, tc.iamDestroyer, fsh)
+			err := destroyIAMUser(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -82,7 +112,6 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	testCases := map[string]struct {
 		destroyer   iamDestroyer
 		fsHandler   file.Handler
-		yes         string
 		stdin       string
 		wantErr     bool
 		wantProceed bool
@@ -92,47 +121,28 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			fsHandler:   newFsNoExist(),
 			wantProceed: true,
 			wantErr:     true,
-			yes:         "false",
-		},
-		"confirm delete flag": {
-			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   newFsExist(),
-			wantProceed: true,
-			yes:         "true",
-		},
-		"confirm delete stdin": {
-			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   newFsExist(),
-			wantProceed: true,
-			yes:         "false",
-			stdin:       "y\n",
-		},
-		"deny delete stdin": {
-			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   newFsExist(),
-			wantProceed: true,
-			yes:         "false",
-			stdin:       "n\n",
 		},
 		"unsuccessful destroy confirm": {
 			destroyer:   &stubIAMDestroyer{},
 			fsHandler:   newFsExist(),
-			yes:         "true",
 			stdin:       "y\n",
 			wantProceed: true,
 		},
 		"unsuccessful destroy deny": {
 			destroyer:   &stubIAMDestroyer{},
 			fsHandler:   newFsExist(),
-			yes:         "true",
 			stdin:       "n\n",
 			wantProceed: false,
 		},
 		"error deleting file": {
 			destroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
 			fsHandler: newFsExist(),
-			yes:       "true",
 			wantErr:   true,
+		},
+		"successful delete": {
+			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
+			fsHandler:   newFsExist(),
+			wantProceed: true,
 		},
 	}
 
@@ -144,7 +154,6 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			assert.NoError(cmd.Flags().Set("yes", tc.yes))
 
 			proceed, err := deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {
