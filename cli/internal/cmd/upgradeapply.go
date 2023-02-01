@@ -31,15 +31,10 @@ func newUpgradeApplyCmd() *cobra.Command {
 		RunE:  runUpgradeApply,
 	}
 
-	cmd.Flags().Bool("helm", false, "execute helm upgrade\n"+
-		"This feature is still in development an may change without announcement. Upgrades all helm charts deployed during constellation-init.")
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
 		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.")
 	cmd.Flags().Duration("timeout", 3*time.Minute, "change helm upgrade timeout\n"+
-		"This feature is still in development an may change without announcement. Might be useful for slow connections or big clusters.")
-	if err := cmd.Flags().MarkHidden("helm"); err != nil {
-		panic(err)
-	}
+		"Might be useful for slow connections or big clusters.")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
@@ -74,49 +69,52 @@ func upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, upgrader cloudU
 		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	if flags.helmFlag {
-		err = upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive)
-		if errors.Is(err, helm.ErrConfirmationMissing) {
-			if !flags.yes {
-				cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
-				ok, askErr := askToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
-				if askErr != nil {
-					return fmt.Errorf("asking for confirmation: %w", err)
-				}
-				if !ok {
-					cmd.Println("Aborting upgrade.")
-					return nil
-				}
-			}
-			err = upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
-		}
-		if err != nil {
-			return fmt.Errorf("upgrading helm: %w", err)
-		}
-
-		return nil
+	if err := handleServiceUpgrade(cmd, upgrader, conf, flags); err != nil {
+		return err
 	}
 
 	// TODO: validate upgrade config? Should be basic things like checking image is not an empty string
 	// More sophisticated validation, like making sure we don't downgrade the cluster, should be done by `constellation upgrade plan`
 
+	return handleImageUpgrade(cmd.Context(), conf, imageFetcher, upgrader)
+}
+
+func handleServiceUpgrade(cmd *cobra.Command, upgrader cloudUpgrader, conf *config.Config, flags upgradeApplyFlags) error {
+	err := upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive)
+	if errors.Is(err, helm.ErrConfirmationMissing) {
+		if !flags.yes {
+			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
+			ok, askErr := askToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
+			if askErr != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Aborting upgrade.")
+				return nil
+			}
+		}
+		err = upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
+	}
+	if err != nil {
+		return fmt.Errorf("upgrading helm: %w", err)
+	}
+
+	return nil
+}
+
+func handleImageUpgrade(ctx context.Context, conf *config.Config, imageFetcher imageFetcher, upgrader cloudUpgrader) error {
 	// this config modification is temporary until we can remove the upgrade section from the config
 	conf.Image = conf.Upgrade.Image
-	imageReference, err := imageFetcher.FetchReference(cmd.Context(), conf)
+	imageReference, err := imageFetcher.FetchReference(ctx, conf)
 	if err != nil {
 		return err
 	}
 
-	return upgrader.Upgrade(cmd.Context(), imageReference, conf.Upgrade.Image, conf.Upgrade.Measurements)
+	return upgrader.UpgradeImage(ctx, imageReference, conf.Upgrade.Image, conf.Upgrade.Measurements)
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	configPath, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return upgradeApplyFlags{}, err
-	}
-
-	helmFlag, err := cmd.Flags().GetBool("helm")
 	if err != nil {
 		return upgradeApplyFlags{}, err
 	}
@@ -136,19 +134,18 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		return upgradeApplyFlags{}, fmt.Errorf("parsing force argument: %w", err)
 	}
 
-	return upgradeApplyFlags{configPath: configPath, helmFlag: helmFlag, yes: yes, upgradeTimeout: timeout, force: force}, nil
+	return upgradeApplyFlags{configPath: configPath, yes: yes, upgradeTimeout: timeout, force: force}, nil
 }
 
 type upgradeApplyFlags struct {
 	configPath     string
-	helmFlag       bool
 	yes            bool
 	upgradeTimeout time.Duration
 	force          bool
 }
 
 type cloudUpgrader interface {
-	Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
+	UpgradeImage(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
 }
 

@@ -68,8 +68,8 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	}, nil
 }
 
-// Upgrade upgrades the cluster to the given measurements and image.
-func (u *Upgrader) Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error {
+// UpgradeImage upgrades the cluster to the given measurements and image.
+func (u *Upgrader) UpgradeImage(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error {
 	if err := u.updateMeasurements(ctx, measurements); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
