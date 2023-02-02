@@ -77,6 +77,7 @@ func TestInitCluster(t *testing.T) {
 					},
 				},
 				ClusterConfiguration: kubeadm.ClusterConfiguration{
+					ClusterName:          "kubernetes",
 					ControlPlaneEndpoint: loadbalancerIP,
 					APIServer: kubeadm.APIServer{
 						CertSANs: []string{privateIP},
