@@ -88,6 +88,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 }
 
 // InitCluster instruments kubeadm to initialize the K8s cluster.
+// On success an admin kubeconfig file is returned.
 func (k *KubernetesUtil) InitCluster(
 	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
