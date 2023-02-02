@@ -71,7 +71,7 @@ runs:
     - name: Constellation config generate
       shell: bash
       run: |
-        constellation config generate ${{ inputs.cloudProvider }}
+        constellation config generate ${{ inputs.cloudProvider }} --name e2e-test 
 
         yq eval -i \
           "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |
@@ -158,7 +158,7 @@ runs:
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
-        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y --force
+        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
