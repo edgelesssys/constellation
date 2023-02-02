@@ -7,6 +7,7 @@ RUN dnf -y update && \
     swtpm \
     swtpm-tools \
     libvirt-client && \
+    dnf remove -y python-setuptools && \
     dnf clean all
 
 # Prevent cgroup issues on Fedora and configure libvirt
