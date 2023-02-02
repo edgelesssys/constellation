@@ -71,7 +71,9 @@ runs:
     - name: Constellation config generate
       shell: bash
       run: |
-        constellation config generate ${{ inputs.cloudProvider }} --name e2e-test 
+        constellation config generate ${{ inputs.cloudProvider }}
+
+        yq eval -i "(.name) = \"e2e-test\"" constellation-conf.yaml
 
         yq eval -i \
           "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |

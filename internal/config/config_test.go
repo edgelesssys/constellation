@@ -123,7 +123,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
 				c.Image = "v0.0.0"
-				c.Name = "constell"
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -143,7 +142,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
 				c.Image = "v0.0.0"
-				c.Name = "constell"
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -187,9 +185,9 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 22 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-	const azErrCount = 10
-	const gcpErrCount = 7
+	const defaultErrCount = 21 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const azErrCount = 9
+	const gcpErrCount = 6
 
 	testCases := map[string]struct {
 		cnf          *Config
@@ -235,7 +233,6 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = "v0.0.0"
-				cnf.Name = "azure-constellation"
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
@@ -265,7 +262,6 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = "v0.0.0"
-				cnf.Name = "gcp-constellation"
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"

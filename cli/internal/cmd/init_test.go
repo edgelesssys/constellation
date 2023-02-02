@@ -403,7 +403,6 @@ func TestAttestation(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.Image = "image"
-	cfg.Name = "kubernetes"
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
 	cfg.Provider.QEMU.Measurements[0] = measurements.WithAllBytes(0x00, false)
 	cfg.Provider.QEMU.Measurements[1] = measurements.WithAllBytes(0x11, false)

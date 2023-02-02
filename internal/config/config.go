@@ -255,6 +255,7 @@ func Default() *Config {
 	return &Config{
 		Version:             Version2,
 		Image:               defaultImage,
+		Name:                "constell",
 		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
