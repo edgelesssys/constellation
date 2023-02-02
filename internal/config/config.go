@@ -62,7 +62,7 @@ type Config struct {
 	Image string `yaml:"image" validate:"required,version_compatibility"`
 	// description: |
 	//   Name of the cluster.
-	Name string `yaml:"name" validate:"required"`
+	Name string `yaml:"name" validate:"required,valid_name"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -506,6 +506,13 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	if err := validate.RegisterTranslation("version_compatibility", trans, registerVersionCompatibilityError, translateVersionCompatibilityError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("valid_name", trans, registerValidateNameError, c.translateValidateNameError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("valid_name", c.validateName); err != nil {
 		return err
 	}
 

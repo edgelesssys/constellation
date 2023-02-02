@@ -64,7 +64,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return err
 	}
 
-	if provider == cloudprovider.AWS && len(flags.name) > 10 {
+	if provider == cloudprovider.AWS && len(flags.name) > constants.AWSConstellationNameLength {
 		return errors.New("cluster name on AWS must not be longer than 10 characters")
 	}
 

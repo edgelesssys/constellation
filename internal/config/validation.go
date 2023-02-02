@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -365,4 +366,29 @@ func returnsTrue(fl validator.FieldLevel) bool {
 // validateUpgradeConfig prints a warning to STDERR and validates the field successfully.
 func validateUpgradeConfig(sl validator.StructLevel) {
 	fmt.Printf("WARNING: the config key `upgrade` will be deprecated in an upcoming version. Please check the documentation for more information.\n")
+}
+
+func registerValidateNameError(ut ut.Translator) error {
+	return ut.Add("validate_name", "{0} must be no more than {1} characters long", true)
+}
+
+func (c *Config) translateValidateNameError(ut ut.Translator, fe validator.FieldError) string {
+	var t string
+	if c.Provider.AWS != nil {
+		t, _ = ut.T("validate_name", fe.Field(), strconv.Itoa(constants.AWSConstellationNameLength))
+	} else {
+		t, _ = ut.T("validate_name", fe.Field(), strconv.Itoa(constants.ConstellationNameLength))
+	}
+
+	return t
+}
+
+// validateName makes sure the name of the constellation is not too long.
+// Since this value may differ between providers, we can't simply use built-in validation.
+// This also allows us to eventually add more validation rules for constellation names if necessary.
+func (c *Config) validateName(fl validator.FieldLevel) bool {
+	if c.Provider.AWS != nil {
+		return len(fl.Field().String()) <= constants.AWSConstellationNameLength
+	}
+	return len(fl.Field().String()) <= constants.ConstellationNameLength
 }

@@ -21,6 +21,8 @@ const (
 
 	// ConstellationNameLength is the maximum length of a Constellation's name.
 	ConstellationNameLength = 37
+	// AWSConstellationNameLength is the maximum length of a Constellation's name on AWS.
+	AWSConstellationNameLength = 10
 	// ConstellationMasterSecretStoreName is the name for the Constellation secrets in Kubernetes.
 	ConstellationMasterSecretStoreName = "constellation-mastersecret"
 	// ConstellationMasterSecretKey is the name of the key for the master secret in the master secret kubernetes secret.

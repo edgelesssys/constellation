@@ -266,7 +266,7 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing name flag: %w", err)
 	}
-	if c.provider == cloudprovider.AWS && len(name) > 10 {
+	if c.provider == cloudprovider.AWS && len(name) > constants.AWSConstellationNameLength {
 		return iamFlags{}, errors.New("cluster name on AWS must not be longer than 10 characters")
 	}
 
