@@ -5453,9 +5453,11 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/sassoftware/go-rpmutils",
-        sum = "h1:ZHMXpGoMHL/cpQJ1byyhEBW73TDtpNq4inYa9M4FxyY=",
-        version = "v0.1.1",
+        replace = "github.com/rmohr/go-rpmutils",  # keep
+        sum = "h1:IPm+rJWi7P9mkoFQjloDEGThxlM71dzDrC2DZSjgnL8=",  # keep
+        version = "v0.1.2-0.20201215123907-5acf7436c00d",  # keep
     )
+
     go_repository(
         name = "com_github_sassoftware_relic",
         build_file_generation = "on",
