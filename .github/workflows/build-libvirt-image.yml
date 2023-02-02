@@ -8,7 +8,6 @@ on:
       - "release/**"
     paths:
       - "cli/internal/libvirt/**"
-      - "!internal/versions/versions.go" # Don't build on version bumps to avoid infinite loops
       - ".github/workflows/build-libvirt-image.yml"
 
 jobs:
