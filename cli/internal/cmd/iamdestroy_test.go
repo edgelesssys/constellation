@@ -32,6 +32,11 @@ func TestIAMDestroy(t *testing.T) {
 		return fh
 	}
 
+	fhWithAdminConf := file.NewHandler(afero.NewMemMapFs())
+	require.NoError(fhWithAdminConf.Write(constants.AdminConfFilename, []byte("")))
+	fhWithClusterIDFile := file.NewHandler(afero.NewMemMapFs())
+	require.NoError(fhWithClusterIDFile.Write(constants.ClusterIDsFileName, []byte("")))
+
 	testCases := map[string]struct {
 		iamDestroyer      *stubIAMDestroyer
 		fh                file.Handler
@@ -40,6 +45,16 @@ func TestIAMDestroy(t *testing.T) {
 		wantErr           bool
 		wantDestroyCalled bool
 	}{
+		"cluster running admin conf": {
+			fh:           fhWithAdminConf,
+			iamDestroyer: &stubIAMDestroyer{},
+			yesFlag:      "false",
+		},
+		"cluster running cluster ids": {
+			fh:           fhWithClusterIDFile,
+			iamDestroyer: &stubIAMDestroyer{},
+			yesFlag:      "false",
+		},
 		"file missing abort": {
 			fh:           newFsMissing(),
 			stdin:        "n\n",
@@ -173,6 +188,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			}},
 			fsHandler:          newFsExist(),
 			wantGetSaKeyCalled: true,
+		},
+		"valid": {
+			destroyer:          &stubIAMDestroyer{},
+			fsHandler:          newFsExist(),
+			wantGetSaKeyCalled: true,
+			wantProceed:        true,
 		},
 	}
 
