@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: 1.19.5
+          go-version: 1.20.1
 
       - name: Build and upload azure SNP reporter container image
         id: build-and-upload
@@ -67,7 +67,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: 1.19.5
+          go-version: 1.20.1
 
       - name: Download report JWT
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
