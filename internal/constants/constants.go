@@ -181,6 +181,10 @@ const (
 	CDNRepositoryURL = "https://cdn.confidential.cloud"
 	// CDNAPIPrefix is the prefix of the Constellation API.
 	CDNAPIPrefix = "constellation/v1"
+	// CDNMeasurementsFile is name of file containing image measurements.
+	CDNMeasurementsFile = "measurements.json"
+	// CDNMeasurementsSignature is name of file containing signature for CDNMeasurementsFile.
+	CDNMeasurementsSignature = "measurements.json.sig"
 )
 
 // VersionInfo returns the version of a binary.

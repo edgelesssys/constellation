@@ -464,10 +464,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 }
 
 // extendConstellationServicesValues extends the given values map by some values depending on user input.
-// This extra step of separating the application of user input is necessary since service upgrades should
-// reuse user input from the init step. However, we can't rely on reuse-values, because
-// during upgrades all values need to be set locally as they might have changed.
-// Also, the charts are not rendered correctly without all of these values.
+// Values set inside this function are only applied during init, not during upgrade.
 func extendConstellationServicesValues(
 	in map[string]any, config *config.Config, masterSecret, salt []byte, maaURL string,
 ) error {

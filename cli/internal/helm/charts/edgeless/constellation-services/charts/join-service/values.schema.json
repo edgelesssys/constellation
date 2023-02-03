@@ -10,10 +10,6 @@
             "type": "string",
             "examples": ["{'1':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','warnOnly':true},'15':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=','warnOnly':true}}"]
         },
-        "enforceIdKeyDigest": {
-            "description": "ID Key Digest enforcement policy.",
-            "enum": ["StrictChecking", "MAAFallback", "WarnOnly"]
-        },
         "idKeyConfig": {
             "description": "Configuration for validating the ID Key Digest of the SEV-SNP attestation.",
             "type": "string",

@@ -10,10 +10,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"path"
 	"regexp"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
 )
@@ -142,9 +144,9 @@ func (v Version) ListPath(gran Granularity) string {
 	)
 }
 
-// ArtifactURL returns the URL to the artifacts stored for this version.
+// ArtifactsURL returns the URL to the artifacts stored for this version.
 // The URL points to a directory.
-func (v Version) ArtifactURL() string {
+func (v Version) ArtifactsURL() string {
 	return constants.CDNRepositoryURL + "/" + v.ArtifactPath()
 }
 
@@ -321,6 +323,33 @@ func ValidateStream(ref, stream string) error {
 	}
 
 	return fmt.Errorf("stream %q is unknown or not supported on ref %q", stream, ref)
+}
+
+// MeasurementURL builds the measurement and signature URLs for the given version and CSP.
+func MeasurementURL(version Version, csp cloudprovider.Provider) (measurementURL, signatureURL *url.URL, err error) {
+	if version.Kind != VersionKindImage {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("kind %q is not supported", version.Kind)
+	}
+
+	measurementPath, err := url.JoinPath(version.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsFile)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for measurement: %w", err)
+	}
+	signaturePath, err := url.JoinPath(version.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsSignature)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for signature: %w", err)
+	}
+
+	measurementURL, err = url.Parse(measurementPath)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("parsing path for measurement: %w", err)
+	}
+
+	signatureURL, err = url.Parse(signaturePath)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("parsing path for signature: %w", err)
+	}
+	return measurementURL, signatureURL, nil
 }
 
 var (

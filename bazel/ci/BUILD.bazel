@@ -3,10 +3,16 @@ load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 
-gazelle(name = "gazelle_generate")
+required_tags = ["e2e"]
+
+gazelle(
+    name = "gazelle_generate",
+    build_tags = required_tags,
+)
 
 gazelle(
     name = "gazelle_check",
+    build_tags = required_tags,
     command = "fix",
     mode = "diff",
 )

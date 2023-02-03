@@ -4,7 +4,7 @@ This module contains rules and macros for building and testing Go code.
 
 load("@io_bazel_rules_go//go:def.bzl", _go_test = "go_test")
 
-def go_test(ld = None, **kwargs):
+def go_test(ld = None, count = 3, **kwargs):
     """go_test is a wrapper for go_test that uses default settings for Constellation.
 
     It adds the following:
@@ -14,12 +14,13 @@ def go_test(ld = None, **kwargs):
 
     Args:
           ld: path to interpreter to that will be written into the elf header.
+          count: number of times each test should be executed. defaults to 3.
           **kwargs: all other arguments are passed to go_test.
     """
 
     # Sets test count to 3.
     kwargs.setdefault("args", [])
-    kwargs["args"].append("--test.count=3")
+    kwargs["args"].append("--test.count={}".format(count))
 
     # enable race detector by default
     kwargs.setdefault("race", "on")

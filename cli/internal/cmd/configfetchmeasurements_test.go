@@ -119,11 +119,13 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    ver.ArtifactURL() + "/image/csp/gcp/measurements.json",
-			wantMeasurementsSigURL: ver.ArtifactURL() + "/image/csp/gcp/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactsURL() + "/image/csp/gcp/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactsURL() + "/image/csp/gcp/measurements.json.sig",
 		},
 		"both set by user": {
-			conf: &config.Config{},
+			conf: &config.Config{
+				Image: ver.ShortPath(),
+			},
 			flags: &fetchMeasurementsFlags{
 				measurementsURL: urlMustParse("get.my/measurements.json"),
 				signatureURL:    urlMustParse("get.my/measurements.json.sig"),

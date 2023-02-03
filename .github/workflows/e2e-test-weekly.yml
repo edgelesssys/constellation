@@ -188,3 +188,23 @@ jobs:
             --force-deletion-types Microsoft.Compute/virtualMachines \
             --no-wait \
             --yes
+
+  e2e-upgrade:
+    strategy:
+        fail-fast: false
+        max-parallel: 1
+        matrix:
+          fromVersion:
+            ["2.6"]
+          cloudProvider: ["gcp", "azure"]
+    name: Run upgrade tests
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/e2e-upgrade.yml
+    with:
+      fromVersion: ${{ matrix.fromVersion }}
+      cloudProvider: ${{ matrix.cloudProvider }}
+      workerNodesCount: 2
+      controlNodesCount: 3

@@ -12,12 +12,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -181,34 +178,21 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 }
 
 func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
+	ver, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("creating version from image name: %w", err)
+	}
+	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(ver, conf.GetProvider())
+	if err != nil {
+		return err
+	}
+
 	if f.measurementsURL == nil {
-		url, err := measurementURL(conf.GetProvider(), conf.Image, "measurements.json")
-		if err != nil {
-			return err
-		}
-		f.measurementsURL = url
+		f.measurementsURL = measurementsURL
 	}
 
 	if f.signatureURL == nil {
-		url, err := measurementURL(conf.GetProvider(), conf.Image, "measurements.json.sig")
-		if err != nil {
-			return err
-		}
-		f.signatureURL = url
+		f.signatureURL = signatureURL
 	}
 	return nil
-}
-
-func measurementURL(provider cloudprovider.Provider, image, file string) (*url.URL, error) {
-	ver, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
-	if err != nil {
-		return nil, fmt.Errorf("creating version from image name: %w", err)
-	}
-	artifactBaseURL := ver.ArtifactURL()
-	url, err := url.Parse(artifactBaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("parsing artifact base URL %s: %w", artifactBaseURL, err)
-	}
-	url.Path = path.Join(url.Path, "image", "csp", strings.ToLower(provider.String()), file)
-	return url, nil
 }
