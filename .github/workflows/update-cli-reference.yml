@@ -9,6 +9,7 @@ on:
       - "cli/cmd/**"
       - "cli/internal/cmd/**"
       - "hack/clidocgen/**"
+      - ".github/workflows/update-cli-reference.yml"
 
 jobs:
   update-docs:
@@ -30,7 +31,7 @@ jobs:
 
       - name: Regenerate CLI reference of the documentation
         working-directory: hack/clidocgen
-        run: go run . | cat header.md - > ../../cli.md
+        run: go run . | cat header.md - > ../../docs/docs/reference/cli.md
 
       - name: Create PR (if there are changes)
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
