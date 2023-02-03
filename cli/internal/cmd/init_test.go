@@ -222,7 +222,7 @@ func TestWriteOutput(t *testing.T) {
 		IP:  "cluster-ip",
 	}
 	i := &initCmd{log: logger.NewTest(t)}
-	err := i.writeOutput(idFile, resp, false, "", &out, fileHandler)
+	err := i.writeOutput(idFile, resp, false, &out, fileHandler)
 	assert.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)

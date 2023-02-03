@@ -184,7 +184,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	i.log.Debugf("Initialization request succeeded")
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
-	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, clusterName, cmd.OutOrStdout(), fileHandler); err != nil {
+	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
 	}
 
@@ -240,8 +240,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, resp *initproto.InitResponse, mergeConfig bool, clusterName string,
-	wr io.Writer, fileHandler file.Handler,
+	idFile clusterid.File, resp *initproto.InitResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
@@ -259,14 +258,15 @@ func (i *initCmd) writeOutput(
 	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Wrote kubeconfig to file")
+	i.log.Debugf("Wrote kubeconfig to file: %s", constants.AdminConfFilename)
+
 	if mergeConfig {
-		if err := i.mergeKubeonfig(clusterName, fileHandler); err != nil {
+		if err := i.mergeKubeonfig(fileHandler); err != nil {
 			return fmt.Errorf("merging kubeconfig: %w", err)
 		}
-		i.log.Debugf("Merged kubeconfig to existing file")
 		writeRow(tw, "Kubernetes configuration merged with default config", "")
 	}
+
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
@@ -291,7 +291,12 @@ func (i *initCmd) writeOutput(
 	return nil
 }
 
-func (i *initCmd) mergeKubeonfig(clusterName string, fileHandler file.Handler) error {
+func (i *initCmd) mergeKubeonfig(fileHandler file.Handler) error {
+	constellConfig, err := clientcmd.LoadFromFile(constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("loading admin kubeconfig: %w", err)
+	}
+
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.Precedence = []string{
 		constants.AdminConfFilename,   // load our config first so it takes precedence
@@ -309,7 +314,7 @@ func (i *initCmd) mergeKubeonfig(clusterName string, fileHandler file.Handler) e
 	}
 
 	// Set the current context to the cluster we just created
-	cfg.CurrentContext = fmt.Sprintf("%s-admin@%s", clusterName, clusterName)
+	cfg.CurrentContext = constellConfig.CurrentContext
 	i.log.Debugf("Set current context to %s", cfg.CurrentContext)
 
 	json, err := runtime.Encode(clientcodec.Codec, cfg)
@@ -325,6 +330,7 @@ func (i *initCmd) mergeKubeonfig(clusterName string, fileHandler file.Handler) e
 	if err := fileHandler.Write(clientcmd.RecommendedHomeFile, mergedKubeconfig, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing merged kubeconfig to file: %w", err)
 	}
+	i.log.Debugf("Merged kubeconfig into default config file: %s", clientcmd.RecommendedHomeFile)
 	return nil
 }
 
