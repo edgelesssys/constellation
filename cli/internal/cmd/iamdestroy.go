@@ -18,21 +18,35 @@ import (
 )
 
 func runIAMDestroy(cmd *cobra.Command, _args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	spinner := newSpinner(cmd.ErrOrStderr())
 	destroyer := cloudcmd.NewIAMDestroyer(cmd.Context())
 	fsHandler := file.NewHandler(afero.NewOsFs())
 
-	return iamDestroy(cmd, spinner, destroyer, fsHandler)
+	c := &destroyCmd{log: log}
+
+	return c.iamDestroy(cmd, spinner, destroyer, fsHandler)
 }
 
-func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
+type destroyCmd struct {
+	log debugLog
+}
+
+func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return err
 	}
 
+	c.log.Debugf("\"yes\" flag is set to %t", yes)
+
 	gcpFileExists := false
 
+	c.log.Debugf("Checking if %s exists", constants.GCPServiceAccountKeyFile)
 	_, err = fsHandler.Stat(constants.GCPServiceAccountKeyFile)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -46,6 +60,7 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 		// Confirmation
 		confirmString := "Do you really want to destroy your IAM configuration?"
 		if gcpFileExists {
+			c.log.Debugf("%s exists", constants.GCPServiceAccountKeyFile)
 			confirmString += " (This will also delete " + constants.GCPServiceAccountKeyFile + ")"
 		}
 		ok, err := askToConfirm(cmd, confirmString)
@@ -59,6 +74,7 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 	}
 
 	if gcpFileExists {
+		c.log.Debugf("Starting to delete %s", constants.GCPServiceAccountKeyFile)
 		proceed, err := deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
 		if err != nil {
 			return err
@@ -68,6 +84,8 @@ func iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroye
 			return nil
 		}
 	}
+
+	c.log.Debugf("Starting to destroy IAM configuration")
 
 	spinner.Start("Destroying IAM configuration", false)
 	defer spinner.Stop()

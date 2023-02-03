@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +90,9 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			assert.NoError(cmd.Flags().Set("yes", tc.yesFlag))
 
-			err := iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
+			c := &destroyCmd{log: logger.NewTest(t)}
+
+			err := c.iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
 
 			if tc.wantErr {
 				assert.Error(err)
