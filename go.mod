@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2
 
-go 1.19
+go 1.20
 
 replace (
 	k8s.io/api v0.0.0 => k8s.io/api v0.26.1

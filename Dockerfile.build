@@ -5,7 +5,7 @@ RUN dnf -y update && \
     dnf clean all
 
 # Install Go
-ARG GO_VER=1.19.5
+ARG GO_VER=1.20.1
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
