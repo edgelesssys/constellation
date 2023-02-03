@@ -62,7 +62,8 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log debugLog
+	log    debugLog
+	merger configMerger
 }
 
 // runInitialize runs the initialize command.
@@ -86,7 +87,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log}
+	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}}
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
 }
 
@@ -261,7 +262,7 @@ func (i *initCmd) writeOutput(
 	i.log.Debugf("Wrote kubeconfig to file: %s", constants.AdminConfFilename)
 
 	if mergeConfig {
-		if err := i.mergeKubeonfig(fileHandler); err != nil {
+		if err := i.merger.mergeConfigs(constants.AdminConfFilename, fileHandler); err != nil {
 			return fmt.Errorf("merging kubeconfig: %w", err)
 		}
 		writeRow(tw, "Kubernetes configuration merged with default config", "")
@@ -281,56 +282,13 @@ func (i *initCmd) writeOutput(
 	} else {
 		fmt.Fprintln(wr, "Constellation kubeconfig merged with default config.")
 
-		if os.Getenv(clientcmd.RecommendedConfigPathEnvVar) != "" {
+		if i.merger.kubeconfigEnvVar() != "" {
 			fmt.Fprintln(wr, "Warning: KUBECONFIG environment variable is set.")
 			fmt.Fprintln(wr, "You may need to unset it to use the default config and connect to your cluster.")
 		} else {
 			fmt.Fprintln(wr, "You can now connect to your cluster.")
 		}
 	}
-	return nil
-}
-
-func (i *initCmd) mergeKubeonfig(fileHandler file.Handler) error {
-	constellConfig, err := clientcmd.LoadFromFile(constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("loading admin kubeconfig: %w", err)
-	}
-
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.Precedence = []string{
-		constants.AdminConfFilename,   // load our config first so it takes precedence
-		clientcmd.RecommendedHomeFile, // then load the default config
-	}
-	i.log.Debugf("Kubeconfig file loading precedence: %v", loadingRules.Precedence)
-
-	// merge and flatten the kubeconfigs
-	cfg, err := loadingRules.Load()
-	if err != nil {
-		return fmt.Errorf("loading merged kubeconfig: %w", err)
-	}
-	if err := clientcmdapi.FlattenConfig(cfg); err != nil {
-		return fmt.Errorf("flattening merged kubeconfig: %w", err)
-	}
-
-	// Set the current context to the cluster we just created
-	cfg.CurrentContext = constellConfig.CurrentContext
-	i.log.Debugf("Set current context to %s", cfg.CurrentContext)
-
-	json, err := runtime.Encode(clientcodec.Codec, cfg)
-	if err != nil {
-		return fmt.Errorf("encoding merged kubeconfig: %w", err)
-	}
-
-	mergedKubeconfig, err := yaml.JSONToYAML(json)
-	if err != nil {
-		return fmt.Errorf("converting merged kubeconfig to YAML: %w", err)
-	}
-
-	if err := fileHandler.Write(clientcmd.RecommendedHomeFile, mergedKubeconfig, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing merged kubeconfig to file: %w", err)
-	}
-	i.log.Debugf("Merged kubeconfig into default config file: %s", clientcmd.RecommendedHomeFile)
 	return nil
 }
 
@@ -472,6 +430,62 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 	default:
 		return "", fmt.Errorf("unsupported cloud provider %q", provider)
 	}
+}
+
+type configMerger interface {
+	mergeConfigs(configPath string, fileHandler file.Handler) error
+	kubeconfigEnvVar() string
+}
+
+type kubeconfigMerger struct {
+	log debugLog
+}
+
+func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Handler) error {
+	constellConfig, err := clientcmd.LoadFromFile(configPath)
+	if err != nil {
+		return fmt.Errorf("loading admin kubeconfig: %w", err)
+	}
+
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.Precedence = []string{
+		configPath,                    // load our config first so it takes precedence
+		clientcmd.RecommendedHomeFile, // then load the default config
+	}
+	c.log.Debugf("Kubeconfig file loading precedence: %v", loadingRules.Precedence)
+
+	// merge and flatten the kubeconfigs
+	cfg, err := loadingRules.Load()
+	if err != nil {
+		return fmt.Errorf("loading merged kubeconfig: %w", err)
+	}
+	if err := clientcmdapi.FlattenConfig(cfg); err != nil {
+		return fmt.Errorf("flattening merged kubeconfig: %w", err)
+	}
+
+	// Set the current context to the cluster we just created
+	cfg.CurrentContext = constellConfig.CurrentContext
+	c.log.Debugf("Set current context to %s", cfg.CurrentContext)
+
+	json, err := runtime.Encode(clientcodec.Codec, cfg)
+	if err != nil {
+		return fmt.Errorf("encoding merged kubeconfig: %w", err)
+	}
+
+	mergedKubeconfig, err := yaml.JSONToYAML(json)
+	if err != nil {
+		return fmt.Errorf("converting merged kubeconfig to YAML: %w", err)
+	}
+
+	if err := fileHandler.Write(clientcmd.RecommendedHomeFile, mergedKubeconfig, file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing merged kubeconfig to file: %w", err)
+	}
+	c.log.Debugf("Merged kubeconfig into default config file: %s", clientcmd.RecommendedHomeFile)
+	return nil
+}
+
+func (c *kubeconfigMerger) kubeconfigEnvVar() string {
+	return os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
 }
 
 type grpcDialer interface {
