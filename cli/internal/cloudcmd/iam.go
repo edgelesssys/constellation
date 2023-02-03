@@ -20,8 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/spf13/afero"
 )
 
 // IAMDestroyer destroys an IAM user and deletes their configuration.
@@ -38,59 +36,47 @@ func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
 	}
 }
 
-// RunDeleteGCPKeyFile deletes gcpServiceAccountKey.json if the IAM users in TerraformIAMWorkingDir and the file match up.
-func (d *IAMDestroyer) RunDeleteGCPKeyFile(ctx context.Context) (bool, error) {
-	fsHandler := file.NewHandler(afero.NewOsFs())
+// RunGetTfstateSaKey returns the sa_key output from the terraform state.
+func (d *IAMDestroyer) RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
 	cl, err := d.newTerraformClient(ctx)
 	if err != nil {
-		return false, err
+		return gcpshared.ServiceAccountKey{}, err
 	}
 
-	return d.deleteGCPKeyFile(ctx, fsHandler, cl)
+	return d.getTfstateSaKey(ctx, cl)
 }
 
-func (d *IAMDestroyer) deleteGCPKeyFile(ctx context.Context, fsHandler file.Handler, cl terraformClient) (bool, error) {
+func (d *IAMDestroyer) getTfstateSaKey(ctx context.Context, cl terraformClient) (gcpshared.ServiceAccountKey, error) {
 	tfState, err := cl.Show(ctx)
 	if err != nil {
-		return false, err
+		return gcpshared.ServiceAccountKey{}, err
 	}
 
 	if tfState.Values == nil {
-		return false, errors.New("no Values field in terraform state")
+		return gcpshared.ServiceAccountKey{}, errors.New("no Values field in terraform state")
 	}
 
 	saKeyJSON := tfState.Values.Outputs["sa_key"]
 	if saKeyJSON == nil {
-		return false, nil
+		return gcpshared.ServiceAccountKey{}, errors.New("no sa_key in outputs of the terraform state")
 	}
 
 	saKeyString, ok := saKeyJSON.Value.(string)
 	if !ok {
-		return false, errors.New("sa_key field in terraform state is not a string")
+		return gcpshared.ServiceAccountKey{}, errors.New("sa_key field in terraform state is not a string")
 	}
 	saKey, err := base64.StdEncoding.DecodeString(saKeyString)
 	if err != nil {
-		return false, err
+		return gcpshared.ServiceAccountKey{}, err
 	}
 
 	var tfSaKey gcpshared.ServiceAccountKey
-	var fileSaKey gcpshared.ServiceAccountKey
 
 	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
-		return false, err
-	}
-	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFile, &fileSaKey); err != nil {
-		return false, err
+		return gcpshared.ServiceAccountKey{}, err
 	}
 
-	if tfSaKey != fileSaKey {
-		return false, nil
-	}
-
-	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
-		return false, err
-	}
-	return true, nil
+	return tfSaKey, nil
 }
 
 // DestroyIAMConfiguration destroys the previously created IAM User and deletes the local IAM terraform files.

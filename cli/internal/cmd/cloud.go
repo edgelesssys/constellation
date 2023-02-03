@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
@@ -36,7 +37,7 @@ type cloudIAMCreator interface {
 
 type iamDestroyer interface {
 	DestroyIAMConfiguration(ctx context.Context) error
-	RunDeleteGCPKeyFile(ctx context.Context) (bool, error)
+	RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error)
 }
 
 type cloudTerminator interface {

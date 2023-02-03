@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -53,6 +54,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 			return err
 		}
 	} else {
+		c.log.Debugf("%s exists", constants.GCPServiceAccountKeyFile)
 		gcpFileExists = true
 	}
 
@@ -60,7 +62,6 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 		// Confirmation
 		confirmString := "Do you really want to destroy your IAM configuration?"
 		if gcpFileExists {
-			c.log.Debugf("%s exists", constants.GCPServiceAccountKeyFile)
 			confirmString += " (This will also delete " + constants.GCPServiceAccountKeyFile + ")"
 		}
 		ok, err := askToConfirm(cmd, confirmString)
@@ -75,7 +76,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	if gcpFileExists {
 		c.log.Debugf("Starting to delete %s", constants.GCPServiceAccountKeyFile)
-		proceed, err := deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
+		proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
 		if err != nil {
 			return err
 		}
@@ -98,19 +99,35 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	return nil
 }
 
-func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
+func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
+	c.log.Debugf("Checking if %s exists", constants.GCPServiceAccountKeyFile)
 	if _, err := fsHandler.Stat(constants.GCPServiceAccountKeyFile); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return false, err
 		}
+		c.log.Debugf("File %s doesn't exist", constants.GCPServiceAccountKeyFile)
 		return true, nil // file just doesn't exist
 	}
 
-	destroyed, err := destroyer.RunDeleteGCPKeyFile(cmd.Context())
+	var fileSaKey gcpshared.ServiceAccountKey
+
+	c.log.Debugf("Parsing %s", constants.GCPServiceAccountKeyFile)
+	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFile, &fileSaKey); err != nil {
+		return false, err
+	}
+
+	c.log.Debugf("Getting service account key from the tfstate")
+	tfSaKey, err := destroyer.RunGetTfstateSaKey(cmd.Context())
 	if err != nil {
 		return false, err
 	}
-	if !destroyed {
+
+	c.log.Debugf("Checking if keys are the same")
+	if tfSaKey != fileSaKey {
+		return false, nil
+	}
+
+	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
 		ok, err := askToConfirm(cmd, "The file gcpServiceAccountKey.json could not be deleted. Either it does not exist or the file belongs to another IAM configuration. Do you want to proceed anyway?")
 		if err != nil {
 			return false, err
@@ -119,5 +136,7 @@ func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, 
 			return false, nil
 		}
 	}
+
+	c.log.Debugf("Successfully deleted %s", constants.GCPServiceAccountKeyFile)
 	return true, nil
 }

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -69,14 +70,16 @@ func TestIAMDestroy(t *testing.T) {
 		"gcp delete error": {
 			fh:           newFsExists(),
 			yesFlag:      "true",
-			iamDestroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
+			iamDestroyer: &stubIAMDestroyer{getTfstateKeyErr: someError},
 			wantErr:      true,
 		},
 		"gcp no proceed": {
-			fh:           newFsExists(),
-			yesFlag:      "true",
-			stdin:        "n\n",
-			iamDestroyer: &stubIAMDestroyer{deletedGCPFile: false},
+			fh:      newFsExists(),
+			yesFlag: "true",
+			stdin:   "n\n",
+			iamDestroyer: &stubIAMDestroyer{gcpSaKey: gcpshared.ServiceAccountKey{
+				Type: "somethingelse",
+			}},
 		},
 	}
 
@@ -112,54 +115,64 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	require := require.New(t)
 	someError := errors.New("failed")
 
+	gcpFile := `
+	{
+		"auth_provider_x509_cert_url": "",
+		"auth_uri": "",
+		"client_email": "",
+		"client_id": "",
+		"client_x509_cert_url": "",
+		"private_key": "",
+		"private_key_id": "",
+		"project_id": "",
+		"token_uri": "",
+		"type": ""
+	}
+	`
+
 	newFsNoExist := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
 		return fs
 	}
 	newFsExist := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
+		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(gcpFile)))
 		return fs
 	}
 
+	fsInvalidJson := file.NewHandler(afero.NewMemMapFs())
+	require.NoError(fsInvalidJson.Write(constants.GCPServiceAccountKeyFile, []byte("asdf")))
+
 	testCases := map[string]struct {
-		destroyer        *stubIAMDestroyer
-		fsHandler        file.Handler
-		stdin            string
-		wantErr          bool
-		wantProceed      bool
-		wantDeleteCalled bool
+		destroyer          *stubIAMDestroyer
+		fsHandler          file.Handler
+		stdin              string
+		wantErr            bool
+		wantProceed        bool
+		wantGetSaKeyCalled bool
 	}{
 		"file doesn't exist": {
 			destroyer:   &stubIAMDestroyer{},
 			fsHandler:   newFsNoExist(),
 			wantProceed: true,
 		},
-		"unsuccessful destroy confirm": {
-			destroyer:        &stubIAMDestroyer{},
-			fsHandler:        newFsExist(),
-			stdin:            "y\n",
-			wantProceed:      true,
-			wantDeleteCalled: true,
+		"invalid gcp json": {
+			destroyer: &stubIAMDestroyer{},
+			fsHandler: fsInvalidJson,
+			wantErr:   true,
 		},
-		"unsuccessful destroy deny": {
-			destroyer:        &stubIAMDestroyer{},
-			fsHandler:        newFsExist(),
-			stdin:            "n\n",
-			wantProceed:      false,
-			wantDeleteCalled: true,
+		"error getting key terraform": {
+			destroyer:          &stubIAMDestroyer{getTfstateKeyErr: someError},
+			fsHandler:          newFsExist(),
+			wantErr:            true,
+			wantGetSaKeyCalled: true,
 		},
-		"error deleting file": {
-			destroyer:        &stubIAMDestroyer{deleteGCPFileErr: someError},
-			fsHandler:        newFsExist(),
-			wantErr:          true,
-			wantDeleteCalled: true,
-		},
-		"successful delete": {
-			destroyer:        &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:        newFsExist(),
-			wantProceed:      true,
-			wantDeleteCalled: true,
+		"keys not same": {
+			destroyer: &stubIAMDestroyer{gcpSaKey: gcpshared.ServiceAccountKey{
+				Type: "somethingelse",
+			}},
+			fsHandler:          newFsExist(),
+			wantGetSaKeyCalled: true,
 		},
 	}
 
@@ -172,7 +185,9 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			proceed, err := deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
+			c := &destroyCmd{log: logger.NewTest(t)}
+
+			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -185,10 +200,10 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 				assert.False(proceed)
 			}
 
-			if tc.wantDeleteCalled {
-				assert.True(tc.destroyer.deleteGCPFileCalled)
+			if tc.wantGetSaKeyCalled {
+				assert.True(tc.destroyer.getTfstateKeyCalled)
 			} else {
-				assert.False(tc.destroyer.deleteGCPFileCalled)
+				assert.False(tc.destroyer.getTfstateKeyCalled)
 			}
 		})
 	}
