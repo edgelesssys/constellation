@@ -60,6 +60,7 @@ resource "google_compute_network" "vpc_network" {
   name                    = local.name
   description             = "Constellation VPC network"
   auto_create_subnetworks = false
+  mtu                     = 8896
 }
 
 resource "google_compute_subnetwork" "vpc_subnetwork" {
