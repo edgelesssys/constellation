@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/edgelesssys/annotated-yaml/encoder"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -23,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 	"github.com/manifoldco/promptui"
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"

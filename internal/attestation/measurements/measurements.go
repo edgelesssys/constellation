@@ -27,10 +27,10 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/edgelesssys/annotated-yaml/encoder"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )

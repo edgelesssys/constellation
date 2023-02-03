@@ -15,8 +15,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/annotated-yaml/encoder"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"

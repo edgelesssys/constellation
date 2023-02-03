@@ -24,7 +24,7 @@ go-licenses csv ./... | {
 
     MPL-2.0)
       case ${pkg} in
-      github.com/siderolabs/talos/pkg/machinery/config/encoder) ;;
+      github.com/edgelesssys/annotated-yaml) ;;
 
       github.com/letsencrypt/boulder) ;;
 

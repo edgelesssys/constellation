@@ -7,7 +7,7 @@
 package config
 
 import (
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
+	"github.com/edgelesssys/annotated-yaml/encoder"
 )
 
 var (

@@ -4,7 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// This binary can be build from siderolabs/talos projects. Located at:
+// This binary can either be downloaded precompiled at:
+// https://github.com/edgelesssys/annotated-yaml/releases/tag/v0.1.0
+// Or build from its source located at:
+// https://github.com/edgelesssys/annotated-yaml/tree/main/docgen
+// Or build from its original project siderolabs/talos:
 // https://github.com/siderolabs/talos/tree/master/hack/docgen
 //
 //go:generate docgen ./config.go ./config_doc.go Configuration

@@ -19,7 +19,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
+	"github.com/edgelesssys/annotated-yaml/encoder"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 )

@@ -61,6 +61,7 @@ require (
 	github.com/aws/smithy-go v1.13.5
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.22+incompatible
+	github.com/edgelesssys/annotated-yaml v0.1.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.0
@@ -80,7 +81,6 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.13.0
-	github.com/siderolabs/talos/pkg/machinery v1.3.2
 	github.com/sigstore/rekor v1.0.1
 	github.com/sigstore/sigstore v1.5.1
 	github.com/spf13/afero v1.9.3
@@ -110,6 +110,11 @@ require (
 	k8s.io/kubernetes v1.25.4
 	k8s.io/mount-utils v0.25.4
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
+)
+
+require (
+	github.com/ProtonMail/go-crypto v0.0.0-20220930113650-c6815a8c17ad // indirect
+	github.com/onsi/ginkgo/v2 v2.2.0 // indirect
 )
 
 require (
