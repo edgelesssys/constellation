@@ -85,7 +85,7 @@ func deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, 
 		if !errors.Is(err, os.ErrNotExist) {
 			return false, err
 		}
-		return true, err // file just doesn't exist
+		return true, nil // file just doesn't exist
 	}
 
 	destroyed, err := destroyer.RunDeleteGCPKeyFile(cmd.Context())

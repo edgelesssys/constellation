@@ -120,7 +120,6 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			destroyer:   &stubIAMDestroyer{},
 			fsHandler:   newFsNoExist(),
 			wantProceed: true,
-			wantErr:     true,
 		},
 		"unsuccessful destroy confirm": {
 			destroyer:   &stubIAMDestroyer{},
