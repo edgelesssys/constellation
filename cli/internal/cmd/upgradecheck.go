@@ -470,12 +470,7 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 	for _, version := range versions {
 		log.Debugf("Fetching measurements for image: %s", version)
 		shortPath := version.ShortPath()
-		measurementsURL, err := measurementURL(csp, shortPath, "measurements.json")
-		if err != nil {
-			return nil, err
-		}
-
-		signatureURL, err := measurementURL(csp, shortPath, "measurements.json.sig")
+		measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version, csp)
 		if err != nil {
 			return nil, err
 		}

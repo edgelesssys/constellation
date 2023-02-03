@@ -37,7 +37,7 @@ func TestNewVersion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			_, err := NewSemver(tc.version)
+			_, err := New(tc.version)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

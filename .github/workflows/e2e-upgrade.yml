@@ -1,0 +1,224 @@
+name: e2e test upgrade
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "gcp"
+          - "azure"
+        default: "azure"
+      workerNodesCount:
+        description: "Number of worker nodes to spawn."
+        default: "2"
+      controlNodesCount:
+        description: "Number of control-plane nodes to spawn."
+        default: "3"
+      fromVersion:
+        description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
+        type: string
+        required: true
+      toCLI:
+        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+        type: string
+        required: false
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+      toMicroservices:
+        description: Microservice version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+  workflow_call:
+    inputs:
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: string
+        required: true
+      workerNodesCount:
+        description: "Number of worker nodes to spawn."
+        type: number
+        required: true
+      controlNodesCount:
+        description: "Number of control-plane nodes to spawn."
+        type: number
+        required: true
+      fromVersion:
+        description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
+        type: string
+        required: true
+      toCLI:
+        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+        type: string
+        required: false
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
+      toKubernetes:
+        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+      toMicroservices:
+        description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
+
+jobs:
+  e2e-upgrade:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          fetch-depth: 0
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.20.2"
+
+      - name: Login to Azure
+        if: inputs.cloudProvider == 'azure'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
+          aws-region: eu-central-1
+
+      - name: Create Azure resource group
+        if: inputs.cloudProvider == 'azure'
+        id: az_resource_group_gen
+        shell: bash
+        run: |
+          uuid=$(cat /proc/sys/kernel/random/uuid)
+          name=e2e-test-${uuid%%-*}
+          az group create --location northeurope --name "$name" --tags e2e
+          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Find latest nightly image
+        id: find-image
+        if: inputs.toImage == ''
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          ref: main
+          stream: nightly
+
+      - name: Create cluster with 'fromVersion' CLI.
+        id: e2e_test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: ${{ inputs.workerNodesCount }}
+          controlNodesCount: ${{ inputs.controlNodesCount }}
+          cloudProvider: ${{ inputs.cloudProvider }}
+          osImage: ${{ inputs.fromVersion }}
+          cliVersion: ${{ inputs.fromVersion }}
+          isDebugImage: "false"
+          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
+          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
+          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
+          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
+          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
+          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          test: "nop"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Run upgrade test
+        run: |
+          echo "Image target: $IMAGE"
+          echo "K8s target: $KUBERNETES"
+          echo "Microservice target: $MICROSERVICES"
+
+          if [[ -n ${MICROSERVICES} ]]; then
+            MICROSERVICES_FLAG="--target-microservices $MICROSERVICES"
+          fi
+          if [[ -n ${KUBERNETES} ]]; then
+            KUBERNETES_FLAG="--target-kubernetes $KUBERNETES"
+          fi
+
+          bazelisk run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
+        env:
+          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+          IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
+          KUBERNETES: ${{ inputs.toKubernetes }}
+          MICROSERVICES: ${{ inputs.toMicroservices }}
+          WORKERNODES: ${{ inputs.workerNodesCount }}
+          CONTROLNODES: ${{ inputs.controlNodesCount }}
+
+      - name: Always fetch logs
+        if: always()
+        continue-on-error: true
+        run: |
+          kubectl logs -n kube-system -l "app.kubernetes.io/name=node-maintenance-operator" --tail=-1 > node-maintenance-operator.logs
+          kubectl get nodeversions.update.edgeless.systems constellation-version -o yaml > constellation-version.yaml
+        env:
+          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always upload logs
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        with:
+          name: upgrade-logs
+          path: |
+            node-maintenance-operator.logs
+            constellation-version.yaml
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Notify teams channel
+        if: failure() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        shell: bash
+        working-directory: .github/actions/e2e_test
+        run: |
+          sudo apt-get install gettext-base -y
+          export TEAMS_JOB_NAME="upgrade-${{ inputs.cloudProvider }}"
+          export TEAMS_RUN_ID=${{ github.run_id }}
+          envsubst < teams-payload.json > to-be-send.json
+          curl                                          \
+            -H "Content-Type: application/json"         \
+            -d @to-be-send.json                         \
+            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
+
+      - name: Always destroy Azure resource group
+        if: always() && inputs.cloudProvider == 'azure'
+        shell: bash
+        run: |
+          az group delete \
+            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
+            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
+            --force-deletion-types Microsoft.Compute/virtualMachines \
+            --no-wait \
+            --yes

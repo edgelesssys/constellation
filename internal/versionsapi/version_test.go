@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
@@ -451,6 +452,49 @@ func TestVersionListPathURL(t *testing.T) {
 	}
 }
 
+func TestVersionArtifactURL(t *testing.T) {
+	testCases := map[string]struct {
+		ver                Version
+		csp                cloudprovider.Provider
+		wantMeasurementURL string
+		wantSignatureURL   string
+		wantErr            bool
+	}{
+		"nightly-feature": {
+			ver: Version{
+				Ref:     "feat-some-feature",
+				Stream:  "nightly",
+				Version: "v2.6.0-pre.0.20230217095603-193dd48ca19f",
+				Kind:    VersionKindImage,
+			},
+			csp:                cloudprovider.GCP,
+			wantMeasurementURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json",
+			wantSignatureURL:   constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json.sig",
+		},
+		"fail for wrong kind": {
+			ver: Version{
+				Kind: VersionKindCLI,
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			measurementURL, signatureURL, err := MeasurementURL(tc.ver, tc.csp)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantMeasurementURL, measurementURL.String())
+			assert.Equal(tc.wantSignatureURL, signatureURL.String())
+		})
+	}
+}
+
 func TestVersionArtifactPathURL(t *testing.T) {
 	testCases := map[string]struct {
 		ver      Version
@@ -518,7 +562,7 @@ func TestVersionArtifactPathURL(t *testing.T) {
 
 			path := tc.ver.ArtifactPath()
 			assert.Equal(tc.wantPath, path)
-			url := tc.ver.ArtifactURL()
+			url := tc.ver.ArtifactsURL()
 			assert.Equal(constants.CDNRepositoryURL+"/"+tc.wantPath, url)
 		})
 	}
