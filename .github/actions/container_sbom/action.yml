@@ -34,8 +34,7 @@ runs:
         SYFT_ATTEST_PASSWORD: ${{ inputs.cosignPassword }} # Required for Syft 0.69.0+ as they overwrite COSIGN_PASSWORD
       run: |
         set -ex
-        echo "$COSIGN_PRIVATE_KEY" > cosign.key
-        syft attest --key cosign.key ${{ inputs.containerReference }} -o cyclonedx-json > container-image.att.json
+        syft attest --key env://COSIGN_PRIVATE_KEY ${{ inputs.containerReference }} -o cyclonedx-json > container-image.att.json
         cosign attach attestation ${{ inputs.containerReference }} --attestation container-image.att.json
         # TODO: type should be auto-discovered after issue is resolved:
         # https://github.com/sigstore/cosign/issues/2264
