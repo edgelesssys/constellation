@@ -199,7 +199,7 @@ func TestDestroyIAMUser(t *testing.T) {
 	}
 }
 
-func TestDeleteGCPKeyFile(t *testing.T) {
+func TestGetTfstateSaKey(t *testing.T) {
 	someError := errors.New("failed")
 	destroyer := NewIAMDestroyer(context.Background())
 
@@ -217,36 +217,7 @@ func TestDeleteGCPKeyFile(t *testing.T) {
 		"type": ""
 	}
 	`
-	// gcpFileNotSame := `
-	// {
-	// 	"auth_provider_x509_cert_url": "",
-	// 	"auth_uri": "",
-	// 	"client_email": "",
-	// 	"client_id": "",
-	// 	"client_x509_cert_url": "",
-	// 	"private_key": "NOTTHESAME",
-	// 	"private_key_id": "",
-	// 	"project_id": "",
-	// 	"token_uri": "",
-	// 	"type": ""
-	// }
-	// `
 	gcpFileB64 := base64.StdEncoding.EncodeToString([]byte(gcpFile))
-	// gcpFileNotSameB64 := base64.StdEncoding.EncodeToString([]byte(gcpFileNotSame))
-
-	// newValidTestFs := func() file.Handler {
-	// 	fs := file.NewHandler(afero.NewMemMapFs())
-	// 	require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(gcpFile)))
-	// 	return fs
-	// }
-
-	// newInvalidTestFs := func() file.Handler {
-	// 	fs := file.NewHandler(afero.NewMemMapFs())
-	// 	require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(`
-	// 	asdf
-	// 	`)))
-	// 	return fs
-	// }
 
 	testCases := map[string]struct {
 		cl             terraformClient
@@ -287,6 +258,7 @@ func TestDeleteGCPKeyFile(t *testing.T) {
 					Values: &tfjson.StateValues{},
 				},
 			},
+			wantErr: true,
 		},
 		"invalid base64": {
 			cl: &stubTerraformClient{
