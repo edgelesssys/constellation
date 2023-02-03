@@ -31,34 +31,39 @@ func TestIAMDestroy(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		iamDestroyer iamDestroyer
-		fh           file.Handler
-		stdin        string
-		yesFlag      string
-		wantErr      bool
+		iamDestroyer      *stubIAMDestroyer
+		fh                file.Handler
+		stdin             string
+		yesFlag           string
+		wantErr           bool
+		wantDestroyCalled bool
 	}{
 		"file missing abort": {
-			fh:      newFsMissing(),
-			stdin:   "n\n",
-			yesFlag: "false",
-		},
-		"file missing": {
 			fh:           newFsMissing(),
-			stdin:        "y\n",
+			stdin:        "n\n",
 			yesFlag:      "false",
 			iamDestroyer: &stubIAMDestroyer{},
 		},
+		"file missing": {
+			fh:                newFsMissing(),
+			stdin:             "y\n",
+			yesFlag:           "false",
+			iamDestroyer:      &stubIAMDestroyer{},
+			wantDestroyCalled: true,
+		},
 		"file exists abort": {
-			fh:      newFsExists(),
-			stdin:   "n\n",
-			yesFlag: "false",
+			fh:           newFsExists(),
+			stdin:        "n\n",
+			yesFlag:      "false",
+			iamDestroyer: &stubIAMDestroyer{},
 		},
 		"error destroying user": {
-			fh:           newFsMissing(),
-			stdin:        "y\n",
-			yesFlag:      "false",
-			iamDestroyer: &stubIAMDestroyer{destroyErr: someError},
-			wantErr:      true,
+			fh:                newFsMissing(),
+			stdin:             "y\n",
+			yesFlag:           "false",
+			iamDestroyer:      &stubIAMDestroyer{destroyErr: someError},
+			wantErr:           true,
+			wantDestroyCalled: true,
 		},
 		"gcp delete error": {
 			fh:           newFsExists(),
@@ -91,6 +96,11 @@ func TestIAMDestroy(t *testing.T) {
 			} else {
 				assert.NoError(err)
 			}
+			if tc.wantDestroyCalled {
+				assert.True(tc.iamDestroyer.destroyCalled)
+			} else {
+				assert.False(tc.iamDestroyer.destroyCalled)
+			}
 		})
 	}
 }
@@ -110,11 +120,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		destroyer   iamDestroyer
-		fsHandler   file.Handler
-		stdin       string
-		wantErr     bool
-		wantProceed bool
+		destroyer        *stubIAMDestroyer
+		fsHandler        file.Handler
+		stdin            string
+		wantErr          bool
+		wantProceed      bool
+		wantDeleteCalled bool
 	}{
 		"file doesn't exist": {
 			destroyer:   &stubIAMDestroyer{},
@@ -122,26 +133,30 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			wantProceed: true,
 		},
 		"unsuccessful destroy confirm": {
-			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   newFsExist(),
-			stdin:       "y\n",
-			wantProceed: true,
+			destroyer:        &stubIAMDestroyer{},
+			fsHandler:        newFsExist(),
+			stdin:            "y\n",
+			wantProceed:      true,
+			wantDeleteCalled: true,
 		},
 		"unsuccessful destroy deny": {
-			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   newFsExist(),
-			stdin:       "n\n",
-			wantProceed: false,
+			destroyer:        &stubIAMDestroyer{},
+			fsHandler:        newFsExist(),
+			stdin:            "n\n",
+			wantProceed:      false,
+			wantDeleteCalled: true,
 		},
 		"error deleting file": {
-			destroyer: &stubIAMDestroyer{deleteGCPFileErr: someError},
-			fsHandler: newFsExist(),
-			wantErr:   true,
+			destroyer:        &stubIAMDestroyer{deleteGCPFileErr: someError},
+			fsHandler:        newFsExist(),
+			wantErr:          true,
+			wantDeleteCalled: true,
 		},
 		"successful delete": {
-			destroyer:   &stubIAMDestroyer{deletedGCPFile: true},
-			fsHandler:   newFsExist(),
-			wantProceed: true,
+			destroyer:        &stubIAMDestroyer{deletedGCPFile: true},
+			fsHandler:        newFsExist(),
+			wantProceed:      true,
+			wantDeleteCalled: true,
 		},
 	}
 
@@ -165,6 +180,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 				assert.True(proceed)
 			} else {
 				assert.False(proceed)
+			}
+
+			if tc.wantDeleteCalled {
+				assert.True(tc.destroyer.deleteGCPFileCalled)
+			} else {
+				assert.False(tc.destroyer.deleteGCPFileCalled)
 			}
 		})
 	}
