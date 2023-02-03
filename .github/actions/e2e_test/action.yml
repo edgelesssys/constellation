@@ -23,6 +23,9 @@ inputs:
     description: "Is OS img a debug img?"
     default: "true"
     required: true
+  cliVersion:
+    description: "Version of a released CLI to download, e.g. 'v2.3.0', leave empty to build it."
+    required: false
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
@@ -96,11 +99,23 @@ runs:
         echo "hostArch=$(go env GOARCH)" >> $GITHUB_OUTPUT
 
     - name: Build CLI
+      if: inputs.cliVersion == ''
       uses: ./.github/actions/build_cli
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
         enterpriseCLI: ${{ inputs.keepMeasurements }}
+
+    - name: Fetch CLI
+      if: inputs.cliVersion != ''
+      shell: bash
+      run: |
+        curl -L https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64 > constellation
+        chmod u+x constellation
+        ./constellation version
+        echo "$(pwd)" >> $GITHUB_PATH
+        # Do not spam license server from pipeline
+        sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
     # macOS runners don't have Docker preinstalled, so they cannot build the bootstrapper.
     # But we can use a Linux runner to build it and store/retrieve it from the action cache.

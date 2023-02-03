@@ -1,9 +1,10 @@
-name: e2e test weekly
+name: e2e test upgrade
 
 on:
+  # TODO: remove push
+  push:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 6" # At 03:00 on Saturday.
+  workflow_call:
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -12,82 +13,18 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
-  find-latest-image:
-    name: Find latest debug image
-    runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
-    outputs:
-      image: ${{ steps.find-latest-image.outputs.output }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
-          aws-region: eu-central-1
-
-      - name: Find latest image
-        id: find-latest-image
-        uses: ./.github/actions/versionsapi
-        with:
-          command: latest
-          ref: main
-          stream: debug
-
-  e2e-weekly:
+  e2e-upgrade:
     strategy:
       fail-fast: false
-      max-parallel: 5
       matrix:
-        test:
-          ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover"]
         provider: ["gcp", "azure", "aws"]
-        version: ["v1.24.9", "v1.25.6", "v1.26.1"]
-        exclude:
-          # Verify test runs only on latest version.
-          - test: "verify"
-            version: "v1.24.9"
-          - test: "verify"
-            version: "v1.25.6"
-          # Recover test runs only on latest version.
-          - test: "recover"
-            version: "v1.24.9"
-          - test: "recover"
-            version: "v1.25.6"
-          # Autoscaling test runs only on latest version.
-          - test: "autoscaling"
-            version: "v1.24.9"
-          - test: "autoscaling"
-            version: "v1.25.6"
-          # K-bench test runs only on latest version.
-          - test: "k-bench"
-            version: "v1.24.9"
-          - test: "k-bench"
-            version: "v1.25.6"
-          # lb test runs only on latest version.
-          - test: "lb"
-            version: "v1.24.9"
-          - test: "lb"
-            version: "v1.25.6"
-          # Currently not supported on AWS.
-          - test: "autoscaling"
-            provider: "aws"
-          - test: "k-bench"
-            provider: "aws"
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
-    needs: [find-latest-image]
     steps:
       - name: Check out repository
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
@@ -95,7 +32,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.5"
+          go-version: "1.19.4"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -104,8 +41,8 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
-        id: az_resource_group_gen
         if: matrix.provider == 'azure'
+        id: az_resource_group_gen
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -113,15 +50,16 @@ jobs:
           az group create --location northeurope --name "$name" --tags e2e
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
-      - name: Run E2E test
+      - name: Run E2E test (nop)
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: ${{ needs.find-latest-image.outputs.image }}
-          kubernetesVersion: ${{ matrix.version }}
+          osImage: "v2.5.1"
+          cliVersion: "v2.5.1"
+          isDebugImage: "false"
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -131,7 +69,32 @@ jobs:
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          test: ${{ matrix.test }}
+          test: "nop"
+
+      - name: Run upgrade test
+        run: |
+          go test ./e2e/internal/upgrade -v --timeout=0 --tags=e2eupgrade
+        env:
+          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always fetch logs
+        if: always()
+        continue-on-error: true
+        run: |
+          kubectl logs -n kube-system -l "app.kubernetes.io/name=node-maintenance-operator" --tail=-1 > node-maintenance-operator.logs
+          kubectl get nodeversions.update.edgeless.systems constellation-version -o yaml > constellation-version.yaml
+        env:
+          KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always upload logs
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        with:
+          name: upgrade-logs
+          path: |
+            node-maintenance-operator.logs
+            constellation-version.yaml
 
       - name: Always terminate cluster
         if: always()
@@ -141,13 +104,13 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Notify teams channel
-        if: failure() && github.ref == 'refs/heads/main'
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true
         shell: bash
         working-directory: .github/actions/e2e_test
         run: |
           sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME=${{ matrix.provider }}
+          export TEAMS_JOB_NAME="upgrade-${{ matrix.provider }}"
           export TEAMS_RUN_ID=${{ github.run_id }}
           envsubst < teams-payload.json > to-be-send.json
           curl                                          \
@@ -165,11 +128,3 @@ jobs:
             --force-deletion-types Microsoft.Compute/virtualMachines \
             --no-wait \
             --yes
-
-  e2e-upgrade:
-    name: Run upgrade tests
-    secrets: inherit
-    permissions:
-      id-token: write
-      contents: read
-    uses: ./.github/workflows/e2e-upgrade.yml
