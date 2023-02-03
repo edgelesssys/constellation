@@ -1,4 +1,4 @@
-// TODO //go:build e2eupgrade
+//go:build e2eupgrade
 
 /*
 Copyright (c) Edgeless Systems GmbH
