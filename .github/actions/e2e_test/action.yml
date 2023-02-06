@@ -110,7 +110,7 @@ runs:
       if: inputs.cliVersion != ''
       shell: bash
       run: |
-        curl -L https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64 > constellation
+        curl -fsSL https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64 > constellation
         chmod u+x constellation
         ./constellation version
         echo "$(pwd)" >> $GITHUB_PATH

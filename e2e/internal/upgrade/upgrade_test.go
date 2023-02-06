@@ -112,7 +112,7 @@ func testNodesEventuallyHaveImage(t *testing.T, k *kubernetes.Clientset, wantIma
 		}
 
 		allUpdated := true
-		fmt.Printf("Node status (%v):\n", time.Now())
+		t.Log(fmt.Sprintf("Node status (%v):", time.Now()))
 		for _, node := range nodes.Items {
 			for key, value := range node.Annotations {
 				if key == "constellation.edgeless.systems/node-image" {

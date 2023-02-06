@@ -32,7 +32,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.19.4"
+          go-version: "1.19.5"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -73,7 +73,7 @@ jobs:
 
       - name: Run upgrade test
         run: |
-          go test ./e2e/internal/upgrade -v --timeout=0 --tags=e2eupgrade
+          go test ./e2e/internal/upgrade -v --timeout=5h30m --tags=e2eupgrade
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
 
@@ -104,7 +104,7 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Notify teams channel
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        if: failure() && github.ref == 'refs/heads/main'
         continue-on-error: true
         shell: bash
         working-directory: .github/actions/e2e_test
