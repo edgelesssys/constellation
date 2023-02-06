@@ -494,7 +494,7 @@ func extendConstellationServicesValues(in map[string]any, config *config.Config,
 		if !ok {
 			return errors.New("invalid join-service values")
 		}
-		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
+		joinServiceVals["enforceIdKeyDigest"] = config.IDKeyDigestPolicy()
 
 		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
 		if err != nil {

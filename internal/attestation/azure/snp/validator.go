@@ -44,11 +44,13 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
+func NewValidator(
+	pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforce idkeydigest.EnforceIDKeyDigest, log vtpm.AttestationLogger,
+) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
-			getTrustedKey(&azureInstanceInfo{}, idKeyDigests, enforceIDKeyDigest, log),
+			getTrustedKey(&azureInstanceInfo{}, idKeyDigests, enforce, log),
 			validateCVM,
 			log,
 		),
@@ -78,7 +80,7 @@ func reverseEndian(b []byte) {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
 func getTrustedKey(
-	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
+	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforce idkeydigest.EnforceIDKeyDigest, log vtpm.AttestationLogger,
 ) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
@@ -96,7 +98,7 @@ func getTrustedKey(
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		if err := validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
+		if err := validateSNPReport(vcek, idKeyDigest, enforce, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
@@ -144,7 +146,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 }
 
 func validateSNPReport(
-	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool,
+	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforce idkeydigest.EnforceIDKeyDigest,
 	report snpAttestationReport, log vtpm.AttestationLogger,
 ) error {
 	if report.Policy.Debug() {
@@ -199,11 +201,15 @@ func validateSNPReport(
 	}
 
 	if !hasExpectedIDKeyDigest {
-		if enforceIDKeyDigest {
+		switch enforce {
+		case idkeydigest.StrictChecking:
 			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigests}
-		}
-		if log != nil {
-			log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
+		case idkeydigest.MAAFallback:
+			// TODO: implement MAA fallback
+		case idkeydigest.WarnOnly:
+			if log != nil {
+				log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
+			}
 		}
 	}
 

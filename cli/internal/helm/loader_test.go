@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -72,7 +73,7 @@ func TestConstellationServices(t *testing.T) {
 				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
 					DeployCSIDriver:    toPtr(true),
-					EnforceIDKeyDigest: toPtr(true),
+					EnforceIDKeyDigest: idkeydigest.StrictChecking,
 				}},
 			},
 			enforceIDKeyDigest: true,

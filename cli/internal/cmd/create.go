@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -97,7 +98,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if conf.IsAzureNonCVM() {
 		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
-		if conf.EnforcesIDKeyDigest() {
+		if conf.IDKeyDigestPolicy() != idkeydigest.Unknown {
 			cmd.PrintErrln("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
 		}
 	}
