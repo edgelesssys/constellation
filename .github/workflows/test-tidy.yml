@@ -63,7 +63,7 @@ jobs:
         run: |
           mods="${{ steps.submods.outputs.submods }}"
           for mod in $mods; do
-            (cd "$mod"; go mod tidy)
+            go mod tidy -C "$mod"
           done
 
       - name: Push changes

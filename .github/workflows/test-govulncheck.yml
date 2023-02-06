@@ -49,4 +49,4 @@ jobs:
         shell: bash
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@6ad3e3d0781578532aaedbed543b25d7d586c746 # v0.0.0-20230110180137-6ad3e3d07815
-          GOMEMLIMIT=5GiB govulncheck "$(go list -f '{{.Dir}}/...' -m | xargs)"
+          GOMEMLIMIT=5GiB govulncheck "${{ steps.submods.outputs.submods }}"

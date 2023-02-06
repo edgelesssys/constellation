@@ -52,7 +52,7 @@ jobs:
           echo "::group::Install go dependencies"
           mods=$(go list -f '{{.Dir}}' -m | xargs)
           for mod in $mods; do
-            (cd "$mod" || exit; go mod download)
+            go mod download -C "$mod"
           done
           echo "::endgroup::"
 
