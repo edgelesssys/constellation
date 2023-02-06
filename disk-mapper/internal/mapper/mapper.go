@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"go.uber.org/zap"
@@ -107,7 +108,7 @@ func (m *Mapper) FormatDisk(passphrase string) error {
 
 // MapDisk maps a crypt device to /dev/mapper/target using the provided passphrase.
 func (m *Mapper) MapDisk(target, passphrase string) error {
-	if err := m.device.ActivateByPassphrase(target, 0, passphrase, 0); err != nil {
+	if err := m.device.ActivateByPassphrase(target, 0, passphrase, ccryptsetup.ReadWriteQueueBypass); err != nil {
 		return fmt.Errorf("mapping disk as %q: %w", target, err)
 	}
 	return nil
