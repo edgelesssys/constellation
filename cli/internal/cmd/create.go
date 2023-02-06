@@ -143,7 +143,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 
 	spinner.Start("Creating", false)
 	idFile, err := creator.Create(cmd.Context(), provider, conf, flags.name, instanceType, flags.controllerCount, flags.workerCount)
-	c.log.Debugf("Create command generated idFile")
+	c.log.Debugf("Successfully created the cloud resources for the cluster")
 	spinner.Stop()
 	if err != nil {
 		return translateCreateErrors(cmd, err)
