@@ -5,7 +5,7 @@ metadata:
   namespace: testNamespace
 data:
   measurements: "{\"1\":{\"expected\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"warnOnly\":false}}"
-  enforceIdKeyDigest: "true"
+  enforceIdKeyDigest: "StrictChecking"
   idkeydigests: "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
 binaryData:
   measurementSalt: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

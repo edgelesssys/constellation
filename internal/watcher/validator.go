@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"sync"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -75,14 +74,14 @@ func (u *Updatable) Update() error {
 	u.log.Debugf("New measurements: %+v", measurements)
 
 	var digest idkeydigest.IDKeyDigests
-	var enforceIDKeyDigest bool
+	var enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
 	if u.variant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
 		u.log.Infof("Updating encforceIdKeyDigest value")
 		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename))
 		if err != nil {
 			return err
 		}
-		enforceIDKeyDigest, err = strconv.ParseBool(string(enforceRaw))
+		enforceIDKeyDigest = idkeydigest.EnforcePolicyFromString(string(enforceRaw))
 		if err != nil {
 			return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
 		}

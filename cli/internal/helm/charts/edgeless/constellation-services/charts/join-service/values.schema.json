@@ -11,8 +11,8 @@
             "examples": ["{'1':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','warnOnly':true},'15':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=','warnOnly':true}}"]
         },
         "enforceIdKeyDigest": {
-            "description": "Whether or not idkeydigest should be enforced during attestation on azure.",
-            "type": "boolean"
+            "description": "ID Key Digest enforcement policy.",
+            "enum": ["StrictChecking", "MAAFallback", "WarnOnly"]
         },
         "idkeydigests": {
             "description": "List of expected idkeydigest values for Azure SNP attestation.",

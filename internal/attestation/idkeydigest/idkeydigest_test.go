@@ -117,3 +117,126 @@ func TestUnmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestEnforceIDKeyDigestMarshal(t *testing.T) {
+	testCases := map[string]struct {
+		input    EnforceIDKeyDigest
+		wantJSON string
+		wantYAML string
+	}{
+		"strict": {
+			input:    StrictChecking,
+			wantJSON: `"StrictChecking"`,
+			wantYAML: "StrictChecking",
+		},
+		"maaFallback": {
+			input:    MAAFallback,
+			wantJSON: `"MAAFallback"`,
+			wantYAML: "MAAFallback",
+		},
+		"warnOnly": {
+			input:    WarnOnly,
+			wantJSON: `"WarnOnly"`,
+			wantYAML: "WarnOnly",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			{
+				// YAML
+				yaml, err := yaml.Marshal(tc.input)
+				require.NoError(err)
+				assert.YAMLEq(tc.wantYAML, string(yaml))
+			}
+
+			{
+				// JSON
+				json, err := json.Marshal(tc.input)
+				require.NoError(err)
+				assert.JSONEq(tc.wantJSON, string(json))
+			}
+		})
+	}
+}
+
+func TestEnforceIDKeyDigestUnmarshal(t *testing.T) {
+	testCases := map[string]struct {
+		inputJSON string
+		inputYAML string
+		want      EnforceIDKeyDigest
+		wantErr   bool
+	}{
+		"strict": {
+			inputJSON: `"StrictChecking"`,
+			inputYAML: "StrictChecking",
+			want:      StrictChecking,
+		},
+		"maaFallback": {
+			inputJSON: `"MAAFallback"`,
+			inputYAML: "MAAFallback",
+			want:      MAAFallback,
+		},
+		"warnOnly": {
+			inputJSON: `"WarnOnly"`,
+			inputYAML: "WarnOnly",
+			want:      WarnOnly,
+		},
+		"legacyTrue": {
+			inputJSON: `true`,
+			inputYAML: "true",
+			want:      StrictChecking,
+		},
+		"legacyFalse": {
+			inputJSON: `false`,
+			inputYAML: "false",
+			want:      WarnOnly,
+		},
+		"invalid": {
+			inputJSON: `"invalid"`,
+			inputYAML: "invalid",
+			wantErr:   true,
+		},
+		"invalidType": {
+			inputJSON: `{"object": "invalid"}`,
+			inputYAML: "object: invalid",
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			{
+				// YAML
+				var got EnforceIDKeyDigest
+				err := yaml.Unmarshal([]byte(tc.inputYAML), &got)
+				if tc.wantErr {
+					assert.Error(err)
+					return
+				}
+
+				require.NoError(err)
+				assert.Equal(tc.want, got)
+			}
+
+			{
+				// JSON
+				var got EnforceIDKeyDigest
+				err := json.Unmarshal([]byte(tc.inputJSON), &got)
+				if tc.wantErr {
+					assert.Error(err)
+					return
+				}
+
+				require.NoError(err)
+				assert.Equal(tc.want, got)
+			}
+		})
+	}
+}

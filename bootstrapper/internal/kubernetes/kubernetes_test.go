@@ -216,7 +216,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion), "kubernetes",
-				nil, nil, false, []byte("{}"), false, nil, logger.NewTest(t),
+				nil, nil, []byte("{}"), false, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {

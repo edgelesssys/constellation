@@ -27,7 +27,7 @@ type Validator struct {
 	attestationVariant oid.Getter
 	pcrs               measurements.M
 	idkeydigests       idkeydigest.IDKeyDigests
-	enforceIDKeyDigest bool
+	enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
 	validator          atls.Validator
 	log                debugLog
 }
@@ -46,8 +46,8 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	}
 
 	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
-		v.enforceIDKeyDigest = conf.EnforcesIDKeyDigest()
-		v.idkeydigests = conf.IDKeyDigests()
+		v.enforceIDKeyDigest = conf.IDKeyDigestPolicy()
+		v.idkeydigests = conf.Provider.Azure.IDKeyDigest
 	}
 
 	return &v, nil
