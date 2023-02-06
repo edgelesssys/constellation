@@ -1,4 +1,4 @@
-//go:build e2eupgrade
+// TODO: //go:build e2eupgrade
 
 /*
 Copyright (c) Edgeless Systems GmbH
@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,11 +40,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	constellationCLIVersion = "2.5.1"
-	wantWorkerNodeCount     = 2
-	wantControlNodeCount    = 3
-	wantNodeCount           = wantControlNodeCount + wantWorkerNodeCount
+var (
+	toImage     = flag.String("to-image", "", "Image (shortversion) to upgrade to.")
+	toVersion   = flag.String("to-version", "", "CLI version to use.")
+	wantWorker  = flag.Int("want-worker", 0, "Number of wanted worker nodes.")
+	wantControl = flag.Int("want-control", 0, "Number of wanted control nodes.")
 )
 
 // E2E is creating cluster from root of Constellation repository, we need to
@@ -56,11 +57,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func mustDecodeHex(s string) [32]byte {
-	val, _ := hex.DecodeString(s)
-	return *(*[32]byte)(val)
-}
-
 func TestUpgrade(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
@@ -69,11 +65,11 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(err)
 	assert.NotNil(k)
 
-	testNodesEventuallyAvailable(t, k, wantControlNodeCount, wantWorkerNodeCount)
+	testNodesEventuallyAvailable(t, k, *wantControl, *wantWorker)
 	testPodsEventuallyReady(t, k, "kube-system")
 
-	testCLIHasVersion(t, constellationCLIVersion)
-	wantImage := writeUpgradeConfig(t)
+	testCLIHasVersion(t, *toVersion)
+	wantImage := writeUpgradeConfig(t, *toImage)
 	cmd := exec.CommandContext(context.Background(), "constellation", "upgrade", "execute")
 	msg, err := cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
@@ -81,12 +77,12 @@ func TestUpgrade(t *testing.T) {
 	testNodesEventuallyHaveImage(t, k, wantImage)
 }
 
-func writeUpgradeConfig(t *testing.T) string {
+func writeUpgradeConfig(t *testing.T, toImage string) string {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	cfg, err := config.New(fileHandler, constants.ConfigFilename)
 	require.NoError(t, err)
 
-	info, err := fetchLatestNightlyUpgradeInfo(cfg.GetProvider())
+	info, err := fetchUpgradeInfo(cfg.GetProvider(), toImage)
 	require.NoError(t, err)
 
 	cfg.Upgrade.Image = info.shortPath
@@ -112,7 +108,7 @@ func testNodesEventuallyHaveImage(t *testing.T, k *kubernetes.Clientset, wantIma
 		}
 
 		allUpdated := true
-		t.Log(fmt.Sprintf("Node status (%v):", time.Now()))
+		t.Logf("Node status (%v):", time.Now())
 		for _, node := range nodes.Items {
 			for key, value := range node.Annotations {
 				if key == "constellation.edgeless.systems/node-image" {
@@ -263,48 +259,25 @@ type upgradeInfo struct {
 	wantImage    string
 }
 
-func fetchLatestNightlyUpgradeInfo(csp cloudprovider.Provider) (upgradeInfo, error) {
+func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, error) {
 	info := upgradeInfo{
 		measurements: make(map[uint32]string),
+		shortPath:    toImage,
 	}
 	versionsClient := fetcher.NewFetcher()
 
-	latest, err := versionsClient.FetchVersionLatest(context.Background(), versionsapi.Latest{
-		Ref:    "main",
-		Stream: "nightly",
-		Kind:   versionsapi.VersionKindImage,
-	})
+	ver, err := versionsapi.NewVersionFromShortPath(toImage, versionsapi.VersionKindImage)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
-	info.shortPath = latest.ShortPath()
 
-	ver := versionsapi.Version{
-		Ref:     latest.Ref,
-		Stream:  latest.Stream,
-		Version: latest.Version,
-		Kind:    latest.Kind,
-	}
 	artifactURL := ver.ArtifactURL()
-
 	measurementsURL, err := url.JoinPath(artifactURL, "image/csp", strings.ToLower(csp.String()), "measurements.image.json")
 	if err != nil {
 		return upgradeInfo{}, err
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, measurementsURL, http.NoBody)
-	if err != nil {
-		return upgradeInfo{}, err
-	}
-	fmt.Printf("Fetching measurements from: %v\n", req.URL)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return upgradeInfo{}, err
-	}
-	defer resp.Body.Close()
-
-	var imageMeasurements imageMeasurements
-	err = json.NewDecoder(resp.Body).Decode(&imageMeasurements)
+	imageMeasurements, err := fetchMeasurements(measurementsURL)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
@@ -317,25 +290,55 @@ func fetchLatestNightlyUpgradeInfo(csp cloudprovider.Provider) (upgradeInfo, err
 		info.measurements[uint32(idx)] = value["expected"]
 	}
 
-	imageInfo, err := versionsClient.FetchImageInfo(context.Background(), versionsapi.ImageInfo{
-		Ref:     latest.Ref,
-		Stream:  latest.Stream,
-		Version: latest.Version,
+	wantImage, err := fetchWantImage(versionsClient, csp, versionsapi.ImageInfo{
+		Ref:     ver.Ref,
+		Stream:  ver.Stream,
+		Version: ver.Version,
 	})
 	if err != nil {
 		return upgradeInfo{}, err
 	}
+	info.wantImage = wantImage
+
+	return info, nil
+}
+
+func fetchMeasurements(url string) (imageMeasurements, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return imageMeasurements{}, err
+	}
+	fmt.Printf("Fetching measurements from: %v\n", req.URL)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return imageMeasurements{}, err
+	}
+	defer resp.Body.Close()
+
+	var imageMeasurements imageMeasurements
+	err = json.NewDecoder(resp.Body).Decode(&imageMeasurements)
+	return imageMeasurements, err
+}
+
+func fetchWantImage(client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
+	imageInfo, err := client.FetchImageInfo(context.Background(), imageInfo)
+	if err != nil {
+		return "", err
+	}
 
 	switch csp {
 	case cloudprovider.GCP:
-		info.wantImage = imageInfo.GCP["sev-es"]
+		return imageInfo.GCP["sev-es"], nil
 	case cloudprovider.Azure:
-		info.wantImage = imageInfo.Azure["cvm"]
+		return imageInfo.Azure["cvm"], nil
 	case cloudprovider.AWS:
-		info.wantImage = imageInfo.AWS["eu-central-1"]
+		return imageInfo.AWS["eu-central-1"], nil
 	default:
-		return upgradeInfo{}, errors.New("finding wanted image")
+		return "", errors.New("finding wanted image")
 	}
+}
 
-	return info, nil
+func mustDecodeHex(s string) [32]byte {
+	val, _ := hex.DecodeString(s)
+	return *(*[32]byte)(val)
 }

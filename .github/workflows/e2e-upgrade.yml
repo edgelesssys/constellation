@@ -1,10 +1,34 @@
 name: e2e test upgrade
 
 on:
-  # TODO: remove push
-  push:
   workflow_dispatch:
+    inputs:
+      fromVersion:
+        description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
+        type: string
+        required: true
+      toVersion:
+        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+        type: string
+        required: false
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
   workflow_call:
+    inputs:
+      fromVersion:
+        description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
+        type: string
+        required: true
+      toVersion:
+        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+        type: string
+        required: false
+      toImage:
+        description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
+        type: string
+        required: false
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -50,15 +74,15 @@ jobs:
           az group create --location northeurope --name "$name" --tags e2e
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
-      - name: Run E2E test (nop)
+      - name: Create cluster with 'fromVersion' CLI.
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: "v2.5.1"
-          cliVersion: "v2.5.1"
+          osImage: ${{ inputs.fromVersion }}
+          cliVersion: ${{ inputs.fromVersion }}
           isDebugImage: "false"
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
@@ -71,11 +95,40 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: "nop"
 
+      - name: Build CLI
+        if: inputs.toVersion == ''
+        uses: ./.github/actions/build_cli
+
+      - name: Fetch CLI
+        if: inputs.toVersion != ''
+        shell: bash
+        run: |
+          curl -fsSL https://github.com/edgelesssys/constellation/releases/download/${{ inputs.toVersion }}/constellation-linux-amd64 > constellation
+          chmod u+x constellation
+          echo "$(pwd)" >> $GITHUB_PATH
+          export PATH="$PATH:$(pwd)"
+          constellation version
+          # Do not spam license server from pipeline
+          sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
+
+      - name: Find latest nightly image
+        id: find-image
+        if: inputs.toImage == ''
+        uses: ./.github/actions/versionsapi
+        with:
+          command: latest
+          ref: main
+          stream: nightly
+
       - name: Run upgrade test
         run: |
-          go test ./e2e/internal/upgrade -v --timeout=5h30m --tags=e2eupgrade
+          go test ./e2e/internal/upgrade \
+            -v -timeout=5h30m -tags=e2eupgrade \
+            -args -to-image ${IMAGE} -to-version ${VERSION} -want-worker 2 -want-control 3
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
+          IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.image }}
+          VERSION: ${{ inputs.toVersion }}
 
       - name: Always fetch logs
         if: always()

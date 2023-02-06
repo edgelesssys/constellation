@@ -112,8 +112,9 @@ runs:
       run: |
         curl -fsSL https://github.com/edgelesssys/constellation/releases/download/${{ inputs.cliVersion }}/constellation-linux-amd64 > constellation
         chmod u+x constellation
-        ./constellation version
         echo "$(pwd)" >> $GITHUB_PATH
+        export PATH="$PATH:$(pwd)"
+        constellation version
         # Do not spam license server from pipeline
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
 
