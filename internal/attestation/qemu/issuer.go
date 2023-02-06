@@ -26,7 +26,7 @@ func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			tpmclient.AttestationKeyRSA,
-			func(tpm io.ReadWriteCloser) ([]byte, error) { return nil, nil },
+			func(io.ReadWriteCloser, []byte) ([]byte, error) { return nil, nil },
 			log,
 		),
 	}

@@ -51,7 +51,7 @@ func (s simTPMWithEventLog) EventLog() ([]byte, error) {
 	return header, nil
 }
 
-func fakeGetInstanceInfo(tpm io.ReadWriteCloser) ([]byte, error) {
+func fakeGetInstanceInfo(io.ReadWriteCloser, []byte) ([]byte, error) {
 	return []byte("unit-test"), nil
 }
 
@@ -59,7 +59,7 @@ func TestValidate(t *testing.T) {
 	require := require.New(t)
 
 	fakeValidateCVM := func(AttestationDocument, *attest.MachineState) error { return nil }
-	fakeGetTrustedKey := func(aKPub, instanceInfo []byte) (crypto.PublicKey, error) {
+	fakeGetTrustedKey := func(aKPub, instanceInfo, _ []byte) (crypto.PublicKey, error) {
 		pubArea, err := tpm2.DecodePublic(aKPub)
 		if err != nil {
 			return nil, err
@@ -175,7 +175,7 @@ func TestValidate(t *testing.T) {
 		"untrusted attestation public key": {
 			validator: NewValidator(
 				testExpectedPCRs,
-				func(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
+				func(_, _, _ []byte) (crypto.PublicKey, error) {
 					return nil, errors.New("untrusted")
 				},
 				fakeValidateCVM, warnLog),
@@ -301,7 +301,7 @@ func TestFailIssuer(t *testing.T) {
 			issuer: NewIssuer(
 				newSimTPMWithEventLog,
 				tpmclient.AttestationKeyRSA,
-				func(io.ReadWriteCloser) ([]byte, error) { return nil, errors.New("failure") },
+				func(io.ReadWriteCloser, []byte) ([]byte, error) { return nil, errors.New("failure") },
 				nil,
 			),
 			userData: []byte("Constellation"),

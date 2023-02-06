@@ -49,7 +49,7 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 
 // verifyAttestationKey establishes trust in an attestation key.
 // It does so by verifying the certificate chain of the attestation key certificate.
-func (v *Validator) verifyAttestationKey(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
+func (v *Validator) verifyAttestationKey(akPub, instanceInfo, _ []byte) (crypto.PublicKey, error) {
 	pubArea, err := tpm2.DecodePublic(akPub)
 	if err != nil {
 		return nil, fmt.Errorf("decoding attestation key public area: %w", err)

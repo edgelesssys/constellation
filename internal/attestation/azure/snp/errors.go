@@ -59,7 +59,7 @@ func (e *idKeyError) Unwrap() error {
 }
 
 func (e *idKeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigests %x doesn't contain reported idkeydigest %x", e.expectedValues, e.encounteredValue)
+	return fmt.Sprintf("configured idkeydigests %x don't contain reported idkeydigest %x", e.expectedValues, e.encounteredValue)
 }
 
 type versionError struct {

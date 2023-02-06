@@ -55,7 +55,7 @@ type akSigner struct {
 }
 
 // getAttestationCert returns the DER encoded certificate of the TPM's attestation key and it's CA.
-func (i *Issuer) getAttestationCert(tpm io.ReadWriteCloser) ([]byte, error) {
+func (i *Issuer) getAttestationCert(tpm io.ReadWriteCloser, _ []byte) ([]byte, error) {
 	certDER, err := tpm2.NVReadEx(tpm, tpmAkCertIdx, tpm2.HandleOwner, "", 0)
 	if err != nil {
 		return nil, fmt.Errorf("reading attestation key certificate from TPM: %w", err)

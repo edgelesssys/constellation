@@ -146,7 +146,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := trustedKeyFromGCEAPI(tc.getClient)(nil, tc.instanceInfo)
+			out, err := trustedKeyFromGCEAPI(tc.getClient)(nil, tc.instanceInfo, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

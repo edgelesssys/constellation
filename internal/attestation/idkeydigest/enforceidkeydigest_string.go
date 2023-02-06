@@ -8,19 +8,28 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[Unknown-0]
-	_ = x[StrictChecking-1]
-	_ = x[MAAFallback-2]
-	_ = x[WarnOnly-3]
+	_ = x[StrictChecking-0]
+	_ = x[MAAFallback-1]
+	_ = x[WarnOnly-2]
+	_ = x[Unknown-4294967295]
 }
 
-const _EnforceIDKeyDigest_name = "UnknownStrictCheckingMAAFallbackWarnOnly"
+const (
+	_EnforceIDKeyDigest_name_0 = "StrictCheckingMAAFallbackWarnOnly"
+	_EnforceIDKeyDigest_name_1 = "Unknown"
+)
 
-var _EnforceIDKeyDigest_index = [...]uint8{0, 7, 21, 32, 40}
+var (
+	_EnforceIDKeyDigest_index_0 = [...]uint8{0, 14, 25, 33}
+)
 
 func (i EnforceIDKeyDigest) String() string {
-	if i >= EnforceIDKeyDigest(len(_EnforceIDKeyDigest_index)-1) {
+	switch {
+	case i <= 2:
+		return _EnforceIDKeyDigest_name_0[_EnforceIDKeyDigest_index_0[i]:_EnforceIDKeyDigest_index_0[i+1]]
+	case i == 4294967295:
+		return _EnforceIDKeyDigest_name_1
+	default:
 		return "EnforceIDKeyDigest(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _EnforceIDKeyDigest_name[_EnforceIDKeyDigest_index[i]:_EnforceIDKeyDigest_index[i+1]]
 }
