@@ -25,7 +25,7 @@ func TestRollbackTerraform(t *testing.T) {
 			tfClient: &stubTerraformClient{},
 		},
 		"destroy cluster error": {
-			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			tfClient: &stubTerraformClient{destroyResourcesErr: someErr},
 			wantErr:  true,
 		},
 		"clean up workspace error": {
@@ -51,7 +51,7 @@ func TestRollbackTerraform(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			assert.True(tc.tfClient.destroyClusterCalled)
+			assert.True(tc.tfClient.destroyResourcesCalled)
 			assert.True(tc.tfClient.cleanUpWorkspaceCalled)
 		})
 	}
@@ -78,7 +78,7 @@ func TestRollbackQEMU(t *testing.T) {
 		},
 		"destroy cluster error": {
 			libvirt:  &stubLibvirtRunner{stopErr: someErr},
-			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			tfClient: &stubTerraformClient{destroyResourcesErr: someErr},
 			wantErr:  true,
 		},
 		"clean up workspace error": {
@@ -109,9 +109,9 @@ func TestRollbackQEMU(t *testing.T) {
 			assert.NoError(err)
 			assert.True(tc.libvirt.stopCalled)
 			if tc.createdWorkspace {
-				assert.True(tc.tfClient.destroyClusterCalled)
+				assert.True(tc.tfClient.destroyResourcesCalled)
 			} else {
-				assert.False(tc.tfClient.destroyClusterCalled)
+				assert.False(tc.tfClient.destroyResourcesCalled)
 			}
 			assert.True(tc.tfClient.cleanUpWorkspaceCalled)
 		})

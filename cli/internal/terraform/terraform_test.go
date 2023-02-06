@@ -660,7 +660,7 @@ func TestDestroyInstances(t *testing.T) {
 				tf: tc.tf,
 			}
 
-			err := c.DestroyCluster(context.Background())
+			err := c.DestroyResources(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return

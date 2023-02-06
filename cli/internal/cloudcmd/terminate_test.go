@@ -33,7 +33,7 @@ func TestTerminator(t *testing.T) {
 			wantErr:        true,
 		},
 		"destroy cluster error": {
-			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			tfClient: &stubTerraformClient{destroyResourcesErr: someErr},
 			libvirt:  &stubLibvirtRunner{},
 			wantErr:  true,
 		},
@@ -70,7 +70,7 @@ func TestTerminator(t *testing.T) {
 			}
 			assert.NoError(err)
 			cl := tc.tfClient.(*stubTerraformClient)
-			assert.True(cl.destroyClusterCalled)
+			assert.True(cl.destroyResourcesCalled)
 			assert.True(cl.removeInstallerCalled)
 			assert.True(tc.libvirt.stopCalled)
 		})
