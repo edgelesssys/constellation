@@ -39,4 +39,4 @@ runs:
         # TODO: type should be auto-discovered after issue is resolved:
         # https://github.com/sigstore/cosign/issues/2264
         cosign verify-attestation ${{ inputs.containerReference }} --type 'https://cyclonedx.org/bom' --key env://COSIGN_PUBLIC_KEY
-        grype ${{ inputs.containerReference }} --fail-on high --only-fixed
+        grype ${{ inputs.containerReference }} --fail-on high --only-fixed --add-cpes-if-none
