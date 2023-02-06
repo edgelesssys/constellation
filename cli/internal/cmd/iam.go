@@ -353,6 +353,7 @@ func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, ia
 	cmd.Printf("zone:\t\t\t%s\n", flags.aws.zone)
 	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
 	cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 }
 
 func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
@@ -493,11 +494,18 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 }
 
 func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
-	cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
+	cmd.Printf("projectID:\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("region:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("zone:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", constants.GCPServiceAccountKeyFile)
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 }
 
 func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+	conf.Provider.GCP.Project = flags.gcp.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
+	conf.Provider.GCP.Region = flags.gcp.region
+	conf.Provider.GCP.Zone = flags.gcp.zone
 }
 
 func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
