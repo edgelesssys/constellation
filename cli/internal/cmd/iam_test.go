@@ -66,15 +66,18 @@ func TestParseIDFile(t *testing.T) {
 }
 
 func TestIAMCreateAWS(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		for _, f := range existingFiles {
 			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 		}
+		for _, d := range existingDirs {
+			require.NoError(fs.MkdirAll(d, 0o755))
+		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -87,7 +90,7 @@ func TestIAMCreateAWS(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs            func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		setupFs            func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
 		creator            *stubIAMCreator
 		provider           cloudprovider.Provider
 		zoneFlag           string
@@ -96,6 +99,7 @@ func TestIAMCreateAWS(t *testing.T) {
 		generateConfigFlag bool
 		configFlag         string
 		existingFiles      []string
+		existingDirs       []string
 		stdin              string
 		wantAbort          bool
 		wantErr            bool
@@ -151,6 +155,16 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantErr:            true,
 			configFlag:         "custom-config.yaml",
 			existingFiles:      []string{"custom-config.yaml"},
+		},
+		"iam create aws existing terraform dir": {
+			setupFs:      defaultFs,
+			creator:      &stubIAMCreator{id: validIAMIDFile},
+			provider:     cloudprovider.AWS,
+			zoneFlag:     "us-east-2a",
+			prefixFlag:   "test",
+			yesFlag:      true,
+			wantErr:      true,
+			existingDirs: []string{constants.TerraformIAMWorkingDir},
 		},
 		"interactive": {
 			setupFs:    defaultFs,
@@ -242,7 +256,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
@@ -282,15 +296,18 @@ func TestIAMCreateAWS(t *testing.T) {
 }
 
 func TestIAMCreateAzure(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		for _, f := range existingFiles {
 			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 		}
+		for _, d := range existingDirs {
+			require.NoError(fs.MkdirAll(d, 0o755))
+		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -306,7 +323,7 @@ func TestIAMCreateAzure(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		regionFlag           string
@@ -316,6 +333,7 @@ func TestIAMCreateAzure(t *testing.T) {
 		generateConfigFlag   bool
 		configFlag           string
 		existingFiles        []string
+		existingDirs         []string
 		stdin                string
 		wantAbort            bool
 		wantErr              bool
@@ -376,6 +394,17 @@ func TestIAMCreateAzure(t *testing.T) {
 			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
 			wantErr:              true,
+		},
+		"iam create azure existing terraform dir": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			yesFlag:              true,
+			wantErr:              true,
+			existingDirs:         []string{constants.TerraformIAMWorkingDir},
 		},
 		"interactive": {
 			setupFs:              defaultFs,
@@ -465,7 +494,7 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
@@ -508,15 +537,18 @@ func TestIAMCreateAzure(t *testing.T) {
 }
 
 func TestIAMCreateGCP(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		for _, f := range existingFiles {
 			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 		}
+		for _, d := range existingDirs {
+			require.NoError(fs.MkdirAll(d, 0o755))
+		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -534,7 +566,7 @@ func TestIAMCreateGCP(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		zoneFlag             string
@@ -544,6 +576,7 @@ func TestIAMCreateGCP(t *testing.T) {
 		generateConfigFlag   bool
 		configFlag           string
 		existingFiles        []string
+		existingDirs         []string
 		stdin                string
 		wantAbort            bool
 		wantErr              bool
@@ -604,6 +637,18 @@ func TestIAMCreateGCP(t *testing.T) {
 			existingFiles:        []string{"custom-config.yaml"},
 			yesFlag:              true,
 			wantErr:              true,
+		},
+		"iam create gcp existing terraform dir": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.GCP,
+			zoneFlag:             "europe-west1-a",
+			serviceAccountIDFlag: "constell-test",
+			projectIDFlag:        "constell-1234",
+
+			existingDirs: []string{constants.TerraformIAMWorkingDir},
+			yesFlag:      true,
+			wantErr:      true,
 		},
 		"iam create gcp invalid flags": {
 			setupFs:  defaultFs,
@@ -712,7 +757,7 @@ func TestIAMCreateGCP(t *testing.T) {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,

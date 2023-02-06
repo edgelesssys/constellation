@@ -184,6 +184,10 @@ func (c *iamCreator) create(ctx context.Context) error {
 		return err
 	}
 
+	if err := c.checkWorkingDir(); err != nil {
+		return err
+	}
+
 	if !flags.yesFlag {
 		c.cmd.Printf("The following IAM configuration will be created:\n\n")
 		c.providerCreator.printConfirmValues(c.cmd, flags)
@@ -258,6 +262,17 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	}
 
 	return flags, nil
+}
+
+// checkWorkingDir checks if the current working directory already contains a Terraform dir or a Constellation config file.
+func (c *iamCreator) checkWorkingDir() error {
+	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
+		return fmt.Errorf("the current working directory already contains the %s directory. Please run the command in a different directory", constants.TerraformIAMWorkingDir)
+	}
+	if _, err := c.fileHandler.Stat(constants.ConfigFilename); err == nil {
+		return fmt.Errorf("the current working directory already contains the %s file. Please run the command in a different directory", constants.ConfigFilename)
+	}
+	return nil
 }
 
 // iamFlags contains the parsed flags of the iam create command, including the parsed flags of the selected cloud provider.
