@@ -32,9 +32,9 @@ type stubTerraformClient struct {
 	uid                    string
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
-	destroyResourcesCalled bool
+	destroyCalled          bool
 	createClusterErr       error
-	destroyResourcesErr    error
+	destroyErr             error
 	prepareWorkspaceErr    error
 	cleanUpWorkspaceErr    error
 	iamOutputErr           error
@@ -56,9 +56,9 @@ func (c *stubTerraformClient) PrepareWorkspace(path string, input terraform.Vari
 	return c.prepareWorkspaceErr
 }
 
-func (c *stubTerraformClient) DestroyResources(ctx context.Context) error {
-	c.destroyResourcesCalled = true
-	return c.destroyResourcesErr
+func (c *stubTerraformClient) Destroy(ctx context.Context) error {
+	c.destroyCalled = true
+	return c.destroyErr
 }
 
 func (c *stubTerraformClient) CleanUpWorkspace() error {
