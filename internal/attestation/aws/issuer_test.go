@@ -91,7 +91,7 @@ func TestGetInstanceInfo(t *testing.T) {
 			instanceInfoFunc := getInstanceInfo(&tc.client)
 			assert.NotNil(instanceInfoFunc)
 
-			info, err := instanceInfoFunc(tpm)
+			info, err := instanceInfoFunc(tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 				assert.Nil(info)

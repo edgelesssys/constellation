@@ -35,7 +35,7 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 }
 
 // unconditionalTrust returns the given public key as the trusted attestation key.
-func unconditionalTrust(akPub, _ []byte) (crypto.PublicKey, error) {
+func unconditionalTrust(akPub, _, _ []byte) (crypto.PublicKey, error) {
 	pubArea, err := tpm2.DecodePublic(akPub)
 	if err != nil {
 		return nil, err

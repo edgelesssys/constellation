@@ -40,7 +40,7 @@ func TestGeTrustedKey(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			out, err := getTrustedKey(tc.attDoc, tc.nonce)
+			out, err := getTrustedKey(tc.attDoc, tc.nonce, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

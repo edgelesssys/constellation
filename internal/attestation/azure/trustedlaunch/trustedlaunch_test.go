@@ -183,7 +183,7 @@ func TestGetAttestationCert(t *testing.T) {
 			issuer := NewIssuer(logger.NewTest(t))
 			issuer.hClient = newTestClient(tc.crlServer)
 
-			certs, err := issuer.getAttestationCert(tpm)
+			certs, err := issuer.getAttestationCert(tpm, nil)
 			if tc.wantIssueErr {
 				assert.Error(err)
 				return
@@ -197,7 +197,7 @@ func TestGetAttestationCert(t *testing.T) {
 			roots.AddCert(cert)
 			validator.roots = roots
 
-			key, err := validator.verifyAttestationKey(akPub, certs)
+			key, err := validator.verifyAttestationKey(akPub, certs, nil)
 			if tc.wantValidateErr {
 				assert.Error(err)
 				return

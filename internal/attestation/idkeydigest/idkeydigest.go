@@ -25,16 +25,16 @@ type EnforceIDKeyDigest uint32
 
 // TODO: Decide on final value naming.
 const (
-	// Unknown is default value for EnforceIDKeyDigest.
-	Unknown EnforceIDKeyDigest = iota
 	// StrictChecking will return an error if the ID key digest is not found in the expected list.
-	StrictChecking
-	// MAAFallback attempts to verify the attestation using Microsoft Azure Attesttation (MAA),
+	StrictChecking EnforceIDKeyDigest = iota
+	// MAAFallback attempts to verify the attestation using Microsoft Azure Attestation (MAA),
 	// if the ID key digest is not found in the expected list.
 	MAAFallback
 	// WarnOnly logs a warning if the ID key digest is not found in the expected list.
 	// No error is returned.
 	WarnOnly
+	// Unknown is reserved for invalid configurations.
+	Unknown EnforceIDKeyDigest = 0xFFFFFFFF
 )
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

@@ -53,22 +53,29 @@ func GetIDKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 type Issuer struct {
 	oid.AzureSEVSNP
 	*vtpm.Issuer
+
+	imds         imdsAPI
+	reportGetter tpmReportGetter
+	maa          maaTokenCreator
 }
 
 // NewIssuer initializes a new Azure Issuer.
 func NewIssuer(log vtpm.AttestationLogger) *Issuer {
-	imdsAPI := imdsClient{
-		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
+	i := &Issuer{
+		imds: imdsClient{
+			client: &http.Client{Transport: &http.Transport{Proxy: nil}},
+		},
+		reportGetter: &tpmReport{},
+		maa:          &maaClient{},
 	}
 
-	return &Issuer{
-		Issuer: vtpm.NewIssuer(
-			vtpm.OpenVTPM,
-			getAttestationKey,
-			getInstanceInfo(&tpmReport{}, imdsAPI),
-			log,
-		),
-	}
+	i.Issuer = vtpm.NewIssuer(
+		vtpm.OpenVTPM,
+		getAttestationKey,
+		i.getInstanceInfo,
+		log,
+	)
+	return i
 }
 
 // getInstanceInfo loads and returns the SEV-SNP attestation report [1] and the
@@ -76,37 +83,41 @@ func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 // The attestation report is loaded from the TPM, the certificate chain is queried
 // from the cloud metadata API.
 // [1] https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
-func getInstanceInfo(reportGetter tpmReportGetter, imdsapi imdsAPI) func(tpm io.ReadWriteCloser) ([]byte, error) {
-	return func(tpm io.ReadWriteCloser) ([]byte, error) {
-		hclReport, err := reportGetter.get(tpm)
-		if err != nil {
-			return nil, fmt.Errorf("reading report from TPM: %w", err)
-		}
-		if len(hclReport) < lenHclHeader+lenSnpReport+lenSnpReportRuntimeDataPadding {
-			return nil, fmt.Errorf("report read from TPM is shorter then expected: %x", hclReport)
-		}
-		hclReport = hclReport[lenHclHeader:]
-
-		runtimeData, _, _ := bytes.Cut(hclReport[lenSnpReport+lenSnpReportRuntimeDataPadding:], []byte{0})
-
-		vcekResponse, err := imdsapi.getVcek(context.TODO())
-		if err != nil {
-			return nil, fmt.Errorf("getVcekFromIMDS: %w", err)
-		}
-
-		instanceInfo := azureInstanceInfo{
-			Vcek:              []byte(vcekResponse.VcekCert),
-			CertChain:         []byte(vcekResponse.CertificateChain),
-			AttestationReport: hclReport[:0x4a0],
-			RuntimeData:       runtimeData,
-		}
-		statement, err := json.Marshal(instanceInfo)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling AzureInstanceInfo: %w", err)
-		}
-
-		return statement, nil
+func (i *Issuer) getInstanceInfo(tpm io.ReadWriteCloser, userData []byte) ([]byte, error) {
+	hclReport, err := i.reportGetter.get(tpm)
+	if err != nil {
+		return nil, fmt.Errorf("reading report from TPM: %w", err)
 	}
+	if len(hclReport) < lenHclHeader+lenSnpReport+lenSnpReportRuntimeDataPadding {
+		return nil, fmt.Errorf("report read from TPM is shorter then expected: %x", hclReport)
+	}
+	hclReport = hclReport[lenHclHeader:]
+
+	runtimeData, _, _ := bytes.Cut(hclReport[lenSnpReport+lenSnpReportRuntimeDataPadding:], []byte{0})
+
+	vcekResponse, err := i.imds.getVcek(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf("retrieving VCEK certificate from IMDS API: %w", err)
+	}
+
+	maaToken, err := i.maa.createToken(context.TODO(), userData)
+	if err != nil {
+		return nil, fmt.Errorf("creating MAA token: %w", err)
+	}
+
+	instanceInfo := azureInstanceInfo{
+		Vcek:              []byte(vcekResponse.VcekCert),
+		CertChain:         []byte(vcekResponse.CertificateChain),
+		AttestationReport: hclReport[:0x4a0],
+		RuntimeData:       runtimeData,
+		MAAToken:          maaToken,
+	}
+	statement, err := json.Marshal(instanceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling AzureInstanceInfo: %w", err)
+	}
+
+	return statement, nil
 }
 
 // getAttestationKey reads the attestation key put into the TPM during early boot.
@@ -131,4 +142,8 @@ type tpmReportGetter interface {
 
 type imdsAPI interface {
 	getVcek(ctx context.Context) (vcekResponse, error)
+}
+
+type maaTokenCreator interface {
+	createToken(context.Context, []byte) (string, error)
 }

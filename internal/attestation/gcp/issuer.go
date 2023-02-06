@@ -37,12 +37,12 @@ func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 }
 
 // getGCEInstanceInfo fetches VM metadata used for attestation.
-func getGCEInstanceInfo(client gcpMetadataClient) func(io.ReadWriteCloser) ([]byte, error) {
+func getGCEInstanceInfo(client gcpMetadataClient) func(io.ReadWriteCloser, []byte) ([]byte, error) {
 	// Ideally we would want to use the endorsement public key certificate
 	// However, this is not available on GCE instances
 	// Workaround: Provide ShieldedVM instance info
 	// The attestating party can request the VMs signing key using Google's API
-	return func(io.ReadWriteCloser) ([]byte, error) {
+	return func(io.ReadWriteCloser, []byte) ([]byte, error) {
 		projectID, err := client.projectID()
 		if err != nil {
 			return nil, errors.New("unable to fetch projectID")

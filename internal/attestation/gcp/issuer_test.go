@@ -65,7 +65,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 			require := require.New(t)
 			var tpm io.ReadWriteCloser
 
-			out, err := getGCEInstanceInfo(tc.client)(tpm)
+			out, err := getGCEInstanceInfo(tc.client)(tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

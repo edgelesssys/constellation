@@ -64,8 +64,10 @@ func newInstanceClient(ctx context.Context, opts ...option.ClientOption) (gcpRes
 
 // trustedKeyFromGCEAPI queries the GCE API for a shieldedVM's public signing key.
 // This key can be used to verify attestation statements issued by the VM.
-func trustedKeyFromGCEAPI(getClient func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error)) func(akPub []byte, instanceInfoRaw []byte) (crypto.PublicKey, error) {
-	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func trustedKeyFromGCEAPI(
+	getClient func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error),
+) func(akPub, instanceInfoRaw, _ []byte) (crypto.PublicKey, error) {
+	return func(akPub, instanceInfoRaw, _ []byte) (crypto.PublicKey, error) {
 		var instanceInfo attest.GCEInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
 			return nil, err

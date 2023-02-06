@@ -44,7 +44,7 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 
 // getTrustedKeys return the public area of the provides attestation key.
 // Normally, here the trust of this key should be verified, but currently AWS does not provide this feature.
-func getTrustedKey(akPub []byte, _ []byte) (crypto.PublicKey, error) {
+func getTrustedKey(akPub, _, _ []byte) (crypto.PublicKey, error) {
 	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
 	pubArea, err := tpm2.DecodePublic(akPub)
 	if err != nil {

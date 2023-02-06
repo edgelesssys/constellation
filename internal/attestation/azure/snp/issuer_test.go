@@ -67,7 +67,13 @@ func TestGetSNPAttestation(t *testing.T) {
 				err:        nil,
 			}
 
-			attestationJSON, err := getInstanceInfo(&snpAttestationReport, imdsClient)(tpm)
+			issuer := Issuer{
+				imds:         imdsClient,
+				reportGetter: &snpAttestationReport,
+				maa:          &stubMaaTokenCreator{},
+			}
+
+			attestationJSON, err := issuer.getInstanceInfo(tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -152,4 +158,13 @@ func (s *stubTpmReport) get(_ io.ReadWriteCloser) ([]byte, error) {
 		return nil, s.err
 	}
 	return s.tpmContent, nil
+}
+
+type stubMaaTokenCreator struct {
+	token string
+	err   error
+}
+
+func (s *stubMaaTokenCreator) createToken(context.Context, []byte) (string, error) {
+	return s.token, s.err
 }
