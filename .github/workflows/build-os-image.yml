@@ -589,7 +589,7 @@ jobs:
           case ${{ matrix.csp }} in
             aws)
               yq e '.csp = "AWS" |
-                .image = "${{ inputs.imageVersion }}" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
                 .measurements.0.warnOnly = true |
                 .measurements.0.expected = "737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12" |
                 .measurements.2.warnOnly = true |
@@ -615,7 +615,7 @@ jobs:
             ;;
             azure)
               yq e '.csp = "Azure" |
-                .image = "${{ inputs.imageVersion }}" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
                 .measurements.1.warnOnly = true |
                 .measurements.1.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
                 .measurements.2.warnOnly = true |
@@ -639,7 +639,7 @@ jobs:
             ;;
             gcp)
               yq e '.csp = "GCP" |
-                .image = "${{ inputs.imageVersion }}" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
                 .measurements.0.warnOnly = false |
                 .measurements.0.expected = "0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf" |
                 .measurements.1.warnOnly = true |
@@ -669,7 +669,7 @@ jobs:
             ;;
             qemu)
               yq e '.csp = "QEMU" |
-                .image = "${{ inputs.imageVersion }}" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
                 .measurements.4.warnOnly = false |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
