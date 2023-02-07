@@ -75,9 +75,8 @@ The following HTTP endpoints are available:
   - [`info.json` returns the lookup table for the given image version.](#image-lookup-table)
   - `sbom.<format>.json` contains SBOM files for the given image version. The exact formats and file names are TBD.
 - `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/csp/<csp>/` contains files with measurements and signatures for the given image version and CSP.
-  - `measurements.json` contains the final measurements for the given image version and CSP.
+  - `measurements.json` contains the measurements for the given image version and CSP.
   - `measurements.json.sig` returns the signature of the measurements file.
-  - `measurements.image.json` returns the measurements generated statically from the image.
   - `image.raw` returns the raw image for the given image version and CSP.
 
 
