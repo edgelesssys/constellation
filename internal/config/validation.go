@@ -47,6 +47,10 @@ func (e *ValidationError) LongMessage() string {
 	return msg
 }
 
+func (e *ValidationError) messagesCount() int {
+	return len(e.validationErrMsgs)
+}
+
 func registerInvalidK8sVersionError(ut ut.Translator) error {
 	return ut.Add("supported_k8s_version", "{0} specifies an unsupported Kubernetes version. {1}", true)
 }

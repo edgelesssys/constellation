@@ -152,8 +152,6 @@ func deleteSingleVersion(ctx context.Context, clients rmImageClients, ver versio
 }
 
 func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun bool, log *logger.Logger) error {
-	var retErr error
-
 	var vers []versionsapi.Version
 	for _, stream := range []string{"nightly", "console", "debug"} {
 		log.Infof("Listing versions of stream %s", stream)
@@ -178,6 +176,8 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 		vers = append(vers, patchVersions...)
 	}
 	log.Infof("Found %d versions to delete", len(vers))
+
+	var retErr error
 
 	for _, ver := range vers {
 		if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
