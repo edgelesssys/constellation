@@ -116,9 +116,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 		}
 		// continue on error to allow other units to be overridden
 		err = s.serviceManager.OverrideServiceUnitExecStart(stream.Context(), file.OverrideServiceUnit, file.TargetPath)
-		if err != nil {
-			overrideUnitErr = errors.Join(overrideUnitErr, err)
-		}
+		overrideUnitErr = errors.Join(overrideUnitErr, err)
 	}
 
 	if overrideUnitErr != nil {

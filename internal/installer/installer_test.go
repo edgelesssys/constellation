@@ -735,14 +735,10 @@ func (w *tarGzWriter) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
-func (w *tarGzWriter) Close() (result error) {
-	if err := w.tarWriter.Close(); err != nil {
-		result = errors.Join(result, err)
-	}
-	if err := w.gzWriter.Close(); err != nil {
-		result = errors.Join(result, err)
-	}
-	return result
+func (w *tarGzWriter) Close() (retErr error) {
+	retErr = errors.Join(retErr, w.tarWriter.Close())
+	retErr = errors.Join(retErr, w.gzWriter.Close())
+	return retErr
 }
 
 func stringPtr(s string) *string {

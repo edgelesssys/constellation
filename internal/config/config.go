@@ -580,13 +580,13 @@ func (c *Config) Validate(force bool) error {
 		return nil
 	}
 
-	var errs validator.ValidationErrors
-	if !errors.As(err, &errs) {
+	var validationErrs validator.ValidationErrors
+	if !errors.As(err, &validationErrs) {
 		return err
 	}
 
 	var validationErrMsgs []string
-	for _, e := range errs {
+	for _, e := range validationErrs {
 		validationErrMsgs = append(validationErrMsgs, e.Translate(trans))
 	}
 

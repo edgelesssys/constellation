@@ -184,13 +184,19 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
+	const defaultErrCount = 21 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const azErrCount = 9
+	const gcpErrCount = 6
+
 	testCases := map[string]struct {
-		cnf     *Config
-		wantErr bool
+		cnf          *Config
+		wantErr      bool
+		wantErrCount int
 	}{
 		"default config is not valid": {
-			cnf:     Default(),
-			wantErr: true,
+			cnf:          Default(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount,
 		},
 		"v0 is one error": {
 			cnf: func() *Config {
@@ -198,7 +204,8 @@ func TestValidate(t *testing.T) {
 				cnf.Version = "v0"
 				return cnf
 			}(),
-			wantErr: true,
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 1,
 		},
 		"v0 and negative state disk are two errors": {
 			cnf: func() *Config {
@@ -207,7 +214,8 @@ func TestValidate(t *testing.T) {
 				cnf.StateDiskSizeGB = -1
 				return cnf
 			}(),
-			wantErr: true,
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 2,
 		},
 		"default Azure config is not valid": {
 			cnf: func() *Config {
@@ -217,7 +225,8 @@ func TestValidate(t *testing.T) {
 				cnf.Provider.Azure = az
 				return cnf
 			}(),
-			wantErr: true,
+			wantErr:      true,
+			wantErrCount: azErrCount,
 		},
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
@@ -245,7 +254,8 @@ func TestValidate(t *testing.T) {
 				cnf.Provider.GCP = gcp
 				return cnf
 			}(),
-			wantErr: true,
+			wantErr:      true,
+			wantErrCount: gcpErrCount,
 		},
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
@@ -287,10 +297,15 @@ func TestValidate(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			err := tc.cnf.Validate(false)
+
 			if tc.wantErr {
 				assert.Error(err)
+				var valErr *ValidationError
+				require.ErrorAs(err, &valErr)
+				assert.Equal(tc.wantErrCount, valErr.messagesCount())
 				return
 			}
 			assert.NoError(err)

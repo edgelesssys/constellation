@@ -38,12 +38,10 @@ type rollbackerTerraform struct {
 }
 
 func (r *rollbackerTerraform) rollback(ctx context.Context) error {
-	var err error
-	err = errors.Join(err, r.client.Destroy(ctx))
-	if err == nil {
-		err = errors.Join(err, r.client.CleanUpWorkspace())
+	if err := r.client.Destroy(ctx); err != nil {
+		return err
 	}
-	return err
+	return r.client.CleanUpWorkspace()
 }
 
 type rollbackerQEMU struct {
@@ -52,14 +50,12 @@ type rollbackerQEMU struct {
 	createdWorkspace bool
 }
 
-func (r *rollbackerQEMU) rollback(ctx context.Context) error {
-	var err error
+func (r *rollbackerQEMU) rollback(ctx context.Context) (retErr error) {
 	if r.createdWorkspace {
-		err = errors.Join(err, r.client.Destroy(ctx))
+		retErr = r.client.Destroy(ctx)
 	}
-	err = errors.Join(err, r.libvirt.Stop(ctx))
-	if err == nil {
-		err = r.client.CleanUpWorkspace()
+	if retErr := errors.Join(retErr, r.libvirt.Stop(ctx)); retErr != nil {
+		return retErr
 	}
-	return err
+	return r.client.CleanUpWorkspace()
 }

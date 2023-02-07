@@ -35,7 +35,7 @@ type libvirtInstance struct {
 	imagePath string
 }
 
-func (l *libvirtInstance) uploadBaseImage(baseVolume *libvirt.StorageVol) (err error) {
+func (l *libvirtInstance) uploadBaseImage(baseVolume *libvirt.StorageVol) (retErr error) {
 	stream, err := l.conn.NewStream(libvirt.STREAM_NONBLOCK)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (l *libvirtInstance) uploadBaseImage(baseVolume *libvirt.StorageVol) (err e
 		return fmt.Errorf("error while opening %s: %s", l.imagePath, err)
 	}
 	defer func() {
-		err = errors.Join(err, file.Close())
+		retErr = errors.Join(err, file.Close())
 	}()
 
 	fi, err := file.Stat()
@@ -282,7 +282,7 @@ func (l *libvirtInstance) deleteLibvirtInstance() error {
 	return err
 }
 
-func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, err error) {
+func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, retErr error) {
 	// sanity check
 	if err := l.deleteLibvirtInstance(); err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, err
 		}
 	}()
 	defer func() {
-		err = errors.Join(err, l.deleteLibvirtInstance())
+		retErr = errors.Join(retErr, l.deleteLibvirtInstance())
 	}()
 	if err := l.createLibvirtInstance(); err != nil {
 		return nil, err

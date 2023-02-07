@@ -76,14 +76,14 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 
 	cmd.Println("Your Constellation cluster was terminated successfully.")
 
-	var retErr error
+	var removeErr error
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
 	}
 
 	if err := fileHandler.Remove(constants.ClusterIDsFileName); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
 	}
 
-	return retErr
+	return removeErr
 }
