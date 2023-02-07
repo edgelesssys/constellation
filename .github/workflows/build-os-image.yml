@@ -611,7 +611,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                ${OUTFLAGS} ${PCRFILE}
+                "${OUTFLAGS}" "${PCRFILE}"
             ;;
             azure)
               yq e '.csp = "Azure" |
@@ -635,7 +635,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                ${OUTFLAGS} ${PCRFILE}
+                "${OUTFLAGS}" "${PCRFILE}"
             ;;
             gcp)
               yq e '.csp = "GCP" |
@@ -665,7 +665,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                ${OUTFLAGS} ${PCRFILE}
+                "${OUTFLAGS}" "${PCRFILE}"
             ;;
             qemu)
               yq e '.csp = "QEMU" |
@@ -677,7 +677,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.15.warnOnly = false' \
-                ${OUTFLAGS} ${PCRFILE}
+                "${OUTFLAGS}" "${PCRFILE}"
             ;;
             *)
               echo "Unknown CSP: ${{ matrix.csp }}"
