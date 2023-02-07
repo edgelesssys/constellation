@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"go.uber.org/multierr"
 )
 
 func TestMain(m *testing.M) {
@@ -185,19 +184,13 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 21 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-	const azErrCount = 9
-	const gcpErrCount = 6
-
 	testCases := map[string]struct {
-		cnf          *Config
-		wantErr      bool
-		wantErrCount int
+		cnf     *Config
+		wantErr bool
 	}{
 		"default config is not valid": {
-			cnf:          Default(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount,
+			cnf:     Default(),
+			wantErr: true,
 		},
 		"v0 is one error": {
 			cnf: func() *Config {
@@ -205,8 +198,7 @@ func TestValidate(t *testing.T) {
 				cnf.Version = "v0"
 				return cnf
 			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount + 1,
+			wantErr: true,
 		},
 		"v0 and negative state disk are two errors": {
 			cnf: func() *Config {
@@ -215,8 +207,7 @@ func TestValidate(t *testing.T) {
 				cnf.StateDiskSizeGB = -1
 				return cnf
 			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount + 2,
+			wantErr: true,
 		},
 		"default Azure config is not valid": {
 			cnf: func() *Config {
@@ -226,8 +217,7 @@ func TestValidate(t *testing.T) {
 				cnf.Provider.Azure = az
 				return cnf
 			}(),
-			wantErr:      true,
-			wantErrCount: azErrCount,
+			wantErr: true,
 		},
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
@@ -255,8 +245,7 @@ func TestValidate(t *testing.T) {
 				cnf.Provider.GCP = gcp
 				return cnf
 			}(),
-			wantErr:      true,
-			wantErrCount: gcpErrCount,
+			wantErr: true,
 		},
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
@@ -302,7 +291,6 @@ func TestValidate(t *testing.T) {
 			err := tc.cnf.Validate(false)
 			if tc.wantErr {
 				assert.Error(err)
-				assert.Len(multierr.Errors(err), tc.wantErrCount)
 				return
 			}
 			assert.NoError(err)

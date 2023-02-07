@@ -36,7 +36,6 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.uber.org/multierr"
 )
 
 // Measurements is a required alias since docgen is not able to work with
@@ -586,12 +585,10 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	var validationErrors error
+	var validationErrMsgs []string
 	for _, e := range errs {
-		validationErrors = multierr.Append(
-			validationErrors,
-			errors.New(e.Translate(trans)),
-		)
+		validationErrMsgs = append(validationErrMsgs, e.Translate(trans))
 	}
-	return validationErrors
+
+	return &ValidationError{validationErrMsgs: validationErrMsgs}
 }

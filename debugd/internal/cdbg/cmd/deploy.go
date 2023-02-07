@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -68,8 +69,12 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	streamer := streamer.New(fs)
 	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
 	constellationConfig, err := config.New(fileHandler, configName, force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
 	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+		return err
 	}
 
 	return deploy(cmd, fileHandler, constellationConfig, transfer, log)

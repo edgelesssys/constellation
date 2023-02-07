@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -64,19 +63,19 @@ func (v Version) ShortPath() string {
 func (v Version) Validate() error {
 	var retErr error
 	if err := ValidateRef(v.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(v.Ref, v.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if !semver.IsValid(v.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semantic version", v.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semantic version", v.Version))
 	}
 	if semver.Canonical(v.Version) != v.Version {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a canonical semantic version", v.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a canonical semantic version", v.Version))
 	}
 	if v.Kind == VersionKindUnknown {
-		retErr = multierr.Append(retErr, errors.New("version kind is unknown"))
+		retErr = errors.Join(retErr, errors.New("version kind is unknown"))
 	}
 	return retErr
 }

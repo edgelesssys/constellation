@@ -127,8 +127,12 @@ type upgradeCheckCmd struct {
 // upgradePlan plans an upgrade of a Constellation cluster.
 func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, flags upgradeCheckFlags) error {
 	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
 	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+		return err
 	}
 	u.log.Debugf("Read configuration from %q", flags.configPath)
 	// get current image version of the cluster

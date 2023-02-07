@@ -24,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
 )
 
 // Validator validates Platform Configuration Registers (PCRs).
@@ -84,10 +83,7 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 		hexErr := err
 		decoded, err = base64.StdEncoding.DecodeString(encoded)
 		if err != nil {
-			return multierr.Append(
-				fmt.Errorf("input [%s] is not hex encoded: %w", encoded, hexErr),
-				fmt.Errorf("input [%s] is not base64 encoded: %w", encoded, err),
-			)
+			return fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
 		}
 	}
 	// new_pcr_value := hash(old_pcr_value || data_to_extend)

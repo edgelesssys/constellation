@@ -43,7 +43,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -167,17 +166,17 @@ func (c *Client) DeleteVersion(ctx context.Context, ver versionsapi.Version) err
 	c.log.Debugf("Deleting version %s from minor version list", ver.Version)
 	possibleNewLatest, err := c.deleteVersionFromMinorVersionList(ctx, ver)
 	if err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("removing from minor version list: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("removing from minor version list: %w", err))
 	}
 
 	c.log.Debugf("Checking latest version for %s", ver.Version)
 	if err := c.deleteVersionFromLatest(ctx, ver, possibleNewLatest); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("updating latest version: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
 	c.log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(), ver.Version)
 	if err := c.deletePath(ctx, ver.ArtifactPath()); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("deleting artifact path: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("deleting artifact path: %w", err))
 	}
 
 	return retErr

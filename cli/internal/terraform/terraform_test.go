@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 )
 
 func TestPrepareCluster(t *testing.T) {
@@ -682,10 +681,13 @@ func TestCleanupWorkspace(t *testing.T) {
 		"files are cleaned up": {
 			provider: cloudprovider.QEMU,
 			prepareFS: func(f file.Handler) error {
-				var err error
-				err = multierr.Append(err, f.Write("terraform.tfvars", someContent))
-				err = multierr.Append(err, f.Write("terraform.tfstate", someContent))
-				return multierr.Append(err, f.Write("terraform.tfstate.backup", someContent))
+				if err := f.Write("terraform.tfvars", someContent); err != nil {
+					return err
+				}
+				if err := f.Write("terraform.tfstate", someContent); err != nil {
+					return err
+				}
+				return f.Write("terraform.tfstate.backup", someContent)
 			},
 		},
 		"no error if files do not exist": {

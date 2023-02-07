@@ -21,7 +21,6 @@ import (
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -116,14 +115,9 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 			continue
 		}
 		// continue on error to allow other units to be overridden
-		// TODO: switch to native go multierror once 1.20 is released
-		// err = s.serviceManager.OverrideServiceUnitExecStart(stream.Context(), file.OverrideServiceUnit, file.TargetPath)
-		// if err != nil {
-		// 	overrideUnitErr = errors.Join(overrideUnitErr, err)
-		// }
 		err = s.serviceManager.OverrideServiceUnitExecStart(stream.Context(), file.OverrideServiceUnit, file.TargetPath)
 		if err != nil {
-			overrideUnitErr = multierr.Append(overrideUnitErr, err)
+			overrideUnitErr = errors.Join(overrideUnitErr, err)
 		}
 	}
 

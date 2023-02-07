@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -18,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/hack/image-measurement/server"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v3"
@@ -46,7 +46,7 @@ func (l *libvirtInstance) uploadBaseImage(baseVolume *libvirt.StorageVol) (err e
 		return fmt.Errorf("error while opening %s: %s", l.imagePath, err)
 	}
 	defer func() {
-		err = multierr.Append(err, file.Close())
+		err = errors.Join(err, file.Close())
 	}()
 
 	fi, err := file.Stat()
@@ -276,9 +276,9 @@ func (l *libvirtInstance) deletePool() error {
 
 func (l *libvirtInstance) deleteLibvirtInstance() error {
 	var err error
-	err = multierr.Append(err, l.deleteNetwork())
-	err = multierr.Append(err, l.deleteDomain())
-	err = multierr.Append(err, l.deletePool())
+	err = errors.Join(err, l.deleteNetwork())
+	err = errors.Join(err, l.deleteDomain())
+	err = errors.Join(err, l.deletePool())
 	return err
 }
 
@@ -295,7 +295,7 @@ func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, err
 		}
 	}()
 	defer func() {
-		err = multierr.Append(err, l.deleteLibvirtInstance())
+		err = errors.Join(err, l.deleteLibvirtInstance())
 	}()
 	if err := l.createLibvirtInstance(); err != nil {
 		return nil, err

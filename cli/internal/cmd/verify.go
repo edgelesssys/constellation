@@ -76,8 +76,12 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 
 	v.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
 	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+		return err
 	}
 
 	provider := conf.GetProvider()

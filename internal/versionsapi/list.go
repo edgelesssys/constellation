@@ -7,12 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package versionsapi
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -66,19 +66,19 @@ func (l List) URL() (string, error) {
 func (l List) ValidateRequest() error {
 	var retErr error
 	if err := ValidateRef(l.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(l.Ref, l.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if l.Granularity != GranularityMajor && l.Granularity != GranularityMinor {
-		retErr = multierr.Append(retErr, fmt.Errorf("granularity %q is not supported", l.Granularity))
+		retErr = errors.Join(retErr, fmt.Errorf("granularity %q is not supported", l.Granularity))
 	}
 	if l.Kind != VersionKindImage {
-		retErr = multierr.Append(retErr, fmt.Errorf("kind %q is not supported", l.Kind))
+		retErr = errors.Join(retErr, fmt.Errorf("kind %q is not supported", l.Kind))
 	}
 	if !semver.IsValid(l.Base) {
-		retErr = multierr.Append(retErr, fmt.Errorf("base version %q is not a valid semantic version", l.Base))
+		retErr = errors.Join(retErr, fmt.Errorf("base version %q is not a valid semantic version", l.Base))
 	}
 	var normalizeFunc func(string) string
 	switch l.Granularity {
@@ -90,10 +90,10 @@ func (l List) ValidateRequest() error {
 		normalizeFunc = func(s string) string { return s }
 	}
 	if normalizeFunc(l.Base) != l.Base {
-		retErr = multierr.Append(retErr, fmt.Errorf("base version %q does not match granularity %q", l.Base, l.Granularity))
+		retErr = errors.Join(retErr, fmt.Errorf("base version %q does not match granularity %q", l.Base, l.Granularity))
 	}
 	if len(l.Versions) != 0 {
-		retErr = multierr.Append(retErr, fmt.Errorf("versions must be empty for request"))
+		retErr = errors.Join(retErr, fmt.Errorf("versions must be empty for request"))
 	}
 	return retErr
 }
@@ -109,19 +109,19 @@ func (l List) ValidateRequest() error {
 func (l List) Validate() error {
 	var retErr error
 	if err := ValidateRef(l.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(l.Ref, l.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if l.Granularity != GranularityMajor && l.Granularity != GranularityMinor {
-		retErr = multierr.Append(retErr, fmt.Errorf("granularity %q is not supported", l.Granularity))
+		retErr = errors.Join(retErr, fmt.Errorf("granularity %q is not supported", l.Granularity))
 	}
 	if l.Kind != VersionKindImage {
-		retErr = multierr.Append(retErr, fmt.Errorf("kind %q is not supported", l.Kind))
+		retErr = errors.Join(retErr, fmt.Errorf("kind %q is not supported", l.Kind))
 	}
 	if !semver.IsValid(l.Base) {
-		retErr = multierr.Append(retErr, fmt.Errorf("base version %q is not a valid semantic version", l.Base))
+		retErr = errors.Join(retErr, fmt.Errorf("base version %q is not a valid semantic version", l.Base))
 	}
 	var normalizeFunc func(string) string
 	switch l.Granularity {
@@ -133,14 +133,14 @@ func (l List) Validate() error {
 		normalizeFunc = func(s string) string { return s }
 	}
 	if normalizeFunc(l.Base) != l.Base {
-		retErr = multierr.Append(retErr, fmt.Errorf("base version %q does not match granularity %q", l.Base, l.Granularity))
+		retErr = errors.Join(retErr, fmt.Errorf("base version %q does not match granularity %q", l.Base, l.Granularity))
 	}
 	for _, ver := range l.Versions {
 		if !semver.IsValid(ver) {
-			retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semantic version", ver))
+			retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semantic version", ver))
 		}
 		if normalizeFunc(ver) != l.Base || normalizeFunc(ver) == ver {
-			retErr = multierr.Append(retErr, fmt.Errorf("version %q is not finer-grained than base version %q", ver, l.Base))
+			retErr = errors.Join(retErr, fmt.Errorf("version %q is not finer-grained than base version %q", ver, l.Base))
 		}
 	}
 

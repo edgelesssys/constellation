@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"io"
 	"io/fs"
 	"net"
@@ -26,7 +27,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 	"google.golang.org/grpc/test/bufconn"
 	testclock "k8s.io/utils/clock/testing"
 )
@@ -737,10 +737,10 @@ func (w *tarGzWriter) Bytes() []byte {
 
 func (w *tarGzWriter) Close() (result error) {
 	if err := w.tarWriter.Close(); err != nil {
-		result = multierr.Append(result, err)
+		result = errors.Join(result, err)
 	}
 	if err := w.gzWriter.Close(); err != nil {
-		result = multierr.Append(result, err)
+		result = errors.Join(result, err)
 	}
 	return result
 }

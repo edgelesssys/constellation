@@ -8,12 +8,12 @@ package client
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/spf13/afero"
-	"go.uber.org/multierr"
 )
 
 // Client is a client for the Google Compute Engine.
@@ -100,7 +100,7 @@ func closeAll(closers []closer) error {
 	// close operations, even if a previous operation failed.
 	var errs error
 	for _, closer := range closers {
-		errs = multierr.Append(errs, closer.Close())
+		errs = errors.Join(errs, closer.Close())
 	}
 	return errs
 }

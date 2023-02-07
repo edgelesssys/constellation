@@ -74,8 +74,12 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, imageFetcher imageFet
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
 	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+		return err
 	}
 
 	if err := u.handleServiceUpgrade(cmd, conf, flags); err != nil {

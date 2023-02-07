@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,7 +32,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
-	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )
 
@@ -91,7 +91,7 @@ func (m *M) FetchAndVerify(
 	var mWithMetadata WithMetadata
 	if err := json.Unmarshal(measurements, &mWithMetadata); err != nil {
 		if yamlErr := yaml.Unmarshal(measurements, &mWithMetadata); yamlErr != nil {
-			return "", multierr.Append(
+			return "", errors.Join(
 				err,
 				fmt.Errorf("trying yaml format: %w", yamlErr),
 			)
@@ -193,7 +193,7 @@ func (m *Measurement) UnmarshalJSON(b []byte) error {
 		// Unmarshalling failed, Measurement might be a simple string instead of Measurement struct.
 		// These values will always be enforced.
 		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
-			return multierr.Append(
+			return errors.Join(
 				err,
 				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)
@@ -222,7 +222,7 @@ func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
 		// Unmarshalling failed, Measurement might be a simple string instead of Measurement struct.
 		// These values will always be enforced.
 		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
-			return multierr.Append(
+			return errors.Join(
 				err,
 				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)
@@ -252,7 +252,7 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		hexErr := err
 		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
 		if err != nil {
-			return multierr.Append(
+			return errors.Join(
 				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
 				fmt.Errorf("not a base64 string: %w", err),
 			)
