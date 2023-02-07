@@ -206,7 +206,7 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	// Other errors will not be retried.
 	newCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	if err :=  retrier.Do(newCtx); err != nil {
+	if err := retrier.Do(newCtx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
 	}
 	return nil
