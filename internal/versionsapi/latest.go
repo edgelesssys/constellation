@@ -7,12 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package versionsapi
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -54,16 +54,16 @@ func (l Latest) URL() (string, error) {
 func (l Latest) Validate() error {
 	var retErr error
 	if err := ValidateRef(l.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(l.Ref, l.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if l.Kind == VersionKindUnknown {
-		retErr = multierr.Append(retErr, fmt.Errorf("version of kind %q is not supported", l.Kind))
+		retErr = errors.Join(retErr, fmt.Errorf("version of kind %q is not supported", l.Kind))
 	}
 	if !semver.IsValid(l.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semver", l.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", l.Version))
 	}
 
 	return retErr
@@ -73,16 +73,16 @@ func (l Latest) Validate() error {
 func (l Latest) ValidateRequest() error {
 	var retErr error
 	if err := ValidateRef(l.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(l.Ref, l.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if l.Kind == VersionKindUnknown {
-		retErr = multierr.Append(retErr, fmt.Errorf("version of kind %q is not supported", l.Kind))
+		retErr = errors.Join(retErr, fmt.Errorf("version of kind %q is not supported", l.Kind))
 	}
 	if l.Version != "" {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q must be empty for request", l.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q must be empty for request", l.Version))
 	}
 	return retErr
 }

@@ -187,8 +187,12 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 	// check for existing config
 	if configPath != "" {
 		conf, err := config.New(fileHandler, configPath, force)
+		var configValidationErr *config.ValidationError
+		if errors.As(err, &configValidationErr) {
+			cmd.PrintErrln(configValidationErr.LongMessage())
+		}
 		if err != nil {
-			return nil, config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+			return nil, err
 		}
 		if conf.GetProvider() != cloudprovider.QEMU {
 			return nil, errors.New("invalid provider for MiniConstellation cluster")

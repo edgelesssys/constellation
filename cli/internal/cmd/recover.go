@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -80,9 +81,14 @@ func (r *recoverCmd) recover(
 
 	r.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath, flags.force)
-	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
+	if err != nil {
+		return err
+	}
+
 	provider := conf.GetProvider()
 	r.log.Debugf("Got provider %s", provider.String())
 	if provider == cloudprovider.Azure {

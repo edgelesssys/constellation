@@ -8,10 +8,9 @@ package cloudcmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
-
-	"go.uber.org/multierr"
 )
 
 // rollbacker does a rollback.
@@ -28,7 +27,7 @@ func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollba
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
 	if err := roll.rollback(ctx); err != nil {
-		*onErr = multierr.Append(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or return it?
+		*onErr = errors.Join(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or return it?
 		return
 	}
 	fmt.Fprintln(w, "Rollback succeeded.")
@@ -40,9 +39,9 @@ type rollbackerTerraform struct {
 
 func (r *rollbackerTerraform) rollback(ctx context.Context) error {
 	var err error
-	err = multierr.Append(err, r.client.Destroy(ctx))
+	err = errors.Join(err, r.client.Destroy(ctx))
 	if err == nil {
-		err = multierr.Append(err, r.client.CleanUpWorkspace())
+		err = errors.Join(err, r.client.CleanUpWorkspace())
 	}
 	return err
 }
@@ -56,9 +55,9 @@ type rollbackerQEMU struct {
 func (r *rollbackerQEMU) rollback(ctx context.Context) error {
 	var err error
 	if r.createdWorkspace {
-		err = multierr.Append(err, r.client.Destroy(ctx))
+		err = errors.Join(err, r.client.Destroy(ctx))
 	}
-	err = multierr.Append(err, r.libvirt.Stop(ctx))
+	err = errors.Join(err, r.libvirt.Stop(ctx))
 	if err == nil {
 		err = r.client.CleanUpWorkspace()
 	}

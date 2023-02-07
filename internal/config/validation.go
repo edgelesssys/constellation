@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -25,22 +24,27 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
-// DisplayValidationErrors shows all validation errors inside configError as one formatted string.
-func DisplayValidationErrors(errWriter io.Writer, configError error) error {
-	errs := multierr.Errors(configError)
-	if errs != nil {
-		fmt.Fprintln(errWriter, "Problems validating config file:")
-		for _, err := range errs {
-			fmt.Fprintln(errWriter, "\t"+err.Error())
-		}
-		fmt.Fprintln(errWriter, "Fix the invalid entries or generate a new configuration using `constellation config generate`")
-		return errors.New("invalid configuration")
+// ValidationError occurs when the validation of a config fails.
+// It contains a list of errors that occurred during validation.
+type ValidationError struct {
+	validationErrMsgs []string
+}
+
+func (e *ValidationError) Error() string {
+	return "invalid configuration"
+}
+
+// LongMessage prints the errors that occurred during validation in a verbose and user friendly way.
+func (e *ValidationError) LongMessage() string {
+	msg := "Problems validating config file:\n"
+	for _, ve := range e.validationErrMsgs {
+		msg += fmt.Sprintf("\t%s\n", ve)
 	}
-	return nil
+	msg += "Fix the invalid entries or generate a new configuration using `constellation config generate`"
+	return msg
 }
 
 func registerInvalidK8sVersionError(ut ut.Translator) error {

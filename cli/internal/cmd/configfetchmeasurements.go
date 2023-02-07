@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -80,8 +81,12 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
 	if err != nil {
-		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
+		return err
 	}
 
 	if !conf.IsReleaseImage() {

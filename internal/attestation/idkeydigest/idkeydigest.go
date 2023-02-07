@@ -9,10 +9,10 @@ package idkeydigest
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"go.uber.org/multierr"
 )
 
 // IDKeyDigests is a list of trusted digest values for the ID key.
@@ -60,7 +60,7 @@ func (d *IDKeyDigests) UnmarshalYAML(unmarshal func(any) error) error {
 		// Unmarshalling failed, IDKeyDigests might be a simple string instead of IDKeyDigests struct.
 		var unmarshalledString string
 		if legacyErr := unmarshal(&unmarshalledString); legacyErr != nil {
-			return multierr.Append(
+			return errors.Join(
 				err,
 				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)
@@ -89,7 +89,7 @@ func (d *IDKeyDigests) UnmarshalJSON(b []byte) error {
 		// Unmarshalling failed, IDKeyDigests might be a simple string instead of IDKeyDigests struct.
 		var unmarshalledString string
 		if legacyErr := json.Unmarshal(b, &unmarshalledString); legacyErr != nil {
-			return multierr.Append(
+			return errors.Join(
 				err,
 				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)

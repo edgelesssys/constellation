@@ -13,7 +13,6 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -79,11 +78,11 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 
 	var retErr error
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
+		retErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
 	}
 
 	if err := fileHandler.Remove(constants.ClusterIDsFileName); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
+		retErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
 	}
 
 	return retErr

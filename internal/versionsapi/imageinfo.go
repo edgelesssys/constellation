@@ -13,7 +13,6 @@ import (
 	"path"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -62,25 +61,25 @@ func (i ImageInfo) URL() (string, error) {
 func (i ImageInfo) ValidateRequest() error {
 	var retErr error
 	if err := ValidateRef(i.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(i.Ref, i.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if !semver.IsValid(i.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semver", i.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", i.Version))
 	}
 	if len(i.AWS) != 0 {
-		retErr = multierr.Append(retErr, errors.New("AWS map must be empty for request"))
+		retErr = errors.Join(retErr, errors.New("AWS map must be empty for request"))
 	}
 	if len(i.Azure) != 0 {
-		retErr = multierr.Append(retErr, errors.New("Azure map must be empty for request"))
+		retErr = errors.Join(retErr, errors.New("Azure map must be empty for request"))
 	}
 	if len(i.GCP) != 0 {
-		retErr = multierr.Append(retErr, errors.New("GCP map must be empty for request"))
+		retErr = errors.Join(retErr, errors.New("GCP map must be empty for request"))
 	}
 	if len(i.QEMU) != 0 {
-		retErr = multierr.Append(retErr, errors.New("QEMU map must be empty for request"))
+		retErr = errors.Join(retErr, errors.New("QEMU map must be empty for request"))
 	}
 
 	return retErr
@@ -90,25 +89,25 @@ func (i ImageInfo) ValidateRequest() error {
 func (i ImageInfo) Validate() error {
 	var retErr error
 	if err := ValidateRef(i.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(i.Ref, i.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if !semver.IsValid(i.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semver", i.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", i.Version))
 	}
 	if len(i.AWS) == 0 {
-		retErr = multierr.Append(retErr, errors.New("AWS map must not be empty"))
+		retErr = errors.Join(retErr, errors.New("AWS map must not be empty"))
 	}
 	if len(i.Azure) == 0 {
-		retErr = multierr.Append(retErr, errors.New("Azure map must not be empty"))
+		retErr = errors.Join(retErr, errors.New("Azure map must not be empty"))
 	}
 	if len(i.GCP) == 0 {
-		retErr = multierr.Append(retErr, errors.New("GCP map must not be empty"))
+		retErr = errors.Join(retErr, errors.New("GCP map must not be empty"))
 	}
 	if len(i.QEMU) == 0 {
-		retErr = multierr.Append(retErr, errors.New("QEMU map must not be empty"))
+		retErr = errors.Join(retErr, errors.New("QEMU map must not be empty"))
 	}
 
 	return retErr

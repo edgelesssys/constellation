@@ -29,7 +29,6 @@ import (
 	verclient "github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
-	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -141,12 +140,12 @@ func deleteSingleVersion(ctx context.Context, clients rmImageClients, ver versio
 
 	log.Debugf("Deleting images for %s", ver.Version)
 	if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("deleting images: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("deleting images: %w", err))
 	}
 
 	log.Debugf("Deleting version %s from versions API", ver.Version)
 	if err := clients.version.DeleteVersion(ctx, ver); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("deleting version from versions API: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("deleting version from versions API: %w", err))
 	}
 
 	return retErr
@@ -182,13 +181,13 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 
 	for _, ver := range vers {
 		if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
-			retErr = multierr.Append(retErr, fmt.Errorf("deleting images for version %s: %w", ver.Version, err))
+			retErr = errors.Join(retErr, fmt.Errorf("deleting images for version %s: %w", ver.Version, err))
 		}
 	}
 
 	log.Infof("Deleting ref %s from versions API", ref)
 	if err := clients.version.DeleteRef(ctx, ref); err != nil {
-		retErr = multierr.Append(retErr, fmt.Errorf("deleting ref from versions API: %w", err))
+		retErr = errors.Join(retErr, fmt.Errorf("deleting ref from versions API: %w", err))
 	}
 
 	return retErr
@@ -215,21 +214,21 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 	log.Infof("Deleting AWS images from %s", imageInfo.JSONPath())
 	for awsRegion, awsImage := range imageInfo.AWS {
 		if err := clients.aws.deleteImage(ctx, awsImage, awsRegion, dryrun, log); err != nil {
-			retErr = multierr.Append(retErr, fmt.Errorf("deleting AWS image %s: %w", awsImage, err))
+			retErr = errors.Join(retErr, fmt.Errorf("deleting AWS image %s: %w", awsImage, err))
 		}
 	}
 
 	log.Infof("Deleting GCP images from %s", imageInfo.JSONPath())
 	for _, gcpImage := range imageInfo.GCP {
 		if err := clients.gcp.deleteImage(ctx, gcpImage, dryrun, log); err != nil {
-			retErr = multierr.Append(retErr, fmt.Errorf("deleting GCP image %s: %w", gcpImage, err))
+			retErr = errors.Join(retErr, fmt.Errorf("deleting GCP image %s: %w", gcpImage, err))
 		}
 	}
 
 	log.Infof("Deleting Azure images from %s", imageInfo.JSONPath())
 	for _, azImage := range imageInfo.Azure {
 		if err := clients.az.deleteImage(ctx, azImage, dryrun, log); err != nil {
-			retErr = multierr.Append(retErr, fmt.Errorf("deleting Azure image %s: %w", azImage, err))
+			retErr = errors.Join(retErr, fmt.Errorf("deleting Azure image %s: %w", azImage, err))
 		}
 	}
 
