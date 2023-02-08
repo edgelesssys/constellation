@@ -9,11 +9,11 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/internal"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	azurekeyvault "github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2"
 )
@@ -26,7 +26,7 @@ type KMSClient struct {
 // New initializes a KMS client for Azure Key Vault.
 func New(ctx context.Context, store kms.Storage, cfg uri.AzureConfig) (*KMSClient, error) {
 	if store == nil {
-		store = storage.NewMemMapStorage()
+		return nil, errors.New("no storage backend provided for KMS")
 	}
 
 	wrapper := azurekeyvault.NewWrapper()

@@ -9,11 +9,11 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	kmsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/internal"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	wrapping "github.com/hashicorp/go-kms-wrapping/v2"
 	awskms "github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2"
@@ -27,7 +27,7 @@ type KMSClient struct {
 // New creates and initializes a new KMSClient for AWS.
 func New(ctx context.Context, store kmsInterface.Storage, cfg uri.AWSConfig) (*KMSClient, error) {
 	if store == nil {
-		store = storage.NewMemMapStorage()
+		return nil, errors.New("no storage backend provided for KMS")
 	}
 
 	wrapper := awskms.NewWrapper()

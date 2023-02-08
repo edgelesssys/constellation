@@ -16,12 +16,12 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	kmsInterface "github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/internal"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	gcpckms "github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2"
 )
@@ -35,7 +35,7 @@ type KMSClient struct {
 // New initializes a KMS client for Google Cloud Platform.
 func New(ctx context.Context, store kmsInterface.Storage, cfg uri.GCPConfig) (*KMSClient, error) {
 	if store == nil {
-		store = storage.NewMemMapStorage()
+		return nil, errors.New("no storage backend provided for KMS")
 	}
 
 	wrapper := gcpckms.NewWrapper()
