@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 // Package cryptsetup contains CGO bindings for cryptsetup.
 package cryptsetup
 
-// #cgo pkg-config: libcryptsetup
 // #include <libcryptsetup.h>
 import "C"
 
