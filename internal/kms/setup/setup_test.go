@@ -90,11 +90,7 @@ func TestGetKMS(t *testing.T) {
 			wantErr: true,
 		},
 		"azure kms": {
-			uri:     fmt.Sprintf(AzureKMSURI, "", "", ""),
-			wantErr: true,
-		},
-		"azure hsm": {
-			uri:     fmt.Sprintf(AzureHSMURI, "", ""),
+			uri:     fmt.Sprintf(AzureKMSURI, "", "", "", "", "", ""),
 			wantErr: true,
 		},
 		"gcp kms": {
@@ -173,49 +169,6 @@ func TestGetAzureBlobConfig(t *testing.T) {
 	require.NoError(err)
 	assert.Equal(container, rContainer)
 	assert.Equal(connStr, rConnStr)
-}
-
-func TestGetGCPKMSConfig(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	project := "test-project"
-	location := "global"
-	keyRing := "test-ring"
-	protectionLvl := "2"
-	kekID := base64.URLEncoding.EncodeToString([]byte(constellationKekID))
-	uri, err := url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, protectionLvl, kekID))
-	require.NoError(err)
-	rProject, rLocation, rKeyRing, rProtectionLvl, rKekID, err := getGCPKMSConfig(uri)
-	require.NoError(err)
-	assert.Equal(project, rProject)
-	assert.Equal(location, rLocation)
-	assert.Equal(keyRing, rKeyRing)
-	assert.Equal(int32(2), rProtectionLvl)
-	assert.Equal(constellationKekID, rKekID)
-
-	uri, err = url.Parse(fmt.Sprintf(GCPKMSURI, project, location, keyRing, "invalid", kekID))
-	require.NoError(err)
-	_, _, _, _, _, err = getGCPKMSConfig(uri)
-	assert.Error(err)
-}
-
-func TestGetClusterKMSConfig(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	expectedSalt := []byte{
-		0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
-		0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
-	}
-
-	masterSecretIn := MasterSecret{Key: []byte("key"), Salt: expectedSalt}
-	uri, err := url.Parse(masterSecretIn.EncodeToURI())
-	require.NoError(err)
-
-	masterSecretOut, err := getClusterKMSConfig(uri)
-	assert.NoError(err)
-	assert.Equal(expectedSalt, masterSecretOut.Salt)
 }
 
 func TestGetConfig(t *testing.T) {

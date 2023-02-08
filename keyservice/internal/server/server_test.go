@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto"
 	"github.com/stretchr/testify/assert"
@@ -53,6 +54,7 @@ func TestGetDataKey(t *testing.T) {
 }
 
 type stubKMS struct {
+	kms.CloudKMS
 	masterKey    []byte
 	derivedKey   []byte
 	deriveKeyErr error

@@ -61,6 +61,7 @@ func main() {
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
 	}
+	defer conKMS.Close()
 
 	if err := server.New(log.Named("keyService"), conKMS).Run(*port); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to run key-service server")

@@ -103,8 +103,7 @@ func TestVectorsHKDF(t *testing.T) {
 				assert.Error(err)
 				return
 			}
-			assert.NoError(err)
-			require.NoError(kms.CreateKEK(context.Background(), "", tc.kek))
+			require.NoError(err)
 
 			out, err := kms.GetDEK(context.Background(), tc.dekID, int(tc.dekSize))
 			require.NoError(err)

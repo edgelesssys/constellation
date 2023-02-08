@@ -155,11 +155,8 @@ func newStubKMS(setupErr, getDEKErr error) kmsFactory {
 }
 
 type stubKMS struct {
+	kms.CloudKMS
 	getDEKErr error
-}
-
-func (s *stubKMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
-	return nil
 }
 
 func (s *stubKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
