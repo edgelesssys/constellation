@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	ccryptsetup "github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	mount "k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"
@@ -296,7 +297,7 @@ func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID 
 		}
 	}
 
-	if err := device.ActivateByPassphrase(volumeID, 0, string(passphrase), 0); err != nil {
+	if err := device.ActivateByPassphrase(volumeID, 0, string(passphrase), ccryptsetup.ReadWriteQueueBypass); err != nil {
 		return "", fmt.Errorf("trying to activate dm-crypt volume: %w", err)
 	}
 
@@ -368,8 +369,8 @@ func resizeCryptDevice(ctx context.Context, device DeviceMapper, name string,
 		return fmt.Errorf("getting key: %w", err)
 	}
 
-	if err := device.ActivateByPassphrase("", 0, string(passphrase), cryptsetup.CRYPT_ACTIVATE_KEYRING_KEY); err != nil {
-		return fmt.Errorf("activating keyrung for crypt device %q with passphrase: %w", name, err)
+	if err := device.ActivateByPassphrase("", 0, string(passphrase), cryptsetup.CRYPT_ACTIVATE_KEYRING_KEY|ccryptsetup.ReadWriteQueueBypass); err != nil {
+		return fmt.Errorf("activating keyring for crypt device %q with passphrase: %w", name, err)
 	}
 
 	if err := device.Resize(name, 0); err != nil {
