@@ -16,6 +16,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -75,8 +76,8 @@ func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
 func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	s.log.Infof("Preparing existing state disk")
-	uuid := s.mapper.DiskUUID()
 
+	uuid := s.mapper.DiskUUID()
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 
 	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
@@ -91,6 +92,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	if err := s.mounter.MkdirAll(stateDiskMountPath, os.ModePerm); err != nil {
 		return err
 	}
+
 	// we do not care about cleaning up the mount point on error, since any errors returned here should cause a boot failure
 	if err := s.mounter.Mount(filepath.Join("/dev/mapper/", stateDiskMappedName), stateDiskMountPath, "ext4", syscall.MS_RDONLY, ""); err != nil {
 		return err
@@ -100,6 +102,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	if err != nil {
 		return err
 	}
+
 	clusterID, err := attestation.DeriveClusterID(measurementSecret, measurementSalt)
 	if err != nil {
 		return err
@@ -165,6 +168,36 @@ func (s *Manager) saveConfiguration(passphrase []byte) error {
 	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
 }
 
+func (s *Manager) LogDevices() {
+	devices, err := ioutil.ReadDir("/sys/class/block")
+	if err != nil {
+		s.log.Errorf("failed to read block devices: %v", err)
+	}
+
+	s.log.Infof("List of all avaliable block devices and partitions:")
+	for _, device := range devices {
+		var stat syscall.Statfs_t
+		dev := "/dev/" + device.Name()
+		if err := syscall.Statfs(dev, &stat); err != nil {
+			s.log.Errorf("failed to statfs %s: %v", dev, err)
+		}
+
+		// get the raw size, in bytes
+		size := stat.Blocks * uint64(stat.Bsize)
+		free := stat.Bfree * uint64(stat.Bsize)
+		avail := stat.Bavail * uint64(stat.Bsize)
+
+		s.log.Infof(
+			"Name: %-15s, Size: %-10d, Mode: %s, ModTime: %s, Size = %-10d, Free = %-10d, Available = %-10d\n",
+			dev,
+			device.Size(),
+			device.Mode(),
+			device.ModTime(),
+			size,
+			free,
+			avail)
+	}
+}
 // RecoveryServer interface serves a recovery server.
 type RecoveryServer interface {
 	Serve(context.Context, net.Listener, string) (key, secret []byte, err error)
@@ -195,11 +228,13 @@ func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) 
 func (r *NodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	lis, err := net.Listen("tcp", endpoint)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer lis.Close()
+
 
 	var once sync.Once
 	var wg sync.WaitGroup

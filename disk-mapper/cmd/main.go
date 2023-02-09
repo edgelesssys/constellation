@@ -134,6 +134,8 @@ func main() {
 		vtpm.OpenVTPM,
 	)
 
+	setupManger.LogDevices()
+
 	// prepare the state disk
 	if mapper.IsLUKSDevice() {
 		// set up rejoin client
