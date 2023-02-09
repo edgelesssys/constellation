@@ -123,6 +123,8 @@ const (
 	K8sVersionFieldName = "cluster-version"
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
+	// NodeVersionResourceName resource name used for NodeVersion in constellation-operator and CLI.
+	NodeVersionResourceName = "constellation-version"
 
 	// NodeKubernetesComponentsAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.
 	NodeKubernetesComponentsAnnotationKey = "constellation.edgeless.systems/kubernetes-components"

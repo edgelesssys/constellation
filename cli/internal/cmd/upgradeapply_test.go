@@ -17,6 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +42,7 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr: true,
 		},
 		"upgrade error": {
-			upgrader: stubUpgrader{err: errors.New("error")},
+			upgrader: stubUpgrader{imageErr: errors.New("error")},
 			wantErr:  true,
 		},
 	}
@@ -57,7 +59,8 @@ func TestUpgradeApply(t *testing.T) {
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
-			err := upgradeApply(cmd, &tc.imageFetcher, tc.upgrader, handler)
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t)}
+			err := upgrader.upgradeApply(cmd, &tc.imageFetcher, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -68,16 +71,21 @@ func TestUpgradeApply(t *testing.T) {
 }
 
 type stubUpgrader struct {
-	err     error
-	helmErr error
+	imageErr error
+	helmErr  error
+	k8sErr   error
 }
 
 func (u stubUpgrader) UpgradeImage(context.Context, string, string, measurements.M) error {
-	return u.err
+	return u.imageErr
 }
 
 func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
 	return u.helmErr
+}
+
+func (u stubUpgrader) UpgradeK8s(ctx context.Context, clusterVersion string, components components.Components) error {
+	return u.k8sErr
 }
 
 type stubImageFetcher struct {

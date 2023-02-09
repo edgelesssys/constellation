@@ -45,12 +45,12 @@ func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (st
 	provider := config.GetProvider()
 	variant, err := variant(provider, config)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("determining variant: %w", err)
 	}
 
 	ver, err := versionsapi.NewVersionFromShortPath(config.Image, versionsapi.VersionKindImage)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parsing config image short path: %w", err)
 	}
 
 	imgInfoReq := versionsapi.ImageInfo{

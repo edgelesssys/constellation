@@ -196,7 +196,7 @@ func TestCreateNodeVersion(t *testing.T) {
 			wantNodeVersion: &updatev1alpha1.NodeVersion{
 				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: constants.NodeVersionResourceName,
+					Name: mainconstants.NodeVersionResourceName,
 				},
 				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageReference:                "image-reference",
@@ -211,11 +211,11 @@ func TestCreateNodeVersion(t *testing.T) {
 			wantErr:   true,
 		},
 		"version exists": {
-			createErr: k8sErrors.NewAlreadyExists(schema.GroupResource{}, constants.NodeVersionResourceName),
+			createErr: k8sErrors.NewAlreadyExists(schema.GroupResource{}, mainconstants.NodeVersionResourceName),
 			existingNodeVersion: &updatev1alpha1.NodeVersion{
 				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: constants.NodeVersionResourceName,
+					Name: mainconstants.NodeVersionResourceName,
 				},
 				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageReference:                "image-reference2",
@@ -227,7 +227,7 @@ func TestCreateNodeVersion(t *testing.T) {
 			wantNodeVersion: &updatev1alpha1.NodeVersion{
 				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: constants.NodeVersionResourceName,
+					Name: mainconstants.NodeVersionResourceName,
 				},
 				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageReference:                "image-reference2",
@@ -286,7 +286,7 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeVersion:         constants.NodeVersionResourceName,
+					NodeVersion:         mainconstants.NodeVersionResourceName,
 					GroupID:             "group-id",
 					AutoscalerGroupName: "group-Name",
 					Min:                 1,
@@ -307,7 +307,7 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeVersion:         constants.NodeVersionResourceName,
+					NodeVersion:         mainconstants.NodeVersionResourceName,
 					GroupID:             "group-id",
 					AutoscalerGroupName: "group-Name",
 					Min:                 1,

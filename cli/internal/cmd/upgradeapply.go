@@ -18,13 +18,16 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
 func newUpgradeApplyCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "execute",
+		Use:   "apply",
 		Short: "Apply an upgrade to a Constellation cluster",
 		Long:  "Apply an upgrade to a Constellation cluster by applying the chosen configuration.",
 		Args:  cobra.NoArgs,
@@ -56,10 +59,16 @@ func runUpgradeApply(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return upgradeApply(cmd, imageFetcher, upgrader, fileHandler)
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log}
+	return applyCmd.upgradeApply(cmd, imageFetcher, fileHandler)
 }
 
-func upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, upgrader cloudUpgrader, fileHandler file.Handler) error {
+type upgradeApplyCmd struct {
+	upgrader cloudUpgrader
+	log      debugLog
+}
+
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, fileHandler file.Handler) error {
 	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -69,18 +78,45 @@ func upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, upgrader cloudU
 		return config.DisplayValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	if err := handleServiceUpgrade(cmd, upgrader, conf, flags); err != nil {
-		return err
+	if err := u.handleServiceUpgrade(cmd, conf, flags); err != nil {
+		return fmt.Errorf("service upgrade: %w", err)
 	}
 
-	// TODO: validate upgrade config? Should be basic things like checking image is not an empty string
-	// More sophisticated validation, like making sure we don't downgrade the cluster, should be done by `constellation upgrade plan`
+	invalidUpgradeErr := &cloudcmd.InvalidUpgradeError{}
+	err = u.handleK8sUpgrade(cmd.Context(), conf)
+	skipCtr := 0
+	switch {
+	case errors.Is(err, cloudcmd.ErrInProgress):
+		skipCtr = skipCtr + 1
+		cmd.PrintErrln("Skipping Kubernetes components upgrades. Another Kubernetes components upgrade is in progress")
+	case errors.As(err, &invalidUpgradeErr):
+		skipCtr = skipCtr + 1
+		cmd.PrintErrf("Skipping Kubernetes components upgrades: %s\n", err)
+	case err != nil:
+		return fmt.Errorf("upgrading Kubernetes components: %w", err)
+	}
 
-	return handleImageUpgrade(cmd.Context(), conf, imageFetcher, upgrader)
+	err = u.handleImageUpgrade(cmd.Context(), conf, imageFetcher)
+	switch {
+	case errors.Is(err, cloudcmd.ErrInProgress):
+		skipCtr = skipCtr + 1
+		cmd.PrintErrln("Skipping image upgrades. Another image upgrade is in progress")
+	case errors.As(err, &invalidUpgradeErr):
+		skipCtr = skipCtr + 1
+		cmd.PrintErrf("Skipping image upgrades: %s\n", err)
+	case err != nil:
+		return fmt.Errorf("upgrading image: %w", err)
+	}
+
+	if skipCtr < 2 {
+		fmt.Printf("Nodes will restart automatically\n")
+	}
+
+	return nil
 }
 
-func handleServiceUpgrade(cmd *cobra.Command, upgrader cloudUpgrader, conf *config.Config, flags upgradeApplyFlags) error {
-	err := upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive)
+func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, flags upgradeApplyFlags) error {
+	err := u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -93,7 +129,7 @@ func handleServiceUpgrade(cmd *cobra.Command, upgrader cloudUpgrader, conf *conf
 				return nil
 			}
 		}
-		err = upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
+		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
 	}
 	if err != nil {
 		return fmt.Errorf("upgrading helm: %w", err)
@@ -102,15 +138,38 @@ func handleServiceUpgrade(cmd *cobra.Command, upgrader cloudUpgrader, conf *conf
 	return nil
 }
 
-func handleImageUpgrade(ctx context.Context, conf *config.Config, imageFetcher imageFetcher, upgrader cloudUpgrader) error {
-	// this config modification is temporary until we can remove the upgrade section from the config
-	conf.Image = conf.Upgrade.Image
+func (u *upgradeApplyCmd) handleImageUpgrade(ctx context.Context, conf *config.Config, imageFetcher imageFetcher) error {
 	imageReference, err := imageFetcher.FetchReference(ctx, conf)
 	if err != nil {
-		return err
+		return fmt.Errorf("fetching image reference: %w", err)
 	}
 
-	return upgrader.UpgradeImage(ctx, imageReference, conf.Upgrade.Image, conf.Upgrade.Measurements)
+	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("parsing version from image short path: %w", err)
+	}
+
+	err = u.upgrader.UpgradeImage(ctx, imageReference, imageVersion.Version, conf.Upgrade.Measurements)
+	if err != nil {
+		return fmt.Errorf("upgrading image: %w", err)
+	}
+
+	return nil
+}
+
+func (u *upgradeApplyCmd) handleK8sUpgrade(ctx context.Context, conf *config.Config) error {
+	currentVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
+	if err != nil {
+		return fmt.Errorf("getting Kubernetes version: %w", err)
+	}
+	versionConfig := versions.VersionConfigs[currentVersion]
+
+	err = u.upgrader.UpgradeK8s(ctx, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
+	if err != nil {
+		return fmt.Errorf("upgrading Kubernetes: %w", err)
+	}
+
+	return nil
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
@@ -147,6 +206,7 @@ type upgradeApplyFlags struct {
 type cloudUpgrader interface {
 	UpgradeImage(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+	UpgradeK8s(ctx context.Context, clusterVersion string, components components.Components) error
 }
 
 type imageFetcher interface {

@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // TestBuildString checks that the resulting user output is as expected. Slow part is the Sscanf in parseCanonicalSemver().
@@ -295,10 +294,10 @@ type stubUpgradeChecker struct {
 	err        error
 }
 
-func (u stubUpgradeChecker) GetCurrentImage(context.Context) (*unstructured.Unstructured, string, error) {
-	return nil, u.image, u.err
+func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
+	return u.image, u.err
 }
 
-func (u stubUpgradeChecker) GetCurrentKubernetesVersion(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	return nil, u.k8sVersion, u.err
+func (u stubUpgradeChecker) CurrentKubernetesVersion(ctx context.Context) (string, error) {
+	return u.k8sVersion, u.err
 }

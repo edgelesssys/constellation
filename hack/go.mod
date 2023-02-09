@@ -30,7 +30,10 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.25.3
 )
 
-replace github.com/edgelesssys/constellation/v2 => ./..
+replace (
+	github.com/edgelesssys/constellation/v2 => ./..
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./../operators/constellation-node-operator/api
+)
 
 require (
 	github.com/edgelesssys/constellation/v2 v2.0.0
@@ -121,6 +124,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -297,6 +301,7 @@ require (
 	k8s.io/kubectl v0.25.2 // indirect
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	oras.land/oras-go v1.2.0 // indirect
+	sigs.k8s.io/controller-runtime v0.13.1 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
