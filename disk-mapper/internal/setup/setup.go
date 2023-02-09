@@ -16,13 +16,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
+	"fs"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -169,9 +169,20 @@ func (s *Manager) saveConfiguration(passphrase []byte) error {
 }
 
 func (s *Manager) LogDevices() {
-	devices, err := ioutil.ReadDir("/sys/class/block")
+	var devices []fs.FileInfo
+	dirs, err := os.ReadDir("/sys/class/block")
+	for _, file := range dirs {
+		if file.IsDir() {
+			continue
+		}
+		fileInfo, err := file.Info()
+		if err != nil {
+			panic(err)
+		}
+		devices = append(devices, fileInfo)
+	}
 	if err != nil {
-		s.log.Errorf("failed to read block devices: %v", err)
+		panic(err)
 	}
 
 	s.log.Infof("List of all avaliable block devices and partitions:")
