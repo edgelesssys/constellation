@@ -66,12 +66,6 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 		return t
 	}
 
-	if !strings.HasPrefix(configured, "v") {
-		errorMsg = fmt.Sprintf("The configured version is missing a 'v' prefix. Supported versions: %s", strings.Join(validVersionsSorted, " "))
-		t, _ := ut.T("supported_k8s_version", fe.Field(), errorMsg)
-		return t
-	}
-
 	configured = compatibility.EnsurePrefixV(configured)
 	switch {
 	case !semver.IsValid(configured):
