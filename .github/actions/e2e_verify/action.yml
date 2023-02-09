@@ -20,7 +20,7 @@ runs:
     - name: Fetch & write measurements
       shell: bash
       run: |
-        MEASUREMENTS=$(curl -fsSL https://cdn.confidential.cloud/constellation/v1/${{ inputs.osImage }}/image/csp/${{ inputs.cloudProvider }}/measurements.image.json | jq '.measurements' -r)
+        MEASUREMENTS=$(curl -fsSL https://cdn.confidential.cloud/constellation/v1/${{ inputs.osImage }}/image/csp/${{ inputs.cloudProvider }}/measurements.json | jq '.measurements' -r)
         for key in $(echo $MEASUREMENTS | jq 'keys[]' -r); do
             echo Updating $key to $(echo $MEASUREMENTS | jq ".\"$key\"" -r)
             yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml

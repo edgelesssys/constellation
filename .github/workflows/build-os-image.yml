@@ -581,18 +581,163 @@ jobs:
           jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
 
+      - name: Add static PCRs
+        run: |
+          OUTFLAGS="-I 0 -o json -i"
+          PCRFILE="${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+
+          case ${{ matrix.csp }} in
+            aws)
+              yq e '.csp = "AWS" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .measurements.0.warnOnly = true |
+                .measurements.0.expected = "737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12" |
+                .measurements.2.warnOnly = true |
+                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.3.warnOnly = true |
+                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.4.warnOnly = false |
+                .measurements.5.warnOnly = true |
+                .measurements.5.expected = "73d13bf0a9dc9a201a337150a0a4adb06e6b2206eefaeb4fbb0fe5dac6202fd3" |
+                .measurements.6.warnOnly = true |
+                .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.7.warnOnly = true |
+                .measurements.7.expected = "120e498db2a224bd512b6efc9b0234f843e10bf061eb7a76ecca5509a2238901" |
+                .measurements.8.warnOnly = false |
+                .measurements.9.warnOnly = false |
+                .measurements.11.warnOnly = false |
+                .measurements.12.warnOnly = false |
+                .measurements.13.warnOnly = false |
+                .measurements.14.warnOnly = true |
+                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.15.warnOnly = false' \
+                "${OUTFLAGS}" "${PCRFILE}"
+            ;;
+            azure)
+              yq e '.csp = "Azure" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .measurements.1.warnOnly = true |
+                .measurements.1.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.2.warnOnly = true |
+                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.3.warnOnly = true |
+                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.4.warnOnly = false |
+                .measurements.5.warnOnly = true |
+                .measurements.5.expected = "b731e1a1c70e65e43a4ed54d668b7e585163d9c42f1ed4096174451ff0ba62f2" |
+                .measurements.7.warnOnly = true |
+                .measurements.7.expected = "346547a8ce5957af27e552427d6b9e6d9cb502f0156e9155380451eea1b3f0ed" |
+                .measurements.8.warnOnly = false |
+                .measurements.9.warnOnly = false |
+                .measurements.11.warnOnly = false |
+                .measurements.12.warnOnly = false |
+                .measurements.13.warnOnly = false |
+                .measurements.14.warnOnly = true |
+                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.15.warnOnly = false' \
+                "${OUTFLAGS}" "${PCRFILE}"
+            ;;
+            gcp)
+              yq e '.csp = "GCP" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .measurements.0.warnOnly = false |
+                .measurements.0.expected = "0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf" |
+                .measurements.1.warnOnly = true |
+                .measurements.1.expected = "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56" |
+                .measurements.2.warnOnly = true |
+                .measurements.2.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.3.warnOnly = true |
+                .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.4.warnOnly = false |
+                .measurements.5.warnOnly = true |
+                .measurements.5.expected = "9d5f8c2e0464c69552e593be32a4b089f7e77f4ed12d60cdcd94120b6ccaccf8" |
+                .measurements.6.warnOnly = true |
+                .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
+                .measurements.7.warnOnly = true |
+                .measurements.7.expected = "b1e9b305325c51b93da58cbf7f92512d8eebfa01143e4d8844e40e062e9b6cd5" |
+                .measurements.8.warnOnly = false |
+                .measurements.9.warnOnly = false |
+                .measurements.10.warnOnly = true |
+                .measurements.10.expected = "7f96fbc55e1d2a0de46e5d44658c06ef102d1198703efa69f2ea6b5aa1c9a176" |
+                .measurements.11.warnOnly = false |
+                .measurements.12.warnOnly = false |
+                .measurements.13.warnOnly = false |
+                .measurements.14.warnOnly = true |
+                .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
+                .measurements.15.warnOnly = false' \
+                "${OUTFLAGS}" "${PCRFILE}"
+            ;;
+            qemu)
+              yq e '.csp = "QEMU" |
+                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .measurements.4.warnOnly = false |
+                .measurements.8.warnOnly = false |
+                .measurements.9.warnOnly = false |
+                .measurements.11.warnOnly = false |
+                .measurements.12.warnOnly = false |
+                .measurements.13.warnOnly = false |
+                .measurements.15.warnOnly = false' \
+                "${OUTFLAGS}" "${PCRFILE}"
+            ;;
+            *)
+              echo "Unknown CSP: ${{ matrix.csp }}"
+              exit 1
+            ;;
+          esac
+
       - name: Upload expected PCRs as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: pcrs
           path: pcrs-${{ matrix.csp }}.json
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+
+      - name: Install Rekor
+        shell: bash
+        run: |
+          curl -fsSLO https://github.com/sigstore/rekor/releases/download/v0.12.0/rekor-cli-linux-amd64
+          sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
+          rm rekor-cli-linux-amd64
+
+      - name: Sign measurements
+        shell: bash
+        env:
+          COSIGN_PUBLIC_KEY: ${{ inputs.isRelease && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          COSIGN_PRIVATE_KEY: ${{ inputs.isRelease && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ inputs.isRelease && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+        run: |
+          echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
+          # Enabling experimental mode also publishes signature to Rekor
+          COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY \
+            "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json" > "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json.sig"
+          # Verify - As documentation & check
+          # Local Signature (input: artifact, key, signature)
+          cosign verify-blob --key cosign.pub \
+            --signature "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json.sig" \
+            "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+          # Transparency Log Signature (input: artifact, key)
+          uuid=$(rekor-cli search --artifact "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json" | tail -n 1)
+          sig=$(rekor-cli get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
+          cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+
+      - name: Upload signature of expected PCRs as artifact
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: pcrs-sig
+          path: pcrs-${{ matrix.csp }}.json.sig
+
       - name: Upload expected PCRs to S3
         shell: bash
         run: |
           aws s3 cp \
             "pcrs-${{ matrix.csp }}.json" \
-            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.image.json" \
+            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json" \
+            --no-progress
+          aws s3 cp \
+            "pcrs-${{ matrix.csp }}.json" \
+            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json.sig" \
             --no-progress
 
   generate-sbom:

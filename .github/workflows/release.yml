@@ -255,24 +255,9 @@ jobs:
       stream: "stable"
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
-  generate-measurements:
-    name: Generate OS image measurements
-    needs: [verify-inputs, os-image]
-    uses: ./.github/workflows/generate-measurements.yml
-    permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
-    with:
-      osImage: ${{ inputs.version }}
-      isDebugImage: false
-      signMeasurements: true
-      isRelease: true
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-
   update-hardcoded-measurements:
     name: Update hardcoded measurements (in the CLI)
-    needs: [verify-inputs, generate-measurements]
+    needs: [verify-inputs]
     permissions:
       contents: write
     runs-on: ubuntu-22.04
