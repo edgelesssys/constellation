@@ -6,9 +6,18 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
+# hacky parsing of the command line arguments. check if argv[1] is --debug
+VERBOSITY=0
+if [[ "$1" = "--debug" ]]; then
+  VERBOSITY=-1
+fi
+
 # Prepare the encrypted volume by either initializing it with a random key or by aquiring the key from another bootstrapper.
 # Store encryption key (random or recovered key) in /run/cryptsetup-keys.d/state.key
-disk-mapper -csp "${CONSTEL_CSP}"
+disk-mapper \
+  -csp "${CONSTEL_CSP}" \
+  -v "${VERBOSITY}"
+
 if [[ $? -ne 0 ]]; then
   echo "Failed to prepare state disk"
   sleep 2 # give the serial console time to print the error message
