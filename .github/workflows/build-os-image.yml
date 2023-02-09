@@ -583,9 +583,6 @@ jobs:
 
       - name: Add static PCRs
         run: |
-          OUTFLAGS="-I 0 -o json -i"
-          PCRFILE="${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
-
           case ${{ matrix.csp }} in
             aws)
               yq e '.csp = "AWS" |
@@ -611,7 +608,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                "${OUTFLAGS}" "${PCRFILE}"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
             ;;
             azure)
               yq e '.csp = "Azure" |
@@ -635,7 +632,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                "${OUTFLAGS}" "${PCRFILE}"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
             ;;
             gcp)
               yq e '.csp = "GCP" |
@@ -665,7 +662,7 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                "${OUTFLAGS}" "${PCRFILE}"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
             ;;
             qemu)
               yq e '.csp = "QEMU" |
@@ -677,7 +674,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.15.warnOnly = false' \
-                "${OUTFLAGS}" "${PCRFILE}"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
             ;;
             *)
               echo "Unknown CSP: ${{ matrix.csp }}"
