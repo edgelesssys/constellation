@@ -145,8 +145,12 @@ func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, 
 		}
 	}
 	return func(cmd *cobra.Command, args []string) error {
-		iamCreator := newIAMCreator(cmd)
+		iamCreator, err := newIAMCreator(cmd)
+		if err != nil {
+			return fmt.Errorf("creating iamCreator: %w", err)
+		}
 		defer iamCreator.spinner.Stop()
+		defer iamCreator.log.Sync()
 		iamCreator.provider = provider
 		iamCreator.providerCreator = providerCreator
 		return iamCreator.create(cmd.Context())
@@ -154,16 +158,23 @@ func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, 
 }
 
 // newIAMCreator creates a new iamiamCreator.
-func newIAMCreator(cmd *cobra.Command) *iamCreator {
-	spinner := newSpinner(cmd.ErrOrStderr())
-
+func newIAMCreator(cmd *cobra.Command) (*iamCreator, error) {
+	spinner, err := newSpinnerOrStderr(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("creating spinner: %w", err)
+	}
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("creating logger: %w", err)
+	}
 	return &iamCreator{
 		cmd:         cmd,
 		spinner:     spinner,
+		log:         log,
 		creator:     cloudcmd.NewIAMCreator(spinner),
 		fileHandler: file.NewHandler(afero.NewOsFs()),
 		iamConfig:   &cloudcmd.IAMConfig{},
-	}
+	}, nil
 }
 
 // iamCreator is the iamCreator for the iam create command.
@@ -175,6 +186,7 @@ type iamCreator struct {
 	provider        cloudprovider.Provider
 	providerCreator providerIAMCreator
 	iamConfig       *cloudcmd.IAMConfig
+	log             debugLog
 }
 
 // create IAM configuration on the iamCreator's cloud provider.
@@ -183,6 +195,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	c.log.Debugf("Using flags: %+v", flags)
 
 	if !flags.yesFlag {
 		c.cmd.Printf("The following IAM configuration will be created:\n\n")
@@ -210,6 +223,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 		return err
 	}
 	c.cmd.Println() // Print empty line to separate after spinner ended.
+	c.log.Debugf("Successfully created the IAM cloud resources")
 
 	err = c.providerCreator.parseAndWriteIDFile(iamFile, c.fileHandler)
 	if err != nil {
@@ -217,6 +231,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if flags.generateConfig {
+		c.log.Debugf("Writing IAM configuration to %s", flags.configPath)
 		c.providerCreator.writeOutputValuesToConfig(conf, flags, iamFile)
 		if err := c.fileHandler.WriteYAML(flags.configPath, conf, file.OptMkdirAll); err != nil {
 			return err

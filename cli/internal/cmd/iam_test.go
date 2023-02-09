@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -246,6 +247,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
+				log:             logger.NewTest(t),
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
@@ -469,6 +471,7 @@ func TestIAMCreateAzure(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
+				log:             logger.NewTest(t),
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
@@ -716,6 +719,7 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
+				log:             logger.NewTest(t),
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
