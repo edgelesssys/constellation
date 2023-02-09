@@ -21,10 +21,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -35,6 +38,7 @@ const (
 // Client is used to install microservice during cluster initialization. It is a wrapper for a helm install action.
 type Client struct {
 	*action.Install
+	log *logger.Logger
 }
 
 // New creates a new client with the given logger.
@@ -54,6 +58,7 @@ func New(log *logger.Logger) (*Client, error) {
 
 	return &Client{
 		action,
+		log,
 	}, nil
 }
 
@@ -178,6 +183,9 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 	return nil
 }
 
+// install tries to install the given chart and aborts after ~5 tries.
+// The function will wait 30 seconds before retrying a failed installation attempt.
+// After 5 minutes the retrier will be canceld and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
 	reader := bytes.NewReader(chartRaw)
 	chart, err := loader.LoadArchive(reader)
@@ -185,9 +193,43 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 		return fmt.Errorf("helm load archive: %w", err)
 	}
 
-	_, err = h.RunWithContext(ctx, chart, values)
-	if err != nil {
+	doer := installDoer{
+		h,
+		chart,
+		values,
+		h.log,
+	}
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, isTimeoutErr)
+
+	// Since we have no precise retry condition we want to stop retrying after 5 minutes.
+	// The helm library only reports a timeout error in the error cases we currently know.
+	// Other errors will not be retried.
+	newCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	if err := retrier.Do(newCtx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
 	}
 	return nil
+}
+
+// installDoer is a help struct to enable retrying helm's install action.
+type installDoer struct {
+	client *Client
+	chart  *chart.Chart
+	values map[string]any
+	log    *logger.Logger
+}
+
+// Do logs which chart is installed and tries to install it.
+func (i installDoer) Do(ctx context.Context) error {
+	i.log.Debugf("trying helm install for chart %s", i.chart.Name())
+
+	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
+
+	return err
+}
+
+// isTimeoutErr checks if the given error is a timeout error from k8s.io/apimachinery.
+func isTimeoutErr(err error) bool {
+	return errors.Is(err, wait.ErrWaitTimeout)
 }
