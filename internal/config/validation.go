@@ -310,7 +310,7 @@ func getPlaceholderEntries(m Measurements) []uint32 {
 }
 
 func validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.IsSupportedK8sVersion(fl.Field().String())
+	return versions.IsSupportedK8sVersion(compatibility.EnsurePrefixV(fl.Field().String()))
 }
 
 func registerVersionCompatibilityError(ut ut.Translator) error {
