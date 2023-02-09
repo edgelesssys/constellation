@@ -3,6 +3,7 @@ Description=Constellation Bootstrapper
 Wants=network-online.target
 After=network-online.target configure-constel-csp.service
 ConditionKernelCommandLine=constellation.debug
+After=export_constellation_debug.service
 
 [Service]
 Type=simple
@@ -10,7 +11,7 @@ RemainAfterExit=yes
 Restart=on-failure
 EnvironmentFile=/run/constellation.env
 Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStart=/usr/bin/bootstrapper
+ExecStart=/usr/bin/bootstrapper $CONSTELLATION_DEBUG_FLAGS
 
 [Install]
 WantedBy=multi-user.target

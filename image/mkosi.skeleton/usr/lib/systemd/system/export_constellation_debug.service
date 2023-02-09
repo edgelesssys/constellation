@@ -1,0 +1,10 @@
+[Unit]
+Description=Export Constellation Debug Level to Environment
+ConditionKernelCommandLine=constellation.debug
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c "DEBUG=$(< /proc/cmdline tr  ' ' '\n' | grep constellation.debug | sed 's/constellation.debug=//'); echo CONSTELLATION_DEBUG_FLAGS=$DEBUG >> /run/constellation.env"
+
+[Install]
+WantedBy=multi-user.target

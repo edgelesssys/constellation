@@ -2,6 +2,7 @@
 Description=Print PCR state on startup
 Before=constellation-bootstrapper.service
 ConditionKernelCommandLine=constellation.debug
+After=export_constellation_debug.service
 
 [Service]
 Type=oneshot
