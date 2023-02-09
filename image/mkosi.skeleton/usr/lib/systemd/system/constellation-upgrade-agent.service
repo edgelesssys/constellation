@@ -1,5 +1,6 @@
 [Unit]
 Description=Constellation Upgrade Agent
+ConditionKernelCommandLine=constellation.debug
 
 [Service]
 Type=simple

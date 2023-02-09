@@ -11,6 +11,7 @@ IMAGE_VERSION                    ?= v0.0.0
 DEBUG                            ?= false
 AUTOLOGIN                        ?= false
 AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
+KERNEL_DEBUG_CMDLNE				 := constellation.debug
 export INSTALL_DEBUGD			 ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
@@ -44,6 +45,7 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 		$(AUTOLOGIN_ARGS) \
 		--environment=INSTALL_DEBUGD \
 		--environment=CONSOLE_MOTD \
+		--kernel-command-line="$(KERNEL_DEBUG_CMDLNE)=$(DEBUG)" \
 		build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \

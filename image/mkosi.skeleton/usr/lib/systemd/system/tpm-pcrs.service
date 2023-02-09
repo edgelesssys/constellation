@@ -1,6 +1,7 @@
 [Unit]
 Description=Print PCR state on startup
 Before=constellation-bootstrapper.service
+ConditionKernelCommandLine=constellation.debug
 
 [Service]
 Type=oneshot
