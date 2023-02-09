@@ -146,7 +146,7 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Always delete IAM configuration
-        if: always() && matrix.test == 'iamcreate' && inputs.cloudProvider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
+        if: always() && matrix.test == 'iamcreate' && matrix.provider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
         continue-on-error: true
         uses: ./.github/actions/constellation_iam_destroy
 
