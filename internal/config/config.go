@@ -506,10 +506,6 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	if err := validate.RegisterTranslation("supported_k8s_version", trans, registerInvalidK8sVersionError, translateInvalidK8sVersionError); err != nil {
-		return err
-	}
-
 	if err := validate.RegisterValidation("no_placeholders", validateNoPlaceholder); err != nil {
 		return err
 	}

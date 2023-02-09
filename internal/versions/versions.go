@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"golang.org/x/mod/semver"
@@ -26,7 +27,7 @@ func SupportedK8sVersions() []string {
 	validVersions := make([]string, len(VersionConfigs))
 	i := 0
 	for _, conf := range VersionConfigs {
-		validVersions[i] = conf.ClusterVersion
+		validVersions[i] = compatibility.EnsurePrefixV(conf.ClusterVersion)
 		i++
 	}
 	validVersionsSorted := semver.ByVersion(validVersions)

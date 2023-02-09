@@ -55,21 +55,32 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	validVersionsSorted := semver.ByVersion(validVersions)
 	sort.Sort(validVersionsSorted)
 
-	errorMsg := fmt.Sprintf("Supported versions: %s", strings.Join(validVersionsSorted, " "))
-	configured, ok := fe.Value().(string)
-	if !ok {
-		errorMsg = "The configured version is not a valid string"
+	if len(validVersionsSorted) == 0 {
+		t, _ := ut.T("supported_k8s_version", fe.Field(), "No valid versions available. This should never happen")
+		return t
 	}
-
 	maxVersion := validVersionsSorted[len(validVersionsSorted)-1]
 	minVersion := validVersionsSorted[0]
 
-	if configured < minVersion {
-		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s.", configured, minVersion)
+	var errorMsg string
+	configured, ok := fe.Value().(string)
+	if !ok {
+		errorMsg = fmt.Sprintf("The configured version is not a valid string. Supported versions: %s", strings.Join(validVersionsSorted, " "))
+		t, _ := ut.T("supported_k8s_version", fe.Field(), errorMsg)
+		return t
 	}
-	if configured > maxVersion {
-		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s.", configured, maxVersion)
+
+	configured = compatibility.EnsurePrefixV(configured)
+	switch {
+	case !semver.IsValid(configured):
+		errorMsg = "The configured version is not a valid semantic version"
+	case semver.Compare(configured, minVersion) == -1:
+		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s", configured, minVersion)
+	case semver.Compare(configured, maxVersion) == 1:
+		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s", configured, maxVersion)
 	}
+
+	errorMsg = errorMsg + fmt.Sprintf("Supported versions: %s", strings.Join(validVersionsSorted, " "))
 
 	t, _ := ut.T("supported_k8s_version", fe.Field(), errorMsg)
 
@@ -299,7 +310,7 @@ func getPlaceholderEntries(m Measurements) []uint32 {
 }
 
 func validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.IsSupportedK8sVersion(fl.Field().String())
+	return versions.IsSupportedK8sVersion(compatibility.EnsurePrefixV(fl.Field().String()))
 }
 
 func registerVersionCompatibilityError(ut ut.Translator) error {
