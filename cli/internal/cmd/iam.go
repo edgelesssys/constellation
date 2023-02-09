@@ -222,8 +222,8 @@ func (c *iamCreator) create(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.log.Debugf("Successfully created the IAM cloud resources")
 	c.cmd.Println() // Print empty line to separate after spinner ended.
+	c.log.Debugf("Successfully created the IAM cloud resources")
 
 	err = c.providerCreator.parseAndWriteIDFile(iamFile, c.fileHandler)
 	if err != nil {
