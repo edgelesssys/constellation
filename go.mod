@@ -30,7 +30,10 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.25.3
 )
 
-replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc
+replace (
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
+	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc
+)
 
 require (
 	cloud.google.com/go/compute v1.15.1
@@ -59,6 +62,7 @@ require (
 	github.com/aws/smithy-go v1.13.5
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.22+incompatible
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.0
@@ -110,6 +114,8 @@ require (
 	k8s.io/mount-utils v0.25.4
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 )
+
+require sigs.k8s.io/controller-runtime v0.13.1 // indirect
 
 require (
 	cloud.google.com/go v0.107.0 // indirect

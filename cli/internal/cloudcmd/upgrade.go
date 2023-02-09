@@ -16,17 +16,43 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/versions/components"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+// ErrInProgress signals that an upgrade is in progress inside the cluster.
+var ErrInProgress = errors.New("upgrade in progress")
+
+// InvalidUpgradeError present an invalid upgrade. It wraps the source and destination version for improved debuggability.
+type InvalidUpgradeError struct {
+	from     string
+	to       string
+	innerErr error
+}
+
+// Unwrap returns the inner error, which is nil in this case.
+func (e *InvalidUpgradeError) Unwrap() error {
+	return e.innerErr
+}
+
+// Error returns the String representation of this error.
+func (e *InvalidUpgradeError) Error() string {
+	return fmt.Sprintf("upgrading from %s to %s is not a valid upgrade: %s", e.from, e.to, e.innerErr)
+}
 
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
@@ -35,6 +61,7 @@ type Upgrader struct {
 	helmClient       helmInterface
 
 	outWriter io.Writer
+	log       debugLog
 }
 
 // NewUpgrader returns a new Upgrader.
@@ -65,57 +92,34 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 		dynamicInterface: &dynamicClient{client: unstructuredClient},
 		helmClient:       helmClient,
 		outWriter:        outWriter,
+		log:              log,
 	}, nil
 }
 
 // UpgradeImage upgrades the cluster to the given measurements and image.
-func (u *Upgrader) UpgradeImage(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error {
-	if err := u.updateMeasurements(ctx, measurements); err != nil {
+func (u *Upgrader) UpgradeImage(ctx context.Context, newImageReference, newImageVersion string, newMeasurements measurements.M) error {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("retrieving current image: %w", err)
+	}
+	currentImageVersion := nodeVersion.Spec.ImageVersion
+
+	if err := compatibility.IsValidUpgrade(currentImageVersion, newImageVersion); err != nil {
+		return &InvalidUpgradeError{from: currentImageVersion, to: newImageVersion, innerErr: err}
+	}
+
+	if imageUpgradeInProgress(nodeVersion) {
+		return ErrInProgress
+	}
+
+	if err := u.updateMeasurements(ctx, newMeasurements); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
 
-	if err := u.updateImage(ctx, imageReference, imageVersion); err != nil {
+	if err := u.updateImage(ctx, nodeVersion, newImageReference, newImageVersion); err != nil {
 		return fmt.Errorf("updating image: %w", err)
 	}
 	return nil
-}
-
-// GetCurrentImage returns the currently used image version of the cluster.
-func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	return u.getFromConstellationVersion(ctx, "imageVersion")
-}
-
-// GetCurrentKubernetesVersion returns the currently used Kubernetes version.
-func (u *Upgrader) GetCurrentKubernetesVersion(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	return u.getFromConstellationVersion(ctx, "kubernetesClusterVersion")
-}
-
-// getFromConstellationVersion queries the constellation-version object for a given field.
-func (u *Upgrader) getFromConstellationVersion(ctx context.Context, fieldName string) (*unstructured.Unstructured, string, error) {
-	versionStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
-	if err != nil {
-		return nil, "", err
-	}
-
-	spec, ok := versionStruct.Object["spec"]
-	if !ok {
-		return nil, "", errors.New("spec missing")
-	}
-	retErr := errors.New("invalid spec")
-	specMap, ok := spec.(map[string]any)
-	if !ok {
-		return nil, "", retErr
-	}
-	fieldValue, ok := specMap[fieldName]
-	if !ok {
-		return nil, "", retErr
-	}
-	fieldValueString, ok := fieldValue.(string)
-	if !ok {
-		return nil, "", retErr
-	}
-
-	return versionStruct, fieldValueString, nil
 }
 
 // UpgradeHelmServices upgrade helm services.
@@ -123,17 +127,109 @@ func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Confi
 	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
 }
 
+// UpgradeK8s upgrade the Kubernetes cluster version and the installed components to matching versions.
+func (u *Upgrader) UpgradeK8s(ctx context.Context, newClusterVersion string, components components.Components) error {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("getting kubernetesClusterVersion: %w", err)
+	}
+
+	if err := compatibility.IsValidUpgrade(nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion); err != nil {
+		return &InvalidUpgradeError{from: nodeVersion.Spec.KubernetesClusterVersion, to: newClusterVersion, innerErr: err}
+	}
+
+	if k8sUpgradeInProgress(nodeVersion) {
+		return ErrInProgress
+	}
+
+	u.log.Debugf("Upgrading cluster's Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion)
+	configMap, err := internalk8s.ConstructK8sComponentsCM(components, newClusterVersion)
+	if err != nil {
+		return fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
+	}
+
+	_, err = u.stableInterface.createConfigMap(ctx, &configMap)
+	// If the map already exists we can use that map and assume it has the same content as 'configMap'.
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("creating k8s-components ConfigMap: %w. %T", err, err)
+	}
+
+	nodeVersion.Spec.KubernetesComponentsReference = configMap.ObjectMeta.Name
+	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
+
+	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+	if err != nil {
+		return fmt.Errorf("converting nodeVersion to unstructured: %w", err)
+	}
+	u.log.Debugf("Triggering Kubernetes version upgrade now")
+	// Send the updated NodeVersion resource
+	updated, err := u.dynamicInterface.update(ctx, &unstructured.Unstructured{Object: raw})
+	if err != nil {
+		return fmt.Errorf("updating NodeVersion: %w", err)
+	}
+
+	// Verify the update worked as expected
+	updatedSpec, ok := updated.Object["spec"]
+	if !ok {
+		return errors.New("invalid updated NodeVersion spec")
+	}
+	updatedMap, ok := updatedSpec.(map[string]any)
+	if !ok {
+		return errors.New("invalid updated NodeVersion spec")
+	}
+	if updatedMap["kubernetesComponentsReference"] != configMap.ObjectMeta.Name || updatedMap["kubernetesClusterVersion"] != newClusterVersion {
+		return errors.New("failed to update NodeVersion resource")
+	}
+
+	fmt.Fprintf(u.outWriter, "Successfully updated the cluster's Kubernetes version to %s\n", newClusterVersion)
+	return nil
+}
+
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
 func (u *Upgrader) KubernetesVersion() (string, error) {
 	return u.stableInterface.kubernetesVersion()
 }
 
+// CurrentImage returns the currently used image version of the cluster.
+func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting constellation-version: %w", err)
+	}
+	return nodeVersion.Spec.ImageVersion, nil
+}
+
+// CurrentKubernetesVersion returns the currently used Kubernetes version.
+func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error) {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting constellation-version: %w", err)
+	}
+	return nodeVersion.Spec.KubernetesClusterVersion, nil
+}
+
+// getFromConstellationVersion queries the constellation-version object for a given field.
+func (u *Upgrader) getConstellationVersion(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
+	raw, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
+	if err != nil {
+		return updatev1alpha1.NodeVersion{}, err
+	}
+	var nodeVersion updatev1alpha1.NodeVersion
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(raw.UnstructuredContent(), &nodeVersion); err != nil {
+		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting unstructured to NodeVersion: %w", err)
+	}
+
+	return nodeVersion, nil
+}
+
 func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
-	existingConf, err := u.stableInterface.getCurrent(ctx, constants.JoinConfigMap)
+	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}
-
+	if _, ok := existingConf.Data[constants.MeasurementsFilename]; !ok {
+		return errors.New("measurements missing from join-config")
+	}
 	var currentMeasurements measurements.M
 	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
@@ -158,7 +254,8 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 		return fmt.Errorf("marshaling measurements: %w", err)
 	}
 	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
-	_, err = u.stableInterface.update(ctx, existingConf)
+	u.log.Debugf("Triggering measurements config map update now")
+	_, err = u.stableInterface.updateConfigMap(ctx, existingConf)
 	if err != nil {
 		return fmt.Errorf("setting new measurements: %w", err)
 	}
@@ -167,25 +264,49 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 	return nil
 }
 
-func (u *Upgrader) updateImage(ctx context.Context, imageReference, imageVersion string) error {
-	currentImage, currentImageVersion, err := u.GetCurrentImage(ctx)
+func (u *Upgrader) updateImage(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion, newImageRef, newImageVersion string) error {
+	u.log.Debugf("Upgrading cluster's image version from %s to %s", nodeVersion.Spec.ImageVersion, newImageVersion)
+	nodeVersion.Spec.ImageReference = newImageRef
+	nodeVersion.Spec.ImageVersion = newImageVersion
+
+	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
 	if err != nil {
-		return fmt.Errorf("retrieving current image: %w", err)
+		return fmt.Errorf("converting nodeVersion to unstructured: %w", err)
 	}
-
-	if currentImageVersion == imageVersion {
-		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen image, skipping image upgrade")
-		return nil
-	}
-
-	currentImage.Object["spec"].(map[string]any)["image"] = imageReference
-	currentImage.Object["spec"].(map[string]any)["imageVersion"] = imageVersion
-	if _, err := u.dynamicInterface.update(ctx, currentImage); err != nil {
+	u.log.Debugf("Triggering image version upgrade now")
+	if _, err := u.dynamicInterface.update(ctx, &unstructured.Unstructured{Object: raw}); err != nil {
 		return fmt.Errorf("setting new image: %w", err)
 	}
 
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's image, upgrades will be applied automatically")
+	fmt.Fprintf(u.outWriter, "Successfully updated the cluster's image version to %s\n", newImageVersion)
 	return nil
+}
+
+// k8sUpgradeInProgress checks if a k8s upgrade is in progress.
+// Returns true with errors as it's the "safer" response. If caller does not check err they at least won't update the cluster.
+func k8sUpgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
+	conditions := nodeVersion.Status.Conditions
+	activeUpgrade := nodeVersion.Status.ActiveClusterVersionUpgrade
+
+	if activeUpgrade {
+		return true
+	}
+
+	for _, condition := range conditions {
+		if condition.Type == updatev1alpha1.ConditionOutdated && condition.Status == metav1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func imageUpgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
+	for _, condition := range nodeVersion.Status.Conditions {
+		if condition.Type == updatev1alpha1.ConditionOutdated && condition.Status == metav1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 type dynamicInterface interface {
@@ -194,8 +315,9 @@ type dynamicInterface interface {
 }
 
 type stableInterface interface {
-	getCurrent(ctx context.Context, name string) (*corev1.ConfigMap, error)
-	update(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+	updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
 	kubernetesVersion() (string, error)
 }
 
@@ -225,14 +347,18 @@ type stableClient struct {
 	client kubernetes.Interface
 }
 
-// getCurrent returns the cluster's expected measurements.
-func (u *stableClient) getCurrent(ctx context.Context, name string) (*corev1.ConfigMap, error) {
+// getCurrent returns a ConfigMap given it's name.
+func (u *stableClient) getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
 }
 
-// update updates the cluster's expected measurements in Kubernetes.
-func (u *stableClient) update(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+// update updates the given ConfigMap.
+func (u *stableClient) updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
+}
+
+func (u *stableClient) createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Create(ctx, configMap, metav1.CreateOptions{})
 }
 
 func (u *stableClient) kubernetesVersion() (string, error) {

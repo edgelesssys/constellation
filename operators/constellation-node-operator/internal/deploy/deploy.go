@@ -121,7 +121,7 @@ func createNodeVersion(ctx context.Context, k8sClient client.Client, imageRefere
 	err = k8sClient.Create(ctx, &updatev1alpha1.NodeVersion{
 		TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: constants.NodeVersionResourceName,
+			Name: mainconstants.NodeVersionResourceName,
 		},
 		Spec: updatev1alpha1.NodeVersionSpec{
 			ImageReference:                imageReference,
@@ -176,7 +176,7 @@ func createScalingGroup(ctx context.Context, config newScalingGroupConfig) error
 			Name: strings.ToLower(config.groupName),
 		},
 		Spec: updatev1alpha1.ScalingGroupSpec{
-			NodeVersion:         constants.NodeVersionResourceName,
+			NodeVersion:         mainconstants.NodeVersionResourceName,
 			GroupID:             config.groupID,
 			AutoscalerGroupName: config.autoscalingGroupName,
 			Min:                 1,

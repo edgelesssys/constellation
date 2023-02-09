@@ -525,7 +525,7 @@ func (m *stubMerger) kubeconfigEnvVar() string {
 func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, csp cloudprovider.Provider) *config.Config {
 	t.Helper()
 
-	conf.Image = constants.VersionInfo
+	conf.Image = "v0.0.0"
 	conf.Name = "kubernetes"
 
 	switch csp {

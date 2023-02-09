@@ -32,8 +32,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func newUpgradeCheckCmd() *cobra.Command {
@@ -438,7 +436,7 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 // getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
 // If the cluster is not using a release image, an error is returned.
 func getCurrentImageVersion(ctx context.Context, checker upgradeChecker) (string, error) {
-	_, imageVersion, err := checker.GetCurrentImage(ctx)
+	imageVersion, err := checker.CurrentImage(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -452,7 +450,7 @@ func getCurrentImageVersion(ctx context.Context, checker upgradeChecker) (string
 
 // getCurrentKubernetesVersion retrieves the semantic version of Kubernetes currently installed in the cluster.
 func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (string, error) {
-	_, k8sVersion, err := checker.GetCurrentKubernetesVersion(ctx)
+	k8sVersion, err := checker.CurrentKubernetesVersion(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -527,8 +525,8 @@ type upgradeCheckFlags struct {
 }
 
 type upgradeChecker interface {
-	GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error)
-	GetCurrentKubernetesVersion(ctx context.Context) (*unstructured.Unstructured, string, error)
+	CurrentImage(ctx context.Context) (string, error)
+	CurrentKubernetesVersion(ctx context.Context) (string, error)
 }
 
 type versionListFetcher interface {
