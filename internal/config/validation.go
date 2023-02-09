@@ -55,6 +55,10 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	validVersionsSorted := semver.ByVersion(validVersions)
 	sort.Sort(validVersionsSorted)
 
+	if len(validVersionsSorted) == 0 {
+		t, _ := ut.T("supported_k8s_version", fe.Field(), "No valid versions available. This should never happen")
+		return t
+	}
 	maxVersion := validVersionsSorted[len(validVersionsSorted)-1]
 	minVersion := validVersionsSorted[0]
 
