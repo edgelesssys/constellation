@@ -1,4 +1,4 @@
-module github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1
+module github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api
 
 go 1.19
 
