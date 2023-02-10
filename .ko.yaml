@@ -1,8 +1,8 @@
-defaultBaseImage: ghcr.io/edgelesssys/apko-alpine-base@sha256:17b0f5320d2755f79956df5f4609b5e20f821eb54c10fca93e4564a558929b56
+defaultBaseImage: ghcr.io/edgelesssys/apko-alpine-base:v2.6.0-pre.0.20230213162659-86ab0bcfe2bf@sha256:afde7fb16090ecafdb0b166f4d8d7d06dd7dcf8bcd5b0e4ed22140a0dea34afa
 
 baseImageOverrides:
-  github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532@sha256:ba90dd0fc05c2a7860f5395de26e66c149023b141ad3607e5b241ae9e11df289
-  github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api: ghcr.io/edgelesssys/apko-alpine-qemu-metadata-api@sha256:971f5534f9fa9bff3459278d79b35cc8d87407f7cbcdea680804ec7547772b47
+  github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532:v2.6.0-pre.0.20230213162659-86ab0bcfe2bf@sha256:9474c40dfa32ff6c3390af27db94e2327ba3e3b8c5815b0495a9c3ab47468112
+  github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api: ghcr.io/edgelesssys/apko-alpine-qemu-metadata-api:v2.6.0-pre.0.20230213162659-86ab0bcfe2bf@sha256:96e08c48de4ad53a181bb95824317cda3669de46de4578f497fb54d3d231f95a
 
 builds:
   - id: keyservice
