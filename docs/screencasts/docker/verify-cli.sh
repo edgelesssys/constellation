@@ -2,46 +2,39 @@
 # Note: Expects to be able to run 'sudo install' without a password
 
 set timeout -1
-set send_human {0.05 0 1 0.05 0.3}
+set send_human {0.005 0.015 1 0.05 0.3}
 set CTRLC \003
 set record_name [lindex $argv 0];
 
 proc expect_prompt {} {
     # make sure this matches your prompt
-    expect "$ "
+    expect "0m "
 }
 
 proc run_command {cmd} {
-    send -h "$cmd"
-    send "\r"
-    expect -timeout 1
-}
-
-proc send_keystroke_to_interactive_process {key {addl_sleep 2}} {
-    send "$key"
-    expect -timeout 1
-    sleep $addl_sleep
+    send -h "$cmd\r"
+    expect -timeout 3
 }
 
 # Start recording
-spawn asciinema rec $record_name
+spawn asciinema rec --overwrite /recordings/verify-cli.cast
 send "\r"
 expect_prompt
 
 ### Step 0: Requirements
-run_command "echo Step 0: Installing requirements"
-expect_prompt
-run_command "go install github.com/sigstore/cosign/cmd/cosign@latest"
-expect_prompt
-run_command "go install github.com/sigstore/rekor/cmd/rekor-cli@latest"
-expect_prompt
+# run_command "echo Step 0: Installing requirements"
+# expect_prompt
+# run_command "go install github.com/sigstore/cosign/cmd/cosign@latest"
+# expect_prompt
+# run_command "go install github.com/sigstore/rekor/cmd/rekor-cli@latest"
+# expect_prompt
 
 ### Step 1: Download CLI
 run_command "echo Step 1: Download CLI and signature"
 expect_prompt
-run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64"
+run_command "curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64"
 expect_prompt
-run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64.sig"
+run_command "curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64.sig"
 expect_prompt
 
 ### Step 2: Verify the CLI using cosign

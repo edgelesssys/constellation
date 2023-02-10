@@ -8,7 +8,7 @@ set record_name [lindex $argv 0];
 
 proc expect_prompt {} {
     # make sure this matches your prompt
-    expect "$ "
+    expect "0m "
 }
 
 proc run_command {cmd} {
@@ -24,7 +24,7 @@ proc send_keystroke_to_interactive_process {key {addl_sleep 2}} {
 }
 
 # Start recording
-spawn asciinema rec --overwrite $record_name
+spawn asciinema rec --overwrite /recordings/check-sbom.cast
 send "\r"
 expect_prompt
 

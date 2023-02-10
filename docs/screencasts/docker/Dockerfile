@@ -14,12 +14,14 @@ ENV PATH="${PATH}:/usr/local/go/bin:/root/go/bin"
 RUN go install github.com/sigstore/cosign/cmd/cosign@latest
 RUN go install github.com/sigstore/rekor/cmd/rekor-cli@latest
 
-# Set prompt
-ENV PS1='$ '
+ENV SHELL=/bin/bash
+ENV TERM=xterm-256color
+ENV COLUMNS=200
+RUN echo 'export PS1="\[\033[38;2;144;255;153m\]~/constellation\[\033[0m\]\r\n\[\033[38;2;139;4;221m\]$\[\033[0m\] "' >> /root/.bashrc
 
 # Copy install scripts
 COPY ./*.sh /root/
 
 WORKDIR /root
 ENTRYPOINT ["/usr/bin/expect", "-f"]
-CMD ["verify-cli.sh", "/recordings/verify-cli.cast"]
+CMD ["verify-cli.sh"]
