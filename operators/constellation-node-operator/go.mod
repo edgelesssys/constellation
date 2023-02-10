@@ -19,7 +19,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.uber.org/multierr v1.9.0
-	golang.org/x/mod v0.7.0
+	golang.org/x/mod v0.8.0
 	google.golang.org/api v0.107.0
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.25.4
