@@ -479,6 +479,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 	t.Helper()
 
 	conf.Image = constants.VersionInfo
+	conf.Name = "kubernetes"
 
 	switch csp {
 	case cloudprovider.Azure:

@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apiserver/pkg/authentication/user"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -87,25 +88,26 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 }
 
 // InitCluster instruments kubeadm to initialize the K8s cluster.
+// On success an admin kubeconfig file is returned.
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
-) error {
+	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
+) ([]byte, error) {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
-		return fmt.Errorf("generating default audit policy: %w", err)
+		return nil, fmt.Errorf("generating default audit policy: %w", err)
 	}
 	if err := os.WriteFile(auditPolicyPath, auditPolicy, 0o644); err != nil {
-		return fmt.Errorf("writing default audit policy: %w", err)
+		return nil, fmt.Errorf("writing default audit policy: %w", err)
 	}
 
 	initConfigFile, err := os.CreateTemp("", "kubeadm-init.*.yaml")
 	if err != nil {
-		return fmt.Errorf("creating init config file %v: %w", initConfigFile.Name(), err)
+		return nil, fmt.Errorf("creating init config file %v: %w", initConfigFile.Name(), err)
 	}
 
 	if _, err := initConfigFile.Write(initConfig); err != nil {
-		return fmt.Errorf("writing kubeadm init yaml config %v: %w", initConfigFile.Name(), err)
+		return nil, fmt.Errorf("writing kubeadm init yaml config %v: %w", initConfigFile.Name(), err)
 	}
 
 	// preflight
@@ -115,9 +117,9 @@ func (k *KubernetesUtil) InitCluster(
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm init phase preflight failed (code %v) with: %s", exitErr.ExitCode(), out)
+			return nil, fmt.Errorf("kubeadm init phase preflight failed (code %v) with: %s", exitErr.ExitCode(), out)
 		}
-		return fmt.Errorf("kubeadm init: %w", err)
+		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 
 	// create CA certs
@@ -127,20 +129,20 @@ func (k *KubernetesUtil) InitCluster(
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm init phase certs all failed (code %v) with: %s", exitErr.ExitCode(), out)
+			return nil, fmt.Errorf("kubeadm init phase certs all failed (code %v) with: %s", exitErr.ExitCode(), out)
 		}
-		return fmt.Errorf("kubeadm init: %w", err)
+		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 
 	// create kubelet key and CA signed certificate for the node
 	log.Infof("Creating signed kubelet certificate")
 	if err := k.createSignedKubeletCert(nodeName, ips); err != nil {
-		return err
+		return nil, fmt.Errorf("creating signed kubelete certificate: %w", err)
 	}
 
 	log.Infof("Preparing node for Konnectivity")
 	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
-		return fmt.Errorf("setup konnectivity: %w", err)
+		return nil, fmt.Errorf("setup konnectivity: %w", err)
 	}
 
 	// initialize the cluster
@@ -155,12 +157,29 @@ func (k *KubernetesUtil) InitCluster(
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), out)
+			return nil, fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), out)
 		}
-		return fmt.Errorf("kubeadm init: %w", err)
+		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	log.With(zap.String("output", string(out))).Infof("kubeadm init succeeded")
-	return nil
+
+	userName := clusterName + "-admin"
+
+	log.With(zap.String("userName", userName)).Infof("Creating admin kubeconfig file")
+	cmd = exec.CommandContext(
+		ctx, constants.KubeadmPath, "kubeconfig", "user",
+		"--client-name", userName, "--config", initConfigFile.Name(), "--org", user.SystemPrivilegedGroup,
+	)
+	out, err = cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return nil, fmt.Errorf("kubeadm kubeconfig user failed (code %v) with: %s", exitErr.ExitCode(), out)
+		}
+		return nil, fmt.Errorf("kubeadm kubeconfig user: %w", err)
+	}
+	log.Infof("kubeadm kubeconfig user succeeded")
+	return out, nil
 }
 
 func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint string) error {

@@ -161,9 +161,15 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	// Check if we are running on a CVM
 	_, isCVM := s.issuer.(*snp.Issuer)
 
+	clusterName := req.ClusterName
+	if clusterName == "" {
+		clusterName = "constellation"
+	}
+
 	kubeconfig, err := s.initializer.InitCluster(ctx,
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
+		clusterName,
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
@@ -237,6 +243,7 @@ type ClusterInitializer interface {
 		ctx context.Context,
 		cloudServiceAccountURI string,
 		k8sVersion string,
+		clusterName string,
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIDKeyDigest bool,

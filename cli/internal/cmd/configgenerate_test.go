@@ -41,11 +41,11 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	wantConf := config.Default()
-	wantConf.RemoveProviderExcept(cloudprovider.GCP)
-
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
+
+	wantConf := config.Default()
+	wantConf.RemoveProviderExcept(cloudprovider.GCP)
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))

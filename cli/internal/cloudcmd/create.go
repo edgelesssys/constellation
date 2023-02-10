@@ -53,7 +53,7 @@ func NewCreator(out io.Writer) *Creator {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
+func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
 	image, err := c.image.FetchReference(ctx, config)
 	if err != nil {
@@ -67,21 +67,21 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
+		return c.createAWS(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
+		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.Azure:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
+		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -92,18 +92,18 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		}
 		defer cl.RemoveInstaller()
 		lv := c.newLibvirtRunner()
-		return c.createQEMU(ctx, cl, lv, name, config, controlPlaneCount, workerCount, image)
+		return c.createQEMU(ctx, cl, lv, config, controlPlaneCount, workerCount, image)
 	default:
 		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int, image string,
+	insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AWSClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               name,
+			Name:               config.Name,
 			CountControlPlanes: controlPlaneCount,
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
@@ -137,11 +137,11 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int, image string,
+	insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.GCPClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               name,
+			Name:               config.Name,
 			CountControlPlanes: controlPlaneCount,
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
@@ -175,11 +175,11 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int, image string,
+	insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               name,
+			Name:               config.Name,
 			CountControlPlanes: controlPlaneCount,
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
@@ -241,7 +241,7 @@ func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClu
 	return vars
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
+func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, config *config.Config,
 	controlPlaneCount, workerCount int, source string,
 ) (idFile clusterid.File, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
@@ -260,7 +260,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	switch {
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
-		if err := lv.Start(ctx, name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
+		if err := lv.Start(ctx, config.Name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
 			return clusterid.File{}, err
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
@@ -292,7 +292,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 
 	vars := terraform.QEMUVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               name,
+			Name:               config.Name,
 			CountControlPlanes: controlPlaneCount,
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,

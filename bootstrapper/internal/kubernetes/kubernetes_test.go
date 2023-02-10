@@ -50,16 +50,12 @@ func TestInitCluster(t *testing.T) {
 		kubectl          stubKubectl
 		kubeAPIWaiter    stubKubeAPIWaiter
 		providerMetadata ProviderMetadata
-		kubeconfigReader configReader
 		wantConfig       k8sapi.KubeadmInitYAML
 		wantErr          bool
 		k8sVersion       versions.ValidK8sVersion
 	}{
 		"kubeadm init works with metadata and loadbalancer": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
@@ -81,6 +77,7 @@ func TestInitCluster(t *testing.T) {
 					},
 				},
 				ClusterConfiguration: kubeadm.ClusterConfiguration{
+					ClusterName:          "kubernetes",
 					ControlPlaneEndpoint: loadbalancerIP,
 					APIServer: kubeadm.APIServer{
 						CertSANs: []string{privateIP},
@@ -91,10 +88,7 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when annotating itself": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
@@ -110,10 +104,7 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when retrieving metadata self": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
 				selfErr: someErr,
@@ -122,10 +113,7 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil: stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			providerMetadata: &stubProviderMetadata{
 				getLoadBalancerEndpointErr: someErr,
 			},
@@ -133,9 +121,9 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when applying the init config": {
-			clusterUtil: stubClusterUtil{initClusterErr: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
+			clusterUtil: stubClusterUtil{
+				initClusterErr: someErr,
+				kubeconfig:     []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -143,95 +131,67 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when deploying cilium": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{ciliumError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			helmClient:       stubHelmClient{ciliumError: someErr},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			helmClient:       stubHelmClient{servicesError: someErr},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting the cloud node manager": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			helmClient:       stubHelmClient{servicesError: someErr},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting the cluster autoscaler": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			helmClient:       stubHelmClient{servicesError: someErr},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when reading kubeconfig": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				readErr: someErr,
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up konnectivity": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
+			helmClient:       stubHelmClient{servicesError: someErr},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up verification service": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when waiting for kubeAPI server": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: someErr},
 			providerMetadata: &stubProviderMetadata{},
 			k8sVersion:       versions.Default,
 			wantErr:          true,
 		},
 		"unsupported k8sVersion fails cluster creation": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				kubeconfig: []byte("someKubeconfig"),
-			},
+			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			k8sVersion:       "1.19",
@@ -251,12 +211,11 @@ func TestInitCluster(t *testing.T) {
 				kubeAPIWaiter:    &tc.kubeAPIWaiter,
 				configProvider:   &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
 				client:           &tc.kubectl,
-				kubeconfigReader: tc.kubeconfigReader,
 				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
 			_, err := kube.InitCluster(
-				context.Background(), serviceAccountURI, string(tc.k8sVersion),
+				context.Background(), serviceAccountURI, string(tc.k8sVersion), "kubernetes",
 				nil, nil, false, true, []byte("{}"), false, nil, logger.NewTest(t),
 			)
 
@@ -503,6 +462,8 @@ type stubClusterUtil struct {
 	joinClusterErr         error
 	startKubeletErr        error
 
+	kubeconfig []byte
+
 	initConfigs [][]byte
 	joinConfigs [][]byte
 }
@@ -515,9 +476,9 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, kubernetesCompo
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) ([]byte, error) {
 	s.initConfigs = append(s.initConfigs, initConfig)
-	return s.initClusterErr
+	return s.kubeconfig, s.initClusterErr
 }
 
 func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
@@ -609,15 +570,6 @@ func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {
 
 func (s *stubKubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
 	return s.listAllNamespacesResp, s.listAllNamespacesErr
-}
-
-type stubKubeconfigReader struct {
-	kubeconfig []byte
-	readErr    error
-}
-
-func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
-	return s.kubeconfig, s.readErr
 }
 
 type stubHelmClient struct {

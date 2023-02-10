@@ -30,7 +30,6 @@ func NewCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		RunE:  runCreate,
 	}
-	cmd.Flags().String("name", "constell", "create the cluster with the specified name")
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
 	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
@@ -110,9 +109,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	case cloudprovider.AWS:
 		c.log.Debugf("Configuring instance type for AWS")
 		instanceType = conf.Provider.AWS.InstanceType
-		if len(flags.name) > 10 {
-			return fmt.Errorf("cluster name on AWS must not be longer than 10 characters")
-		}
 	case cloudprovider.Azure:
 		c.log.Debugf("Configuring instance type for Azure")
 		instanceType = conf.Provider.Azure.InstanceType
@@ -142,7 +138,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	spinner.Start("Creating", false)
-	idFile, err := creator.Create(cmd.Context(), provider, conf, flags.name, instanceType, flags.controllerCount, flags.workerCount)
+	idFile, err := creator.Create(cmd.Context(), provider, conf, instanceType, flags.controllerCount, flags.workerCount)
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 	spinner.Stop()
 	if err != nil {
@@ -177,18 +173,6 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
 	}
 
-	name, err := cmd.Flags().GetString("name")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing name argument: %w", err)
-	}
-	c.log.Debugf("Name flag is %q", name)
-	if len(name) > constants.ConstellationNameLength {
-		return createFlags{}, fmt.Errorf(
-			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
-			constants.ConstellationNameLength, len(name), name,
-		)
-	}
-
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
@@ -210,7 +194,6 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	return createFlags{
 		controllerCount: controllerCount,
 		workerCount:     workerCount,
-		name:            name,
 		configPath:      configPath,
 		force:           force,
 		yes:             yes,
@@ -221,7 +204,6 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 type createFlags struct {
 	controllerCount int
 	workerCount     int
-	name            string
 	configPath      string
 	force           bool
 	yes             bool

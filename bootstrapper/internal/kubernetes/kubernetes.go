@@ -30,7 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,11 +37,6 @@ import (
 )
 
 var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
-
-// configReader provides kubeconfig as []byte.
-type configReader interface {
-	ReadKubeconfig() ([]byte, error)
-}
 
 // configurationProvider provides kubeadm init and join configuration.
 type configurationProvider interface {
@@ -62,7 +56,6 @@ type KubeWrapper struct {
 	kubeAPIWaiter       kubeAPIWaiter
 	configProvider      configurationProvider
 	client              k8sapi.Client
-	kubeconfigReader    configReader
 	providerMetadata    ProviderMetadata
 	initialMeasurements measurements.M
 	getIPAddr           func() (string, error)
@@ -79,7 +72,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		kubeAPIWaiter:       kubeAPIWaiter,
 		configProvider:      configProvider,
 		client:              client,
-		kubeconfigReader:    &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
 		providerMetadata:    providerMetadata,
 		initialMeasurements: measurements,
 		getIPAddr:           getIPAddr,
@@ -88,8 +80,8 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, azureCVM bool,
+	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string,
+	measurementSalt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -139,6 +131,7 @@ func (k *KubeWrapper) InitCluster(
 		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
 	initConfig := k.configProvider.InitConfiguration(ccmSupported, versionString)
 	initConfig.SetNodeIP(nodeIP)
+	initConfig.SetClusterName(clusterName)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
 	initConfig.SetProviderID(instance.ProviderID)
@@ -148,13 +141,11 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, controlPlaneEndpoint, conformanceMode, log); err != nil {
+	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, controlPlaneEndpoint, conformanceMode, log)
+	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
-	kubeConfig, err := k.GetKubeconfig()
-	if err != nil {
-		return nil, fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
-	}
+
 	err = k.client.Initialize(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("initializing kubectl client: %w", err)
@@ -250,7 +241,7 @@ func (k *KubeWrapper) InitCluster(
 
 	k.clusterUtil.FixCilium(log)
 
-	return k.GetKubeconfig()
+	return kubeConfig, nil
 }
 
 // JoinCluster joins existing Kubernetes cluster.
@@ -309,11 +300,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	k.clusterUtil.FixCilium(log)
 
 	return nil
-}
-
-// GetKubeconfig returns the current nodes kubeconfig of stored on disk.
-func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
-	return k.kubeconfigReader.ReadKubeconfig()
 }
 
 // setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.

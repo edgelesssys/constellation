@@ -35,7 +35,7 @@ func (c *stubCloudCreator) Create(
 	ctx context.Context,
 	provider cloudprovider.Provider,
 	config *config.Config,
-	name, insType string,
+	insType string,
 	coordCount, nodeCount int,
 ) (clusterid.File, error) {
 	c.createCalled = true
