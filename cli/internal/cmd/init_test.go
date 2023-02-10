@@ -196,6 +196,7 @@ func TestInitialize(t *testing.T) {
 
 func TestWriteOutput(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 
 	resp := &initproto.InitResponse{
 		OwnerId:    []byte("ownerID"),
@@ -221,9 +222,12 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  "cluster-ip",
 	}
-	i := &initCmd{log: logger.NewTest(t)}
-	err := i.writeOutput(idFile, resp, &out, fileHandler)
-	assert.NoError(err)
+	i := &initCmd{
+		log:    logger.NewTest(t),
+		merger: &stubMerger{},
+	}
+	err := i.writeOutput(idFile, resp, false, &out, fileHandler)
+	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
@@ -239,6 +243,29 @@ func TestWriteOutput(t *testing.T) {
 	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
 	assert.Equal(expectedIDFile, testIDFile)
+
+	// test config merging
+	out.Reset()
+	require.NoError(afs.Remove(constants.AdminConfFilename))
+	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	require.NoError(err)
+	// assert.Contains(out.String(), ownerID)
+	assert.Contains(out.String(), clusterID)
+	assert.Contains(out.String(), constants.AdminConfFilename)
+	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
+	assert.Contains(out.String(), "You can now connect to your cluster")
+
+	// test config merging with env vars set
+	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
+	out.Reset()
+	require.NoError(afs.Remove(constants.AdminConfFilename))
+	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	require.NoError(err)
+	// assert.Contains(out.String(), ownerID)
+	assert.Contains(out.String(), clusterID)
+	assert.Contains(out.String(), constants.AdminConfFilename)
+	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
+	assert.Contains(out.String(), "Warning: KUBECONFIG environment variable is set")
 }
 
 func TestReadOrGenerateMasterSecret(t *testing.T) {
@@ -473,6 +500,19 @@ type stubInitServer struct {
 
 func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	return s.initResp, s.initErr
+}
+
+type stubMerger struct {
+	envVar   string
+	mergeErr error
+}
+
+func (m *stubMerger) mergeConfigs(string, file.Handler) error {
+	return m.mergeErr
+}
+
+func (m *stubMerger) kubeconfigEnvVar() string {
+	return m.envVar
 }
 
 func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, csp cloudprovider.Provider) *config.Config {
