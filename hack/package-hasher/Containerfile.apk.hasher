@@ -8,8 +8,6 @@ RUN chmod +x /usr/bin/repro-get
 
 RUN apk update && apk add \
     alpine-base \
-    cryptsetup-dev \
-    gcompat \
     libvirt-dev \
     abuild
 
