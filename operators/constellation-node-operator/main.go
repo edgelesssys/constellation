@@ -31,7 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1/v1alpha1"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/controllers"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
