@@ -311,7 +311,7 @@ jobs:
       cloudProvider: ${{ matrix.csp }}
       runner: ${{ matrix.runner }}
       test: "sonobuoy full"
-      kubernetesVersion: "1.25"
+      kubernetesVersion: "v1.25.6"
       keepMeasurements: true
       osImage: ${{ inputs.version }}
       machineType: "default"
