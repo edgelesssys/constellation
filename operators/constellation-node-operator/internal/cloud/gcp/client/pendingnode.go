@@ -12,13 +12,12 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1/v1alpha1"
-	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"google.golang.org/api/googleapi"
 )
 
 // GetNodeState returns the state of the node.
-func (c *Client) GetNodeState(ctx context.Context, providerID string) (updatev1alpha1.CSPNodeState, error) {
+func (c *Client) GetNodeState(ctx context.Context, providerID string) (v1alpha1.CSPNodeState, error) {
 	project, zone, instanceName, err := splitProviderID(providerID)
 	if err != nil {
 		return "", err
