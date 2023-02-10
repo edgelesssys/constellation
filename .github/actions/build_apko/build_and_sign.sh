@@ -63,6 +63,6 @@ if [[ -n ${APKO_CONFIG} ]]; then
 fi
 
 echo "Building all images in image"
-for imageConfig in apko/*.yaml; do
+for imageConfig in ./*.yaml; do
   buildImage "${imageConfig}"
 done

@@ -64,10 +64,11 @@ runs:
       env:
         DOCKER_BUILDKIT: "1"
       run: |
-        docker build -o . -f hack/package-hasher/Containerfile.apk.downloader .
+        docker build -o ./apko -f hack/package-hasher/Containerfile.apk.downloader ./apko
 
     - name: Build apko images and sign them
       shell: bash
+      working-directory: apko
       env:
         COSIGN_EXPERIMENTAL: "true"
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
@@ -77,7 +78,7 @@ runs:
         APKO_ARCH: ${{ inputs.apkoArch }}
         CONTAINER_TAGS: ${{ inputs.containerTags }}
         REGISTRY: ${{ inputs.registry }}
-      run: .github/actions/build_apko/build_and_sign.sh
+      run: ../.github/actions/build_apko/build_and_sign.sh
 
     - name: Sign sboms
       if: |
@@ -85,6 +86,7 @@ runs:
         inputs.cosignPrivateKey != '' &&
         inputs.cosignPassword != ''
       shell: bash
+      working-directory: apko
       env:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
@@ -106,4 +108,4 @@ runs:
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: sboms
-        path: sboms.zip
+        path: apko/sboms.zip
