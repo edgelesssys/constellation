@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
+	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -222,7 +223,7 @@ type installDoer struct {
 
 // Do logs which chart is installed and tries to install it.
 func (i installDoer) Do(ctx context.Context) error {
-	i.log.Debugf("trying helm install for chart %s", i.chart.Name())
+	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install helm chart")
 
 	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
 
