@@ -47,3 +47,7 @@ func (t *simulatedTPM) Close() error {
 	// never close the underlying simulated TPM to allow calling the TPMOpenFunc again
 	return nil
 }
+
+func (*simulatedTPM) EventLog() ([]byte, error) {
+	return nil, nil
+}
