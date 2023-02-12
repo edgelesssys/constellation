@@ -39,15 +39,15 @@ import (
 func newUpgradeCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check",
-		Short: "Check for possible upgrades.",
+		Short: "Check for possible upgrades",
 		Long:  "Check which upgrades can be applied to your Constellation Cluster.",
 		Args:  cobra.NoArgs,
 		RunE:  runUpgradeCheck,
 	}
 
-	cmd.Flags().BoolP("write-config", "w", false, "Update the specified config file with the suggested versions")
-	cmd.Flags().String("ref", versionsapi.ReleaseRef, "Specify the reference used when querying the versionsapi for new versions.")
-	cmd.Flags().String("stream", "stable", "Specify the stream used when querying the versionsapi for new versions.")
+	cmd.Flags().BoolP("write-config", "w", false, "update the specified config file with the suggested versions")
+	cmd.Flags().String("ref", versionsapi.ReleaseRef, "the reference to use for querying new versions")
+	cmd.Flags().String("stream", "stable", "the stream to use for querying new versions")
 
 	return cmd
 }

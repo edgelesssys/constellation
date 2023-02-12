@@ -47,7 +47,7 @@ func NewRootCmd() *cobra.Command {
 	must(rootCmd.MarkPersistentFlagFilename("config", "yaml"))
 
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
-	rootCmd.PersistentFlags().Bool("force", false, "disables version validation errors - might result in corrupted clusters")
+	rootCmd.PersistentFlags().Bool("force", false, "disable version compatibility checks - might result in corrupted clusters")
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
