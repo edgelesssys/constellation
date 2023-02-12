@@ -80,9 +80,8 @@ type AttestationDocument struct {
 	Attestation *attest.Attestation
 	// InstanceInfo is used to verify the provided public key.
 	InstanceInfo []byte
-	// arbitrary data, signed by the TPM.
-	UserData          []byte
-	UserDataSignature []byte
+	// arbitrary data, quoted by the TPM.
+	UserData []byte
 }
 
 // Issuer handles issuing of TPM based attestation documents.
@@ -117,7 +116,8 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	defer aK.Close()
 
 	// Create an attestation using the loaded key
-	attestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: nonce})
+	extraData := makeExtraData(userData, nonce)
+	attestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
 	if err != nil {
 		return nil, fmt.Errorf("creating attestation: %w", err)
 	}
@@ -128,17 +128,10 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
 	}
 
-	// Sign user provided data using the loaded key
-	userDataSigned, err := aK.SignData(userData)
-	if err != nil {
-		return nil, fmt.Errorf("signing user data: %w", err)
-	}
-
 	attDoc := AttestationDocument{
-		Attestation:       attestation,
-		InstanceInfo:      instanceInfo,
-		UserData:          userData,
-		UserDataSignature: userDataSigned,
+		Attestation:  attestation,
+		InstanceInfo: instanceInfo,
+		UserData:     userData,
 	}
 	return json.Marshal(attDoc)
 }
@@ -192,7 +185,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	if _, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      nonce,
+			Nonce:      makeExtraData(attDoc.UserData, nonce),
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
@@ -216,15 +209,10 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 		}
 	}
 
-	// Verify signed user data
-	digest := sha256.Sum256(attDoc.UserData)
-	if err = v.verifyUserData(aKP, crypto.SHA256, digest[:], attDoc.UserDataSignature); err != nil {
-		return nil, fmt.Errorf("verifying signed user data: %w", err)
-	}
-
 	if v.log != nil {
 		v.log.Infof("Successfully validated attestation document")
 	}
+
 	return attDoc.UserData, nil
 }
 
@@ -280,4 +268,11 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 	}
 
 	return m, nil
+}
+
+func makeExtraData(userData []byte, nonce []byte) []byte {
+	data := append([]byte{}, userData...)
+	data = append(data, nonce...)
+	digest := sha256.Sum256(data)
+	return digest[:]
 }

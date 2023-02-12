@@ -66,13 +66,17 @@ func TestValidate(t *testing.T) {
 	}
 
 	testExpectedPCRs := measurements.M{
-		0: measurements.WithAllBytes(0x00, true),
-		1: measurements.WithAllBytes(0x00, true),
+		0:                                      measurements.WithAllBytes(0x00, false),
+		1:                                      measurements.WithAllBytes(0x00, false),
+		uint32(measurements.PCRIndexClusterID): measurements.WithAllBytes(0x00, false),
 	}
 	warnLog := &testAttestationLogger{}
 
-	issuer := NewIssuer(newSimTPMWithEventLog, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo)
-	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog)
+	tpmOpen, tpmCloser := tpmsim.NewSimulatedTPMOpenFunc()
+	defer tpmCloser.Close()
+
+	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo)
+	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, nil)
 
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
@@ -89,6 +93,24 @@ func TestValidate(t *testing.T) {
 	out, err := validator.Validate(attDocRaw, nonce)
 	require.NoError(err)
 	require.Equal(challenge, out)
+
+	// validation must fail after bootstrapping (change of enforced PCR)
+	require.NoError(MarkNodeAsBootstrapped(tpmOpen, []byte{2}))
+	attDocBootstrappedRaw, err := issuer.Issue(challenge, nonce)
+	require.NoError(err)
+	_, err = validator.Validate(attDocBootstrappedRaw, nonce)
+	require.Error(err)
+
+	// userData must be bound to PCR state
+	attDocBootstrappedRaw, err = issuer.Issue([]byte{2, 3}, nonce)
+	require.NoError(err)
+	var attDocBootstrapped AttestationDocument
+	require.NoError(json.Unmarshal(attDocBootstrappedRaw, &attDocBootstrapped))
+	attDocBootstrapped.Attestation = attDoc.Attestation
+	attDocBootstrappedRaw, err = json.Marshal(attDocBootstrapped)
+	require.NoError(err)
+	_, err = validator.Validate(attDocBootstrappedRaw, nonce)
+	require.Error(err)
 
 	expectedPCRs := measurements.M{
 		0: measurements.WithAllBytes(0x00, true),
@@ -128,6 +150,11 @@ func TestValidate(t *testing.T) {
 		nonce     []byte
 		wantErr   bool
 	}{
+		"valid": {
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			attDoc:    mustMarshalAttestation(attDoc, require),
+			nonce:     nonce,
+		},
 		"invalid nonce": {
 			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc:    mustMarshalAttestation(attDoc, require),
@@ -137,10 +164,9 @@ func TestValidate(t *testing.T) {
 		"invalid signature": {
 			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc: mustMarshalAttestation(AttestationDocument{
-				Attestation:       attDoc.Attestation,
-				InstanceInfo:      attDoc.InstanceInfo,
-				UserData:          []byte("wrong data"),
-				UserDataSignature: attDoc.UserDataSignature,
+				Attestation:  attDoc.Attestation,
+				InstanceInfo: attDoc.InstanceInfo,
+				UserData:     []byte("wrong data"),
 			}, require),
 			nonce:   nonce,
 			wantErr: true,
@@ -194,9 +220,8 @@ func TestValidate(t *testing.T) {
 					EventLog:     attDoc.Attestation.EventLog,
 					InstanceInfo: attDoc.Attestation.InstanceInfo,
 				},
-				InstanceInfo:      attDoc.InstanceInfo,
-				UserData:          attDoc.UserData,
-				UserDataSignature: attDoc.UserDataSignature,
+				InstanceInfo: attDoc.InstanceInfo,
+				UserData:     attDoc.UserData,
 			}, require),
 			nonce:   nonce,
 			wantErr: true,
