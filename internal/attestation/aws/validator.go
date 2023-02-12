@@ -35,7 +35,6 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 		pcrs,
 		getTrustedKey,
 		v.tpmEnabled,
-		vtpm.VerifyPKCS1v15,
 		log,
 	)
 	v.getDescribeClient = getEC2Client

@@ -41,7 +41,6 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 		pcrs,
 		v.verifyAttestationKey,
 		validateVM,
-		vtpm.VerifyPKCS1v15,
 		log,
 	)
 	return v
