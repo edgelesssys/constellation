@@ -28,7 +28,6 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 			pcrs,
 			unconditionalTrust,
 			func(attestation vtpm.AttestationDocument) error { return nil },
-			vtpm.VerifyPKCS1v15,
 			log,
 		),
 	}

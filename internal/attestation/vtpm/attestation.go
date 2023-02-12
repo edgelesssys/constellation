@@ -9,10 +9,8 @@ package vtpm
 import (
 	"bytes"
 	"crypto"
-	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
@@ -64,8 +62,6 @@ type (
 	GetInstanceInfo func(tpm io.ReadWriteCloser) ([]byte, error)
 	// ValidateCVM validates confidential computing capabilities of the instance issuing the attestation.
 	ValidateCVM func(attestation AttestationDocument) error
-	// VerifyUserData verifies signed user data.
-	VerifyUserData func(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) error
 )
 
 // AttestationLogger is a logger used to print warnings and infos during attestation validation.
@@ -138,24 +134,22 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 
 // Validator handles validation of TPM based attestation.
 type Validator struct {
-	expected       measurements.M
-	getTrustedKey  GetTPMTrustedAttestationPublicKey
-	validateCVM    ValidateCVM
-	verifyUserData VerifyUserData
+	expected      measurements.M
+	getTrustedKey GetTPMTrustedAttestationPublicKey
+	validateCVM   ValidateCVM
 
 	log AttestationLogger
 }
 
 // NewValidator returns a new Validator.
 func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
-	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
+	validateCVM ValidateCVM, log AttestationLogger,
 ) *Validator {
 	return &Validator{
-		expected:       expected,
-		getTrustedKey:  getTrustedKey,
-		validateCVM:    validateCVM,
-		verifyUserData: verifyUserData,
-		log:            log,
+		expected:      expected,
+		getTrustedKey: getTrustedKey,
+		validateCVM:   validateCVM,
+		log:           log,
 	}
 }
 
@@ -233,15 +227,6 @@ func GetSHA256QuoteIndex(quotes []*tpmProto.Quote) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("attestation did not include SHA256 hashed PCRs")
-}
-
-// VerifyPKCS1v15 is a convenience function to call rsa.VerifyPKCS1v15.
-func VerifyPKCS1v15(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) error {
-	key, ok := pub.(*rsa.PublicKey)
-	if !ok {
-		return errors.New("key is not an RSA public key")
-	}
-	return rsa.VerifyPKCS1v15(key, hash, hashed, sig)
 }
 
 // GetSelectedMeasurements returns a map of Measurments for the PCRs in selection.

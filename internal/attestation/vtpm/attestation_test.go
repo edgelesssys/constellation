@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 	defer tpmCloser.Close()
 
 	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo)
-	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, nil)
+	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, nil)
 
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
@@ -136,7 +136,6 @@ func TestValidate(t *testing.T) {
 		expectedPCRs,
 		fakeGetTrustedKey,
 		fakeValidateCVM,
-		VerifyPKCS1v15,
 		warnLog,
 	)
 	out, err = warningValidator.Validate(attDocRaw, nonce)
@@ -151,18 +150,18 @@ func TestValidate(t *testing.T) {
 		wantErr   bool
 	}{
 		"valid": {
-			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
 			attDoc:    mustMarshalAttestation(attDoc, require),
 			nonce:     nonce,
 		},
 		"invalid nonce": {
-			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
 			attDoc:    mustMarshalAttestation(attDoc, require),
 			nonce:     []byte{4, 3, 2, 1},
 			wantErr:   true,
 		},
 		"invalid signature": {
-			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
 			attDoc: mustMarshalAttestation(AttestationDocument{
 				Attestation:  attDoc.Attestation,
 				InstanceInfo: attDoc.InstanceInfo,
@@ -177,7 +176,7 @@ func TestValidate(t *testing.T) {
 				func(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
 					return nil, errors.New("untrusted")
 				},
-				fakeValidateCVM, VerifyPKCS1v15, warnLog),
+				fakeValidateCVM, warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
@@ -189,7 +188,7 @@ func TestValidate(t *testing.T) {
 				func(attestation AttestationDocument) error {
 					return errors.New("untrusted")
 				},
-				VerifyPKCS1v15, warnLog),
+				warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
@@ -204,13 +203,13 @@ func TestValidate(t *testing.T) {
 				},
 				fakeGetTrustedKey,
 				fakeValidateCVM,
-				VerifyPKCS1v15, warnLog),
+				warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
 		},
 		"no sha256 quote": {
-			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
 			attDoc: mustMarshalAttestation(AttestationDocument{
 				Attestation: &attest.Attestation{
 					AkPub: attDoc.Attestation.AkPub,
@@ -227,7 +226,7 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid attestation document": {
-			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
+			validator: NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, warnLog),
 			attDoc:    []byte("invalid attestation"),
 			nonce:     nonce,
 			wantErr:   true,

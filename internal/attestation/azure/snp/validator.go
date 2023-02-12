@@ -49,7 +49,6 @@ func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, en
 			pcrs,
 			getTrustedKey(&azureInstanceInfo{}, idKeyDigests, enforceIDKeyDigest, log),
 			validateCVM,
-			vtpm.VerifyPKCS1v15,
 			log,
 		),
 	}
