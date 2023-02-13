@@ -57,7 +57,7 @@ and [pseudo-versions](https://go.dev/ref/mod#pseudo-versions).
 
 The [pesudo-version tool](../hack/pseudo-version) can generate a valid pseudo-version for your current head.
 
-### Consisten API path prefix of `ref` and `stream`
+### Consistent API path prefix of `ref` and `stream`
 
 For API calls, paths will always start with `ref` and `stream`:
 

@@ -1,6 +1,6 @@
 # OS image & measurement discovery
 
-The Constellation OS image build pipeline generates a set of images using a chosen commit of the Constellation monorepo and and a desired release version number.
+The Constellation OS image build pipeline generates a set of images using a chosen commit of the Constellation monorepo and a desired release version number.
 
 ```mermaid
 graph LR
