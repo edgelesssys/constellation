@@ -32,6 +32,7 @@ There may be more API groups in the future (e.g. `cli`)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json`](image-api.md)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/measurements.json.sig`](image-api.md)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/image/csp/<csp>/image.raw`](image-api.md)
+- [`/constellation/v1/ref/<ref>/stream/<stream>/<version>/cli/info.json`](cli-api.md#cli-lookup-table)
 
 ## API path identifiers  `ref`, `stream` and `version`
 
