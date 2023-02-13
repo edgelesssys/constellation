@@ -107,6 +107,10 @@ runs:
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
 
+        if [[ ${{ inputs.kubernetesVersion != '' }} = true ]]; then
+          yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
+        fi
+
     - name: Remove embedded measurements
       if: inputs.keepMeasurements == 'false'
       shell: bash

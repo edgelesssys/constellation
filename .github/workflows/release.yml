@@ -294,25 +294,20 @@ jobs:
     name: Run E2E tests
     needs: [verify-inputs, update-hardcoded-measurements]
     secrets: inherit
-    strategy:
-      matrix:
-        runner: [ubuntu-22.04, macos-12]
-        csp: [aws, azure, gcp]
-    uses: ./.github/workflows/e2e-test-manual.yml
     permissions:
       id-token: write
       contents: read
+    strategy:
+      matrix:
+        runner: [ubuntu-22.04, macos-12]
+    uses: ./.github/workflows/e2e-test-weekly.yml
     with:
-      workerNodesCount: 2
-      controlNodesCount: 3
-      cloudProvider: ${{ matrix.csp }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       runner: ${{ matrix.runner }}
       test: "sonobuoy full"
       kubernetesVersion: "v1.25"
       keepMeasurements: true
       osImage: ${{ inputs.version }}
-      machineType: "default"
-      git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
   e2e-mini:
     name: Run E2E tests for mini Constellation
