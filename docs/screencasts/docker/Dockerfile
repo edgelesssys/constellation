@@ -14,9 +14,18 @@ ENV PATH="${PATH}:/usr/local/go/bin:/root/go/bin"
 RUN go install github.com/sigstore/cosign/cmd/cosign@latest
 RUN go install github.com/sigstore/rekor/cmd/rekor-cli@latest
 
-ENV SHELL=/bin/bash
+# Enable RGB colors in PS1
 ENV TERM=xterm-256color
-ENV COLUMNS=200
+# Set width of terminal, default is ~80 and leads to broken lines for long lines,
+# e.g., curl & cosign commands.
+ENV COLUMNS=512
+# For PS1 to work shell needs to specified
+ENV SHELL=/bin/bash
+# ANSI color codes are used to control PS1 prompt. We use "\033[38;2;<r>;<g>;<b>m"
+# to control the foreground color with RBG colors [1]. Non-printable characters
+# need to  be escaped with additional \[ and \], see [2].
+# [1]: https://stackoverflow.com/a/33206814/2306355
+# [2]: https://stackoverflow.com/a/19501528/2306355
 RUN echo 'export PS1="\[\033[38;2;144;255;153m\]~/constellation\[\033[0m\]\r\n\[\033[38;2;139;4;221m\]$\[\033[0m\] "' >> /root/.bashrc
 
 # Copy install scripts

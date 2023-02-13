@@ -7,7 +7,7 @@ set CTRLC \003
 set record_name [lindex $argv 0];
 
 proc expect_prompt {} {
-    # make sure this matches your prompt
+    # This matches the trailing 0m of our ANSI control sequence. See PS1 in Dockerfile.
     expect "0m "
 }
 
@@ -15,12 +15,6 @@ proc run_command {cmd} {
     send -h "$cmd"
     send "\r"
     expect -timeout 1
-}
-
-proc send_keystroke_to_interactive_process {key {addl_sleep 2}} {
-    send "$key"
-    expect -timeout 1
-    sleep $addl_sleep
 }
 
 # Start recording
@@ -47,7 +41,7 @@ run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/lat
 expect_prompt
 run_command "grype constellation.spdx.sbom -o table -q"
 expect_prompt
-run_command "echo We are safe! :)"
+run_command "echo We are safe!"
 
 # Stop recording
 send "exit"
