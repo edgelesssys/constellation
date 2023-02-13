@@ -19,6 +19,7 @@ import (
 	"time"
 
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -115,6 +116,12 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{initErr: someErr},
 			retriable:     true,
 			wantErr:       true,
+		},
+		"k8s version without v works": {
+			provider:      cloudprovider.Azure,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{initResp: testInitResp},
+			configMutator: func(c *config.Config) { c.KubernetesVersion = strings.TrimPrefix(string(versions.Default), "v") },
 		},
 	}
 

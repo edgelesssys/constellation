@@ -18,6 +18,8 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -112,7 +114,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
+	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion))
 	if err != nil {
 		return fmt.Errorf("validating kubernetes version: %w", err)
 	}
