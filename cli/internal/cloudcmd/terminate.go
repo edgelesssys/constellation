@@ -50,7 +50,7 @@ func (t *Terminator) Terminate(ctx context.Context) (retErr error) {
 }
 
 func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient) error {
-	if err := cl.DestroyCluster(ctx); err != nil {
+	if err := cl.Destroy(ctx); err != nil {
 		return err
 	}
 	return cl.CleanUpWorkspace()

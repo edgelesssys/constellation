@@ -121,7 +121,7 @@ func TestCreator(t *testing.T) {
 				if tc.wantRollback {
 					cl := tc.tfClient.(*stubTerraformClient)
 					if tc.wantTerraformRollback {
-						assert.True(cl.destroyClusterCalled)
+						assert.True(cl.destroyCalled)
 					}
 					assert.True(cl.cleanUpWorkspaceCalled)
 					if tc.provider == cloudprovider.QEMU {
