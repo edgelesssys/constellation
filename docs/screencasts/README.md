@@ -34,11 +34,13 @@ There are three different locations were styling is applied:
 
 1. **The prompt** is styled using [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code).
 More explanation and the actual color codes can be found in [Dockerfile](docker/Dockerfile).
-2. **Font size and player dimensions** are passed to the [`AsciinemaWidget`](../src/components/AsciinemaWidget/index.js)
+2. **Player dimensions** are passed to the [`AsciinemaWidget`](../src/components/AsciinemaWidget/index.js)
 when it is [embedded in the docs](../docs/workflows/verify-cli.md#5). Check the `asciinema-player` for a
 [full list of options](https://github.com/asciinema/asciinema-player#options).
 3. **Everything else** is [styled via CSS](../src/css/custom.css). This includes the option to build a custom
 [player theme](https://github.com/asciinema/asciinema-player/wiki/Custom-terminal-themes).
+
+###
 
 ## GitHub README.md
 
