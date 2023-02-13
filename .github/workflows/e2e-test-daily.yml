@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        refStream: ["main-debug", "release-stable"]
+        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     name: Find latest image
     runs-on: ubuntu-22.04
     permissions:
@@ -31,31 +31,20 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+      - name: Select relevant image
+        id: select-image-action
+        uses: ./.github/actions/select_image
         with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
-          aws-region: eu-central-1
-
-      - name: Separate ref and stream from matrix
-        id: separate-ref-stream
-        env:
-          REFSTREAM: ${{ matrix.refStream }}
-        run: |
-          echo "ref=${REFSTREAM%-*}" | tee -a "$GITHUB_OUTPUT"
-          echo "stream=${REFSTREAM#*-}" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Find latest image
-        id: find-latest-image
-        uses: ./.github/actions/versionsapi
-        with:
-          command: latest
-          ref: ${{ steps.separate-ref-stream.outputs.ref == 'release' && '-' || steps.separate-ref-stream.outputs.ref }}
-          stream: ${{ steps.separate-ref-stream.outputs.stream }}
+          osImage: ${{ matrix.refStream }}
 
       - name: Relabel output
         id: relabel-output
-        run: echo "image-${{ matrix.refStream }}=${{ steps.find-latest-image.outputs.output }}" | tee -a "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          ref=$(echo ${{ matrix.refStream }} | cut -d/ -f2)
+          stream=$(echo ${{ matrix.refStream }} | cut -d/ -f4)
+
+          echo "image-$ref-$stream=${{ steps.select-image-action.outputs.osImage }}" | tee -a "$GITHUB_OUTPUT"
 
   e2e-daily:
     strategy:
@@ -63,7 +52,7 @@ jobs:
       max-parallel: 5
       matrix:
         provider: ["gcp", "azure", "aws"]
-        refStream: ["main-debug", "release-stable"]
+        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -105,9 +94,9 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
-          isDebugImage: ${{ matrix.refStream == 'main-debug' }}
-          cliVersion: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || '' }}
+          osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
+          isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
+          cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
