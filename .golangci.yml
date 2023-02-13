@@ -3,6 +3,8 @@ run:
   build-tags:
     - integration
   modules-download-mode: readonly
+  skip-dirs:
+    - 3rdparty/node-maintenance-operator
 
 output:
   format: tab
