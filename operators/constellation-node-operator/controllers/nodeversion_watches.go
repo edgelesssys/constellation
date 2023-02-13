@@ -17,8 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 )
 
 // scalingGroupImageChangedPredicate checks if a scaling group has adopted a new node image for future nodes.
