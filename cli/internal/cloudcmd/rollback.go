@@ -40,7 +40,7 @@ type rollbackerTerraform struct {
 
 func (r *rollbackerTerraform) rollback(ctx context.Context) error {
 	var err error
-	err = multierr.Append(err, r.client.DestroyCluster(ctx))
+	err = multierr.Append(err, r.client.Destroy(ctx))
 	if err == nil {
 		err = multierr.Append(err, r.client.CleanUpWorkspace())
 	}
@@ -56,7 +56,7 @@ type rollbackerQEMU struct {
 func (r *rollbackerQEMU) rollback(ctx context.Context) error {
 	var err error
 	if r.createdWorkspace {
-		err = multierr.Append(err, r.client.DestroyCluster(ctx))
+		err = multierr.Append(err, r.client.Destroy(ctx))
 	}
 	err = multierr.Append(err, r.libvirt.Stop(ctx))
 	if err == nil {

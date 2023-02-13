@@ -272,8 +272,8 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 	}
 }
 
-// DestroyCluster destroys a Constellation cluster using Terraform.
-func (c *Client) DestroyCluster(ctx context.Context) error {
+// Destroy destroys Terraform-created cloud resources.
+func (c *Client) Destroy(ctx context.Context) error {
 	if err := c.tf.Init(ctx); err != nil {
 		return err
 	}
