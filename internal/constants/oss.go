@@ -14,3 +14,6 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELcPl4Ik+qZuH4K049wksoXK/Os3Z
 b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 -----END PUBLIC KEY-----
 `
+
+// VersionBuild is the category of the current build.
+const VersionBuild = "Open-source software build; AGPL-3.0-only applies"

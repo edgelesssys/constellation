@@ -14,3 +14,6 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
 JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 -----END PUBLIC KEY-----
 `
+
+// VersionBuild is the category of the current build.
+const VersionBuild = "Enterprise build; see documentation for license agreement"
