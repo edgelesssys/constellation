@@ -75,7 +75,7 @@ runs:
       shell: bash
       if: inputs.existingConfig != 'true'
       run: |
-        if [[ ${{ inputs.kubernetesVersion != '' }} == true ]]; then
+        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
           constellation config generate ${{ inputs.cloudProvider }} --kubernetes="${{ inputs.kubernetesVersion }}" --debug
         else
           constellation config generate ${{ inputs.cloudProvider }} --debug
@@ -107,6 +107,10 @@ runs:
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
 
+        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
+          yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
+        fi
+
     - name: Remove embedded measurements
       if: inputs.keepMeasurements == 'false'
       shell: bash
@@ -128,6 +132,7 @@ runs:
           constellation-conf.yaml
 
     - name: Set image
+      if: inputs.osImage != ''
       shell: bash
       env:
         image: ${{ inputs.osImage }}
