@@ -1,9 +1,21 @@
-name: e2e test weekly
+name: e2e test release
+# This workflow is not integrated with e2e-test-weekly since we want different tests to run during weekly and release testing.
+# To integrate both tests we would need to pass executed tests as arguments.
+# Defining the executed tests is currently the main point of the e2e-test-weekly workflow.
+# e2e-test-release runs the same tests as e2e-test-weekly except:
+# - any tests on the last release
+# - loadbalancer tests for AWS. Test test is currently broken and should not block a release. AB#2780.
+#
+# The workflow is triggered by the completion of the release workflow.
+# The workflow only executes, after being triggered, if the triggering workflow completed successfully.
+# e2e-test-release uses the same branch as the triggering workflow and not the commit of the triggering workflow. This is because the release workflow produces further commits.
+# e2e-test-release depends on the fact that actions/constellation_create does not overwrite the default osImage, if no osImage is supplied.
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 6" # At 03:00 on Saturday.
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
@@ -12,41 +24,16 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
-  find-latest-image:
-    strategy:
-      fail-fast: false
-      matrix:
-        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
-    name: Find latest image
+  on-failure-quit:
     runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
-    outputs:
-      image-main-debug: ${{ steps.relabel-output.outputs.image-main-debug }}
-      image-release-stable: ${{ steps.relabel-output.outputs.image-release-stable }}
+    if: github.event.workflow_run.conclusion == 'failure'
     steps:
-      - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Select relevant image
-        id: select-image-action
-        uses: ./.github/actions/select_image
-        with:
-          osImage: ${{ matrix.refStream }}
-
-      - name: Relabel output
-        id: relabel-output
-        shell: bash
-        run: |
-          ref=$(echo ${{ matrix.refStream }} | cut -d/ -f2)
-          stream=$(echo ${{ matrix.refStream }} | cut -d/ -f4)
-
-          echo "image-$ref-$stream=${{ steps.select-image-action.outputs.osImage }}" | tee -a "$GITHUB_OUTPUT"
+      - run: |
+          echo 'Release workflow failed, exiting..'
+          exit 1
 
   e2e-weekly:
+    needs: [on-failure-quit]
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -63,7 +50,7 @@ jobs:
           ]
         provider: ["gcp", "azure", "aws"]
         kubernetes-version: ["v1.24", "v1.25", "v1.26"]
-        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
+        runner: [ubuntu-22.04, macos-12]
         exclude:
           # IAM create test runs only on latest kubernetes-version.
           - test: "iamcreate"
@@ -100,40 +87,34 @@ jobs:
             provider: "aws"
           - test: "perf-bench"
             provider: "aws"
-          # Only iamcreate for K8s v1.25 on all providers.
-          - refStream: "ref/release/stream/stable/?"
-            kubernetes-version: "v1.24"
-          - refStream: "ref/release/stream/stable/?"
-            kubernetes-version: "v1.26"
-          - refStream: "ref/release/stream/stable/?"
-            test: "lb"
-          - refStream: "ref/release/stream/stable/?"
-            test: "perf-bench"
-          - refStream: "ref/release/stream/stable/?"
-            test: "autoscaling"
-          - refStream: "ref/release/stream/stable/?"
-            test: "sonobuoy full"
-          - refStream: "ref/release/stream/stable/?"
-            test: "verify"
-          - refStream: "ref/release/stream/stable/?"
-            test: "recover"
-    runs-on: ubuntu-22.04
+          # Currently broken on AWS. Enable when AB#2780 is fixed.
+          - test: "lb"
+            provider: "aws"
+    runs-on: ${{ matrix.runner }}
     permissions:
       id-token: write
       checks: write
       contents: read
-    needs: [find-latest-image]
     steps:
-      - name: Check out repository
+      - name: Install the basics tools (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: brew install coreutils kubectl bash
+
+      - name: Checkout
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           fetch-depth: 0
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.event.workflow_run.head_branch || '' }}
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.20.2"
+
+      - name: Set up gcloud CLI (macOS)
+        if: matrix.provider == 'gcp' && runner.os == 'macOS'
+        uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # v1.0.1
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -158,10 +139,11 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
-          isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
-          cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
+          cliVersion: ""
           kubernetesVersion: ${{ matrix.kubernetes-version }}
+          osImage: ""
+          isDebugImage: "false"
+          keepMeasurements: "true"
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}

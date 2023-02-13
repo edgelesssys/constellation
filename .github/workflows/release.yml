@@ -203,7 +203,7 @@ jobs:
 
   update-versions:
     name: Update container image versions
-    needs: [verify-inputs, micro-services]
+    needs: [verify-inputs, micro-services, micro-services-metadata]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -294,45 +294,9 @@ jobs:
           git commit -m "attestation: hardcode measurements for ${VERSION}"
           git push
 
-  e2e-tests:
-    name: Run E2E tests
-    needs: [verify-inputs, update-hardcoded-measurements]
-    secrets: inherit
-    strategy:
-      matrix:
-        runner: [ubuntu-22.04, macos-12]
-        csp: [aws, azure, gcp]
-    uses: ./.github/workflows/e2e-test-manual.yml
-    permissions:
-      id-token: write
-      contents: read
-      checks: write
-    with:
-      workerNodesCount: 2
-      controlNodesCount: 3
-      cloudProvider: ${{ matrix.csp }}
-      runner: ${{ matrix.runner }}
-      test: "sonobuoy full"
-      kubernetesVersion: "v1.25"
-      keepMeasurements: true
-      cliImageVersion: ":${{ inputs.version }}"
-      machineType: "default"
-      git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-
-  e2e-mini:
-    name: Run E2E tests for mini Constellation
-    needs: [verify-inputs, update-hardcoded-measurements]
-    uses: ./.github/workflows/e2e-mini.yml
-    permissions:
-      id-token: write
-      contents: read
-    secrets: inherit
-    with:
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-
   tag-release:
     name: Tag release
-    needs: [verify-inputs, e2e-tests, e2e-mini]
+    needs: [verify-inputs, update-hardcoded-measurements]
     runs-on: ubuntu-22.04
     permissions:
       contents: write

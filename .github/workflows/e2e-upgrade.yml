@@ -20,9 +20,10 @@ on:
         description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
         type: string
         required: true
-      toCLI:
-        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+      gitRef:
+        description: Ref to build upgrading CLI on, empty for HEAD.
         type: string
+        default: "head"
         required: false
       toImage:
         description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
@@ -54,9 +55,10 @@ on:
         description: CLI version to create a new cluster with. This has to be a released version, e.g., 'v2.1.3'.
         type: string
         required: true
-      toCLI:
-        description: CLI version to execute upgrade with, e.g., 'v2.1.3', or empty to build HEAD.
+      gitRef:
+        description: Ref to build upgrading CLI on.
         type: string
+        default: "head"
         required: false
       toImage:
         description: Image (shortpath) the cluster is upgraded to, or empty for main/nightly.
@@ -85,11 +87,19 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Check out repository
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - name: Checkout
+        if: inputs.gitRef == 'head'
+        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           fetch-depth: 0
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Checkout ref
+        if: inputs.gitRef != 'head'
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.gitRef }}
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
