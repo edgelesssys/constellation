@@ -40,6 +40,12 @@
     },
     {
       "matchPackagePatterns": [
+        "^github.com/hashicorp/go-kms-wrapping"
+      ],
+      "groupName": "github.com/hashicorp/go-kms-wrapping"
+    },
+    {
+      "matchPackagePatterns": [
         "^github.com/aws/aws-sdk-go-v2"
       ],
       "groupName": "AWS SDK",
