@@ -21,8 +21,8 @@ Commands:
   * [up](#constellation-mini-up): Create and initialize a new MiniConstellation cluster
   * [down](#constellation-mini-down): Destroy a MiniConstellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
-* [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
-  * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
+* [upgrade](#constellation-upgrade): Find and execute upgrades to your Constellation cluster
+  * [check](#constellation-upgrade-check): Check for possible upgrades
   * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
@@ -52,6 +52,7 @@ Work with the Constellation configuration file.
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation config generate
@@ -78,6 +79,7 @@ constellation config generate {aws|azure|gcp|qemu} [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation config fetch-measurements
@@ -107,6 +109,7 @@ constellation config fetch-measurements [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation config instance-types
@@ -132,6 +135,7 @@ constellation config instance-types [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation create
@@ -151,7 +155,6 @@ constellation create [flags]
 ```
   -c, --control-plane-nodes int   number of control-plane nodes (required)
   -h, --help                      help for create
-      --name string               create the cluster with the specified name (default "constell")
   -w, --worker-nodes int          number of worker nodes (required)
   -y, --yes                       create the cluster without further confirmation
 ```
@@ -161,6 +164,7 @@ constellation create [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation init
@@ -183,6 +187,7 @@ constellation init [flags]
       --conformance            enable conformance mode
   -h, --help                   help for init
       --master-secret string   path to base64-encoded master secret
+      --merge-kubeconfig       merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
 ```
 
 ### Options inherited from parent commands
@@ -190,6 +195,7 @@ constellation init [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation mini
@@ -211,6 +217,7 @@ Manage MiniConstellation clusters.
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation mini up
@@ -238,6 +245,7 @@ constellation mini up [flags]
 
 ```
       --debug   enable debug logging
+      --force   disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation mini down
@@ -264,6 +272,7 @@ constellation mini down [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation verify
@@ -293,15 +302,16 @@ constellation verify [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation upgrade
 
-Plan and perform an upgrade of a Constellation cluster
+Find and execute upgrades to your Constellation cluster
 
 ### Synopsis
 
-Plan and perform an upgrade of a Constellation cluster.
+Find and execute upgrades to your Constellation cluster.
 
 ### Options
 
@@ -314,25 +324,28 @@ Plan and perform an upgrade of a Constellation cluster.
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
-## constellation upgrade plan
+## constellation upgrade check
 
-Plan an upgrade of a Constellation cluster
+Check for possible upgrades
 
 ### Synopsis
 
-Plan an upgrade of a Constellation cluster by fetching compatible image versions and their measurements.
+Check which upgrades can be applied to your Constellation Cluster.
 
 ```
-constellation upgrade plan [flags]
+constellation upgrade check [flags]
 ```
 
 ### Options
 
 ```
-  -f, --file string   path to output file, or '-' for stdout (omit for interactive mode)
-  -h, --help          help for plan
+  -h, --help            help for check
+      --ref string      the reference to use for querying new versions (default "-")
+      --stream string   the stream to use for querying new versions (default "stable")
+  -w, --write-config    update the specified config file with the suggested versions
 ```
 
 ### Options inherited from parent commands
@@ -340,6 +353,7 @@ constellation upgrade plan [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation upgrade execute
@@ -367,6 +381,7 @@ constellation upgrade execute [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation recover
@@ -396,6 +411,7 @@ constellation recover [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation terminate
@@ -424,6 +440,7 @@ constellation terminate [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation version
@@ -449,6 +466,7 @@ constellation version [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation iam
@@ -470,6 +488,7 @@ Work with the IAM configuration on your cloud provider.
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation iam create
@@ -485,6 +504,7 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ```
       --generate-config   automatically generate a configuration file and fill in the required fields
   -h, --help              help for create
+      --yes               create the IAM configuration without further confirmation
 ```
 
 ### Options inherited from parent commands
@@ -492,6 +512,7 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation iam create aws
@@ -511,7 +532,6 @@ constellation iam create aws [flags]
 ```
   -h, --help            help for aws
       --prefix string   name prefix for all resources (required)
-      --yes             create the IAM configuration without further confirmation
       --zone string     AWS availability zone the resources will be created in, e.g. us-east-2a (required)
                         Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.
 ```
@@ -521,7 +541,9 @@ constellation iam create aws [flags]
 ```
       --config string     path to the configuration file (default "constellation-conf.yaml")
       --debug             enable debug logging
+      --force             disable version compatibility checks - might result in corrupted clusters
       --generate-config   automatically generate a configuration file and fill in the required fields
+      --yes               create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create azure
@@ -543,7 +565,6 @@ constellation iam create azure [flags]
       --region string             region the resources will be created in, e.g. westus (required)
       --resourceGroup string      name prefix of the two resource groups your cluster / IAM resources will be created in (required)
       --servicePrincipal string   name of the service principal that will be created (required)
-      --yes                       create the IAM configuration without further confirmation
 ```
 
 ### Options inherited from parent commands
@@ -551,7 +572,9 @@ constellation iam create azure [flags]
 ```
       --config string     path to the configuration file (default "constellation-conf.yaml")
       --debug             enable debug logging
+      --force             disable version compatibility checks - might result in corrupted clusters
       --generate-config   automatically generate a configuration file and fill in the required fields
+      --yes               create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create gcp
@@ -574,7 +597,6 @@ constellation iam create gcp [flags]
                                   Find it on the welcome screen of your project: https://console.cloud.google.com/welcome.
       --serviceAccountID string   ID for the service account that will be created (required)
                                   Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$.
-      --yes                       create the IAM configuration without further confirmation
       --zone string               GCP zone the cluster will be deployed in (required)
                                   Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available.
 ```
@@ -584,6 +606,8 @@ constellation iam create gcp [flags]
 ```
       --config string     path to the configuration file (default "constellation-conf.yaml")
       --debug             enable debug logging
+      --force             disable version compatibility checks - might result in corrupted clusters
       --generate-config   automatically generate a configuration file and fill in the required fields
+      --yes               create the IAM configuration without further confirmation
 ```
 
