@@ -2,13 +2,18 @@ module github.com/edgelesssys/constellation/v2/operators/constellation-node-oper
 
 go 1.19
 
-replace github.com/edgelesssys/constellation/v2 => ./../..
+replace (
+	github.com/edgelesssys/constellation/v2 => ./../..
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./api
+)
 
 require (
 	cloud.google.com/go/compute v1.15.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.1.0
+	github.com/edgelesssys/constellation/v2 v2.0.0
+	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/medik8s/node-maintenance-operator v0.14.0
 	github.com/onsi/ginkgo v1.16.5
@@ -44,7 +49,6 @@ require (
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/edgelesssys/constellation/v2 v2.3.0
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

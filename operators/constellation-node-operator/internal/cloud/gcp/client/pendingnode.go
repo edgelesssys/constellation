@@ -12,7 +12,6 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"google.golang.org/api/googleapi"
 )
@@ -32,14 +31,14 @@ func (c *Client) GetNodeState(ctx context.Context, providerID string) (updatev1a
 		var apiErr *googleapi.Error
 		if errors.As(err, &apiErr) {
 			if apiErr.Code == http.StatusNotFound {
-				return v1alpha1.NodeStateTerminated, nil
+				return updatev1alpha1.NodeStateTerminated, nil
 			}
 		}
 		return "", err
 	}
 
 	if instance.Status == nil {
-		return v1alpha1.NodeStateUnknown, nil
+		return updatev1alpha1.NodeStateUnknown, nil
 	}
 
 	// reference: https://cloud.google.com/compute/docs/instances/instance-life-cycle
@@ -47,9 +46,9 @@ func (c *Client) GetNodeState(ctx context.Context, providerID string) (updatev1a
 	case computepb.Instance_PROVISIONING.String():
 		fallthrough
 	case computepb.Instance_STAGING.String():
-		return v1alpha1.NodeStateCreating, nil
+		return updatev1alpha1.NodeStateCreating, nil
 	case computepb.Instance_RUNNING.String():
-		return v1alpha1.NodeStateReady, nil
+		return updatev1alpha1.NodeStateReady, nil
 	case computepb.Instance_STOPPING.String():
 		fallthrough
 	case computepb.Instance_SUSPENDING.String():
@@ -59,7 +58,7 @@ func (c *Client) GetNodeState(ctx context.Context, providerID string) (updatev1a
 	case computepb.Instance_REPAIRING.String():
 		fallthrough
 	case computepb.Instance_TERMINATED.String(): // this is stopped in GCP terms
-		return v1alpha1.NodeStateStopped, nil
+		return updatev1alpha1.NodeStateStopped, nil
 	}
-	return v1alpha1.NodeStateUnknown, nil
+	return updatev1alpha1.NodeStateUnknown, nil
 }

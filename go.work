@@ -4,4 +4,5 @@ use (
 	.
 	./hack
 	./operators/constellation-node-operator/
+	./operators/constellation-node-operator/api
 )
