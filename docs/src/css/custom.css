@@ -77,6 +77,7 @@ html[data-theme='dark'] .header-github-link:before {
 .asciinema-theme-edgeless .asciinema-terminal {
   color: #ffffff;                    /* default text color */
   background-color: #000000;         /* terminal background color */
+  border-color: #000000;
 }
 .asciinema-theme-edgeless .fg-bg {    /* inverse for default text color */
   color: #000000;

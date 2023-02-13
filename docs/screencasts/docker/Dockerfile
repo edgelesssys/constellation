@@ -29,8 +29,8 @@ ENV SHELL=/bin/bash
 RUN echo 'export PS1="\[\033[38;2;144;255;153m\]~/constellation\[\033[0m\]\r\n\[\033[38;2;139;4;221m\]$\[\033[0m\] "' >> /root/.bashrc
 
 # Copy install scripts
-COPY ./*.sh /root/
+COPY ./*.expect /root/
 
 WORKDIR /root
 ENTRYPOINT ["/usr/bin/expect", "-f"]
-CMD ["verify-cli.sh"]
+CMD ["verify-cli.expect"]

@@ -1,8 +1,6 @@
 # Consume software bill of materials (SBOMs)
 
-import AsciinemaWidget from '../../src/components/AsciinemaWidget';
-
-<AsciinemaWidget src="/constellation/assets/check-sbom.cast" fontSize={16} rows={18} cols={80} idleTimeLimit={3} preload={true} />
+<asciinemaWidget src="/constellation/assets/check-sbom.cast" fontSize={16} rows={18} cols={80} idleTimeLimit={3} preload={true} />
 
 Constellation builds produce a [software bill of materials (SBOM)](https://www.ntia.gov/SBOM) for each generated [artifact](../architecture/microservices.md).
 You can use SBOMs to make informed decisions about dependencies and vulnerabilities in a given application. Enterprises rely on SBOMs to maintain an inventory of used applications, which allows them to take data-driven approaches to managing risks related to vulnerabilities.
