@@ -1,4 +1,4 @@
-name: Linting
+name: Spelling check for docs (Vale)
 on:
   workflow_dispatch:
   push:
