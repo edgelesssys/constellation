@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/verify/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/attestation/aws",
+        "//internal/attestation/azure",
+        "//internal/attestation/gcp",
+        "//internal/attestation/qemu",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/logger",
+        "//verify/server",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "cmd",
+    embed = [":cmd_lib"],
+    # keep
+    pure = "on",
+    visibility = ["//visibility:public"],
+)

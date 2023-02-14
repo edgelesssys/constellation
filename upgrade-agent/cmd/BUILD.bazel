@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/upgrade-agent/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "//upgrade-agent/internal/server",
+        "@com_github_spf13_afero//:afero",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "cmd",
+    embed = [":cmd_lib"],
+    # keep
+    pure = "on",
+    visibility = ["//visibility:public"],
+)

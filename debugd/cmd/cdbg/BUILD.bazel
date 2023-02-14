@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cdbg_lib",
+    srcs = ["cdbg.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/cmd/cdbg",
+    visibility = ["//visibility:private"],
+    deps = ["//debugd/internal/cdbg/cmd"],
+)
+
+go_binary(
+    name = "cdbg",
+    embed = [":cdbg_lib"],
+    # keep
+    pure = "on",
+    visibility = ["//visibility:public"],
+)

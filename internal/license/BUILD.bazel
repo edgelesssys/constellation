@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "license",
+    srcs = [
+        # keep
+        "checker_enterprise.go",
+        # keep
+        "checker_oss.go",
+        "file.go",
+        "license.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/license",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+        # keep
+        "//internal/constants",
+        "//internal/file",
+    ],
+)
+
+go_test(
+    name = "license_test",
+    srcs = [
+        "file_test.go",
+        "license_test.go",
+    ],
+    embed = [":license"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

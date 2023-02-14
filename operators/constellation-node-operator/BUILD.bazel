@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+# gazelle:prefix github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2
+
+go_library(
+    name = "constellation-node-operator_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/controllers",
+        "//operators/constellation-node-operator/internal/cloud/azure/client",
+        "//operators/constellation-node-operator/internal/cloud/fake/client",
+        "//operators/constellation-node-operator/internal/cloud/gcp/client",
+        "//operators/constellation-node-operator/internal/deploy",
+        "//operators/constellation-node-operator/internal/etcd",
+        "//operators/constellation-node-operator/internal/upgrade",
+        "@com_github_medik8s_node_maintenance_operator//api/v1beta1",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/util/runtime",
+        "@io_k8s_client_go//discovery",
+        "@io_k8s_client_go//kubernetes/scheme",
+        "@io_k8s_client_go//plugin/pkg/client/auth",
+        "@io_k8s_sigs_controller_runtime//:controller-runtime",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@io_k8s_sigs_controller_runtime//pkg/healthz",
+        "@io_k8s_sigs_controller_runtime//pkg/log/zap",
+    ],
+)
+
+go_binary(
+    name = "constellation-node-operator",
+    embed = [":constellation-node-operator_lib"],
+    # keep
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
