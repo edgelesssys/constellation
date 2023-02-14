@@ -3,15 +3,30 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+REPOSITORY_ROOT="${REPOSITORY_ROOT:-$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)}"
+
+ensure_pseudo_version_tool() {
+  if [[ ! -f "${REPOSITORY_ROOT}/tools/pseudo-version" ]]; then
+    go build -o "${REPOSITORY_ROOT}/tools/pseudo-version" "${REPOSITORY_ROOT}"/hack/pseudo-version >&2
+  fi
+}
+
 pseudo_version() {
-    if [[ -f "./.version.txt" ]]; then
-        cat ./.version.txt
-    else
-        go run ./hack/pseudo-version
-    fi
+  if [[ -f "${REPOSITORY_ROOT}/.version.txt" ]]; then
+    cat "${REPOSITORY_ROOT}/.version.txt"
+  else
+    ensure_pseudo_version_tool
+    "${REPOSITORY_ROOT}/tools/pseudo-version" -skip-v
+  fi
+}
+
+timestamp() {
+  ensure_pseudo_version_tool
+  "${REPOSITORY_ROOT}/tools/pseudo-version" -print-timestamp -timestamp-format '2006-01-02T15:04:05Z07:00'
 }
 
 echo "STABLE_STAMP_COMMIT $(git rev-parse HEAD)"
 echo "STABLE_STAMP_STATE $(git diff-index --quiet HEAD -- && echo "clean" || echo "dirty")"
 echo "STABLE_STAMP_VERSION $(pseudo_version)"
-echo "STABLE_STAMP_TIME $(go run ./hack/pseudo-version -print-timestamp -timestamp-format '2006-01-02T15:04:05Z07:00')"
+echo "STABLE_STAMP_TIME $(timestamp)"

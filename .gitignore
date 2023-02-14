@@ -58,6 +58,7 @@ __pycache__/
 
 # Bazel
 bazel-*
+tools/pseudo-version
 
 # bazeldnf
 .bazeldnf/
