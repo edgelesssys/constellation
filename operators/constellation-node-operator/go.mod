@@ -4,6 +4,7 @@ go 1.19
 
 replace (
 	github.com/edgelesssys/constellation/v2 => ./../..
+	github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator => ./../../3rdparty/node-maintenance-operator
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./api
 )
 
@@ -13,9 +14,9 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.1.0
 	github.com/edgelesssys/constellation/v2 v2.0.0
+	github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator v0.0.0-00010101000000-000000000000
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/googleapis/gax-go/v2 v2.7.0
-	github.com/medik8s/node-maintenance-operator v0.14.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.24.2
 	github.com/spf13/afero v1.9.3

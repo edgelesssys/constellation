@@ -16,7 +16,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
+	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"

@@ -39,4 +39,4 @@ jobs:
         run: hack/check-licenses.sh
 
       - name: Check for files without license header
-        run: "! grep -rL --include='*.go' -e'SPDX-License-Identifier: AGPL-3.0-only' -e'DO NOT EDIT' | grep ''"
+        run: "! grep -rL --include='*.go' --exclude-dir 3rdparty -e'SPDX-License-Identifier: AGPL-3.0-only' -e'DO NOT EDIT' | grep ''"
