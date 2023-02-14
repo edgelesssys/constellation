@@ -35,8 +35,8 @@ func TestLoad(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	chartLoader := ChartLoader{}
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
+	chartLoader := ChartLoader{csp: config.GetProvider()}
 	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 
@@ -89,6 +89,7 @@ func TestConstellationServices(t *testing.T) {
 			require := require.New(t)
 
 			chartLoader := ChartLoader{
+				csp:                      tc.config.GetProvider(),
 				joinServiceImage:         "joinServiceImage",
 				keyServiceImage:          "keyServiceImage",
 				ccmImage:                 tc.ccmImage,
@@ -100,7 +101,7 @@ func TestConstellationServices(t *testing.T) {
 			}
 			chart, err := loadChartsDir(helmFS, conServicesPath)
 			require.NoError(err)
-			values, err := chartLoader.loadConstellationServicesValues(tc.config.GetProvider())
+			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
 			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
@@ -160,6 +161,7 @@ func TestOperators(t *testing.T) {
 			require := require.New(t)
 
 			chartLoader := ChartLoader{
+				csp:                          tc.csp,
 				joinServiceImage:             "joinServiceImage",
 				keyServiceImage:              "keyServiceImage",
 				ccmImage:                     "ccmImage",
@@ -170,7 +172,7 @@ func TestOperators(t *testing.T) {
 			}
 			chart, err := loadChartsDir(helmFS, conOperatorsPath)
 			require.NoError(err)
-			vals, err := chartLoader.loadOperatorsValues(tc.csp)
+			vals, err := chartLoader.loadOperatorsValues()
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{

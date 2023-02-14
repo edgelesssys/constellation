@@ -52,6 +52,7 @@ const (
 
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
+	csp                          cloudprovider.Provider
 	joinServiceImage             string
 	keyServiceImage              string
 	ccmImage                     string
@@ -78,6 +79,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 	}
 
 	return &ChartLoader{
+		csp:                          csp,
 		joinServiceImage:             versions.JoinImage,
 		keyServiceImage:              versions.KeyServiceImage,
 		ccmImage:                     ccmImage,
@@ -103,7 +105,7 @@ func AvailableServiceVersions() (string, error) {
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
-	ciliumRelease, err := i.loadCilium(config.GetProvider())
+	ciliumRelease, err := i.loadCilium()
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
@@ -114,12 +116,12 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
-	operatorRelease, err := i.loadOperators(config.GetProvider())
+	operatorRelease, err := i.loadOperators()
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(config.GetProvider())
+	conServicesRelease, err := i.loadConstellationServices()
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
@@ -137,14 +139,14 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 }
 
 // loadCilium prepares a helm release for use in a helm install action.
-func (i *ChartLoader) loadCilium(csp cloudprovider.Provider) (helm.Release, error) {
+func (i *ChartLoader) loadCilium() (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, ciliumPath)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
-	values, err := i.loadCiliumValues(csp)
+	values, err := i.loadCiliumValues()
 	if err != nil {
-		return helm.Release{}, err
+		return helm.Release{}, fmt.Errorf("loading cilium values: %w", err)
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -157,9 +159,9 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider) (helm.Release, erro
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadCiliumValues(csp cloudprovider.Provider) (map[string]any, error) {
+func (i *ChartLoader) loadCiliumValues() (map[string]any, error) {
 	var values map[string]any
-	switch csp {
+	switch i.csp {
 	case cloudprovider.AWS:
 		values = awsVals
 	case cloudprovider.Azure:
@@ -169,7 +171,7 @@ func (i *ChartLoader) loadCiliumValues(csp cloudprovider.Provider) (map[string]a
 	case cloudprovider.QEMU:
 		values = qemuVals
 	default:
-		return nil, fmt.Errorf("unknown csp: %s", csp)
+		return nil, fmt.Errorf("unknown csp: %s", i.csp)
 	}
 
 	return values, nil
@@ -275,12 +277,12 @@ func (i *ChartLoader) loadCertManagerValues() map[string]any {
 	}
 }
 
-func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, error) {
+func (i *ChartLoader) loadOperators() (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, conOperatorsPath)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
 	}
-	values, err := i.loadOperatorsValues(csp)
+	values, err := i.loadOperatorsValues()
 	if err != nil {
 		return helm.Release{}, err
 	}
@@ -295,7 +297,7 @@ func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, e
 
 // loadOperatorsHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadOperatorsValues(csp cloudprovider.Provider) (map[string]any, error) {
+func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 	values := map[string]any{
 		"constellation-operator": map[string]any{
 			"controllerManager": map[string]any{
@@ -312,7 +314,7 @@ func (i *ChartLoader) loadOperatorsValues(csp cloudprovider.Provider) (map[strin
 			},
 		},
 	}
-	switch csp {
+	switch i.csp {
 	case cloudprovider.Azure:
 		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
@@ -359,12 +361,12 @@ func (i *ChartLoader) loadOperatorsValues(csp cloudprovider.Provider) (map[strin
 }
 
 // loadConstellationServices prepares a helm release for use in a helm install action.
-func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider) (helm.Release, error) {
+func (i *ChartLoader) loadConstellationServices() (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, conServicesPath)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
-	values, err := i.loadConstellationServicesValues(csp)
+	values, err := i.loadConstellationServicesValues()
 	if err != nil {
 		return helm.Release{}, err
 	}
@@ -379,7 +381,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider) (hel
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadConstellationServicesValues(csp cloudprovider.Provider) (map[string]any, error) {
+func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) {
 	values := map[string]any{
 		"global": map[string]any{
 			"keyServicePort":      constants.KeyServicePort,
@@ -396,18 +398,18 @@ func (i *ChartLoader) loadConstellationServicesValues(csp cloudprovider.Provider
 			"measurementsFilename": constants.MeasurementsFilename,
 		},
 		"join-service": map[string]any{
-			"csp":   csp.String(),
+			"csp":   i.csp.String(),
 			"image": i.joinServiceImage,
 		},
 		"ccm": map[string]any{
-			"csp": csp.String(),
+			"csp": i.csp.String(),
 		},
 		"autoscaler": map[string]any{
-			"csp":   csp.String(),
+			"csp":   i.csp.String(),
 			"image": i.autoscalerImage,
 		},
 		"verification-service": map[string]any{
-			"csp":   csp.String(),
+			"csp":   i.csp.String(),
 			"image": i.verificationServiceImage,
 		},
 		"gcp-guest-agent": map[string]any{
@@ -418,7 +420,7 @@ func (i *ChartLoader) loadConstellationServicesValues(csp cloudprovider.Provider
 		},
 	}
 
-	switch csp {
+	switch i.csp {
 	case cloudprovider.Azure:
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
