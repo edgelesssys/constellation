@@ -1,0 +1,51 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "storage",
+    srcs = [
+        "awss3storage.go",
+        "azurestorage.go",
+        "gcloudstorage.go",
+        "memfsstorage.go",
+        "storage.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/storage",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/kms/config",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//:azblob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//bloberror",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//container",
+        "@com_google_cloud_go_storage//:storage",
+        "@org_golang_google_api//option",
+    ],
+)
+
+go_test(
+    name = "storage_test",
+    srcs = [
+        "awss3storage_test.go",
+        "azurestorage_test.go",
+        "gcloudstorage_test.go",
+        "memfsstroage_test.go",
+    ],
+    embed = [":storage"],
+    deps = [
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
+        "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//:azblob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//bloberror",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//container",
+        "@com_github_stretchr_testify//assert",
+        "@com_google_cloud_go_storage//:storage",
+        "@org_golang_google_api//option",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

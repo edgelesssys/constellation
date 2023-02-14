@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "server",
+    srcs = ["server.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/debugd/server",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//debugd/internal/debugd/deploy",
+        "//debugd/internal/debugd/info",
+        "//debugd/internal/filetransfer",
+        "//debugd/service",
+        "//internal/constants",
+        "//internal/logger",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//keepalive",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "server_test",
+    srcs = ["server_test.go"],
+    embed = [":server"],
+    deps = [
+        "//debugd/internal/debugd/deploy",
+        "//debugd/internal/debugd/info",
+        "//debugd/internal/filetransfer",
+        "//debugd/service",
+        "//internal/constants",
+        "//internal/grpc/testdialer",
+        "//internal/logger",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

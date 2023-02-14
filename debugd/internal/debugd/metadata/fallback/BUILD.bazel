@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "fallback",
+    srcs = ["fallback.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//debugd/internal/debugd/metadata/cloudprovider",
+        "//internal/cloud/metadata",
+    ],
+)
+
+go_test(
+    name = "fallback_test",
+    srcs = ["fallback_test.go"],
+    embed = [":fallback"],
+    deps = [
+        "//internal/role",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cryptsetup",
+    srcs = ["cryptsetup.go"],
+    # keep
+    cdeps = [
+        "@//rpm:cryptsetup",
+    ],
+    cgo = True,
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cryptsetup",
+    visibility = ["//:__subpackages__"],
+)

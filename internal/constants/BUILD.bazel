@@ -5,13 +5,9 @@ go_library(
     srcs = [
         "constants.go",
         # keep
-        "edition_enterprise.go",
+        "enterprise.go",
         # keep
-        "edition_oss.go",
-        # keep
-        "keys_enterprise.go",
-        # keep
-        "keys_oss.go",
+        "oss.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/constants",
     visibility = ["//:__subpackages__"],

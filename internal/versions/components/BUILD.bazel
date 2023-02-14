@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "components",
+    srcs = ["components.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/versions/components",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//bootstrapper/initproto",
+        "//joinservice/joinproto",
+    ],
+)

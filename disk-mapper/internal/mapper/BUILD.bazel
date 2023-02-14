@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "mapper",
+    srcs = [
+        "cryptdevice.go",
+        "mapper.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = [
+        "//internal/cryptsetup",
+        "//internal/logger",
+        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+        "@org_uber_go_zap//:zap",
+    ],
+)

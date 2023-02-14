@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kms",
+    srcs = ["constellation.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/csi/kms",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//keyservice/keyserviceproto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure",
+    ],
+)
+
+go_test(
+    name = "kms_test",
+    srcs = ["constellation_test.go"],
+    embed = [":kms"],
+    deps = [
+        "//keyservice/keyserviceproto",
+        "@com_github_stretchr_testify//assert",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//test/bufconn",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

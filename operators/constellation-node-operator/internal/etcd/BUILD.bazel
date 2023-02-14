@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "etcd",
+    srcs = ["etcd.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/etcd",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//operators/constellation-node-operator/internal/controlplane",
+        "@io_etcd_go_etcd_client_pkg_v3//transport",
+        "@io_etcd_go_etcd_client_v3//:client",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_test(
+    name = "etcd_test",
+    srcs = ["etcd_test.go"],
+    embed = [":etcd"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_etcd_go_etcd_api_v3//etcdserverpb",
+        "@io_etcd_go_etcd_client_v3//:client",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)

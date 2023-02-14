@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "info",
+    srcs = ["info.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info",
+    visibility = ["//debugd:__subpackages__"],
+    deps = ["//debugd/service"],
+)
+
+go_test(
+    name = "info_test",
+    srcs = ["info_test.go"],
+    embed = [":info"],
+    deps = [
+        "//debugd/service",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

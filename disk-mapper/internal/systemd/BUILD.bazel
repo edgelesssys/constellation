@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "systemd",
+    srcs = ["systemd.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = ["@com_github_spf13_afero//:afero"],
+)
+
+go_test(
+    name = "systemd_test",
+    srcs = ["systemd_test.go"],
+    embed = [":systemd"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

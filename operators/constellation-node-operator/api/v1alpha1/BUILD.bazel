@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "v1alpha1",
+    srcs = [
+        "autoscalingstrategy_types.go",
+        "groupversion_info.go",
+        "joiningnodes_types.go",
+        "nodeversion_types.go",
+        "pendingnode_types.go",
+        "scalinggroup_types.go",
+        "zz_generated.deepcopy.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_sigs_controller_runtime//pkg/scheme",
+    ],
+)

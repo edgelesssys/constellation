@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "clusterid",
+    srcs = ["id.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/clusterid",
+    visibility = ["//cli:__subpackages__"],
+    deps = ["//internal/cloud/cloudprovider"],
+)

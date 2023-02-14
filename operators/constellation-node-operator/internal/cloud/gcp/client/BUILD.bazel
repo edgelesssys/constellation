@@ -1,0 +1,64 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "client",
+    srcs = [
+        "api.go",
+        "autocaler.go",
+        "client.go",
+        "config.go",
+        "disks.go",
+        "gcpwrappers.go",
+        "instancegroupmanagers.go",
+        "instancetemplate.go",
+        "metadata.go",
+        "nodeimage.go",
+        "pendingnode.go",
+        "project.go",
+        "providerid.go",
+        "scalinggroup.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_github_spf13_afero//:afero",
+        "@com_google_cloud_go_compute//apiv1",
+        "@com_google_cloud_go_compute//apiv1/computepb",
+        "@org_golang_google_api//googleapi",
+        "@org_golang_google_api//iterator",
+        "@org_golang_google_protobuf//proto",
+    ],
+)
+
+go_test(
+    name = "client_test",
+    srcs = [
+        "client_test.go",
+        "config_test.go",
+        "disks_test.go",
+        "instancegroupmanagers_test.go",
+        "instancetemplate_test.go",
+        "metadata_test.go",
+        "nodeimage_test.go",
+        "pendingnode_test.go",
+        "project_test.go",
+        "providerid_test.go",
+        "scalinggroup_test.go",
+    ],
+    embed = [":client"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_compute//apiv1",
+        "@com_google_cloud_go_compute//apiv1/computepb",
+        "@org_golang_google_api//googleapi",
+        "@org_golang_google_api//iterator",
+        "@org_golang_google_protobuf//proto",
+    ],
+)

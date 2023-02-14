@@ -1,0 +1,49 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubectl",
+    srcs = [
+        "kubectl.go",
+        "restclient.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apiextensions_apiserver//pkg/apis/apiextensions/v1:apiextensions",
+        "@io_k8s_apiextensions_apiserver//pkg/client/clientset/clientset/typed/apiextensions/v1:apiextensions",
+        "@io_k8s_apimachinery//pkg/api/meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/runtime/serializer",
+        "@io_k8s_cli_runtime//pkg/resource",
+        "@io_k8s_client_go//discovery",
+        "@io_k8s_client_go//discovery/cached/memory",
+        "@io_k8s_client_go//dynamic",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//restmapper",
+        "@io_k8s_client_go//scale/scheme",
+        "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_client_go//util/retry",
+    ],
+)
+
+go_test(
+    name = "kubectl_test",
+    srcs = [
+        "kubectl_test.go",
+        "restclient_test.go",
+    ],
+    embed = [":kubectl"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_client_go//tools/clientcmd/api",
+    ],
+)

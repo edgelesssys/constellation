@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "cloudprovider",
+    srcs = [
+        "cloudprovider.go",
+        "provider_string.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "cloudprovider_test",
+    srcs = ["cloudprovider_test.go"],
+    embed = [":cloudprovider"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)

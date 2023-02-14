@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "role",
+    srcs = [
+        "role.go",
+        "role_string.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/role",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "role_test",
+    srcs = ["role_test.go"],
+    embed = [":role"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

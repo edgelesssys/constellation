@@ -1,0 +1,40 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "recoveryserver",
+    srcs = ["recoveryserver.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = [
+        "//disk-mapper/recoverproto",
+        "//internal/atls",
+        "//internal/crypto",
+        "//internal/grpc/atlscredentials",
+        "//internal/grpc/grpclog",
+        "//internal/kms/kms",
+        "//internal/logger",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "recoveryserver_test",
+    srcs = ["recoveryserver_test.go"],
+    embed = [":recoveryserver"],
+    deps = [
+        "//disk-mapper/recoverproto",
+        "//internal/atls",
+        "//internal/grpc/dialer",
+        "//internal/grpc/testdialer",
+        "//internal/kms/kms",
+        "//internal/logger",
+        "//internal/oid",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "azureshared",
+    srcs = [
+        "appcredentials.go",
+        "azureshared.go",
+        "metadata.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/azureshared",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "azureshared_test",
+    srcs = [
+        "appcredentials_test.go",
+        "metadata_test.go",
+    ],
+    embed = [":azureshared"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "azure",
+    srcs = ["azure.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/atls",
+        "//internal/attestation/azure/snp",
+        "//internal/attestation/azure/trustedlaunch",
+        "//internal/attestation/vtpm",
+    ],
+)

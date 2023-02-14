@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "compatibility",
+    srcs = ["compatibility.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/compatibility",
+    visibility = ["//:__subpackages__"],
+    deps = ["@org_golang_x_mod//semver"],
+)
+
+go_test(
+    name = "compatibility_test",
+    srcs = ["compatibility_test.go"],
+    embed = [":compatibility"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

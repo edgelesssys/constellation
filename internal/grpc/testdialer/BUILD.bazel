@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "testdialer",
+    srcs = ["testdialer.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/grpc/testdialer",
+    visibility = ["//:__subpackages__"],
+    deps = ["@org_golang_google_grpc//test/bufconn"],
+)

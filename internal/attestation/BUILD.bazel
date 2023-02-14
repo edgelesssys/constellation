@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "attestation",
+    srcs = ["attestation.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/crypto"],
+)
+
+go_test(
+    name = "attestation_test",
+    srcs = ["attestation_test.go"],
+    embed = [":attestation"],
+    deps = [
+        "//internal/crypto/testvector",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubewaiter",
+    srcs = ["kubewaiter.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = [
+        "//internal/retry",
+        "@io_k8s_api//core/v1:core",
+    ],
+)
+
+go_test(
+    name = "kubewaiter_test",
+    srcs = ["kubewaiter_test.go"],
+    embed = [":kubewaiter"],
+    deps = [
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

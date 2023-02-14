@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "uri",
+    srcs = ["uri.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/uri",
+    visibility = ["//:__subpackages__"],
+)

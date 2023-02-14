@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "semver",
+    srcs = ["semver.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/semver",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "@org_golang_x_mod//semver",
+    ],
+)
+
+go_test(
+    name = "semver_test",
+    srcs = ["semver_test.go"],
+    embed = [":semver"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -1,0 +1,50 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "watcher",
+    srcs = [
+        "validator.go",
+        "watcher.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/watcher",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/atls",
+        "//internal/attestation/aws",
+        "//internal/attestation/azure/snp",
+        "//internal/attestation/azure/trustedlaunch",
+        "//internal/attestation/gcp",
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/attestation/qemu",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_fsnotify_fsnotify//:fsnotify",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "watcher_test",
+    srcs = [
+        "validator_test.go",
+        "watcher_test.go",
+    ],
+    embed = [":watcher"],
+    deps = [
+        "//internal/atls",
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_fsnotify_fsnotify//:fsnotify",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

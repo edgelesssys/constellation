@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 
 go_library(
     name = "cdbg_lib",
@@ -15,3 +15,18 @@ go_binary(
     pure = "on",
     visibility = ["//visibility:public"],
 )
+
+[
+    go_cross_binary(
+        name = "cdbg_%s" % platform,
+        platform = "@io_bazel_rules_go//go/toolchain:" + platform,
+        target = ":cdbg",
+        visibility = ["//visibility:public"],
+    )
+    for platform in [
+        "darwin_amd64",
+        "darwin_arm64",
+        "linux_amd64",
+        "linux_arm64",
+    ]
+]

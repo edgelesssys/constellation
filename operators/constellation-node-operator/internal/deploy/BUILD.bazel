@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "deploy",
+    srcs = [
+        "deploy.go",
+        "imageinfo.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/constants",
+        "@com_github_spf13_afero//:afero",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+    ],
+)
+
+go_test(
+    name = "deploy_test",
+    srcs = [
+        "deploy_test.go",
+        "imageinfo_test.go",
+    ],
+    embed = [":deploy"],
+    deps = [
+        "//internal/constants",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/constants",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/types",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)

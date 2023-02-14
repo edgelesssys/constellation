@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "clidocgen_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/clidocgen",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cli/cmd",
+        "@com_github_spf13_cobra//:cobra",
+        "@com_github_spf13_cobra//doc",
+    ],
+)
+
+go_binary(
+    name = "clidocgen",
+    embed = [":clidocgen_lib"],
+    visibility = ["//visibility:public"],
+)

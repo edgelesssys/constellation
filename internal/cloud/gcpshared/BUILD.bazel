@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "gcpshared",
+    srcs = [
+        "gcpshared.go",
+        "providerid.go",
+        "serviceaccountkey.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "gcpshared_test",
+    srcs = [
+        "providerid_test.go",
+        "serviceaccountkey_test.go",
+    ],
+    embed = [":gcpshared"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
