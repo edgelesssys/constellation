@@ -82,6 +82,7 @@ func runUpgradeCheck(cmd *cobra.Command, args []string) error {
 			rekor:          rekor,
 			flags:          flags,
 			cliVersion:     constants.VersionInfo,
+			log:            log,
 		},
 		log: log,
 	}
@@ -316,7 +317,7 @@ func (v *versionCollector) newImages(ctx context.Context, version string, csp cl
 		if !v.flags.force {
 			return nil, fmt.Errorf("cluster image version (%s) newer than CLI version (%s)", currentImageMinorVer, currentCLIMinorVer)
 		}
-		if _, err := fmt.Fprintf(v.writer, "WARNING: CLI version is older than cluster image version. Continuing due to force flag."); err != nil {
+		if _, err := fmt.Fprintf(v.writer, "WARNING: CLI version is older than cluster image version. Continuing due to force flag.\n"); err != nil {
 			return nil, fmt.Errorf("writing to buffer: %w", err)
 		}
 	case cliImageCompare == 0:
