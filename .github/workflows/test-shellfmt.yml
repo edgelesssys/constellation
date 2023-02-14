@@ -9,13 +9,13 @@ on:
       - "**.sh"
       - "**.bash"
       - "image/**"
-      - "./github/workflows/test-shellfmt.yml"
+      - ".github/workflows/test-shellfmt.yml"
   pull_request:
     paths:
       - "**.sh"
       - "**.bash"
       - "image/**"
-      - "./github/workflows/test-shellfmt.yml"
+      - ".github/workflows/test-shellfmt.yml"
 
 jobs:
   shellcheck:

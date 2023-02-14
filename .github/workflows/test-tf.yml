@@ -9,12 +9,12 @@ on:
     paths:
       - "**.tf"
       - "**.lock.hcl"
-      - "./github/workflows/test-tf.yml"
+      - ".github/workflows/test-tf.yml"
   pull_request:
     paths:
       - "**.tf"
       - "**.lock.hcl"
-      - "./github/workflows/test-tf.yml"
+      - ".github/workflows/test-tf.yml"
 
 jobs:
   tfsec:

@@ -11,7 +11,7 @@ on:
       - "**/go.mod"
       - "**/go.sum"
       - "**/testdata/**"
-      - "./github/workflows/test-unittest.yml"
+      - ".github/workflows/test-unittest.yml"
   pull_request:
     paths:
       - "cli/internal/helm/**"
@@ -19,7 +19,7 @@ on:
       - "**/go.mod"
       - "**/go.sum"
       - "**/testdata/**"
-      - "./github/workflows/test-unittest.yml"
+      - ".github/workflows/test-unittest.yml"
 
 jobs:
   test-linux:

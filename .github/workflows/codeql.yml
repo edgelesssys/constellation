@@ -11,7 +11,7 @@ on:
       - "**/go.sum"
       - "**.py"
       - "**requirements.txt"
-      - "./github/workflows/codeql.yml"
+      - ".github/workflows/codeql.yml"
 
 jobs:
   codeql:

@@ -10,13 +10,13 @@ on:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-govulncheck.yml"
+      - ".github/workflows/test-govulncheck.yml"
   pull_request:
     paths:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-govulncheck.yml"
+      - ".github/workflows/test-govulncheck.yml"
 
 jobs:
   govulncheck:
