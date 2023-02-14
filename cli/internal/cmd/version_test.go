@@ -23,6 +23,7 @@ func TestVersionCmd(t *testing.T) {
 	cmd := NewVersionCmd()
 	b := &bytes.Buffer{}
 	cmd.SetOut(b)
+	cmd.SetArgs([]string{})
 
 	err := cmd.Execute()
 	assert.NoError(err)

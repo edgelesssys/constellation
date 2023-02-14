@@ -57,6 +57,7 @@ func TestAskToConfirm(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			in := bytes.NewBufferString(tc.input)
 			cmd.SetIn(in)
+			cmd.SetArgs([]string{})
 
 			err := cmd.Execute()
 			assert.ErrorIs(err, tc.wantErr)

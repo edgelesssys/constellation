@@ -8,7 +8,7 @@ def go_test(ld = None, **kwargs):
     """go_test is a wrapper for go_test that uses default settings for Constellation.
 
     It adds the following:
-    - Sets test count to 10.
+    - Sets test count to 3.
     - Sets race detector to on by default.
     - Optionally sets the interpreter path to ld.
 
@@ -17,7 +17,7 @@ def go_test(ld = None, **kwargs):
           **kwargs: all other arguments are passed to go_test.
     """
 
-    # Sets test count to 10.
+    # Sets test count to 3.
     kwargs.setdefault("args", [])
     kwargs["args"].append("--test.count=3")
 
@@ -92,7 +92,7 @@ def go_ld_test(**kwargs):
           **kwargs: all arguments are passed to go_test.
     """
 
-    # Sets test count to 10.
+    # Sets test count to 3.
     kwargs.setdefault("args", [])
     kwargs["args"].append("--test.count=3")
 
