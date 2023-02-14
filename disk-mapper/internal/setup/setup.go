@@ -16,13 +16,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
-	"fs"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -75,9 +75,8 @@ func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 // PrepareExistingDisk requests and waits for a decryption key to remap the encrypted state disk.
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
 func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
-	s.log.Infof("Preparing existing state disk")
-
 	uuid := s.mapper.DiskUUID()
+	s.log.Infof("Preparing existing state disk (UUID: %s)", uuid)
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 
 	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
@@ -122,7 +121,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 
 // PrepareNewDisk prepares an instances state disk by formatting the disk as a LUKS device using a random passphrase.
 func (s *Manager) PrepareNewDisk() error {
-	s.log.Infof("Preparing new state disk")
+	s.log.Infof("Preparing new state disk (UUID: %s)", s.mapper.DiskUUID())
 
 	// generate and save temporary passphrase
 	passphrase := make([]byte, crypto.RNGLengthDefault)
@@ -168,6 +167,7 @@ func (s *Manager) saveConfiguration(passphrase []byte) error {
 	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
 }
 
+// LogDevices logs all available block devices and partitions (lsblk like).
 func (s *Manager) LogDevices() {
 	var devices []fs.FileInfo
 	dirs, err := os.ReadDir("/sys/class/block")
@@ -185,7 +185,7 @@ func (s *Manager) LogDevices() {
 		panic(err)
 	}
 
-	s.log.Infof("List of all avaliable block devices and partitions:")
+	s.log.Infof("List of all available block devices and partitions:")
 	for _, device := range devices {
 		var stat syscall.Statfs_t
 		dev := "/dev/" + device.Name()
@@ -209,6 +209,7 @@ func (s *Manager) LogDevices() {
 			avail)
 	}
 }
+
 // RecoveryServer interface serves a recovery server.
 type RecoveryServer interface {
 	Serve(context.Context, net.Listener, string) (key, secret []byte, err error)
@@ -245,7 +246,6 @@ func (r *NodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret
 		return nil, nil, err
 	}
 	defer lis.Close()
-
 
 	var once sync.Once
 	var wg sync.WaitGroup
