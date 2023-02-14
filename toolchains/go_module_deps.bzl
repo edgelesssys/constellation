@@ -1088,6 +1088,13 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/cloudflare/circl",
+        # keep
+        patches = [
+            "//3rdparty/bazel/com_github_cloudflare_circl:math_fp448_BUILD_bazel.patch",
+            "//3rdparty/bazel/com_github_cloudflare_circl:math_fp25519_BUILD_bazel.patch",
+            "//3rdparty/bazel/com_github_cloudflare_circl:dh_x448_BUILD_bazel.patch",
+            "//3rdparty/bazel/com_github_cloudflare_circl:dh_x25519_BUILD_bazel.patch",
+        ],
         sum = "h1:bZgT/A+cikZnKIwn7xL2OBj012Bmvho/o6RpRvv3GKY=",
         version = "v1.1.0",
     )
