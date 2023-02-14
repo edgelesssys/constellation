@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+
+go_library(
+    name = "cryptmapper",
+    srcs = ["cryptmapper.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/csi/cryptmapper",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//internal/crypto",
+        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+        "@io_k8s_mount_utils//:mount-utils",
+        "@io_k8s_utils//exec",
+    ],
+)
+
+go_test(
+    name = "cryptmapper_test",
+    srcs = ["cryptmapper_test.go"],
+    embed = [":cryptmapper"],
+    # keep
+    tags = ["manual"],
+    deps = [
+        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)
+
+go_ld_test(
+    name = "cryptmapper_ld_test",
+    src = "cryptmapper_test",
+    ld = "//rpm:ld",
+)
