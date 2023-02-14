@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/attestation/aws",
-        "//internal/attestation/azure",
+        "//internal/attestation/azure/snp",
         "//internal/attestation/gcp",
         "//internal/attestation/qemu",
         "//internal/cloud/cloudprovider",

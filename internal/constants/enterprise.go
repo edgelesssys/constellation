@@ -17,3 +17,6 @@ JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 
 // VersionBuild is the category of the current build.
 const VersionBuild = "Enterprise build; see documentation for license agreement"
+
+// Edition is the edition of the CLI.
+const Edition = "Community"

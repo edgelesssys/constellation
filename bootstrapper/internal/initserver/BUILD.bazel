@@ -43,6 +43,7 @@ go_test(
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/kms/setup",
+        "//internal/kms/uri",
         "//internal/logger",
         "//internal/oid",
         "//internal/versions/components",

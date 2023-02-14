@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "cloudprovider",
+    srcs = ["cloudprovider.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/role",
+    ],
+)
+
+go_test(
+    name = "cloudprovider_test",
+    srcs = ["cloudprovider_test.go"],
+    embed = [":cloudprovider"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/role",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

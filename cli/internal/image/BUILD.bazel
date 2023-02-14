@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "image",
+    srcs = [
+        "image.go",
+        "raw.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/image",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+        "//internal/versionsapi",
+        "//internal/versionsapi/fetcher",
+        "@com_github_schollz_progressbar_v3//:progressbar",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "image_test",
+    srcs = [
+        "image_test.go",
+        "raw_test.go",
+    ],
+    embed = [":image"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+        "//internal/file",
+        "//internal/versionsapi",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

@@ -8,6 +8,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2",
     visibility = ["//visibility:private"],
     deps = [
+        "//3rdparty/node-maintenance-operator/api/v1beta1",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//operators/constellation-node-operator/controllers",
         "//operators/constellation-node-operator/internal/cloud/azure/client",
@@ -16,7 +17,6 @@ go_library(
         "//operators/constellation-node-operator/internal/deploy",
         "//operators/constellation-node-operator/internal/etcd",
         "//operators/constellation-node-operator/internal/upgrade",
-        "@com_github_medik8s_node_maintenance_operator//api/v1beta1",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/util/runtime",
         "@io_k8s_client_go//discovery",

@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "client",
+    srcs = ["client.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/versionsapi/client",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/logger",
+        "//internal/versionsapi",
+        "@com_github_aws_aws_sdk_go_v2//aws",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
+        "@com_github_aws_aws_sdk_go_v2_service_cloudfront//:cloudfront",
+        "@com_github_aws_aws_sdk_go_v2_service_cloudfront//types",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
+        "@org_golang_x_mod//semver",
+    ],
+)

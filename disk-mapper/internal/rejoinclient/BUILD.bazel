@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "rejoinclient",
+    srcs = ["rejoinclient.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/logger",
+        "//internal/role",
+        "//joinservice/joinproto",
+        "@io_k8s_utils//clock",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "rejoinclient_test",
+    srcs = ["rejoinclient_test.go"],
+    embed = [":rejoinclient"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/constants",
+        "//internal/grpc/atlscredentials",
+        "//internal/grpc/dialer",
+        "//internal/grpc/testdialer",
+        "//internal/logger",
+        "//internal/role",
+        "//joinservice/joinproto",
+        "@com_github_stretchr_testify//assert",
+        "@io_k8s_utils//clock/testing",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

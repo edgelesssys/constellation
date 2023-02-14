@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubernetes",
+    srcs = ["kubernetes.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/versions/components",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_client_go//dynamic",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
+    ],
+)
+
+go_test(
+    name = "kubernetes_test",
+    srcs = ["kubernetes_test.go"],
+    embed = [":kubernetes"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

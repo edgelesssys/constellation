@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "file",
+    srcs = ["file.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/file",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
+        "@com_github_spf13_afero//:afero",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)
+
+go_test(
+    name = "file_test",
+    srcs = ["file_test.go"],
+    embed = [":file"],
+    deps = [
+        "//internal/constants",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

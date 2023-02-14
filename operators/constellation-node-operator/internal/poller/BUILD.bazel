@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "poller",
+    srcs = ["poller.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/poller",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = ["@io_k8s_utils//clock"],
+)
+
+go_test(
+    name = "poller_test",
+    srcs = ["poller_test.go"],
+    embed = [":poller"],
+    deps = [
+        "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
+        "@com_github_stretchr_testify//assert",
+        "@io_k8s_utils//clock/testing",
+    ],
+)

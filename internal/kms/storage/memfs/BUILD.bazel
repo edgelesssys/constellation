@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "memfs",
+    srcs = ["memfs.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/kms/storage"],
+)
+
+go_test(
+    name = "memfs_test",
+    srcs = ["memfs_test.go"],
+    embed = [":memfs"],
+    deps = [
+        "//internal/kms/storage",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

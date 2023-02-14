@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cmd",
+    srcs = ["root.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/cmd",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cli/internal/cmd",
+        "//internal/constants",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)

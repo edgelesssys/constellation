@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "debugd",
+    srcs = [
+        "constants.go",
+        "debugd.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/debugd",
+    visibility = ["//debugd:__subpackages__"],
+)

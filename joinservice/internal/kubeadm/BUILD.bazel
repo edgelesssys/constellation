@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubeadm",
+    srcs = ["kubeadm.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/kubeadm",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_spf13_afero//:afero",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
+        "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_client_go//util/cert",
+        "@io_k8s_cluster_bootstrap//token/util",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/bootstraptoken/v1:bootstraptoken",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/phases/bootstraptoken/node",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/util/kubeconfig",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/util/pubkeypin",
+    ],
+)
+
+go_test(
+    name = "kubeadm_test",
+    srcs = ["kubeadm_test.go"],
+    embed = [":kubeadm"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_client_go//kubernetes/fake",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

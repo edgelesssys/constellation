@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cmd_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/cmd",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//disk-mapper/internal/mapper",
+        "//disk-mapper/internal/recoveryserver",
+        "//disk-mapper/internal/rejoinclient",
+        "//disk-mapper/internal/setup",
+        "//internal/attestation/choose",
+        "//internal/attestation/vtpm",
+        "//internal/cloud/aws",
+        "//internal/cloud/azure",
+        "//internal/cloud/cloudprovider",
+        "//internal/cloud/gcp",
+        "//internal/cloud/metadata",
+        "//internal/cloud/openstack",
+        "//internal/cloud/qemu",
+        "//internal/constants",
+        "//internal/grpc/dialer",
+        "//internal/kms/setup",
+        "//internal/logger",
+        "//internal/oid",
+        "//internal/role",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_spf13_afero//:afero",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "cmd",
+    embed = [":cmd_lib"],
+    visibility = ["//visibility:public"],
+)

@@ -12,6 +12,7 @@ go_library(
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcp",
         "//internal/cloud/metadata",
+        "//internal/cloud/openstack",
         "//internal/cloud/qemu",
         "//internal/constants",
         "//internal/file",

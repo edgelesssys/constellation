@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "filetransfer",
+    srcs = [
+        "chunkstream.go",
+        "filetransfer.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//debugd/internal/debugd",
+        "//debugd/internal/filetransfer/streamer",
+        "//debugd/service",
+        "//internal/logger",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "filetransfer_test",
+    srcs = [
+        "chunkstream_test.go",
+        "filetransfer_test.go",
+    ],
+    embed = [":filetransfer"],
+    deps = [
+        "//debugd/internal/filetransfer/streamer",
+        "//debugd/service",
+        "//internal/logger",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

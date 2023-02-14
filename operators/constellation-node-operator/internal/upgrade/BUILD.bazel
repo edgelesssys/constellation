@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "upgrade",
+    srcs = ["upgrade.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//upgrade-agent/upgradeproto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure",
+    ],
+)

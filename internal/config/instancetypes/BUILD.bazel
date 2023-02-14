@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "instancetypes",
+    srcs = [
+        "aws.go",
+        "azure.go",
+        "gcp.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/config/instancetypes",
+    visibility = ["//:__subpackages__"],
+)

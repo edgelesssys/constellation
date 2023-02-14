@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "setup",
+    srcs = [
+        "interface.go",
+        "setup.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = [
+        "//disk-mapper/internal/systemd",
+        "//internal/attestation",
+        "//internal/attestation/vtpm",
+        "//internal/cloud/metadata",
+        "//internal/constants",
+        "//internal/crypto",
+        "//internal/file",
+        "//internal/logger",
+        "//internal/nodestate",
+        "@com_github_spf13_afero//:afero",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "setup_test",
+    srcs = ["setup_test.go"],
+    embed = [":setup"],
+    deps = [
+        "//internal/attestation/vtpm",
+        "//internal/crypto",
+        "//internal/file",
+        "//internal/logger",
+        "//internal/nodestate",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

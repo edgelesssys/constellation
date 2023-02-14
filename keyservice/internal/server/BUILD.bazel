@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "server",
+    srcs = ["server.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/keyservice/internal/server",
+    visibility = ["//keyservice:__subpackages__"],
+    deps = [
+        "//internal/crypto",
+        "//internal/grpc/grpclog",
+        "//internal/kms/kms",
+        "//internal/logger",
+        "//keyservice/keyserviceproto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_uber_go_zap//:zap",
+        "@org_uber_go_zap//zapcore",
+    ],
+)
+
+go_test(
+    name = "server_test",
+    srcs = ["server_test.go"],
+    embed = [":server"],
+    deps = [
+        "//internal/kms/kms",
+        "//internal/logger",
+        "//keyservice/keyserviceproto",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

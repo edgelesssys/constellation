@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "qemu",
+    srcs = [
+        "issuer.go",
+        "qemu.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/qemu",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/measurements",
+        "//internal/attestation/vtpm",
+        "//internal/oid",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)

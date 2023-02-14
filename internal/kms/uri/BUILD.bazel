@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "uri",
+    srcs = ["uri.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/uri",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "uri_test",
+    srcs = ["uri_test.go"],
+    embed = [":uri"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

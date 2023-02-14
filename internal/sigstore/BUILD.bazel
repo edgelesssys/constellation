@@ -1,0 +1,39 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "sigstore",
+    srcs = [
+        "rekor.go",
+        "sigstore.go",
+        "verify.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@com_github_sigstore_rekor//pkg/client",
+        "@com_github_sigstore_rekor//pkg/generated/client",
+        "@com_github_sigstore_rekor//pkg/generated/client/entries",
+        "@com_github_sigstore_rekor//pkg/generated/client/index",
+        "@com_github_sigstore_rekor//pkg/generated/models",
+        "@com_github_sigstore_rekor//pkg/types/hashedrekord/v0.0.1:v0_0_1",
+        "@com_github_sigstore_rekor//pkg/verify",
+        "@com_github_sigstore_sigstore//pkg/cryptoutils",
+        "@com_github_sigstore_sigstore//pkg/signature",
+    ],
+)
+
+go_test(
+    name = "sigstore_test",
+    srcs = [
+        "rekor_test.go",
+        "verify_test.go",
+    ],
+    embed = [":sigstore"],
+    deps = [
+        "@com_github_sigstore_rekor//pkg/generated/models",
+        "@com_github_sigstore_rekor//pkg/types/hashedrekord/v0.0.1:v0_0_1",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

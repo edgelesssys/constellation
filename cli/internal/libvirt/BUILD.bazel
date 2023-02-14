@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "libvirt",
+    srcs = ["libvirt.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/libvirt",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//internal/file",
+        "@com_github_docker_docker//api/types",
+        "@com_github_docker_docker//api/types/container",
+        "@com_github_docker_docker//api/types/filters",
+        "@com_github_docker_docker//client",
+        "@com_github_spf13_afero//:afero",
+    ],
+)

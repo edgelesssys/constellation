@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "patch",
+    srcs = [
+        "annotations.go",
+        "labels.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/patch",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = ["@io_k8s_sigs_controller_runtime//pkg/client"],
+)
+
+go_test(
+    name = "patch_test",
+    srcs = [
+        "annotations_test.go",
+        "labels_test.go",
+    ],
+    embed = [":patch"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+    ],
+)
