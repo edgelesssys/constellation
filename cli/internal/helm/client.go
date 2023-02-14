@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/semver"
@@ -73,19 +74,19 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
-	if err := c.upgradeRelease(ctx, timeout, ciliumPath, ciliumReleaseName, false, allowDestructive); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading cilium: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, certManagerPath, certManagerReleaseName, false, allowDestructive); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, config, certManagerPath, certManagerReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading cert-manager: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, config, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading constellation operators: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, conServicesPath, conServicesReleaseName, false, allowDestructive); err != nil {
+	if err := c.upgradeRelease(ctx, timeout, config, conServicesPath, conServicesReleaseName, false, allowDestructive); err != nil {
 		return fmt.Errorf("upgrading constellation-services: %w", err)
 	}
 
@@ -127,12 +128,37 @@ func (c *Client) currentVersion(release string) (string, error) {
 var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, chartPath, releaseName string, hasCRDs bool, allowDestructive bool,
+	ctx context.Context, timeout time.Duration, conf *config.Config, chartPath string, releaseName string, hasCRDs bool, allowDestructive bool,
 ) error {
 	chart, err := loadChartsDir(helmFS, chartPath)
 	if err != nil {
 		return fmt.Errorf("loading chart: %w", err)
 	}
+
+	// We need to load all values that can be statically loaded before merging them with the cluster
+	// values. Otherwise the templates are not rendered correctly.
+	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
+	if err != nil {
+		return fmt.Errorf("invalid k8s version: %w", err)
+	}
+	loader := NewLoader(conf.GetProvider(), k8sVersion)
+	var values map[string]any
+	switch releaseName {
+	case ciliumReleaseName:
+		values, err = loader.loadCiliumValues()
+	case certManagerReleaseName:
+		values = loader.loadCertManagerValues()
+	case conOperatorsReleaseName:
+		values, err = loader.loadOperatorsValues()
+	case conServicesReleaseName:
+		values, err = loader.loadConstellationServicesValues()
+	default:
+		return fmt.Errorf("invalid release name: %s", releaseName)
+	}
+	if err != nil {
+		return fmt.Errorf("loading values: %w", err)
+	}
+
 	currentVersion, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting current version: %w", err)
@@ -157,7 +183,7 @@ func (c *Client) upgradeRelease(
 			return fmt.Errorf("updating CRDs: %w", err)
 		}
 	}
-	values, err := c.prepareValues(chart, releaseName)
+	values, err = c.prepareValues(values, releaseName)
 	if err != nil {
 		return fmt.Errorf("preparing values: %w", err)
 	}
@@ -176,16 +202,17 @@ func (c *Client) upgradeRelease(
 // and merging the fetched values with the locally found values.
 // This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
 // reuse-values does not ensure this.
-func (c *Client) prepareValues(chart *chart.Chart, releaseName string) (map[string]any, error) {
+func (c *Client) prepareValues(localValues map[string]any, releaseName string) (map[string]any, error) {
 	// Ensure installCRDs is set for cert-manager chart.
 	if releaseName == certManagerReleaseName {
-		chart.Values["installCRDs"] = true
+		localValues["installCRDs"] = true
 	}
-	values, err := c.actions.getValues(releaseName)
+	clusterValues, err := c.actions.getValues(releaseName)
 	if err != nil {
 		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
 	}
-	return helm.MergeMaps(chart.Values, values), nil
+
+	return helm.MergeMaps(clusterValues, localValues), nil
 }
 
 // GetValues queries the cluster for the values of the given release.

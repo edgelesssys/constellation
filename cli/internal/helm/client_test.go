@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
@@ -102,7 +103,7 @@ func TestUpgradeRelease(t *testing.T) {
 			assert := assert.New(t)
 
 			client := Client{kubectl: nil, actions: &stubActionWrapper{}, log: logger.NewTest(t)}
-			err := client.upgradeRelease(context.Background(), 0, certManagerPath, certManagerReleaseName, false, tc.allowDestructive)
+			err := client.upgradeRelease(context.Background(), 0, config.Default(), certManagerPath, certManagerReleaseName, false, tc.allowDestructive)
 			if tc.wantError {
 				assert.ErrorIs(err, ErrConfirmationMissing)
 				return
