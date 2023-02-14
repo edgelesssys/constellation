@@ -45,7 +45,7 @@ func IsValidUpgrade(a, b string) error {
 	}
 
 	if semver.Compare(a, b) >= 0 {
-		return errors.New("current version newer than new version")
+		return errors.New("current version newer than or equal to new version")
 	}
 
 	aMajor, aMinor, err := parseCanonicalSemver(a)
