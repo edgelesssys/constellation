@@ -1,6 +1,6 @@
 #!/bin/sh
 rm -f rpm/repo.yaml
-bazel run --config linux_amd64_static //:bazeldnf -- init \
+bazel run //:bazeldnf -- init \
   --fc 37 \
   --arch x86_64 \
   --output rpm/repo.yaml
