@@ -16,7 +16,7 @@ runs:
       run: |
         echo "::group::Build the upgrade-agent"
         mkdir -p build && cd build
-        cmake ..
+        cmake -DBAZEL:STRING=bazelisk ..
         make upgrade-agent
         mv -n upgrade-agent "${{ inputs.outputPath }}"
         echo "::endgroup::"
