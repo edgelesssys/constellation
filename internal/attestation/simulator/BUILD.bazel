@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+# keep
+go_library(
+    name = "simulator",
+    srcs = [
+        "simulator.go",
+        "simulator_disabled.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/simulator",
+    visibility = ["//:__subpackages__"],
+    deps = ["@com_github_google_go_tpm_tools//simulator"],
+)

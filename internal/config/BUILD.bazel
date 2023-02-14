@@ -1,0 +1,56 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "config",
+    srcs = [
+        "config.go",
+        "config_doc.go",
+        # keep
+        "images_enterprise.go",
+        # keep
+        "images_oss.go",
+        "validation.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/config",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/cloud/cloudprovider",
+        "//internal/config/instancetypes",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/versions",
+        "@com_github_go_playground_locales//en",
+        "@com_github_go_playground_universal_translator//:universal-translator",
+        "@com_github_go_playground_validator_v10//:validator",
+        "@com_github_go_playground_validator_v10//translations/en",
+        "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
+        "@org_golang_x_mod//semver",
+        "@org_uber_go_multierr//:multierr",
+    ],
+)
+
+go_test(
+    name = "config_test",
+    srcs = ["config_test.go"],
+    data = glob(["testdata/**"]),
+    embed = [":config"],
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/cloud/cloudprovider",
+        "//internal/config/instancetypes",
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_go_playground_locales//en",
+        "@com_github_go_playground_universal_translator//:universal-translator",
+        "@com_github_go_playground_validator_v10//:validator",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+        "@org_uber_go_multierr//:multierr",
+    ],
+)
