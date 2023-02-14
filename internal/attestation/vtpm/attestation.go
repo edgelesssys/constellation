@@ -14,12 +14,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	tpmServer "github.com/google/go-tpm-tools/server"
 	"github.com/google/go-tpm/tpm2"
+
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 )
 
 var (

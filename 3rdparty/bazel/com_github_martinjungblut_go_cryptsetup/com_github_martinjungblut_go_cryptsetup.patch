@@ -1,0 +1,12 @@
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -14,6 +14,9 @@
+         "plain.go",
+     ],
+     cgo = True,
++    cdeps = [
++        "@//rpm:cryptsetup",
++    ],
+     importpath = "github.com/martinjungblut/go-cryptsetup",
+     visibility = ["//visibility:public"],
+ )

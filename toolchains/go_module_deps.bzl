@@ -2785,6 +2785,12 @@ def go_dependencies():
     go_repository(
         name = "com_github_google_go_tpm_tools",
         build_file_generation = "on",
+        # keep
+        patches = [
+            "//3rdparty/bazel/com_github_google_go_tpm_tools:com_github_google_go_tpm_tools.patch",
+            "//3rdparty/bazel/com_github_google_go_tpm_tools:ms_tpm_20_ref.patch",
+            "//3rdparty/bazel/com_github_google_go_tpm_tools:include.patch",
+        ],
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tpm-tools",
         replace = "github.com/daniel-weisse/go-tpm-tools",
@@ -4272,6 +4278,9 @@ def go_dependencies():
         name = "com_github_martinjungblut_go_cryptsetup",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
+        patches = [
+            "//3rdparty/bazel/com_github_martinjungblut_go_cryptsetup:com_github_martinjungblut_go_cryptsetup.patch",  # keep
+        ],
         importpath = "github.com/martinjungblut/go-cryptsetup",
         sum = "h1:YDjLk3wsL5ZLhLC4TIwIvT2NkSCAdAV6pzzZaRfj4jk=",
         version = "v0.0.0-20220520180014-fd0874fd07a6",
