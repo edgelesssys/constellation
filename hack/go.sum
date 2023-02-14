@@ -712,8 +712,8 @@ github.com/google/trillian v1.3.11/go.mod h1:0tPraVHrSDkA3BO6vKX67zgLXs6SsOAbHEi
 github.com/google/trillian v1.3.14-0.20210409160123-c5ea3abd4a41/go.mod h1:1dPv0CUjNQVFEDuAUFhZql16pw/VlPgaX8qj+g5pVzQ=
 github.com/google/trillian v1.3.14-0.20210511103300-67b5f349eefa/go.mod h1:s4jO3Ai4NSvxucdvqUHON0bCqJyoya32eNw6XJwsmNc=
 github.com/google/trillian v1.4.0/go.mod h1:1Bja2nEgMDlEJWWRXBUemSPG9qYw84ZYX2gHRVHlR+g=
-github.com/google/trillian v1.5.1 h1:2p1l13f0eWd7eOShwarwIxutYYnGzY/5S+xYewQIPkU=
-github.com/google/trillian v1.5.1/go.mod h1:EcDttN8nf+EoAiyLigBAp9ebncZI6rhJPyxZ+dQ6HSo=
+github.com/google/trillian v1.5.2-0.20230214005801-4ad46d3291e6 h1:6hKerqITvyPDal/rSLOwTWb1HAxYO6FGuOXRXLXKJsw=
+github.com/google/trillian v1.5.2-0.20230214005801-4ad46d3291e6/go.mod h1:w/XUPQV2WxdnfpwqnWsabVUzeFqIYQVsj/DZaxgVqsI=
 github.com/google/uuid v0.0.0-20161128191214-064e2069ce9c/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
