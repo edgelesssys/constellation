@@ -35,36 +35,15 @@ jobs:
         with:
           go-version: "1.20.1"
 
-      - name: Get Go submodules
-        id: submods
-        shell: bash
-        run: |
-          mods=$(go list -f '{{.Dir}}' -m | xargs)
-          echo "Found mods: $mods"
-          echo "submods=${mods}" >> "$GITHUB_OUTPUT"
-
       - name: Go tidy check
         id: tidycheck
-        uses: katexochen/go-tidy-check@45731e0013a976d5d616d79007c7ba52de6ce542 # tag=v1.0.2
+        uses: katexochen/go-tidy-check@2f5d75dbd503b372466fa9d8bc85710558b953c7 # v2.0.0
         with:
-          modules: ${{ steps.submods.outputs.submods }}
+          submodules: "true"
 
       # The following steps are only executed if the previous tidy check failed
       # and the action runs on an renovat branche. In this case, we tidy all
       # modules again and commit the changes, so the user doesn't need to do it.
-
-      - name: Tidy modules on renovate branches
-        if: |
-          failure() &&
-          (steps.tidycheck.conclusion == 'failure') &&
-          startsWith(github.head_ref, 'renovate/') &&
-          !github.event.pull_request.head.repo.fork
-        shell: bash
-        run: |
-          mods="${{ steps.submods.outputs.submods }}"
-          for mod in $mods; do
-            go mod tidy -C "$mod"
-          done
 
       - name: Push changes
         if: |
