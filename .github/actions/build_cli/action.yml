@@ -45,9 +45,9 @@ runs:
         cd build
         if [ ${{ inputs.enterpriseCLI }} == 'true' ]
         then
-          cmake -DCLI_BUILD_TAGS:STRING=enterprise ..
+          cmake -DBAZEL:STRING=bazelisk -DCLI_BUILD_TAGS:STRING=enterprise ..
         else
-          cmake ..
+          cmake -DBAZEL:STRING=bazelisk ..
         fi
         GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make cli
         cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}

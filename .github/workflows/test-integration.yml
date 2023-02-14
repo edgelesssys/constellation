@@ -39,7 +39,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcryptsetup12 libcryptsetup-dev
 
       - name: Create and populate build folder
-        run: mkdir build && cd build && cmake ..
+        run: mkdir build && cd build && cmake -DBAZEL:STRING=bazelisk ..
 
       # Runs all test targets starting with "integration-"
       - name: Integration Tests

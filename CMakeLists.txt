@@ -1,25 +1,17 @@
 cmake_minimum_required(VERSION 3.11)
-
-# WARNING: This is only executed when running `cmake`.
-# Therefore, to update the version number, one needs to run `cmake` first.
-execute_process(COMMAND bash -c "go run ${CMAKE_SOURCE_DIR}/hack/pseudo-version/. | tr -d '\n'"
-    OUTPUT_VARIABLE PSEUDO_VERSION)
-
-project(constellation LANGUAGES C VERSION 0.0.0)
-
-if (${PROJECT_VERSION} STREQUAL "0.0.0")
-  set(PROJECT_VERSION ${PSEUDO_VERSION})
-endif()
-
+project(constellation LANGUAGES C)
 set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI.")
+set(BAZEL "bazel" CACHE STRING "Path to bazel binary.")
 
 enable_testing()
 
 #
-# core-os disk-mapper
+# disk-mapper
 #
 add_custom_target(disk-mapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target disk-mapper .
+  COMMAND ${BAZEL} build //disk-mapper/cmd:cmd
+  COMMAND cp \$$\(${BAZEL} cquery --output=files //disk-mapper/cmd:cmd\) ${CMAKE_BINARY_DIR}/disk-mapper
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/disk-mapper
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS disk-mapper
 )
@@ -28,7 +20,9 @@ add_custom_target(disk-mapper ALL
 # bootstrapper
 #
 add_custom_target(bootstrapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target bootstrapper .
+  COMMAND ${BAZEL} build //bootstrapper/cmd/bootstrapper:bootstrapper
+  COMMAND cp \$$\(${BAZEL} cquery --output=files //bootstrapper/cmd/bootstrapper:bootstrapper\) ${CMAKE_BINARY_DIR}/bootstrapper
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/bootstrapper
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS bootstrapper
 )
@@ -37,7 +31,9 @@ add_custom_target(bootstrapper ALL
 # upgrade-agent
 #
 add_custom_target(upgrade-agent ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target upgrade-agent .
+  COMMAND ${BAZEL} build //upgrade-agent/cmd:cmd
+  COMMAND cp \$$\(${BAZEL} cquery --output=files //upgrade-agent/cmd:cmd\) ${CMAKE_BINARY_DIR}/upgrade-agent
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/upgrade-agent
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS upgrade-agent
 )
@@ -46,26 +42,21 @@ add_custom_target(upgrade-agent ALL
 # cli
 #
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
+  COMMAND ${BAZEL} build --@io_bazel_rules_go//go/config:tags='${CLI_BUILD_TAGS}' --platforms=@local_config_platform//:host //cli:cli_oss
+  COMMAND cp \$$\(${BAZEL} cquery --@io_bazel_rules_go//go/config:tags='${CLI_BUILD_TAGS}' --platforms=@local_config_platform//:host --output=files //cli:cli_oss\) ${CMAKE_BINARY_DIR}/constellation
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/constellation
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS constellation
-)
-
-#
-# testing / debugging
-#
-add_custom_target(debug_bootstrapper
-  go build -o ${CMAKE_BINARY_DIR}/debug_bootstrapper -buildvcs=false -ldflags "-buildid='' -X main.version=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bootstrapper/cmd/bootstrapper
-  BYPRODUCTS debug_bootstrapper
 )
 
 #
 # debugd
 #
 add_custom_target(debugd ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/debugd -buildvcs=false -ldflags "-buildid=''"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/debugd
+  COMMAND ${BAZEL} build //debugd/cmd/debugd:debugd
+  COMMAND cp \$$\(${BAZEL} cquery --output=files //debugd/cmd/debugd:debugd\) ${CMAKE_BINARY_DIR}/debugd
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/debugd
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS debugd
 )
 
@@ -73,8 +64,10 @@ add_custom_target(debugd ALL
 # cdbg
 #
 add_custom_target(cdbg ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/cdbg
+  COMMAND ${BAZEL} build --platforms=@local_config_platform//:host //debugd/cmd/cdbg:cdbg
+  COMMAND cp \$$\(${BAZEL} cquery --platforms=@local_config_platform//:host --output=files //debugd/cmd/cdbg:cdbg\) ${CMAKE_BINARY_DIR}/cdbg
+  COMMAND chmod +w ${CMAKE_BINARY_DIR}/cdbg
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS cdbg
 )
 
@@ -88,6 +81,9 @@ add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WO
 # format
 #
 add_custom_target(format
+  COMMAND bash -c "${BAZEL} run //:buildifier-fix"
+  COMMAND bash -c "${BAZEL} run //:gazelle"
+  COMMAND bash -c "${BAZEL} run //:gazelle-update-repos"
   COMMAND bash -c "shfmt -i 2 -s -w -sr $(shfmt -f ${CMAKE_SOURCE_DIR} | grep -v helm/charts/cilium)"
   COMMAND bash -c "gofumpt -l -w ${CMAKE_SOURCE_DIR}"
   VERBATIM
