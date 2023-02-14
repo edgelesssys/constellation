@@ -1,0 +1,52 @@
+#!/usr/bin/expect -f
+# Note: Expects to be able to run 'sudo install' without a password
+
+set timeout -1
+set send_human {0.05 0 1 0.05 0.3}
+set CTRLC \003
+set CTRLX \030
+set record_name [lindex $argv 0];
+
+proc expect_prompt {} {
+    # This matches the trailing 0m of our ANSI control sequence. See PS1 in Dockerfile.
+    expect "0m "
+}
+
+proc run_command {cmd} {
+    send -h "$cmd"
+    send "\r"
+    expect -timeout 1
+}
+
+# Start recording
+spawn asciinema rec --overwrite /recordings/create-cluster.cast
+send "\r"
+expect_prompt
+
+run_command "# Step 1: Create cloud environment"
+expect_prompt
+run_command "constellation create --control-plane-nodes 3 --worker-nodes 2"
+expect -re "y\/n"
+send "y"
+send "\r"
+expect_prompt
+
+run_command "# Step 2: Initialize Constellation"
+expect_prompt
+run_command "constellation init"
+expect_prompt
+
+run_command "# Wait for cluster to finish bootstrapping..."
+expect_prompt
+# Without a sleep we only see a single node, not 5.
+run_command "sleep 300"
+expect_prompt
+
+run_command "# Step 3: Connect to Constellation"
+expect_prompt
+run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
+expect_prompt
+run_command "kubectl get nodes"
+
+# Stop recording
+send "exit"

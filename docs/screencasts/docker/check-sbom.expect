@@ -22,8 +22,28 @@ spawn asciinema rec --overwrite /recordings/check-sbom.cast
 send "\r"
 expect_prompt
 
-### Step 0: Requirements
-run_command "echo Step 0: Installing requirements"
+run_command "# Step 1: Install SLSA verifier"
+expect_prompt
+run_command "curl -sLO https://github.com/slsa-framework/slsa-verifier/releases/latest/download/slsa-verifier-linux-amd64"
+expect_prompt
+run_command "sudo install slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier"
+expect_prompt
+
+run_command "# Step 2: Download Constellation SBOM and provenance"
+expect_prompt
+run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.spdx.sbom"
+expect_prompt
+run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.intoto.jsonl"
+expect_prompt
+
+run_command "# Step 3: Check integrity of SBOM"
+expect_prompt
+run_command "slsa-verifier verify-artifact constellation.spdx.sbom --provenance-path constellation.intoto.jsonl --source-uri github.com/edgelesssys/constellation"
+expect_prompt
+run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.intoto.jsonl"
+expect_prompt
+
+run_command "# Step 4: Install grype (security scanner)"
 expect_prompt
 run_command "curl -sLO https://github.com/anchore/grype/releases/download/v0.56.0/grype_0.56.0_linux_amd64.tar.gz"
 expect_prompt
@@ -34,14 +54,9 @@ expect_prompt
 run_command "grype --help"
 expect_prompt
 
-### Step 1: Download & check SBOM
-run_command "echo Step 1: Download Constellation SBOM"
-expect_prompt
-run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.spdx.sbom"
+run_command "# Step 5: Check for vulnerabilities"
 expect_prompt
 run_command "grype constellation.spdx.sbom -o table -q"
-expect_prompt
-run_command "echo We are safe!"
 
 # Stop recording
 send "exit"

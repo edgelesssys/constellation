@@ -1,5 +1,13 @@
 # Configure your cluster
 
+:::info
+This recording presents the essence of this page. It is recommended to read it in full for the motivation and all details.
+:::
+
+<asciinemaWidget src="/constellation/assets/configure-cluster.cast" rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />
+
+---
+
 Before you can create your cluster, you need to configure the identity and access management (IAM) for your cloud service provider (CSP) and choose machine types for the nodes.
 
 ## Creating the configuration file
@@ -256,3 +264,7 @@ Delete the IAM configuration by executing the following command in the same dire
 ```bash
 constellation iam destroy
 ```
+
+---
+
+<asciinemaWidget src="/constellation/assets/delete-iam.cast" rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />

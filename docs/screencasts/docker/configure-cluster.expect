@@ -1,0 +1,46 @@
+#!/usr/bin/expect -f
+# Note: Expects to be able to run 'sudo install' without a password
+
+set timeout -1
+set send_human {0.05 0 1 0.05 0.3}
+set CTRLC \003
+set CTRLX \030
+set record_name [lindex $argv 0];
+
+proc expect_prompt {} {
+    # This matches the trailing 0m of our ANSI control sequence. See PS1 in Dockerfile.
+    expect "0m "
+}
+
+proc run_command {cmd} {
+    send -h "$cmd"
+    send "\r"
+    expect -timeout 1
+}
+
+# Start recording
+spawn asciinema rec --overwrite /recordings/configure-cluster.cast
+send "\r"
+expect_prompt
+
+run_command "# Step 1: Create IAM configuration"
+expect_prompt
+run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
+expect -re "y\/n"
+send "y"
+send "\r"
+expect_prompt
+
+run_command "# Step 2: Fill in configuration"
+expect_prompt
+run_command "yq '.provider.gcp.project = \"constellation-331613\"' -i constellation-conf.yaml"
+expect_prompt
+run_command "yq '.provider.gcp.zone = \"europe-west3-b\"' -i constellation-conf.yaml"
+expect_prompt
+run_command "yq '.provider.gcp.region = \"europe-west3\"' -i constellation-conf.yaml"
+expect_prompt
+run_command "cat constellation-conf.yaml | head -n15"
+expect_prompt
+
+# Stop recording
+send "exit"

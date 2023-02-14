@@ -22,26 +22,26 @@ spawn asciinema rec --overwrite /recordings/verify-cli.cast
 send "\r"
 expect_prompt
 
-run_command "# Step 0: Installing SLSA verifier"
+run_command "# Step 1: Install SLSA verifier"
 expect_prompt
 run_command "curl -sLO https://github.com/slsa-framework/slsa-verifier/releases/latest/download/slsa-verifier-linux-amd64"
 expect_prompt
 run_command "sudo install slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier"
 expect_prompt
 
-run_command "# Step 1: Download Constellation and provenance file"
+run_command "# Step 2: Download Constellation CLI and provenance"
 expect_prompt
 run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64"
 expect_prompt
 run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.intoto.jsonl"
 expect_prompt
 
-run_command "# Step 2: Verify provenance"
+run_command "# Step 3: Verify provenance"
 expect_prompt
 run_command "slsa-verifier verify-artifact constellation-linux-amd64 --provenance-path constellation.intoto.jsonl --source-uri github.com/edgelesssys/constellation"
 expect_prompt
 
-run_command "# Step 3: Install the CLI"
+run_command "# Step 4: Install the CLI"
 expect_prompt
 run_command "sudo install constellation-linux-amd64 /usr/local/bin/constellation"
 expect_prompt

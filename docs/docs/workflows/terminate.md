@@ -1,5 +1,13 @@
 # Terminate your cluster
 
+:::info
+This recording presents the essence of this page. It is recommended to read it in full for the motivation and all details.
+:::
+
+<asciinemaWidget src="/constellation/assets/terminate-cluster.cast" rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />
+
+---
+
 You can terminate your cluster using the CLI. For this, you need the Terraform state directory named [`constellation-terraform`](../reference/terraform.md) in the current directory.
 
 :::danger
