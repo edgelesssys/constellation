@@ -28,11 +28,11 @@ require (
 	golang.org/x/mod v0.8.0
 	google.golang.org/api v0.107.0
 	google.golang.org/protobuf v1.28.1
-	k8s.io/api v0.25.4
-	k8s.io/apimachinery v0.25.4
-	k8s.io/client-go v0.25.4
-	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/controller-runtime v0.13.1
+	k8s.io/api v0.26.1
+	k8s.io/apimachinery v0.26.1
+	k8s.io/client-go v0.26.1
+	k8s.io/utils a36077c30491
+	sigs.k8s.io/controller-runtime v0.14.4
 )
 
 require (
