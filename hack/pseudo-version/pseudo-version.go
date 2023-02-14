@@ -22,6 +22,7 @@ import (
 func main() {
 	printSemVer := flag.Bool("semantic-version", false, "Only print semantic version")
 	printTimestamp := flag.Bool("print-timestamp", false, "Only print timestamp")
+	timestampFormat := flag.String("timestamp-format", "20060102150405", "Timestamp format")
 	printBranch := flag.Bool("print-branch", false, "Only print branch name")
 	printReleaseVersion := flag.Bool("print-release-branch", false, "Only print release branch version")
 	major := flag.String("major", "v0", "Optional major version")
@@ -83,7 +84,7 @@ func main() {
 	case *printSemVer:
 		fmt.Println(*base)
 	case *printTimestamp:
-		fmt.Println(headTime.Format("20060102150405"))
+		fmt.Println(headTime.Format(*timestampFormat))
 	case *printBranch:
 		fmt.Println(parsedBranch)
 	case *printReleaseVersion:

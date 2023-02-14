@@ -187,5 +187,28 @@ func VersionInfo() string {
 	return versionInfo
 }
 
-// versionInfo is the version of a binary. Left as a separate variable to allow override during build.
-var versionInfo = "0.0.0"
+// Timestamp returns the commit timestamp of a binary.
+func Timestamp() string {
+	return timestamp
+}
+
+// Commit returns the commit hash of a binary.
+func Commit() string {
+	return commit
+}
+
+// State returns the git state of the working directory.
+func State() string {
+	return state
+}
+
+var (
+	// versionInfo is the version of a binary. Left as a separate variable to allow override during build.
+	versionInfo = "0.0.0"
+	// timestamp is the commit timestamp of a binary. Left as a separate variable to allow override during build.
+	timestamp = "1970-01-01T00:00:00Z"
+	// commit is the commit hash of a binary. Left as a separate variable to allow override during build.
+	commit = "0000000000000000000000000000000000000000"
+	// state is the git state of the working directory. Left as a separate variable to allow override during build.
+	state = "unknown"
+)
