@@ -103,10 +103,11 @@ func AvailableServiceVersions() (string, error) {
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
-	ciliumRelease, err := i.loadCilium(config.GetProvider(), conformanceMode)
+	ciliumRelease, err := i.loadCilium(config.GetProvider())
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
+	extendCiliumValues(ciliumRelease.Values, conformanceMode)
 
 	certManagerRelease, err := i.loadCertManager()
 	if err != nil {
@@ -118,10 +119,14 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(config, masterSecret, salt)
+	conServicesRelease, err := i.loadConstellationServices(config.GetProvider())
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
+	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt); err != nil {
+		return nil, fmt.Errorf("extending constellation-services values: %w", err)
+	}
+
 	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
 
 	rel, err := json.Marshal(releases)
@@ -131,12 +136,13 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 	return rel, nil
 }
 
-func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
+// loadCilium prepares a helm release for use in a helm install action.
+func (i *ChartLoader) loadCilium(csp cloudprovider.Provider) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, ciliumPath)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
-	values, err := i.loadCiliumValues(csp, conformanceMode)
+	values, err := i.loadCiliumValues(csp)
 	if err != nil {
 		return helm.Release{}, err
 	}
@@ -149,9 +155,9 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: ciliumReleaseName, Wait: false}, nil
 }
 
-// loadCiliumHelper is used to separate the marshalling step from the loading step.
+// loadCiliumValues is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadCiliumValues(csp cloudprovider.Provider, conformanceMode bool) (map[string]any, error) {
+func (i *ChartLoader) loadCiliumValues(csp cloudprovider.Provider) (map[string]any, error) {
 	var values map[string]any
 	switch csp {
 	case cloudprovider.AWS:
@@ -165,16 +171,24 @@ func (i *ChartLoader) loadCiliumValues(csp cloudprovider.Provider, conformanceMo
 	default:
 		return nil, fmt.Errorf("unknown csp: %s", csp)
 	}
+
+	return values, nil
+}
+
+// extendCiliumValues extends the given values map by some values depending on user input.
+// This extra step of separating the application of user input is necessary since service upgrades should
+// reuse user input from the init step. However, we can't rely on reuse-values, because
+// during upgrades we all values need to be set locally as they might have changed.
+// Also, the charts are not rendered correctly without all of these values.
+func extendCiliumValues(in map[string]any, conformanceMode bool) {
 	if conformanceMode {
-		values["kubeProxyReplacementHealthzBindAddr"] = ""
-		values["kubeProxyReplacement"] = "partial"
-		values["sessionAffinity"] = true
-		values["cni"] = map[string]any{
+		in["kubeProxyReplacementHealthzBindAddr"] = ""
+		in["kubeProxyReplacement"] = "partial"
+		in["sessionAffinity"] = true
+		in["cni"] = map[string]any{
 			"chainingMode": "portmap",
 		}
-
 	}
-	return values, nil
 }
 
 func (i *ChartLoader) loadCertManager() (helm.Release, error) {
@@ -344,14 +358,13 @@ func (i *ChartLoader) loadOperatorsValues(csp cloudprovider.Provider) (map[strin
 	return values, nil
 }
 
-// loadConstellationServices loads the constellation-services chart from the embed.FS,
-// marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
-func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSecret, salt []byte) (helm.Release, error) {
+// loadConstellationServices prepares a helm release for use in a helm install action.
+func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, conServicesPath)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
-	values, err := i.loadConstellationServicesValues(config, masterSecret, salt)
+	values, err := i.loadConstellationServicesValues(csp)
 	if err != nil {
 		return helm.Release{}, err
 	}
@@ -366,8 +379,7 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, masterSecret, salt []byte) (map[string]any, error) {
-	csp := config.GetProvider()
+func (i *ChartLoader) loadConstellationServicesValues(csp cloudprovider.Provider) (map[string]any, error) {
 	values := map[string]any{
 		"global": map[string]any{
 			"keyServicePort":      constants.KeyServicePort,
@@ -378,8 +390,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 		},
 		"key-service": map[string]any{
 			"image":                i.keyServiceImage,
-			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
-			"salt":                 base64.StdEncoding.EncodeToString(salt),
 			"saltKeyName":          constants.ConstellationSaltKey,
 			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
 			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
@@ -410,18 +420,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 
 	switch csp {
 	case cloudprovider.Azure:
-		joinServiceVals, ok := values["join-service"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid join-service values")
-		}
-		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
-
-		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
-		if err != nil {
-			return nil, fmt.Errorf("marshalling id key digests: %w", err)
-		}
-		joinServiceVals["idkeydigests"] = string(marshalledDigests)
-
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
 			return nil, errors.New("invalid ccm values")
@@ -432,10 +430,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 
 		values["cnm"] = map[string]any{
 			"image": i.cnmImage,
-		}
-
-		values["azure"] = map[string]any{
-			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
 		values["tags"] = map[string]any{
@@ -449,10 +443,6 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 		}
 		ccmVals["GCP"] = map[string]any{
 			"image": i.ccmImage,
-		}
-
-		values["gcp"] = map[string]any{
-			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
 		values["tags"] = map[string]any{
@@ -478,6 +468,47 @@ func (i *ChartLoader) loadConstellationServicesValues(config *config.Config, mas
 		}
 	}
 	return values, nil
+}
+
+// extendConstellationServicesValues extends the given values map by some values depending on user input.
+// This extra step of separating the application of user input is necessary since service upgrades should
+// reuse user input from the init step. However, we can't rely on reuse-values, because
+// during upgrades all values need to be set locally as they might have changed.
+// Also, the charts are not rendered correctly without all of these values.
+func extendConstellationServicesValues(in map[string]any, config *config.Config, masterSecret, salt []byte) error {
+	keyServiceValues, ok := in["key-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'key-service' key")
+	}
+	keyServiceValues["masterSecret"] = base64.StdEncoding.EncodeToString(masterSecret)
+	keyServiceValues["salt"] = base64.StdEncoding.EncodeToString(salt)
+
+	csp := config.GetProvider()
+	switch csp {
+	case cloudprovider.Azure:
+		joinServiceVals, ok := in["join-service"].(map[string]any)
+		if !ok {
+			return errors.New("invalid join-service values")
+		}
+		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
+
+		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
+		if err != nil {
+			return fmt.Errorf("marshalling id key digests: %w", err)
+		}
+		joinServiceVals["idkeydigests"] = string(marshalledDigests)
+
+		in["azure"] = map[string]any{
+			"deployCSIDriver": config.DeployCSIDriver(),
+		}
+
+	case cloudprovider.GCP:
+		in["gcp"] = map[string]any{
+			"deployCSIDriver": config.DeployCSIDriver(),
+		}
+	}
+
+	return nil
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.

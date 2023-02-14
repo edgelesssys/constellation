@@ -171,7 +171,7 @@ func (c *Client) upgradeRelease(
 	return nil
 }
 
-// prepareCertManagerValues returns a values map as required for helm-upgrade.
+// prepareValues returns a values map as required for helm-upgrade.
 // It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
 // and merging the fetched values with the locally found values.
 // This is done to ensure that new values (from upgrades of the local files) end up in the cluster.

@@ -100,7 +100,9 @@ func TestConstellationServices(t *testing.T) {
 			}
 			chart, err := loadChartsDir(helmFS, conServicesPath)
 			require.NoError(err)
-			values, err := chartLoader.loadConstellationServicesValues(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			values, err := chartLoader.loadConstellationServicesValues(tc.config.GetProvider())
+			require.NoError(err)
+			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
