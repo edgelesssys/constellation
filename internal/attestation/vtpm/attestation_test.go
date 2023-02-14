@@ -14,24 +14,25 @@ import (
 	"io"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	tpmsim "github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
-	"github.com/google/go-tpm-tools/simulator"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	tpmsim "github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 type simTPMWithEventLog struct {
-	*simulator.Simulator
+	io.ReadWriteCloser
 }
 
 func newSimTPMWithEventLog() (io.ReadWriteCloser, error) {
-	tpmSim, err := simulator.Get()
+	tpmSim, err := simulator.OpenSimulatedTPM()
 	if err != nil {
 		return nil, err
 	}
@@ -407,18 +408,18 @@ func TestGetSelectedMeasurements(t *testing.T) {
 			wantErr: true,
 		},
 		"3 PCRs": {
-			openFunc: tpmsim.OpenSimulatedTPM,
+			openFunc: simulator.OpenSimulatedTPM,
 			pcrSelection: tpm2.PCRSelection{
 				Hash: tpm2.AlgSHA256,
 				PCRs: []int{0, 1, 2},
 			},
 		},
 		"Azure PCRS": {
-			openFunc:     tpmsim.OpenSimulatedTPM,
+			openFunc:     simulator.OpenSimulatedTPM,
 			pcrSelection: AzurePCRSelection,
 		},
 		"GCP PCRs": {
-			openFunc:     tpmsim.OpenSimulatedTPM,
+			openFunc:     simulator.OpenSimulatedTPM,
 			pcrSelection: GCPPCRSelection,
 		},
 	}

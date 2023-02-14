@@ -14,8 +14,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	tpmclient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm-tools/simulator"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +51,7 @@ func TestGetSNPAttestation(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			tpm, err := simulator.Get()
+			tpm, err := simulator.OpenSimulatedTPM()
 			require.NoError(err)
 			defer tpm.Close()
 
@@ -96,7 +96,7 @@ func TestGetHCLAttestationKey(t *testing.T) {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	tpm, err := simulator.Get()
+	tpm, err := simulator.OpenSimulatedTPM()
 	require.NoError(err)
 	defer tpm.Close()
 

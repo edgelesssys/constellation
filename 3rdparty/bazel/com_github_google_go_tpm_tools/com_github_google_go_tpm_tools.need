@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "internal",
+    srcs = [
+        "doc.go",
+        "internal_cgo.go",
+        "internal_cross.go",
+    ],
+    cgo = True,
+    cdeps = select({
+        "@//bazel/settings:tpm_simulator_enabled": ["//simulator/ms-tpm-20-ref:ms_tpm_20_ref"],
+        "//conditions:default": ["@//3rdparty/bazel/com_github_google_go_tpm_tools/placeholder:ms_tpm_20_ref_disabled"],
+    }),
+    copts = [
+        "-fno-sanitize=all",  # relax sanitizer checks for this test-only dependency
+    ],
+    importpath = "github.com/google/go-tpm-tools/simulator/internal",
+    visibility = ["//simulator:__subpackages__"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":internal",
+    visibility = ["//simulator:__subpackages__"],
+)

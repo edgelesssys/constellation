@@ -10,14 +10,7 @@ package simulator
 
 import (
 	"io"
-	"testing"
-
-	"go.uber.org/goleak"
 )
-
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
-}
 
 // OpenSimulatedTPM returns a simulated TPM device.
 func OpenSimulatedTPM() (io.ReadWriteCloser, error) {
