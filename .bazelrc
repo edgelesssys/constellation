@@ -1,22 +1,48 @@
-build --stamp --workspace_status_command=tools/workspace_status
-build --incompatible_enable_cc_toolchain_resolution
+# share bazel cache between checkouts of the same project
+# and keep old build caches around for longer
+build --disk_cache=~/.cache/shared_bazel_action_cache
+build --repository_cache=~/.cache/shared_bazel_repository_cache
+
+# better caching / reproducibility
 build --incompatible_strict_action_env=true
+build --experimental_output_directory_naming_scheme=diff_against_baseline
+
+# disable automatic toolchain detection for C/C++
+build --incompatible_enable_cc_toolchain_resolution
 build --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-build --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
+
+# disable automatic toolchain detection for Java
 build --incompatible_use_toolchain_resolution_for_java_rules
 build --java_runtime_version=pinned_remotejdk_11
 build --tool_java_runtime_version=pinned_remotejdk_11
-build --experimental_output_directory_naming_scheme=diff_against_baseline
-test --java_runtime_version=pinned_remotejdk_11
-test --tool_java_runtime_version=pinned_remotejdk_11
-test --incompatible_use_toolchain_resolution_for_java_rules
-test --experimental_output_directory_naming_scheme=diff_against_baseline
+
+# inject version information into binaries
+build --stamp --workspace_status_command=tools/workspace_status
+
+# strip binaries for better reproducibility
+build --strip=always
+
+# set build mode to opt by default (better reproducibility and performance)
+build --compilation_mode=opt
+
+# compile for linux_amd64 by default (this is the target for any binaries that go into the cluster)
+build --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
+
+# enable tpm simulator for tests
 test --//bazel/settings:tpm_simulator
+
+# disable test caching (rerun all test cases even if they passed before)
 test --cache_test_results=no
 
+# bazel config for debug builds
+build:debug --compilation_mode=dbg --strip=never
+
+# bazel configs to explicitly target a platform
+build:host --platforms @local_config_platform//:host
 build:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
 build:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.34
 build:linux_amd64_static --platforms @zig_sdk//libc_aware/platform:linux_amd64_musl
 build:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_musl
-build:nostamp --stamp=false --workspace_status_command=
-run:nostamp --stamp=false --workspace_status_command=
+
+# bazel config to explicitly disable stamping (hide version information at build time)
+build:nostamp --nostamp --workspace_status_command=
