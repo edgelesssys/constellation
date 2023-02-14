@@ -1,7 +1,9 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazeldnf//:def.bzl", "bazeldnf")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
+load("//bazel/go:go_test.bzl", "go_test")
 
+# gazelle:map_kind go_test go_test //bazel/go:go_test.bzl
 # gazelle:prefix github.com/edgelesssys/constellation/v2
 gazelle(name = "gazelle")
 
