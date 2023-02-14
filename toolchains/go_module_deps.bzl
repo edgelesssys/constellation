@@ -8427,6 +8427,10 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "libvirt.org/go/libvirt",
+        # keep
+        patches = [
+            "//3rdparty/bazel/org_libvirt_go_libvirt:go_libvirt.patch",
+        ],
         sum = "h1:q4UeuyzSp7GiYUB5T3ytzeXh41hp9JqNQu150NkO+7A=",
         version = "v1.8010.0",
     )
