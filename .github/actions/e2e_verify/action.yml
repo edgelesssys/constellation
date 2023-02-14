@@ -31,4 +31,4 @@ runs:
 
     - name: Constellation verify
       shell: bash
-      run: constellation verify --cluster-id $(jq -r ".clusterID" constellation-id.json)
+      run: constellation verify --cluster-id $(jq -r ".clusterID" constellation-id.json) --force
