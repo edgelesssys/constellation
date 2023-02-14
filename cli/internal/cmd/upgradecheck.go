@@ -317,7 +317,7 @@ func (v *versionCollector) newImages(ctx context.Context, version string, csp cl
 		if !v.flags.force {
 			return nil, fmt.Errorf("cluster image version (%s) newer than CLI version (%s)", currentImageMinorVer, currentCLIMinorVer)
 		}
-		if _, err := fmt.Fprintf(v.writer, "WARNING: CLI version is older than cluster image version. Continuing due to force flag.\n"); err != nil {
+		if _, err := fmt.Fprintln(v.writer, "WARNING: CLI version is older than cluster image version. Continuing due to force flag."); err != nil {
 			return nil, fmt.Errorf("writing to buffer: %w", err)
 		}
 	case cliImageCompare == 0:
