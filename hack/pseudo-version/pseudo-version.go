@@ -29,6 +29,7 @@ func main() {
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
 	revision := flag.String("revision", "", "Optional revision (git commit hash)")
+	skipV := flag.Bool("skip-v", false, "Skip 'v' prefix in version")
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
@@ -79,6 +80,9 @@ func main() {
 	}
 
 	version := module.PseudoVersion(*major, *base, headTime, *revision)
+	if *skipV {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	switch {
 	case *printSemVer:

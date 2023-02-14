@@ -20,11 +20,11 @@ func TestValidateVersionCompatibilityHelper(t *testing.T) {
 		wantError bool
 	}{
 		"full version works": {
-			cli:    "v0.1.0",
+			cli:    "0.1.0",
 			target: "v0.0.0",
 		},
 		"short path works": {
-			cli:    "v0.1.0",
+			cli:    "0.1.0",
 			target: "ref/main/stream/debug/v0.0.0-pre.0.20230109121528-d24fac00f018",
 		},
 		"minor version difference > 1": {
