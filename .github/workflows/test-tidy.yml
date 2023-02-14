@@ -10,13 +10,13 @@ on:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-tidy.yml"
+      - ".github/workflows/test-tidy.yml"
   pull_request:
     paths:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-tidy.yml"
+      - ".github/workflows/test-tidy.yml"
 
 jobs:
   gotidycheck:

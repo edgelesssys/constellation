@@ -10,13 +10,13 @@ on:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-lint.yml"
+      - ".github/workflows/test-lint.yml"
   pull_request:
     paths:
       - "**.go"
       - "**/go.mod"
       - "**/go.sum"
-      - "./github/workflows/test-lint.yml"
+      - ".github/workflows/test-lint.yml"
 
 jobs:
   golangci:
