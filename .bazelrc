@@ -1,3 +1,4 @@
+build --stamp --workspace_status_command=tools/workspace_status
 build --incompatible_enable_cc_toolchain_resolution
 build --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 build --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
@@ -15,3 +16,5 @@ build:linux_amd64 --platforms @zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34
 build:linux_arm64 --platforms @zig_sdk//libc_aware/platform:linux_arm64_gnu.2.34
 build:linux_amd64_static --platforms @zig_sdk//libc_aware/platform:linux_amd64_musl
 build:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_musl
+build:nostamp --stamp=false --workspace_status_command=
+run:nostamp --stamp=false --workspace_status_command=
