@@ -1,0 +1,12 @@
+--- dh/x25519/BUILD.bazel
++++ dh/x25519/BUILD.bazel
+@@ -13,6 +13,9 @@
+         "key.go",
+         "table.go",
+     ],
++    embed = [
++        "//math/fp25519:headers",
++    ],
+     importpath = "github.com/cloudflare/circl/dh/x25519",
+     visibility = ["//visibility:public"],
+     deps = [

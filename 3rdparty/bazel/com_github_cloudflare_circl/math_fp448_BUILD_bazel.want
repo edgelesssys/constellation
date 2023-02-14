@@ -1,0 +1,50 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_source", "go_test")
+
+go_library(
+    name = "fp448",
+    srcs = [
+        "fp.go",
+        "fp_amd64.go",
+        "fp_amd64.h",
+        "fp_amd64.s",
+        "fp_generic.go",
+        "fp_noasm.go",
+    ],
+    importpath = "github.com/cloudflare/circl/math/fp448",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//internal/conv",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:amd64": [
+            "@org_golang_x_sys//cpu",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+go_source(
+    name = "headers",
+    srcs = [
+        "fp_amd64.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":fp448",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "fp448_test",
+    srcs = [
+        "edgecases_test.go",
+        "fp_test.go",
+    ],
+    embed = [":fp448"],
+    deps = [
+        "//internal/conv",
+        "//internal/test",
+    ],
+)

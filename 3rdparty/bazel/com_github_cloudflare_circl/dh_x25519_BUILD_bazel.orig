@@ -1,0 +1,47 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "x25519",
+    srcs = [
+        "curve.go",
+        "curve_amd64.go",
+        "curve_amd64.h",
+        "curve_amd64.s",
+        "curve_generic.go",
+        "curve_noasm.go",
+        "doc.go",
+        "key.go",
+        "table.go",
+    ],
+    importpath = "github.com/cloudflare/circl/dh/x25519",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math/fp25519",
+    ] + select({
+        "@io_bazel_rules_go//go/platform:amd64": [
+            "@org_golang_x_sys//cpu",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":x25519",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "x25519_test",
+    srcs = [
+        "curve_test.go",
+        "key_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":x25519"],
+    deps = [
+        "//internal/conv",
+        "//internal/test",
+        "//math/fp25519",
+    ],
+)
