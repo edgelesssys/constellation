@@ -81,7 +81,7 @@ func runUpgradeCheck(cmd *cobra.Command, args []string) error {
 			client:         http.DefaultClient,
 			rekor:          rekor,
 			flags:          flags,
-			cliVersion:     constants.VersionInfo,
+			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo),
 			log:            log,
 		},
 		log: log,
