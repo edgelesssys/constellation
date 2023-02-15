@@ -21,9 +21,9 @@ Commands:
   * [up](#constellation-mini-up): Create and initialize a new MiniConstellation cluster
   * [down](#constellation-mini-down): Destroy a MiniConstellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
-* [upgrade](#constellation-upgrade): Find and execute upgrades to your Constellation cluster
+* [upgrade](#constellation-upgrade): Find and apply upgrades to your Constellation cluster
   * [check](#constellation-upgrade-check): Check for possible upgrades
-  * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
+  * [apply](#constellation-upgrade-apply): Apply an upgrade to a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
 * [version](#constellation-version): Display version of this CLI
@@ -307,11 +307,11 @@ constellation verify [flags]
 
 ## constellation upgrade
 
-Find and execute upgrades to your Constellation cluster
+Find and apply upgrades to your Constellation cluster
 
 ### Synopsis
 
-Find and execute upgrades to your Constellation cluster.
+Find and apply upgrades to your Constellation cluster.
 
 ### Options
 
@@ -356,22 +356,22 @@ constellation upgrade check [flags]
       --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
-## constellation upgrade execute
+## constellation upgrade apply
 
-Execute an upgrade of a Constellation cluster
+Apply an upgrade to a Constellation cluster
 
 ### Synopsis
 
-Execute an upgrade of a Constellation cluster by applying the chosen configuration.
+Apply an upgrade to a Constellation cluster by applying the chosen configuration.
 
 ```
-constellation upgrade execute [flags]
+constellation upgrade apply [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for execute
+  -h, --help   help for apply
   -y, --yes    run upgrades without further confirmation
                WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
 ```
