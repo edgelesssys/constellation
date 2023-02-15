@@ -328,7 +328,9 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 	case errors.Is(err, compatibility.ErrMajorMismatch):
 		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s)", constants.VersionInfo, fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMinorDrift):
-		msg = fmt.Sprintf("only the CLI (%s) can be up to one minor version newer than the configured version (%s)", constants.VersionInfo, fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart", constants.VersionInfo, fe.Value().(string))
+	case errors.Is(err, compatibility.ErrOutdatedCLI):
+		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s)", constants.VersionInfo, fe.Value().(string))
 	default:
 		msg = err.Error()
 	}
