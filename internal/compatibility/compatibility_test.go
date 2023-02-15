@@ -87,7 +87,7 @@ func TestNextMinorVersion(t *testing.T) {
 	}
 }
 
-func TestCLIWith(t *testing.T) {
+func TestBinaryWith(t *testing.T) {
 	testCases := map[string]struct {
 		cli       string
 		target    string
@@ -107,7 +107,7 @@ func TestCLIWith(t *testing.T) {
 			target:    "v1.2",
 			wantError: true,
 		},
-		"a has to be the newer version": {
+		"cli has to be the newer version": {
 			cli:       "v2.4.0",
 			target:    "v2.5.0",
 			wantError: true,
@@ -116,7 +116,7 @@ func TestCLIWith(t *testing.T) {
 			cli:    "v2.5.0-pre",
 			target: "v2.4.0",
 		},
-		"pre prelease version ordering is correct #2": {
+		"pre prelease versions are not forward compatible": {
 			cli:       "v2.4.0",
 			target:    "v2.5.0-pre",
 			wantError: true,
@@ -125,10 +125,18 @@ func TestCLIWith(t *testing.T) {
 			cli:    "v2.6.0-pre",
 			target: "v2.6.0-pre",
 		},
-		"pseudo version is newer than first pre release": {
-			cli:       "v2.6.0-pre",
+		"patch versions are forward compatible": {
+			cli:    "v2.6.0",
+			target: "v2.6.1",
+		},
+		"pseudo versions are not forward compatible": {
+			cli:       "v2.5.0",
 			target:    "v2.6.0-pre.0.20230125085856-aaaaaaaaaaaa",
 			wantError: true,
+		},
+		"pseudo version is newer than first pre release": {
+			cli:    "v2.6.0-pre",
+			target: "v2.6.0-pre.0.20230125085856-aaaaaaaaaaaa",
 		},
 	}
 

@@ -358,6 +358,14 @@ func validateVersionCompatibilityHelper(fieldName string, configuredVersion stri
 		configuredVersion = imageVersion.Version
 	}
 
+	if fieldName == "MicroserviceVersion" {
+		cliVersion := compatibility.EnsurePrefixV(constants.VersionInfo)
+		serviceVersion := compatibility.EnsurePrefixV(configuredVersion)
+		if semver.Compare(cliVersion, serviceVersion) == -1 {
+			return fmt.Errorf("the CLI's version (%s) is older than the configured version (%s)", cliVersion, serviceVersion)
+		}
+	}
+
 	return compatibility.BinaryWith(configuredVersion)
 }
 

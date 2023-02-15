@@ -90,7 +90,8 @@ func BinaryWith(target string) error {
 	if cliMajor != targetMajor {
 		return ErrMajorMismatch
 	}
-	if semver.Compare(binaryVersion, target) == -1 {
+	// For images we allow newer patch versions, therefore this only checks the minor version.
+	if semver.Compare(semver.MajorMinor(binaryVersion), semver.MajorMinor(target)) == -1 {
 		return ErrOutdatedCLI
 	}
 	// Abort if minor version drift between CLI and versionA value is greater than 1.
