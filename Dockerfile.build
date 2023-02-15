@@ -1,4 +1,4 @@
-FROM fedora:37@sha256:99aa8919afd1880064ec915dba44cdc5b52808667717f605750329d55006538a as build
+FROM fedora:37@sha256:23c63666eefb64cd2364e6d8ad327f06abf9eb1f34b621e9fd6c1602e142244b as build
 
 RUN dnf -y update && \
     dnf -y install @development-tools pkg-config iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
