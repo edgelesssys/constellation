@@ -26,6 +26,6 @@ WORKDIR /constellation/keyservice/cmd
 ARG PROJECT_VERSION=0.0.0
 RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o /constellation/build/keyservice -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
 
-FROM gcr.io/distroless/static:nonroot@sha256:6b01107391648040c796967b49b7973188b7c9a6b1d49d06090db349248eba39 as release
+FROM gcr.io/distroless/static:nonroot@sha256:116ec02427430e69f5692bf9408d9331ae1ae019749e41f3064ff1bb7482c73e as release
 COPY --from=build /constellation/build/keyservice /keyservice
 ENTRYPOINT ["/keyservice"]
