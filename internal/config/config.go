@@ -341,7 +341,9 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 
 	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.
 	// In case the field is not set in an old config we prefil it with the default value.
-	c.MicroserviceVersion = Default().MicroserviceVersion
+	if c.MicroserviceVersion == "" {
+		c.MicroserviceVersion = Default().MicroserviceVersion
+	}
 
 	return c, c.Validate(force)
 }
