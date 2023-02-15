@@ -14,7 +14,7 @@ RUN curl -sLO https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl &&\
 
 RUN curl -sLO https://releases.hashicorp.com/terraform/1.3.8/terraform_1.3.8_linux_amd64.zip &&\
     unzip terraform_1.3.8_linux_amd64.zip &&\
-    sudo install terraform /usr/local/bin/terraform && rm terraform
+    sudo install terraform /usr/local/bin/terraform && rm terraform terraform_1.3.8_linux_amd64.zip
 
 RUN curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64 &&\
     sudo install constellation-linux-amd64 /usr/local/bin/constellation &&\

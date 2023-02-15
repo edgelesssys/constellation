@@ -19,13 +19,15 @@ proc run_command {cmd} {
 }
 
 # Start recording
-spawn asciinema rec --overwrite /recordings/create-cluster.cast
+spawn asciinema rec --overwrite /recordings/delete-iam.cast
 send "\r"
 expect_prompt
 
 run_command "cd constellation-iam-terraform"
 expect_prompt
 run_command "terraform apply -destroy -auto-approve"
+expect -timeout 25
+run_command "# All resources are cleaned up."
 
 # Stop recording
 send "exit"

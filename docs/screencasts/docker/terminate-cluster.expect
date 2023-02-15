@@ -19,7 +19,7 @@ proc run_command {cmd} {
 }
 
 # Start recording
-spawn asciinema rec --overwrite /recordings/create-cluster.cast
+spawn asciinema rec --overwrite /recordings/terminate-cluster.cast
 send "\r"
 expect_prompt
 

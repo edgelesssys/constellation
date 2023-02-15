@@ -57,6 +57,7 @@ expect_prompt
 run_command "# Step 5: Check for vulnerabilities"
 expect_prompt
 run_command "grype constellation.spdx.sbom -o table -q"
+expect_prompt
 
 # Stop recording
 send "exit"

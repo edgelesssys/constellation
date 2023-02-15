@@ -23,7 +23,7 @@ Include the generated screencast into our docs using the [`AsciinemaWidget`](../
 ```md
 import AsciinemaWidget from '../../src/components/AsciinemaWidget';
 
-<AsciinemaWidget src="/constellation/assets/verify-cli.cast" fontSize={16} rows={18} cols={80} idleTimeLimit={3} preload={true} theme={'edgeless'} />
+<AsciinemaWidget src="/constellation/assets/verify-cli.cast" fontSize={16} rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />
 ```
 
 Then [re-build and locally host the docs](../README.md).
