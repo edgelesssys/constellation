@@ -52,7 +52,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	rand.Seed(time.Now().Unix())
 	flag.Parse()
 	os.Exit(m.Run())
 }
@@ -83,6 +82,7 @@ func runKMSTest(t *testing.T, kms kms.CloudKMS) {
 }
 
 func addSuffix(s string) string {
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, 5)
 	for i := range b {
