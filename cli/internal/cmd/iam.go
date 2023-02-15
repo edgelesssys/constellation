@@ -445,7 +445,6 @@ func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, 
 	cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
 	cmd.Printf("appClientID:\t\t%s\n", iamFile.AzureOutput.ApplicationID)
 	cmd.Printf("clientSecretValue:\t%s\n\n", iamFile.AzureOutput.ApplicationClientSecretValue)
-	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 }
 
 func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
@@ -523,11 +522,17 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 }
 
 func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
-	cmd.Println(fmt.Sprintf("serviceAccountKeyPath:\t%s\n", constants.GCPServiceAccountKeyFile))
+	cmd.Printf("projectID:\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("region:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("zone:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
+	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", constants.GCPServiceAccountKeyFile)
 }
 
 func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+	conf.Provider.GCP.Project = flags.gcp.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
+	conf.Provider.GCP.Region = flags.gcp.region
+	conf.Provider.GCP.Zone = flags.gcp.zone
 }
 
 func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
