@@ -365,7 +365,16 @@ func returnsTrue(fl validator.FieldLevel) bool {
 
 // validateUpgradeConfig prints a warning to STDERR and validates the field successfully.
 func validateUpgradeConfig(sl validator.StructLevel) {
-	fmt.Printf("WARNING: the config key `upgrade` will be deprecated in an upcoming version. Please check the documentation for more information.\n")
+	config, ok := sl.Current().Interface().(UpgradeConfig)
+	if !ok {
+		sl.ReportError(config, "upgrade", "UpgradeConfig", "malformed_upgrade_config", "")
+	}
+	// A valid `upgrade` section will always have a non-nil Measurements map.
+	// Only print a warning if the user actually specified an upgrade section.
+	if config.Image == "" && config.CSP == cloudprovider.Unknown && config.Measurements == nil {
+		return
+	}
+	fmt.Println("WARNING: the config key `upgrade` will be deprecated in an upcoming version. Please check the documentation for more information.")
 }
 
 func registerValidateNameError(ut ut.Translator) error {
