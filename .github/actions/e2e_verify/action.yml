@@ -24,7 +24,6 @@ runs:
         for key in $(echo $MEASUREMENTS | jq 'keys[]' -r); do
             echo Updating $key to $(echo $MEASUREMENTS | jq ".\"$key\"" -r)
             yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
-            yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key].warnOnly = false" constellation-conf.yaml
         done
         yq -i '.provider.${{ inputs.cloudProvider }}.measurements |= array_to_map' constellation-conf.yaml
         cat constellation-conf.yaml
