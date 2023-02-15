@@ -40,6 +40,8 @@ go-licenses csv ./... | {
       case ${pkg} in
       github.com/edgelesssys/constellation/v2) ;;
 
+      github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1) ;;
+
       *)
         not_allowed
         ;;
@@ -48,6 +50,7 @@ go-licenses csv ./... | {
 
     Unknown)
       case ${pkg} in
+
       *)
         not_allowed
         ;;
