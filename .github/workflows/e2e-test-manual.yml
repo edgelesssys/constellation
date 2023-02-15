@@ -214,13 +214,13 @@ jobs:
           outputPath: ${{ github.workspace }}/build/upgrade-agent
 
       - name: Upload bootstrapper to cache
-        uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812 # v3.2.5
         with:
           key: bootstrapper-${{ github.sha }}
           path: "build/bootstrapper"
 
       - name: Upload upgrade-agent to cache
-        uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812 # v3.2.5
         with:
           key: upgrade-agent-${{ github.sha }}
           path: "build/upgrade-agent"
@@ -263,7 +263,7 @@ jobs:
 
       - name: Set up gcloud CLI (macOS)
         if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
-        uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # v1.0.1
+        uses: google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587 # v1.1.0
 
       - name: Login to Azure
         if: inputs.cloudProvider == 'azure'

@@ -50,8 +50,8 @@ runs:
         sudo apt-get install azure-cli -y
 
     - name: Set up gcloud CLI
-      uses: google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce # v1.0.1
+      uses: google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587 # v1.1.0
 
     - name: Set up Docker Buildx
       id: docker-setup
-      uses: docker/setup-buildx-action@15c905b16b06416d2086efa066dd8e3a35cc7f98 # v2.4.0
+      uses: docker/setup-buildx-action@f03ac48505955848960e80bbb68046aa35c7b9e7 # v2.4.1
