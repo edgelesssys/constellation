@@ -4,8 +4,9 @@ The following are instructions for building all components in the constellation 
 
 Prerequisites:
 
-* 20 GB disk space
+* 20GB (minimum), better 40 GB disk space (required if you want to cross compile for all platforms)
 * [Latest version of Go](https://go.dev/doc/install).
+* [Bazelisk installed as `bazel` in your path](https://github.com/bazelbuild/bazelisk/releases).
 * [Docker](https://docs.docker.com/engine/install/). Can be installed with these commands on Ubuntu 22.04: `sudo apt update && sudo apt install docker.io`. As the build spawns docker containers your user account either needs to be in the `docker` group (Add with `sudo usermod -a -G docker $USER`) or you have to run builds with `sudo`. When using `sudo` remember that your root user might (depending on your distro and local config) not have the go binary in it's PATH. The current PATH can be forwarded to the root env with `sudo env PATH=$PATH <cmd>`.
 
 * Packages on Ubuntu:
@@ -20,11 +21,27 @@ Prerequisites:
   sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
   ```
 
+CMake wrapper:
+
 ```sh
 mkdir build
 cd build
 cmake ..
-make -j`nproc`
+make
+```
+
+Bazel build:
+
+```sh
+bazel query //...
+bazel build //path/to:target
+bazel build //... # build everything (for every supported platform)
+bazel build //bootstrapper/cmd/bootstrapper:bootstrapper # build bootstrapper
+bazel build //cli:cli_oss # build CLI
+bazel build //cli:cli_oss_linux_amd64 # cross compile CLI for linux amd64
+bazel build //cli:cli_oss_linux_arm64 # cross compile CLI for linux arm64
+bazel build //cli:cli_oss_darwin_amd64 # cross compile CLI for mac amd64
+bazel build //cli:cli_oss_darwin_arm64 # cross compile CLI for mac arm64
 ```
 
 # Test
@@ -38,6 +55,12 @@ ctest -j `nproc`
 You can limit the execution of tests to specific targets with e.g. `ctest -R unit-*` to only execute unit tests.
 
 Some of the tests rely on libvirt and won't work if you don't have a virtualization capable CPU. You can find instructions on setting up libvirt in our [QEMU README](qemu.md).
+
+Running unit tests with Bazel:
+
+```sh
+bazel test //...
+```
 
 # Deploy
 
@@ -75,6 +98,44 @@ The PCR values depend on the image you specify in the `path` argument.
 Therefore, if you want to verify a cluster deployed with a release image you will have to download the images first.
 
 After collecting the measurements you can put them into your `constellation-conf.yaml` under the `measurements` key in order to enforce them.
+
+# Dependency management
+
+## Go
+
+Go dependencies are managed with [Go modules](https://blog.golang.org/using-go-modules) that are all linked from the main [go.work](/go.work) file.
+[Follow the go documentation](https://go.dev/doc/modules/managing-dependencies) on how to use Go modules.
+After updating a dependency, you will have to run `bazel run //:gazelle-update-repos` to update the Bazel workspace with changes from `go.mod` and `go.sum` files.
+
+# Bazel
+
+Bazel is the primary build system for this project. It is used to build all Go code and will be used to build all artifacts in the future.
+Still, we aim to keep the codebase compatible with `go build` and `go test` as well.
+Whenever Go code is changed, you will have to run `bazel run //:gazelle` to regenerate the Bazel build files for Go code.
+The CI will check if the Bazel build files are up to date with `bazel run //:gazelle-check`.
+Optionally, you can use [autogazelle](https://github.com/bazelbuild/bazel-gazelle/tree/master/cmd/autogazelle) to regenerate the Bazel build files automatically on save. This is not tested and might not work properly.
+
+## Bazel commands
+
+* `bazel query //...` - list all targets
+* `bazel query //subfolder` - list all targets in a subfolder
+* `bazel build //...` - build all targets
+* `bazel build //subfolder/...` - build all targets in a subfolder (recursive)
+* `bazel build //subfolder:all` - build all targets in a subfolder (non-recursive)
+* `bazel build //subfolder:target` - build single target
+* `bazel run --run_under="cd $PWD &&" //cli:cli_oss -- create -c 1 -w 1` - build + run a target with arguments in current working directory
+* `bazel cquery --output=files //subfolder:target` - get location of a build artifact
+* `bazel test //...` - run all tests
+* `bazel run //:gazelle` - regenerate Bazel build files for Go code
+* `bazel run //:gazelle-check` - check if Bazel build files for Go code are up to date
+* `bazel run //:gazelle-update-repos` - update Bazel workspace with changes from `go.mod` and `go.sum` files
+* `bazel run //:buildifier-fix` - format Bazel build files
+* `bazel test //:buildifier-check` - lint Bazel build files
+
+## Editor integration
+
+You can continue to use the default Go language server and editor integration. This will show you different paths for external dependencies and not use the Bazel cache.
+Alternatively, you can use [the go language server integration for Bazel](https://github.com/bazelbuild/rules_go/wiki/Editor-setup). This will use Bazel for dependency resolution and execute Bazel commands for building and testing.
 
 # Image export
 
