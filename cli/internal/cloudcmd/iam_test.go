@@ -160,26 +160,32 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		tfClient terraformClient
-		wantErr  bool
+		tfClient                   terraformClient
+		wantErr                    bool
+		wantDestroyCalled          bool
+		wantCleanupWorkspaceCalled bool
 	}{
 		"destroy error": {
-			tfClient: &stubTerraformClient{destroyErr: newError()},
-			wantErr:  true,
+			tfClient:          &stubTerraformClient{destroyErr: newError()},
+			wantErr:           true,
+			wantDestroyCalled: true,
 		},
 		"destroy": {
-			tfClient: &stubTerraformClient{},
+			tfClient:                   &stubTerraformClient{},
+			wantDestroyCalled:          true,
+			wantCleanupWorkspaceCalled: true,
 		},
 		"cleanup error": {
-			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: newError()},
-			wantErr:  true,
+			tfClient:                   &stubTerraformClient{cleanUpWorkspaceErr: newError()},
+			wantErr:                    true,
+			wantDestroyCalled:          true,
+			wantCleanupWorkspaceCalled: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-
 			destroyer := &IAMDestroyer{client: tc.tfClient}
 
 			err := destroyer.DestroyIAMConfiguration(context.Background())
@@ -188,6 +194,16 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
+			}
+			if tc.wantDestroyCalled {
+				assert.True(destroyer.client.(*stubTerraformClient).destroyCalled)
+			} else {
+				assert.False(destroyer.client.(*stubTerraformClient).destroyCalled)
+			}
+			if tc.wantCleanupWorkspaceCalled {
+				assert.True(destroyer.client.(*stubTerraformClient).cleanUpWorkspaceCalled)
+			} else {
+				assert.False(destroyer.client.(*stubTerraformClient).cleanUpWorkspaceCalled)
 			}
 		})
 	}
@@ -216,6 +232,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		cl             terraformClient
 		wantValidSaKey bool
 		wantErr        bool
+		wantShowCalled bool
 	}{
 		"valid": {
 			cl: &stubTerraformClient{
@@ -230,12 +247,14 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 				},
 			},
 			wantValidSaKey: true,
+			wantShowCalled: true,
 		},
 		"show error": {
 			cl: &stubTerraformClient{
 				showErr: someError,
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 		"nil tfstate values": {
 			cl: &stubTerraformClient{
@@ -243,7 +262,8 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 					Values: nil,
 				},
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 		"no key": {
 			cl: &stubTerraformClient{
@@ -251,7 +271,8 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 					Values: &tfjson.StateValues{},
 				},
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 		"invalid base64": {
 			cl: &stubTerraformClient{
@@ -265,7 +286,8 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 		"valid base64 invalid json": {
 			cl: &stubTerraformClient{
@@ -279,7 +301,8 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 		"not string": {
 			cl: &stubTerraformClient{
@@ -293,7 +316,8 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:        true,
+			wantShowCalled: true,
 		},
 	}
 
@@ -310,12 +334,16 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 			} else {
 				assert.NoError(err)
 			}
-
 			if tc.wantValidSaKey {
 				var saKeyComp gcpshared.ServiceAccountKey
 				require.NoError(t, json.Unmarshal([]byte(gcpFile), &saKeyComp))
 
 				assert.Equal(saKey, saKeyComp)
+			}
+			if tc.wantShowCalled {
+				assert.True(destroyer.client.(*stubTerraformClient).showCalled)
+			} else {
+				assert.False(destroyer.client.(*stubTerraformClient).showCalled)
 			}
 		})
 	}

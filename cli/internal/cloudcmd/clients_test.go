@@ -35,6 +35,7 @@ type stubTerraformClient struct {
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyCalled          bool
+	showCalled             bool
 	createClusterErr       error
 	destroyErr             error
 	prepareWorkspaceErr    error
@@ -74,6 +75,7 @@ func (c *stubTerraformClient) RemoveInstaller() {
 }
 
 func (c *stubTerraformClient) Show(ctx context.Context) (*tfjson.State, error) {
+	c.showCalled = true
 	return c.tfjsonState, c.showErr
 }
 
