@@ -191,7 +191,7 @@ func (s *Manager) LogDevices() error {
 		var stat syscall.Statfs_t
 		dev := "/dev/" + device.Name()
 		if err := syscall.Statfs(dev, &stat); err != nil {
-			s.log.Errorf("failed to statfs %s: %v", dev, err)
+			s.log.With(zap.Error(err)).Errorf("failed to statfs %s", dev)
 			continue
 		}
 
@@ -210,6 +210,7 @@ func (s *Manager) LogDevices() error {
 			free,
 			avail)
 	}
+	return nil
 }
 
 // RecoveryServer interface serves a recovery server.
