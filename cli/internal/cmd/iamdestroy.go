@@ -42,12 +42,12 @@ type destroyCmd struct {
 
 func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
 	// check if there is a possibility that the cluster is still running by looking out for specific files
-	c.log.Debugf("Checking if %s exists", constants.AdminConfFilename)
+	c.log.Debugf("Checking if %q exists", constants.AdminConfFilename)
 	_, err := fsHandler.Stat(constants.AdminConfFilename)
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.AdminConfFilename)
 	}
-	c.log.Debugf("Checking if %s exists", constants.ClusterIDsFileName)
+	c.log.Debugf("Checking if %q exists", constants.ClusterIDsFileName)
 	_, err = fsHandler.Stat(constants.ClusterIDsFileName)
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.ClusterIDsFileName)
@@ -61,14 +61,14 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	gcpFileExists := false
 
-	c.log.Debugf("Checking if %s exists", constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Checking if %q exists", constants.GCPServiceAccountKeyFile)
 	_, err = fsHandler.Stat(constants.GCPServiceAccountKeyFile)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	} else {
-		c.log.Debugf("%s exists", constants.GCPServiceAccountKeyFile)
+		c.log.Debugf("%q exists", constants.GCPServiceAccountKeyFile)
 		gcpFileExists = true
 	}
 
@@ -76,7 +76,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 		// Confirmation
 		confirmString := "Do you really want to destroy your IAM configuration?"
 		if gcpFileExists {
-			confirmString += " (This will also delete " + constants.GCPServiceAccountKeyFile + ")"
+			confirmString += fmt.Sprintf(" (This will also delete %q)", constants.GCPServiceAccountKeyFile)
 		}
 		ok, err := askToConfirm(cmd, confirmString)
 		if err != nil {
@@ -89,7 +89,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	}
 
 	if gcpFileExists {
-		c.log.Debugf("Starting to delete %s", constants.GCPServiceAccountKeyFile)
+		c.log.Debugf("Starting to delete %q", constants.GCPServiceAccountKeyFile)
 		proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
 		if err != nil {
 			return err
@@ -114,18 +114,18 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 }
 
 func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
-	c.log.Debugf("Checking if %s exists", constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Checking if %q exists", constants.GCPServiceAccountKeyFile)
 	if _, err := fsHandler.Stat(constants.GCPServiceAccountKeyFile); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return false, err
 		}
-		c.log.Debugf("File %s doesn't exist", constants.GCPServiceAccountKeyFile)
+		c.log.Debugf("File %q doesn't exist", constants.GCPServiceAccountKeyFile)
 		return true, nil // file just doesn't exist
 	}
 
 	var fileSaKey gcpshared.ServiceAccountKey
 
-	c.log.Debugf("Parsing %s", constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Parsing %q", constants.GCPServiceAccountKeyFile)
 	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFile, &fileSaKey); err != nil {
 		return false, err
 	}
@@ -151,6 +151,6 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 		}
 	}
 
-	c.log.Debugf("Successfully deleted %s", constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Successfully deleted %q", constants.GCPServiceAccountKeyFile)
 	return true, nil
 }
