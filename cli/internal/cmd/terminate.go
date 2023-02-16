@@ -37,7 +37,10 @@ func NewTerminateCmd() *cobra.Command {
 // runTerminate runs the terminate command.
 func runTerminate(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	spinner := newSpinner(cmd.ErrOrStderr())
+	spinner, err := newSpinnerOrStderr(cmd)
+	if err != nil {
+		return fmt.Errorf("creating spinner: %w", err)
+	}
 	defer spinner.Stop()
 	terminator := cloudcmd.NewTerminator()
 
