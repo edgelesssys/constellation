@@ -8,8 +8,16 @@ shopt -s inherit_errexit
 
 # hacky parsing of the command line arguments. check if argv[1] is --debug
 verbosity=0
-if [[ $1 == "--debug" ]]; then
-  verbosity=-1
+if [[ $# -gt 0 ]]; then
+  if [[ $1 == "--debug" ]]; then
+    verbosity=-1
+    echo "[Constellation] Debug mode enabled"Q
+  else
+    echo "[Constellation] Unknown argument: $1"
+    exit 1
+  fi
+else
+  echo "[Constellation] Debug mode disabled"
 fi
 
 # Prepare the encrypted volume by either initializing it with a random key or by aquiring the key from another bootstrapper.
