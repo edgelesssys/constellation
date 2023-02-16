@@ -105,8 +105,8 @@ jobs:
         run: |
           curl -fsSL https://github.com/edgelesssys/constellation/releases/download/${{ inputs.toVersion }}/constellation-linux-amd64 > constellation
           chmod u+x constellation
-          echo "$(pwd)" >> $GITHUB_PATH
-          export PATH="$PATH:$(pwd)"
+          "$(pwd)" >> "$GITHUB_PATH"
+          export PATH="$PATH:$PWD"
           constellation version
           # Do not spam license server from pipeline
           sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts'
@@ -124,10 +124,10 @@ jobs:
         run: |
           go test ./e2e/internal/upgrade \
             -v -timeout=5h30m -tags=e2eupgrade \
-            -args -to-image ${IMAGE} -to-version ${VERSION} -want-worker 2 -want-control 3
+            -args -to-image "${IMAGE}" -to-version "${VERSION}" -want-worker 2 -want-control 3
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
-          IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.image }}
+          IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
           VERSION: ${{ inputs.toVersion }}
 
       - name: Always fetch logs

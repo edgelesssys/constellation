@@ -79,7 +79,7 @@ func TestUpgrade(t *testing.T) {
 
 func writeUpgradeConfig(t *testing.T, toImage string) string {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	cfg, err := config.New(fileHandler, constants.ConfigFilename)
+	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
 	require.NoError(t, err)
 
 	info, err := fetchUpgradeInfo(cfg.GetProvider(), toImage)
