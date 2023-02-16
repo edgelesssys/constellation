@@ -160,15 +160,9 @@ func TestDestroyIAMUser(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		tfClient       terraformClient
-		newTfClientErr error
-		wantErr        bool
+		tfClient terraformClient
+		wantErr  bool
 	}{
-		"new terraform client error": {
-			tfClient:       &stubTerraformClient{},
-			newTfClientErr: newError(),
-			wantErr:        true,
-		},
 		"destroy error": {
 			tfClient: &stubTerraformClient{destroyErr: newError()},
 			wantErr:  true,
@@ -182,11 +176,7 @@ func TestDestroyIAMUser(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			destroyer := &IAMDestroyer{
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
-					return tc.tfClient, tc.newTfClientErr
-				},
-			}
+			destroyer := &IAMDestroyer{client: tc.tfClient}
 
 			err := destroyer.DestroyIAMConfiguration(context.Background())
 
@@ -200,8 +190,10 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestGetTfstateSaKey(t *testing.T) {
+	require := require.New(t)
 	someError := errors.New("failed")
-	destroyer := NewIAMDestroyer(context.Background())
+	destroyer, err := NewIAMDestroyer(context.Background())
+	require.NoError(err)
 
 	gcpFile := `
 	{
@@ -318,7 +310,7 @@ func TestGetTfstateSaKey(t *testing.T) {
 
 			if tc.wantValidSaKey {
 				var saKeyComp gcpshared.ServiceAccountKey
-				require.NoError(t, json.Unmarshal([]byte(gcpFile), &saKeyComp))
+				require.NoError(json.Unmarshal([]byte(gcpFile), &saKeyComp))
 
 				assert.Equal(saKey, saKeyComp)
 			}

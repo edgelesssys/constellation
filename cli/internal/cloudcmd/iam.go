@@ -24,26 +24,21 @@ import (
 
 // IAMDestroyer destroys an IAM configuration.
 type IAMDestroyer struct {
-	newTerraformClient func(ctx context.Context) (terraformClient, error)
+	client terraformClient
 }
 
 // NewIAMDestroyer creates a new IAM Destroyer.
-func NewIAMDestroyer(ctx context.Context) *IAMDestroyer {
-	return &IAMDestroyer{
-		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
-			return terraform.New(ctx, constants.TerraformIAMWorkingDir)
-		},
+func NewIAMDestroyer(ctx context.Context) (*IAMDestroyer, error) {
+	cl, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
+	if err != nil {
+		return nil, err
 	}
+	return &IAMDestroyer{client: cl}, nil
 }
 
 // RunGetTfstateSaKey returns the sa_key output from the terraform state.
 func (d *IAMDestroyer) RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
-	cl, err := d.newTerraformClient(ctx)
-	if err != nil {
-		return gcpshared.ServiceAccountKey{}, err
-	}
-
-	return d.getTfstateSaKey(ctx, cl)
+	return d.getTfstateSaKey(ctx, d.client)
 }
 
 func (d *IAMDestroyer) getTfstateSaKey(ctx context.Context, cl terraformClient) (gcpshared.ServiceAccountKey, error) {
@@ -79,16 +74,12 @@ func (d *IAMDestroyer) getTfstateSaKey(ctx context.Context, cl terraformClient) 
 	return tfSaKey, nil
 }
 
-// DestroyIAMConfiguration destroys the previously created IAM User and deletes the local IAM terraform files.
+// DestroyIAMConfiguration destroys the previously created IAM configuration and deletes the local IAM terraform files.
 func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
-	cl, err := d.newTerraformClient(ctx)
-	if err != nil {
+	if err := d.client.Destroy(ctx); err != nil {
 		return err
 	}
-	if err := cl.Destroy(ctx); err != nil {
-		return err
-	}
-	return cl.CleanUpWorkspace()
+	return d.client.CleanUpWorkspace()
 }
 
 // IAMCreator creates the IAM configuration on the cloud provider.

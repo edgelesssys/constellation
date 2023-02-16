@@ -25,7 +25,10 @@ func runIAMDestroy(cmd *cobra.Command, _args []string) error {
 	}
 	defer log.Sync()
 	spinner := newSpinner(cmd.ErrOrStderr())
-	destroyer := cloudcmd.NewIAMDestroyer(cmd.Context())
+	destroyer, err := cloudcmd.NewIAMDestroyer(cmd.Context())
+	if err != nil {
+		return err
+	}
 	fsHandler := file.NewHandler(afero.NewOsFs())
 
 	c := &destroyCmd{log: log}
