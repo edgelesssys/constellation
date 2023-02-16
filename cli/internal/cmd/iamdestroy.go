@@ -133,13 +133,7 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 	}
 
 	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
-		ok, err := askToConfirm(cmd, "The file gcpServiceAccountKey.json could not be deleted. Either it does not exist or the file belongs to another IAM configuration. Do you want to proceed anyway?")
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
-		}
+		return false, err
 	}
 
 	c.log.Debugf("Successfully deleted %q", constants.GCPServiceAccountKeyFile)
