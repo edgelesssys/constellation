@@ -569,8 +569,8 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 func newIAMDestroyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
-		Short: "Destroy an IAM user and delete local terraform files for the IAM user",
-		Long:  "Destroy an IAM user and delete local terraform files for the IAM user.",
+		Short: "Destroy an IAM configuration and delete local terraform files",
+		Long:  "Destroy an IAM configuration and delete local terraform files.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runIAMDestroy,
 	}

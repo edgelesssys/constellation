@@ -22,7 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
-// IAMDestroyer destroys an IAM user and deletes their configuration.
+// IAMDestroyer destroys an IAM configuration.
 type IAMDestroyer struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 }
