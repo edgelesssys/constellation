@@ -62,7 +62,6 @@ func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshar
 	}
 
 	var tfSaKey gcpshared.ServiceAccountKey
-
 	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
 		return gcpshared.ServiceAccountKey{}, err
 	}
