@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	tty "github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
@@ -45,10 +46,11 @@ type spinner struct {
 
 func newSpinnerOrStderr(cmd *cobra.Command) (spinnerInterf, error) {
 	debug, err := cmd.Flags().GetBool("debug")
+	noSpinner := os.Getenv(constants.EnvVarNoSpinner)
 	if err != nil {
 		return nil, err
 	}
-	if debug {
+	if debug || noSpinner != "" {
 		return &nopSpinner{cmd.ErrOrStderr()}, nil
 	}
 	return newSpinner(cmd.ErrOrStderr()), nil

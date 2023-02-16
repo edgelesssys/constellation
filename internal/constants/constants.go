@@ -145,6 +145,10 @@ const (
 	// EnvVarAzureClientSecretValue is environment variable to overwrite
 	// provider.azure.clientSecretValue .
 	EnvVarAzureClientSecretValue = EnvVarPrefix + "AZURE_CLIENT_SECRET_VALUE"
+	// EnvVarNoSpinner is environment variable used to disable the loading indicator (spinner)
+	// displayed in Constellation CLI. Any non-empty value, e.g., CONSTELL_NO_SPINNER=1,
+	// can be used to disable the spinner.
+	EnvVarNoSpinner = EnvVarPrefix + "NO_SPINNER"
 	// MiniConstellationUID is a sentinel value for the UID of a mini constellation.
 	MiniConstellationUID = "mini"
 
