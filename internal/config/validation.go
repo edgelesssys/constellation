@@ -326,7 +326,7 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 	case errors.Is(err, compatibility.ErrSemVer):
 		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMajorMismatch):
-		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s)", constants.VersionInfo, fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). If you know what you are doing, you can use the --force flag to ignore this version mismatch.", constants.VersionInfo, fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMinorDrift):
 		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart", constants.VersionInfo, fe.Value().(string))
 	case errors.Is(err, compatibility.ErrOutdatedCLI):
