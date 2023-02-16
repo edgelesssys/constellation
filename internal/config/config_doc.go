@@ -37,7 +37,7 @@ func init() {
 	ConfigDoc.Fields[1].Comments[encoder.LineComment] = "Machine image version used to create Constellation nodes."
 	ConfigDoc.Fields[2].Name = "name"
 	ConfigDoc.Fields[2].Type = "string"
-	ConfigDoc.Fields[2].Note = ""
+	ConfigDoc.Fields[2].Note = "TODO: v2.7: Use \"required\" validation for name\n"
 	ConfigDoc.Fields[2].Description = "Name of the cluster."
 	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the cluster."
 	ConfigDoc.Fields[3].Name = "stateDiskSizeGB"
