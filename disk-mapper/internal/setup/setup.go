@@ -33,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 )
 
 const (
@@ -76,7 +77,7 @@ func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
 func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	uuid := s.mapper.DiskUUID()
-	s.log.Infof("Preparing existing state disk (UUID: %s)", uuid)
+	s.log.With(zap.String("uuid", uuid)).Infof("Preparing existing state disk")
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 
 	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
@@ -121,7 +122,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 
 // PrepareNewDisk prepares an instances state disk by formatting the disk as a LUKS device using a random passphrase.
 func (s *Manager) PrepareNewDisk() error {
-	s.log.Infof("Preparing new state disk (UUID: %s)", s.mapper.DiskUUID())
+	s.log.With(zap.String("uuid", s.mapper.DiskUUID())).Infof("Preparing new state disk")
 
 	// generate and save temporary passphrase
 	passphrase := make([]byte, crypto.RNGLengthDefault)
@@ -168,21 +169,21 @@ func (s *Manager) saveConfiguration(passphrase []byte) error {
 }
 
 // LogDevices logs all available block devices and partitions (lsblk like).
-func (s *Manager) LogDevices() {
+func (s *Manager) LogDevices() error {
 	var devices []fs.FileInfo
 	dirs, err := os.ReadDir("/sys/class/block")
+	if err != nil {
+		return err
+	}
 	for _, file := range dirs {
 		if file.IsDir() {
 			continue
 		}
 		fileInfo, err := file.Info()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		devices = append(devices, fileInfo)
-	}
-	if err != nil {
-		panic(err)
 	}
 
 	s.log.Infof("List of all available block devices and partitions:")
