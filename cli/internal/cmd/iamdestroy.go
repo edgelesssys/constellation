@@ -129,6 +129,7 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 
 	c.log.Debugf("Checking if keys are the same")
 	if tfSaKey != fileSaKey {
+		c.log.Debugf("Keys are not the same, aborting")
 		return false, nil
 	}
 
