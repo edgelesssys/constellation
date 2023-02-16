@@ -50,6 +50,8 @@ type Digests = idkeydigest.IDKeyDigests
 const (
 	// Version2 is the second version number for Constellation config file.
 	Version2 = "v2"
+
+	defaultName = "constell"
 )
 
 // Config defines configuration used by CLI.
@@ -62,7 +64,7 @@ type Config struct {
 	Image string `yaml:"image" validate:"required,version_compatibility"`
 	// description: |
 	//   Name of the cluster.
-	Name string `yaml:"name" validate:"required,valid_name"`
+	Name string `yaml:"name" validate:"valid_name"` // TODO: v2.7: Use "required" validation for name
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -255,7 +257,7 @@ func Default() *Config {
 	return &Config{
 		Version:             Version2,
 		Image:               defaultImage,
-		Name:                "constell",
+		Name:                defaultName,
 		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
