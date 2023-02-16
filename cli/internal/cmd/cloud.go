@@ -37,7 +37,7 @@ type cloudIAMCreator interface {
 
 type iamDestroyer interface {
 	DestroyIAMConfiguration(ctx context.Context) error
-	RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error)
+	GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error)
 }
 
 type cloudTerminator interface {

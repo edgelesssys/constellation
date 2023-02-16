@@ -190,10 +190,7 @@ func TestDestroyIAMUser(t *testing.T) {
 }
 
 func TestGetTfstateServiceAccountKey(t *testing.T) {
-	require := require.New(t)
 	someError := errors.New("failed")
-	destroyer, err := NewIAMDestroyer(context.Background())
-	require.NoError(err)
 
 	gcpFile := `
 	{
@@ -300,7 +297,9 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			saKey, err := destroyer.getTfstateServiceAccountKey(context.Background(), tc.cl)
+			destroyer := IAMDestroyer{client: tc.cl}
+
+			saKey, err := destroyer.GetTfstateServiceAccountKey(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -310,7 +309,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 
 			if tc.wantValidSaKey {
 				var saKeyComp gcpshared.ServiceAccountKey
-				require.NoError(json.Unmarshal([]byte(gcpFile), &saKeyComp))
+				require.NoError(t, json.Unmarshal([]byte(gcpFile), &saKeyComp))
 
 				assert.Equal(saKey, saKeyComp)
 			}

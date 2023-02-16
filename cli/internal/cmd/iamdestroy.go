@@ -136,7 +136,7 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 	}
 
 	c.log.Debugf("Getting service account key from the tfstate")
-	tfSaKey, err := destroyer.RunGetTfstateSaKey(cmd.Context())
+	tfSaKey, err := destroyer.GetTfstateServiceAccountKey(cmd.Context())
 	if err != nil {
 		return false, err
 	}

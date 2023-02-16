@@ -87,7 +87,7 @@ func (d *stubIAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
 	return d.destroyErr
 }
 
-func (d *stubIAMDestroyer) RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
+func (d *stubIAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
 	d.getTfstateKeyCalled = true
 	return d.gcpSaKey, d.getTfstateKeyErr
 }
