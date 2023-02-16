@@ -157,9 +157,11 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(gcpFile)))
 		return fs
 	}
-
-	fsInvalidJson := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fsInvalidJson.Write(constants.GCPServiceAccountKeyFile, []byte("asdf")))
+	newFsInvalidJson := func() file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fh.Write(constants.GCPServiceAccountKeyFile, []byte("asdf")))
+		return fh
+	}
 
 	testCases := map[string]struct {
 		destroyer          *stubIAMDestroyer
@@ -171,7 +173,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	}{
 		"invalid gcp json": {
 			destroyer: &stubIAMDestroyer{},
-			fsHandler: fsInvalidJson,
+			fsHandler: newFsInvalidJson(),
 			wantErr:   true,
 		},
 		"error getting key terraform": {
