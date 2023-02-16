@@ -6,12 +6,12 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-# hacky parsing of the command line arguments. check if argv[1] is --debug
+# parsing of the command line arguments. check if argv[1] is --debug
 verbosity=0
 if [[ $# -gt 0 ]]; then
   if [[ $1 == "--debug" ]]; then
     verbosity=-1
-    echo "[Constellation] Debug mode enabled"Q
+    echo "[Constellation] Debug mode enabled"
   else
     echo "[Constellation] Unknown argument: $1"
     exit 1
