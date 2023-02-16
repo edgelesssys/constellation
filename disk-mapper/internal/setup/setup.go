@@ -192,6 +192,7 @@ func (s *Manager) LogDevices() error {
 		dev := "/dev/" + device.Name()
 		if err := syscall.Statfs(dev, &stat); err != nil {
 			s.log.Errorf("failed to statfs %s: %v", dev, err)
+			continue
 		}
 
 		// get the raw size, in bytes
