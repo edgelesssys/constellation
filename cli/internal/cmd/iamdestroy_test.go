@@ -31,11 +31,16 @@ func TestIAMDestroy(t *testing.T) {
 		fh := file.NewHandler(afero.NewMemMapFs())
 		return fh
 	}
-
-	fhWithAdminConf := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fhWithAdminConf.Write(constants.AdminConfFilename, []byte("")))
-	fhWithClusterIDFile := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fhWithClusterIDFile.Write(constants.ClusterIDsFileName, []byte("")))
+	newFsWithAdminConf := func() file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fh.Write(constants.AdminConfFilename, []byte("")))
+		return fh
+	}
+	newFsWithClusterIDFile := func() file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(fh.Write(constants.ClusterIDsFileName, []byte("")))
+		return fh
+	}
 
 	testCases := map[string]struct {
 		iamDestroyer      *stubIAMDestroyer
@@ -46,13 +51,13 @@ func TestIAMDestroy(t *testing.T) {
 		wantDestroyCalled bool
 	}{
 		"cluster running admin conf": {
-			fh:           fhWithAdminConf,
+			fh:           newFsWithAdminConf(),
 			iamDestroyer: &stubIAMDestroyer{},
 			yesFlag:      "false",
 			wantErr:      true,
 		},
 		"cluster running cluster ids": {
-			fh:           fhWithClusterIDFile,
+			fh:           newFsWithClusterIDFile(),
 			iamDestroyer: &stubIAMDestroyer{},
 			yesFlag:      "false",
 			wantErr:      true,
