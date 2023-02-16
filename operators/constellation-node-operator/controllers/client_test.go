@@ -165,14 +165,19 @@ func (c *stubReadWriterClient) Status() client.StatusWriter {
 }
 
 type stubStatusWriter struct {
+	createErr error
 	updateErr error
 	patchErr  error
 }
 
-func (w *stubStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (w *stubStatusWriter) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+	return w.createErr
+}
+
+func (w *stubStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
 	return w.updateErr
 }
 
-func (w *stubStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (w *stubStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
 	return w.patchErr
 }
