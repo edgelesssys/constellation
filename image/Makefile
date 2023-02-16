@@ -11,8 +11,8 @@ IMAGE_VERSION                    ?= v0.0.0
 DEBUG                            ?= false
 AUTOLOGIN                        ?= false
 AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
-KERNEL_DEBUG_CMDLNE				 := constellation.debug
-export INSTALL_DEBUGD			 ?= $(DEBUG)
+KERNEL_DEBUG_CMDLNE              := constellation.debug
+export INSTALL_DEBUGD            ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
 csps := aws qemu gcp azure
