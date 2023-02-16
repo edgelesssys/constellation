@@ -125,8 +125,8 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if !flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
-		cmd.Printf("%d control-planes nodes of type %s will be created.\n", flags.controllerCount, instanceType)
-		cmd.Printf("%d worker nodes of type %s will be created.\n", flags.workerCount, instanceType)
+		cmd.Printf("%d control-plane node%s of type %s will be created.\n", flags.controllerCount, isPlural(flags.controllerCount), instanceType)
+		cmd.Printf("%d worker node%s of type %s will be created.\n", flags.workerCount, isPlural(flags.workerCount), instanceType)
 		ok, err := askToConfirm(cmd, "Do you want to create this cluster?")
 		if err != nil {
 			return err
@@ -246,6 +246,13 @@ func translateCreateErrors(cmd *cobra.Command, err error) error {
 	default:
 		return err
 	}
+}
+
+func isPlural(count int) string {
+	if count == 1 {
+		return ""
+	}
+	return "s"
 }
 
 func must(err error) {
