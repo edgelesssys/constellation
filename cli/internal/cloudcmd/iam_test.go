@@ -154,7 +154,7 @@ func TestIAMCreator(t *testing.T) {
 	}
 }
 
-func TestDestroyIAMUser(t *testing.T) {
+func TestDestroyIAMConfiguration(t *testing.T) {
 	newError := func() error {
 		return errors.New("failed")
 	}
