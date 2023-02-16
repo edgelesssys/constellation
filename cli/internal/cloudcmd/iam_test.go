@@ -170,6 +170,10 @@ func TestDestroyIAMUser(t *testing.T) {
 		"destroy": {
 			tfClient: &stubTerraformClient{},
 		},
+		"cleanup error": {
+			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: newError()},
+			wantErr:  true,
+		},
 	}
 
 	for name, tc := range testCases {
