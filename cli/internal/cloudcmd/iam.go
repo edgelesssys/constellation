@@ -36,12 +36,12 @@ func NewIAMDestroyer(ctx context.Context) (*IAMDestroyer, error) {
 	return &IAMDestroyer{client: cl}, nil
 }
 
-// RunGetTfstateSaKey returns the sa_key output from the terraform state.
-func (d *IAMDestroyer) RunGetTfstateSaKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
-	return d.getTfstateSaKey(ctx, d.client)
+// GetTfstateServiceAccountKey returns the sa_key output from the terraform state.
+func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
+	return d.getTfstateServiceAccountKey(ctx, d.client)
 }
 
-func (d *IAMDestroyer) getTfstateSaKey(ctx context.Context, cl terraformClient) (gcpshared.ServiceAccountKey, error) {
+func (d *IAMDestroyer) getTfstateServiceAccountKey(ctx context.Context, cl terraformClient) (gcpshared.ServiceAccountKey, error) {
 	tfState, err := cl.Show(ctx)
 	if err != nil {
 		return gcpshared.ServiceAccountKey{}, err

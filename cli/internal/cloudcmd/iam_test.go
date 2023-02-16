@@ -189,7 +189,7 @@ func TestDestroyIAMUser(t *testing.T) {
 	}
 }
 
-func TestGetTfstateSaKey(t *testing.T) {
+func TestGetTfstateServiceAccountKey(t *testing.T) {
 	require := require.New(t)
 	someError := errors.New("failed")
 	destroyer, err := NewIAMDestroyer(context.Background())
@@ -300,7 +300,7 @@ func TestGetTfstateSaKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			saKey, err := destroyer.getTfstateSaKey(context.Background(), tc.cl)
+			saKey, err := destroyer.getTfstateServiceAccountKey(context.Background(), tc.cl)
 
 			if tc.wantErr {
 				assert.Error(err)
