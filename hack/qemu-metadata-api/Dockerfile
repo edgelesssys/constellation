@@ -11,6 +11,9 @@ RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
 ENV PATH ${PATH}:/usr/local/go/bin
 
 WORKDIR /qemu-metadata-api
+# Necessary to make `go mod download all` work while having a local replace rule in the root-go.mod.
+COPY operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.mod
+COPY operators/constellation-node-operator/api/go.sum ./operators/constellation-node-operator/api/go.sum
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download all
