@@ -147,11 +147,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 	}
 	`
 
-	newFsNoExist := func() file.Handler {
-		fs := file.NewHandler(afero.NewMemMapFs())
-		return fs
-	}
-	newFsExist := func() file.Handler {
+	newFs := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(gcpFile)))
 		return fs
@@ -168,11 +164,6 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 		wantProceed        bool
 		wantGetSaKeyCalled bool
 	}{
-		"file doesn't exist": {
-			destroyer:   &stubIAMDestroyer{},
-			fsHandler:   newFsNoExist(),
-			wantProceed: true,
-		},
 		"invalid gcp json": {
 			destroyer: &stubIAMDestroyer{},
 			fsHandler: fsInvalidJson,
@@ -180,7 +171,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 		},
 		"error getting key terraform": {
 			destroyer:          &stubIAMDestroyer{getTfstateKeyErr: someError},
-			fsHandler:          newFsExist(),
+			fsHandler:          newFs(),
 			wantErr:            true,
 			wantGetSaKeyCalled: true,
 		},
@@ -188,12 +179,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			destroyer: &stubIAMDestroyer{gcpSaKey: gcpshared.ServiceAccountKey{
 				Type: "somethingelse",
 			}},
-			fsHandler:          newFsExist(),
+			fsHandler:          newFs(),
 			wantGetSaKeyCalled: true,
 		},
 		"valid": {
 			destroyer:          &stubIAMDestroyer{},
-			fsHandler:          newFsExist(),
+			fsHandler:          newFs(),
 			wantGetSaKeyCalled: true,
 			wantProceed:        true,
 		},

@@ -114,15 +114,6 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 }
 
 func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
-	c.log.Debugf("Checking if %q exists", constants.GCPServiceAccountKeyFile)
-	if _, err := fsHandler.Stat(constants.GCPServiceAccountKeyFile); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return false, err
-		}
-		c.log.Debugf("File %q doesn't exist", constants.GCPServiceAccountKeyFile)
-		return true, nil // file just doesn't exist
-	}
-
 	var fileSaKey gcpshared.ServiceAccountKey
 
 	c.log.Debugf("Parsing %q", constants.GCPServiceAccountKeyFile)
