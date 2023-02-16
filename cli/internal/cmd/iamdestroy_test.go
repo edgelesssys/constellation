@@ -49,11 +49,13 @@ func TestIAMDestroy(t *testing.T) {
 			fh:           fhWithAdminConf,
 			iamDestroyer: &stubIAMDestroyer{},
 			yesFlag:      "false",
+			wantErr:      true,
 		},
 		"cluster running cluster ids": {
 			fh:           fhWithClusterIDFile,
 			iamDestroyer: &stubIAMDestroyer{},
 			yesFlag:      "false",
+			wantErr:      true,
 		},
 		"file missing abort": {
 			fh:           newFsMissing(),

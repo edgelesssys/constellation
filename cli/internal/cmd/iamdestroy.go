@@ -45,14 +45,12 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	c.log.Debugf("Checking if %s exists", constants.AdminConfFilename)
 	_, err := fsHandler.Stat(constants.AdminConfFilename)
 	if !errors.Is(err, os.ErrNotExist) {
-		cmd.Printf("The file %s still exists, please make sure to terminate your cluster before destroying your IAM configuration.\n", constants.AdminConfFilename)
-		return nil
+		return errors.New("file " + constants.AdminConfFilename + " still exists, please make sure to terminate your cluster before destroying your IAM configuration")
 	}
 	c.log.Debugf("Checking if %s exists", constants.ClusterIDsFileName)
 	_, err = fsHandler.Stat(constants.ClusterIDsFileName)
 	if !errors.Is(err, os.ErrNotExist) {
-		cmd.Printf("The file %s still exists, please make sure to terminate your cluster before destroying your IAM configuration.\n", constants.ClusterIDsFileName)
-		return nil
+		return errors.New("file " + constants.ClusterIDsFileName + " still exists, please make sure to terminate your cluster before destroying your IAM configuration")
 	}
 
 	yes, err := cmd.Flags().GetBool("yes")
