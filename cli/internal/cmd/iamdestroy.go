@@ -57,7 +57,6 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	if err != nil {
 		return err
 	}
-
 	c.log.Debugf("\"yes\" flag is set to %t", yes)
 
 	gcpFileExists := false
