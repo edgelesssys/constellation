@@ -733,7 +733,7 @@ jobs:
             "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json" \
             --no-progress
           aws s3 cp \
-            "pcrs-${{ matrix.csp }}.json" \
+            "pcrs-${{ matrix.csp }}.json.sig" \
             "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json.sig" \
             --no-progress
 
