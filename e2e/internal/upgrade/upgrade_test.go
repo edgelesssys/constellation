@@ -242,6 +242,11 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 	}, time.Minute*30, time.Minute)
 }
 
+type Measurement struct {
+	WarnOnly bool   `json:"warnOnly"`
+	Expected string `json:"expected"`
+}
+
 type imageMeasurements struct {
 	Cmdline       string `json:"cmdline"`
 	CmdlineSHA256 string `json:"cmdline-sha256"`
@@ -249,8 +254,8 @@ type imageMeasurements struct {
 		Name   string `json:"name"`
 		SHA256 string `json:"sha256"`
 	} `json:"efistages"`
-	InitrdSHA256 string                       `json:"initrd-sha256"`
-	Measurements map[string]map[string]string `json:"measurements"`
+	InitrdSHA256 string                 `json:"initrd-sha256"`
+	Measurements map[string]Measurement `json:"measurements"`
 }
 
 type upgradeInfo struct {
@@ -272,7 +277,7 @@ func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, 
 	}
 
 	artifactURL := ver.ArtifactURL()
-	measurementsURL, err := url.JoinPath(artifactURL, "image/csp", strings.ToLower(csp.String()), "measurements.image.json")
+	measurementsURL, err := url.JoinPath(artifactURL, "image/csp", strings.ToLower(csp.String()), "measurements.json")
 	if err != nil {
 		return upgradeInfo{}, err
 	}
@@ -287,7 +292,7 @@ func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, 
 		if err != nil {
 			return upgradeInfo{}, err
 		}
-		info.measurements[uint32(idx)] = value["expected"]
+		info.measurements[uint32(idx)] = value.Expected
 	}
 
 	wantImage, err := fetchWantImage(versionsClient, csp, versionsapi.ImageInfo{
