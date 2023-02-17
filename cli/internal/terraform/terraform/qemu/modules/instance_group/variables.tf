@@ -38,6 +38,21 @@ variable "boot_volume_id" {
   description = "id of the constellation boot disk"
 }
 
+variable "kernel_volume_id" {
+  type        = string
+  description = "id of the constellation kernel volume"
+}
+
+variable "initrd_volume_id" {
+  type        = string
+  description = "id of the constellation initrd volume"
+}
+
+variable "kernel_cmdline" {
+  type        = string
+  description = "kernel cmdline"
+}
+
 variable "role" {
   type        = string
   description = "role of the node in the constellation. either 'control-plane' or 'worker'"
@@ -62,4 +77,3 @@ variable "name" {
   type        = string
   description = "name prefix of the cluster VMs"
 }
-

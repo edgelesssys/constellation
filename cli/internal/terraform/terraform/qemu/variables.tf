@@ -8,6 +8,21 @@ variable "constellation_os_image" {
   description = "constellation OS file path"
 }
 
+variable "constellation_kernel" {
+  type        = string
+  description = "constellation Kernel file path"
+}
+
+variable "constellation_initrd" {
+  type        = string
+  description = "constellation initrd file path"
+}
+
+variable "constellation_cmdline" {
+  type        = string
+  description = "constellation kernel cmdline"
+}
+
 variable "image_format" {
   type        = string
   default     = "qcow2"

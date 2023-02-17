@@ -233,6 +233,12 @@ type QEMUVariables struct {
 	ImagePath string
 	// ImageFormat is the format of the image from ImagePath.
 	ImageFormat string
+	// BzImagePath is the path to the bzImage (kernel).
+	BzImagePath string
+	// InitrdPath is the path to the initrd.
+	InitrdPath string
+	// KernelCmdline is the kernel command line.
+	KernelCmdline string
 	// MetadataAPIImage is the container image to use for the metadata API.
 	MetadataAPIImage string
 	// MetadataLibvirtURI is the libvirt connection URI used by the metadata container.
@@ -253,6 +259,9 @@ func (v *QEMUVariables) String() string {
 	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
 	writeLinef(b, "constellation_os_image = %q", v.ImagePath)
 	writeLinef(b, "image_format = %q", v.ImageFormat)
+	writeLinef(b, "constellation_kernel = %q", v.BzImagePath)
+	writeLinef(b, "constellation_initrd = %q", v.InitrdPath)
+	writeLinef(b, "constellation_cmdline = %q", v.KernelCmdline)
 	writeLinef(b, "vcpus = %d", v.CPUCount)
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)
 	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
