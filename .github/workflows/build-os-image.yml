@@ -122,6 +122,7 @@ jobs:
       imageName: ${{ steps.image-version.outputs.imageName }}
       imageNameShort: ${{ steps.image-version.outputs.imageNameShort }}
       imageApiBasePath: ${{ steps.image-version.outputs.imageApiBasePath }}
+      cliApiBasePath: ${{ steps.image-version.outputs.cliApiBasePath }}
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -193,6 +194,7 @@ jobs:
             echo "imageVersion=${IMAGE_VERSION}"
             echo "imageName=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}"
             echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}/image"
+            echo "cliApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}/cli"
           } >> "$GITHUB_OUTPUT"
 
           if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then
@@ -863,8 +865,8 @@ jobs:
               --no-progress
           done
 
-  upload-image-lookup-table:
-    name: "Upload image lookup table"
+  upload-artifacts:
+    name: "Upload image lookup table and CLI compatibility info"
     runs-on: ubuntu-22.04
     needs: [build-settings, upload-os-image]
     permissions:
@@ -918,8 +920,37 @@ jobs:
             echo -e "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - name: Create CLI compatibility information artifact
+        shell: bash
+        run: |
+          go run ./hack/cli-k8s-compatibility/main.go > info.json
+          echo '{}' > temp.json
+          jq '.ref = "${{  needs.build-settings.outputs.ref }}"' info.json > temp.json
+          cp temp.json info.json
+          jq '.stream = "${{ needs.build-settings.outputs.stream }}"' info.json > temp.json
+          cp temp.json info.json
+          jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' info.json > temp.json
+          cp temp.json info.json
+          cat info.json
+          rm -f temp.json
+
+      - name: Upload CLI compatibility information to S3
+        shell: bash
+        run: |
+          aws s3 cp \
+            "info.json" \
+            "s3://cdn-constellation-backend/${{ needs.build-settings.outputs.cliApiBasePath }}/info.json" \
+            --no-progress
+          echo -e "[CLI compatibility information](https://cdn.confidential.cloud/${{ needs.build-settings.outputs.cliApiBasePath }}/info.json)" >> "$GITHUB_STEP_SUMMARY"
+
+
   add-version-to-versionsapi:
-    needs: [upload-image-lookup-table, build-settings]
+    needs: [upload-artifacts, build-settings]
     name: "Add version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
