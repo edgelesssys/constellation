@@ -36,7 +36,7 @@ jobs:
         id: build-and-upload
         uses: ./.github/actions/build_micro_service_ko
         with:
-          name: joinservice
+          name: join-service
           koTarget: ./joinservice/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
