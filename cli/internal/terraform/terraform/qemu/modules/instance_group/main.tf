@@ -13,16 +13,19 @@ locals {
 }
 
 resource "libvirt_domain" "instance_group" {
-  name     = "${var.name}-${var.role}-${count.index}"
-  count    = var.amount
-  memory   = var.memory
-  vcpu     = var.vcpus
-  machine  = var.machine
-  firmware = var.firmware
-  nvram {
-    file     = "/var/lib/libvirt/qemu/nvram/${var.role}-${count.index}_VARS.fd"
-    template = var.nvram
-  }
+  name    = "${var.name}-${var.role}-${count.index}"
+  count   = var.amount
+  memory  = var.memory
+  vcpu    = var.vcpus
+  machine = var.machine
+  # firmware = var.firmware
+  # nvram {
+  #   file     = "/var/lib/libvirt/qemu/nvram/${var.role}-${count.index}_VARS.fd"
+  #   template = var.nvram
+  # }
+  kernel  = var.kernel_volume_id
+  initrd  = var.initrd_volume_id
+  cmdline = [{ "_" = var.kernel_cmdline }]
   tpm {
     backend_type    = "emulator"
     backend_version = "2.0"
@@ -44,9 +47,9 @@ resource "libvirt_domain" "instance_group" {
     type        = "pty"
     target_port = "0"
   }
-  xml {
-    xslt = file("${path.module}/domain.xsl")
-  }
+  # xml {
+  #   xslt = file("${path.module}/domain.xsl")
+  # }
 }
 
 resource "libvirt_volume" "boot_volume" {

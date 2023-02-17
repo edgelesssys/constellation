@@ -281,6 +281,15 @@ type QEMUConfig struct {
 	//   Path to the OVMF firmware. Leave empty for auto selection.
 	Firmware string `yaml:"firmware"`
 	// description: |
+	//   Path to the kernel bzImage.
+	KernelBzImage string `yaml:"kernelBzImage"`
+	// description: |
+	//   Path to the kernel initrd.
+	Initrd string `yaml:"initrd"`
+	// description: |
+	//   Kernel cmdline.
+	KernelCmdline string `yaml:"kernelCmdline"`
+	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
