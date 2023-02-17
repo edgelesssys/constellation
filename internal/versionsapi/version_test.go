@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewVersionFromShortPath(t *testing.T) {
@@ -373,6 +375,38 @@ func TestVersionListPathURL(t *testing.T) {
 	}
 }
 
+func TestVersionArtifactURL(t *testing.T) {
+	testCases := map[string]struct {
+		ver     Version
+		csp     cloudprovider.Provider
+		file    string
+		wantURL string
+	}{
+		"nightly-feature": {
+			ver: Version{
+				Ref:     "feat-some-feature",
+				Stream:  "nightly",
+				Version: "v2.6.0-pre.0.20230217095603-193dd48ca19f",
+				Kind:    VersionKindImage,
+			},
+			csp:     cloudprovider.GCP,
+			file:    "measurements.json",
+			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			artifactURL, err := tc.ver.ArtifactURL(tc.csp, tc.file)
+			require.NoError(err)
+			assert.Equal(tc.wantURL, artifactURL.String())
+		})
+	}
+}
+
 func TestVersionArtifactPathURL(t *testing.T) {
 	testCases := map[string]struct {
 		ver      Version
@@ -413,7 +447,7 @@ func TestVersionArtifactPathURL(t *testing.T) {
 
 			path := tc.ver.ArtifactPath()
 			assert.Equal(tc.wantPath, path)
-			url := tc.ver.ArtifactURL()
+			url := tc.ver.ArtifactsURL()
 			assert.Equal(constants.CDNRepositoryURL+"/"+tc.wantPath, url)
 		})
 	}

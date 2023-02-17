@@ -16,11 +16,9 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -276,13 +274,12 @@ func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, 
 		return upgradeInfo{}, err
 	}
 
-	artifactURL := ver.ArtifactURL()
-	measurementsURL, err := url.JoinPath(artifactURL, "image/csp", strings.ToLower(csp.String()), "measurements.json")
+	measurementsURL, err := ver.ArtifactURL(csp, constants.CDNMeasurementsFile)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
 
-	imageMeasurements, err := fetchMeasurements(measurementsURL)
+	imageMeasurements, err := fetchMeasurements(measurementsURL.String())
 	if err != nil {
 		return upgradeInfo{}, err
 	}

@@ -143,7 +143,7 @@ func measurementURL(provider cloudprovider.Provider, image, file string) (*url.U
 	}
 
 	return url.Parse(
-		version.ArtifactURL() + path.Join("/image", "csp", strings.ToLower(provider.String()), file),
+		version.ArtifactsURL() + path.Join("/image", "csp", strings.ToLower(provider.String()), file),
 	)
 }
 

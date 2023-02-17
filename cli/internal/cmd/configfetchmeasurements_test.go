@@ -119,8 +119,8 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    ver.ArtifactURL() + "/image/csp/gcp/measurements.json",
-			wantMeasurementsSigURL: ver.ArtifactURL() + "/image/csp/gcp/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactsURL() + "/image/csp/gcp/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactsURL() + "/image/csp/gcp/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},
