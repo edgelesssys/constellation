@@ -39,7 +39,7 @@ flowchart LR
 
 The *Bootstrapper* is the first component launched after booting a Constellation node image.
 It sets up that machine as a Kubernetes node and integrates that node into the Kubernetes cluster.
-To this end, the *Bootstrapper* first downloads and [verifies](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) at the configured versions.
+To this end, the *Bootstrapper* first downloads and verifies the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) at the configured versions.
 The *Bootstrapper* tries to find an existing cluster and if successful, communicates with the [JoinService](components.md#joinservice) to join the node.
 Otherwise, it waits for an initialization request to create a new Kubernetes cluster.
 
