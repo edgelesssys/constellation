@@ -258,4 +258,7 @@ cd constellation-iam-terraform
 # Destroy the IAM configuration via Terraform
 terraform destroy
 # Confirm deletion by typing "yes"
+# Remove the Terraform state directory
+cd ..
+rm -rf constellation-iam-terraform
 ```
