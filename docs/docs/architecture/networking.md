@@ -2,7 +2,7 @@
 
 Constellation encrypts all pod communication using the [container network interface (CNI)](https://github.com/containernetworking/cni).
 To that end, Constellation deploys, configures, and operates the [Cilium](https://cilium.io/) CNI plugin.
-Cilium provides [transparent encryption](https://docs.cilium.io/en/stable/gettingstarted/encryption) for all cluster traffic using either IPSec or [WireGuard](https://www.wireguard.com/).
+Cilium provides [transparent encryption](https://docs.cilium.io/en/stable/security/network/encryption) for all cluster traffic using either IPSec or [WireGuard](https://www.wireguard.com/).
 Currently, Constellation only supports WireGuard as the encryption engine.
 You can read more about the cryptographic soundness of WireGuard [in their white paper](https://www.wireguard.com/papers/wireguard.pdf).
 
