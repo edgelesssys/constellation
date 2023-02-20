@@ -15,9 +15,10 @@ Releases should be performed using [the automated release pipeline](https://gith
 ### Patch release
 
 1. `cherry-pick` (only) the required commits from `main`
+   * Check PRs with label [needs-backport](https://github.com/edgelesssys/constellation/pulls?q=is%3Apr+is%3Aclosed+label%3A%22needs+backport%22) to find candidates that should be included in a patch release.
 2. trigger the automated release pipeline from the existing minor version branch:
    ```sh
-    ver=1.3.1 # replace me
+    ver=v1.3.1 # replace me
     minor=$(echo $ver | cut -d '.' -f 1,2)
     gh workflow run release.yml --ref release/v$minor -F version=$ver -F kind=patch
    ```
@@ -29,7 +30,7 @@ Releases should be performed using [the automated release pipeline](https://gith
 1. Merge ready PRs
 2. trigger the automated release pipeline from `main`:
    ```sh
-    ver=1.3.0 # replace me
+    ver=v1.3.0 # replace me
     minor=$(echo $ver | cut -d '.' -f 1,2)
     gh workflow run release.yml --ref main -F version=$ver -F kind=minor
    ```
