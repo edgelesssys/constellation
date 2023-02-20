@@ -128,7 +128,7 @@ func (m *M) EqualTo(other M) bool {
 	}
 	for k, v := range *m {
 		otherExpected := other[k].Expected
-		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
+		if !bytes.Equal(v.Expected, otherExpected) {
 			return false
 		}
 		if v.WarnOnly != other[k].WarnOnly {
@@ -180,7 +180,8 @@ func (m *M) SetEnforced(enforced []uint32) error {
 // Measurement wraps expected PCR value and whether it is enforced.
 type Measurement struct {
 	// Expected measurement value.
-	Expected [32]byte `json:"expected" yaml:"expected"`
+	// 32 bytes for vTPM attestation, 48 for TDX.
+	Expected []byte `json:"expected" yaml:"expected"`
 	// WarnOnly if set to true, a mismatching measurement will only result in a warning.
 	WarnOnly bool `json:"warnOnly" yaml:"warnOnly"`
 }
@@ -259,11 +260,11 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		}
 	}
 
-	if len(expected) != 32 {
+	if !((len(expected) == 32) || len(expected) == 48) {
 		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
 	}
 
-	m.Expected = *(*[32]byte)(expected)
+	m.Expected = expected
 	m.WarnOnly = eM.WarnOnly
 
 	return nil
@@ -272,7 +273,7 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 // WithAllBytes returns a measurement value where all 32 bytes are set to b.
 func WithAllBytes(b byte, warnOnly bool) Measurement {
 	return Measurement{
-		Expected: *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
+		Expected: bytes.Repeat([]byte{b}, 32),
 		WarnOnly: warnOnly,
 	}
 }
@@ -280,7 +281,7 @@ func WithAllBytes(b byte, warnOnly bool) Measurement {
 // PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
 func PlaceHolderMeasurement() Measurement {
 	return Measurement{
-		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		Expected: bytes.Repeat([]byte{0x12, 0x34}, 16),
 		WarnOnly: false,
 	}
 }

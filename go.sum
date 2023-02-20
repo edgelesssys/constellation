@@ -403,6 +403,10 @@ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25Kn
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230214123602-8d2bda548207 h1:XmbebXRUlLB/cx3xn95ahDbgMXAQQAwtLUL8Q9PZI0I=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230214123602-8d2bda548207/go.mod h1:4GVQlIKKwU4aVsVzp0YDvtzfI3/p4UUKOVvzs9mtEa4=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230220134940-6649dedc9377 h1:nHA+P2r2stCtyHdKXCaVSTS9dgMVDCa41BF/yt9mTd8=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230220134940-6649dedc9377/go.mod h1:DXWTbJDi0UGPDsVpePyS/kbKp1jmhjT8x60coCdfGPw=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 h1:yUdfgN0XgIJw7foRItutHYUIhlcKzcSf5vDpdhQAKTc=
 github.com/emicklei/go-restful/v3 v3.9.0 h1:XwGDlfxEnQZzuopoqxwSEllNcCOM9DhhFyhFIIGKwxE=

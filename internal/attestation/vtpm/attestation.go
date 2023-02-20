@@ -249,7 +249,7 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 			return nil, fmt.Errorf("invalid measurement: invalid length: %d", len(pcr))
 		}
 		m[i] = measurements.Measurement{
-			Expected: *(*[32]byte)(pcr),
+			Expected: pcr,
 		}
 	}
 

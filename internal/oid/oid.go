@@ -79,3 +79,13 @@ type QEMU struct{}
 func (QEMU) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 5, 1}
 }
+
+// QEMUTDX holds the QEMU TDX OID.
+// Placeholder for dev-cloud integration.
+type QEMUTDX struct{}
+
+// OID returns the struct's object identifier.
+// Placeholder for dev-cloud integration.
+func (QEMUTDX) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5, 99}
+}
