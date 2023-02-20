@@ -65,8 +65,8 @@ jobs:
           diff_dirs=$(git diff --name-only)
           if [[ "${diff_dirs}" == "internal/versions/versions.go" ]]; then
             echo "internal/versions/versions.go is the only changed file, so we can push the changes."
-            git config --global user.name "renovate[bot]"
-            git config --global user.email "29139614+renovate[bot]@users.noreply.github.com"
+            git config --global user.name "edgelessci"
+            git config --global user.email "edgelessci@users.noreply.github.com"
             git commit -am "deps: update versions.go"
             git push
           fi
