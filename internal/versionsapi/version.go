@@ -145,12 +145,26 @@ func (v Version) ListPath(gran Granularity) string {
 	)
 }
 
-func (v Version) ArtifactURL(csp cloudprovider.Provider, file string) (*url.URL, error) {
-	path, err := url.JoinPath(v.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), file)
+func (v Version) MeasurementURL(csp cloudprovider.Provider) (*url.URL, *url.URL, error) {
+	measurementPath, err := url.JoinPath(v.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsFile)
 	if err != nil {
-		return &url.URL{}, err
+		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for measurement: %w", err)
 	}
-	return url.Parse(path)
+	signaturePath, err := url.JoinPath(v.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsSignature)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for signature: %w", err)
+	}
+
+	measurementURL, err := url.Parse(measurementPath)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("parsing path for measurement: %w", err)
+	}
+
+	signatureURL, err := url.Parse(signaturePath)
+	if err != nil {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("parsing path for signature: %w", err)
+	}
+	return measurementURL, signatureURL, nil
 }
 
 // ArtifactsURL returns the URL to the artifacts stored for this version.

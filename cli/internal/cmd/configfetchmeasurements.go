@@ -177,19 +177,16 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("creating version from image name: %w", err)
 	}
+	measurementsURL, signatureURL, err := ver.MeasurementURL(conf.GetProvider())
+	if err != nil {
+		return err
+	}
+
 	if f.measurementsURL == nil {
-		measurementsURL, err := ver.ArtifactURL(conf.GetProvider(), constants.CDNMeasurementsFile)
-		if err != nil {
-			return err
-		}
 		f.measurementsURL = measurementsURL
 	}
 
 	if f.signatureURL == nil {
-		signatureURL, err := ver.ArtifactURL(conf.GetProvider(), constants.CDNMeasurementsSignature)
-		if err != nil {
-			return err
-		}
 		f.signatureURL = signatureURL
 	}
 	return nil

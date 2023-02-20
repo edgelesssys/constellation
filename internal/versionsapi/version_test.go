@@ -377,10 +377,10 @@ func TestVersionListPathURL(t *testing.T) {
 
 func TestVersionArtifactURL(t *testing.T) {
 	testCases := map[string]struct {
-		ver     Version
-		csp     cloudprovider.Provider
-		file    string
-		wantURL string
+		ver                Version
+		csp                cloudprovider.Provider
+		wantMeasurementURL string
+		wantSignatureURL   string
 	}{
 		"nightly-feature": {
 			ver: Version{
@@ -389,9 +389,9 @@ func TestVersionArtifactURL(t *testing.T) {
 				Version: "v2.6.0-pre.0.20230217095603-193dd48ca19f",
 				Kind:    VersionKindImage,
 			},
-			csp:     cloudprovider.GCP,
-			file:    "measurements.json",
-			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json",
+			csp:                cloudprovider.GCP,
+			wantMeasurementURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json",
+			wantSignatureURL:   constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json.sig",
 		},
 	}
 
@@ -400,9 +400,10 @@ func TestVersionArtifactURL(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			artifactURL, err := tc.ver.ArtifactURL(tc.csp, tc.file)
+			measurementURL, signatureURL, err := tc.ver.MeasurementURL(tc.csp)
 			require.NoError(err)
-			assert.Equal(tc.wantURL, artifactURL.String())
+			assert.Equal(tc.wantMeasurementURL, measurementURL.String())
+			assert.Equal(tc.wantSignatureURL, signatureURL.String())
 		})
 	}
 }

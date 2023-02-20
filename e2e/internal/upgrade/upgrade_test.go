@@ -40,7 +40,6 @@ import (
 
 var (
 	toImage     = flag.String("to-image", "", "Image (shortversion) to upgrade to.")
-	toVersion   = flag.String("to-version", "", "CLI version to use.")
 	wantWorker  = flag.Int("want-worker", 0, "Number of wanted worker nodes.")
 	wantControl = flag.Int("want-control", 0, "Number of wanted control nodes.")
 )
@@ -66,16 +65,16 @@ func TestUpgrade(t *testing.T) {
 	testNodesEventuallyAvailable(t, k, *wantControl, *wantWorker)
 	testPodsEventuallyReady(t, k, "kube-system")
 
-	testCLIHasVersion(t, *toVersion)
-	wantImage := writeUpgradeConfig(t, *toImage)
-	cmd := exec.CommandContext(context.Background(), "constellation", "upgrade", "execute")
+	wantImage, wantK8sVersion, wantMicroserviceVersion := writeUpgradeConfig(t, *toImage)
+	cmd := exec.CommandContext(context.Background(), "constellation", "upgrade", "apply", "--force")
 	msg, err := cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
 
-	testNodesEventuallyHaveImage(t, k, wantImage)
+	testNodesEventuallyHaveVersion(t, k, wantImage, wantK8sVersion)
+	testMicroservicesEventuallyHaveVersion(t, wantMicroserviceVersion)
 }
 
-func writeUpgradeConfig(t *testing.T, toImage string) string {
+func writeUpgradeConfig(t *testing.T, toImage string) (string, string, string) {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
 	require.NoError(t, err)
@@ -83,21 +82,39 @@ func writeUpgradeConfig(t *testing.T, toImage string) string {
 	info, err := fetchUpgradeInfo(cfg.GetProvider(), toImage)
 	require.NoError(t, err)
 
-	cfg.Upgrade.Image = info.shortPath
-	cfg.Upgrade.Measurements = make(measurements.M)
-	for key, value := range info.measurements {
-		cfg.Upgrade.Measurements[key] = measurements.Measurement{
-			Expected: mustDecodeHex(value),
-			WarnOnly: false,
-		}
-	}
+	cfg.Image = info.shortPath
+	cfg.UpdateMeasurements(info.measurements)
+	// TODO: Create ticket to make them parameters from CI
+	defaultConfig := config.Default()
+	fmt.Printf("Setting K8s version: %v\n", defaultConfig.KubernetesVersion)
+	cfg.KubernetesVersion = defaultConfig.KubernetesVersion
+	fmt.Printf("Setting microservice version: %v\n", defaultConfig.MicroserviceVersion)
+	cfg.MicroserviceVersion = defaultConfig.MicroserviceVersion
+
 	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
 	require.NoError(t, err)
 
-	return info.wantImage
+	return info.wantImage, cfg.KubernetesVersion, cfg.MicroserviceVersion
 }
 
-func testNodesEventuallyHaveImage(t *testing.T, k *kubernetes.Clientset, wantImage string) {
+func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string) {
+	require.Eventually(t, func() bool {
+		version, err := servicesVersion(t)
+		if err != nil {
+			fmt.Printf("Unable to fetch microservice version: %v", err)
+			return false
+		}
+
+		if version != wantMicroserviceVersion {
+			fmt.Printf("Microservices still at version: %v", version)
+			return false
+		}
+
+		return true
+	}, time.Hour*3, time.Minute)
+}
+
+func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, wantImage, wantK8sVersion string) {
 	require.Eventually(t, func() bool {
 		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
 		if err != nil {
@@ -110,25 +127,27 @@ func testNodesEventuallyHaveImage(t *testing.T, k *kubernetes.Clientset, wantIma
 		for _, node := range nodes.Items {
 			for key, value := range node.Annotations {
 				if key == "constellation.edgeless.systems/node-image" {
-					fmt.Printf("\t%s: %s\n", node.Name, value)
+					fmt.Printf("\t%s: Image %s\n", node.Name, value)
 					if value != wantImage {
 						allUpdated = false
 					}
 				}
 			}
+
+			kubeletVersion := node.Status.NodeInfo.KubeletVersion
+			if kubeletVersion != wantK8sVersion {
+				fmt.Printf("\t%s: K8s (Kubelet) %s\n", node.Name, kubeletVersion)
+				allUpdated = false
+			}
+			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
+			if kubeProxyVersion != wantK8sVersion {
+				fmt.Printf("\t%s: K8s (Proxy) %s\n", node.Name, kubeProxyVersion)
+				allUpdated = false
+			}
 		}
 
 		return allUpdated
 	}, time.Hour*3, time.Minute)
-}
-
-// testCLIHasVersion checks that `constellation version` states the expected version.
-func testCLIHasVersion(t *testing.T, wantVersion string) {
-	require := require.New(t)
-	cmd := exec.CommandContext(context.Background(), "constellation", "version")
-	output, err := cmd.CombinedOutput()
-	require.NoError(err)
-	require.Contains(string(output), wantVersion)
 }
 
 // testPodsEventuallyReady checks that:
@@ -257,14 +276,14 @@ type imageMeasurements struct {
 }
 
 type upgradeInfo struct {
-	measurements map[uint32]string
+	measurements measurements.M
 	shortPath    string
 	wantImage    string
 }
 
 func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, error) {
 	info := upgradeInfo{
-		measurements: make(map[uint32]string),
+		measurements: make(measurements.M),
 		shortPath:    toImage,
 	}
 	versionsClient := fetcher.NewFetcher()
@@ -274,7 +293,7 @@ func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, 
 		return upgradeInfo{}, err
 	}
 
-	measurementsURL, err := ver.ArtifactURL(csp, constants.CDNMeasurementsFile)
+	measurementsURL, _, err := ver.MeasurementURL(csp)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
@@ -289,7 +308,10 @@ func fetchUpgradeInfo(csp cloudprovider.Provider, toImage string) (upgradeInfo, 
 		if err != nil {
 			return upgradeInfo{}, err
 		}
-		info.measurements[uint32(idx)] = value.Expected
+		info.measurements[uint32(idx)] = measurements.Measurement{
+			Expected: mustDecodeHex(value.Expected),
+			WarnOnly: value.WarnOnly,
+		}
 	}
 
 	wantImage, err := fetchWantImage(versionsClient, csp, versionsapi.ImageInfo{
