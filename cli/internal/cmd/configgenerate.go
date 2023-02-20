@@ -8,14 +8,18 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 func newConfigGenerateCmd() *cobra.Command {
@@ -31,12 +35,14 @@ func newConfigGenerateCmd() *cobra.Command {
 		RunE:              runConfigGenerate,
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
+	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
 
 	return cmd
 }
 
 type generateFlags struct {
-	file string
+	file       string
+	k8sVersion string
 }
 
 type configGenerateCmd struct {
@@ -64,6 +70,11 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
 	conf := createConfig(provider)
+	extendedVersion := config.K8sVersionFromMajorMinor(flags.k8sVersion)
+	if extendedVersion == "" {
+		return fmt.Errorf("kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(flags.k8sVersion, "v"), supportedVersions())
+	}
+	conf.KubernetesVersion = extendedVersion
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
@@ -101,13 +112,36 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 	return conf
 }
 
+// supportedVersions prints the supported version without v prefix and without patch version.
+// Should only be used when accepting Kubernetes versions from --kubernetes.
+func supportedVersions() string {
+	builder := strings.Builder{}
+	for i, version := range versions.SupportedK8sVersions() {
+		if i > 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(strings.TrimPrefix(semver.MajorMinor(version), "v"))
+	}
+	return builder.String()
+}
+
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	file, err := cmd.Flags().GetString("file")
 	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing config generate flags: %w", err)
+		return generateFlags{}, fmt.Errorf("parsing file flag: %w", err)
 	}
+	k8sVersion, err := cmd.Flags().GetString("kubernetes")
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("parsing kuberentes flag: %w", err)
+	}
+	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
+	if !semver.IsValid(prefixedVersion) {
+		return generateFlags{}, fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
+	}
+
 	return generateFlags{
-		file: file,
+		file:       file,
+		k8sVersion: prefixedVersion,
 	}, nil
 }
 
