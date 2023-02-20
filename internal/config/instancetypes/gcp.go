@@ -17,7 +17,7 @@ var GCPInstanceTypes = []string{
 	"n2d-standard-80",
 	"n2d-standard-96",
 	"n2d-standard-128",
-	"n2d-standard-424",
+	"n2d-standard-224",
 	"n2d-highmem-4",
 	"n2d-highmem-8",
 	"n2d-highmem-16",
