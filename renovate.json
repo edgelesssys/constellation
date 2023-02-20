@@ -26,6 +26,16 @@
   ],
   "packageRules": [
     {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "indirect"
+      ],
+      "enabled": true,
+      "prPriority": -30
+    },
+    {
       "matchPackagePatterns": [
         "^k8s.io",
         "^sigs.k8s.io"
