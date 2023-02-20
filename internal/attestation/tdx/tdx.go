@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package tdx
 
 type tdxAttestationDocument struct {
+	// RawQuote is the raw TDX quote.
 	RawQuote []byte
+	// UserData is the user data that was passed to the enclave and was included in the quote.
 	UserData []byte
 }

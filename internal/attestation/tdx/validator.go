@@ -16,13 +16,18 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/go-tdx-qpl/verification"
+	"github.com/edgelesssys/go-tdx-qpl/verification/types"
 )
+
+type tdxVerifier interface {
+	Verify(ctx context.Context, quote []byte) (types.SGXQuote4, error)
+}
 
 // Validator is the TDX attestation validator.
 type Validator struct {
 	oid.QEMUTDX
 
-	tdx      *verification.TDXVerifier
+	tdx      tdxVerifier
 	expected measurements.M
 
 	log vtpm.AttestationLogger
