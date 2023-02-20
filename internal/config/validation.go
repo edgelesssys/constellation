@@ -311,8 +311,27 @@ func getPlaceholderEntries(m Measurements) []uint32 {
 	return placeholders
 }
 
-func validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.IsSupportedK8sVersion(compatibility.EnsurePrefixV(fl.Field().String()))
+func (c *Config) validateK8sVersion(fl validator.FieldLevel) bool {
+	// TODO: v2.7: do not create extendedVersion variable and directly validate field from fl.
+	// This patch is for compatibility with configs from v2.5 only. Configs specifying k8s
+	// the version as MAJOR.MINOR automatically get extended with the respective patch version.
+	configVersion := compatibility.EnsurePrefixV(fl.Field().String())
+	if !semver.IsValid(configVersion) {
+		return false
+	}
+	var extendedVersion string
+	switch semver.MajorMinor(configVersion) {
+	case semver.MajorMinor(string(versions.V1_24)):
+		extendedVersion = string(versions.V1_24)
+	case semver.MajorMinor(string(versions.V1_25)):
+		extendedVersion = string(versions.V1_25)
+	case semver.MajorMinor(string(versions.V1_26)):
+		extendedVersion = string(versions.V1_26)
+	default:
+		return false
+	}
+	c.KubernetesVersion = extendedVersion
+	return versions.IsSupportedK8sVersion(extendedVersion)
 }
 
 func registerVersionCompatibilityError(ut ut.Translator) error {

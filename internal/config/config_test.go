@@ -273,6 +273,26 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
+		// TODO: v2.7: remove this test as it should start breaking after v2.6 is released.
+		"k8s vMAJOR.MINOR is valid in v2.7": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.KubernetesVersion = "v1.25"
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount,
+		},
+		// TODO: v2.7: remove this test as it should start breaking after v2.6 is released.
+		"k8s MAJOR.MINOR is valid in v2.7": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.KubernetesVersion = "1.25"
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount,
+		},
 	}
 
 	for name, tc := range testCases {
