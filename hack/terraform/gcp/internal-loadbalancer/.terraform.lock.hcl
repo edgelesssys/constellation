@@ -32,26 +32,20 @@ provider "registry.terraform.io/hashicorp/google" {
 }
 
 provider "registry.terraform.io/hashicorp/google-beta" {
-  version     = "4.50.0"
-  constraints = "4.50.0"
+  version     = "4.53.1"
+  constraints = "4.53.1"
   hashes = [
-    "h1:Hk/FiEYCeD5hjnWmSjdieA1ljkU/5IFKZLFliBihoSA=",
-    "h1:UUqaoZf9B/dLII2fzpaIomR5Nfc9dBXeSXdzBV5RmVo=",
-    "h1:hMroxEFG0w6/fnNeCcd8ZGerMwXvhtlONXWN5czn/70=",
-    "h1:j2O+3bt6avOFaK1OQK3cj2rUQ48LpPnR076PfGyFQWw=",
-    "h1:pBa3CRwXRuBfD5NUlN2pT69P4BM7Pg4BEEdo3ZUKncA=",
-    "zh:21279b8b2f248a308a257ed954ea9c9c712ae62cd8881579489ac84c393d18e0",
-    "zh:3d5376c6295205b2d61998085f96054d677fd23ea15a7a626dec7b8e234580fb",
-    "zh:52d7a1fe39bc75293bf1aa949327b0cd3320411ff1ed9adeb80fee623fe7f807",
-    "zh:61a0e74e9686b0762383834364f5170860f49d40dbaca5977c660f96854d5c7b",
-    "zh:66084e3649835ae1f7d882578a1a1efea6051b68a4112110628d1e320b7c6d4f",
-    "zh:7f5d004de80540b938d88535b89f3b0093097a6b4cfd9658d8e788fc8034b2dc",
-    "zh:9e8a5afe13b0c8bda71293eeca8c6127f3c8689acc9d3543602c8af07af520f1",
-    "zh:c194593927f0bfd1c5001fd0e73d14bb424fe0c64dc7d5e4395b3de09499bad4",
-    "zh:cac2c09be56b43f8842de5eafaf26f9bc48be2b00c6bfeab91a7d6030e4ccf7f",
-    "zh:ceca718eb26a3e96dc43e7f21f8869c4b5e7c15a94223a3b53834050047d0e45",
-    "zh:f569b65999264a9416862bca5cd2a6177d94ccb0424f3a4ef424428912b9cb3c",
-    "zh:f955c329b01daa9d7c1cd82267c5bd12b48cea5e643e734723af08247a17664c",
+    "h1:1MkAf6P8vBXgSJamKtcPD/79u8jo6YNG5gc8uoY2ydc=",
+    "h1:5aaAMoxP7pCzrVr29MPmSZVoirHm0+1ilDOY5JeMY64=",
+    "h1:7QGkQjAlZMktK72GqcAbqHva+8LoRbYEJUf2lygxi0s=",
+    "h1:Y55TjaDjrJ7ZG4o0u68eBRX65KIH57zFpD5lZKJ2cas=",
+    "h1:aEyJWuso74SXvmC8Zj4C9pvIgwOEQLztCEaST183FIk=",
+    "h1:dv64Qy49gXvnTzTtfqPhKJMsFPZIOwVPhdUWlTtkxmc=",
+    "h1:nmNBwwS581V9AzTMtDG4Pk7oWCNdmhIlGNebxuLvv7I=",
+    "h1:uCRn44kj3UmGACx/zFtqX9rvPlLc2n00XJG/8QbTUH0=",
+    "h1:ujSzbaIt/cz+1+5HjcFBaM8DRwjIxLnUE1eu0ocNBxk=",
+    "h1:wqkbheWmFp608Q8hHpX6SxAH+bXefU1L+JDLrohpOOs=",
+    "h1:xYmVG6E7aojtl1DwQJg1uT+K0jkQ53x6m02kWvfW2gc=",
   ]
 }
 
