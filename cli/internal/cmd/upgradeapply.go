@@ -149,7 +149,7 @@ func (u *upgradeApplyCmd) handleImageUpgrade(ctx context.Context, conf *config.C
 		return fmt.Errorf("parsing version from image short path: %w", err)
 	}
 
-	err = u.upgrader.UpgradeImage(ctx, imageReference, imageVersion.Version, conf.Upgrade.Measurements)
+	err = u.upgrader.UpgradeImage(ctx, imageReference, imageVersion.Version, conf.GetMeasurements())
 	if err != nil {
 		return fmt.Errorf("upgrading image: %w", err)
 	}
