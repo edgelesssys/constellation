@@ -25,7 +25,7 @@ RUN go mod download all
 
 COPY . /qemu-metadata-api
 WORKDIR /qemu-metadata-api/hack/qemu-metadata-api
-RUN go build -o api-server ./main.go
+RUN go build -o api-server .
 
 FROM fedora:37@sha256:23c63666eefb64cd2364e6d8ad327f06abf9eb1f34b621e9fd6c1602e142244b as release
 RUN  dnf -y install libvirt-devel && \
