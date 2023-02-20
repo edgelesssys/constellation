@@ -140,7 +140,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Fill the values produced by the script into your configuration file.
 
-    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family with a minimum of 4 vCPUs. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     <tabItem value="gcp-console" label="GCP (Console)">
@@ -169,7 +169,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
-      Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+      Supported are all machines from the N2D family with a minimum of 4 vCPUs. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     <tabItem value="aws" label="AWS">

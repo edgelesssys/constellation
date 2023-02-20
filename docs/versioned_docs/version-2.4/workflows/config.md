@@ -45,12 +45,12 @@ You can also run `constellation config instance-types` to get the list of all su
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines with a minimum of 4 vCPUs from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
+By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines with a minimum of 4 vCPUs (`xlarge` or larger). Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 </tabs>
