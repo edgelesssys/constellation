@@ -70,7 +70,7 @@ type Config struct {
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
 	//   Kubernetes version to be installed into the cluster.
-	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
+	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
 	//   Microservice version to be installed into the cluster. Setting this value is optional until v2.7. Defaults to the version of the CLI.
 	MicroserviceVersion string `yaml:"microserviceVersion" validate:"omitempty,version_compatibility"`
@@ -526,7 +526,7 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
-	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
+	if err := validate.RegisterValidation("supported_k8s_version", c.validateK8sVersion); err != nil {
 		return err
 	}
 
