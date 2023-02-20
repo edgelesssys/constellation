@@ -436,6 +436,23 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 	return cloudprovider.Unknown
 }
 
+// GetMeasurements returns the configured measurements or nil if no provder is set.
+func (c *Config) GetMeasurements() measurements.M {
+	if c.Provider.AWS != nil {
+		return c.Provider.AWS.Measurements
+	}
+	if c.Provider.Azure != nil {
+		return c.Provider.Azure.Measurements
+	}
+	if c.Provider.GCP != nil {
+		return c.Provider.GCP.Measurements
+	}
+	if c.Provider.QEMU != nil {
+		return c.Provider.QEMU.Measurements
+	}
+	return nil
+}
+
 // EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
 func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
