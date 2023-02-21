@@ -70,8 +70,9 @@ constellation config generate {aws|azure|gcp|qemu} [flags]
 ### Options
 
 ```
-  -f, --file string   path to output file, or '-' for stdout (default "constellation-conf.yaml")
-  -h, --help          help for generate
+  -f, --file string         path to output file, or '-' for stdout (default "constellation-conf.yaml")
+  -h, --help                help for generate
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR (default "v1.25")
 ```
 
 ### Options inherited from parent commands
