@@ -7,7 +7,7 @@ runs:
     - name: Delete IAM configuration
       shell: bash
       run: |
-        if [ -f constellation-iam-terraform/terraform.tfstate ]; then
+        if [[ -f constellation-iam-terraform/terraform.tfstate ]]; then
           echo "IAM Terraform state file exists, deleting..."
           cd constellation-iam-terraform
           terraform destroy -auto-approve
