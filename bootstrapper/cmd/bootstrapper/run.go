@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -44,7 +45,7 @@ func run(issuer atls.Issuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 		cloudLogger.Disclose("Disk UUID: " + uuid)
 	}
 
-	nodeBootstrapped, err := vtpm.IsNodeBootstrapped(tpm)
+	nodeBootstrapped, err := initialize.IsNodeBootstrapped(tpm)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to check if node was previously bootstrapped")
 	}

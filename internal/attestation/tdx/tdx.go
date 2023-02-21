@@ -7,9 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 // Package TDX implements attestation for Intel TDX.
 package tdx
 
+import "github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
+
 type tdxAttestationDocument struct {
 	// RawQuote is the raw TDX quote.
 	RawQuote []byte
 	// UserData is the user data that was passed to the enclave and was included in the quote.
 	UserData []byte
 }
+
+// OpenFunc is a function that opens the TDX device.
+type OpenFunc func() (tdx.Device, error)

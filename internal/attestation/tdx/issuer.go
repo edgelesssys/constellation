@@ -9,35 +9,33 @@ package tdx
 import (
 	"encoding/json"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
-
-type tdxIssuer interface {
-	Close() error
-	GenerateQuote(userData []byte) ([]byte, error)
-}
 
 // Issuer is the TDX attestation issuer.
 type Issuer struct {
 	oid.QEMUTDX
 
-	open func() (tdxIssuer, error)
+	open OpenFunc
 }
 
 // NewIssuer initializes a new TDX Issuer.
-func NewIssuer() *Issuer {
-	return &Issuer{open: openTDXIssuer}
+func NewIssuer(open OpenFunc) *Issuer {
+	return &Issuer{open: open}
 }
 
 // Issue issues a TDX attestation document.
-func (i *Issuer) Issue(userData []byte) ([]byte, error) {
-	tdx, err := i.open()
+func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+	handle, err := i.open()
 	if err != nil {
 		return nil, err
 	}
-	defer tdx.Close()
+	defer handle.Close()
 
-	quote, err := tdx.GenerateQuote(userData)
+	// TODO: switch to using makeExtraData after rebasing
+	// quote, err := tdx.GenerateQuote(nonce, makeExtraData(userData))
+	quote, err := tdx.GenerateQuote(handle, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -47,14 +45,3 @@ func (i *Issuer) Issue(userData []byte) ([]byte, error) {
 		UserData: userData,
 	})
 }
-
-func openTDXIssuer() (tdxIssuer, error) {
-	// return tdx.Open()
-	return &tdxStub{}, nil
-}
-
-type tdxStub struct{}
-
-func (t *tdxStub) Close() error { return nil }
-
-func (t *tdxStub) GenerateQuote(userData []byte) ([]byte, error) { return nil, nil }
