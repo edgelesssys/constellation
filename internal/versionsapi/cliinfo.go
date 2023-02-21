@@ -13,7 +13,6 @@ import (
 	"path"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"go.uber.org/multierr"
 	"golang.org/x/mod/semver"
 )
 
@@ -56,16 +55,16 @@ func (c CLIInfo) URL() (string, error) {
 func (c CLIInfo) ValidateRequest() error {
 	var retErr error
 	if err := ValidateRef(c.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(c.Ref, c.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if !semver.IsValid(c.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semver", c.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", c.Version))
 	}
 	if len(c.Kubernetes) != 0 {
-		retErr = multierr.Append(retErr, errors.New("Kubernetes slice must be empty for request"))
+		retErr = errors.Join(retErr, errors.New("Kubernetes slice must be empty for request"))
 	}
 
 	return retErr
@@ -75,21 +74,21 @@ func (c CLIInfo) ValidateRequest() error {
 func (c CLIInfo) Validate() error {
 	var retErr error
 	if err := ValidateRef(c.Ref); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if err := ValidateStream(c.Ref, c.Stream); err != nil {
-		retErr = multierr.Append(retErr, err)
+		retErr = errors.Join(retErr, err)
 	}
 	if !semver.IsValid(c.Version) {
-		retErr = multierr.Append(retErr, fmt.Errorf("version %q is not a valid semver", c.Version))
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", c.Version))
 	}
 	if len(c.Kubernetes) == 0 {
-		retErr = multierr.Append(retErr, errors.New("Kubernetes slice must not be empty"))
+		retErr = errors.Join(retErr, errors.New("Kubernetes slice must not be empty"))
 	}
 	for _, k := range c.Kubernetes {
 		// add "v" prefix to ensure valid semver AND valid Kubernetes version for the config
 		if !semver.IsValid(fmt.Sprintf("v%s", k)) {
-			retErr = multierr.Append(retErr, fmt.Errorf("Kubernetes version %q is not a valid semver", fmt.Sprintf("v%s", k)))
+			retErr = errors.Join(retErr, fmt.Errorf("Kubernetes version %q is not a valid semver", fmt.Sprintf("v%s", k)))
 		}
 	}
 
