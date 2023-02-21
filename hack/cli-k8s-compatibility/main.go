@@ -8,12 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"flag"
-	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -34,7 +36,7 @@ func main() {
 		panic("version must be set")
 	}
 
-	compatibilityFile := versionsapi.CLIInfo{
+	cliInfo := versionsapi.CLIInfo{
 		Ref:        *refFlag,
 		Stream:     *streamFlag,
 		Version:    *versionFlag,
@@ -42,13 +44,15 @@ func main() {
 	}
 
 	for _, v := range versions.VersionConfigs {
-		compatibilityFile.Kubernetes = append(compatibilityFile.Kubernetes, v.ClusterVersion)
+		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
 	}
 
-	output, err := json.Marshal(compatibilityFile)
+	c, err := client.NewClient(context.Background(), "eu-central-1", "cdn-constellation-backend", "", false, logger.New(logger.PlainLog, zapcore.DebugLevel))
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(string(output))
+	
+	if err := c.UpdateCLIInfo(context.Background(), cliInfo); err != nil {
+		panic(err)
+	}
 }

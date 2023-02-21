@@ -932,16 +932,6 @@ jobs:
             --ref=${{  needs.build-settings.outputs.ref }} \
             --stream=${{  needs.build-settings.outputs.stream }} \
             --version=${{  needs.build-settings.outputs.imageVersion }} \
-            > info.json
-
-      - name: Upload CLI compatibility information to S3
-        shell: bash
-        run: |
-          aws s3 cp \
-            "info.json" \
-            "s3://cdn-constellation-backend/${{ needs.build-settings.outputs.cliApiBasePath }}/info.json" \
-            --no-progress
-          echo -e "[CLI compatibility information](https://cdn.confidential.cloud/${{ needs.build-settings.outputs.cliApiBasePath }}/info.json)" >> "$GITHUB_STEP_SUMMARY"
 
 
   add-version-to-versionsapi:
