@@ -23,6 +23,8 @@ RUN curl -sLO https://github.com/edgelesssys/constellation/releases/latest/downl
 # As mount point for $HOME/.config/gcloud
 RUN mkdir /root/.config
 
+# Disable spinner when running Constellation CLI commands
+ENV CONSTELL_NO_SPINNER=1
 # Enable RGB colors in PS1
 ENV TERM=xterm-256color
 # Set width of terminal, default is ~80 and leads to broken lines for long lines,

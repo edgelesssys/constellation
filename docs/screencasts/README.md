@@ -44,20 +44,14 @@ when it is [embedded in the docs](../docs/workflows/verify-cli.md#5). Check the 
 
 ## GitHub README.md
 
-The GitHub `README.md` does not support embedding the `asciinema-player`, therefore we generate an
+The GitHub `README.md` does not support embedding the JavaScript `asciinema-player`, therefore we generate an
 `svg` file for that usecase.
 
-{"version": 2, "width": 0, "height": 0, "timestamp": 1676289328, "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}}
-
-=> TODO: Automate that change
-
-{"version": 2, "width": 95, "height": 17, "timestamp": 1676289328, "env": {"SHELL": "/bin/bash", "TERM": "xterm-256color"}}
-
 ```sh
+# Make sure to install the converter.
 # https://github.com/nbedos/termtosvg
-# Archived since 2020, do we want to change?
 pip3 install termtosvg
-# Window-frame.svg contains the styling information
-termtosvg render recordings/readme.cast readme.svg -t window-frame.svg
-cp readme.svg ../static/img/shell-windowframe.svg
+
+# Generate SVG. This takes ~10min, since it actually creates a cluster in GCP.
+./generate-readme-svg.sh
 ```

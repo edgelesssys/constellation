@@ -19,7 +19,7 @@ proc run_command {cmd} {
 }
 
 # Start recording
-spawn asciinema rec --overwrite /recordings/configure-cluster.cast
+spawn asciinema rec --overwrite /recordings/github-readme.cast
 send "\r"
 expect_prompt
 
@@ -42,6 +42,47 @@ run_command "yq '.provider.gcp.region = \"europe-west3\"' -i constellation-conf.
 expect_prompt
 run_command "cat constellation-conf.yaml | head -n15"
 expect_prompt
+
+run_command "# Step 3: Create cloud environment"
+expect_prompt
+run_command "constellation create --control-plane-nodes 3 --worker-nodes 2"
+expect -re "y\/n"
+send "y"
+send "\r"
+expect_prompt
+
+run_command "# Step 4: Initialize Constellation"
+expect_prompt
+run_command "constellation init"
+expect_prompt
+
+run_command "# Wait for cluster to finish bootstrapping..."
+expect_prompt
+# Without a sleep we only see a single node, not 5.
+run_command "sleep 300"
+expect_prompt
+
+run_command "# Step 5: Connect to Constellation"
+expect_prompt
+run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
+expect_prompt
+run_command "kubectl get nodes"
+
+run_command "# Step 6: Delete Constellation cluster"
+expect_prompt
+run_command "constellation terminate"
+expect -re "y\/n"
+send "y"
+send "\r"
+expect_prompt
+
+run_command "# Step 7: Remove IAM resources"
+expect_prompt
+run_command "cd constellation-iam-terraform"
+expect_prompt
+run_command "terraform apply -destroy -auto-approve"
+expect -timeout 25
+run_command "# All resources are cleaned up."
 
 # Stop recording
 send "exit"
