@@ -327,19 +327,35 @@ func (c *Config) validateK8sVersion(fl validator.FieldLevel) bool {
 	if !semver.IsValid(configVersion) {
 		return false
 	}
-	var extendedVersion string
-	switch semver.MajorMinor(configVersion) {
-	case semver.MajorMinor(string(versions.V1_24)):
-		extendedVersion = string(versions.V1_24)
-	case semver.MajorMinor(string(versions.V1_25)):
-		extendedVersion = string(versions.V1_25)
-	case semver.MajorMinor(string(versions.V1_26)):
-		extendedVersion = string(versions.V1_26)
-	default:
+
+	extendedVersion := K8sVersionFromMajorMinor(semver.MajorMinor(configVersion))
+	if extendedVersion == "" {
 		return false
 	}
+
+	valid := versions.IsSupportedK8sVersion(extendedVersion)
+	if !valid {
+		return false
+	}
+
 	c.KubernetesVersion = extendedVersion
-	return versions.IsSupportedK8sVersion(extendedVersion)
+	return true
+}
+
+// K8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
+// and returns the version in format MAJOR.MINOR.PATCH with the
+// supported patch version as PATCH.
+func K8sVersionFromMajorMinor(version string) string {
+	switch version {
+	case semver.MajorMinor(string(versions.V1_24)):
+		return string(versions.V1_24)
+	case semver.MajorMinor(string(versions.V1_25)):
+		return string(versions.V1_25)
+	case semver.MajorMinor(string(versions.V1_26)):
+		return string(versions.V1_26)
+	default:
+		return ""
+	}
 }
 
 func registerVersionCompatibilityError(ut ut.Translator) error {

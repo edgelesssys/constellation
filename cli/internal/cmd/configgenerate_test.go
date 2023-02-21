@@ -15,11 +15,53 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v3"
 )
+
+func TestConfigGenerateKubernetesVersion(t *testing.T) {
+	testCases := map[string]struct {
+		version string
+		wantErr bool
+	}{
+		"success": {
+			version: semver.MajorMinor(string(versions.Default)),
+		},
+		"no semver": {
+			version: "asdf",
+			wantErr: true,
+		},
+		"not supported": {
+			version: "1111",
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			cmd := newConfigGenerateCmd()
+			err := cmd.Flags().Set("kubernetes", tc.version)
+			require.NoError(err)
+
+			cg := &configGenerateCmd{log: logger.NewTest(t)}
+			err = cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
 
 func TestConfigGenerateDefault(t *testing.T) {
 	assert := assert.New(t)
