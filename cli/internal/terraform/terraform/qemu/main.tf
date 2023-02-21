@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     libvirt = {
-      source  = "dmacvicar/libvirt"
-      version = "0.7.1"
+      source  = "malt3/libvirt"
+      version = "0.7.1-pre"
     }
     docker = {
       source  = "kreuzwerker/docker"

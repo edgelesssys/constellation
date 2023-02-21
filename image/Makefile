@@ -23,8 +23,10 @@ SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc3
 AZURE_FIXED_KERNEL_RPMS := kernel-6.1.14-200.fc37.x86_64.rpm kernel-core-6.1.14-200.fc37.x86_64.rpm kernel-modules-6.1.14-200.fc37.x86_64.rpm
 GCP_FIXED_KERNEL_RPMS := kernel-5.19.17-300.fc37.x86_64.rpm kernel-core-5.19.17-300.fc37.x86_64.rpm kernel-modules-5.19.17-300.fc37.x86_64.rpm
 PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
+QEMU_FIXED_KERNEL_RPMS := kernel-5.19.0-300.constellation.fc37.x86_64.rpm kernel-core-5.19.0-300.constellation.fc37.x86_64.rpm kernel-modules-5.19.0-300.constellation.fc37.x86_64.rpm
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
+PREBUILT_RPMS_QEMU := $(addprefix prebuilt/rpms/qemu/,$(QEMU_FIXED_KERNEL_RPMS))
 
 .PHONY: all clean inject-bins $(csps)
 
@@ -47,6 +49,11 @@ prebuilt/rpms/azure/%.rpm:
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.14/200.fc37/x86_64/$*.rpm
 
+prebuilt/rpms/qemu/%.rpm:
+	@echo "Downloading $*"
+	@mkdir -p $(@D)
+	@curl -fsSL -o $@ https://cdn.confidential.cloud/constellation/kernel/5.19.0-300.constellation/$*.rpm
+
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf \
 		--image-version=$(IMAGE_VERSION) \
@@ -61,7 +68,7 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 	fi
 	@echo "Image is ready: $@"
 
-inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
+inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP) $(PREBUILT_RPMS_QEMU)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent

@@ -46,7 +46,7 @@ const (
 	gcpStateDiskPath       = "/dev/disk/by-id/google-state-disk"
 	azureStateDiskPath     = "/dev/disk/azure/scsi1/lun0"
 	awsStateDiskPath       = "/dev/sdb"
-	qemuStateDiskPath      = "/dev/vda"
+	qemuStateDiskPath      = "/dev/vdb"
 	openstackStateDiskPath = "/dev/vdb"
 )
 

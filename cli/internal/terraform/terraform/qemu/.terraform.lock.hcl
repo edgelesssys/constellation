@@ -93,3 +93,29 @@ provider "registry.terraform.io/kreuzwerker/docker" {
     "zh:fa822a4eb4e6385e88fbb133fd63d3a953693712a7adeb371913a2d477c0148c",
   ]
 }
+
+provider "registry.terraform.io/malt3/libvirt" {
+  version     = "0.7.1-pre"
+  constraints = "0.7.1-pre"
+  hashes = [
+    "h1:9tEanGbBSSmPUci7Pw5BkPS4bLzNiOhbUIiq9gaOaLo=",
+    "h1:Eote5KwszESpoyJ1P1tKSCijUirr4JQGEDMQl5Y5v3I=",
+    "h1:N2XAvlOPlXUmvg7NgSLeexO+GkLXaIDEvwSQiKVozG8=",
+    "h1:P8BpHRKAF+vBk/wt6kt2zr2u+XdbZIgkjBVL9GjfStM=",
+    "h1:xFjoJmIZdiAb9Wso5vmKuGcWMI2xFDyyyEwy6oiaefI=",
+    "zh:1d17baa459b63736be86af24555e6d219e887b329c1b6ba2320ab93163aaa417",
+    "zh:3cd5d1509d3559e6636455035b845794ee091cadecc0b99370d8e1ba875fc077",
+    "zh:48558ff6072d4e541508f921c8e7fac10806da33c97f53967a19e8f9f00453db",
+    "zh:5caf16ff2594bb2bdbf8d2f401d47436165db4830c04499f4c54c5bf40de57c9",
+    "zh:61a067403a62131e301e63c575e4753aa5d3f144fb94df0b3c22dc19821411c9",
+    "zh:72d6ccffc09c6a8afa4c8f3896cc2833b0a6edd902580cfece587ec122363900",
+    "zh:74bf5551393092eeb641128abda402527e4e71e826cb4fc006901c75181eca6b",
+    "zh:7a4d930bc1db040191e44087d2063281df30831eacc2a1211175ac6c8a5b3236",
+    "zh:9cca03cc8d05a238fb816aa71a4d67b7f9ea32619c3155d2f0808df5b65e0f8f",
+    "zh:a2dd9471b0a38b833f2d03f6a0c427a1840ac84e211a32b718288ad4038fea79",
+    "zh:e34eb194ec2f273197a51ae96c8dafb9f7703fef7e1c4e3a005847b3b78bc8b5",
+    "zh:e5d5e9376c9d60f47c95f2cec4b2693283d34fe19ff2493a686c5d5916a19ff5",
+    "zh:e7d09fb7cd7f381133e437254b62ef0ddf0044ac2038dc3680c555af2f0c0eaf",
+    "zh:f68df85469dbe60006e448710eb113d63f223ddefd6ba306bde063335289c06b",
+  ]
+}
