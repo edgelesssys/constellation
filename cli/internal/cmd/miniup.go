@@ -206,11 +206,12 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 	_, err = fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user to overwrite
-		cmd.PrintErrln("A config file already exists in the current workspace.")
+		cmd.PrintErrln("A config file already exists in the current workspace. Use --config to use an existing config file.")
 		ok, err := askToConfirm(cmd, "Do you want to overwrite it?")
 		if err != nil {
 			return nil, err
 		}
+
 		if !ok {
 			return nil, errors.New("not overwriting existing config")
 		}
