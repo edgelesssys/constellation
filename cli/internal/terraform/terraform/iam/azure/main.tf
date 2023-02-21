@@ -73,7 +73,7 @@ resource "azuread_service_principal" "application_principal" {
 
 # Set identity as base resource group owner
 resource "azurerm_role_assignment" "owner_role" {
-  scope                = azurerm_resource_group.identity_resource_group.id
+  scope                = azurerm_resource_group.base_resource_group.id
   role_definition_name = "Owner"
   principal_id         = azuread_service_principal.application_principal.object_id
 }
