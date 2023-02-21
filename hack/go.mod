@@ -176,10 +176,10 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.3.1 // indirect
-	github.com/hashicorp/go-kms-wrapping/v2 v2.0.6 // indirect
-	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.1 // indirect
-	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.1 // indirect
-	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.2 // indirect
+	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8 // indirect
+	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.7 // indirect
+	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.7 // indirect
+	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.8 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/go-secure-stdlib/awsutil v0.1.6 // indirect
