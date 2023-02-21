@@ -7,8 +7,8 @@ runs:
       shell: bash
       working-directory: /tmp
       env:
-        SYFT_VERSION: "0.70.0"
-        GRYPE_VERSION: "0.56.0"
+        SYFT_VERSION: "0.72.0"
+        GRYPE_VERSION: "0.57.1"
         OS: ${{ runner.os }}
         ARCH: ${{ runner.arch }}
       run: |
