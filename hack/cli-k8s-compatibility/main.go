@@ -9,22 +9,35 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
-// cliCompatibilityConfig describes the compatibility of a CLI version with Kubernetes versions.
-// It is specified in rfc/cli-api.md.
-type cliCompatibilityConfig struct {
-	Version    string   `json:"version"`
-	Ref        string   `json:"ref"`
-	Stream     string   `json:"stream"`
-	Kubernetes []string `json:"kubernetes"`
-}
+var (
+	refFlag     = flag.String("ref", "", "the reference name of the image")
+	streamFlag  = flag.String("stream", "", "the stream name of the image")
+	versionFlag = flag.String("version", "", "the version of the image")
+)
 
 func main() {
-	compatibilityFile := cliCompatibilityConfig{
+	flag.Parse()
+	if *refFlag == "" {
+		panic("ref must be set")
+	}
+	if *streamFlag == "" {
+		panic("stream must be set")
+	}
+	if *versionFlag == "" {
+		panic("version must be set")
+	}
+
+	compatibilityFile := versionsapi.CLIInfo{
+		Ref:        *refFlag,
+		Stream:     *streamFlag,
+		Version:    *versionFlag,
 		Kubernetes: []string{},
 	}
 

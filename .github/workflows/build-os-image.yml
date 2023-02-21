@@ -928,16 +928,11 @@ jobs:
       - name: Create CLI compatibility information artifact
         shell: bash
         run: |
-          go run ./hack/cli-k8s-compatibility/main.go > info.json
-          echo '{}' > temp.json
-          jq '.ref = "${{  needs.build-settings.outputs.ref }}"' info.json > temp.json
-          cp temp.json info.json
-          jq '.stream = "${{ needs.build-settings.outputs.stream }}"' info.json > temp.json
-          cp temp.json info.json
-          jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' info.json > temp.json
-          cp temp.json info.json
-          cat info.json
-          rm -f temp.json
+          go run ./hack/cli-k8s-compatibility/main.go \
+            --ref=${{  needs.build-settings.outputs.ref }} \
+            --stream=${{  needs.build-settings.outputs.stream }} \
+            --version=${{  needs.build-settings.outputs.imageVersion }} \
+            > info.json
 
       - name: Upload CLI compatibility information to S3
         shell: bash
