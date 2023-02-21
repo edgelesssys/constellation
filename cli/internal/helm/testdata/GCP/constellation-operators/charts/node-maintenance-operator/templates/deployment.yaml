@@ -5,7 +5,7 @@ metadata:
   namespace: testNamespace
   labels:
     node-maintenance-operator: ""
-    helm.sh/chart: node-maintenance-operator-2.5.0
+    helm.sh/chart: node-maintenance-operator-0.0.0
     app.kubernetes.io/name: node-maintenance-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm
@@ -18,7 +18,7 @@ metadata:
   labels:
     control-plane: controller-manager
     node-maintenance-operator: ""
-    helm.sh/chart: node-maintenance-operator-2.5.0
+    helm.sh/chart: node-maintenance-operator-0.0.0
     app.kubernetes.io/name: node-maintenance-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm

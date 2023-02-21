@@ -5,7 +5,7 @@ metadata:
   namespace: testNamespace
   labels:
     control-plane: controller-manager
-    helm.sh/chart: constellation-operator-2.5.0
+    helm.sh/chart: constellation-operator-0.0.0
     app.kubernetes.io/name: constellation-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm

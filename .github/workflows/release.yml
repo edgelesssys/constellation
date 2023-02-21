@@ -378,6 +378,12 @@ jobs:
           git config --global user.email "release[bot]@users.noreply.github.com"
           git fetch
           git checkout -b "${NEW_BRANCH}"
+
+      - name: Update CMakeLists.txt
+        run: |
+          sed -i "s/project(constellation LANGUAGES C VERSION [0-9]\+\.[0-9]\+\.[0-9]\+)/project(constellation LANGUAGES C VERSION 0.0.0)/" CMakeLists.txt
+          git add CMakeLists.txt
+          git commit -m "deps: set PROJECT_VERSION to prerelease"
           git push --set-upstream origin "${NEW_BRANCH}"
 
       - name: Create PR

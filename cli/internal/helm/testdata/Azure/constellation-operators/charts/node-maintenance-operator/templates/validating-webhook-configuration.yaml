@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: testNamespace/node-maintenance-operator-serving-cert
   labels:
-    helm.sh/chart: node-maintenance-operator-2.5.0
+    helm.sh/chart: node-maintenance-operator-0.0.0
     app.kubernetes.io/name: node-maintenance-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm

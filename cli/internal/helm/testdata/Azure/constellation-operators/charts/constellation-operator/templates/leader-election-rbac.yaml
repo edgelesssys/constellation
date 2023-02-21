@@ -4,7 +4,7 @@ metadata:
   name: constellation-operator-leader-election-role
   namespace: testNamespace
   labels:
-    helm.sh/chart: constellation-operator-2.5.0
+    helm.sh/chart: constellation-operator-0.0.0
     app.kubernetes.io/name: constellation-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm
@@ -47,7 +47,7 @@ metadata:
   name: constellation-operator-leader-election-rolebinding
   namespace: testNamespace
   labels:
-    helm.sh/chart: constellation-operator-2.5.0
+    helm.sh/chart: constellation-operator-0.0.0
     app.kubernetes.io/name: constellation-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm
