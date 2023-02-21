@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.20.1@sha256:d19ee8512191c8b8e967246d4a7d0de4f4133a30bd9ce982e9b70a0c596dbf18 as builder
+FROM golang:1.20.1@sha256:745aa72cefb6f9527c1588590982c0bdf85a1be5d611dda849e54b5dbf551506 as builder
 
 # Download project root dependencies
 WORKDIR /workspace
