@@ -14,6 +14,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmsim "github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -95,7 +96,7 @@ func TestValidate(t *testing.T) {
 	require.Equal(challenge, out)
 
 	// validation must fail after bootstrapping (change of enforced PCR)
-	require.NoError(MarkNodeAsBootstrapped(tpmOpen, []byte{2}))
+	require.NoError(initialize.MarkNodeAsBootstrapped(tpmOpen, []byte{2}))
 	attDocBootstrappedRaw, err := issuer.Issue(challenge, nonce)
 	require.NoError(err)
 	_, err = validator.Validate(attDocBootstrappedRaw, nonce)

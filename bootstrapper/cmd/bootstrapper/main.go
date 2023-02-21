@@ -23,8 +23,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
+	tdxapi "github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -161,12 +164,21 @@ func main() {
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
-		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
+		var measurements measurements.M
+		if tdx.Available() {
+			measurements, err = vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
+			if err != nil {
+				log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
+			}
 
-		issuer = qemu.NewIssuer()
+			issuer = qemu.NewIssuer()
+		} else {
+			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3})
+			if err != nil {
+				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
+			}
+			issuer = tdx.NewIssuer(tdxapi.Open)
+		}
 
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()

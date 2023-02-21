@@ -83,6 +83,7 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.8/go.mod h1:huNtlWx75MwO7qMs
 contrib.go.opencensus.io/integrations/ocsql v0.1.4/go.mod h1:8DsSdjz3F+APR+0z0WkU1aRorQCFfRxvqjUUPMbF3fE=
 contrib.go.opencensus.io/resource v0.1.1/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcigGlFvXwEGEnkRLA=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
+github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 h1:EKPd1INOIyr5hWOWhvpmQpY6tKjeG0hT1s3AMC/9fic=
 github.com/Azure/azure-amqp-common-go/v2 v2.1.0/go.mod h1:R8rea+gJRuJR6QxTir/XuEd+YuKoUiazDC/N96FiDEU=
 github.com/Azure/azure-pipeline-go v0.2.1/go.mod h1:UGSo8XybXnIGZ3epmeBw7Jdz+HiUVpqIlpz/HKHylF4=
 github.com/Azure/azure-sdk-for-go v29.0.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
@@ -403,8 +404,6 @@ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25Kn
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
-github.com/edgelesssys/go-tdx-qpl v0.0.0-20230214123602-8d2bda548207 h1:XmbebXRUlLB/cx3xn95ahDbgMXAQQAwtLUL8Q9PZI0I=
-github.com/edgelesssys/go-tdx-qpl v0.0.0-20230214123602-8d2bda548207/go.mod h1:4GVQlIKKwU4aVsVzp0YDvtzfI3/p4UUKOVvzs9mtEa4=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230220134940-6649dedc9377 h1:nHA+P2r2stCtyHdKXCaVSTS9dgMVDCa41BF/yt9mTd8=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230220134940-6649dedc9377/go.mod h1:DXWTbJDi0UGPDsVpePyS/kbKp1jmhjT8x60coCdfGPw=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=

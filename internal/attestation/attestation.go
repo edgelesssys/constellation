@@ -29,6 +29,9 @@ Attestation code for new platforms needs to implement these two interfaces.
 package attestation
 
 import (
+	"bytes"
+	"crypto/sha256"
+
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 )
 
@@ -43,4 +46,29 @@ const (
 // DeriveClusterID derives the cluster ID from a salt and secret value.
 func DeriveClusterID(secret, salt []byte) ([]byte, error) {
 	return crypto.DeriveKey(secret, salt, []byte(crypto.DEKPrefix+clusterIDContext), crypto.DerivedKeyLengthDefault)
+}
+
+// MakeExtraData binds userData to a random nonce used in attestation.
+func MakeExtraData(userData []byte, nonce []byte) []byte {
+	data := append([]byte{}, userData...)
+	data = append(data, nonce...)
+	digest := sha256.Sum256(data)
+	return digest[:]
+}
+
+// CompareExtraData compares the extra data of a quote with the expected extra data.
+// Returns true if the data from the quote matches the expected data.
+// If the slices are not of equal length, the shorter slice is padded with zeros.
+func CompareExtraData(quoteData, expectedData []byte) bool {
+	if len(quoteData) != len(expectedData) {
+		// If the lengths are not equal, pad the shorter slice with zeros.
+		diff := len(quoteData) - len(expectedData)
+		if diff < 0 {
+			diff = -diff
+			quoteData = append(quoteData, bytes.Repeat([]byte{0x00}, diff)...)
+		} else {
+			expectedData = append(expectedData, bytes.Repeat([]byte{0x00}, diff)...)
+		}
+	}
+	return bytes.Equal(quoteData, expectedData)
 }

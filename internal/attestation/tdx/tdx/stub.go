@@ -6,6 +6,9 @@ import (
 	"os"
 )
 
+// GuestDevice is the path to the TDX guest device.
+const GuestDevice = "/dev/tdx-guest"
+
 // Device is a handle to the TDX guest device.
 type Device interface {
 	io.ReadWriteCloser
@@ -32,7 +35,7 @@ func ExtendRTMR(tdx Device, extendData []byte, index uint8) error {
 	return nil
 }
 
-// ReadRTMR reads the RTMR at the given index.
-func ReadRTMR(tdx Device, index uint8) ([48]byte, error) {
-	return [48]byte{}, nil
+// ReadRTMRs reads the RTMR values of a TDX guest.
+func ReadRTMRs(tdx Device) ([4][48]byte, error) {
+	return [4][48]byte{}, nil
 }

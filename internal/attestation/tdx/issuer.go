@@ -9,6 +9,7 @@ package tdx
 import (
 	"encoding/json"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
@@ -33,9 +34,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	}
 	defer handle.Close()
 
-	// TODO: switch to using makeExtraData after rebasing
-	// quote, err := tdx.GenerateQuote(nonce, makeExtraData(userData))
-	quote, err := tdx.GenerateQuote(handle, nonce)
+	quote, err := tdx.GenerateQuote(handle, attestation.MakeExtraData(userData, nonce))
 	if err != nil {
 		return nil, err
 	}

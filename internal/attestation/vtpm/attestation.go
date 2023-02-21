@@ -9,11 +9,11 @@ package vtpm
 import (
 	"bytes"
 	"crypto"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -112,8 +112,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	defer aK.Close()
 
 	// Create an attestation using the loaded key
-	extraData := makeExtraData(userData, nonce)
-	attestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
+	attestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: attestation.MakeExtraData(userData, nonce)})
 	if err != nil {
 		return nil, fmt.Errorf("creating attestation: %w", err)
 	}
@@ -185,7 +184,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	if _, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      makeExtraData(attDoc.UserData, nonce),
+			Nonce:      attestation.MakeExtraData(attDoc.UserData, nonce),
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
@@ -254,13 +253,6 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 	}
 
 	return m, nil
-}
-
-func makeExtraData(userData []byte, nonce []byte) []byte {
-	data := append([]byte{}, userData...)
-	data = append(data, nonce...)
-	digest := sha256.Sum256(data)
-	return digest[:]
 }
 
 // nopAttestationLogger is a no-op implementation of AttestationLogger.

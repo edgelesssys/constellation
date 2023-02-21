@@ -43,6 +43,9 @@ const (
 	// The value used to extend is derived from Constellation's master key.
 	// TODO: move to stable, non-debug PCR before use.
 	PCRIndexOwnerID = tpmutil.Handle(16)
+
+	// RTMRIndexClusterID is a RTMR we extend to mark the node as initialized.
+	RTMRIndexClusterID = 2
 )
 
 // M are Platform Configuration Register (PCR) values that make up the Measurements.

@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
@@ -60,9 +61,9 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 		return nil, fmt.Errorf("verifying TDX quote: %w", err)
 	}
 
-	// TODO: switch to using makeExtraData after rebasing
-	// if !bytes.Equal(quote.Body.ReportData[:], makeExtraData(attDoc.UserData, nonce)) {
-	if !bytes.Equal(quote.Body.ReportData[:], nonce) {
+	// Report data
+	extraData := attestation.MakeExtraData(attDoc.UserData, nonce)
+	if !attestation.CompareExtraData(quote.Body.ReportData[:], extraData) {
 		return nil, fmt.Errorf("report data in TDX quote does not match provided nonce")
 	}
 
