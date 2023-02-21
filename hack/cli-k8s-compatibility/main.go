@@ -47,7 +47,7 @@ func main() {
 		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
 	}
 
-	c, err := client.NewClient(context.Background(), "eu-central-1", "cdn-constellation-backend", "", false, logger.New(logger.PlainLog, zapcore.DebugLevel))
+	c, err := client.NewClient(context.Background(), "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, logger.New(logger.PlainLog, zapcore.DebugLevel))
 	if err != nil {
 		panic(err)
 	}
