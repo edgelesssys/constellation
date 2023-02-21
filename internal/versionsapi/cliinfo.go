@@ -86,9 +86,8 @@ func (c CLIInfo) Validate() error {
 		retErr = errors.Join(retErr, errors.New("Kubernetes slice must not be empty"))
 	}
 	for _, k := range c.Kubernetes {
-		// add "v" prefix to ensure valid semver AND valid Kubernetes version for the config
-		if !semver.IsValid(fmt.Sprintf("v%s", k)) {
-			retErr = errors.Join(retErr, fmt.Errorf("Kubernetes version %q is not a valid semver", fmt.Sprintf("v%s", k)))
+		if !semver.IsValid(k) {
+			retErr = errors.Join(retErr, fmt.Errorf("Kubernetes version %q is not a valid semver", k))
 		}
 	}
 
