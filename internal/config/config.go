@@ -349,6 +349,7 @@ func Default() *Config {
 				LibvirtURI:            "",
 				LibvirtContainerImage: versions.LibvirtImage,
 				NVRAM:                 "production",
+				Firmware:              "/usr/share/qemu/OVMF.fd",
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 			},
 		},
