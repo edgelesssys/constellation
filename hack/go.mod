@@ -38,7 +38,7 @@ replace (
 
 require (
 	github.com/edgelesssys/constellation/v2 v2.0.0
-	github.com/fatih/color v1.13.0
+	github.com/fatih/color v1.14.1
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/google/go-tpm-tools v0.3.10
 	github.com/spf13/cobra v1.6.1
