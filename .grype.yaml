@@ -1,0 +1,2 @@
+ignore:
+    - vulnerability: "GHSA-r2h5-3hgw-8j34" # Replaced in submodules' go mod.
