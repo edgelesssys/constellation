@@ -51,7 +51,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	if err := c.UpdateCLIInfo(context.Background(), cliInfo); err != nil {
 		panic(err)
 	}
