@@ -51,19 +51,30 @@ runs:
       shell: bash
       if: inputs.cloudProvider == 'aws'
       run: |
-        constellation iam create aws --zone=${{ inputs.awsZone }} --prefix=${{ inputs.awsPrefix }} --generate-config --yes
+        constellation iam create aws \
+          --zone=${{ inputs.awsZone }} \
+          --prefix=${{ inputs.awsPrefix }} \
+          --generate-config --yes
 
     - name: Constellation iam create azure
       shell: bash
       if: inputs.cloudProvider == 'azure'
       run: |
-        constellation iam create azure --region=${{ inputs.azureRegion }} --resourceGroup=${{ inputs.azureResourceGroup }} --servicePrincipal=${{ inputs.azureServicePrincipal }} --generate-config --yes
+        constellation iam create azure \
+          --region=${{ inputs.azureRegion }} \
+          --resourceGroup=${{ inputs.azureResourceGroup }} \
+          --servicePrincipal=${{ inputs.azureServicePrincipal }} \
+          --generate-config --yes
 
     - name: Constellation iam create gcp
       shell: bash
       if: inputs.cloudProvider == 'gcp'
       run: |
-        constellation iam create gcp --projectID=${{ inputs.gcpProjectID }} --zone=${{ inputs.gcpZone }} --serviceAccountID=${{ inputs.gcpServiceAccountID }} --generate-config --yes
+        constellation iam create gcp \
+          --projectID=${{ inputs.gcpProjectID }} \
+          --zone=${{ inputs.gcpZone }} \
+          --serviceAccountID=${{ inputs.gcpServiceAccountID }} \
+          --generate-config --yes
 
     - name: Set existing config
       id: setExistingConfig
