@@ -282,6 +282,9 @@ func (i *ChartLoader) loadOperators() (helm.Release, error) {
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
 	}
+
+	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
+
 	values, err := i.loadOperatorsValues()
 	if err != nil {
 		return helm.Release{}, err
@@ -366,6 +369,9 @@ func (i *ChartLoader) loadConstellationServices() (helm.Release, error) {
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
+
+	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
+
 	values, err := i.loadConstellationServicesValues()
 	if err != nil {
 		return helm.Release{}, err
@@ -511,6 +517,24 @@ func extendConstellationServicesValues(in map[string]any, config *config.Config,
 	}
 
 	return nil
+}
+
+// updateVersions changes all versions of direct dependencies that are set to "0.0.0" to newVersion.
+func updateVersions(chart *chart.Chart, newVersion string) {
+	chart.Metadata.Version = newVersion
+	selectedDeps := chart.Metadata.Dependencies
+	for i := range selectedDeps {
+		if selectedDeps[i].Version == "0.0.0" {
+			selectedDeps[i].Version = newVersion
+		}
+	}
+
+	deps := chart.Dependencies()
+	for i := range deps {
+		if deps[i].Metadata.Version == "0.0.0" {
+			deps[i].Metadata.Version = newVersion
+		}
+	}
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.

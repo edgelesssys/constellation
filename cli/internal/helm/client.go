@@ -149,8 +149,12 @@ func (c *Client) upgradeRelease(
 	case certManagerReleaseName:
 		values = loader.loadCertManagerValues()
 	case conOperatorsReleaseName:
+		// ensure that the operator chart has the same version as the CLI
+		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
 		values, err = loader.loadOperatorsValues()
 	case conServicesReleaseName:
+		// ensure that the services chart has the same version as the CLI
+		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
 		values, err = loader.loadConstellationServicesValues()
 	default:
 		return fmt.Errorf("invalid release name: %s", releaseName)

@@ -4,7 +4,7 @@ metadata:
   name: node-maintenance-operator-selfsigned-issuer
   namespace: testNamespace
   labels:
-    helm.sh/chart: node-maintenance-operator-2.5.0
+    helm.sh/chart: node-maintenance-operator-0.0.0
     app.kubernetes.io/name: node-maintenance-operator
     app.kubernetes.io/instance: testRelease
     app.kubernetes.io/managed-by: Helm

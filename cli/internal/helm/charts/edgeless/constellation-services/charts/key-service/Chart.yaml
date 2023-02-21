@@ -2,4 +2,4 @@ apiVersion: v2
 name: key-service
 description: A Helm chart to deploy the Constellation KeyService
 type: application
-version: 2.5.0
+version: 0.0.0
