@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.11)
-project(constellation LANGUAGES C VERSION 2.5.0)
+
+# WARNING: This is only executed when running `cmake`.
+# Therefore, to update the version number, one needs to run `cmake` first.
+execute_process(COMMAND bash -c "go run ${CMAKE_SOURCE_DIR}/hack/pseudo-version/. | tr -d '\n'"
+    OUTPUT_VARIABLE PSEUDO_VERSION)
+
+project(constellation LANGUAGES C VERSION 0.0.0)
+
+if (${PROJECT_VERSION} STREQUAL "0.0.0")
+  set(PROJECT_VERSION ${PSEUDO_VERSION})
+endif()
+
 set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI.")
 
 enable_testing()
@@ -8,7 +19,7 @@ enable_testing()
 # core-os disk-mapper
 #
 add_custom_target(disk-mapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target disk-mapper .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target disk-mapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS disk-mapper
 )
@@ -17,7 +28,7 @@ add_custom_target(disk-mapper ALL
 # bootstrapper
 #
 add_custom_target(bootstrapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target bootstrapper .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target bootstrapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS bootstrapper
 )
@@ -26,7 +37,7 @@ add_custom_target(bootstrapper ALL
 # upgrade-agent
 #
 add_custom_target(upgrade-agent ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target upgrade-agent .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target upgrade-agent .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS upgrade-agent
 )
