@@ -14,6 +14,12 @@ resource "libvirt_domain" "instance_group" {
   vcpu     = var.vcpus
   machine  = var.machine
   firmware = local.firmware
+  dynamic "cpu" {
+    for_each = var.boot_mode == "direct-linux-boot" ? [1] : []
+    content {
+      mode = "host-passthrough"
+    }
+  }
   dynamic "nvram" {
     for_each = var.boot_mode == "uefi" ? [1] : []
     content {
@@ -21,11 +27,8 @@ resource "libvirt_domain" "instance_group" {
       template = var.nvram
     }
   }
-  dynamic "xml" {
-    for_each = var.boot_mode == "uefi" ? [1] : []
-    content {
-      xslt = file("${path.module}/domain.xsl")
-    }
+  xml {
+    xslt = file("${path.module}/${local.xslt_filename}")
   }
   kernel  = local.kernel
   initrd  = local.initrd
@@ -36,7 +39,6 @@ resource "libvirt_domain" "instance_group" {
   }
   disk {
     volume_id = element(libvirt_volume.boot_volume.*.id, count.index)
-    scsi      = true
   }
   disk {
     volume_id = element(libvirt_volume.state_volume.*.id, count.index)
@@ -75,4 +77,5 @@ locals {
   initrd               = var.boot_mode == "direct-linux-boot" ? var.initrd_volume_id : null
   cmdline              = var.boot_mode == "direct-linux-boot" ? [{ "_" = var.kernel_cmdline }] : null
   firmware             = var.boot_mode == "uefi" ? var.firmware : null
+  xslt_filename        = var.boot_mode == "direct-linux-boot" ? "tdx_domain.xsl" : "domain.xsl"
 }
