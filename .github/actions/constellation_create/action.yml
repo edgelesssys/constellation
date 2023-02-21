@@ -26,6 +26,9 @@ inputs:
   keepMeasurements:
     default: "false"
     description: "Keep measurements embedded in the CLI."
+  existingConfig:
+    default: "false"
+    description: "Use existing config file."
   #
   # GCP specific inputs
   #
@@ -70,6 +73,7 @@ runs:
   steps:
     - name: Constellation config generate
       shell: bash
+      if: inputs.existingConfig != 'true'
       run: |
         constellation config generate ${{ inputs.cloudProvider }}
 
@@ -99,6 +103,9 @@ runs:
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
 
+    - name: Update config
+      shell: bash
+      run: |
         if [[ ${{ inputs.kubernetesVersion != '' }} = true ]]; then
           yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
         fi
@@ -138,7 +145,7 @@ runs:
         yq eval -i "(.provider | select(. | has(\"aws\")).aws.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Create serviceAccountKey.json
-      if: inputs.cloudProvider == 'gcp'
+      if: inputs.cloudProvider == 'gcp' && !inputs.existingConfig # Skip if using existing config. serviceAccountKey.json is already present in that case.
       shell: bash
       env:
         GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}

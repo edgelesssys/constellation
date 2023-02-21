@@ -39,6 +39,7 @@ on:
           - "verify"
           - "recover"
           - "nop"
+          - "iamcreate"
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
@@ -310,6 +311,11 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always delete IAM configuration
+        if: always() && inputs.test == 'iamcreate' && inputs.cloudProvider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
+        continue-on-error: true
+        uses: ./.github/actions/constellation_iam_destroy
 
       - name: Always destroy Azure resource group
         if: always() && inputs.cloudProvider == 'azure'

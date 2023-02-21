@@ -383,6 +383,7 @@ func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, ia
 	cmd.Printf("zone:\t\t\t%s\n", flags.aws.zone)
 	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
 	cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
+	cmd.Println("Your IAM configuration was created successfully. Please fill the above values into your configuration file.")
 }
 
 func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {

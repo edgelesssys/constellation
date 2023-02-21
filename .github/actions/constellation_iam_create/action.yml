@@ -1,0 +1,83 @@
+name: Constellation IAM create
+description: Create IAM configuration for a Constellation cluster.
+
+inputs:
+  cloudProvider:
+      description: "Either 'aws', 'azure' or 'gcp'."
+      required: true
+  #
+  # AWS specific inputs
+  #
+  awsZone:
+    description: "AWS zone to deploy Constellation in."
+    required: false
+  awsPrefix:
+    description: "name prefix to use for the AWS resources."
+    required: false
+  #
+  # Azure specific inputs
+  #
+  azureRegion:
+    description: "Azure region to deploy Constellation in."
+    required: false
+  azureResourceGroup:
+    description: "Name of the Azure resource group being created."
+    required: false
+  azureServicePrincipal:
+    description: "Name of the Azure service principal being created."
+    required: false
+  #
+  # GCP specific inputs
+  #
+  gcpProjectID:
+    description: "The GCP project ID to deploy Constellation in."
+    required: false
+  gcpZone:
+    description: "The GCP zone to deploy Constellation in."
+    required: false
+  gcpServiceAccountID:
+    description: "ID of the GCP service account being created."
+    required: false
+
+outputs:
+  existingConfig:
+    description: "Whether a configuration file has been created to be used in the next step."
+    value: ${{ steps.setExistingConfig.outputs.existingConfig }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Constellation iam create aws
+      shell: bash
+      if: inputs.cloudProvider == 'aws'
+      run: |
+        constellation iam create aws \
+          --zone=${{ inputs.awsZone }} \
+          --prefix=${{ inputs.awsPrefix }} \
+          --generate-config --yes
+
+    - name: Constellation iam create azure
+      shell: bash
+      if: inputs.cloudProvider == 'azure'
+      run: |
+        constellation iam create azure \
+          --region=${{ inputs.azureRegion }} \
+          --resourceGroup=${{ inputs.azureResourceGroup }} \
+          --servicePrincipal=${{ inputs.azureServicePrincipal }} \
+          --generate-config --yes
+
+    - name: Constellation iam create gcp
+      shell: bash
+      if: inputs.cloudProvider == 'gcp'
+      run: |
+        constellation iam create gcp \
+          --projectID=${{ inputs.gcpProjectID }} \
+          --zone=${{ inputs.gcpZone }} \
+          --serviceAccountID=${{ inputs.gcpServiceAccountID }} \
+          --generate-config --yes
+
+    - name: Set existing config
+      id: setExistingConfig
+      shell: bash
+      run: |
+        echo "existingConfig=true" >> $GITHUB_OUTPUT

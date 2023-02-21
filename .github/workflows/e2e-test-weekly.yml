@@ -46,10 +46,15 @@ jobs:
       max-parallel: 5
       matrix:
         test:
-          ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover"]
+          ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover", "iamcreate"]
         provider: ["gcp", "azure", "aws"]
         version: ["v1.24.9", "v1.25.6", "v1.26.1"]
         exclude:
+          # IAM create test runs only on latest version.
+          - test: "iamcreate"
+            version: "v1.24.9"
+          - test: "iamcreate"
+            version: "v1.25.6"
           # Verify test runs only on latest version.
           - test: "verify"
             version: "v1.24.9"
@@ -139,6 +144,11 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always delete IAM configuration
+        if: always() && matrix.test == 'iamcreate' && matrix.provider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
+        continue-on-error: true
+        uses: ./.github/actions/constellation_iam_destroy
 
       - name: Notify teams channel
         if: failure() && github.ref == 'refs/heads/main'
