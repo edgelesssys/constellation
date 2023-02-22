@@ -49,16 +49,12 @@ func NewValidK8sVersion(k8sVersion string) (ValidK8sVersion, error) {
 
 // IsSupportedK8sVersion checks if a given Kubernetes version is supported by Constellation.
 func IsSupportedK8sVersion(version string) bool {
-	switch version {
-	case string(V1_24):
-		return true
-	case string(V1_25):
-		return true
-	case string(V1_26):
-		return true
-	default:
-		return false
+	for _, valid := range SupportedK8sVersions() {
+		if valid == version {
+			return true
+		}
 	}
+	return false
 }
 
 // IsPreviewK8sVersion checks if a given Kubernetes version is still in preview and not fully supported.
