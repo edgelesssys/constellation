@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -109,7 +110,11 @@ func main() {
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
-		issuer = qemu.NewIssuer()
+		if tdx.Available() {
+			issuer = tdx.NewIssuer()
+		} else {
+			issuer = qemu.NewIssuer()
+		}
 		metadataAPI = qemucloud.New()
 		_ = exportPCRs()
 

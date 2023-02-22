@@ -22,8 +22,8 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new TDX Issuer.
-func NewIssuer(open OpenFunc) *Issuer {
-	return &Issuer{open: open}
+func NewIssuer() *Issuer {
+	return &Issuer{open: tdx.Open}
 }
 
 // Issue issues a TDX attestation document.

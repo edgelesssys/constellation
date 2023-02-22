@@ -36,8 +36,14 @@ type Validator struct {
 
 // NewValidator initializes a new TDX Validator.
 func NewValidator(measurements measurements.M, log vtpm.AttestationLogger) *Validator {
+	if log == nil {
+		log = nopAttestationLogger{}
+	}
+
 	return &Validator{
-		tdx: verification.New(),
+		tdx:      verification.New(),
+		expected: measurements,
+		log:      log,
 	}
 }
 
@@ -85,3 +91,12 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 
 	return attDoc.UserData, nil
 }
+
+// nopAttestationLogger is a no-op implementation of AttestationLogger.
+type nopAttestationLogger struct{}
+
+// Infof is a no-op.
+func (nopAttestationLogger) Infof(string, ...interface{}) {}
+
+// Warnf is a no-op.
+func (nopAttestationLogger) Warnf(string, ...interface{}) {}

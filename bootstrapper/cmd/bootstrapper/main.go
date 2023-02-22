@@ -170,7 +170,7 @@ func main() {
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
 			}
-			issuer = tdx.NewIssuer(tdxapi.Open)
+			issuer = tdx.NewIssuer()
 
 			openDevice = openTDXGuestDevice
 		} else {
