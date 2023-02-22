@@ -48,13 +48,13 @@ resource "azurerm_user_assigned_identity" "identity_uami" {
 
 # Assign roles to managed identity
 resource "azurerm_role_assignment" "virtual_machine_contributor_role" {
-  scope                = azurerm_resource_group.identity_resource_group.id
+  scope                = azurerm_resource_group.base_resource_group.id
   role_definition_name = "Virtual Machine Contributor"
   principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
 }
 
 resource "azurerm_role_assignment" "application_insights_component_contributor_role" {
-  scope                = azurerm_resource_group.identity_resource_group.id
+  scope                = azurerm_resource_group.base_resource_group.id
   role_definition_name = "Application Insights Component Contributor"
   principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
 }
@@ -73,7 +73,7 @@ resource "azuread_service_principal" "application_principal" {
 
 # Set identity as base resource group owner
 resource "azurerm_role_assignment" "owner_role" {
-  scope                = azurerm_resource_group.identity_resource_group.id
+  scope                = azurerm_resource_group.base_resource_group.id
   role_definition_name = "Owner"
   principal_id         = azuread_service_principal.application_principal.object_id
 }
