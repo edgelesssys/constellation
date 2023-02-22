@@ -70,7 +70,7 @@ func main() {
 	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
 	var issuer atls.Issuer
-	var openTPM vtpm.TPMOpenFunc
+	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
 	helmClient, err := helm.New(log)
@@ -102,7 +102,7 @@ func main() {
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.GCP:
@@ -129,7 +129,7 @@ func main() {
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 		log.Infof("Added load balancer IP to routing table")
 
@@ -160,24 +160,27 @@ func main() {
 			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
 		var measurements measurements.M
 		if tdx.Available() {
+			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3})
+			if err != nil {
+				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
+			}
+			issuer = tdx.NewIssuer(tdxapi.Open)
+
+			openDevice = openTDXGuestDevice
+		} else {
 			measurements, err = vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 			}
 
 			issuer = qemu.NewIssuer()
-		} else {
-			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3})
-			if err != nil {
-				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
-			}
-			issuer = tdx.NewIssuer(tdxapi.Open)
+			openDevice = vtpm.OpenVTPM
 		}
 
 		cloudLogger = qemucloud.NewLogger()
@@ -188,7 +191,6 @@ func main() {
 		)
 		metadataAPI = metadata
 
-		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
 		issuer = atls.NewFakeIssuer(oid.Dummy{})
@@ -196,12 +198,16 @@ func main() {
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
 		var simulatedTPMCloser io.Closer
-		openTPM, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
+		openDevice, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
 		defer simulatedTPMCloser.Close()
 		fs = afero.NewMemMapFs()
 	}
 
 	fileHandler := file.NewHandler(fs)
 
-	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
+	run(issuer, openDevice, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
+}
+
+func openTDXGuestDevice() (io.ReadWriteCloser, error) {
+	return tdxapi.Open()
 }
