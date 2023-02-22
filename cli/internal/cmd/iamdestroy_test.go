@@ -116,11 +116,7 @@ func TestIAMDestroy(t *testing.T) {
 			} else {
 				assert.NoError(err)
 			}
-			if tc.wantDestroyCalled {
-				assert.True(tc.iamDestroyer.destroyCalled)
-			} else {
-				assert.False(tc.iamDestroyer.destroyCalled)
-			}
+			assert.Equal(tc.wantDestroyCalled, tc.iamDestroyer.destroyCalled)
 		})
 	}
 }
@@ -208,17 +204,8 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 				assert.NoError(err)
 			}
 
-			if tc.wantProceed {
-				assert.True(proceed)
-			} else {
-				assert.False(proceed)
-			}
-
-			if tc.wantGetSaKeyCalled {
-				assert.True(tc.destroyer.getTfstateKeyCalled)
-			} else {
-				assert.False(tc.destroyer.getTfstateKeyCalled)
-			}
+			assert.Equal(tc.wantProceed, proceed)
+			assert.Equal(tc.wantGetSaKeyCalled, tc.destroyer.getTfstateKeyCalled)
 		})
 	}
 }

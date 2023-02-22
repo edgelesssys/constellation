@@ -195,16 +195,9 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 			} else {
 				assert.NoError(err)
 			}
-			if tc.wantDestroyCalled {
-				assert.True(tc.tfClient.destroyCalled)
-			} else {
-				assert.False(tc.tfClient.destroyCalled)
-			}
-			if tc.wantCleanupWorkspaceCalled {
-				assert.True(tc.tfClient.cleanUpWorkspaceCalled)
-			} else {
-				assert.False(tc.tfClient.cleanUpWorkspaceCalled)
-			}
+
+			assert.Equal(tc.wantDestroyCalled, tc.tfClient.destroyCalled)
+			assert.Equal(tc.wantCleanupWorkspaceCalled, tc.tfClient.cleanUpWorkspaceCalled)
 		})
 	}
 }
@@ -229,7 +222,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 	gcpFileB64 := base64.StdEncoding.EncodeToString([]byte(gcpFile))
 
 	testCases := map[string]struct {
-		cl             terraformClient
+		cl             *stubTerraformClient
 		wantValidSaKey bool
 		wantErr        bool
 		wantShowCalled bool
@@ -340,11 +333,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 
 				assert.Equal(saKey, saKeyComp)
 			}
-			if tc.wantShowCalled {
-				assert.True(destroyer.client.(*stubTerraformClient).showCalled)
-			} else {
-				assert.False(destroyer.client.(*stubTerraformClient).showCalled)
-			}
+			assert.Equal(tc.wantShowCalled, tc.cl.showCalled)
 		})
 	}
 }
