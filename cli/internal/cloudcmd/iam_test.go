@@ -160,7 +160,7 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		tfClient                   terraformClient
+		tfClient                   *stubTerraformClient
 		wantErr                    bool
 		wantDestroyCalled          bool
 		wantCleanupWorkspaceCalled bool
@@ -196,14 +196,14 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 				assert.NoError(err)
 			}
 			if tc.wantDestroyCalled {
-				assert.True(destroyer.client.(*stubTerraformClient).destroyCalled)
+				assert.True(tc.tfClient.destroyCalled)
 			} else {
-				assert.False(destroyer.client.(*stubTerraformClient).destroyCalled)
+				assert.False(tc.tfClient.destroyCalled)
 			}
 			if tc.wantCleanupWorkspaceCalled {
-				assert.True(destroyer.client.(*stubTerraformClient).cleanUpWorkspaceCalled)
+				assert.True(tc.tfClient.cleanUpWorkspaceCalled)
 			} else {
-				assert.False(destroyer.client.(*stubTerraformClient).cleanUpWorkspaceCalled)
+				assert.False(tc.tfClient.cleanUpWorkspaceCalled)
 			}
 		})
 	}
