@@ -324,15 +324,14 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
+				return
 			}
-			if tc.wantValidSaKey {
-				var saKeyComp gcpshared.ServiceAccountKey
-				require.NoError(t, json.Unmarshal([]byte(gcpFile), &saKeyComp))
+			assert.NoError(err)
 
-				assert.Equal(saKey, saKeyComp)
-			}
+			var saKeyComp gcpshared.ServiceAccountKey
+			require.NoError(t, json.Unmarshal([]byte(gcpFile), &saKeyComp))
+
+			assert.Equal(saKey, saKeyComp)
 			assert.Equal(tc.wantShowCalled, tc.cl.showCalled)
 		})
 	}
