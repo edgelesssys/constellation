@@ -37,23 +37,6 @@ import (
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
 var ErrInProgress = errors.New("upgrade in progress")
 
-// InvalidUpgradeError present an invalid upgrade. It wraps the source and destination version for improved debuggability.
-type InvalidUpgradeError struct {
-	from     string
-	to       string
-	innerErr error
-}
-
-// Unwrap returns the inner error, which is nil in this case.
-func (e *InvalidUpgradeError) Unwrap() error {
-	return e.innerErr
-}
-
-// Error returns the String representation of this error.
-func (e *InvalidUpgradeError) Error() string {
-	return fmt.Sprintf("upgrading from %s to %s is not a valid upgrade: %s", e.from, e.to, e.innerErr)
-}
-
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
 	stableInterface  stableInterface
@@ -105,7 +88,7 @@ func (u *Upgrader) UpgradeImage(ctx context.Context, newImageReference, newImage
 	currentImageVersion := nodeVersion.Spec.ImageVersion
 
 	if err := compatibility.IsValidUpgrade(currentImageVersion, newImageVersion); err != nil {
-		return &InvalidUpgradeError{from: currentImageVersion, to: newImageVersion, innerErr: err}
+		return err
 	}
 
 	if imageUpgradeInProgress(nodeVersion) {
@@ -135,7 +118,7 @@ func (u *Upgrader) UpgradeK8s(ctx context.Context, newClusterVersion string, com
 	}
 
 	if err := compatibility.IsValidUpgrade(nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion); err != nil {
-		return &InvalidUpgradeError{from: nodeVersion.Spec.KubernetesClusterVersion, to: newClusterVersion, innerErr: err}
+		return err
 	}
 
 	if k8sUpgradeInProgress(nodeVersion) {

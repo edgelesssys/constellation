@@ -29,6 +29,28 @@ var (
 	ErrOutdatedCLI = errors.New("target version newer than cli version")
 )
 
+// InvalidUpgradeError present an invalid upgrade. It wraps the source and destination version for improved debuggability.
+type InvalidUpgradeError struct {
+	from     string
+	to       string
+	innerErr error
+}
+
+// NewInvalidUpgradeError returns a new InvalidUpgradeError.
+func NewInvalidUpgradeError(from string, to string, innerErr error) *InvalidUpgradeError {
+	return &InvalidUpgradeError{from: from, to: to, innerErr: innerErr}
+}
+
+// Unwrap returns the inner error, which is nil in this case.
+func (e *InvalidUpgradeError) Unwrap() error {
+	return e.innerErr
+}
+
+// Error returns the String representation of this error.
+func (e *InvalidUpgradeError) Error() string {
+	return fmt.Sprintf("upgrading from %s to %s is not a valid upgrade: %s", e.from, e.to, e.innerErr)
+}
+
 // EnsurePrefixV returns the input string prefixed with the letter "v", if the string doesn't already start with that letter.
 func EnsurePrefixV(str string) string {
 	if strings.HasPrefix(str, "v") {
@@ -43,28 +65,28 @@ func IsValidUpgrade(a, b string) error {
 	b = EnsurePrefixV(b)
 
 	if !semver.IsValid(a) || !semver.IsValid(b) {
-		return ErrSemVer
+		return NewInvalidUpgradeError(a, b, ErrSemVer)
 	}
 
 	if semver.Compare(a, b) >= 0 {
-		return errors.New("current version newer than or equal to new version")
+		return NewInvalidUpgradeError(a, b, errors.New("current version newer than or equal to new version"))
 	}
 
 	aMajor, aMinor, err := parseCanonicalSemver(a)
 	if err != nil {
-		return err
+		return NewInvalidUpgradeError(a, b, err)
 	}
 	bMajor, bMinor, err := parseCanonicalSemver(b)
 	if err != nil {
-		return err
+		return NewInvalidUpgradeError(a, b, err)
 	}
 
 	if aMajor != bMajor {
-		return ErrMajorMismatch
+		return NewInvalidUpgradeError(a, b, ErrMajorMismatch)
 	}
 
 	if bMinor-aMinor > 1 {
-		return ErrMinorDrift
+		return NewInvalidUpgradeError(a, b, ErrMinorDrift)
 	}
 
 	return nil

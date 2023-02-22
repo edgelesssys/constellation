@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -48,7 +49,7 @@ func TestUpgradeK8s(t *testing.T) {
 			newClusterVersion:     "v1.2.3",
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &InvalidUpgradeError{}
+				target := &compatibility.InvalidUpgradeError{}
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -57,7 +58,7 @@ func TestUpgradeK8s(t *testing.T) {
 			newClusterVersion:     "v1.2.2",
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &InvalidUpgradeError{}
+				target := &compatibility.InvalidUpgradeError{}
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -156,7 +157,7 @@ func TestUpgradeImage(t *testing.T) {
 			newImageVersion:     "v1.2.2",
 			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &InvalidUpgradeError{}
+				target := &compatibility.InvalidUpgradeError{}
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -165,7 +166,7 @@ func TestUpgradeImage(t *testing.T) {
 			newImageVersion:     "v1.2.1",
 			wantErr:             true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &InvalidUpgradeError{}
+				target := &compatibility.InvalidUpgradeError{}
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
