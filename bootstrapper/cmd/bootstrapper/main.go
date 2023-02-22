@@ -27,7 +27,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
-	tdxapi "github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -39,6 +38,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	tdxapi "github.com/edgelesssys/go-tdx-qpl/tdx"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

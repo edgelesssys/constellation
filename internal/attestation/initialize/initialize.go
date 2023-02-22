@@ -14,7 +14,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
+	"github.com/edgelesssys/go-tdx-qpl/tdx"
 	"github.com/google/go-tpm/tpm2"
 )
 

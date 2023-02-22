@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/go-tdx-qpl/tdx"
 )
 
 // Issuer is the TDX attestation issuer.

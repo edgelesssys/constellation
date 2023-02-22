@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx/tdx"
+	"github.com/edgelesssys/go-tdx-qpl/tdx"
 )
 
 type tdxAttestationDocument struct {
