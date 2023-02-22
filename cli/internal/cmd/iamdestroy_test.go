@@ -95,14 +95,6 @@ func TestIAMDestroy(t *testing.T) {
 			iamDestroyer: &stubIAMDestroyer{getTfstateKeyErr: someError},
 			wantErr:      true,
 		},
-		"gcp no proceed": {
-			fh:      newFsExists(),
-			yesFlag: "true",
-			stdin:   "n\n",
-			iamDestroyer: &stubIAMDestroyer{gcpSaKey: gcpshared.ServiceAccountKey{
-				Type: "somethingelse",
-			}},
-		},
 	}
 
 	for name, tc := range testCases {
@@ -188,6 +180,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			}},
 			fsHandler:          newFs(),
 			wantGetSaKeyCalled: true,
+			wantProceed:        true,
 		},
 		"valid": {
 			destroyer:          &stubIAMDestroyer{},

@@ -129,8 +129,8 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 
 	c.log.Debugf("Checking if keys are the same")
 	if tfSaKey != fileSaKey {
-		c.log.Debugf("Keys are not the same, aborting")
-		return false, nil
+		cmd.Printf("The key in %q don't match up with your terraform state. %q will not be deleted.\n", constants.GCPServiceAccountKeyFile, constants.GCPServiceAccountKeyFile)
+		return true, nil
 	}
 
 	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
