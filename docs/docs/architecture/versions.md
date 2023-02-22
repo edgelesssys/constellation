@@ -10,3 +10,6 @@ New releases are published on [GitHub](https://github.com/edgelesssys/constellat
 ### Kubernetes support policy
 
 Constellation is aligned to the [version support policy of Kubernetes](https://kubernetes.io/releases/version-skew-policy/#supported-versions), and therefore supports the most recent three minor versions.
+When a new minor version is released upstream, the next Constellation release will include four supported Kubernetes versions.
+The fourth version being the newly released Kubernetes version.
+Then, the next Constellation release after that will drop the oldest supported Kubernetes version.

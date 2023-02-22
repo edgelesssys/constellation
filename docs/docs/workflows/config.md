@@ -36,7 +36,7 @@ This creates the file `constellation-conf.yaml` in the current directory.
 You can also automatically generate a configuration file by adding the `--generate-config` flag to the `constellation iam create` command when [creating an IAM configuration](#creating-an-iam-configuration).
 :::
 
-## Choosing VM types
+## Choosing a VM type
 
 Constellation supports the following VM types:
 <tabs groupId="csp">
@@ -60,6 +60,11 @@ By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create y
 </tabs>
 
 Fill the desired VM type into the **instanceType** field in the `constellation-conf.yml` file.
+
+## Choosing a Kubernetes version
+
+To learn which Kubernetes versions can be installed with your current CLI you can run `constellation config kubernetes-versions`.
+Our support policy for Kubernetes versions is described in [Kubernetes support policy](../architecture/versions.md#kubernetes-support-policy).
 
 ## Creating an IAM configuration
 
