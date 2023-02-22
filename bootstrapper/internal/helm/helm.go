@@ -15,6 +15,7 @@ import (
 	"net"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
@@ -188,6 +189,11 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 // The function will wait 30 seconds before retrying a failed installation attempt.
 // After 5 minutes the retrier will be canceld and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
+	retriable := func(err error) bool {
+		return errors.Is(err, wait.ErrWaitTimeout) ||
+			strings.Contains(err.Error(), "connection refused")
+	}
+
 	reader := bytes.NewReader(chartRaw)
 	chart, err := loader.LoadArchive(reader)
 	if err != nil {
@@ -200,7 +206,7 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 		values,
 		h.log,
 	}
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, isTimeoutErr)
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, retriable)
 
 	// Since we have no precise retry condition we want to stop retrying after 5 minutes.
 	// The helm library only reports a timeout error in the error cases we currently know.
@@ -228,9 +234,4 @@ func (i installDoer) Do(ctx context.Context) error {
 	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
 
 	return err
-}
-
-// isTimeoutErr checks if the given error is a timeout error from k8s.io/apimachinery.
-func isTimeoutErr(err error) bool {
-	return errors.Is(err, wait.ErrWaitTimeout)
 }

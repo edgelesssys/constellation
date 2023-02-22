@@ -9,6 +9,7 @@ package kubewaiter
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -33,7 +34,7 @@ func (w *CloudKubeAPIWaiter) Wait(ctx context.Context, kubernetesClient Kubernet
 	doer := &kubeDoer{kubeClient: kubernetesClient}
 	retrier := retry.NewIntervalRetrier(doer, 5*time.Second, funcAlwaysRetriable)
 	if err := retrier.Do(ctx); err != nil {
-		return doer.Do(context.Background())
+		return fmt.Errorf("waiting for Kubernetes API: %w", err)
 	}
 	return nil
 }
