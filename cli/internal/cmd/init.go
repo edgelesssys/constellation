@@ -330,7 +330,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing force argument: %w", err)
 	}
-	i.log.Debugf("force flag is %t", configPath)
+	i.log.Debugf("force flag is %t", force)
 
 	return initFlags{
 		configPath:       configPath,
