@@ -166,7 +166,7 @@ func main() {
 	case cloudprovider.QEMU:
 		var measurements measurements.M
 		if tdx.Available() {
-			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3})
+			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3, 4})
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
 			}
