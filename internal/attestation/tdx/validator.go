@@ -73,19 +73,20 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 		return nil, fmt.Errorf("report data in TDX quote does not match provided nonce")
 	}
 
-	// Convert RTMRs to map.
-	rtmrs := make(map[uint32][]byte)
+	// Convert RTMRs and MRTD to map.
+	tdMeasure := make(map[uint32][]byte)
+	tdMeasure[0] = quote.Body.MRTD[:]
 	for idx, rtmr := range quote.Body.RTMR {
-		rtmrs[uint32(idx)] = rtmr[:]
+		tdMeasure[uint32(idx+1)] = rtmr[:]
 	}
 
 	// Verify the quote against the expected measurements.
 	for idx, ex := range v.expected {
-		if !bytes.Equal(ex.Expected, rtmrs[idx]) {
+		if !bytes.Equal(ex.Expected, tdMeasure[idx]) {
 			if !ex.WarnOnly {
-				return nil, fmt.Errorf("untrusted RTMR value at index %d", idx)
+				return nil, fmt.Errorf("untrusted TD measurement value at index %d", idx)
 			}
-			v.log.Warnf("Encountered untrusted RTMR value at index %d", idx)
+			v.log.Warnf("Encountered untrusted TD measurement value at index %d", idx)
 		}
 	}
 

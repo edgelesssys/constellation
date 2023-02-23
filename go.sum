@@ -406,6 +406,10 @@ github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230222160807-ef00781f6322 h1:rAuLBUlUEHnJXiQJH3hOqFsYBECG3oKebGtLgUWKefg=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230222160807-ef00781f6322/go.mod h1:IC72qyykUIWl0ZmSk53L4xbLCFDBEGZVaujUmPQOEyw=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230223084006-b87bd12d3d1b h1:uv5shYhdh32sllkl+JWqTp+ZHFMOf7mSAJnckO8aQfU=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230223084006-b87bd12d3d1b/go.mod h1:IC72qyykUIWl0ZmSk53L4xbLCFDBEGZVaujUmPQOEyw=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230223084532-17bde5a1c0dc h1:xGS9SYHw4xMlpQomeQU0MnX9ZesmwqJMWDBq4sGF4Tk=
+github.com/edgelesssys/go-tdx-qpl v0.0.0-20230223084532-17bde5a1c0dc/go.mod h1:IC72qyykUIWl0ZmSk53L4xbLCFDBEGZVaujUmPQOEyw=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 h1:yUdfgN0XgIJw7foRItutHYUIhlcKzcSf5vDpdhQAKTc=
 github.com/emicklei/go-restful/v3 v3.9.0 h1:XwGDlfxEnQZzuopoqxwSEllNcCOM9DhhFyhFIIGKwxE=

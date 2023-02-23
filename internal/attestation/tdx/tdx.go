@@ -25,9 +25,14 @@ type tdxAttestationDocument struct {
 type OpenFunc func() (tdx.Device, error)
 
 // GetSelectedMeasurements returns the selected measurements from the RTMRs.
-func GetSelectedMeasurements(open OpenFunc, rtmrSelection []int) (measurements.M, error) {
-	if len(rtmrSelection) > 4 {
-		return nil, fmt.Errorf("invalid RTMR selection: max 4 RTMRs allowed, got %d", len(rtmrSelection))
+func GetSelectedMeasurements(open OpenFunc, selection []int) (measurements.M, error) {
+	if len(selection) > 5 {
+		return nil, fmt.Errorf("invalid measurement selection: max 5 measurements allowed, got %d", len(selection))
+	}
+	for _, idx := range selection {
+		if idx < 0 || idx >= 5 {
+			return nil, fmt.Errorf("invalid measurement index %d", idx)
+		}
 	}
 
 	handle, err := open()
@@ -36,18 +41,15 @@ func GetSelectedMeasurements(open OpenFunc, rtmrSelection []int) (measurements.M
 	}
 	defer handle.Close()
 
-	rtmr, err := tdx.ReadRTMRs(handle)
+	tdxMeasurements, err := tdx.ReadMeasurements(handle)
 	if err != nil {
 		return nil, err
 	}
 
 	m := make(measurements.M)
-	for _, rtmrIdx := range rtmrSelection {
-		if rtmrIdx < 0 || rtmrIdx >= len(rtmr) {
-			return nil, fmt.Errorf("invalid RTMR index %d", rtmrIdx)
-		}
-		m[uint32(rtmrIdx)] = measurements.Measurement{
-			Expected: rtmr[rtmrIdx][:],
+	for _, idx := range selection {
+		m[uint32(idx)] = measurements.Measurement{
+			Expected: tdxMeasurements[idx][:],
 		}
 	}
 
