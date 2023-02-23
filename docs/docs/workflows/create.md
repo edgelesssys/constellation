@@ -18,6 +18,10 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 
 ### Create
 
+:::info
+Familiarize with the [Terraform usage policy](../reference/terraform.md) before manually interacting with Terraform to create a cluster.
+:::
+
 <tabs groupId="provider">
 <tabItem value="cli" label="CLI">
 
@@ -30,7 +34,7 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your workspace.
+*create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
 </tabItem>
 <tabItem value="terraform" label="Terraform">
