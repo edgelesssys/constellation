@@ -74,10 +74,10 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	}
 
 	// Convert RTMRs and MRTD to map.
-	tdMeasure := make(map[uint32][]byte)
+	tdMeasure := make(map[uint32][]byte, 5)
 	tdMeasure[0] = quote.Body.MRTD[:]
-	for idx, rtmr := range quote.Body.RTMR {
-		tdMeasure[uint32(idx+1)] = rtmr[:]
+	for idx := 0; idx < len(quote.Body.RTMR); idx++ {
+		tdMeasure[uint32(idx+1)] = quote.Body.RTMR[idx][:]
 	}
 
 	// Verify the quote against the expected measurements.
