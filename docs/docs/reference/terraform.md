@@ -8,7 +8,7 @@ This page assumes basic familiarity with Terraform. The Terraform documentation 
 
 ## Interacting with Terraform manually
 
-Manual interaction with Terraform state created by Constellation should only be performed by experienced users and only if absolutely necessary, as it may lead to unrecoverable loss of cloud resources. For the vast majority of users and use-cases, the interaction done by the [Constellation CLI](cli.md) is sufficient.
+Manual interaction with Terraform state created by Constellation (i.e. via the Terraform CLI) should only be performed by experienced users and only if absolutely necessary, as it may lead to unrecoverable loss of cloud resources. For the vast majority of users and use-cases, the interaction done by the [Constellation CLI](cli.md) is sufficient.
 
 ## Terraform state files
 
@@ -19,4 +19,4 @@ Currently, these subdirectories are:
 * `constellation-terraform` - Terraform state files for the resources used for the Constellation cluster
 * `constellation-iam-terraform` - Terraform state files for IAM configuration
 
-When working with either of the files, i.e. when running `constellation terminate` to [terminate a cluster](../workflows/terminate.md) (and delete it's cloud resources), the `constellation terraform` subdirectory needs to be in the current working directory. The same applies to the `constellation-iam-terraform` subdirectory when working with IAM configuration.
+When working with either of the files, i.e. when running `constellation terminate` to [terminate a cluster](../workflows/terminate.md) (and delete it's cloud resources), the `constellation terraform` subdirectory needs to be in the current working directory. The same applies to the `constellation-iam-terraform` subdirectory when working with IAM configuration. The state directories should not be deleted manually.
