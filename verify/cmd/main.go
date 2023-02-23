@@ -43,7 +43,7 @@ func main() {
 		issuer = azure.NewIssuer()
 	case cloudprovider.QEMU:
 		if tdx.Available() {
-			issuer = tdx.NewIssuer()
+			issuer = tdx.NewIssuer(log)
 		} else {
 			issuer = qemu.NewIssuer()
 		}

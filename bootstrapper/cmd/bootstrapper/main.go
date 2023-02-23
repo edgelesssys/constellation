@@ -170,8 +170,7 @@ func main() {
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
 			}
-			issuer = tdx.NewIssuer()
-			log.With(zap.Any("measurements", measurements)).Infof("Got measurements for TDX guest")
+			issuer = tdx.NewIssuer(log)
 
 			openDevice = openTDXGuestDevice
 		} else {

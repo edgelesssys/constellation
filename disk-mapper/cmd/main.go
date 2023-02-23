@@ -111,7 +111,7 @@ func main() {
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
 		if tdx.Available() {
-			issuer = tdx.NewIssuer()
+			issuer = tdx.NewIssuer(log)
 		} else {
 			issuer = qemu.NewIssuer()
 		}

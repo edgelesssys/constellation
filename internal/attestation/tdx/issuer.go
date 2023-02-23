@@ -8,8 +8,10 @@ package tdx
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/go-tdx-qpl/tdx"
 )
@@ -19,28 +21,47 @@ type Issuer struct {
 	oid.QEMUTDX
 
 	open OpenFunc
+	log  vtpm.AttestationLogger
 }
 
 // NewIssuer initializes a new TDX Issuer.
-func NewIssuer() *Issuer {
-	return &Issuer{open: tdx.Open}
+func NewIssuer(log vtpm.AttestationLogger) *Issuer {
+	if log == nil {
+		log = nopAttestationLogger{}
+	}
+	return &Issuer{
+		open: tdx.Open,
+		log:  log,
+	}
 }
 
 // Issue issues a TDX attestation document.
-func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (i *Issuer) Issue(userData []byte, nonce []byte) (attDoc []byte, err error) {
+	i.log.Infof("Issuing attestation statement")
+	defer func() {
+		if err != nil {
+			i.log.Warnf("Failed to issue attestation document: %s", err)
+		}
+	}()
+
 	handle, err := i.open()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening TDX device: %w", err)
 	}
 	defer handle.Close()
 
 	quote, err := tdx.GenerateQuote(handle, attestation.MakeExtraData(userData, nonce))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generating quote: %w", err)
 	}
 
-	return json.Marshal(tdxAttestationDocument{
+	rawAttDoc, err := json.Marshal(tdxAttestationDocument{
 		RawQuote: quote,
 		UserData: userData,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("marshaling attestation document: %w", err)
+	}
+
+	return rawAttDoc, nil
 }
