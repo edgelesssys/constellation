@@ -188,7 +188,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		if err := upgrade.writeConfig(conf, fileHandler, flags.configPath); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
-		cmd.Println("Wrote config successfully.")
+		cmd.Println("Config updated successfully.")
 	}
 
 	return nil

@@ -129,7 +129,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Wrote configuration to YAML")
+	cfm.log.Debugf("Configuration written to %s", flags.configPath)
 	return nil
 }
 
