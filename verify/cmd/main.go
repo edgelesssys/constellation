@@ -35,13 +35,13 @@ func main() {
 	var issuer server.AttestationIssuer
 	switch cloudprovider.FromString(*provider) {
 	case cloudprovider.AWS:
-		issuer = aws.NewIssuer()
+		issuer = aws.NewIssuer(log)
 	case cloudprovider.GCP:
-		issuer = gcp.NewIssuer()
+		issuer = gcp.NewIssuer(log)
 	case cloudprovider.Azure:
-		issuer = azure.NewIssuer()
+		issuer = azure.NewIssuer(log)
 	case cloudprovider.QEMU:
-		issuer = qemu.NewIssuer()
+		issuer = qemu.NewIssuer(log)
 	default:
 		log.With(zap.String("cloudProvider", *provider)).Fatalf("Unknown cloud provider")
 	}

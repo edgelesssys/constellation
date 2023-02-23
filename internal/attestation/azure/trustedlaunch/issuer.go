@@ -35,7 +35,7 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new Azure Issuer.
-func NewIssuer() *Issuer {
+func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 	i := &Issuer{
 		hClient: &http.Client{},
 	}
@@ -43,6 +43,7 @@ func NewIssuer() *Issuer {
 		vtpm.OpenVTPM,
 		getAttestationKey,
 		i.getAttestationCert,
+		log,
 	)
 	return i
 }

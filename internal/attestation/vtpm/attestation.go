@@ -85,19 +85,34 @@ type Issuer struct {
 	openTPM           TPMOpenFunc
 	getAttestationKey GetTPMAttestationKey
 	getInstanceInfo   GetInstanceInfo
+	log               AttestationLogger
 }
 
 // NewIssuer returns a new Issuer.
-func NewIssuer(openTPM TPMOpenFunc, getAttestationKey GetTPMAttestationKey, getInstanceInfo GetInstanceInfo) *Issuer {
+func NewIssuer(
+	openTPM TPMOpenFunc, getAttestationKey GetTPMAttestationKey,
+	getInstanceInfo GetInstanceInfo, log AttestationLogger,
+) *Issuer {
+	if log == nil {
+		log = &nopAttestationLogger{}
+	}
 	return &Issuer{
 		openTPM:           openTPM,
 		getAttestationKey: getAttestationKey,
 		getInstanceInfo:   getInstanceInfo,
+		log:               log,
 	}
 }
 
 // Issue generates an attestation document using a TPM.
-func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
+	i.log.Infof("Issuing attestation statement")
+	defer func() {
+		if err != nil {
+			i.log.Warnf("Failed to issue attestation statement: %s", err)
+		}
+	}()
+
 	tpm, err := i.openTPM()
 	if err != nil {
 		return nil, fmt.Errorf("opening TPM: %w", err)
@@ -113,7 +128,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 
 	// Create an attestation using the loaded key
 	extraData := makeExtraData(userData, nonce)
-	attestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
+	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
 	if err != nil {
 		return nil, fmt.Errorf("creating attestation: %w", err)
 	}
@@ -125,11 +140,18 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	}
 
 	attDoc := AttestationDocument{
-		Attestation:  attestation,
+		Attestation:  tpmAttestation,
 		InstanceInfo: instanceInfo,
 		UserData:     userData,
 	}
-	return json.Marshal(attDoc)
+
+	rawAttDoc, err := json.Marshal(attDoc)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling attestation document: %w", err)
+	}
+
+	i.log.Infof("Successfully issued attestation statement")
+	return rawAttDoc, nil
 }
 
 // Validator handles validation of TPM based attestation.

@@ -21,12 +21,13 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new QEMU Issuer.
-func NewIssuer() *Issuer {
+func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			tpmclient.AttestationKeyRSA,
 			func(tpm io.ReadWriteCloser) ([]byte, error) { return nil, nil },
+			log,
 		),
 	}
 }

@@ -79,7 +79,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
 		}
 
-		issuer = aws.NewIssuer()
+		issuer = aws.NewIssuer(log)
 
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
@@ -92,7 +92,7 @@ func main() {
 			log.With(zap.Error).Fatalf("Failed to set up Azure metadata API")
 		}
 
-		issuer = azure.NewIssuer()
+		issuer = azure.NewIssuer(log)
 
 	case cloudprovider.GCP:
 		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
@@ -100,7 +100,7 @@ func main() {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve GCP state disk path")
 		}
-		issuer = gcp.NewIssuer()
+		issuer = gcp.NewIssuer(log)
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create GCP client")
@@ -116,7 +116,7 @@ func main() {
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
-		issuer = qemu.NewIssuer()
+		issuer = qemu.NewIssuer(log)
 		metadataAPI = qemucloud.New()
 		_ = exportPCRs()
 

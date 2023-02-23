@@ -56,7 +56,7 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new Azure Issuer.
-func NewIssuer() *Issuer {
+func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 	imdsAPI := imdsClient{
 		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}
@@ -66,6 +66,7 @@ func NewIssuer() *Issuer {
 			vtpm.OpenVTPM,
 			getAttestationKey,
 			getInstanceInfo(&tpmReport{}, imdsAPI),
+			log,
 		),
 	}
 }

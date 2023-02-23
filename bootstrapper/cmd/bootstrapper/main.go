@@ -82,7 +82,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = aws.NewIssuer()
+		issuer = aws.NewIssuer(log)
 
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
@@ -108,7 +108,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = gcp.NewIssuer()
+		issuer = gcp.NewIssuer(log)
 
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
@@ -137,10 +137,10 @@ func main() {
 		}
 
 		if _, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
-			issuer = snp.NewIssuer()
+			issuer = snp.NewIssuer(log)
 		} else {
 			// assume we are running in a trusted-launch VM
-			issuer = trustedlaunch.NewIssuer()
+			issuer = trustedlaunch.NewIssuer(log)
 		}
 
 		metadata, err := azurecloud.New(ctx)
@@ -166,7 +166,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = qemu.NewIssuer()
+		issuer = qemu.NewIssuer(log)
 
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
