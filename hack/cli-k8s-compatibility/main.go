@@ -25,15 +25,18 @@ var (
 )
 
 func main() {
+	log := logger.New(logger.PlainLog, zapcore.DebugLevel)
+	ctx := context.Background()
+
 	flag.Parse()
 	if *refFlag == "" {
-		panic("ref must be set")
+		log.Fatalf("ref must be set")
 	}
 	if *streamFlag == "" {
-		panic("stream must be set")
+		log.Fatalf("stream must be set")
 	}
 	if *versionFlag == "" {
-		panic("version must be set")
+		log.Fatalf("version must be set")
 	}
 
 	cliInfo := versionsapi.CLIInfo{
@@ -47,12 +50,17 @@ func main() {
 		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
 	}
 
-	c, err := client.NewClient(context.Background(), "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, logger.New(logger.PlainLog, zapcore.DebugLevel))
+	c, err := client.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, log)
 	if err != nil {
-		panic(err)
+		log.Fatalf("creating s3 client: %w", err)
 	}
+	defer func() {
+		if err := c.InvalidateCache(ctx); err != nil {
+			log.Fatalf("invalidating cache: %w", err)
+		}
+	}()
 
 	if err := c.UpdateCLIInfo(context.Background(), cliInfo); err != nil {
-		panic(err)
+		log.Fatalf("updating cli info: %w", err)
 	}
 }
