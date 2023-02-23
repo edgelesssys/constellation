@@ -3,12 +3,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-# This script reads the PCR state of the system
-# and prints the message to the serial console
+# This script reads the PCR and RTMR (Intel TDX) state
+# of the system and prints the message to the serial console
 
 main() {
   pcr_state="$(tpm2_pcrread sha256)"
   echo -e "PCR state:\n${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+  if [ -e /dev/tdx-guest ]; then
+    rtmr_state="$(rtmr-reader)"
+    echo -e "RTMR state:\n${rtmr_state}\n" >> /run/issue.d/35_constellation_pcrs.issue
+  fi
 }
 
 main

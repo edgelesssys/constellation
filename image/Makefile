@@ -5,6 +5,7 @@ BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
 DEBUGD_BINARY                    ?= $(BASE_PATH)/../build/debugd
+RTMR_READER_BINARY               ?= $(BASE_PATH)/../build/rtmr-reader
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 IMAGE_VERSION                    ?= v0.0.0
@@ -61,6 +62,7 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 inject-bins: $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP) $(PREBUILT_RPMS_QEMU)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
+	cp $(RTMR_READER_BINARY) $(MKOSI_EXTRA)/usr/bin/rtmr-reader
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
 	cp $(DISK_MAPPER_BINARY) $(MKOSI_EXTRA)/usr/sbin/disk-mapper
 	if [ "$(DEBUG)" = "true" ]; then \
