@@ -19,4 +19,4 @@ Currently, these subdirectories are:
 * `constellation-terraform` - Terraform state files for the resources used for the Constellation cluster
 * `constellation-iam-terraform` - Terraform state files for IAM configuration
 
-When working with either of the files, i.e. when running `constellation terminate` to [terminate a cluster](../workflows/terminate.md) (and delete it's cloud resources), the `constellation terraform` subdirectory needs to be in the current working directory. The same applies to the `constellation-iam-terraform` subdirectory when working with IAM configuration. The state directories should not be deleted manually.
+When working with either of the files, i.e. when running `constellation terminate` to [terminate a cluster](../workflows/terminate.md) (and delete it's cloud resources), the `constellation terraform` subdirectory needs to be in the current working directory. The same applies to the `constellation-iam-terraform` subdirectory when working with IAM configuration. The state directories shouldn't be deleted manually.
