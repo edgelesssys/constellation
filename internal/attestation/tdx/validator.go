@@ -86,7 +86,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 			if !ex.WarnOnly {
 				return nil, fmt.Errorf("untrusted TD measurement value at index %d", idx)
 			}
-			v.log.Warnf("Encountered untrusted TD measurement value at index %d", idx)
+			v.log.Warnf("Encountered untrusted TD measurement value at index %d: want: %x, got: %x", idx, ex.Expected, tdMeasure[idx])
 		}
 	}
 
