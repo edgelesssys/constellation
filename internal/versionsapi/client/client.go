@@ -140,6 +140,16 @@ func (c *Client) UpdateImageInfo(ctx context.Context, imageInfo versionsapi.Imag
 	return update(ctx, c, imageInfo)
 }
 
+// FetchCLIInfo fetches the given CLI info from the versions API.
+func (c *Client) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
+	return fetch(ctx, c, cliInfo)
+}
+
+// UpdateCLIInfo updates the given CLI info in the versions API.
+func (c *Client) UpdateCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) error {
+	return update(ctx, c, cliInfo)
+}
+
 // DeleteRef deletes the given ref from the versions API.
 func (c *Client) DeleteRef(ctx context.Context, ref string) error {
 	if err := versionsapi.ValidateRef(ref); err != nil {

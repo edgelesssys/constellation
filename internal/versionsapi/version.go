@@ -167,6 +167,8 @@ const (
 	VersionKindUnknown VersionKind = iota
 	// VersionKindImage is the kind for image versions.
 	VersionKindImage
+	// VersionKindCLI is the kind for CLI versions.
+	VersionKindCLI
 )
 
 // MarshalJSON marshals the VersionKind to JSON.
@@ -189,6 +191,8 @@ func (k VersionKind) String() string {
 	switch k {
 	case VersionKindImage:
 		return "image"
+	case VersionKindCLI:
+		return "cli"
 	default:
 		return "unknown"
 	}
@@ -199,6 +203,8 @@ func VersionKindFromString(s string) VersionKind {
 	switch strings.ToLower(s) {
 	case "image":
 		return VersionKindImage
+	case "cli":
+		return VersionKindCLI
 	default:
 		return VersionKindUnknown
 	}

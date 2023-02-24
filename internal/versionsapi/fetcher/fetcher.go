@@ -49,6 +49,11 @@ func (f *Fetcher) FetchImageInfo(ctx context.Context, imageInfo versionsapi.Imag
 	return fetch(ctx, f.httpc, imageInfo)
 }
 
+// FetchCLIInfo fetches the given cli info from the versions API.
+func (f *Fetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
+	return fetch(ctx, f.httpc, cliInfo)
+}
+
 type apiObject interface {
 	ValidateRequest() error
 	Validate() error

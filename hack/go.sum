@@ -227,6 +227,8 @@ github.com/aws/aws-sdk-go-v2/credentials v1.13.10 h1:T4Y39IhelTLg1f3xiKJssThnFxs
 github.com/aws/aws-sdk-go-v2/credentials v1.13.10/go.mod h1:tqAm4JmQaShel+Qi38hmd1QglSnnxaYt50k/9yGQzzc=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.21 h1:j9wi1kQ8b+e0FBVHxCqCGo4kxDU175hoDHcWAi0sauU=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.21/go.mod h1:ugwW57Z5Z48bpvUyZuaPy4Kv+vEfJWnIrky7RmkBvJg=
+github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.49 h1:zPFhadkmXbXu3RVXTPU4HVW+g2DStMY+01cJaj//+Cw=
+github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.49/go.mod h1:N9gSChQkKpdAj7vRpfKma4ND88zoZM+v6W2lJgWrDh4=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.27 h1:I3cakv2Uy1vNmmhRQmFptYDxOvBnwCdNwyw63N0RaRU=
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.27/go.mod h1:a1/UpzeyBBerajpnP5nGZa9mGzsBn5cOKxm6NWQsvoI=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.21 h1:5NbbMrIzmUn/TXFqAle6mgrH5m9cOvMLRGL7pnG8tRE=
@@ -235,6 +237,8 @@ github.com/aws/aws-sdk-go-v2/internal/ini v1.3.28 h1:KeTxcGdNnQudb46oOl4d90f2I33
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.28/go.mod h1:yRZVr/iT0AqyHeep00SZ4YfBAKojXz08w3XMBscdi0c=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.18 h1:H/mF2LNWwX00lD6FlYfKpLLZgUW7oIzCBkig78x4Xok=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.18/go.mod h1:T2Ku+STrYQ1zIkL1wMvj8P3wWQaaCMKNdz70MT2FLfE=
+github.com/aws/aws-sdk-go-v2/service/cloudfront v1.24.0 h1:k1RJsiyqnUm5u+jrYOls9MoP9xgqsVUOrfsYy9mxCro=
+github.com/aws/aws-sdk-go-v2/service/cloudfront v1.24.0/go.mod h1:xUOmvPrMKmH94stXswKsGSkL02vMpNU+rTG+eIzFfNQ=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.83.0 h1:6eTsq8mUG4VCrqbebRYVtgkKguP9J2veJHuhdISMM+Y=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.83.0/go.mod h1:mV0E7631M1eXdB+tlGFIw6JxfsC7Pz7+7Aw15oLVhZw=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 h1:y2+VQzC6Zh2ojtV2LoC0MNwHWc6qXv/j2vrQtlftkdA=
