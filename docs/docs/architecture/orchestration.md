@@ -23,10 +23,8 @@ Altogether, the following files are generated during the creation of a Constella
 * a configuration file
 * an ID file
 * a Base64-encoded master secret
-* Terraform artifacts such as `terraform.tfstate`, stored in the `constellation-terraform` subdirectory
+* [Terraform artifacts](../reference/terraform.md), stored in the `constellation-terraform` subdirectory
 * a Kubernetes `kubeconfig` file.
-
-Constellation uses Terraform for infrastructure management. No setup of Terraform is needed. The CLI automatically fetches a copy of Terraform when required. The policy on usage of Terraform by Constellation can be found [here](../reference/terraform.md).
 
 After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
 This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
