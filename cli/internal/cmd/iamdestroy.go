@@ -125,7 +125,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	spinner.Stop() // stop the spinner to print a new line
 	fmt.Println("Successfully destroyed IAM configuration")
-	return fmt.Errorf("hello im error")
+	return nil
 }
 
 func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
