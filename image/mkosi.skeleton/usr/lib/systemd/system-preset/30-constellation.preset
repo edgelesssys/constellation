@@ -5,3 +5,4 @@ enable containerd.service
 enable kubelet.service
 enable systemd-networkd.service
 enable tpm-pcrs.service
+enable export_constellation_debug.service

@@ -134,6 +134,10 @@ func main() {
 		vtpm.OpenVTPM,
 	)
 
+	if err := setupManger.LogDevices(); err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to log devices")
+	}
+
 	// prepare the state disk
 	if mapper.IsLUKSDevice() {
 		// set up rejoin client
