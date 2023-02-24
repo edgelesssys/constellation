@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"go.uber.org/goleak"
 )
@@ -71,4 +72,22 @@ func (c *stubIAMCreator) Create(
 	c.createCalled = true
 	c.id.CloudProvider = provider
 	return c.id, c.createErr
+}
+
+type stubIAMDestroyer struct {
+	destroyCalled       bool
+	getTfstateKeyCalled bool
+	gcpSaKey            gcpshared.ServiceAccountKey
+	destroyErr          error
+	getTfstateKeyErr    error
+}
+
+func (d *stubIAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
+	d.destroyCalled = true
+	return d.destroyErr
+}
+
+func (d *stubIAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
+	d.getTfstateKeyCalled = true
+	return d.gcpSaKey, d.getTfstateKeyErr
 }

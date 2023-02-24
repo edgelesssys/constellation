@@ -7,6 +7,9 @@ package cloudcmd
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -15,8 +18,64 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
+
+// IAMDestroyer destroys an IAM configuration.
+type IAMDestroyer struct {
+	client terraformClient
+}
+
+// NewIAMDestroyer creates a new IAM Destroyer.
+func NewIAMDestroyer(ctx context.Context) (*IAMDestroyer, error) {
+	cl, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
+	if err != nil {
+		return nil, err
+	}
+	return &IAMDestroyer{client: cl}, nil
+}
+
+// GetTfstateServiceAccountKey returns the sa_key output from the terraform state.
+func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
+	tfState, err := d.client.Show(ctx)
+	if err != nil {
+		return gcpshared.ServiceAccountKey{}, err
+	}
+
+	if tfState.Values == nil {
+		return gcpshared.ServiceAccountKey{}, errors.New("no Values field in terraform state")
+	}
+
+	saKeyJSON := tfState.Values.Outputs["sa_key"]
+	if saKeyJSON == nil {
+		return gcpshared.ServiceAccountKey{}, errors.New("no sa_key in outputs of the terraform state")
+	}
+
+	saKeyString, ok := saKeyJSON.Value.(string)
+	if !ok {
+		return gcpshared.ServiceAccountKey{}, errors.New("sa_key field in terraform state is not a string")
+	}
+	saKey, err := base64.StdEncoding.DecodeString(saKeyString)
+	if err != nil {
+		return gcpshared.ServiceAccountKey{}, err
+	}
+
+	var tfSaKey gcpshared.ServiceAccountKey
+	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
+		return gcpshared.ServiceAccountKey{}, err
+	}
+
+	return tfSaKey, nil
+}
+
+// DestroyIAMConfiguration destroys the previously created IAM configuration and deletes the local IAM terraform files.
+func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
+	if err := d.client.Destroy(ctx); err != nil {
+		return err
+	}
+	return d.client.CleanUpWorkspace()
+}
 
 // IAMCreator creates the IAM configuration on the cloud provider.
 type IAMCreator struct {
