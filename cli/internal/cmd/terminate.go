@@ -85,5 +85,5 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
 	}
 
-	return fmt.Errorf("hellooo i am an error: %w", removeErr)
+	return removeErr
 }
