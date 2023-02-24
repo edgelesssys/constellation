@@ -110,6 +110,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			initSecretHash: initSecretHash,
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
+			wantShutdown:   true,
 		},
 		"node locked": {
 			nodeLock:       lockedLock,
@@ -119,7 +120,6 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
-			wantShutdown:   true,
 		},
 		"disk open error": {
 			nodeLock:       newFakeLock(),
@@ -129,6 +129,7 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"disk uuid error": {
 			nodeLock:       newFakeLock(),
@@ -138,6 +139,7 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"disk update passphrase error": {
 			nodeLock:       newFakeLock(),
@@ -147,6 +149,7 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"write state file error": {
 			nodeLock:       newFakeLock(),
@@ -156,6 +159,7 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"initialize cluster error": {
 			nodeLock:       newFakeLock(),
@@ -165,6 +169,7 @@ func TestInit(t *testing.T) {
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"wrong initSecret": {
 			nodeLock:       newFakeLock(),
