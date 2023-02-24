@@ -564,4 +564,3 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 	}
 	return out, nil
 }
-
