@@ -5,7 +5,6 @@ After=network-online.target nss-lookup.target configure-constel-csp.service
 Wants=network-online.target
 Requires=initrd-root-fs.target
 FailureAction=reboot-immediate
-ConditionKernelCommandLine=constellation.debug
 After=export_constellation_debug.service
 
 [Service]
