@@ -69,27 +69,27 @@ runs:
 
         if [[ "${{ github.ref_name }}" == "${{ github.event.repository.default_branch }}" ]]; then
           tags="latest"
-        else:
+        else
           tags="${{ github.sha }}"
         fi
 
-        if [ -n "${{ inputs.pushTag }}" ]; then
-          if [ -n "${tags}" ]; then
+        if [[ -n "${{ inputs.pushTag }}" ]]; then
+          if [[ -n "${tags}" ]]; then
             tags="${tags},${{ inputs.pushTag }}"
           else
             tags="${{ inputs.pushTag }}"
           fi
         fi
 
-        if [ -n "${{ steps.pseudo-version.outputs.pseudoVersion }}" ]; then
-          if [ -n "${tags}" ]; then
+        if [[ -n "${{ steps.pseudo-version.outputs.pseudoVersion }}" ]]; then
+          if [[ -n "${tags}" ]]; then
             tags="${tags},${{ steps.pseudo-version.outputs.pseudoVersion }}"
           else
             tags="${{ steps.pseudo-version.outputs.pseudoVersion }}"
           fi
         fi
 
-        if [ "${{ inputs.generateKoSBOM }}" == "false" ]; then
+        if [[ "${{ inputs.generateKoSBOM }}" == "false" ]]; then
           sbom="--sbom=none"
         fi
 
