@@ -60,7 +60,7 @@ func main() {
 		}
 	}()
 
-	if err := c.UpdateCLIInfo(context.Background(), cliInfo); err != nil {
+	if err := c.UpdateCLIInfo(ctx, cliInfo); err != nil {
 		log.Fatalf("updating cli info: %w", err)
 	}
 }
