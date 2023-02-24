@@ -1,6 +1,5 @@
 [Unit]
 Description=Constellation Upgrade Agent
-ConditionKernelCommandLine=constellation.debug
 After=export_constellation_debug.service
 
 [Service]

@@ -2,7 +2,6 @@
 Description=Constellation Bootstrapper
 Wants=network-online.target
 After=network-online.target configure-constel-csp.service
-ConditionKernelCommandLine=constellation.debug
 After=export_constellation_debug.service
 
 [Service]
