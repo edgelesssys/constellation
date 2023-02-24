@@ -107,7 +107,7 @@ require (
 	k8s.io/apimachinery v0.26.1
 	k8s.io/apiserver v0.26.1
 	k8s.io/cli-runtime v0.26.1
-	k8s.io/client-go v0.26.1
+	k8s.io/client-go/v11 v11.0.0+incompatible
 	k8s.io/cluster-bootstrap v0.26.1
 	k8s.io/kubelet v0.26.1
 	k8s.io/kubernetes v1.26.1
@@ -320,6 +320,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4/v5 v5.0.0 // indirect
 	sigs.k8s.io/yaml v1.3.0
 )
