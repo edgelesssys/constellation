@@ -48,38 +48,38 @@ jobs:
         test:
           ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover", "iamcreate"]
         provider: ["gcp", "azure", "aws"]
-        version: ["v1.24.9", "v1.25.6", "v1.26.1"]
+        version: ["v1.24", "v1.25", "v1.26"]
         exclude:
           # IAM create test runs only on latest version.
           - test: "iamcreate"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "iamcreate"
-            version: "v1.25.6"
+            version: "v1.25"
           # Verify test runs only on latest version.
           - test: "verify"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "verify"
-            version: "v1.25.6"
+            version: "v1.25"
           # Recover test runs only on latest version.
           - test: "recover"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "recover"
-            version: "v1.25.6"
+            version: "v1.25"
           # Autoscaling test runs only on latest version.
           - test: "autoscaling"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "autoscaling"
-            version: "v1.25.6"
+            version: "v1.25"
           # K-bench test runs only on latest version.
           - test: "k-bench"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "k-bench"
-            version: "v1.25.6"
+            version: "v1.25"
           # lb test runs only on latest version.
           - test: "lb"
-            version: "v1.24.9"
+            version: "v1.24"
           - test: "lb"
-            version: "v1.25.6"
+            version: "v1.25"
           # Currently not supported on AWS.
           - test: "autoscaling"
             provider: "aws"
