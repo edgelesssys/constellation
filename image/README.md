@@ -240,6 +240,31 @@ upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
 </details>
 
 <details>
+<summary>OpenStack</summary>
+
+Note:
+
+> OpenStack is not one a global cloud provider, but rather a software that can be installed on-premises.
+> This means we do not upload the image to a cloud provider, but to our CDN.
+
+- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
+- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
+
+```sh
+# set these variables
+export REF= # e.g. feat-xyz (branch name encoded with dashes)
+export STREAM= # e.g. "nightly", "debug", "stable" (depends on the type of image and if it is a release)
+export IMAGE_VERSION= # e.g. v2.1.0" or output of pseudo-version tool
+export OPENSTACK_BUCKET=cdn-constellation-backend
+export OPENSTACK_BASE_URL="https://cdn.confidential.cloud"
+export OPENSTACK_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~37/image.raw
+export OPENSTACK_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~37/image-upload.json
+upload/upload_openstack.sh
+```
+
+</details>
+
+<details>
 <summary>QEMU</summary>
 
 - Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))

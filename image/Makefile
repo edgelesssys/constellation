@@ -15,7 +15,7 @@ KERNEL_DEBUG_CMDLNE              := $(if $(filter true,$(DEBUG)),constellation.d
 export INSTALL_DEBUGD            ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
-csps := aws qemu gcp azure
+csps := aws azure gcp openstack qemu
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 AZURE_FIXED_KERNEL_RPMS := kernel-6.1.12-200.fc37.x86_64.rpm kernel-core-6.1.12-200.fc37.x86_64.rpm kernel-modules-6.1.12-200.fc37.x86_64.rpm
