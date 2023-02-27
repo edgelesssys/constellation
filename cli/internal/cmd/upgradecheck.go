@@ -139,42 +139,49 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	csp := conf.GetProvider()
 	u.log.Debugf("Using provider %s", csp.String())
 
-	currentServices, currentImage, currentK8s, err := u.collect.currentVersions(cmd.Context())
+	current, err := u.collect.currentVersions(cmd.Context())
 	if err != nil {
 		return err
 	}
 
-	supportedServices, supportedImages, supportedK8s, err := u.collect.supportedVersions(cmd.Context(), currentImage)
+	supported, err := u.collect.supportedVersions(cmd.Context(), csp, current.image, current.k8s)
 	if err != nil {
 		return err
 	}
-	u.log.Debugf("Current service version: %s", currentServices)
-	u.log.Debugf("Supported service version: %s", supportedServices)
-	u.log.Debugf("Current k8s version: %s", currentK8s)
-	u.log.Debugf("Supported k8s version: %s", supportedK8s)
+	u.log.Debugf("Current cli version: %s", current.cli)
+	u.log.Debugf("Supported cli version(s): %s", supported.cli)
+	u.log.Debugf("Current service version: %s", current.service)
+	u.log.Debugf("Supported service version: %s", supported.service)
+	u.log.Debugf("Current k8s version: %s", current.k8s)
+	u.log.Debugf("Supported k8s version(s): %s", supported.k8s)
 
 	// Filter versions to only include upgrades
-	newServices := supportedServices
-	if err := compatibility.IsValidUpgrade(currentServices, supportedServices); err != nil {
+	newServices := supported.service
+	if err := compatibility.IsValidUpgrade(current.service, supported.service); err != nil {
 		newServices = ""
 	}
 
-	newKubernetes := filterK8sUpgrades(currentK8s, supportedK8s)
+	newKubernetes := filterK8sUpgrades(current.k8s, supported.k8s)
 	sort.Strings(newKubernetes)
 
-	supportedImages = filterImageUpgrades(currentImage, supportedImages)
-	newImages, err := u.collect.newMeasurementes(cmd.Context(), csp, supportedImages)
+	supported.image = filterImageUpgrades(current.image, supported.image)
+	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, supported.image)
 	if err != nil {
 		return err
 	}
+
+	newCLI := filterCLIUpgrades(current.cli, supported.cli)
+	sort.Strings(newCLI)
 
 	upgrade := versionUpgrade{
 		newServices:       newServices,
 		newImages:         newImages,
 		newKubernetes:     newKubernetes,
-		currentServices:   currentServices,
-		currentImage:      currentImage,
-		currentKubernetes: currentK8s,
+		newCLI:            newCLI,
+		currentServices:   current.service,
+		currentImage:      current.image,
+		currentKubernetes: current.k8s,
+		currentCLI:        current.cli,
 	}
 
 	updateMsg, err := upgrade.buildString()
@@ -204,6 +211,7 @@ func sortedMapKeys[T any](a map[string]T) []string {
 	return keys
 }
 
+// filterImageUpgrades filters out image versions that are not valid upgrades.
 func filterImageUpgrades(currentVersion string, newVersions []versionsapi.Version) []versionsapi.Version {
 	newImages := []versionsapi.Version{}
 	for i := range newVersions {
@@ -215,6 +223,7 @@ func filterImageUpgrades(currentVersion string, newVersions []versionsapi.Versio
 	return newImages
 }
 
+// filterK8sUpgrades filters out K8s versions that are not valid upgrades.
 func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 	result := []string{}
 	for i := range newVersions {
@@ -227,12 +236,26 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 	return result
 }
 
+// filterCLIUpgrades filters out CLI versions that are not valid upgrades.
+func filterCLIUpgrades(currentVersion string, newVersions []string) []string {
+	result := []string{}
+	for i := range newVersions {
+		if err := compatibility.IsValidUpgrade(currentVersion, newVersions[i]); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		result = append(result, newVersions[i])
+	}
+
+	return result
+}
+
 type collector interface {
-	currentVersions(ctx context.Context) (serviceVersions string, imageVersion string, k8sVersion string, err error)
-	supportedVersions(ctx context.Context, version string) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error)
-	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
-	newMeasurementes(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
-	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
+	currentVersions(ctx context.Context) (currentVersionInfo, error)
+	supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error)
+	newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error)
+	newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
+	newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error)
 }
 
 type versionCollector struct {
@@ -247,7 +270,7 @@ type versionCollector struct {
 	log            debugLog
 }
 
-func (v *versionCollector) newMeasurementes(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
+func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
 	// get expected measurements for each image
 	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.rekor, []byte(v.flags.cosignPubKey), csp, images, v.log)
 	if err != nil {
@@ -258,43 +281,71 @@ func (v *versionCollector) newMeasurementes(ctx context.Context, csp cloudprovid
 	return upgrades, nil
 }
 
-func (v *versionCollector) currentVersions(ctx context.Context) (serviceVersion string, imageVersion string, k8sVersion string, err error) {
+type currentVersionInfo struct {
+	service string
+	image   string
+	k8s     string
+	cli     string
+}
+
+func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
 	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, v.log)
 	if err != nil {
-		return "", "", "", fmt.Errorf("setting up helm client: %w", err)
+		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}
 
 	serviceVersions, err := helmClient.Versions()
 	if err != nil {
-		return "", "", "", fmt.Errorf("getting service versions: %w", err)
+		return currentVersionInfo{}, fmt.Errorf("getting service versions: %w", err)
 	}
 
-	imageVersion, err = getCurrentImageVersion(ctx, v.checker)
+	imageVersion, err := getCurrentImageVersion(ctx, v.checker)
 	if err != nil {
-		return "", "", "", fmt.Errorf("getting image version: %w", err)
+		return currentVersionInfo{}, fmt.Errorf("getting image version: %w", err)
 	}
 
-	k8sVersion, err = getCurrentKubernetesVersion(ctx, v.checker)
+	k8sVersion, err := getCurrentKubernetesVersion(ctx, v.checker)
 	if err != nil {
-		return "", "", "", fmt.Errorf("getting image version: %w", err)
+		return currentVersionInfo{}, fmt.Errorf("getting Kubernetes version: %w", err)
 	}
 
-	return serviceVersions.ConstellationServices(), imageVersion, k8sVersion, nil
+	return currentVersionInfo{
+		service: serviceVersions.ConstellationServices(),
+		image:   imageVersion,
+		k8s:     k8sVersion,
+		cli:     v.cliVersion,
+	}, nil
+}
+
+type supportedVersionInfo struct {
+	service string
+	image   []versionsapi.Version
+	k8s     []string
+	cli     []string
 }
 
 // supportedVersions returns slices of supported versions.
-func (v *versionCollector) supportedVersions(ctx context.Context, version string) (serviceVersion string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
-	k8sVersions = versions.SupportedK8sVersions()
-	serviceVersion, err = helm.AvailableServiceVersions()
+func (v *versionCollector) supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error) {
+	k8sVersions := versions.SupportedK8sVersions()
+	serviceVersion, err := helm.AvailableServiceVersions()
 	if err != nil {
-		return "", nil, nil, fmt.Errorf("loading service versions: %w", err)
+		return supportedVersionInfo{}, fmt.Errorf("loading service versions: %w", err)
 	}
-	imageVersions, err = v.newImages(ctx, version)
+	imageVersions, err := v.newImages(ctx, version, csp)
 	if err != nil {
-		return "", nil, nil, fmt.Errorf("loading image versions: %w", err)
+		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)
+	}
+	cliVersions, err := v.newCLIVersions(ctx, currentK8sVersion)
+	if err != nil {
+		return supportedVersionInfo{}, fmt.Errorf("loading cli versions: %w", err)
 	}
 
-	return serviceVersion, imageVersions, k8sVersions, nil
+	return supportedVersionInfo{
+		service: serviceVersion,
+		image:   imageVersions,
+		k8s:     k8sVersions,
+		cli:     cliVersions,
+	}, nil
 }
 
 func (v *versionCollector) newImages(ctx context.Context, version string) ([]versionsapi.Version, error) {
@@ -367,9 +418,11 @@ type versionUpgrade struct {
 	newServices       string
 	newImages         map[string]measurements.M
 	newKubernetes     []string
+	newCLI            []string
 	currentServices   string
 	currentImage      string
 	currentKubernetes string
+	currentCLI        string
 }
 
 func (v *versionUpgrade) buildString() (string, error) {
@@ -377,6 +430,10 @@ func (v *versionUpgrade) buildString() (string, error) {
 
 	if len(v.newKubernetes) > 0 {
 		upgradeMsg.WriteString(fmt.Sprintf("  Kubernetes: %s --> %s\n", v.currentKubernetes, strings.Join(v.newKubernetes, " ")))
+	}
+
+	if len(v.newCLI) > 0 {
+		upgradeMsg.WriteString(fmt.Sprintf("  CLI: %s --> %s\n", v.currentCLI, strings.Join(v.newCLI, " ")))
 	}
 
 	if len(v.newImages) > 0 {
@@ -508,6 +565,61 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 	}
 
 	return upgrades, nil
+}
+
+// newCLIVersions returns a list of versions of the CLI which are compatible with the current Kubernetes version.
+func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+	versionFetcher := fetcher.NewFetcher()
+
+	list := versionsapi.List{
+		Ref:         "feat-upload-cli-version-list",
+		Stream:      "debug",
+		Granularity: versionsapi.GranularityMajor,
+		Base:        "v2",
+		Kind:        versionsapi.VersionKindCLI,
+	}
+	minorList, err := versionFetcher.FetchVersionList(ctx, list)
+	if err != nil {
+		return nil, fmt.Errorf("listing minor versions: %w", err)
+	}
+
+	var patchVersions []string
+	for _, version := range minorList.Versions {
+		list := versionsapi.List{
+			Ref:         "feat-upload-cli-version-list",
+			Stream:      "debug",
+			Granularity: versionsapi.GranularityMinor,
+			Base:        version,
+			Kind:        versionsapi.VersionKindCLI,
+		}
+		patchList, err := versionFetcher.FetchVersionList(ctx, list)
+		if err != nil {
+			return nil, fmt.Errorf("listing minor versions: %w", err)
+		}
+		patchVersions = append(patchVersions, patchList.Versions...)
+	}
+
+	// filter out invalid upgrades and versions which are not compatible with the current Kubernetes version
+	var compatibleVersions []string
+	for _, version := range patchVersions {
+		req := versionsapi.CLIInfo{
+			Ref:     "feat-upload-cli-version-list",
+			Stream:  "debug",
+			Version: version,
+		}
+		info, err := versionFetcher.FetchCLIInfo(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("fetching CLI info: %w", err)
+		}
+
+		for _, k8sVersion := range info.Kubernetes {
+			if k8sVersion == currentKubernetesVersion {
+				compatibleVersions = append(compatibleVersions, version)
+			}
+		}
+	}
+
+	return compatibleVersions, nil
 }
 
 type upgradeCheckFlags struct {

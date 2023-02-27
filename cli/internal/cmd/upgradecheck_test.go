@@ -259,24 +259,36 @@ type stubVersionCollector struct {
 	supportedImages           []versionsapi.Version
 	supportedImageVersions    map[string]measurements.M
 	supportedK8sVersions      []string
+	supportedCLIVersions      []string
 	currentServicesVersions   string
 	currentImageVersion       string
 	currentK8sVersion         string
+	currentCLIVersion         string
 	images                    []versionsapi.Version
 	newCLIVersions            []string
 	someErr                   error
 }
 
-func (s *stubVersionCollector) newMeasurementes(_ context.Context, _ cloudprovider.Provider, _ []versionsapi.Version) (map[string]measurements.M, error) {
+func (s *stubVersionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
 	return s.supportedImageVersions, nil
 }
 
-func (s *stubVersionCollector) currentVersions(_ context.Context) (serviceVersions string, imageVersion string, k8sVersion string, err error) {
-	return s.currentServicesVersions, s.currentImageVersion, s.currentK8sVersion, s.someErr
+func (s *stubVersionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
+	return currentVersionInfo{
+		service: s.currentServicesVersions,
+		image:   s.currentImageVersion,
+		k8s:     s.currentK8sVersion,
+		cli:     s.currentCLIVersion,
+	}, s.someErr
 }
 
-func (s *stubVersionCollector) supportedVersions(_ context.Context, _ string) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
-	return s.supportedServicesVersions, s.supportedImages, s.supportedK8sVersions, s.someErr
+func (s *stubVersionCollector) supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error) {
+	return supportedVersionInfo{
+		service: s.supportedServicesVersions,
+		image:   s.supportedImages,
+		k8s:     s.supportedK8sVersions,
+		cli:     s.supportedCLIVersions,
+	}, s.someErr
 }
 
 func (s *stubVersionCollector) newImages(_ context.Context, _ string) ([]versionsapi.Version, error) {

@@ -18,11 +18,11 @@ import (
 
 // CLIInfo contains information about a specific CLI version (i.e. it's compatibility with Kubernetes versions).
 type CLIInfo struct {
-	// Ref is the reference name of the image.
+	// Ref is the reference name of the CLI.
 	Ref string `json:"ref,omitempty"`
-	// Stream is the stream name of the image.
+	// Stream is the stream name of the CLI.
 	Stream string `json:"stream,omitempty"`
-	// Version is the version of the image.
+	// Version is the version of the CLI.
 	Version string `json:"version,omitempty"`
 	// Kubernetes contains all compatible Kubernetes versions.
 	Kubernetes []string `json:"kubernetes,omitempty"`
