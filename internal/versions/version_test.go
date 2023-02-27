@@ -13,6 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	v1_18_0, _ = NewVersion("v1.18.0")
+	v1_18_1, _ = NewVersion("v1.18.1")
+	v1_19_0, _ = NewVersion("v1.19.0")
+	v1_20_0, _ = NewVersion("v1.20.0")
+	v2_0_0, _  = NewVersion("v2.0.0")
+)
+
 func TestVersionValidation(t *testing.T) {
 	testCases := map[string]struct {
 		version string
@@ -41,12 +49,12 @@ func TestVersionValidation(t *testing.T) {
 
 func TestJSONMarshal(t *testing.T) {
 	testCases := map[string]struct {
-		version    string
+		version    Version
 		wantString string
 		wantErr    bool
 	}{
 		"valid version": {
-			version:    "v1.18.0",
+			version:    v1_18_0,
 			wantString: `"v1.18.0"`,
 		},
 	}
@@ -56,10 +64,7 @@ func TestJSONMarshal(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			version, err := NewVersion(tc.version)
-			require.NoError(err)
-
-			b, err := version.MarshalJSON()
+			b, err := tc.version.MarshalJSON()
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -105,116 +110,84 @@ func TestJSONUnmarshal(t *testing.T) {
 
 func TestComparison(t *testing.T) {
 	testCases := map[string]struct {
-		version1 string
-		version2 string
+		version1 Version
+		version2 Version
 		want     int
-		wantErr  bool
 	}{
 		"equal": {
-			version1: "v1.18.0",
-			version2: "v1.18.0",
+			version1: v1_18_0,
+			version2: v1_18_0,
 			want:     0,
 		},
 		"less than": {
-			version1: "v1.18.0",
-			version2: "v1.18.1",
+			version1: v1_18_0,
+			version2: v1_18_1,
 			want:     -1,
 		},
 		"greater than": {
-			version1: "v1.18.1",
-			version2: "v1.18.0",
+			version1: v1_18_1,
+			version2: v1_18_0,
 			want:     1,
-		},
-		"invalid version": {
-			version1: "v1.18.0",
-			version2: "v1.18. ",
-			wantErr:  true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			require := require.New(t)
-
-			v1, err := NewVersion(tc.version1)
-			require.NoError(err)
-
-			v2, err := NewVersion(tc.version2)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.want, v1.Compare(v2))
-			}
+			assert.Equal(tc.want, tc.version1.Compare(tc.version2))
 		})
 	}
 }
 
 func TestCanUpgrade(t *testing.T) {
 	testCases := map[string]struct {
-		version1 string
-		version2 string
+		version1 Version
+		version2 Version
 		want     bool
 		wantErr  bool
 	}{
 		"equal": {
-			version1: "v1.18.0",
-			version2: "v1.18.0",
+			version1: v1_18_0,
+			version2: v1_18_0,
 			want:     false,
 		},
 		"patch less than": {
-			version1: "v1.18.0",
-			version2: "v1.18.1",
+			version1: v1_18_0,
+			version2: v1_18_1,
 			want:     true,
 		},
 		"minor less then": {
-			version1: "v1.18.0",
-			version2: "v1.19.0",
+			version1: v1_18_0,
+			version2: v1_19_0,
 			want:     true,
 		},
 		"minor too big drift": {
-			version1: "v1.18.0",
-			version2: "v1.19.1",
-			want:     true,
-		},
-		"major too big drift": {
-			version1: "v1.18.0",
-			version2: "v2.18.1",
-			want:     true,
-		},
-		"greater than": {
-			version1: "v1.18.1",
-			version2: "v1.18.0",
+			version1: v1_18_0,
+			version2: v1_20_0,
 			want:     false,
 		},
-		"invalid version": {
-			version1: "v1.18.0",
-			version2: "v1.18. ",
-			wantErr:  true,
+		"major too big drift": {
+			version1: v1_18_0,
+			version2: v2_0_0,
+			want:     false,
+		},
+		"greater than": {
+			version1: v1_18_1,
+			version2: v1_18_0,
+			want:     false,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			require := require.New(t)
 
-			v1, err := NewVersion(tc.version1)
-			require.NoError(err)
-
-			v2, err := NewVersion(tc.version2)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.want, v1.CanUpgradeTo(v2))
-			}
+			assert.Equal(tc.want, tc.version2.IsUpgradeTo(tc.version1))
 		})
 	}
 }
 
-func TestNextMinor(t *testing.T) {
+func TestNewVersion(t *testing.T) {
 	testCases := map[string]struct {
 		version string
 		want    string
@@ -222,11 +195,15 @@ func TestNextMinor(t *testing.T) {
 	}{
 		"valid version": {
 			version: "v1.18.2",
-			want:    "v1.19",
+			want:    "v1.18.2",
 		},
 		"invalid version": {
 			version: "v1.18. ",
 			wantErr: true,
+		},
+		"no leading v": {
+			version: "1.18.2",
+			want:    "v1.18.2",
 		},
 	}
 
@@ -240,8 +217,27 @@ func TestNextMinor(t *testing.T) {
 				require.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.want, v.NextMinor())
+				assert.Equal(tc.want, v.String())
 			}
+		})
+	}
+}
+
+func TestNextMinor(t *testing.T) {
+	testCases := map[string]struct {
+		version Version
+		want    string
+	}{
+		"valid version": {
+			version: v1_18_0,
+			want:    "v1.19",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.want, tc.version.NextMinor())
 		})
 	}
 }

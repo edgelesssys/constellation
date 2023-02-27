@@ -58,26 +58,31 @@ func (v Version) Compare(other Version) int {
 	return semver.Compare(v.String(), other.String())
 }
 
-// CanUpgradeTo returns if a version can be upgraded to another version.
-// It checks if the version of other is greater than the current version and allows a drift of at most one minor version.
-func (v Version) CanUpgradeTo(other Version) bool {
-	return v.Compare(other) < 0 && other.Minor-v.Minor <= 1
+// IsUpgradeTo returns if a version is an upgrade to another version.
+// It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
+func (v Version) IsUpgradeTo(other Version) bool {
+	return v.Compare(other) > 0 && v.Major == other.Major && v.Minor-other.Minor <= 1
 }
 
-// CanUpgradeToBinary returns if a version can upgrade to the version of the current built binary.
-// It checks if the version of the binary is greater than the current version and allows a drift of at most one minor version.
-func (v Version) CanUpgradeToBinary() bool {
+// CompatibleWithBinary returns if a version is compatible version of the current built binary.
+// It checks if the version of the binary is equal or greater than the current version and allows a drift of at most one minor version.
+func (v Version) CompatibleWithBinary() bool {
 	binaryVersion, err := NewVersion(constants.VersionInfo)
 	if err != nil {
 		return false
 	}
 
-	return v.CanUpgradeTo(binaryVersion)
+	return v.Equals(binaryVersion) || binaryVersion.IsUpgradeTo(v)
 }
 
 // NextMinor returns the next minor version in the format "vMAJOR.MINOR".
 func (v Version) NextMinor() string {
 	return fmt.Sprintf("v%d.%d", v.Major, v.Minor+1)
+}
+
+// Equals returns if two versions are equal.
+func (v Version) Equals(other Version) bool {
+	return v.Major == other.Major && v.Minor == other.Minor && v.Patch == other.Patch
 }
 
 // MarshalJSON implements the json.Marshaler interface.
