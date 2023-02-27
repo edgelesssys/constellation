@@ -66,7 +66,7 @@ Generate a default configuration file
 Generate a default configuration file for your selected cloud provider.
 
 ```
-constellation config generate {aws|azure|gcp|qemu} [flags]
+constellation config generate {aws|azure|gcp|openstack|qemu} [flags]
 ```
 
 ### Options
