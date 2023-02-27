@@ -3,7 +3,7 @@
 [Terraform](https://www.terraform.io/) is an open-source Infrastructure as Code (IaC) framework which is being used by multiple Constellation components to manage cloud resources. This page describes our policy on using Terraform in Constellation.
 
 :::info
-This page assumes basic familiarity with Terraform. The Terraform documentation can be found [here](https://developer.hashicorp.com/terraform/docs).
+This page assumes basic familiarity with Terraform. Refer to the [Terraform documentation](https://developer.hashicorp.com/terraform/docs) for an introduction.
 :::
 
 ## Interacting with Terraform manually
