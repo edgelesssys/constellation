@@ -67,6 +67,7 @@ Where applicable, the API uses the following CSP names:
 - `aws` for Amazon Web Services
 - `azure` for Microsoft Azure
 - `gcp` for Google Cloud Platform
+- `openstack` for OpenStack
 - `qemu` for QEMU
 
 The following HTTP endpoints are available:
@@ -105,6 +106,9 @@ The image lookup table is a JSON file that maps the image name consisting of `re
   },
   "gcp": {
     "sev-es": "gcp-image-123"
+  },
+  "openstack": {
+    "sev": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/csp/openstack/image.raw"
   },
   "qemu": {
     "default": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/csp/qemu/image.raw"

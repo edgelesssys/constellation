@@ -114,6 +114,9 @@ type ProviderConfig struct {
 	//   Configuration for Google Cloud as provider.
 	GCP *GCPConfig `yaml:"gcp,omitempty" validate:"omitempty,dive"`
 	// description: |
+	//   Configuration for OpenStack as provider.
+	OpenStack *OpenStackConfig `yaml:"openstack,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   Configuration for QEMU as provider.
 	QEMU *QEMUConfig `yaml:"qemu,omitempty" validate:"omitempty,dive"`
 }
@@ -220,6 +223,25 @@ type GCPConfig struct {
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
+// OpenStackConfig holds config information for OpenStack based Constellation deployments.
+type OpenStackConfig struct {
+	// description: |
+	//   OpenStack cloud name to select from "clouds.yaml". Only required if config file for OpenStack is used. Fallback authentication uses environment variables. For details see: https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html.
+	Cloud string `yaml:"cloud"`
+	// description: |
+	//   Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html
+	AvailabilityZone string `yaml:"availabilityZone" validate:"required"`
+	// description: |
+	//   Flavor ID (machine type) to use for the VMs. For details see: https://docs.openstack.org/nova/latest/admin/flavors.html
+	FlavorID string `yaml:"flavorID" validate:"required"`
+	// description: |
+	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
+	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
+	// description: |
+	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
+	DirectDownload *bool `yaml:"directDownload" validate:"required"`
+}
+
 // QEMUConfig holds config information for QEMU based Constellation deployments.
 type QEMUConfig struct {
 	// description: |
@@ -294,6 +316,9 @@ func Default() *Config {
 				StateDiskType:         "pd-ssd",
 				DeployCSIDriver:       func() *bool { b := true; return &b }(),
 				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
+			},
+			OpenStack: &OpenStackConfig{
+				DirectDownload: func() *bool { b := true; return &b }(),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -393,6 +418,8 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 		c.Provider.Azure = currentProviderConfigs.Azure
 	case cloudprovider.GCP:
 		c.Provider.GCP = currentProviderConfigs.GCP
+	case cloudprovider.OpenStack:
+		c.Provider.OpenStack = currentProviderConfigs.OpenStack
 	case cloudprovider.QEMU:
 		c.Provider.QEMU = currentProviderConfigs.QEMU
 	default:
@@ -428,6 +455,9 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 	}
 	if c.Provider.GCP != nil {
 		return cloudprovider.GCP
+	}
+	if c.Provider.OpenStack != nil {
+		return cloudprovider.OpenStack
 	}
 	if c.Provider.QEMU != nil {
 		return cloudprovider.QEMU

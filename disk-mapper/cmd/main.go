@@ -44,10 +44,11 @@ import (
 )
 
 const (
-	gcpStateDiskPath   = "/dev/disk/by-id/google-state-disk"
-	azureStateDiskPath = "/dev/disk/azure/scsi1/lun0"
-	awsStateDiskPath   = "/dev/sdb"
-	qemuStateDiskPath  = "/dev/vda"
+	gcpStateDiskPath       = "/dev/disk/by-id/google-state-disk"
+	azureStateDiskPath     = "/dev/disk/azure/scsi1/lun0"
+	awsStateDiskPath       = "/dev/sdb"
+	qemuStateDiskPath      = "/dev/vda"
+	openstackStateDiskPath = "/dev/vdb"
 )
 
 func main() {
@@ -106,6 +107,12 @@ func main() {
 		}
 		defer gcpMeta.Close()
 		metadataAPI = gcpMeta
+
+	case cloudprovider.OpenStack:
+		diskPath = openstackStateDiskPath
+		// TODO(malt3): implement OpenStack metadata API and quote issuer
+		// issuer = ...
+		// metadataAPI = ...
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath

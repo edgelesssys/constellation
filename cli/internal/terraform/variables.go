@@ -216,6 +216,46 @@ func (v *AzureIAMVariables) String() string {
 	return b.String()
 }
 
+// OpenStackClusterVariables is user configuration for creating a cluster with Terraform on OpenStack.
+type OpenStackClusterVariables struct {
+	// CommonVariables contains common variables.
+	CommonVariables
+
+	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
+	Cloud string
+	// AvailabilityZone is the OpenStack availability zone to use.
+	AvailabilityZone string
+	// Flavor is the ID of the OpenStack flavor (machine type) to use.
+	FlavorID string
+	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
+	FloatingIPPoolID string
+	// ImageURL is the URL of the OpenStack image to use.
+	ImageURL string
+	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
+	DirectDownload bool
+	// Debug is true if debug mode is enabled.
+	Debug bool
+}
+
+// String returns a string representation of the variables, formatted as Terraform variables.
+func (v *OpenStackClusterVariables) String() string {
+	b := &strings.Builder{}
+	b.WriteString(v.CommonVariables.String())
+	if v.Cloud != "" {
+		writeLinef(b, "cloud = %q", v.Cloud)
+	}
+	writeLinef(b, "availability_zone = %q", v.AvailabilityZone)
+	writeLinef(b, "flavor_id = %q", v.FlavorID)
+	writeLinef(b, "floating_ip_pool_id = %q", v.FloatingIPPoolID)
+	writeLinef(b, "image_url = %q", v.ImageURL)
+	writeLinef(b, "direct_download = %t", v.DirectDownload)
+	writeLinef(b, "debug = %t", v.Debug)
+
+	return b.String()
+}
+
+// TODO: Add support for OpenStack IAM variables.
+
 // QEMUVariables is user configuration for creating a QEMU cluster with Terraform.
 type QEMUVariables struct {
 	// CommonVariables contains common variables.

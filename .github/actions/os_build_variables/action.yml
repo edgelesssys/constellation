@@ -129,6 +129,18 @@ outputs:
   gcpImageFamily:
     description: "GCP image family"
     value: ${{ steps.gcp.outputs.imageFamily }}
+  openStackJsonOutput:
+    description: "OpenStack image json output path"
+    value: ${{ steps.openstack.outputs.jsonOutput }}
+  openStackBucket:
+    description: "OpenStack S3 bucket"
+    value: ${{ steps.openstack.outputs.bucket }}
+  openStackBaseUrl:
+    description: "OpenStack raw image base URL"
+    value: ${{ steps.openstack.outputs.baseUrl }}
+  openStackImagePath:
+    description: "OpenStack image path"
+    value: ${{ steps.openstack.outputs.imagePath }}
   qemuJsonOutput:
     description: "QEMU image json output path"
     value: ${{ steps.qemu.outputs.jsonOutput }}
@@ -269,6 +281,18 @@ runs:
         else
           echo "imageFamily=constellation-${ref::45}" >> $GITHUB_OUTPUT
         fi
+
+    - name: Configure OpenStack input variables
+      id: openstack
+      if: inputs.csp == 'openstack'
+      shell: bash
+      env:
+        basePath: ${{ inputs.basePath }}
+      run: |
+        echo "bucket=cdn-constellation-backend" >> $GITHUB_OUTPUT
+        echo "baseUrl=https://cdn.confidential.cloud" >> $GITHUB_OUTPUT
+        echo "imagePath=${basePath}/mkosi.output.openstack/fedora~37/image.raw" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.openstack/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
 
     - name: Configure QEMU input variables
       id: qemu

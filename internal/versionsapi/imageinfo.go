@@ -30,6 +30,8 @@ type ImageInfo struct {
 	Azure map[string]string `json:"azure,omitempty"`
 	// GCP is a map of image types to GCP image IDs.
 	GCP map[string]string `json:"gcp,omitempty"`
+	// OpenStack is a map of image types to OpenStack image IDs.
+	OpenStack map[string]string `json:"openstack,omitempty"`
 	// QEMU is a map of image types to QEMU image URLs.
 	QEMU map[string]string `json:"qemu,omitempty"`
 }
@@ -78,6 +80,9 @@ func (i ImageInfo) ValidateRequest() error {
 	if len(i.GCP) != 0 {
 		retErr = errors.Join(retErr, errors.New("GCP map must be empty for request"))
 	}
+	if len(i.OpenStack) != 0 {
+		retErr = errors.Join(retErr, errors.New("OpenStack map must be empty for request"))
+	}
 	if len(i.QEMU) != 0 {
 		retErr = errors.Join(retErr, errors.New("QEMU map must be empty for request"))
 	}
@@ -97,17 +102,14 @@ func (i ImageInfo) Validate() error {
 	if !semver.IsValid(i.Version) {
 		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semver", i.Version))
 	}
-	if len(i.AWS) == 0 {
-		retErr = errors.Join(retErr, errors.New("AWS map must not be empty"))
-	}
-	if len(i.Azure) == 0 {
-		retErr = errors.Join(retErr, errors.New("Azure map must not be empty"))
-	}
-	if len(i.GCP) == 0 {
-		retErr = errors.Join(retErr, errors.New("GCP map must not be empty"))
-	}
-	if len(i.QEMU) == 0 {
-		retErr = errors.Join(retErr, errors.New("QEMU map must not be empty"))
+	var providers int
+	providers += len(i.AWS)
+	providers += len(i.Azure)
+	providers += len(i.GCP)
+	providers += len(i.OpenStack)
+	providers += len(i.QEMU)
+	if providers == 0 {
+		retErr = errors.Join(retErr, errors.New("one or more providers must be specified"))
 	}
 
 	return retErr

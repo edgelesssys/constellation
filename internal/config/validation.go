@@ -130,6 +130,9 @@ func validateProvider(sl validator.StructLevel) {
 	if provider.GCP != nil {
 		providerCount++
 	}
+	if provider.OpenStack != nil {
+		providerCount++
+	}
 	if provider.QEMU != nil {
 		providerCount++
 	}
@@ -163,7 +166,7 @@ func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) st
 
 // Validation translation functions for Provider errors.
 func registerNoProviderError(ut ut.Translator) error {
-	return ut.Add("no_provider", "{0}: No provider has been defined (requires either Azure, GCP or QEMU)", true)
+	return ut.Add("no_provider", "{0}: No provider has been defined (requires either Azure, GCP, OpenStack or QEMU)", true)
 }
 
 func translateNoProviderError(ut ut.Translator, fe validator.FieldError) string {

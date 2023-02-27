@@ -11,13 +11,14 @@ import (
 )
 
 var (
-	ConfigDoc         encoder.Doc
-	UpgradeConfigDoc  encoder.Doc
-	ProviderConfigDoc encoder.Doc
-	AWSConfigDoc      encoder.Doc
-	AzureConfigDoc    encoder.Doc
-	GCPConfigDoc      encoder.Doc
-	QEMUConfigDoc     encoder.Doc
+	ConfigDoc          encoder.Doc
+	UpgradeConfigDoc   encoder.Doc
+	ProviderConfigDoc  encoder.Doc
+	AWSConfigDoc       encoder.Doc
+	AzureConfigDoc     encoder.Doc
+	GCPConfigDoc       encoder.Doc
+	OpenStackConfigDoc encoder.Doc
+	QEMUConfigDoc      encoder.Doc
 )
 
 func init() {
@@ -110,7 +111,7 @@ func init() {
 			FieldName: "provider",
 		},
 	}
-	ProviderConfigDoc.Fields = make([]encoder.Doc, 4)
+	ProviderConfigDoc.Fields = make([]encoder.Doc, 5)
 	ProviderConfigDoc.Fields[0].Name = "aws"
 	ProviderConfigDoc.Fields[0].Type = "AWSConfig"
 	ProviderConfigDoc.Fields[0].Note = ""
@@ -126,11 +127,16 @@ func init() {
 	ProviderConfigDoc.Fields[2].Note = ""
 	ProviderConfigDoc.Fields[2].Description = "Configuration for Google Cloud as provider."
 	ProviderConfigDoc.Fields[2].Comments[encoder.LineComment] = "Configuration for Google Cloud as provider."
-	ProviderConfigDoc.Fields[3].Name = "qemu"
-	ProviderConfigDoc.Fields[3].Type = "QEMUConfig"
+	ProviderConfigDoc.Fields[3].Name = "openstack"
+	ProviderConfigDoc.Fields[3].Type = "OpenStackConfig"
 	ProviderConfigDoc.Fields[3].Note = ""
-	ProviderConfigDoc.Fields[3].Description = "Configuration for QEMU as provider."
-	ProviderConfigDoc.Fields[3].Comments[encoder.LineComment] = "Configuration for QEMU as provider."
+	ProviderConfigDoc.Fields[3].Description = "Configuration for OpenStack as provider."
+	ProviderConfigDoc.Fields[3].Comments[encoder.LineComment] = "Configuration for OpenStack as provider."
+	ProviderConfigDoc.Fields[4].Name = "qemu"
+	ProviderConfigDoc.Fields[4].Type = "QEMUConfig"
+	ProviderConfigDoc.Fields[4].Note = ""
+	ProviderConfigDoc.Fields[4].Description = "Configuration for QEMU as provider."
+	ProviderConfigDoc.Fields[4].Comments[encoder.LineComment] = "Configuration for QEMU as provider."
 
 	AWSConfigDoc.Type = "AWSConfig"
 	AWSConfigDoc.Comments[encoder.LineComment] = "AWSConfig are AWS specific configuration values used by the CLI."
@@ -315,6 +321,42 @@ func init() {
 	GCPConfigDoc.Fields[7].Description = "Expected confidential VM measurements."
 	GCPConfigDoc.Fields[7].Comments[encoder.LineComment] = "Expected confidential VM measurements."
 
+	OpenStackConfigDoc.Type = "OpenStackConfig"
+	OpenStackConfigDoc.Comments[encoder.LineComment] = "OpenStackConfig holds config information for OpenStack based Constellation deployments."
+	OpenStackConfigDoc.Description = "OpenStackConfig holds config information for OpenStack based Constellation deployments."
+	OpenStackConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "ProviderConfig",
+			FieldName: "openstack",
+		},
+	}
+	OpenStackConfigDoc.Fields = make([]encoder.Doc, 5)
+	OpenStackConfigDoc.Fields[0].Name = "cloud"
+	OpenStackConfigDoc.Fields[0].Type = "string"
+	OpenStackConfigDoc.Fields[0].Note = ""
+	OpenStackConfigDoc.Fields[0].Description = "OpenStack cloud name to select from \"clouds.yaml\". Only required if config file for OpenStack is used. Fallback authentication uses environment variables. For details see: https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html."
+	OpenStackConfigDoc.Fields[0].Comments[encoder.LineComment] = "OpenStack cloud name to select from \"clouds.yaml\". Only required if config file for OpenStack is used. Fallback authentication uses environment variables. For details see: https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html."
+	OpenStackConfigDoc.Fields[1].Name = "availabilityZone"
+	OpenStackConfigDoc.Fields[1].Type = "string"
+	OpenStackConfigDoc.Fields[1].Note = ""
+	OpenStackConfigDoc.Fields[1].Description = "Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html"
+	OpenStackConfigDoc.Fields[1].Comments[encoder.LineComment] = "Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html"
+	OpenStackConfigDoc.Fields[2].Name = "flavorID"
+	OpenStackConfigDoc.Fields[2].Type = "string"
+	OpenStackConfigDoc.Fields[2].Note = ""
+	OpenStackConfigDoc.Fields[2].Description = "Flavor ID (machine type) to use for the VMs. For details see: https://docs.openstack.org/nova/latest/admin/flavors.html"
+	OpenStackConfigDoc.Fields[2].Comments[encoder.LineComment] = "Flavor ID (machine type) to use for the VMs. For details see: https://docs.openstack.org/nova/latest/admin/flavors.html"
+	OpenStackConfigDoc.Fields[3].Name = "floatingIPPoolID"
+	OpenStackConfigDoc.Fields[3].Type = "string"
+	OpenStackConfigDoc.Fields[3].Note = ""
+	OpenStackConfigDoc.Fields[3].Description = "Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html"
+	OpenStackConfigDoc.Fields[3].Comments[encoder.LineComment] = "Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html"
+	OpenStackConfigDoc.Fields[4].Name = "directDownload"
+	OpenStackConfigDoc.Fields[4].Type = "bool"
+	OpenStackConfigDoc.Fields[4].Note = ""
+	OpenStackConfigDoc.Fields[4].Description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+	OpenStackConfigDoc.Fields[4].Comments[encoder.LineComment] = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."
 	QEMUConfigDoc.Description = "QEMUConfig holds config information for QEMU based Constellation deployments."
@@ -396,6 +438,10 @@ func (_ GCPConfig) Doc() *encoder.Doc {
 	return &GCPConfigDoc
 }
 
+func (_ OpenStackConfig) Doc() *encoder.Doc {
+	return &OpenStackConfigDoc
+}
+
 func (_ QEMUConfig) Doc() *encoder.Doc {
 	return &QEMUConfigDoc
 }
@@ -412,6 +458,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&AWSConfigDoc,
 			&AzureConfigDoc,
 			&GCPConfigDoc,
+			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
 		},
 	}

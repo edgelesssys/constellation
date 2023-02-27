@@ -53,6 +53,12 @@ func TestGetReference(t *testing.T) {
 			variant:       "someVariant",
 			wantReference: "someReference",
 		},
+		"reference exists openstack": {
+			info:          versionsapi.ImageInfo{OpenStack: map[string]string{"someVariant": "someReference"}},
+			provider:      cloudprovider.OpenStack,
+			variant:       "someVariant",
+			wantReference: "someReference",
+		},
 		"reference exists qemu": {
 			info:          versionsapi.ImageInfo{QEMU: map[string]string{"someVariant": "someReference"}},
 			provider:      cloudprovider.QEMU,
@@ -140,6 +146,13 @@ func TestVariant(t *testing.T) {
 				GCP: &config.GCPConfig{},
 			}},
 			wantVariant: "sev-es",
+		},
+		"OpenStack": {
+			csp: cloudprovider.OpenStack,
+			config: &config.Config{Image: "someImage", Provider: config.ProviderConfig{
+				OpenStack: &config.OpenStackConfig{},
+			}},
+			wantVariant: "sev",
 		},
 		"QEMU": {
 			csp: cloudprovider.QEMU,

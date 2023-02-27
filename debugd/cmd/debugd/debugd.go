@@ -81,6 +81,9 @@ func main() {
 		defer meta.Close()
 		fetcher = cloudprovider.New(meta)
 
+	// TODO(malt3): implement OpenStack
+	// case platform.OpenStack:
+
 	case platform.QEMU:
 		fetcher = cloudprovider.New(qemucloud.New())
 
