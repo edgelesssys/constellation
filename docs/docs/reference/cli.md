@@ -15,6 +15,7 @@ Commands:
   * [generate](#constellation-config-generate): Generate a default configuration file
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
   * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
+  * [kubernetes-versions](#constellation-config-kubernetes-versions): Print the Kubernetes versions supported by this CLI
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
 * [mini](#constellation-mini): Manage MiniConstellation clusters
@@ -32,6 +33,7 @@ Commands:
     * [aws](#constellation-iam-create-aws): Create IAM configuration on AWS for your Constellation cluster
     * [azure](#constellation-iam-create-azure): Create IAM configuration on Microsoft Azure for your Constellation cluster
     * [gcp](#constellation-iam-create-gcp): Create IAM configuration on GCP for your Constellation cluster
+  * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local terraform files
 
 ## constellation config
 
@@ -129,6 +131,32 @@ constellation config instance-types [flags]
 
 ```
   -h, --help   help for instance-types
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+```
+
+## constellation config kubernetes-versions
+
+Print the Kubernetes versions supported by this CLI
+
+### Synopsis
+
+Print the Kubernetes versions supported by this CLI.
+
+```
+constellation config kubernetes-versions [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for kubernetes-versions
 ```
 
 ### Options inherited from parent commands
@@ -610,5 +638,32 @@ constellation iam create gcp [flags]
       --force             disable version compatibility checks - might result in corrupted clusters
       --generate-config   automatically generate a configuration file and fill in the required fields
       --yes               create the IAM configuration without further confirmation
+```
+
+## constellation iam destroy
+
+Destroy an IAM configuration and delete local terraform files
+
+### Synopsis
+
+Destroy an IAM configuration and delete local terraform files.
+
+```
+constellation iam destroy [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for destroy
+  -y, --yes    destroy the IAM configuration without asking for confirmation
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
