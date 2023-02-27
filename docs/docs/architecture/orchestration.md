@@ -23,7 +23,7 @@ Altogether, the following files are generated during the creation of a Constella
 * a configuration file
 * an ID file
 * a Base64-encoded master secret
-* [Terraform artifacts](../reference/terraform.md), stored in the `constellation-terraform` subdirectory
+* [Terraform artifacts](../reference/terraform.md), stored in the `constellation-terraform` and `constellation-iam-terraform` subdirectories
 * a Kubernetes `kubeconfig` file.
 
 After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
