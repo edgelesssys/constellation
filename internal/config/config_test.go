@@ -832,7 +832,3 @@ func TestConfigVersionCompatibility(t *testing.T) {
 		})
 	}
 }
-
-func toPtr[T any](v T) *T {
-	return &v
-}
