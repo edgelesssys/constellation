@@ -92,6 +92,8 @@ jobs:
           commit-message: "docs: add release ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
+          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
 
   prepare-release-branch:
     name: Prepare release branch
@@ -413,3 +415,5 @@ jobs:
           commit-message: "release: bring back changes from ${{ env.VERSION }}"
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
+          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
