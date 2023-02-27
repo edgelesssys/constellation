@@ -35,6 +35,10 @@ func TestMarshalJSON(t *testing.T) {
 			input: GCP,
 			want:  []byte("\"GCP\""),
 		},
+		"openstack": {
+			input: OpenStack,
+			want:  []byte("\"OpenStack\""),
+		},
 		"qemu": {
 			input: QEMU,
 			want:  []byte("\"QEMU\""),
@@ -78,6 +82,10 @@ func TestUnmarshalJSON(t *testing.T) {
 		"gcp": {
 			input: []byte("\"gcp\""),
 			want:  GCP,
+		},
+		"openstack": {
+			input: []byte("\"openstack\""),
+			want:  OpenStack,
 		},
 		"qemu": {
 			input: []byte("\"qemu\""),
@@ -123,6 +131,10 @@ func TestMarshalYAML(t *testing.T) {
 			input: GCP,
 			want:  []byte("GCP\n"),
 		},
+		"openstack": {
+			input: OpenStack,
+			want:  []byte("OpenStack\n"),
+		},
 		"qemu": {
 			input: QEMU,
 			want:  []byte("QEMU\n"),
@@ -166,6 +178,10 @@ func TestUnmarshalYAML(t *testing.T) {
 		"gcp": {
 			input: []byte("gcp\n"),
 			want:  GCP,
+		},
+		"openstack": {
+			input: []byte("openstack\n"),
+			want:  OpenStack,
 		},
 		"qemu": {
 			input: []byte("qemu\n"),
@@ -214,6 +230,10 @@ func TestFromString(t *testing.T) {
 		"gcp": {
 			input: "gcp",
 			want:  GCP,
+		},
+		"openstack": {
+			input: "openstack",
+			want:  OpenStack,
 		},
 		"qemu": {
 			input: "qemu",

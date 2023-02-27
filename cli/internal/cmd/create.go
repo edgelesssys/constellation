@@ -119,6 +119,9 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	case cloudprovider.GCP:
 		c.log.Debugf("Configuring instance type for GCP")
 		instanceType = conf.Provider.GCP.InstanceType
+	case cloudprovider.OpenStack:
+		c.log.Debugf("Configuring instance type for OpenStack")
+		instanceType = conf.Provider.OpenStack.FlavorID
 	case cloudprovider.QEMU:
 		c.log.Debugf("Configuring instance type for QEMU")
 		cpus := conf.Provider.QEMU.VCPUs

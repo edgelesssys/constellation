@@ -98,6 +98,8 @@ func variant(provider cloudprovider.Provider, config *config.Config) (string, er
 
 	case cloudprovider.GCP:
 		return "sev-es", nil
+	case cloudprovider.OpenStack:
+		return "sev", nil
 	case cloudprovider.QEMU:
 		return "default", nil
 	default:
@@ -139,6 +141,8 @@ func getReferenceFromImageInfo(provider cloudprovider.Provider, variant string, 
 		providerList = imgInfo.Azure
 	case cloudprovider.GCP:
 		providerList = imgInfo.GCP
+	case cloudprovider.OpenStack:
+		providerList = imgInfo.OpenStack
 	case cloudprovider.QEMU:
 		providerList = imgInfo.QEMU
 	default:

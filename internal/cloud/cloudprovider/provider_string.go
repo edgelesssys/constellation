@@ -12,12 +12,13 @@ func _() {
 	_ = x[AWS-1]
 	_ = x[Azure-2]
 	_ = x[GCP-3]
-	_ = x[QEMU-4]
+	_ = x[OpenStack-4]
+	_ = x[QEMU-5]
 }
 
-const _Provider_name = "UnknownAWSAzureGCPQEMU"
+const _Provider_name = "UnknownAWSAzureGCPOpenStackQEMU"
 
-var _Provider_index = [...]uint8{0, 7, 10, 15, 18, 22}
+var _Provider_index = [...]uint8{0, 7, 10, 15, 18, 27, 31}
 
 func (i Provider) String() string {
 	if i >= Provider(len(_Provider_index)-1) {

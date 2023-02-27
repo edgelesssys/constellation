@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -82,6 +83,13 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		}
 		defer cl.RemoveInstaller()
 		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
+	case cloudprovider.OpenStack:
+		cl, err := c.newTerraformClient(ctx)
+		if err != nil {
+			return clusterid.File{}, err
+		}
+		defer cl.RemoveInstaller()
+		return c.createOpenStack(ctx, cl, config, controlPlaneCount, workerCount, image)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -239,6 +247,54 @@ func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClu
 	vars.ImageID = caseInsensitiveVersionsRegExp.ReplaceAllString(vars.ImageID, "/versions/")
 
 	return vars
+}
+
+func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, config *config.Config,
+	controlPlaneCount, workerCount int, image string,
+) (idFile clusterid.File, retErr error) {
+	// TODO: Remove this once OpenStack is supported.
+	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
+		return clusterid.File{}, errors.New("OpenStack isn't supported yet")
+	}
+	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL {
+		return clusterid.File{}, errors.New(
+			"environment variable OS_AUTH_URL is not set. OpenStack authentication requires a set of " +
+				"OS_* environment variables that are typically sourced into the current shell with an openrc file. " +
+				"See https://registry.terraform.io/providers/terraform-provider-openstack/openstack/latest/docs#configuration-reference for more information",
+		)
+	}
+
+	vars := terraform.OpenStackClusterVariables{
+		CommonVariables: terraform.CommonVariables{
+			Name:               config.Name,
+			CountControlPlanes: controlPlaneCount,
+			CountWorkers:       workerCount,
+			StateDiskSizeGB:    config.StateDiskSizeGB,
+		},
+		AvailabilityZone: config.Provider.OpenStack.AvailabilityZone,
+		FloatingIPPoolID: config.Provider.OpenStack.FloatingIPPoolID,
+		FlavorID:         config.Provider.OpenStack.FlavorID,
+		ImageURL:         image,
+		DirectDownload:   *config.Provider.OpenStack.DirectDownload,
+		Debug:            config.IsDebugCluster(),
+	}
+
+	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.OpenStack.String())), &vars); err != nil {
+		return clusterid.File{}, err
+	}
+
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	tfOutput, err := cl.CreateCluster(ctx)
+	if err != nil {
+		return clusterid.File{}, err
+	}
+
+	return clusterid.File{
+		CloudProvider: cloudprovider.OpenStack,
+		IP:            tfOutput.IP,
+		InitSecret:    []byte(tfOutput.Secret),
+		UID:           tfOutput.UID,
+	}, nil
 }
 
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, config *config.Config,

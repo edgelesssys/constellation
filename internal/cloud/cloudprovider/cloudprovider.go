@@ -25,6 +25,8 @@ const (
 	Azure
 	// GCP is Google Compute Platform.
 	GCP
+	// OpenStack is an open standard cloud computing platform.
+	OpenStack
 	// QEMU for a local emulated installation.
 	QEMU
 )
@@ -69,6 +71,8 @@ func FromString(s string) Provider {
 		return Azure
 	case "gcp":
 		return GCP
+	case "openstack":
+		return OpenStack
 	case "qemu":
 		return QEMU
 	default:
