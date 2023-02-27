@@ -129,47 +129,11 @@ func TestImageInfoValidate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"invalid aws": {
+		"no provider": {
 			info: ImageInfo{
 				Ref:     "test-ref",
 				Stream:  "nightly",
 				Version: "v1.0.0",
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid gcp": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid azure": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid qemu": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
 			},
 			wantErr: true,
 		},
@@ -266,6 +230,15 @@ func TestImageInfoValidateRequest(t *testing.T) {
 				Stream:  "nightly",
 				Version: "v1.0.0",
 				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+			},
+			wantErr: true,
+		},
+		"invalid openstack": {
+			info: ImageInfo{
+				Ref:       "test-ref",
+				Stream:    "nightly",
+				Version:   "v1.0.0",
+				OpenStack: map[string]string{"key": "value", "key2": "value2"},
 			},
 			wantErr: true,
 		},
