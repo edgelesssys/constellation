@@ -75,7 +75,11 @@ runs:
       shell: bash
       if: inputs.existingConfig != 'true'
       run: |
-        constellation config generate ${{ inputs.cloudProvider }}
+        if [[ ${{ inputs.kubernetesVersion != '' }} == true ]]; then
+          constellation config generate ${{ inputs.cloudProvider }} --kubernetes="${{ inputs.kubernetesVersion }}"
+        else
+          constellation config generate ${{ inputs.cloudProvider }}
+        fi
 
         yq eval -i "(.name) = \"e2e-test\"" constellation-conf.yaml
 
@@ -102,13 +106,6 @@ runs:
             (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
-
-    - name: Update config
-      shell: bash
-      run: |
-        if [[ ${{ inputs.kubernetesVersion != '' }} = true ]]; then
-          yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
-        fi
 
     - name: Remove embedded measurements
       if: inputs.keepMeasurements == 'false'
