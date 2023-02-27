@@ -51,3 +51,5 @@ jobs:
           commit-message: "docs: update cli reference"
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: no changelog
+          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
