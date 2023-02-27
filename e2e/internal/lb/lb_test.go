@@ -11,8 +11,10 @@ package test
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -37,12 +39,54 @@ const (
 	interval      = time.Second * 5
 )
 
+func gatherDebugInfo(t *testing.T, k *kubernetes.Clientset) {
+	// Do not gather additional information on success
+	if !t.Failed() {
+		return
+	}
+
+	t.Log("Gathering additional debug information.")
+
+	pods, err := k.CoreV1().Pods(namespaceName).List(context.Background(), v1.ListOptions{
+		LabelSelector: "app=whoami",
+	})
+	if err != nil {
+		t.Logf("listing pods: %v", err)
+		return
+	}
+
+	for idx := range pods.Items {
+		pod := pods.Items[idx]
+		req := k.CoreV1().Pods(namespaceName).GetLogs(pod.Name, &coreV1.PodLogOptions{
+			LimitBytes: func() *int64 { i := int64(1024 * 1024); return &i }(),
+		})
+		logs, err := req.Stream(context.Background())
+		if err != nil {
+			t.Logf("fetching logs: %v", err)
+			return
+		}
+		defer logs.Close()
+
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, logs)
+		if err != nil {
+			t.Logf("copying logs: %v", err)
+			return
+		}
+		t.Logf("Logs of pod '%s':\n%s\n\n", pod.Name, buf)
+	}
+}
+
 func TestLoadBalancer(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	k, err := kubectl.New()
 	require.NoError(err)
+
+	t.Cleanup(func() {
+		gatherDebugInfo(t, k)
+	})
 
 	t.Log("Waiting for external IP to be registered")
 	svc := testEventuallyExternalIPAvailable(t, k)
@@ -57,7 +101,7 @@ func TestLoadBalancer(t *testing.T) {
 	t.Log("Check that all pods receive traffic")
 	var allHostnames []string
 	for i := 0; i < numRequests; i++ {
-		allHostnames = testEndpointAvailable(t, url, allHostnames)
+		allHostnames = testEndpointAvailable(t, url, allHostnames, i)
 	}
 	assert.True(hasNUniqueStrings(allHostnames, numPods))
 	allHostnames = allHostnames[:0]
@@ -74,7 +118,7 @@ func TestLoadBalancer(t *testing.T) {
 
 	t.Log("Check again that all pods receive traffic")
 	for i := 0; i < numRequests; i++ {
-		allHostnames = testEndpointAvailable(t, newURL, allHostnames)
+		allHostnames = testEndpointAvailable(t, newURL, allHostnames, i)
 	}
 	assert.True(hasNUniqueStrings(allHostnames, numPods))
 }
@@ -164,7 +208,7 @@ func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *c
 // Hostname: <pod-name>
 // If this works the <pod-name> value is appended to allHostnames slice and
 // new allHostnames is returned.
-func testEndpointAvailable(t *testing.T, url string, allHostnames []string) []string {
+func testEndpointAvailable(t *testing.T, url string, allHostnames []string, reqIdx int) []string {
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -172,7 +216,7 @@ func testEndpointAvailable(t *testing.T, url string, allHostnames []string) []st
 	require.NoError(err)
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
+	require.NoError(err, "Request #%d failed", reqIdx)
 	defer resp.Body.Close()
 	assert.Equal(http.StatusOK, resp.StatusCode)
 	// Force close of connections so that we see different backends
