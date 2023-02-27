@@ -198,7 +198,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	if err := c.checkWorkingDir(); err != nil {
+	if err := c.checkWorkingDir(flags); err != nil {
 		return err
 	}
 
@@ -281,12 +281,14 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 }
 
 // checkWorkingDir checks if the current working directory already contains a Terraform dir or a Constellation config file.
-func (c *iamCreator) checkWorkingDir() error {
+func (c *iamCreator) checkWorkingDir(flags iamFlags) error {
 	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
-		return fmt.Errorf("the current working directory already contains the %s directory. Please run the command in a different directory", constants.TerraformIAMWorkingDir)
+		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", constants.TerraformIAMWorkingDir)
 	}
-	if _, err := c.fileHandler.Stat(constants.ConfigFilename); err == nil {
-		return fmt.Errorf("the current working directory already contains the %s file. Please run the command in a different directory", constants.ConfigFilename)
+	if flags.generateConfig {
+		if _, err := c.fileHandler.Stat(flags.configPath); err == nil {
+			return fmt.Errorf("the flag --generate-config is set, but %q already exists. Please either run the command in a different directory, define another config path, or delete or move the existing configuration", flags.configPath)
+		}
 	}
 	return nil
 }
