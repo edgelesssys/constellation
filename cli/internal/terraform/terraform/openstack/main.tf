@@ -12,7 +12,9 @@ terraform {
   }
 }
 
-provider "openstack" {}
+provider "openstack" {
+  cloud = var.cloud
+}
 
 locals {
   uid                    = random_id.uid.hex

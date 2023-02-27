@@ -221,6 +221,8 @@ type OpenStackClusterVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
 
+	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
+	Cloud string
 	// AvailabilityZone is the OpenStack availability zone to use.
 	AvailabilityZone string
 	// Flavor is the ID of the OpenStack flavor (machine type) to use.
@@ -239,6 +241,9 @@ type OpenStackClusterVariables struct {
 func (v *OpenStackClusterVariables) String() string {
 	b := &strings.Builder{}
 	b.WriteString(v.CommonVariables.String())
+	if v.Cloud != "" {
+		writeLinef(b, "cloud = %q", v.Cloud)
+	}
 	writeLinef(b, "availability_zone = %q", v.AvailabilityZone)
 	writeLinef(b, "flavor_id = %q", v.FlavorID)
 	writeLinef(b, "floating_ip_pool_id = %q", v.FloatingIPPoolID)

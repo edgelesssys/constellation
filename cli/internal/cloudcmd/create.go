@@ -256,11 +256,12 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
 		return clusterid.File{}, errors.New("OpenStack isn't supported yet")
 	}
-	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL {
+	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && config.Provider.OpenStack.Cloud == "" {
 		return clusterid.File{}, errors.New(
-			"environment variable OS_AUTH_URL is not set. OpenStack authentication requires a set of " +
-				"OS_* environment variables that are typically sourced into the current shell with an openrc file. " +
-				"See https://registry.terraform.io/providers/terraform-provider-openstack/openstack/latest/docs#configuration-reference for more information",
+			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
+				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
+				"or a cloud name for \"clouds.yaml\". " +
+				"See https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html for more information",
 		)
 	}
 
@@ -271,6 +272,7 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
+		Cloud:            config.Provider.OpenStack.Cloud,
 		AvailabilityZone: config.Provider.OpenStack.AvailabilityZone,
 		FloatingIPPoolID: config.Provider.OpenStack.FloatingIPPoolID,
 		FlavorID:         config.Provider.OpenStack.FlavorID,

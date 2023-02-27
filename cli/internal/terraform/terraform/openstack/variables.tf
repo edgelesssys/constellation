@@ -1,3 +1,9 @@
+variable "cloud" {
+  type        = string
+  default     = null
+  description = "The cloud to use within the OpenStack \"clouds.yaml\" file. Optional. If not set, environment variables are used."
+}
+
 variable "name" {
   type        = string
   default     = "constell"

@@ -226,6 +226,9 @@ type GCPConfig struct {
 // OpenStackConfig holds config information for OpenStack based Constellation deployments.
 type OpenStackConfig struct {
 	// description: |
+	//   OpenStack cloud name to select from "clouds.yaml". Only required if config file for OpenStack is used. Fallback authentication uses environment variables. For details see: https://docs.openstack.org/openstacksdk/latest/user/config/configuration.html.
+	Cloud string `yaml:"cloud"`
+	// description: |
 	//   Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html
 	AvailabilityZone string `yaml:"availabilityZone" validate:"required"`
 	// description: |
