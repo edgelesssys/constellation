@@ -18,6 +18,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewIAMDestroyCmd returns a new cobra.Command for the iam destroy subcommand.
+func newIAMDestroyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "destroy",
+		Short: "Destroy an IAM configuration and delete local Terraform files",
+		Long:  "Destroy an IAM configuration and delete local Terraform files.",
+		Args:  cobra.ExactArgs(0),
+		RunE:  runIAMDestroy,
+	}
+
+	cmd.Flags().BoolP("yes", "y", false, "destroy the IAM configuration without asking for confirmation")
+
+	return cmd
+}
+
 func runIAMDestroy(cmd *cobra.Command, _args []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
@@ -129,7 +144,7 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 
 	c.log.Debugf("Checking if keys are the same")
 	if tfSaKey != fileSaKey {
-		cmd.Printf("The key in %q don't match up with your terraform state. %q will not be deleted.\n", constants.GCPServiceAccountKeyFile, constants.GCPServiceAccountKeyFile)
+		cmd.Printf("The key in %q don't match up with your Terraform state. %q will not be deleted.\n", constants.GCPServiceAccountKeyFile, constants.GCPServiceAccountKeyFile)
 		return true, nil
 	}
 
