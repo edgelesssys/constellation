@@ -95,6 +95,27 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Your Constellation cluster was created successfully.
     ```
 
+   :::info
+
+   On Azure, you may receive the following error when running with limited IAM permissions:
+   ```shell-session
+   Error: Error ensuring Resource Providers are registered.
+
+   Terraform automatically attempts to register the Resource Providers it supports to
+   ensure it's able to provision resources.
+
+   If you don't have permission to register Resource Providers you may wish to use the
+   "skip_provider_registration" flag in the Provider block to disable this functionality.
+   ```
+
+   To continue, please ensure that the [required resource providers](install.md#required-permissions) have been registered in your subscription by your administrator.
+   Afterward, run `constellation create` again with `ARM_SKIP_PROVIDER_REGISTRATION` set as an environment variable:
+   ```bash
+   ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+   ```
+   
+   :::
+
 3. Initialize the cluster
 
     ```bash
