@@ -72,19 +72,19 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "recover", "nop", "iamcreate"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "nop", "iamcreate"]'), inputs.test))
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
         exit 1
 
-    # K-Bench's network benchmarks require at least two distinct worker nodes.
-    - name: Validate k-bench inputs
-      if: inputs.test == 'k-bench'
+    # Perf-bench's network benchmarks require at least two distinct worker nodes.
+    - name: Validate perf-bench inputs
+      if: inputs.test == 'perf-bench'
       shell: bash
       run: |
         if [[ "${{ inputs.workerNodesCount }}" -lt 2 ]]; then
-          echo "::error::Test K-Bench requires at least 2 worker nodes."
+          echo "::error::Test Perf-Bench requires at least 2 worker nodes."
           exit 1
         fi
 
