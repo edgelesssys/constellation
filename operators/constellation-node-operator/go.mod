@@ -34,6 +34,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.4
 )
 
+require gopkg.in/yaml.v2 v2.4.0 // indirect
+
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
@@ -97,7 +99,6 @@ require (
 	google.golang.org/grpc v1.53.0
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
