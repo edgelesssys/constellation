@@ -35,7 +35,7 @@ on:
           - "sonobuoy full"
           - "autoscaling"
           - "lb"
-          - "k-bench"
+          - "perf-bench"
           - "verify"
           - "recover"
           - "nop"

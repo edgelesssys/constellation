@@ -57,7 +57,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, verify, recover, nop, iamcreate]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, nop, iamcreate]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -230,9 +230,9 @@ runs:
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
 
-    - name: Run K-Bench
-      if: inputs.test == 'k-bench'
-      uses: ./.github/actions/e2e_kbench
+    - name: Run Performance Benchmark
+      if: inputs.test == 'perf-bench'
+      uses: ./.github/actions/e2e_benchmark
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
