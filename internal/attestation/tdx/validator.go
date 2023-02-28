@@ -14,7 +14,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/go-tdx-qpl/verification"
 	"github.com/edgelesssys/go-tdx-qpl/verification/types"
@@ -31,13 +30,13 @@ type Validator struct {
 	tdx      tdxVerifier
 	expected measurements.M
 
-	log vtpm.AttestationLogger
+	log attestation.Logger
 }
 
 // NewValidator initializes a new TDX Validator.
-func NewValidator(measurements measurements.M, log vtpm.AttestationLogger) *Validator {
+func NewValidator(measurements measurements.M, log attestation.Logger) *Validator {
 	if log == nil {
-		log = nopAttestationLogger{}
+		log = attestation.NOPLogger{}
 	}
 
 	return &Validator{
@@ -92,12 +91,3 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 
 	return attDoc.UserData, nil
 }
-
-// nopAttestationLogger is a no-op implementation of AttestationLogger.
-type nopAttestationLogger struct{}
-
-// Infof is a no-op.
-func (nopAttestationLogger) Infof(string, ...interface{}) {}
-
-// Warnf is a no-op.
-func (nopAttestationLogger) Warnf(string, ...interface{}) {}

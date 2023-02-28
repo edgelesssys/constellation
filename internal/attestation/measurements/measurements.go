@@ -183,6 +183,40 @@ func (m *M) SetEnforced(enforced []uint32) error {
 	return nil
 }
 
+// UnmarshalJSON unmarshals measurements from json.
+// This function enforces all measurements to be of equal length.
+func (m *M) UnmarshalJSON(b []byte) error {
+	newM := make(map[uint32]Measurement)
+	if err := json.Unmarshal(b, &newM); err != nil {
+		return err
+	}
+
+	// check if all measurements are of equal length
+	if err := checkLength(newM); err != nil {
+		return err
+	}
+
+	*m = newM
+	return nil
+}
+
+// UnmarshalYAML unmarshals measurements from yaml.
+// This function enforces all measurements to be of equal length.
+func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
+	newM := make(map[uint32]Measurement)
+	if err := unmarshal(&newM); err != nil {
+		return err
+	}
+
+	// check if all measurements are of equal length
+	if err := checkLength(newM); err != nil {
+		return err
+	}
+
+	*m = newM
+	return nil
+}
+
 // Measurement wraps expected PCR value and whether it is enforced.
 type Measurement struct {
 	// Expected measurement value.
@@ -266,7 +300,6 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		}
 	}
 
-	//	if !((len(expected) == 32) || len(expected) == 48) {
 	if len(expected) != 32 && len(expected) != 48 {
 		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
 	}
@@ -312,6 +345,18 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
+}
+
+func checkLength(m map[uint32]Measurement) error {
+	var length int
+	for idx, measurement := range m {
+		if length == 0 {
+			length = len(measurement.Expected)
+		} else if len(measurement.Expected) != length {
+			return fmt.Errorf("inconsistent measurement length: index %d: expected %d, got %d", idx, length, len(measurement.Expected))
+		}
+	}
+	return nil
 }
 
 type encodedMeasurement struct {

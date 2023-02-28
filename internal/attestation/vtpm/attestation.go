@@ -64,12 +64,6 @@ type (
 	ValidateCVM func(attestation AttestationDocument) error
 )
 
-// AttestationLogger is a logger used to print warnings and infos during attestation validation.
-type AttestationLogger interface {
-	Infof(format string, args ...any)
-	Warnf(format string, args ...any)
-}
-
 // AttestationDocument contains the TPM attestation with signed user data.
 type AttestationDocument struct {
 	// Attestation contains the TPM event log, PCR values and quotes, and public key of the key used to sign the attestation.
@@ -137,15 +131,15 @@ type Validator struct {
 	getTrustedKey GetTPMTrustedAttestationPublicKey
 	validateCVM   ValidateCVM
 
-	log AttestationLogger
+	log attestation.Logger
 }
 
 // NewValidator returns a new Validator.
 func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
-	validateCVM ValidateCVM, log AttestationLogger,
+	validateCVM ValidateCVM, log attestation.Logger,
 ) *Validator {
 	if log == nil {
-		log = &nopAttestationLogger{}
+		log = &attestation.NOPLogger{}
 	}
 	return &Validator{
 		expected:      expected,
@@ -254,12 +248,3 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 
 	return m, nil
 }
-
-// nopAttestationLogger is a no-op implementation of AttestationLogger.
-type nopAttestationLogger struct{}
-
-// Infof is a no-op.
-func (nopAttestationLogger) Infof(string, ...interface{}) {}
-
-// Warnf is a no-op.
-func (nopAttestationLogger) Warnf(string, ...interface{}) {}

@@ -43,6 +43,21 @@ const (
 	MeasurementSecretContext = "measurementSecret"
 )
 
+// Logger is a logger used to print warnings and infos during attestation validation.
+type Logger interface {
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+}
+
+// NOPLogger is a no-op implementation of [Logger].
+type NOPLogger struct{}
+
+// Infof is a no-op.
+func (NOPLogger) Infof(string, ...interface{}) {}
+
+// Warnf is a no-op.
+func (NOPLogger) Warnf(string, ...interface{}) {}
+
 // DeriveClusterID derives the cluster ID from a salt and secret value.
 func DeriveClusterID(secret, salt []byte) ([]byte, error) {
 	return crypto.DeriveKey(secret, salt, []byte(crypto.DEKPrefix+clusterIDContext), crypto.DerivedKeyLengthDefault)

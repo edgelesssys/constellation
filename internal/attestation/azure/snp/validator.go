@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -43,7 +44,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log attestation.Logger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
@@ -77,7 +78,7 @@ func reverseEndian(b []byte) {
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
 func getTrustedKey(
-	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
+	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log attestation.Logger,
 ) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
@@ -144,7 +145,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 
 func validateSNPReport(
 	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool,
-	report snpAttestationReport, log vtpm.AttestationLogger,
+	report snpAttestationReport, log attestation.Logger,
 ) error {
 	if report.Policy.Debug() {
 		return errDebugEnabled

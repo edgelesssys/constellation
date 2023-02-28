@@ -11,7 +11,6 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/go-tdx-qpl/tdx"
 )
@@ -21,13 +20,13 @@ type Issuer struct {
 	oid.QEMUTDX
 
 	open OpenFunc
-	log  vtpm.AttestationLogger
+	log  attestation.Logger
 }
 
 // NewIssuer initializes a new TDX Issuer.
-func NewIssuer(log vtpm.AttestationLogger) *Issuer {
+func NewIssuer(log attestation.Logger) *Issuer {
 	if log == nil {
-		log = nopAttestationLogger{}
+		log = attestation.NOPLogger{}
 	}
 	return &Issuer{
 		open: tdx.Open,
