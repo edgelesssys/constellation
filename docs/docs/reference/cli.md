@@ -33,7 +33,7 @@ Commands:
     * [aws](#constellation-iam-create-aws): Create IAM configuration on AWS for your Constellation cluster
     * [azure](#constellation-iam-create-azure): Create IAM configuration on Microsoft Azure for your Constellation cluster
     * [gcp](#constellation-iam-create-gcp): Create IAM configuration on GCP for your Constellation cluster
-  * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local terraform files
+  * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local Terraform files
 
 ## constellation config
 
@@ -642,11 +642,11 @@ constellation iam create gcp [flags]
 
 ## constellation iam destroy
 
-Destroy an IAM configuration and delete local terraform files
+Destroy an IAM configuration and delete local Terraform files
 
 ### Synopsis
 
-Destroy an IAM configuration and delete local terraform files.
+Destroy an IAM configuration and delete local Terraform files.
 
 ```
 constellation iam destroy [flags]
