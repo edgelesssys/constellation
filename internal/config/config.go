@@ -282,7 +282,7 @@ func Default() *Config {
 		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
-		DebugCluster:        func() *bool { b := false; return &b }(),
+		DebugCluster:        toPtr(false),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",
@@ -300,11 +300,11 @@ func Default() *Config {
 				ResourceGroup:        "",
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
-				DeployCSIDriver:      func() *bool { b := true; return &b }(),
+				DeployCSIDriver:      toPtr(true),
 				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
-				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
-				ConfidentialVM:       func() *bool { b := true; return &b }(),
-				SecureBoot:           func() *bool { b := false; return &b }(),
+				EnforceIDKeyDigest:   toPtr(true),
+				ConfidentialVM:       toPtr(true),
+				SecureBoot:           toPtr(false),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
 			},
 			GCP: &GCPConfig{
@@ -314,11 +314,11 @@ func Default() *Config {
 				ServiceAccountKeyPath: "",
 				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
-				DeployCSIDriver:       func() *bool { b := true; return &b }(),
+				DeployCSIDriver:       toPtr(true),
 				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
 			},
 			OpenStack: &OpenStackConfig{
-				DirectDownload: func() *bool { b := true; return &b }(),
+				DirectDownload: toPtr(true),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -621,4 +621,8 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	return &ValidationError{validationErrMsgs: validationErrMsgs}
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
