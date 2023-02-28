@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	v1_18_0, _ = NewSemver("v1.18.0")
-	v1_18_1, _ = NewSemver("v1.18.1")
-	v1_19_0, _ = NewSemver("v1.19.0")
-	v1_20_0, _ = NewSemver("v1.20.0")
-	v2_0_0, _  = NewSemver("v2.0.0")
+	v1_18_0 = Semver{Major: 1, Minor: 18, Patch: 0}
+	v1_19_0 = Semver{Major: 1, Minor: 19, Patch: 0}
+	v1_18_1 = Semver{Major: 1, Minor: 18, Patch: 1}
+	v1_20_0 = Semver{Major: 1, Minor: 20, Patch: 0}
+	v2_0_0  = Semver{Major: 2, Minor: 0, Patch: 0}
 )
 
 func TestNewVersion(t *testing.T) {
