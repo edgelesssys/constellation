@@ -37,7 +37,7 @@ func TestMarshal(t *testing.T) {
 		},
 		"warn only": {
 			m: Measurement{
-				Expected: []byte{1, 2, 3, 4}, // implicitly padded with 0s
+				Expected: []byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				WarnOnly: true,
 			},
 			wantYAML: "expected: \"0102030400000000000000000000000000000000000000000000000000000000\"\nwarnOnly: true",
@@ -200,10 +200,10 @@ func TestEncodeM(t *testing.T) {
 		},
 		"output is sorted": {
 			m: M{
-				3:  {},
-				1:  {},
-				11: {},
-				2:  {},
+				3:  WithAllBytes(0, false),
+				1:  WithAllBytes(0, false),
+				11: WithAllBytes(0, false),
+				2:  WithAllBytes(0, false),
 			},
 			want: `1:
     expected: "0000000000000000000000000000000000000000000000000000000000000000"

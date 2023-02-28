@@ -26,9 +26,6 @@ type OpenFunc func() (tdx.Device, error)
 
 // GetSelectedMeasurements returns the selected measurements from the RTMRs.
 func GetSelectedMeasurements(open OpenFunc, selection []int) (measurements.M, error) {
-	if len(selection) > 5 {
-		return nil, fmt.Errorf("invalid measurement selection: max 5 measurements allowed, got %d", len(selection))
-	}
 	for _, idx := range selection {
 		if idx < 0 || idx >= 5 {
 			return nil, fmt.Errorf("invalid measurement index %d", idx)

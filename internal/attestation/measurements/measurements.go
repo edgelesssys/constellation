@@ -266,7 +266,8 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		}
 	}
 
-	if !((len(expected) == 32) || len(expected) == 48) {
+	//	if !((len(expected) == 32) || len(expected) == 48) {
+	if len(expected) != 32 && len(expected) != 48 {
 		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
 	}
 
