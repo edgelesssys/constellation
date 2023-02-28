@@ -228,7 +228,7 @@ require (
 	github.com/hashicorp/go-secure-stdlib/awsutil v0.1.6 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20211028175153-1c139d1cc84b // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
