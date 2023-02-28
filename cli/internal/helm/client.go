@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"golang.org/x/mod/semver"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -170,12 +169,10 @@ func (c *Client) upgradeRelease(
 	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
 	c.log.Debugf("New %s version: %s", releaseName, chart.Metadata.Version)
 
-	if !isUpgrade(currentVersion, chart.Metadata.Version) {
-		c.log.Debugf(
-			"Skipping upgrade of %s: new version (%s) is not an upgrade for current version (%s)",
-			releaseName, chart.Metadata.Version, currentVersion,
-		)
-		return nil
+	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
+	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
+	if err := compatibility.IsValidUpgrade(currentVersion, chart.Metadata.Version); err != nil {
+		return err
 	}
 
 	if releaseName == certManagerReleaseName && !allowDestructive {
@@ -247,29 +244,6 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 		}
 	}
 	return nil
-}
-
-// isUpgrade returns true if the new version is greater than the current version.
-// Versions should adhere to the semver spec, but this function will prefix the versions with 'v' if they don't.
-func isUpgrade(currentVersion, newVersion string) bool {
-	if !strings.HasPrefix(currentVersion, "v") {
-		currentVersion = "v" + currentVersion
-	}
-	if !strings.HasPrefix(newVersion, "v") {
-		newVersion = "v" + newVersion
-	}
-
-	// If the current version is not a valid semver,
-	// we cant compare it to the new version.
-	// -> We can't upgrade.
-	if !semver.IsValid(currentVersion) {
-		return false
-	}
-
-	if semver.Compare(currentVersion, newVersion) < 0 {
-		return true
-	}
-	return false
 }
 
 type debugLog interface {

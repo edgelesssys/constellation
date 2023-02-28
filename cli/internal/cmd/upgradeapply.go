@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -82,11 +83,15 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, imageFetcher imageFet
 		return err
 	}
 
-	if err := u.handleServiceUpgrade(cmd, conf, flags); err != nil {
+	invalidUpgradeErr := &compatibility.InvalidUpgradeError{}
+	err = u.handleServiceUpgrade(cmd, conf, flags)
+	switch {
+	case errors.As(err, &invalidUpgradeErr):
+		cmd.PrintErrf("Skipping microservice upgrades: %s\n", err)
+	case err != nil:
 		return fmt.Errorf("service upgrade: %w", err)
 	}
 
-	invalidUpgradeErr := &cloudcmd.InvalidUpgradeError{}
 	err = u.handleK8sUpgrade(cmd.Context(), conf)
 	skipCtr := 0
 	switch {
