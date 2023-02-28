@@ -76,7 +76,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 -->
 
 2. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
-    If you want to use Terraform for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
+    If you want to manually use [Terraform](../reference/terraform.md) for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
 
@@ -151,7 +151,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 ## Terminate your cluster
 
-Use the CLI to terminate your cluster. If you used Terraform to manage your cloud resources, follow the corresponding instructions in the [Terminate workflow](../workflows/terminate.md).
+Use the CLI to terminate your cluster. If you manually used [Terraform](../reference/terraform.md) to manage your cloud resources, follow the corresponding instructions in the [Terminate workflow](../workflows/terminate.md).
 
 ```bash
 constellation terminate

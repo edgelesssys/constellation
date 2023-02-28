@@ -261,6 +261,11 @@ const sidebars = {
           label: 'SLSA adoption',
           id: 'reference/slsa',
         },
+        {
+          type: 'doc',
+          label: 'Terraform Usage',
+          id: 'reference/terraform',
+        },
       ],
     },
   ],

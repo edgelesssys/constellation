@@ -231,13 +231,13 @@ The following describes the configuration fields and how you obtain the required
 
 * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
-  Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
+  The resource can be created with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
 * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
 
-  Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
+  The resource can be created with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
@@ -254,7 +254,7 @@ You can keep created IAM configurations and reuse them for new clusters. Alterna
 
 **Prerequisites:**
 * [Terraform](https://developer.hashicorp.com/terraform/downloads) is installed on your machine.
-* Access to the `terraform.tfstate` file created by the `constellation iam create` command.
+* Access to the [`constellation-iam-terraform`](../reference/terraform.md) directory created by the `constellation iam create` command.
 
 You can delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create`:
 ```bash

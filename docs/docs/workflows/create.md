@@ -30,14 +30,18 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your workspace.
+*create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
 </tabItem>
 <tabItem value="terraform" label="Terraform">
 
-Constellation supports managing the infrastructure via Terraform. This allows for an easier GitOps integration as well as meeting regulatory requirements.
+Terraform allows for an easier GitOps integration as well as meeting regulatory requirements.
 Since the Constellation CLI also uses Terraform under the hood, you can reuse the same Terraform files.
-For now, please refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
+
+:::info
+Familiarize with the [Terraform usage policy](../reference/terraform.md) before manually interacting with Terraform to create a cluster.
+Please also refrain from changing the Terraform resource definitions, as Constellation is tightly coupled to them.
+:::
 
 Download the Terraform files for the selected CSP from the [GitHub repository](https://github.com/edgelesssys/constellation/tree/main/cli/internal/terraform/terraform).
 

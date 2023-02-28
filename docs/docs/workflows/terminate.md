@@ -1,6 +1,6 @@
 # Terminate your cluster
 
-You can terminate your cluster using the CLI. For this, you need the Terraform state directory named `constellation-terraform` in the current directory.
+You can terminate your cluster using the CLI. For this, you need the Terraform state directory named [`constellation-terraform`](../reference/terraform.md) in the current directory.
 
 :::danger
 
