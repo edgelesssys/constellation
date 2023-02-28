@@ -54,6 +54,8 @@ runs:
 
     - name: Set up ko
       uses: imjasonh/setup-ko@ace48d793556083a76f1e3e6068850c1f4a369aa # v0.6
+      with:
+        ko-version: "v0.12.0"
 
     - name: Build and upload ko container image
       id: build
