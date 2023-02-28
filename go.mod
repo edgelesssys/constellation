@@ -66,8 +66,8 @@ require (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
-	github.com/go-playground/universal-translator v0.18.0
-	github.com/go-playground/validator/v10 v10.11.1
+	github.com/go-playground/universal-translator v0.18.1
+	github.com/go-playground/validator/v10 v10.11.2
 	github.com/google/go-tpm v0.3.3
 	github.com/google/go-tpm-tools v0.3.10
 	github.com/googleapis/gax-go/v2 v2.7.0
