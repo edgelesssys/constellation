@@ -44,9 +44,11 @@ const (
 	// TODO: move to stable, non-debug PCR before use.
 	PCRIndexOwnerID = tpmutil.Handle(16)
 
-	// RTMRIndexClusterID is the RTMR we extend to mark the node as initialized.
+	// TDXIndexClusterID is the measurement used to mark the node as initialized.
 	// The value is the index of the RTMR + 1, since index 0 of the TDX measurements is reserved for MRTD.
-	RTMRIndexClusterID = 3
+	TDXIndexClusterID = RTMRIndexClusterID + 1
+	// RTMRIndexClusterID is the RTMR we extend to mark the node as initialized.
+	RTMRIndexClusterID = 2
 )
 
 // M are Platform Configuration Register (PCR) values that make up the Measurements.

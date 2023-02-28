@@ -60,7 +60,7 @@ func tdxIsNodeBootstrapped(handle tdx.Device) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return measurementInitialized(tdMeasure[measurements.RTMRIndexClusterID][:]), nil
+	return measurementInitialized(tdMeasure[measurements.TDXIndexClusterID][:]), nil
 }
 
 func tpmIsNodeBootstrapped(tpm io.ReadWriteCloser) (bool, error) {
@@ -116,7 +116,7 @@ func tpmIsNodeBootstrapped(tpm io.ReadWriteCloser) (bool, error) {
 }
 
 func tdxMarkNodeAsBootstrapped(handle tdx.Device, clusterID []byte) error {
-	return tdx.ExtendRTMR(handle, clusterID, 4)
+	return tdx.ExtendRTMR(handle, clusterID, measurements.RTMRIndexClusterID)
 }
 
 func tpmMarkNodeAsBootstrapped(tpm io.ReadWriteCloser, clusterID []byte) error {
