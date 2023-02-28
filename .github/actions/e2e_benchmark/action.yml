@@ -1,0 +1,155 @@
+name: benchmark
+description: "Run benchmarks"
+
+inputs:
+  cloudProvider:
+    description: "Which cloud provider to use."
+    required: true
+  kubeconfig:
+    description: "The kubeconfig of the cluster to test."
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Setup python
+      uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435 # v4.5.0
+      with:
+        python-version: "3.10"
+
+    - name: Install kubestr
+      shell: bash
+      env:
+        KUBESTR_VER: "0.4.37"
+      run: |
+        HOSTOS="$(go env GOOS)"
+        HOSTARCH="$(go env GOARCH)"
+        curl -fsSLO https://github.com/kastenhq/kubestr/releases/download/v${KUBESTR_VER}/kubestr_${KUBESTR_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
+        tar -xzf kubestr_${KUBESTR_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
+        install kubestr /usr/local/bin
+
+    - name: Checkout k8s-bench-suite
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      with:
+        fetch-depth: 0
+        repository: "InfraBuilder/k8s-bench-suite"
+        ref: 1698974913b7b18ad54cf5860838029c295c77b1
+        path: k8s-bench-suite
+
+    - name: Run FIO benchmark
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        mkdir -p out
+        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-rwo -z 400Gi
+
+    - name: Upload raw FIO benchmark results
+      if: (!env.ACT)
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      with:
+        path: "out/fio-constellation-${{ inputs.cloudProvider }}.json"
+        name: "fio-constellation-${{ inputs.cloudProvider }}.json"
+
+    - name: Run knb benchmark
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+        TERM: xterm-256color
+      run: |
+        workers="$(kubectl get nodes -o name | grep worker)"
+        echo -e "Found workers:\n$workers"
+        server="$(echo "$workers" | tail +1 | head -1 | cut -d '/' -f2)"
+        echo "Server: $server"
+        client="$(echo "$workers" | tail +2 | head -1 | cut -d '/' -f2)"
+        echo "Client: $client"
+        k8s-bench-suite/knb -f "out/knb-constellation-${{ inputs.cloudProvider }}.json" -o json --server-node "$server" --client-node "$client"
+
+    - name: Upload raw knb benchmark results
+      if: (!env.ACT)
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      with:
+        path: "out/knb-constellation-${{ inputs.cloudProvider }}.json"
+        name: "knb-constellation-${{ inputs.cloudProvider }}.json"
+
+    - name: Assume AWS role to retrieve and update benchmarks in S3
+      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
+        aws-region: us-east-2
+
+    - name: Set S3 artifact store
+      shell: bash
+      env:
+        ARTIFACT_BUCKET_CONSTELLATION: "edgeless-artifact-store/constellation"
+      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
+
+    - name: Get previous benchmark records from S3
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
+      run: |
+        mkdir -p benchmarks
+        aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
+        if [[ -f benchmarks/constellation-${CSP}.json ]]; then
+          mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
+        else
+            echo "::warning::Couldn't retrieve previous benchmark records from s3"
+        fi
+
+    - name: Parse results, create diagrams and post the progression summary
+      shell: bash
+      env:
+        # Original result directory
+        BENCH_RESULTS: out/
+        # Working directory containing the previous results as JSON and to contain the graphs
+        BDIR: benchmarks
+        # Paths to benchmark results as JSON of the previous run and the current run
+        PREV_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}-previous.json
+        CURR_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}.json
+        CSP: ${{ inputs.cloudProvider }}
+      run: |
+        python .github/actions/e2e_benchmark/evaluate/parse.py
+        export BENCHMARK_SUCCESS=true
+        if [[ -f "$PREV_BENCH" ]]; then
+          # Sets $BENCHMARK_SUCCESS=false if delta is bigger than defined in compare.py
+          python .github/actions/e2e_benchmark/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
+        fi
+        echo BENCHMARK_SUCCESS=$BENCHMARK_SUCCESS >> $GITHUB_ENV
+
+    - name: Upload benchmark results to action run
+      if: (!env.ACT)
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      with:
+        path: |
+          benchmarks/constellation-${{ inputs.cloudProvider }}.json
+        name: "benchmarks"
+
+    - name: Check performance comparison result
+      shell: bash
+      run: |
+        if [ $COMPARISON_SUCCESS = true ] ; then
+          echo "Comparison successful"
+        else
+          echo "Comparison failed"
+          exit 1
+        fi
+
+    - name: Update benchmark records in S3
+      if: github.ref_name == 'main'
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
+      run: |
+        aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
+
+    - name: Check performance comparison result
+      shell: bash
+      run: |
+        if [[ $BENCHMARK_SUCCESS == true ]] ; then
+          echo "Benchmark successful, all metrics in the expected range."
+        else
+          echo "::error::Benchmark failed, some metrics are outside of the expected range."
+          exit 1
+        fi
