@@ -5,9 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package version provides functionality to parse and process semantic versions, as they are used in multiple components of Constellation.
+Package semver provides functionality to parse and process semantic versions, as they are used in multiple components of Constellation.
 */
-package version
+package semver
 
 import (
 	"encoding/json"
@@ -18,22 +18,22 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Version represents a semantic version.
-type Version struct {
+// Semver represents a semantic version.
+type Semver struct {
 	Major int
 	Minor int
 	Patch int
 }
 
-// NewVersion returns a Version from a string.
-func NewVersion(version string) (Version, error) {
+// NewSemver returns a Version from a string.
+func NewSemver(version string) (Semver, error) {
 	// ensure that semver has "v" prefix
 	if !strings.HasPrefix(version, "v") {
 		version = "v" + version
 	}
 
 	if !semver.IsValid(version) {
-		return Version{}, fmt.Errorf("invalid semver: %s", version)
+		return Semver{}, fmt.Errorf("invalid semver: %s", version)
 	}
 
 	version = semver.Canonical(version)
@@ -41,10 +41,10 @@ func NewVersion(version string) (Version, error) {
 	var major, minor, patch int
 	_, err := fmt.Sscanf(version, "v%d.%d.%d", &major, &minor, &patch)
 	if err != nil {
-		return Version{}, fmt.Errorf("parsing semver parts: %w", err)
+		return Semver{}, fmt.Errorf("parsing semver parts: %w", err)
 	}
 
-	return Version{
+	return Semver{
 		Major: major,
 		Minor: minor,
 		Patch: patch,
@@ -52,55 +52,50 @@ func NewVersion(version string) (Version, error) {
 }
 
 // String returns the string representation of the version.
-func (v Version) String() string {
+func (v Semver) String() string {
 	return fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
 // Compare compares two versions. It relies on the semver.Compare function internally.
-func (v Version) Compare(other Version) int {
+func (v Semver) Compare(other Semver) int {
 	return semver.Compare(v.String(), other.String())
 }
 
 // IsUpgradeTo returns if a version is an upgrade to another version.
 // It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
-func (v Version) IsUpgradeTo(other Version) bool {
+func (v Semver) IsUpgradeTo(other Semver) bool {
 	return v.Compare(other) > 0 && v.Major == other.Major && v.Minor-other.Minor <= 1
 }
 
 // CompatibleWithBinary returns if a version is compatible version of the current built binary.
 // It checks if the version of the binary is equal or greater than the current version and allows a drift of at most one minor version.
-func (v Version) CompatibleWithBinary() bool {
-	binaryVersion, err := NewVersion(constants.VersionInfo)
+func (v Semver) CompatibleWithBinary() bool {
+	binaryVersion, err := NewSemver(constants.VersionInfo)
 	if err != nil {
 		return false
 	}
 
-	return v.Equals(binaryVersion) || binaryVersion.IsUpgradeTo(v)
+	return v.Compare(binaryVersion) == 0 || binaryVersion.IsUpgradeTo(v)
 }
 
 // NextMinor returns the next minor version in the format "vMAJOR.MINOR".
-func (v Version) NextMinor() string {
+func (v Semver) NextMinor() string {
 	return fmt.Sprintf("v%d.%d", v.Major, v.Minor+1)
 }
 
-// Equals returns if two versions are equal.
-func (v Version) Equals(other Version) bool {
-	return v.Major == other.Major && v.Minor == other.Minor && v.Patch == other.Patch
-}
-
 // MarshalJSON implements the json.Marshaler interface.
-func (v Version) MarshalJSON() ([]byte, error) {
+func (v Semver) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, v.String())), nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (v *Version) UnmarshalJSON(data []byte) error {
+func (v *Semver) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
 
-	version, err := NewVersion(s)
+	version, err := NewSemver(s)
 	if err != nil {
 		return err
 	}

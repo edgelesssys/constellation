@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package version
+package semver
 
 import (
 	"testing"
@@ -14,14 +14,14 @@ import (
 )
 
 var (
-	v1_18_0, _ = NewVersion("v1.18.0")
-	v1_18_1, _ = NewVersion("v1.18.1")
-	v1_19_0, _ = NewVersion("v1.19.0")
-	v1_20_0, _ = NewVersion("v1.20.0")
-	v2_0_0, _  = NewVersion("v2.0.0")
+	v1_18_0, _ = NewSemver("v1.18.0")
+	v1_18_1, _ = NewSemver("v1.18.1")
+	v1_19_0, _ = NewSemver("v1.19.0")
+	v1_20_0, _ = NewSemver("v1.20.0")
+	v2_0_0, _  = NewSemver("v2.0.0")
 )
 
-func TestVersionValidation(t *testing.T) {
+func TestNewVersion(t *testing.T) {
 	testCases := map[string]struct {
 		version string
 		wantErr bool
@@ -37,7 +37,7 @@ func TestVersionValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			_, err := NewVersion(tc.version)
+			_, err := NewSemver(tc.version)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -49,7 +49,7 @@ func TestVersionValidation(t *testing.T) {
 
 func TestJSONMarshal(t *testing.T) {
 	testCases := map[string]struct {
-		version    Version
+		version    Semver
 		wantString string
 		wantErr    bool
 	}{
@@ -96,7 +96,7 @@ func TestJSONUnmarshal(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			var version Version
+			var version Semver
 			err := version.UnmarshalJSON([]byte(tc.version))
 			if tc.wantErr {
 				require.Error(err)
@@ -110,8 +110,8 @@ func TestJSONUnmarshal(t *testing.T) {
 
 func TestComparison(t *testing.T) {
 	testCases := map[string]struct {
-		version1 Version
-		version2 Version
+		version1 Semver
+		version2 Semver
 		want     int
 	}{
 		"equal": {
@@ -141,8 +141,8 @@ func TestComparison(t *testing.T) {
 
 func TestCanUpgrade(t *testing.T) {
 	testCases := map[string]struct {
-		version1 Version
-		version2 Version
+		version1 Semver
+		version2 Semver
 		want     bool
 		wantErr  bool
 	}{
@@ -187,45 +187,9 @@ func TestCanUpgrade(t *testing.T) {
 	}
 }
 
-func TestNewVersion(t *testing.T) {
-	testCases := map[string]struct {
-		version string
-		want    string
-		wantErr bool
-	}{
-		"valid version": {
-			version: "v1.18.2",
-			want:    "v1.18.2",
-		},
-		"invalid version": {
-			version: "v1.18. ",
-			wantErr: true,
-		},
-		"no leading v": {
-			version: "1.18.2",
-			want:    "v1.18.2",
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			v, err := NewVersion(tc.version)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.want, v.String())
-			}
-		})
-	}
-}
-
 func TestNextMinor(t *testing.T) {
 	testCases := map[string]struct {
-		version Version
+		version Semver
 		want    string
 	}{
 		"valid version": {
