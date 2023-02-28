@@ -28,9 +28,9 @@ import (
 
 // NewIssuer returns an SNP issuer if it can successfully read the idkeydigest from the TPM.
 // Otherwise returns a Trusted Launch issuer.
-func NewIssuer() atls.Issuer {
+func NewIssuer(log vtpm.AttestationLogger) atls.Issuer {
 	if _, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
-		return snp.NewIssuer()
+		return snp.NewIssuer(log)
 	}
-	return trustedlaunch.NewIssuer()
+	return trustedlaunch.NewIssuer(log)
 }

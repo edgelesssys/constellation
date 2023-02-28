@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
@@ -179,7 +180,7 @@ func TestGetAttestationCert(t *testing.T) {
 			))
 			require.NoError(tpm2.NVWrite(tpm, tpm2.HandleOwner, tpmAkCertIdx, "", akCert, 0))
 
-			issuer := NewIssuer()
+			issuer := NewIssuer(logger.NewTest(t))
 			issuer.hClient = newTestClient(tc.crlServer)
 
 			certs, err := issuer.getAttestationCert(tpm)

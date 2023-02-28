@@ -16,6 +16,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmsim "github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
@@ -75,7 +76,7 @@ func TestValidate(t *testing.T) {
 	tpmOpen, tpmCloser := tpmsim.NewSimulatedTPMOpenFunc()
 	defer tpmCloser.Close()
 
-	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo)
+	issuer := NewIssuer(tpmOpen, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo, logger.NewTest(t))
 	validator := NewValidator(testExpectedPCRs, fakeGetTrustedKey, fakeValidateCVM, nil)
 
 	nonce := []byte{1, 2, 3, 4}
@@ -266,6 +267,7 @@ func TestFailIssuer(t *testing.T) {
 				},
 				tpmclient.AttestationKeyRSA,
 				fakeGetInstanceInfo,
+				nil,
 			),
 			userData: []byte("Constellation"),
 			nonce:    []byte{1, 2, 3, 4},
@@ -277,6 +279,7 @@ func TestFailIssuer(t *testing.T) {
 					return nil, errors.New("failure")
 				},
 				fakeGetInstanceInfo,
+				nil,
 			),
 			userData: []byte("Constellation"),
 			nonce:    []byte{1, 2, 3, 4},
@@ -288,6 +291,7 @@ func TestFailIssuer(t *testing.T) {
 					return &tpmclient.Key{}, nil
 				},
 				fakeGetInstanceInfo,
+				nil,
 			),
 			userData: []byte("Constellation"),
 			nonce:    []byte{1, 2, 3, 4},
@@ -297,6 +301,7 @@ func TestFailIssuer(t *testing.T) {
 				newSimTPMWithEventLog,
 				tpmclient.AttestationKeyRSA,
 				func(io.ReadWriteCloser) ([]byte, error) { return nil, errors.New("failure") },
+				nil,
 			),
 			userData: []byte("Constellation"),
 			nonce:    []byte{1, 2, 3, 4},
@@ -306,6 +311,8 @@ func TestFailIssuer(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			tc.issuer.log = logger.NewTest(t)
 
 			_, err := tc.issuer.Issue(tc.userData, tc.nonce)
 			assert.Error(err)
