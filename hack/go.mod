@@ -287,7 +287,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm v2.17.0+incompatible // indirect
 	helm.sh/helm/v3 v3.11.1 // indirect
 	k8s.io/api v0.26.1 // indirect
