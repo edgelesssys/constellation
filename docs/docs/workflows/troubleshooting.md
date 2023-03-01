@@ -19,7 +19,7 @@ If you don't have permission to register Resource Providers you may wish to use 
 
 To continue, please ensure that the [required resource providers](../getting-started/install.md#required-permissions) have been registered in your subscription by your administrator.
 
-Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run the `create` or `terminate` step again.
+Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run `create` or `terminate` again.
 For example:
 ```bash
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
