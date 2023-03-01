@@ -2,6 +2,34 @@
 
 This section aids you in finding problems when working with Constellation.
 
+## Azure: Resource Providers can't be registered
+
+On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
+```shell-session
+Error: Error ensuring Resource Providers are registered.
+
+Terraform automatically attempts to register the Resource Providers it supports to
+ensure it's able to provision resources.
+
+If you don't have permission to register Resource Providers you may wish to use the
+"skip_provider_registration" flag in the Provider block to disable this functionality.
+
+[...]
+```
+
+To continue, please ensure that the [required resource providers](../getting-started/install.md#required-permissions) have been registered in your subscription by your administrator.
+
+Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run the `create` or `terminate` step again.
+For example:
+```bash
+ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+```
+
+Or alternatively, for `terminate`:
+```bash
+ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
+```
+
 ## Cloud logging
 
 To provide information during early stages of the node's boot process, Constellation logs messages into the cloud providers' log systems. Since these offerings **aren't** confidential, only generic information without any sensitive values are stored. This provides administrators with a high level understanding of the current state of a node.
