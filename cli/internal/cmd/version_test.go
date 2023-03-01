@@ -28,7 +28,7 @@ func TestVersionCmd(t *testing.T) {
 
 	s, err := io.ReadAll(b)
 	assert.NoError(err)
-	assert.Contains(string(s), constants.VersionInfo)
+	assert.Contains(string(s), constants.VersionInfo())
 }
 
 func TestParseBuildInfo(t *testing.T) {

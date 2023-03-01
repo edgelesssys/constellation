@@ -9,7 +9,6 @@ package config
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,8 +38,7 @@ func TestValidateVersionCompatibilityHelper(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			constants.VersionInfo = tc.cli
-			err := validateVersionCompatibilityHelper("Image", tc.target)
+			err := validateVersionCompatibilityHelper(tc.cli, "Image", tc.target)
 			if tc.wantError {
 				assert.Error(err)
 				return

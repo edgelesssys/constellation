@@ -28,19 +28,19 @@ FROM build AS build-bootstrapper
 WORKDIR /constellation/bootstrapper/
 
 ARG PROJECT_VERSION
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o bootstrapper -tags=disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/bootstrapper/
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o bootstrapper -tags=disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}" ./cmd/bootstrapper/
 
 FROM build AS build-disk-mapper
 WORKDIR /constellation/disk-mapper/
 
 ARG PROJECT_VERSION
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o disk-mapper -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o disk-mapper -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}" ./cmd/
 
 FROM build AS build-upgrade-agent
 WORKDIR /constellation/upgrade-agent/
 
 ARG PROJECT_VERSION
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o upgrade-agent -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o upgrade-agent -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}" ./cmd/
 
 FROM scratch AS bootstrapper
 COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /

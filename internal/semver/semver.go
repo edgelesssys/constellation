@@ -70,7 +70,7 @@ func (v Semver) IsUpgradeTo(other Semver) bool {
 // CompatibleWithBinary returns if a version is compatible version of the current built binary.
 // It checks if the version of the binary is equal or greater than the current version and allows a drift of at most one minor version.
 func (v Semver) CompatibleWithBinary() bool {
-	binaryVersion, err := NewSemver(constants.VersionInfo)
+	binaryVersion, err := NewSemver(constants.VersionInfo())
 	if err != nil {
 		return false
 	}

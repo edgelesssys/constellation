@@ -283,7 +283,7 @@ func (i *ChartLoader) loadOperators() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
 	}
 
-	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
+	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 
 	values, err := i.loadOperatorsValues()
 	if err != nil {
@@ -370,7 +370,7 @@ func (i *ChartLoader) loadConstellationServices() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
-	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo))
+	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 
 	values, err := i.loadConstellationServicesValues()
 	if err != nil {

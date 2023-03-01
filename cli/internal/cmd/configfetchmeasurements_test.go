@@ -250,7 +250,6 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 			gcpConfig.Image = "v999.999.999"
-			constants.VersionInfo = "v999.999.999"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
