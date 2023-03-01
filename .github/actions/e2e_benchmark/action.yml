@@ -8,6 +8,15 @@ inputs:
   kubeconfig:
     description: "The kubeconfig of the cluster to test."
     required: true
+  awsOpenSearchDomain:
+    description: "AWS OpenSearch Endpoint Domain to upload the results."
+    required: false
+  awsOpenSearchUsers:
+    description: "AWS OpenSearch User to upload the results."
+    required: false
+  awsOpenSearchPwd:
+    description: "AWS OpenSearch Password to upload the results."
+    required: false
 
 runs:
   using: "composite"
@@ -126,15 +135,19 @@ runs:
           benchmarks/constellation-${{ inputs.cloudProvider }}.json
         name: "benchmarks"
 
-    - name: Check performance comparison result
+    - name: Upload benchmark results to opensearch
+      if: (!env.ACT)
       shell: bash
+      env:
+        OPENSEARCH_DOMAIN: ${{ inputs.awsOpenSearchDomain }}
+        OPENSEARCH_USER: ${{ inputs.awsOpenSearchUsers }}
+        OPENSEARCH_PWD: ${{ inputs.awsOpenSearchPwd }}
       run: |
-        if [ $COMPARISON_SUCCESS = true ] ; then
-          echo "Comparison successful"
-        else
-          echo "Comparison failed"
-          exit 1
-        fi
+        curl -XPOST \
+            -u "${OPENSEARCH_USER}:${OPENSEARCH_PWD}" \
+            "${OPENSEARCH_DOMAIN}/benchmarks-${{ inputs.cloudProvider }}-$(date '+%Y')"/_doc \
+            --data-binary @benchmarks/constellation-${{ inputs.cloudProvider }}.json \
+            -H 'Content-Type: application/json'
 
     - name: Update benchmark records in S3
       if: github.ref_name == 'main'

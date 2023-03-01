@@ -296,6 +296,9 @@ jobs:
           test: ${{ inputs.test }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
           keepMeasurements: ${{ inputs.keepMeasurements }}
+          awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
+          awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
+          awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
