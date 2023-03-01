@@ -4,7 +4,7 @@ This section aids you in finding problems when working with Constellation.
 
 ## Azure: Resource Providers can't be registered
 
-On Azure, you may receive the following error when running `create` or `terminate` step with limited IAM permissions:
+On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
 ```shell-session
 Error: Error ensuring Resource Providers are registered.
 
