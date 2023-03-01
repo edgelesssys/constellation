@@ -1,7 +1,12 @@
 name: Build and Upload GCP guest-agent container
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 2" # Every Tuesday at 4am UTC
+
 env:
   REGISTRY: ghcr.io
-on: [workflow_dispatch]
 
 jobs:
   build-gcp-guest-agent:
@@ -9,18 +14,20 @@ jobs:
     permissions:
       contents: read
       packages: write
-    strategy:
-      matrix:
-        version: ["20220927.00"]
-        include:
-          - version: "20220927.00"
-            latest: true
+
     steps:
+      - name: Get latest release of guest-agent
+        id: latest-release
+        run: |
+          latest=$(curl -fsSL https://api.github.com/repos/GoogleCloudPlatform/guest-agent/releases/latest | jq -r .tag_name)
+          echo "Latest version of guest-agent is $latest"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
       - name: Checkout GoogleCloudPlatform/guest-agent
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           repository: "GoogleCloudPlatform/guest-agent"
-          ref: refs/tags/${{ matrix.version }}
+          ref: refs/tags/${{ steps.latest-release.outputs.latest }}
           path: "guest-agent"
 
       - name: Checkout Constellation
@@ -36,9 +43,12 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/edgelesssys/gcp-guest-agent
           flavor: |
-            latest=${{ matrix.latest || false }}
+            latest=false
           tags: |
-            type=raw,value=${{ matrix.version }}
+            type=raw,value=${{ steps.latest-release.outputs.latest }}
+            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_name != 'main' }}
+            type=sha,value=${{ github.sha }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
 
       - name: Log in to the Container registry
         id: docker-login
