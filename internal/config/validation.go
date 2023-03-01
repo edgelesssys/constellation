@@ -366,18 +366,19 @@ func registerVersionCompatibilityError(ut ut.Translator) error {
 }
 
 func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldError) string {
-	err := validateVersionCompatibilityHelper(fe.Field(), fe.Value().(string))
+	binaryVersion := constants.VersionInfo()
+	err := validateVersionCompatibilityHelper(binaryVersion, fe.Field(), fe.Value().(string))
 	var msg string
 
 	switch {
 	case errors.Is(err, compatibility.ErrSemVer):
 		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMajorMismatch):
-		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo, fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMinorDrift):
-		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", constants.VersionInfo, fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
 	case errors.Is(err, compatibility.ErrOutdatedCLI):
-		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo, fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
 	default:
 		msg = err.Error()
 	}
@@ -389,14 +390,15 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 
 // Check that the validated field and the CLI version are not more than one minor version apart.
 func validateVersionCompatibility(fl validator.FieldLevel) bool {
-	if err := validateVersionCompatibilityHelper(fl.FieldName(), fl.Field().String()); err != nil {
+	binaryVersion := constants.VersionInfo()
+	if err := validateVersionCompatibilityHelper(binaryVersion, fl.FieldName(), fl.Field().String()); err != nil {
 		return false
 	}
 
 	return true
 }
 
-func validateVersionCompatibilityHelper(fieldName string, configuredVersion string) error {
+func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVersion string) error {
 	if fieldName == "Image" {
 		imageVersion, err := versionsapi.NewVersionFromShortPath(configuredVersion, versionsapi.VersionKindImage)
 		if err != nil {
@@ -406,14 +408,14 @@ func validateVersionCompatibilityHelper(fieldName string, configuredVersion stri
 	}
 
 	if fieldName == "MicroserviceVersion" {
-		cliVersion := compatibility.EnsurePrefixV(constants.VersionInfo)
+		cliVersion := compatibility.EnsurePrefixV(binaryVersion)
 		serviceVersion := compatibility.EnsurePrefixV(configuredVersion)
 		if semver.Compare(cliVersion, serviceVersion) == -1 {
 			return fmt.Errorf("the CLI's version (%s) is older than the configured version (%s)", cliVersion, serviceVersion)
 		}
 	}
 
-	return compatibility.BinaryWith(configuredVersion)
+	return compatibility.BinaryWith(binaryVersion, configuredVersion)
 }
 
 func returnsTrue(fl validator.FieldLevel) bool {

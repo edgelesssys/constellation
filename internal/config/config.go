@@ -279,7 +279,7 @@ func Default() *Config {
 		Version:             Version2,
 		Image:               defaultImage,
 		Name:                defaultName,
-		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo),
+		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo()),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
 		DebugCluster:        toPtr(false),

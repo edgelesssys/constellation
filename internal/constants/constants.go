@@ -182,5 +182,10 @@ const (
 	CDNAPIPrefix = "constellation/v1"
 )
 
-// VersionInfo is the version of a binary. Left as a separate variable to allow override during build.
-var VersionInfo = "0.0.0"
+// VersionInfo returns the version of a binary.
+func VersionInfo() string {
+	return versionInfo
+}
+
+// versionInfo is the version of a binary. Left as a separate variable to allow override during build.
+var versionInfo = "0.0.0"

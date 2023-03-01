@@ -233,7 +233,6 @@ func TestUpgradeCheck(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			constants.VersionInfo = "v0.0.0"
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
 			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))

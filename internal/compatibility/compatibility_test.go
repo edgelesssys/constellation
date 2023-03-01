@@ -9,7 +9,6 @@ package compatibility
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -144,8 +143,7 @@ func TestBinaryWith(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			constants.VersionInfo = tc.cli
-			err := BinaryWith(tc.target)
+			err := BinaryWith(tc.cli, tc.target)
 			if tc.wantError {
 				assert.Error(err)
 				return

@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
 )
 
@@ -93,8 +92,8 @@ func IsValidUpgrade(a, b string) error {
 }
 
 // BinaryWith tests that this binarie's version is greater or equal than some target version, but not further away than one minor version.
-func BinaryWith(target string) error {
-	binaryVersion := EnsurePrefixV(constants.VersionInfo)
+func BinaryWith(binaryVersion, target string) error {
+	binaryVersion = EnsurePrefixV(binaryVersion)
 	target = EnsurePrefixV(target)
 	if !semver.IsValid(binaryVersion) || !semver.IsValid(target) {
 		return ErrSemVer

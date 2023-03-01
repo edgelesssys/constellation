@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
-	log.With(zap.String("version", constants.VersionInfo)).
+	log.With(zap.String("version", constants.VersionInfo())).
 		Infof("Constellation Key Management Service")
 
 	// read master secret and salt

@@ -57,7 +57,7 @@ func main() {
 
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
-	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *csp)).
+	log.With(zap.String("version", constants.VersionInfo()), zap.String("cloudProvider", *csp)).
 		Infof("Starting disk-mapper")
 
 	// set up metadata API and quote issuer for aTLS connections

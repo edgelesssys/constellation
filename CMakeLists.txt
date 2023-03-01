@@ -46,7 +46,7 @@ add_custom_target(upgrade-agent ALL
 # cli
 #
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
   BYPRODUCTS constellation
 )
@@ -73,7 +73,7 @@ add_custom_target(debugd ALL
 # cdbg
 #
 add_custom_target(cdbg ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/cdbg
   BYPRODUCTS cdbg
 )
