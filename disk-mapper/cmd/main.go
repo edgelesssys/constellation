@@ -114,6 +114,11 @@ func main() {
 		// issuer = ...
 		// metadataAPI = ...
 
+		// TODO(katexochen): Remove the following
+		issuer = qemu.NewIssuer(log)
+		metadataAPI = qemucloud.New()
+		_ = exportPCRs()
+
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer(log)
