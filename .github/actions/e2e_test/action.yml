@@ -38,6 +38,15 @@ inputs:
   gcpClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
     required: false
+  awsOpenSearchDomain:
+    description: "AWS OpenSearch Endpoint Domain to upload the benchmark results."
+    required: false
+  awsOpenSearchUsers:
+    description: "AWS OpenSearch User to upload the benchmark results."
+    required: false
+  awsOpenSearchPwd:
+    description: "AWS OpenSearch Password to upload the benchmark results."
+    required: false
   azureSubscription:
     description: "The Azure subscription ID to deploy Constellation in."
     required: false
@@ -236,6 +245,9 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        awsOpenSearchDomain: ${{ inputs.awsOpenSearchDomain }}
+        awsOpenSearchUsers: ${{ inputs.awsOpenSearchUsers }}
+        awsOpenSearchPwd: ${{ inputs.awsOpenSearchPwd }}
 
     - name: Run constellation verify test
       if: inputs.test == 'verify'
