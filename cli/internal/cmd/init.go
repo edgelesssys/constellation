@@ -161,12 +161,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 
 	spinner.Start("Initializing cluster ", false)
 	req := &initproto.InitRequest{
-		MasterSecret:           masterSecret.Key,
-		Salt:                   masterSecret.Salt,
 		KmsUri:                 masterSecret.EncodeToURI(),
 		StorageUri:             uri.NoStoreURI,
-		KeyEncryptionKeyId:     "",
-		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),

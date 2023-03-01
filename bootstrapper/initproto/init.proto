@@ -10,15 +10,15 @@ service API {
 
 message InitRequest {
   // repeated string autoscaling_node_groups = 1; removed
-  bytes master_secret = 2;
+  // bytes master_secret = 2; removed
   string kms_uri = 3;
   string storage_uri = 4;
-  string key_encryption_key_id = 5;
-  bool use_existing_kek = 6;
+  // string key_encryption_key_id = 5; removed
+  // bool use_existing_kek = 6; removed
   string cloud_service_account_uri = 7;
   string kubernetes_version = 8;
   // repeated SSHUserKey ssh_user_keys = 9; removed
-  bytes salt = 10;
+  // bytes salt = 10; removed
   bytes helm_deployments = 11;
   repeated uint32 enforced_pcrs = 12;
   bool enforce_idkeydigest = 13;
