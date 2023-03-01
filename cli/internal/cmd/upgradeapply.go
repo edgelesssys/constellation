@@ -14,14 +14,9 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/image"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -54,14 +49,13 @@ func runUpgradeApply(cmd *cobra.Command, args []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	imageFetcher := image.New()
 	upgrader, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log}
-	return applyCmd.upgradeApply(cmd, imageFetcher, fileHandler)
+	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
@@ -69,7 +63,7 @@ type upgradeApplyCmd struct {
 	log      debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, imageFetcher imageFetcher, fileHandler file.Handler) error {
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
 	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -83,42 +77,23 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, imageFetcher imageFet
 		return err
 	}
 
-	invalidUpgradeErr := &compatibility.InvalidUpgradeError{}
 	err = u.handleServiceUpgrade(cmd, conf, flags)
+	upgradeErr := &compatibility.InvalidUpgradeError{}
 	switch {
-	case errors.As(err, &invalidUpgradeErr):
-		cmd.PrintErrf("Skipping microservice upgrades: %s\n", err)
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
 	case err != nil:
-		return fmt.Errorf("service upgrade: %w", err)
+		return fmt.Errorf("upgrading services: %w", err)
 	}
 
-	err = u.handleK8sUpgrade(cmd.Context(), conf)
-	skipCtr := 0
-	switch {
-	case errors.Is(err, cloudcmd.ErrInProgress):
-		skipCtr = skipCtr + 1
-		cmd.PrintErrln("Skipping Kubernetes components upgrades. Another Kubernetes components upgrade is in progress")
-	case errors.As(err, &invalidUpgradeErr):
-		skipCtr = skipCtr + 1
-		cmd.PrintErrf("Skipping Kubernetes components upgrades: %s\n", err)
-	case err != nil:
-		return fmt.Errorf("upgrading Kubernetes components: %w", err)
-	}
-
-	err = u.handleImageUpgrade(cmd.Context(), conf, imageFetcher)
+	err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
 	switch {
 	case errors.Is(err, cloudcmd.ErrInProgress):
-		skipCtr = skipCtr + 1
-		cmd.PrintErrln("Skipping image upgrades. Another image upgrade is in progress")
-	case errors.As(err, &invalidUpgradeErr):
-		skipCtr = skipCtr + 1
-		cmd.PrintErrf("Skipping image upgrades: %s\n", err)
+		cmd.PrintErrln("Skipping image & Kubernetes upgrades. Another upgrade is in progress")
+	case errors.As(err, &upgradeErr):
+		cmd.PrintErrln(err)
 	case err != nil:
-		return fmt.Errorf("upgrading image: %w", err)
-	}
-
-	if skipCtr < 2 {
-		fmt.Printf("Nodes will restart automatically\n")
+		return fmt.Errorf("upgrading NodeVersion: %w", err)
 	}
 
 	return nil
@@ -140,45 +115,8 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 		}
 		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
 	}
-	if err != nil {
-		return fmt.Errorf("upgrading helm: %w", err)
-	}
 
-	return nil
-}
-
-func (u *upgradeApplyCmd) handleImageUpgrade(ctx context.Context, conf *config.Config, imageFetcher imageFetcher) error {
-	imageReference, err := imageFetcher.FetchReference(ctx, conf)
-	if err != nil {
-		return fmt.Errorf("fetching image reference: %w", err)
-	}
-
-	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
-	if err != nil {
-		return fmt.Errorf("parsing version from image short path: %w", err)
-	}
-
-	err = u.upgrader.UpgradeImage(ctx, imageReference, imageVersion.Version, conf.GetMeasurements())
-	if err != nil {
-		return fmt.Errorf("upgrading image: %w", err)
-	}
-
-	return nil
-}
-
-func (u *upgradeApplyCmd) handleK8sUpgrade(ctx context.Context, conf *config.Config) error {
-	currentVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
-	if err != nil {
-		return fmt.Errorf("getting Kubernetes version: %w", err)
-	}
-	versionConfig := versions.VersionConfigs[currentVersion]
-
-	err = u.upgrader.UpgradeK8s(ctx, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
-	if err != nil {
-		return fmt.Errorf("upgrading Kubernetes: %w", err)
-	}
-
-	return nil
+	return err
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
@@ -213,11 +151,6 @@ type upgradeApplyFlags struct {
 }
 
 type cloudUpgrader interface {
-	UpgradeImage(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
+	UpgradeNodeVersion(ctx context.Context, conf *config.Config) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
-	UpgradeK8s(ctx context.Context, clusterVersion string, components components.Components) error
-}
-
-type imageFetcher interface {
-	FetchReference(ctx context.Context, config *config.Config) (string, error)
 }

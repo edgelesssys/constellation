@@ -8,6 +8,7 @@ package helm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -73,23 +73,41 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
-	if err := c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive); err != nil {
-		return fmt.Errorf("upgrading cilium: %w", err)
+	upgradeErrs := []error{}
+	invalidUpgrade := &compatibility.InvalidUpgradeError{}
+	err := c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive)
+	switch {
+	case errors.As(err, &invalidUpgrade):
+		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Cilium upgrade: %w", err))
+	case err != nil:
+		return fmt.Errorf("upgrading cilium: %s", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, config, certManagerPath, certManagerReleaseName, false, allowDestructive); err != nil {
+	err = c.upgradeRelease(ctx, timeout, config, certManagerPath, certManagerReleaseName, false, allowDestructive)
+	switch {
+	case errors.As(err, &invalidUpgrade):
+		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping cert-manager upgrade: %w", err))
+	case err != nil:
 		return fmt.Errorf("upgrading cert-manager: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, config, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive); err != nil {
+	err = c.upgradeRelease(ctx, timeout, config, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive)
+	switch {
+	case errors.As(err, &invalidUpgrade):
+		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping constellation operators upgrade: %w", err))
+	case err != nil:
 		return fmt.Errorf("upgrading constellation operators: %w", err)
 	}
 
-	if err := c.upgradeRelease(ctx, timeout, config, conServicesPath, conServicesReleaseName, false, allowDestructive); err != nil {
+	err = c.upgradeRelease(ctx, timeout, config, conServicesPath, conServicesReleaseName, false, allowDestructive)
+	switch {
+	case errors.As(err, &invalidUpgrade):
+		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping constellation-services upgrade: %w", err))
+	case err != nil:
 		return fmt.Errorf("upgrading constellation-services: %w", err)
 	}
 
-	return nil
+	return errors.Join(upgradeErrs...)
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.

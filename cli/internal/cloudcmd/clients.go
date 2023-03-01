@@ -16,6 +16,11 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// imageFetcher gets an image reference from the versionsapi.
+type imageFetcher interface {
+	FetchReference(ctx context.Context, config *config.Config) (string, error)
+}
+
 type terraformClient interface {
 	PrepareWorkspace(path string, input terraform.Variables) error
 	CreateCluster(ctx context.Context) (terraform.CreateOutput, error)
@@ -29,10 +34,6 @@ type terraformClient interface {
 type libvirtRunner interface {
 	Start(ctx context.Context, containerName, imageName string) error
 	Stop(ctx context.Context) error
-}
-
-type imageFetcher interface {
-	FetchReference(ctx context.Context, config *config.Config) (string, error)
 }
 
 type rawDownloader interface {
