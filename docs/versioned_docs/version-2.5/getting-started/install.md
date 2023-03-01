@@ -117,7 +117,7 @@ The following resource providers need to be need to be [registered](https://lear
 * `Microsoft.Network`
 * `microsoft.insights`
 
-By default, Constellation will try to register these automatically if they haven't been registered before.
+By default, Constellation tries to register these automatically if they haven't been registered before.
 
 You need the following permissions for your user account:
 
