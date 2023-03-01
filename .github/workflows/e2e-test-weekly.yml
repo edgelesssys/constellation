@@ -46,7 +46,7 @@ jobs:
       max-parallel: 5
       matrix:
         test:
-          ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover", "iamcreate"]
+          ["sonobuoy full", "autoscaling", "perf-bench", "lb", "verify", "recover", "iamcreate"]
         provider: ["gcp", "azure", "aws"]
         version: ["v1.24", "v1.25", "v1.26"]
         exclude:
@@ -70,10 +70,10 @@ jobs:
             version: "v1.24"
           - test: "autoscaling"
             version: "v1.25"
-          # K-bench test runs only on latest version.
-          - test: "k-bench"
+          # Perf-Bench test runs only on latest version.
+          - test: "perf-bench"
             version: "v1.24"
-          - test: "k-bench"
+          - test: "perf-bench"
             version: "v1.25"
           # lb test runs only on latest version.
           - test: "lb"
@@ -83,7 +83,7 @@ jobs:
           # Currently not supported on AWS.
           - test: "autoscaling"
             provider: "aws"
-          - test: "k-bench"
+          - test: "perf-bench"
             provider: "aws"
     runs-on: ubuntu-22.04
     permissions:
