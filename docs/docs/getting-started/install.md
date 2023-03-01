@@ -111,7 +111,7 @@ If you don't have a cloud subscription, you can try [MiniConstellation](first-st
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-The following resource providers need to be [registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
+The following [resource providers need to be registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
 * `Microsoft.Compute`
 * `Microsoft.ManagedIdentity`
 * `Microsoft.Network`
