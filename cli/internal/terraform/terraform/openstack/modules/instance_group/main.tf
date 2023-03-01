@@ -48,6 +48,8 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     delete_on_termination = true
   }
   metadata = {
+    constellation-role             = local.role_dashed
+    constellation-uid              = var.uid
     constellation-init-secret-hash = var.init_secret_hash
   }
   availability_zone_hints = var.availability_zone

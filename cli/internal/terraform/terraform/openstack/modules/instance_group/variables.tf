@@ -3,6 +3,11 @@ variable "name" {
   description = "Base name of the instance group."
 }
 
+variable "uid" {
+  type        = string
+  description = "Unique ID of the Constellation."
+}
+
 variable "role" {
   type        = string
   description = "The role of the instance group."

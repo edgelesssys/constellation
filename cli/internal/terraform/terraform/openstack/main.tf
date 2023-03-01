@@ -135,6 +135,7 @@ module "instance_group_control_plane" {
     openstack_compute_secgroup_v2.vpc_secgroup.id,
   ]
   tags              = local.tags
+  uid               = local.uid
   disk_size         = var.state_disk_size
   availability_zone = var.availability_zone
   network_id        = openstack_networking_network_v2.vpc_network.id
@@ -149,6 +150,7 @@ module "instance_group_worker" {
   image_id       = openstack_images_image_v2.constellation_os_image.image_id
   flavor_id      = var.flavor_id
   tags           = local.tags
+  uid            = local.uid
   security_groups = [
     openstack_compute_secgroup_v2.vpc_secgroup.id,
   ]
