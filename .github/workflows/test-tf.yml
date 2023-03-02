@@ -26,7 +26,7 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           # No token available for forks, so we can't push changes
-          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # tag=v2.0.3

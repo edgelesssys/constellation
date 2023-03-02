@@ -28,7 +28,7 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
           # No token available for forks, so we can't push changes
-          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
