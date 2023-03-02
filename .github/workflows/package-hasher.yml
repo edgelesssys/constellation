@@ -69,4 +69,4 @@ jobs:
           committer: edgelessci <edgelessci@users.noreply.github.com>
           labels: dependencies
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
-          token: ${{ !github.event.pull_request.head.repo.fork && secrets.TIDY_RENOVATE_PUSH || '' }}
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
