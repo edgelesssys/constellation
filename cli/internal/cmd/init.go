@@ -40,6 +40,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -236,6 +237,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
+	d.logGRPCStateChanges(ctx, conn)
 	protoClient := initproto.NewAPIClient(conn)
 	d.log.Debugf("Created protoClient")
 	resp, err := protoClient.Init(ctx, d.req)
@@ -244,6 +246,21 @@ func (d *initDoer) Do(ctx context.Context) error {
 	}
 	d.resp = resp
 	return nil
+}
+
+func (d *initDoer) logGRPCStateChanges(ctx context.Context, conn *grpc.ClientConn) {
+	go func() {
+		state := conn.GetState()
+		d.log.Debugf("Connection state started as %s", state)
+		for ; state != connectivity.Ready && conn.WaitForStateChange(ctx, state); state = conn.GetState() {
+			d.log.Debugf("Connection state changed to %s", state)
+		}
+		if state == connectivity.Ready {
+			d.log.Debugf("Connection ready")
+		} else {
+			d.log.Debugf("Connection state ended with %s", state)
+		}
+	}()
 }
 
 func (i *initCmd) writeOutput(
