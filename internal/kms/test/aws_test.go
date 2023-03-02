@@ -40,8 +40,8 @@ func TestAwsStorage(t *testing.T) {
 	// create bucket
 	cfg := uri.AWSS3Config{
 		Bucket:      *awsBucket,
-		AccessKeyID: *awsAccessKey,
-		AccessKey:   *awsAccessKeyID,
+		AccessKeyID: *awsAccessKeyID,
+		AccessKey:   *awsAccessKey,
 		Region:      *awsRegion,
 	}
 	store, err := awss3.New(ctx, cfg)
@@ -49,19 +49,20 @@ func TestAwsStorage(t *testing.T) {
 
 	runStorageTest(t, store)
 
-	cleanUpBucket(ctx, require, *awsBucket, func(*s3.Options) {})
+	cleanUpBucket(ctx, require, *awsBucket, *awsRegion)
 }
 
-func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID string, optFns ...func(*s3.Options)) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID, awsRegion string) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(awsRegion))
 	require.NoError(err)
-	client := s3.NewFromConfig(cfg, optFns...)
+	client := s3.NewFromConfig(cfg)
 
 	// List all objects of the bucket
 	listObjectsInput := &s3.ListObjectsV2Input{
 		Bucket: &bucketID,
 	}
-	output, _ := client.ListObjectsV2(ctx, listObjectsInput)
+	output, err := client.ListObjectsV2(ctx, listObjectsInput)
+	require.NoError(err)
 	var objects []string
 	var i int32
 	for i = 0; i < output.KeyCount; i++ {
