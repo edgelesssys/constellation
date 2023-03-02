@@ -23,7 +23,7 @@ import (
 
 // Validator for AWS TPM attestation.
 type Validator struct {
-	oid.AWS
+	oid.AWSNitroTPM
 	*vtpm.Validator
 	getDescribeClient func(context.Context, string) (awsMetadataAPI, error)
 }

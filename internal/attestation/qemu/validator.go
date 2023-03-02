@@ -17,7 +17,7 @@ import (
 
 // Validator for QEMU VM attestation.
 type Validator struct {
-	oid.QEMU
+	oid.QEMUVTPM
 	*vtpm.Validator
 }
 

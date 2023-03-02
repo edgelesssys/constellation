@@ -400,14 +400,14 @@ func TestAttestation(t *testing.T) {
 	netDialer := testdialer.NewBufconnDialer()
 	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
 		validator := &testValidator{
-			Getter: oid.QEMU{},
+			Getter: oid.QEMUVTPM{},
 			pcrs:   v.PCRS(),
 		}
 		return dialer.New(nil, validator, netDialer)
 	}
 
 	issuer := &testIssuer{
-		Getter: oid.QEMU{},
+		Getter: oid.QEMUVTPM{},
 		pcrs: map[uint32][]byte{
 			0: bytes.Repeat([]byte{0xFF}, 32),
 			1: bytes.Repeat([]byte{0xFF}, 32),

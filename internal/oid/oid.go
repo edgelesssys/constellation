@@ -25,11 +25,31 @@ package oid
 
 import (
 	"encoding/asn1"
+	"errors"
 )
 
 // Getter returns an ASN.1 Object Identifier.
 type Getter interface {
 	OID() asn1.ObjectIdentifier
+}
+
+// FromString returns the OID for the given string.
+func FromString(oid string) (Getter, error) {
+	switch oid {
+	case dummy:
+		return Dummy{}, nil
+	case awsNitroTPM:
+		return AWSNitroTPM{}, nil
+	case gcpSEVES:
+		return GCPSEVES{}, nil
+	case azureSEVSNP:
+		return AzureSEVSNP{}, nil
+	case azureTrustedLaunch:
+		return AzureTrustedLaunch{}, nil
+	case qemuVTPM:
+		return QEMUVTPM{}, nil
+	}
+	return nil, errors.New("unknown OID")
 }
 
 // Dummy OID for testing.
@@ -40,28 +60,48 @@ func (Dummy) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 1, 1}
 }
 
-// AWS holds the AWS OID.
-type AWS struct{}
+// String returns the string representation of the OID.
+func (Dummy) String() string {
+	return dummy
+}
+
+// AWSNitroTPM holds the AWS nitro TPM OID.
+type AWSNitroTPM struct{}
 
 // OID returns the struct's object identifier.
-func (AWS) OID() asn1.ObjectIdentifier {
+func (AWSNitroTPM) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 2, 1}
 }
 
-// GCP holds the GCP OID.
-type GCP struct{}
+// String returns the string representation of the OID.
+func (AWSNitroTPM) String() string {
+	return awsNitroTPM
+}
+
+// GCPSEVES holds the GCP SEV-ES OID.
+type GCPSEVES struct{}
 
 // OID returns the struct's object identifier.
-func (GCP) OID() asn1.ObjectIdentifier {
+func (GCPSEVES) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 3, 1}
 }
 
-// AzureSNP holds the OID for Azure SNP CVMs.
-type AzureSNP struct{}
+// String returns the string representation of the OID.
+func (GCPSEVES) String() string {
+	return gcpSEVES
+}
+
+// AzureSEVSNP holds the OID for Azure SNP CVMs.
+type AzureSEVSNP struct{}
 
 // OID returns the struct's object identifier.
-func (AzureSNP) OID() asn1.ObjectIdentifier {
+func (AzureSEVSNP) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 4, 1}
+}
+
+// String returns the string representation of the OID.
+func (AzureSEVSNP) String() string {
+	return azureSEVSNP
 }
 
 // AzureTrustedLaunch holds the OID for Azure TrustedLaunch VMs.
@@ -72,10 +112,29 @@ func (AzureTrustedLaunch) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 4, 2}
 }
 
-// QEMU holds the QEMU OID.
-type QEMU struct{}
+// String returns the string representation of the OID.
+func (AzureTrustedLaunch) String() string {
+	return azureTrustedLaunch
+}
+
+// QEMUVTPM holds the QEMUVTPM OID.
+type QEMUVTPM struct{}
 
 // OID returns the struct's object identifier.
-func (QEMU) OID() asn1.ObjectIdentifier {
+func (QEMUVTPM) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 5, 1}
 }
+
+// String returns the string representation of the OID.
+func (QEMUVTPM) String() string {
+	return qemuVTPM
+}
+
+const (
+	dummy              = "dummy"
+	awsNitroTPM        = "aws-nitro-tpm"
+	gcpSEVES           = "gcp-sev-es"
+	azureSEVSNP        = "azure-sev-snp"
+	azureTrustedLaunch = "azure-trustedlaunch"
+	qemuVTPM           = "qemu-vtpm"
+)

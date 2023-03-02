@@ -16,7 +16,7 @@ import (
 
 // Issuer for qemu TPM attestation.
 type Issuer struct {
-	oid.QEMU
+	oid.QEMUVTPM
 	*vtpm.Issuer
 }
 

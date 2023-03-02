@@ -30,7 +30,7 @@ import (
 
 // Validator for GCP confidential VM attestation.
 type Validator struct {
-	oid.GCP
+	oid.GCPSEVES
 	*vtpm.Validator
 }
 

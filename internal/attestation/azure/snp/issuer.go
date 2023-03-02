@@ -51,7 +51,7 @@ func GetIDKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 
 // Issuer for Azure TPM attestation.
 type Issuer struct {
-	oid.AzureSNP
+	oid.AzureSEVSNP
 	*vtpm.Issuer
 }
 

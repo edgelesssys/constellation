@@ -20,7 +20,7 @@ import (
 
 // Issuer for GCP confidential VM attestation.
 type Issuer struct {
-	oid.GCP
+	oid.GCPSEVES
 	*vtpm.Issuer
 }
 
