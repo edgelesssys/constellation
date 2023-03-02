@@ -38,7 +38,7 @@ const (
 
 // Validator for Azure confidential VM attestation.
 type Validator struct {
-	oid.AzureSNP
+	oid.AzureSEVSNP
 	*vtpm.Validator
 }
 

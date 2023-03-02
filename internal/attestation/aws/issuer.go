@@ -23,7 +23,7 @@ import (
 
 // Issuer for AWS TPM attestation.
 type Issuer struct {
-	oid.AWS
+	oid.AWSNitroTPM
 	*vtpm.Issuer
 }
 
