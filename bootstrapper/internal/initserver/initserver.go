@@ -33,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/v2/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -191,6 +192,28 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		Kubeconfig: kubeconfig,
 		ClusterId:  clusterID,
 	}, nil
+}
+
+// GetLogs gets and streams the requested systemd logs.
+func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogsServer) error {
+	jctl_command, err := journald.NewCommand(stream.Context(), req.Name)
+	if err != nil {
+		return err
+	}
+
+	systemd_logs, err := journald.GetServiceLog(jctl_command)
+	if err != nil {
+		return err
+	}
+
+	// stream the systemd logs
+	for _, el := range systemd_logs {
+		if err = stream.Send(&initproto.LogResponse{Log: []byte{el}}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Stop stops the initialization server gracefully.
