@@ -82,7 +82,7 @@ As a fallback, the client may try to automatically fetch the data from the local
 
 #### Azure Blob Storage
 
-Authorization for Azure Key Vault happens through the use of manged identities.
+Authorization for Azure Blob Storage happens through the use of manged identities.
 The managed identity requires the following permissions:
 
 * `Microsoft.Storage/storageAccounts/blobServices/containers/write` (only if a storage container is not set up in advance)
