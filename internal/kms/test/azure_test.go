@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/azureblob"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/memfs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,31 +25,26 @@ func TestAzureStorage(t *testing.T) {
 	if !*runAzStorage {
 		t.Skip("Skipping Azure storage test")
 	}
-	if *azConnectionString == "" || *azContainer == "" {
+	if *azStorageAccount == "" || *azContainer == "" || *azClientID == "" || *azClientSecret == "" || *azTenantID == "" {
 		flag.Usage()
-		t.Fatal("Required flags not set: --az-connection-string, --az-container")
+		t.Fatal("Required flags not set: --az-storage-account, --az-container, --az-tenant-id, --az-client-id, --az-client-secret")
 	}
-
-	assert := assert.New(t)
 	require := require.New(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	store, err := storage.NewAzureStorage(ctx, *azConnectionString, *azContainer, nil)
+
+	cfg := uri.AzureBlobConfig{
+		StorageAccount: *azStorageAccount,
+		Container:      *azContainer,
+		TenantID:       *azTenantID,
+		ClientID:       *azClientID,
+		ClientSecret:   *azClientSecret,
+	}
+	store, err := azureblob.New(ctx, cfg)
 	require.NoError(err)
 
-	testData := []byte("Constellation test data")
-	testName := "constellation-test"
-
-	err = store.Put(ctx, testName, testData)
-	assert.NoError(err)
-
-	got, err := store.Get(ctx, testName)
-	assert.NoError(err)
-	assert.Equal(testData, got)
-
-	_, err = store.Get(ctx, addSuffix("does-not-exist"))
-	assert.ErrorIs(err, storage.ErrDEKUnset)
+	runStorageTest(t, store)
 }
 
 func TestAzureKeyKMS(t *testing.T) {
@@ -63,7 +58,7 @@ func TestAzureKeyKMS(t *testing.T) {
 	}
 	require := require.New(t)
 
-	store := storage.NewMemMapStorage()
+	store := memfs.New()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
@@ -92,7 +87,7 @@ func TestAzureKeyHSM(t *testing.T) {
 	}
 	require := require.New(t)
 
-	store := storage.NewMemMapStorage()
+	store := memfs.New()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 

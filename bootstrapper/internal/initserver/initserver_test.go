@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -90,7 +91,7 @@ func TestInit(t *testing.T) {
 	initSecretHash, err := bcrypt.GenerateFromPassword(initSecret, bcrypt.DefaultCost)
 	require.NoError(t, err)
 
-	masterSecret := kmssetup.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
+	masterSecret := uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
 
 	testCases := map[string]struct {
 		nodeLock       *fakeLock
@@ -108,14 +109,14 @@ func TestInit(t *testing.T) {
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			initSecretHash: initSecretHash,
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 		},
 		"node locked": {
 			nodeLock:       lockedLock,
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -125,7 +126,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{openErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -134,7 +135,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{uuidErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -143,7 +144,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{updatePassphraseErr: someErr},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -152,7 +153,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -161,7 +162,7 @@ func TestInit(t *testing.T) {
 			initializer:    &stubClusterInitializer{initClusterErr: someErr},
 			disk:           &stubDisk{},
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
-			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: kmssetup.NoStoreURI},
+			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -249,9 +250,9 @@ func TestSetupDisk(t *testing.T) {
 				disk: disk,
 			}
 
-			masterSecret := kmssetup.MasterSecret{Key: tc.masterKey, Salt: tc.salt}
+			masterSecret := uri.MasterSecret{Key: tc.masterKey, Salt: tc.salt}
 
-			cloudKms, err := kmssetup.KMS(context.Background(), kmssetup.NoStoreURI, masterSecret.EncodeToURI())
+			cloudKms, err := kmssetup.KMS(context.Background(), uri.NoStoreURI, masterSecret.EncodeToURI())
 			require.NoError(err)
 			assert.NoError(server.setupDisk(context.Background(), cloudKms))
 		})

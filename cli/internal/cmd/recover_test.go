@@ -26,7 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
-	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -158,7 +158,7 @@ func TestRecover(t *testing.T) {
 
 			require.NoError(fileHandler.WriteJSON(
 				"constellation-mastersecret.json",
-				kmssetup.MasterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
+				uri.MasterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
 				file.OptNone,
 			))
 

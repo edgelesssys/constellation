@@ -19,6 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/config"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,18 +30,19 @@ var (
 	runAwsStorage  = flag.Bool("aws-storage", false, "set to run AWS S3 Bucket Storage test")
 	runAwsKms      = flag.Bool("aws-kms", false, "set to run AWS KMS test")
 	awsRegion      = flag.String("aws-region", "us-east-1", "Region to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS test.")
+	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsBucket      = flag.String("aws-bucket", "", "Name of the S3 bucket to use for AWS storage test. Required for AWS storage test.")
 
-	azConnectionString = flag.String("az-storage-conn", "", "Connection string for Azure storage account. Required for Azure storage test.")
-	azContainer        = flag.String("az-container", "constellation-test-storage", "Container to save test data to. Required for Azure storage test.")
-	runAzStorage       = flag.Bool("az-storage", false, "set to run Azure Storage test")
-	runAzKms           = flag.Bool("az-kms", false, "set to run Azure KMS test")
-	runAzHsm           = flag.Bool("az-hsm", false, "set to run Azure HSM test")
-	azVaultName        = flag.String("az-vault-name", "", "Name of the Azure Key Vault to use. Required for Azure KMS/HSM test.")
-	azTenantID         = flag.String("az-tenant-id", "", "Tenant ID to use for Azure tests. Required for Azure KMS/HSM test.")
-	azClientID         = flag.String("az-client-id", "", "Client ID to use for Azure tests. Required for Azure KMS/HSM test.")
-	azClientSecret     = flag.String("az-client-secret", "", "Client secret to use for Azure tests. Required for Azure KMS/HSM test.")
+	runAzStorage     = flag.Bool("az-storage", false, "set to run Azure Storage test")
+	runAzKms         = flag.Bool("az-kms", false, "set to run Azure KMS test")
+	runAzHsm         = flag.Bool("az-hsm", false, "set to run Azure HSM test")
+	azVaultName      = flag.String("az-vault-name", "", "Name of the Azure Key Vault to use. Required for Azure KMS/HSM and storage test.")
+	azTenantID       = flag.String("az-tenant-id", "", "Tenant ID to use for Azure tests. Required for Azure KMS/HSM and storage test.")
+	azClientID       = flag.String("az-client-id", "", "Client ID to use for Azure tests. Required for Azure KMS/HSM and storage test.")
+	azClientSecret   = flag.String("az-client-secret", "", "Client secret to use for Azure tests. Required for Azure KMS/HSM and storage test.")
+	azStorageAccount = flag.String("az-storage-account", "", "Service URL for Azure storage account. Required for Azure storage test.")
+	azContainer      = flag.String("az-container", "constellation-test-storage", "Container to save test data to. Required for Azure storage test.")
 
 	runGcpKms          = flag.Bool("gcp-kms", false, "set to run Google KMS test")
 	runGcpStorage      = flag.Bool("gcp-storage", false, "set to run Google Storage test")
@@ -79,6 +81,27 @@ func runKMSTest(t *testing.T, kms kms.CloudKMS) {
 	assert.Len(res3, config.SymmetricKeyLength)
 	assert.NotEqual(res, res3)
 	t.Logf("DEK 3: %x\n", res3)
+}
+
+func runStorageTest(t *testing.T, store kms.Storage) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	testData := []byte("Constellation test data")
+	testName := "constellation-test"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	err := store.Put(ctx, testName, testData)
+	require.NoError(err)
+
+	got, err := store.Get(ctx, testName)
+	require.NoError(err)
+	assert.Equal(testData, got)
+
+	_, err = store.Get(ctx, addSuffix("does-not-exist"))
+	assert.ErrorIs(err, storage.ErrDEKUnset)
 }
 
 func addSuffix(s string) string {

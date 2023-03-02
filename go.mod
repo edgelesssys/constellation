@@ -53,11 +53,14 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.17.5
 	github.com/aws/aws-sdk-go-v2/config v1.18.15
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.15
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.23
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.55
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.26.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.86.1
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.19.5
+	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.30.5
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.18.6
 	github.com/aws/smithy-go v1.13.5
@@ -72,6 +75,7 @@ require (
 	github.com/google/go-tpm-tools v0.3.10
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8
 	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.7
 	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.7
 	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.8
@@ -113,9 +117,8 @@ require (
 	k8s.io/kubernetes v1.26.2
 	k8s.io/mount-utils v0.26.2
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
+	sigs.k8s.io/yaml v1.3.0
 )
-
-require github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 
 require (
 	cloud.google.com/go v0.107.0 // indirect
@@ -144,20 +147,18 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Masterminds/squirrel v1.5.3 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aws/aws-sdk-go v1.44.209 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.15 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.21 // indirect
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.19.5
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.24 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.5
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.5 // indirect
@@ -224,7 +225,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.3.1 // indirect
-	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/awsutil v0.1.6 // indirect
@@ -323,5 +323,4 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0
 )

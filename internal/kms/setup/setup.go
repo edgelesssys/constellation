@@ -17,7 +17,6 @@ package setup
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 
@@ -26,36 +25,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/azure"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/awss3"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/azureblob"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
-
-// Well known endpoints for KMS services.
-const (
-	AWSKMSURI     = "kms://aws?keyPolicy=%s&kekID=%s"
-	AzureKMSURI   = "kms://azure?tenantID=%s&clientID=%s&clientSecret=%s&name=%s&type=%s&kekID=%s"
-	GCPKMSURI     = "kms://gcp?project=%s&location=%s&keyRing=%s&protectionLvl=%s&kekID=%s"
-	ClusterKMSURI = "kms://cluster-kms?key=%s&salt=%s"
-	AWSS3URI      = "storage://aws?bucket=%s"
-	AzureBlobURI  = "storage://azure?container=%s&connectionString=%s"
-	GCPStorageURI = "storage://gcp?projects=%s&bucket=%s"
-	NoStoreURI    = "storage://no-store"
-)
-
-// MasterSecret holds the master key and salt for deriving keys.
-type MasterSecret struct {
-	Key  []byte `json:"key"`
-	Salt []byte `json:"salt"`
-}
-
-// EncodeToURI returns an URI encoding the master secret.
-func (m *MasterSecret) EncodeToURI() string {
-	return fmt.Sprintf(
-		ClusterKMSURI,
-		base64.URLEncoding.EncodeToString(m.Key),
-		base64.URLEncoding.EncodeToString(m.Salt),
-	)
-}
 
 // KMSInformation about an existing KMS.
 type KMSInformation struct {
@@ -76,41 +50,41 @@ func KMS(ctx context.Context, storageURI, kmsURI string) (kms.CloudKMS, error) {
 
 // getStore creates a key store depending on the given parameters.
 func getStore(ctx context.Context, storageURI string) (kms.Storage, error) {
-	uri, err := url.Parse(storageURI)
+	url, err := url.Parse(storageURI)
 	if err != nil {
 		return nil, err
 	}
-	if uri.Scheme != "storage" {
-		return nil, fmt.Errorf("invalid storage URI: invalid scheme: %s", uri.Scheme)
+	if url.Scheme != "storage" {
+		return nil, fmt.Errorf("invalid storage URI: invalid scheme: %s", url.Scheme)
 	}
 
-	switch uri.Host {
+	switch url.Host {
 	case "aws":
-		bucket, err := getAWSS3Config(uri)
+		cfg, err := uri.DecodeAWSS3ConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewAWSS3Storage(ctx, bucket, nil)
+		return awss3.New(ctx, cfg)
 
 	case "azure":
-		container, connString, err := getAzureBlobConfig(uri)
+		cfg, err := uri.DecodeAzureBlobConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewAzureStorage(ctx, connString, container, nil)
+		return azureblob.New(ctx, cfg)
 
 	case "gcp":
-		project, bucket, err := getGCPStorageConfig(uri)
+		cfg, err := uri.DecodeGoogleCloudStorageConfigFromURI(storageURI)
 		if err != nil {
 			return nil, err
 		}
-		return storage.NewGoogleCloudStorage(ctx, project, bucket, nil)
+		return gcs.New(ctx, cfg)
 
 	case "no-store":
 		return nil, nil
 
 	default:
-		return nil, fmt.Errorf("unknown storage type: %s", uri.Host)
+		return nil, fmt.Errorf("unknown storage type: %s", url.Host)
 	}
 }
 
@@ -156,69 +130,4 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", url.Host)
 	}
-}
-
-type defaultPolicyProducer struct {
-	policy string
-}
-
-func (p *defaultPolicyProducer) CreateKeyPolicy(keyID string) (string, error) {
-	return p.policy, nil
-}
-
-func getAWSS3Config(uri *url.URL) (string, error) {
-	r, err := getConfig(uri.Query(), []string{"bucket"})
-	return r[0], err
-}
-
-func getAWSKMSConfig(uri *url.URL) (*defaultPolicyProducer, string, error) {
-	r, err := getConfig(uri.Query(), []string{"keyPolicy", "kekID"})
-	if err != nil {
-		return nil, "", err
-	}
-
-	if len(r) != 2 {
-		return nil, "", fmt.Errorf("expected 2 KmsURI args, got %d", len(r))
-	}
-
-	kekID, err := base64.URLEncoding.DecodeString(r[1])
-	if err != nil {
-		return nil, "", fmt.Errorf("parsing kekID from kmsUri: %w", err)
-	}
-
-	return &defaultPolicyProducer{policy: r[0]}, string(kekID), err
-}
-
-func getAzureBlobConfig(uri *url.URL) (string, string, error) {
-	r, err := getConfig(uri.Query(), []string{"container", "connectionString"})
-	if err != nil {
-		return "", "", err
-	}
-	return r[0], r[1], nil
-}
-
-func getGCPStorageConfig(uri *url.URL) (string, string, error) {
-	r, err := getConfig(uri.Query(), []string{"project", "bucket"})
-	return r[0], r[1], err
-}
-
-// getConfig parses url query values, returning a map of the requested values.
-// Returns an error if a key has no value.
-// This function MUST always return a slice of the same length as len(keys).
-func getConfig(values url.Values, keys []string) ([]string, error) {
-	res := make([]string, len(keys))
-
-	for idx, key := range keys {
-		val := values.Get(key)
-		if val == "" {
-			return res, fmt.Errorf("missing value for key: %q", key)
-		}
-		val, err := url.QueryUnescape(val)
-		if err != nil {
-			return res, fmt.Errorf("failed to unescape value for key: %q", key)
-		}
-		res[idx] = val
-	}
-
-	return res, nil
 }

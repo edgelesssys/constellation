@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/keyservice/internal/server"
 	"github.com/spf13/afero"
@@ -52,12 +53,12 @@ func main() {
 	if len(salt) < crypto.RNGLengthDefault {
 		log.With(zap.Error(errors.New("invalid salt length"))).Fatalf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
 	}
-	masterSecret := setup.MasterSecret{Key: masterKey, Salt: salt}
+	masterSecret := uri.MasterSecret{Key: masterKey, Salt: salt}
 
 	// set up Key Management Service
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	conKMS, err := setup.KMS(ctx, setup.NoStoreURI, masterSecret.EncodeToURI())
+	conKMS, err := setup.KMS(ctx, uri.NoStoreURI, masterSecret.EncodeToURI())
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
 	}

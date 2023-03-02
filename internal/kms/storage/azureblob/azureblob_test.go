@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package storage
+package azureblob
 
 import (
 	"bytes"
@@ -18,6 +18,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,11 +46,9 @@ func TestAzureGet(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := &AzureStorage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+			client := &Storage{
+				client:    &tc.client,
+				container: "test",
 			}
 
 			out, err := client.Get(context.Background(), "test-key")
@@ -57,9 +56,9 @@ func TestAzureGet(t *testing.T) {
 				assert.Error(err)
 
 				if tc.unsetError {
-					assert.ErrorIs(err, ErrDEKUnset)
+					assert.ErrorIs(err, storage.ErrDEKUnset)
 				} else {
-					assert.False(errors.Is(err, ErrDEKUnset))
+					assert.False(errors.Is(err, storage.ErrDEKUnset))
 				}
 				return
 			}
@@ -89,11 +88,9 @@ func TestAzurePut(t *testing.T) {
 
 			testData := []byte{0x1, 0x2, 0x3}
 
-			client := &AzureStorage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+			client := &Storage{
+				client:    &tc.client,
+				container: "test",
 			}
 
 			err := client.Put(context.Background(), "test-key", testData)
@@ -128,11 +125,9 @@ func TestCreateContainerOrContinue(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			client := &AzureStorage{
-				client:           &tc.client,
-				connectionString: "test",
-				containerName:    "test",
-				opts:             &AzureOpts{},
+			client := &Storage{
+				client:    &tc.client,
+				container: "test",
 			}
 
 			err := client.createContainerOrContinue(context.Background())
