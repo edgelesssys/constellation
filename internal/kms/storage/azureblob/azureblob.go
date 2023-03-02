@@ -36,16 +36,13 @@ type Storage struct {
 	container string
 }
 
-// New initializes a storage client using Azure's Blob Storage: https://azure.microsoft.com/en-us/services/storage/blobs/
+// New initializes a storage client using Azure's Blob Storage using the provided config.
 //
-// A connections string is required to connect to the Storage Account, see https://docs.microsoft.com/en-us/azure/storage/common/storage-configure-connection-string
-// If the container does not exists, a new one is created automatically.
-// Connect options for the Client, Downloader and Uploader can be configured using opts.
+// See the Azure docs for more information: https://azure.microsoft.com/en-us/services/storage/blobs/
 func New(ctx context.Context, cfg uri.AzureBlobConfig) (*Storage, error) {
 	var creds azcore.TokenCredential
-	var err error
 
-	creds, err = azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, cfg.ClientSecret, nil)
+	creds, err := azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, cfg.ClientSecret, nil)
 	if err != nil {
 		// Fallback: try to load default credentials
 		creds, err = azidentity.NewDefaultAzureCredential(nil)

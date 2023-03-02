@@ -52,9 +52,9 @@ type Storage struct {
 	bucketName string
 }
 
-// New creates a Storage client for Google Cloud Storage: https://cloud.google.com/storage/docs/
+// New creates a Storage client for Google Cloud Storage using the provided config.
 //
-// The parameter bucketOptions is optional, if not present default options will be created.
+// See the Google docs for more information: https://cloud.google.com/storage/docs/
 func New(ctx context.Context, cfg uri.GoogleCloudStorageConfig) (*Storage, error) {
 	s := &Storage{
 		newClient:  newGCPStorageClientFactory(cfg.CredentialsPath),

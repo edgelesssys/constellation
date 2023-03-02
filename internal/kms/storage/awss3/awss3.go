@@ -35,9 +35,9 @@ type Storage struct {
 	client   awsS3ClientAPI
 }
 
-// New creates a Storage client for AWS S3: https://aws.amazon.com/s3/
+// New creates a Storage client for AWS S3 using the provided config.
 //
-// You need to provide credentials to authenticate to AWS using the cfg parameter.
+// See the AWS docs for more information: https://aws.amazon.com/s3/
 func New(ctx context.Context, cfg uri.AWSS3Config) (*Storage, error) {
 	clientCfg, err := awsconfig.LoadDefaultConfig(
 		ctx,
