@@ -198,6 +198,100 @@ func (x *InitResponse) GetClusterId() []byte {
 	return nil
 }
 
+type LogRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *LogRequest) Reset() {
+	*x = LogRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_init_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LogRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogRequest) ProtoMessage() {}
+
+func (x *LogRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_init_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogRequest.ProtoReflect.Descriptor instead.
+func (*LogRequest) Descriptor() ([]byte, []int) {
+	return file_init_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *LogRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type LogResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Log []byte `protobuf:"bytes,1,opt,name=log,proto3" json:"log,omitempty"`
+}
+
+func (x *LogResponse) Reset() {
+	*x = LogResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_init_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LogResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogResponse) ProtoMessage() {}
+
+func (x *LogResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_init_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogResponse.ProtoReflect.Descriptor instead.
+func (*LogResponse) Descriptor() ([]byte, []int) {
+	return file_init_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *LogResponse) GetLog() []byte {
+	if x != nil {
+		return x.Log
+	}
+	return nil
+}
+
 type KubernetesComponent struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -212,7 +306,7 @@ type KubernetesComponent struct {
 func (x *KubernetesComponent) Reset() {
 	*x = KubernetesComponent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_bootstrapper_initproto_init_proto_msgTypes[2]
+		mi := &file_init_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -225,7 +319,7 @@ func (x *KubernetesComponent) String() string {
 func (*KubernetesComponent) ProtoMessage() {}
 
 func (x *KubernetesComponent) ProtoReflect() protoreflect.Message {
-	mi := &file_bootstrapper_initproto_init_proto_msgTypes[2]
+	mi := &file_init_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -238,7 +332,7 @@ func (x *KubernetesComponent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KubernetesComponent.ProtoReflect.Descriptor instead.
 func (*KubernetesComponent) Descriptor() ([]byte, []int) {
-	return file_bootstrapper_initproto_init_proto_rawDescGZIP(), []int{2}
+	return file_init_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *KubernetesComponent) GetUrl() string {
@@ -341,14 +435,18 @@ var file_bootstrapper_initproto_init_proto_msgTypes = make([]protoimpl.MessageIn
 var file_bootstrapper_initproto_init_proto_goTypes = []interface{}{
 	(*InitRequest)(nil),         // 0: init.InitRequest
 	(*InitResponse)(nil),        // 1: init.InitResponse
-	(*KubernetesComponent)(nil), // 2: init.KubernetesComponent
+	(*LogRequest)(nil),          // 2: init.LogRequest
+	(*LogResponse)(nil),         // 3: init.LogResponse
+	(*KubernetesComponent)(nil), // 4: init.KubernetesComponent
 }
 var file_bootstrapper_initproto_init_proto_depIdxs = []int32{
 	2, // 0: init.InitRequest.kubernetes_components:type_name -> init.KubernetesComponent
 	0, // 1: init.API.Init:input_type -> init.InitRequest
-	1, // 2: init.API.Init:output_type -> init.InitResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	2, // 2: init.API.GetLogs:input_type -> init.LogRequest
+	1, // 3: init.API.Init:output_type -> init.InitResponse
+	3, // 4: init.API.GetLogs:output_type -> init.LogResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -403,7 +501,7 @@ func file_bootstrapper_initproto_init_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_bootstrapper_initproto_init_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

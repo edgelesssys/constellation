@@ -6,6 +6,7 @@ option go_package = "github.com/edgelesssys/constellation/v2/bootstrapper/initpr
 
 service API {
   rpc Init(InitRequest) returns (InitResponse);
+  rpc GetLogs(LogRequest) returns (stream LogResponse);
 }
 
 message InitRequest {
@@ -32,6 +33,14 @@ message InitResponse {
   bytes kubeconfig = 1;
   bytes owner_id = 2;
   bytes cluster_id = 3;
+}
+
+message LogRequest {
+  string name = 1;
+}
+
+message LogResponse {
+  bytes log = 1;
 }
 
 message KubernetesComponent {
