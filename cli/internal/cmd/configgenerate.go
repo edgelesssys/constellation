@@ -70,11 +70,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
 	conf := createConfig(provider)
-	extendedVersion := config.K8sVersionFromMajorMinor(flags.k8sVersion)
-	if extendedVersion == "" {
-		return fmt.Errorf("kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(flags.k8sVersion, "v"), supportedVersions())
-	}
-	conf.KubernetesVersion = extendedVersion
+	conf.KubernetesVersion = flags.k8sVersion
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
@@ -134,14 +130,14 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing kuberentes flag: %w", err)
 	}
-	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
-	if !semver.IsValid(prefixedVersion) {
-		return generateFlags{}, fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
+	resolvedVersion, err := resolveK8sVersion(k8sVersion)
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("resolving kuberentes version from flag: %w", err)
 	}
 
 	return generateFlags{
 		file:       file,
-		k8sVersion: prefixedVersion,
+		k8sVersion: resolvedVersion,
 	}, nil
 }
 
@@ -154,4 +150,20 @@ func generateCompletion(cmd *cobra.Command, args []string, toComplete string) ([
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}
+}
+
+// resolveK8sVersion takes the user input from --kubernetes and transforms a MAJOR.MINOR definition into a supported
+// MAJOR.MINOR.PATCH release.
+func resolveK8sVersion(k8sVersion string) (string, error) {
+	prefixedVersion := compatibility.EnsurePrefixV(k8sVersion)
+	if !semver.IsValid(prefixedVersion) {
+		return "", fmt.Errorf("kubernetes flag does not specify a valid semantic version: %s", k8sVersion)
+	}
+
+	extendedVersion := config.K8sVersionFromMajorMinor(prefixedVersion)
+	if extendedVersion == "" {
+		return "", fmt.Errorf("--kubernetes (%s) does not specify a valid Kubernetes version. Supported versions: %s", strings.TrimPrefix(k8sVersion, "v"), supportedVersions())
+	}
+
+	return extendedVersion, nil
 }
