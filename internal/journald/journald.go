@@ -18,6 +18,7 @@ type collectionCommand interface {
 	executeCommand() ([]byte, error)
 }
 
+// JournaldCommand represents a command that is executed by journalctl.
 type JournaldCommand struct {
 	ctx     context.Context
 	service string
