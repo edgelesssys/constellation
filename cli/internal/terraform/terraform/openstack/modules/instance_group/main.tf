@@ -51,6 +51,8 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     constellation-role             = local.role_dashed
     constellation-uid              = var.uid
     constellation-init-secret-hash = var.init_secret_hash
+    openstack-auth-url             = var.identity_internal_url
   }
+  user_data               = var.openstack_service_account_token
   availability_zone_hints = var.availability_zone
 }

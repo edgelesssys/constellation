@@ -238,6 +238,9 @@ type OpenStackConfig struct {
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
 	// description: |
+	//   Service account token to use authenticate VMs with the OpenStack API. Alternatively leave empty and pass value via CONSTELL_OPENSTACK_SERVICE_ACCOUNT_TOKEN environment variable.
+	ServiceAccountToken string `yaml:"serviceAccountToken" validate:"required"`
+	// description: |
 	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
 	DirectDownload *bool `yaml:"directDownload" validate:"required"`
 }
@@ -363,6 +366,11 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
 		c.Provider.Azure.ClientSecretValue = clientSecretValue
+	}
+
+	serviceAccountToken := os.Getenv(constants.EnvVarOpenStackServiceAccountToken)
+	if serviceAccountToken != "" && c.Provider.OpenStack != nil {
+		c.Provider.OpenStack.ServiceAccountToken = serviceAccountToken
 	}
 
 	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.

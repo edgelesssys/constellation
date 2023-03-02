@@ -16,6 +16,10 @@ provider "openstack" {
   cloud = var.cloud
 }
 
+data "openstack_identity_auth_scope_v3" "scope" {
+  name = "scope"
+}
+
 locals {
   uid                    = random_id.uid.hex
   name                   = "${var.name}-${local.uid}"
@@ -30,6 +34,15 @@ locals {
   ports_debugd           = "4000"
   cidr_vpc_subnet_nodes  = "192.168.178.0/24"
   tags                   = ["constellation-uid-${local.uid}"]
+  identity_service = [
+    for entry in data.openstack_identity_auth_scope_v3.scope.service_catalog :
+    entry if entry.type == "identity"
+  ][0]
+  identity_endpoint = [
+    for endpoint in local.identity_service.endpoints :
+    endpoint if(endpoint.interface == "internal")
+  ][0]
+  identity_internal_url = local.identity_endpoint.url
 }
 
 resource "random_id" "uid" {
@@ -134,12 +147,14 @@ module "instance_group_control_plane" {
   security_groups = [
     openstack_compute_secgroup_v2.vpc_secgroup.id,
   ]
-  tags              = local.tags
-  uid               = local.uid
-  disk_size         = var.state_disk_size
-  availability_zone = var.availability_zone
-  network_id        = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash  = local.initSecretHash
+  tags                            = local.tags
+  uid                             = local.uid
+  disk_size                       = var.state_disk_size
+  availability_zone               = var.availability_zone
+  network_id                      = openstack_networking_network_v2.vpc_network.id
+  init_secret_hash                = local.initSecretHash
+  identity_internal_url           = local.identity_internal_url
+  openstack_service_account_token = var.openstack_service_account_token
 }
 
 module "instance_group_worker" {
@@ -154,10 +169,12 @@ module "instance_group_worker" {
   security_groups = [
     openstack_compute_secgroup_v2.vpc_secgroup.id,
   ]
-  disk_size         = var.state_disk_size
-  availability_zone = var.availability_zone
-  network_id        = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash  = local.initSecretHash
+  disk_size                       = var.state_disk_size
+  availability_zone               = var.availability_zone
+  network_id                      = openstack_networking_network_v2.vpc_network.id
+  init_secret_hash                = local.initSecretHash
+  identity_internal_url           = local.identity_internal_url
+  openstack_service_account_token = var.openstack_service_account_token
 }
 
 resource "openstack_networking_floatingip_v2" "public_ip" {

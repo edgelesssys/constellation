@@ -233,6 +233,8 @@ type OpenStackClusterVariables struct {
 	ImageURL string
 	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
 	DirectDownload bool
+	// OpenStackServiceAccountToken is the OpenStack service account token to use.
+	OpenStackServiceAccountToken string
 	// Debug is true if debug mode is enabled.
 	Debug bool
 }
@@ -249,6 +251,7 @@ func (v *OpenStackClusterVariables) String() string {
 	writeLinef(b, "floating_ip_pool_id = %q", v.FloatingIPPoolID)
 	writeLinef(b, "image_url = %q", v.ImageURL)
 	writeLinef(b, "direct_download = %t", v.DirectDownload)
+	writeLinef(b, "openstack_service_account_token = %q", v.OpenStackServiceAccountToken)
 	writeLinef(b, "debug = %t", v.Debug)
 
 	return b.String()
