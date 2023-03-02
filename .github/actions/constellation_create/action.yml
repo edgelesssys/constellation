@@ -76,9 +76,9 @@ runs:
       if: inputs.existingConfig != 'true'
       run: |
         if [[ ${{ inputs.kubernetesVersion != '' }} == true ]]; then
-          constellation config generate ${{ inputs.cloudProvider }} --kubernetes="${{ inputs.kubernetesVersion }}"
+          constellation config generate ${{ inputs.cloudProvider }} --kubernetes="${{ inputs.kubernetesVersion }}" --debug
         else
-          constellation config generate ${{ inputs.cloudProvider }}
+          constellation config generate ${{ inputs.cloudProvider }} --debug
         fi
 
         yq eval -i "(.name) = \"e2e-test\"" constellation-conf.yaml
@@ -164,7 +164,7 @@ runs:
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
-        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force
+        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force --debug
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
@@ -190,7 +190,7 @@ runs:
       id: constellation-init
       shell: bash
       run: |
-        constellation init --force
+        constellation init --force --debug
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
         echo "MASTERSECRET=$(pwd)/constellation-mastersecret.json" >> $GITHUB_OUTPUT
 
