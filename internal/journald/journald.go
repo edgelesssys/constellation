@@ -33,7 +33,7 @@ func NewCommand(ctx context.Context, service string) (*JournaldCommand, error) {
 	return &JournaldCommand{ctx, service, cmd}, nil
 }
 
-// GetServiceLog gets all journald logs from a service and returns a string with the plain text logs.
+// GetServiceLog gets all journald logs from a service and returns a byte array with the plain text logs.
 func GetServiceLog(jcmd collectionCommand) ([]byte, error) {
 	out, err := jcmd.executeCommand()
 	if err != nil {
