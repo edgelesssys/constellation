@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -237,7 +238,15 @@ func (d *initDoer) Do(ctx context.Context) error {
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
-	d.logGRPCStateChanges(ctx, conn)
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	grpcStateLogCtx, grpcStateLogCancel := context.WithCancel(ctx)
+	defer grpcStateLogCancel()
+	wg.Add(1)
+	d.logGRPCStateChanges(grpcStateLogCtx, &wg, conn)
+
 	protoClient := initproto.NewAPIClient(conn)
 	d.log.Debugf("Created protoClient")
 	resp, err := protoClient.Init(ctx, d.req)
@@ -248,8 +257,9 @@ func (d *initDoer) Do(ctx context.Context) error {
 	return nil
 }
 
-func (d *initDoer) logGRPCStateChanges(ctx context.Context, conn *grpc.ClientConn) {
+func (d *initDoer) logGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
 	go func() {
+		defer wg.Done()
 		state := conn.GetState()
 		d.log.Debugf("Connection state started as %s", state)
 		for ; state != connectivity.Ready && conn.WaitForStateChange(ctx, state); state = conn.GetState() {
