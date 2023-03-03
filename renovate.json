@@ -157,7 +157,7 @@
     },
     {
       "matchPackagePrefixes": [
-        "ghcr.io/edgelesssys/"
+        "ghcr.io/edgelesssys/constellation/"
       ],
       "versioning": "semver",
       "groupName": "Constellation containers",
