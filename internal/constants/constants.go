@@ -145,9 +145,9 @@ const (
 	// EnvVarAzureClientSecretValue is environment variable to overwrite
 	// provider.azure.clientSecretValue .
 	EnvVarAzureClientSecretValue = EnvVarPrefix + "AZURE_CLIENT_SECRET_VALUE"
-	// EnvVarOpenStackServiceAccountToken is environment variable to overwrite
-	// provider.openstack.serviceAccountToken .
-	EnvVarOpenStackServiceAccountToken = EnvVarPrefix + "OPENSTACK_SERVICE_ACCOUNT_TOKEN"
+	// EnvVarOpenStackPassword is environment variable to overwrite
+	// provider.openstack.password .
+	EnvVarOpenStackPassword = EnvVarPrefix + "OS_PASSWORD"
 	// EnvVarNoSpinner is environment variable used to disable the loading indicator (spinner)
 	// displayed in Constellation CLI. Any non-empty value, e.g., CONSTELL_NO_SPINNER=1,
 	// can be used to disable the spinner.

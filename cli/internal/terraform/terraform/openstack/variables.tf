@@ -51,11 +51,20 @@ variable "floating_ip_pool_id" {
   description = "The pool (network name) to use for floating IPs."
 }
 
-variable "openstack_service_account_token" {
+variable "openstack_user_domain_name" {
   type        = string
-  description = "OpenStack service account token."
+  description = "OpenStack user domain name."
 }
 
+variable "openstack_username" {
+  type        = string
+  description = "OpenStack user name."
+}
+
+variable "openstack_password" {
+  type        = string
+  description = "OpenStack password."
+}
 
 variable "debug" {
   type        = bool
