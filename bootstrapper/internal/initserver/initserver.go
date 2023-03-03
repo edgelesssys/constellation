@@ -113,7 +113,6 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
-	defer s.cleaner.Clean()
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
 
@@ -145,6 +144,11 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		log.Warnf("Node is already in a join process")
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
+
+	// Stop the join client -> We no longer expect to join an existing cluster,
+	// since we are bootstrapping a new one.
+	// Any errors following this call will result in a failed node that may not join any cluster.
+	s.cleaner.Clean()
 
 	if err := s.setupDisk(ctx, cloudKms); err != nil {
 		return nil, status.Errorf(codes.Internal, "setting up disk: %s", err)
