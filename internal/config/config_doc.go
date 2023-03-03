@@ -330,7 +330,7 @@ func init() {
 			FieldName: "openstack",
 		},
 	}
-	OpenStackConfigDoc.Fields = make([]encoder.Doc, 6)
+	OpenStackConfigDoc.Fields = make([]encoder.Doc, 8)
 	OpenStackConfigDoc.Fields[0].Name = "cloud"
 	OpenStackConfigDoc.Fields[0].Type = "string"
 	OpenStackConfigDoc.Fields[0].Note = ""
@@ -351,16 +351,26 @@ func init() {
 	OpenStackConfigDoc.Fields[3].Note = ""
 	OpenStackConfigDoc.Fields[3].Description = "Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html"
 	OpenStackConfigDoc.Fields[3].Comments[encoder.LineComment] = "Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html"
-	OpenStackConfigDoc.Fields[4].Name = "serviceAccountToken"
+	OpenStackConfigDoc.Fields[4].Name = "userDomainName"
 	OpenStackConfigDoc.Fields[4].Type = "string"
 	OpenStackConfigDoc.Fields[4].Note = ""
-	OpenStackConfigDoc.Fields[4].Description = "Service account token to use authenticate VMs with the OpenStack API. Alternatively leave empty and pass value via CONSTELL_OPENSTACK_SERVICE_ACCOUNT_TOKEN environment variable."
-	OpenStackConfigDoc.Fields[4].Comments[encoder.LineComment] = "Service account token to use authenticate VMs with the OpenStack API. Alternatively leave empty and pass value via CONSTELL_OPENSTACK_SERVICE_ACCOUNT_TOKEN environment variable."
-	OpenStackConfigDoc.Fields[5].Name = "directDownload"
-	OpenStackConfigDoc.Fields[5].Type = "bool"
+	OpenStackConfigDoc.Fields[4].Description = "UserDomainName is the name of the domain where a user resides."
+	OpenStackConfigDoc.Fields[4].Comments[encoder.LineComment] = "UserDomainName is the name of the domain where a user resides."
+	OpenStackConfigDoc.Fields[5].Name = "username"
+	OpenStackConfigDoc.Fields[5].Type = "string"
 	OpenStackConfigDoc.Fields[5].Note = ""
-	OpenStackConfigDoc.Fields[5].Description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
-	OpenStackConfigDoc.Fields[5].Comments[encoder.LineComment] = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+	OpenStackConfigDoc.Fields[5].Description = "Username to use inside the cluster."
+	OpenStackConfigDoc.Fields[5].Comments[encoder.LineComment] = "Username to use inside the cluster."
+	OpenStackConfigDoc.Fields[6].Name = "password"
+	OpenStackConfigDoc.Fields[6].Type = "string"
+	OpenStackConfigDoc.Fields[6].Note = ""
+	OpenStackConfigDoc.Fields[6].Description = "Password to use inside the cluster. You can instead use the environment variable \"CONSTELL_OS_PASSWORD\"."
+	OpenStackConfigDoc.Fields[6].Comments[encoder.LineComment] = "Password to use inside the cluster. You can instead use the environment variable \"CONSTELL_OS_PASSWORD\"."
+	OpenStackConfigDoc.Fields[7].Name = "directDownload"
+	OpenStackConfigDoc.Fields[7].Type = "bool"
+	OpenStackConfigDoc.Fields[7].Note = ""
+	OpenStackConfigDoc.Fields[7].Description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+	OpenStackConfigDoc.Fields[7].Comments[encoder.LineComment] = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."

@@ -238,8 +238,14 @@ type OpenStackConfig struct {
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
 	// description: |
-	//   Service account token to use authenticate VMs with the OpenStack API. Alternatively leave empty and pass value via CONSTELL_OPENSTACK_SERVICE_ACCOUNT_TOKEN environment variable.
-	ServiceAccountToken string `yaml:"serviceAccountToken" validate:"required"`
+	//   UserDomainName is the name of the domain where a user resides.
+	UserDomainName string `yaml:"userDomainName" validate:"required"`
+	// description: |
+	//   Username to use inside the cluster.
+	Username string `yaml:"username" validate:"required"`
+	// description: |
+	//   Password to use inside the cluster. You can instead use the environment variable "CONSTELL_OS_PASSWORD".
+	Password string `yaml:"password"`
 	// description: |
 	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
 	DirectDownload *bool `yaml:"directDownload" validate:"required"`
@@ -368,9 +374,9 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 		c.Provider.Azure.ClientSecretValue = clientSecretValue
 	}
 
-	serviceAccountToken := os.Getenv(constants.EnvVarOpenStackServiceAccountToken)
-	if serviceAccountToken != "" && c.Provider.OpenStack != nil {
-		c.Provider.OpenStack.ServiceAccountToken = serviceAccountToken
+	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
+	if openstackPassword != "" && c.Provider.OpenStack != nil {
+		c.Provider.OpenStack.Password = openstackPassword
 	}
 
 	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.

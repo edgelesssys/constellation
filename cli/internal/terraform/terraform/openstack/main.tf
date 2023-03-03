@@ -40,7 +40,7 @@ locals {
   ][0]
   identity_endpoint = [
     for endpoint in local.identity_service.endpoints :
-    endpoint if(endpoint.interface == "internal")
+    endpoint if(endpoint.interface == "public")
   ][0]
   identity_internal_url = local.identity_endpoint.url
 }
@@ -138,43 +138,43 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
 }
 
 module "instance_group_control_plane" {
-  source         = "./modules/instance_group"
-  name           = local.name
-  role           = "ControlPlane"
-  instance_count = var.control_plane_count
-  image_id       = openstack_images_image_v2.constellation_os_image.image_id
-  flavor_id      = var.flavor_id
-  security_groups = [
-    openstack_compute_secgroup_v2.vpc_secgroup.id,
-  ]
-  tags                            = local.tags
-  uid                             = local.uid
-  disk_size                       = var.state_disk_size
-  availability_zone               = var.availability_zone
-  network_id                      = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash                = local.initSecretHash
-  identity_internal_url           = local.identity_internal_url
-  openstack_service_account_token = var.openstack_service_account_token
+  source                     = "./modules/instance_group"
+  name                       = local.name
+  role                       = "ControlPlane"
+  instance_count             = var.control_plane_count
+  image_id                   = openstack_images_image_v2.constellation_os_image.image_id
+  flavor_id                  = var.flavor_id
+  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
+  tags                       = local.tags
+  uid                        = local.uid
+  disk_size                  = var.state_disk_size
+  availability_zone          = var.availability_zone
+  network_id                 = openstack_networking_network_v2.vpc_network.id
+  init_secret_hash           = local.initSecretHash
+  identity_internal_url      = local.identity_internal_url
+  openstack_username         = var.openstack_username
+  openstack_password         = var.openstack_password
+  openstack_user_domain_name = var.openstack_user_domain_name
 }
 
 module "instance_group_worker" {
-  source         = "./modules/instance_group"
-  name           = local.name
-  role           = "Worker"
-  instance_count = var.worker_count
-  image_id       = openstack_images_image_v2.constellation_os_image.image_id
-  flavor_id      = var.flavor_id
-  tags           = local.tags
-  uid            = local.uid
-  security_groups = [
-    openstack_compute_secgroup_v2.vpc_secgroup.id,
-  ]
-  disk_size                       = var.state_disk_size
-  availability_zone               = var.availability_zone
-  network_id                      = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash                = local.initSecretHash
-  identity_internal_url           = local.identity_internal_url
-  openstack_service_account_token = var.openstack_service_account_token
+  source                     = "./modules/instance_group"
+  name                       = local.name
+  role                       = "Worker"
+  instance_count             = var.worker_count
+  image_id                   = openstack_images_image_v2.constellation_os_image.image_id
+  flavor_id                  = var.flavor_id
+  tags                       = local.tags
+  uid                        = local.uid
+  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
+  disk_size                  = var.state_disk_size
+  availability_zone          = var.availability_zone
+  network_id                 = openstack_networking_network_v2.vpc_network.id
+  init_secret_hash           = local.initSecretHash
+  identity_internal_url      = local.identity_internal_url
+  openstack_username         = var.openstack_username
+  openstack_password         = var.openstack_password
+  openstack_user_domain_name = var.openstack_user_domain_name
 }
 
 resource "openstack_networking_floatingip_v2" "public_ip" {

@@ -67,8 +67,17 @@ variable "identity_internal_url" {
   description = "Internal URL of the Identity service."
 }
 
-
-variable "openstack_service_account_token" {
+variable "openstack_user_domain_name" {
   type        = string
-  description = "OpenStack service account token."
+  description = "OpenStack user domain name."
+}
+
+variable "openstack_username" {
+  type        = string
+  description = "OpenStack user name."
+}
+
+variable "openstack_password" {
+  type        = string
+  description = "OpenStack password."
 }
