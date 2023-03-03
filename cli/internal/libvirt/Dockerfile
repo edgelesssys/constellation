@@ -7,8 +7,10 @@ RUN dnf -y update && \
     swtpm \
     swtpm-tools \
     libvirt-client && \
+    dnf upgrade --enablerepo=updates-testing --refresh --advisory=FEDORA-2023-c487bde4b4 -y && \
     dnf remove -y python-setuptools && \
     dnf clean all
+# TODO(malt3): remove advisory FEDORA-2023-c487bde4b4 upgrade for libtpms to libtpms-0.9.6-1.fc37.x86_64 once it is in stable
 
 # Prevent cgroup issues on Fedora and configure libvirt
 RUN echo "cgroup_controllers = []" >> /etc/libvirt/qemu.conf && \
