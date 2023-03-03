@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package helm
 
+// Values for the Cilium Helm releases for AWS.
 var awsVals = map[string]any{
 	"endpointRoutes": map[string]any{
 		"enabled": true,
@@ -44,6 +45,7 @@ var awsVals = map[string]any{
 	"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
 }
 
+// Values for the Cilium Helm releases for Azure.
 var azureVals = map[string]any{
 	"endpointRoutes": map[string]any{
 		"enabled": true,
@@ -84,6 +86,7 @@ var azureVals = map[string]any{
 	"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
 }
 
+// Values for the Cilium Helm releases for GCP.
 var gcpVals = map[string]any{
 	"endpointRoutes": map[string]any{
 		"enabled": true,

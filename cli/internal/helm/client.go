@@ -36,7 +36,7 @@ const (
 	DenyDestructive = false
 )
 
-// Client handles interaction with helm.
+// Client handles interaction with helm and the cluster.
 type Client struct {
 	config  *action.Configuration
 	kubectl crdClient
