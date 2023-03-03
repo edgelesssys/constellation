@@ -272,13 +272,14 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
-		Cloud:            config.Provider.OpenStack.Cloud,
-		AvailabilityZone: config.Provider.OpenStack.AvailabilityZone,
-		FloatingIPPoolID: config.Provider.OpenStack.FloatingIPPoolID,
-		FlavorID:         config.Provider.OpenStack.FlavorID,
-		ImageURL:         image,
-		DirectDownload:   *config.Provider.OpenStack.DirectDownload,
-		Debug:            config.IsDebugCluster(),
+		Cloud:                        config.Provider.OpenStack.Cloud,
+		AvailabilityZone:             config.Provider.OpenStack.AvailabilityZone,
+		FloatingIPPoolID:             config.Provider.OpenStack.FloatingIPPoolID,
+		FlavorID:                     config.Provider.OpenStack.FlavorID,
+		ImageURL:                     image,
+		DirectDownload:               *config.Provider.OpenStack.DirectDownload,
+		OpenStackServiceAccountToken: config.Provider.OpenStack.ServiceAccountToken,
+		Debug:                        config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.OpenStack.String())), &vars); err != nil {

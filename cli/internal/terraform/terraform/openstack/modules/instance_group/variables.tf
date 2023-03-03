@@ -61,3 +61,14 @@ variable "init_secret_hash" {
   type        = string
   description = "Hash of the init secret."
 }
+
+variable "identity_internal_url" {
+  type        = string
+  description = "Internal URL of the Identity service."
+}
+
+
+variable "openstack_service_account_token" {
+  type        = string
+  description = "OpenStack service account token."
+}
