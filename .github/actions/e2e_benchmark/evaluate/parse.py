@@ -68,13 +68,17 @@ def main() -> None:
     knb_results = knb.evaluate(knb_path)
     fio_results = fio.evaluate(fio_path)
 
+    # Get timestamp
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
     combined_results = {'metadata': {
                             'github.sha': commit_hash,
                             'github.ref-name': commit_ref,
                             'github.actor': actor,
                             'github.workflow': workflow,
-                            'created': str(datetime.now()),
                         },
+                        '@timestamp': str(timestamp),
                         'provider': ext_provider_name,
                         'fio': {}, 
                         'knb': {}}
