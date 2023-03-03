@@ -18,9 +18,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/mod/semver"
 )
 
 func TestParseIDFile(t *testing.T) {
@@ -98,6 +100,7 @@ func TestIAMCreateAWS(t *testing.T) {
 		prefixFlag         string
 		yesFlag            bool
 		generateConfigFlag bool
+		k8sVersionFlag     string
 		configFlag         string
 		existingFiles      []string
 		existingDirs       []string
@@ -225,6 +228,38 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantErr:            true,
 			configFlag:         constants.ConfigFilename,
 		},
+		"iam create azure without generate config and invalid kubernetes version": {
+			setupFs:        defaultFs,
+			creator:        &stubIAMCreator{id: validIAMIDFile},
+			provider:       cloudprovider.AWS,
+			zoneFlag:       "us-east-2a",
+			prefixFlag:     "test",
+			k8sVersionFlag: "1.11.1", // supposed to be ignored without generateConfigFlag
+			yesFlag:        true,
+		},
+		"iam create azure generate config with valid kubernetes version": {
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			generateConfigFlag: true,
+			k8sVersionFlag:     semver.MajorMinor(string(versions.Default)),
+			configFlag:         constants.ConfigFilename,
+			yesFlag:            true,
+		},
+		"iam create azure generate config with invalid kubernetes version": {
+			setupFs:            defaultFs,
+			creator:            &stubIAMCreator{id: validIAMIDFile},
+			provider:           cloudprovider.AWS,
+			zoneFlag:           "us-east-2a",
+			prefixFlag:         "test",
+			generateConfigFlag: true,
+			k8sVersionFlag:     "1.22.1",
+			configFlag:         constants.ConfigFilename,
+			yesFlag:            true,
+			wantErr:            true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -237,10 +272,12 @@ func TestIAMCreateAWS(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
-			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
-			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
+			// register persistent flags manually
+			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().Bool("generate-config", false, "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("yes", false, "")
+			cmd.Flags().String("name", "constell", "")
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
@@ -256,6 +293,9 @@ func TestIAMCreateAWS(t *testing.T) {
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			}
+			if tc.k8sVersionFlag != "" {
+				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
@@ -334,6 +374,7 @@ func TestIAMCreateAzure(t *testing.T) {
 		resourceGroupFlag    string
 		yesFlag              bool
 		generateConfigFlag   bool
+		k8sVersionFlag       string
 		configFlag           string
 		existingFiles        []string
 		existingDirs         []string
@@ -462,6 +503,41 @@ func TestIAMCreateAzure(t *testing.T) {
 			configFlag:           constants.ConfigFilename,
 			wantErr:              true,
 		},
+		"iam create azure without generate config and invalid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			k8sVersionFlag:       "1.11.1", // supposed to be ignored without generateConfigFlag
+			yesFlag:              true,
+		},
+		"iam create azure generate config with valid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			k8sVersionFlag:       semver.MajorMinor(string(versions.Default)),
+			configFlag:           constants.ConfigFilename,
+			yesFlag:              true,
+		},
+		"iam create azure generate config with invalid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			generateConfigFlag:   true,
+			k8sVersionFlag:       "1.22.1",
+			configFlag:           constants.ConfigFilename,
+			yesFlag:              true,
+			wantErr:              true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -474,10 +550,12 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
-			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
-			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
+			// register persistent flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().Bool("generate-config", false, "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("yes", false, "")
+			cmd.Flags().String("name", "constell", "")
 
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
@@ -496,6 +574,9 @@ func TestIAMCreateAzure(t *testing.T) {
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			}
+			if tc.k8sVersionFlag != "" {
+				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
@@ -579,6 +660,7 @@ func TestIAMCreateGCP(t *testing.T) {
 		projectIDFlag        string
 		yesFlag              bool
 		generateConfigFlag   bool
+		k8sVersionFlag       string
 		configFlag           string
 		existingFiles        []string
 		existingDirs         []string
@@ -727,6 +809,41 @@ func TestIAMCreateGCP(t *testing.T) {
 			configFlag:           constants.ConfigFilename,
 			wantErr:              true,
 		},
+		"iam create gcp without generate config and invalid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.GCP,
+			zoneFlag:             "europe-west1-a",
+			serviceAccountIDFlag: "constell-test",
+			projectIDFlag:        "constell-1234",
+			k8sVersionFlag:       "1.11.1", // supposed to be ignored without generateConfigFlag
+			yesFlag:              true,
+		},
+		"iam create gcp generate config with valid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.GCP,
+			zoneFlag:             "europe-west1-a",
+			serviceAccountIDFlag: "constell-test",
+			projectIDFlag:        "constell-1234",
+			generateConfigFlag:   true,
+			k8sVersionFlag:       semver.MajorMinor(string(versions.Default)),
+			configFlag:           constants.ConfigFilename,
+			yesFlag:              true,
+		},
+		"iam create gcp generate config with invalid kubernetes version": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.GCP,
+			zoneFlag:             "europe-west1-a",
+			serviceAccountIDFlag: "constell-test",
+			projectIDFlag:        "constell-1234",
+			generateConfigFlag:   true,
+			k8sVersionFlag:       "1.22.1",
+			configFlag:           constants.ConfigFilename,
+			yesFlag:              true,
+			wantErr:              true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -739,10 +856,12 @@ func TestIAMCreateGCP(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("generate-config", false, "")             // register persistent flag manually
-			cmd.Flags().Bool("yes", false, "")                         // register persistent flag manually
-			cmd.Flags().String("name", "constell", "")                 // register persistent flag manually
+			// register persistent flags manually
+			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().Bool("generate-config", false, "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("yes", false, "")
+			cmd.Flags().String("name", "constell", "")
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
@@ -761,6 +880,9 @@ func TestIAMCreateGCP(t *testing.T) {
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			}
+			if tc.k8sVersionFlag != "" {
+				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
