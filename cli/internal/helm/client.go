@@ -73,9 +73,17 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+	crds, err := c.backupCRDs(ctx)
+	if err != nil {
+		return fmt.Errorf("creating CRD backup: %w", err)
+	}
+	if err := c.backupCRs(ctx, crds); err != nil {
+		return fmt.Errorf("creating CR backup: %w", err)
+	}
+
 	upgradeErrs := []error{}
 	invalidUpgrade := &compatibility.InvalidUpgradeError{}
-	err := c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive)
+	err = c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive)
 	switch {
 	case errors.As(err, &invalidUpgrade):
 		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Cilium upgrade: %w", err))
