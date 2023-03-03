@@ -531,9 +531,10 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ### Options
 
 ```
-      --generate-config   automatically generate a configuration file and fill in the required fields
-  -h, --help              help for create
-      --yes               create the IAM configuration without further confirmation
+      --generate-config     automatically generate a configuration file and fill in the required fields
+  -h, --help                help for create
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+      --yes                 create the IAM configuration without further confirmation
 ```
 
 ### Options inherited from parent commands
@@ -568,11 +569,12 @@ constellation iam create aws [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string     path to the configuration file (default "constellation-conf.yaml")
-      --debug             enable debug logging
-      --force             disable version compatibility checks - might result in corrupted clusters
-      --generate-config   automatically generate a configuration file and fill in the required fields
-      --yes               create the IAM configuration without further confirmation
+      --config string       path to the configuration file (default "constellation-conf.yaml")
+      --debug               enable debug logging
+      --force               disable version compatibility checks - might result in corrupted clusters
+      --generate-config     automatically generate a configuration file and fill in the required fields
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+      --yes                 create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create azure
@@ -599,11 +601,12 @@ constellation iam create azure [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string     path to the configuration file (default "constellation-conf.yaml")
-      --debug             enable debug logging
-      --force             disable version compatibility checks - might result in corrupted clusters
-      --generate-config   automatically generate a configuration file and fill in the required fields
-      --yes               create the IAM configuration without further confirmation
+      --config string       path to the configuration file (default "constellation-conf.yaml")
+      --debug               enable debug logging
+      --force               disable version compatibility checks - might result in corrupted clusters
+      --generate-config     automatically generate a configuration file and fill in the required fields
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+      --yes                 create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create gcp
@@ -633,11 +636,12 @@ constellation iam create gcp [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string     path to the configuration file (default "constellation-conf.yaml")
-      --debug             enable debug logging
-      --force             disable version compatibility checks - might result in corrupted clusters
-      --generate-config   automatically generate a configuration file and fill in the required fields
-      --yes               create the IAM configuration without further confirmation
+      --config string       path to the configuration file (default "constellation-conf.yaml")
+      --debug               enable debug logging
+      --force               disable version compatibility checks - might result in corrupted clusters
+      --generate-config     automatically generate a configuration file and fill in the required fields
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+      --yes                 create the IAM configuration without further confirmation
 ```
 
 ## constellation iam destroy
