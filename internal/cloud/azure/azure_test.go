@@ -92,6 +92,35 @@ func TestGetCCMConfig(t *testing.T) {
 				AADClientSecret:     "client-secret",
 			},
 		},
+		"no app registration": {
+			imdsAPI: &stubIMDSAPI{
+				uidVal: "uid",
+			},
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{goodLB},
+				},
+			},
+			secGroupAPI: &stubSecurityGroupsAPI{
+				pager: &stubSecurityGroupsClientListPager{
+					list: []armnetwork.SecurityGroup{goodSecurityGroup},
+				},
+			},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set/virtualMachines/0",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&location=westeurope",
+			wantConfig: cloudConfig{
+				Cloud:               "AzurePublicCloud",
+				TenantID:            "tenant-id",
+				SubscriptionID:      "subscription-id",
+				ResourceGroup:       "resource-group",
+				LoadBalancerSku:     "standard",
+				SecurityGroupName:   "security-group",
+				LoadBalancerName:    "load-balancer",
+				UseInstanceMetadata: true,
+				VMType:              "vmss",
+				Location:            "westeurope",
+			},
+		},
 		"missing UID tag": {
 			imdsAPI: &stubIMDSAPI{
 				uidVal: "uid",

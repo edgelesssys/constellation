@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
@@ -489,24 +488,6 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
 		}
 
-		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
-		if err != nil {
-			return nil, err
-		}
-		creds, err := azureshared.ApplicationCredentialsFromURI(serviceConfig.cloudServiceAccountURI)
-		if err != nil {
-			return nil, err
-		}
-
-		extraVals["autoscaler"] = map[string]any{
-			"Azure": map[string]any{
-				"clientID":       creds.AppClientID,
-				"clientSecret":   creds.ClientSecretValue,
-				"resourceGroup":  resourceGroup,
-				"subscriptionID": subscriptionID,
-				"tenantID":       creds.TenantID,
-			},
-		}
 	case cloudprovider.OpenStack:
 		creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
 		if err != nil {
