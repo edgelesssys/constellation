@@ -15,8 +15,10 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -27,122 +29,28 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func TestUpgradeK8s(t *testing.T) {
+func TestUpgradeNodeVersion(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		stable                      stubStableClient
-		conditions                  []metav1.Condition
-		activeClusterVersionUpgrade bool
-		newClusterVersion           string
-		currentClusterVersion       string
-		components                  components.Components
-		getErr                      error
-		assertCorrectError          func(t *testing.T, err error) bool
-		wantErr                     bool
+		stable                *stubStableClient
+		conditions            []metav1.Condition
+		currentImageVersion   string
+		currentClusterVersion string
+		conf                  *config.Config
+		getErr                error
+		wantErr               bool
+		wantUpdate            bool
+		assertCorrectError    func(t *testing.T, err error) bool
 	}{
 		"success": {
-			currentClusterVersion: "v1.2.2",
-			newClusterVersion:     "v1.2.3",
-		},
-		"not an upgrade": {
-			currentClusterVersion: "v1.2.3",
-			newClusterVersion:     "v1.2.3",
-			wantErr:               true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
-				return assert.ErrorAs(t, err, &target)
-			},
-		},
-		"downgrade": {
-			currentClusterVersion: "v1.2.3",
-			newClusterVersion:     "v1.2.2",
-			wantErr:               true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
-				return assert.ErrorAs(t, err, &target)
-			},
-		},
-		"no constellation-version object": {
-			getErr:  someErr,
-			wantErr: true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				return assert.ErrorIs(t, err, someErr)
-			},
-		},
-		"upgrade in progress": {
-			currentClusterVersion: "v1.2.2",
-			newClusterVersion:     "v1.2.3",
-			conditions: []metav1.Condition{{
-				Type:   updatev1alpha1.ConditionOutdated,
-				Status: metav1.ConditionTrue,
-			}},
-			wantErr: true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				return assert.ErrorIs(t, err, ErrInProgress)
-			},
-		},
-		"configmap create fails": {
-			currentClusterVersion: "v1.2.2",
-			newClusterVersion:     "v1.2.3",
-			stable: stubStableClient{
-				createErr: someErr,
-			},
-			wantErr: true,
-			assertCorrectError: func(t *testing.T, err error) bool {
-				return assert.ErrorIs(t, err, someErr)
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-			nodeVersion := updatev1alpha1.NodeVersion{
-				Spec: updatev1alpha1.NodeVersionSpec{
-					KubernetesClusterVersion: tc.currentClusterVersion,
-				},
-				Status: updatev1alpha1.NodeVersionStatus{
-					Conditions:                  tc.conditions,
-					ActiveClusterVersionUpgrade: tc.activeClusterVersionUpgrade,
-				},
-			}
-
-			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
-			require.NoError(err)
-
-			upgrader := Upgrader{
-				stableInterface:  &tc.stable,
-				dynamicInterface: &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, getErr: tc.getErr},
-				log:              logger.NewTest(t),
-				outWriter:        io.Discard,
-			}
-
-			err = upgrader.UpgradeK8s(context.Background(), tc.newClusterVersion, tc.components)
-			if tc.wantErr {
-				tc.assertCorrectError(t, err)
-				return
-			}
-			assert.NoError(err)
-		})
-	}
-}
-
-func TestUpgradeImage(t *testing.T) {
-	someErr := errors.New("some error")
-	testCases := map[string]struct {
-		stable              *stubStableClient
-		conditions          []metav1.Condition
-		currentImageVersion string
-		newImageVersion     string
-		getErr              error
-		wantErr             bool
-		wantUpdate          bool
-		assertCorrectError  func(t *testing.T, err error) bool
-	}{
-		"success": {
-			currentImageVersion: "v1.2.2",
-			newImageVersion:     "v1.2.3",
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			stable: &stubStableClient{
 				configMap: &corev1.ConfigMap{
 					Data: map[string]string{
@@ -152,37 +60,93 @@ func TestUpgradeImage(t *testing.T) {
 			},
 			wantUpdate: true,
 		},
-		"not an upgrade": {
-			currentImageVersion: "v1.2.2",
-			newImageVersion:     "v1.2.2",
-			wantErr:             true,
+		"only k8s upgrade": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.2"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMap: &corev1.ConfigMap{
+					Data: map[string]string{
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
+					},
+				},
+			},
+			wantUpdate: true,
+			wantErr:    true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
-				return assert.ErrorAs(t, err, &target)
+				upgradeErr := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
-		"downgrade": {
-			currentImageVersion: "v1.2.2",
-			newImageVersion:     "v1.2.1",
-			wantErr:             true,
+		"only image upgrade": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMap: &corev1.ConfigMap{
+					Data: map[string]string{
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
+					},
+				},
+			},
+			wantUpdate: true,
+			wantErr:    true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
-				return assert.ErrorAs(t, err, &target)
+				upgradeErr := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
+		"not an upgrade": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.2"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable:                &stubStableClient{},
+			wantErr:               true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				upgradeErr := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
 		"upgrade in progress": {
-			currentImageVersion: "v1.2.2",
-			newImageVersion:     "v1.2.3",
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
 			conditions: []metav1.Condition{{
 				Type:   updatev1alpha1.ConditionOutdated,
 				Status: metav1.ConditionTrue,
 			}},
-			wantErr: true,
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable:                &stubStableClient{},
+			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, ErrInProgress)
 			},
 		},
 		"get error": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				return conf
+			}(),
 			getErr:  someErr,
 			wantErr: true,
 			assertCorrectError: func(t *testing.T, err error) bool {
@@ -198,7 +162,8 @@ func TestUpgradeImage(t *testing.T) {
 
 			nodeVersion := updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
-					ImageVersion: tc.currentImageVersion,
+					ImageVersion:             tc.currentImageVersion,
+					KubernetesClusterVersion: tc.currentClusterVersion,
 				},
 				Status: updatev1alpha1.NodeVersionStatus{
 					Conditions: tc.conditions,
@@ -212,11 +177,12 @@ func TestUpgradeImage(t *testing.T) {
 			upgrader := Upgrader{
 				stableInterface:  tc.stable,
 				dynamicInterface: dynamicClient,
+				imageFetcher:     &stubImageFetcher{},
 				log:              logger.NewTest(t),
 				outWriter:        io.Discard,
 			}
 
-			err = upgrader.UpgradeImage(context.Background(), "", tc.newImageVersion, nil)
+			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf)
 
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
@@ -342,24 +308,25 @@ func TestUpdateMeasurements(t *testing.T) {
 func TestUpdateImage(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		nodeVersion       updatev1alpha1.NodeVersion
 		newImageReference string
 		newImageVersion   string
+		oldImageReference string
 		oldImageVersion   string
 		updateErr         error
 		wantUpdate        bool
 		wantErr           bool
 	}{
 		"success": {
-			nodeVersion: updatev1alpha1.NodeVersion{
-				Spec: updatev1alpha1.NodeVersionSpec{
-					ImageReference: "old-image-ref",
-					ImageVersion:   "old-image-ver",
-				},
-			},
+			oldImageReference: "old-image-ref",
+			oldImageVersion:   "v0.0.0",
 			newImageReference: "new-image-ref",
-			newImageVersion:   "new-image-ver",
+			newImageVersion:   "v0.1.0",
 			wantUpdate:        true,
+		},
+		"same version fails": {
+			oldImageVersion: "v0.0.0",
+			newImageVersion: "v0.0.0",
+			wantErr:         true,
 		},
 		"update error": {
 			updateErr: someErr,
@@ -371,14 +338,18 @@ func TestUpdateImage(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			upgradeClient := &stubDynamicClient{updateErr: tc.updateErr}
 			upgrader := &Upgrader{
-				dynamicInterface: upgradeClient,
-				outWriter:        io.Discard,
-				log:              logger.NewTest(t),
+				log: logger.NewTest(t),
 			}
 
-			err := upgrader.updateImage(context.Background(), tc.nodeVersion, tc.newImageReference, tc.newImageVersion)
+			nodeVersion := updatev1alpha1.NodeVersion{
+				Spec: updatev1alpha1.NodeVersionSpec{
+					ImageReference: tc.oldImageReference,
+					ImageVersion:   tc.oldImageVersion,
+				},
+			}
+
+			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -387,10 +358,67 @@ func TestUpdateImage(t *testing.T) {
 
 			assert.NoError(err)
 			if tc.wantUpdate {
-				assert.Equal(tc.newImageReference, upgradeClient.updatedObject.Object["spec"].(map[string]any)["image"])
-				assert.Equal(tc.newImageVersion, upgradeClient.updatedObject.Object["spec"].(map[string]any)["imageVersion"])
+				assert.Equal(tc.newImageReference, nodeVersion.Spec.ImageReference)
+				assert.Equal(tc.newImageVersion, nodeVersion.Spec.ImageVersion)
 			} else {
-				assert.Nil(upgradeClient.updatedObject)
+				assert.Equal(tc.oldImageReference, nodeVersion.Spec.ImageReference)
+				assert.Equal(tc.oldImageVersion, nodeVersion.Spec.ImageVersion)
+			}
+		})
+	}
+}
+
+func TestUpdateK8s(t *testing.T) {
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		newClusterVersion string
+		oldClusterVersion string
+		updateErr         error
+		wantUpdate        bool
+		wantErr           bool
+	}{
+		"success": {
+			oldClusterVersion: "v0.0.0",
+			newClusterVersion: "v0.1.0",
+			wantUpdate:        true,
+		},
+		"same version fails": {
+			oldClusterVersion: "v0.0.0",
+			newClusterVersion: "v0.0.0",
+			wantErr:           true,
+		},
+		"update error": {
+			updateErr: someErr,
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			upgrader := &Upgrader{
+				log: logger.NewTest(t),
+			}
+
+			nodeVersion := updatev1alpha1.NodeVersion{
+				Spec: updatev1alpha1.NodeVersionSpec{
+					KubernetesClusterVersion: tc.oldClusterVersion,
+				},
+			}
+
+			_, err := upgrader.updateK8s(&nodeVersion, tc.newClusterVersion, components.Components{})
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+
+			assert.NoError(err)
+			if tc.wantUpdate {
+				assert.Equal(tc.newClusterVersion, nodeVersion.Spec.KubernetesClusterVersion)
+			} else {
+				assert.Equal(tc.oldClusterVersion, nodeVersion.Spec.KubernetesClusterVersion)
 			}
 		})
 	}
@@ -428,7 +456,7 @@ func (s *stubStableClient) getCurrentConfigMap(ctx context.Context, name string)
 
 func (s *stubStableClient) updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	s.updatedConfigMap = configMap
-	return nil, s.updateErr
+	return s.updatedConfigMap, s.updateErr
 }
 
 func (s *stubStableClient) createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {

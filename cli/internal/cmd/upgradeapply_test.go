@@ -12,37 +12,35 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUpgradeApply(t *testing.T) {
+	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		upgrader     stubUpgrader
-		imageFetcher stubImageFetcher
-		wantErr      bool
+		upgrader stubUpgrader
+		wantErr  bool
 	}{
 		"success": {
-			imageFetcher: stubImageFetcher{
-				reference: "someReference",
-			},
+			upgrader: stubUpgrader{},
 		},
-		"fetch error": {
-			imageFetcher: stubImageFetcher{
-				fetchReferenceErr: errors.New("error"),
-			},
-			wantErr: true,
+		"nodeVersion some error": {
+			upgrader: stubUpgrader{nodeVersionErr: someErr},
+			wantErr:  true,
 		},
-		"upgrade error": {
-			upgrader: stubUpgrader{imageErr: errors.New("error")},
+		"nodeVersion in progress error": {
+			upgrader: stubUpgrader{nodeVersionErr: cloudcmd.ErrInProgress},
+		},
+		"helm other error": {
+			upgrader: stubUpgrader{helmErr: someErr},
 			wantErr:  true,
 		},
 	}
@@ -60,7 +58,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t)}
-			err := upgrader.upgradeApply(cmd, &tc.imageFetcher, handler)
+			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -71,28 +69,14 @@ func TestUpgradeApply(t *testing.T) {
 }
 
 type stubUpgrader struct {
-	imageErr error
-	helmErr  error
-	k8sErr   error
+	nodeVersionErr error
+	helmErr        error
 }
 
-func (u stubUpgrader) UpgradeImage(context.Context, string, string, measurements.M) error {
-	return u.imageErr
+func (u stubUpgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) error {
+	return u.nodeVersionErr
 }
 
 func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
 	return u.helmErr
-}
-
-func (u stubUpgrader) UpgradeK8s(ctx context.Context, clusterVersion string, components components.Components) error {
-	return u.k8sErr
-}
-
-type stubImageFetcher struct {
-	reference         string
-	fetchReferenceErr error
-}
-
-func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
-	return f.reference, f.fetchReferenceErr
 }
