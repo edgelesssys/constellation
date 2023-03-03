@@ -37,10 +37,11 @@ def configure() -> Tuple[str, str, str, str | None, str, str, str, str]:
     workflow = os.environ.get('GITHUB_WORKFLOW', 'N/A')
     return base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow
 
+
 class BenchmarkParser:
     def __init__(self, base_path, csp, out_dir, ext_provider_name=None, commit_hash="N/A", commit_ref="N/A", actor="N/A", workflow="N/A"):
         self.base_path = base_path
-        self.csp= csp
+        self.csp = csp
         self.out_dir = out_dir
         self.ext_provider_name = ext_provider_name
         if not self.ext_provider_name:
@@ -49,7 +50,6 @@ class BenchmarkParser:
         self.commit_ref = commit_ref
         self.actor = actor
         self.workflow = workflow
-
 
     def parse(self) -> None:
         """Read and parse the K-Bench tests.
@@ -81,15 +81,15 @@ class BenchmarkParser:
         timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
         combined_results = {'metadata': {
-                                'github.sha': self.commit_hash,
-                                'github.ref-name': self.commit_ref,
-                                'github.actor': self.actor,
-                                'github.workflow': self.workflow,
-                            },
-                            '@timestamp': str(timestamp),
-                            'provider': self.ext_provider_name,
-                            'fio': {}, 
-                            'knb': {}}
+            'github.sha': self.commit_hash,
+            'github.ref-name': self.commit_ref,
+            'github.actor': self.actor,
+            'github.workflow': self.workflow,
+        },
+            '@timestamp': str(timestamp),
+            'provider': self.ext_provider_name,
+            'fio': {},
+            'knb': {}}
 
         combined_results['knb'].update(knb_results)
         combined_results['fio'].update(fio_results)
@@ -102,8 +102,10 @@ class BenchmarkParser:
 
 def main():
     base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow = configure()
-    p = BenchmarkParser(base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow)
+    p = BenchmarkParser(base_path, csp, out_dir, ext_provider_name,
+                        commit_hash, commit_ref, actor, workflow)
     p.parse()
+
 
 if __name__ == '__main__':
     main()
