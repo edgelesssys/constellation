@@ -34,11 +34,12 @@ type Validator struct {
 	enforceIDKeyDigest bool
 	azureCVM           bool
 	validator          atls.Validator
+	log                debugLog
 }
 
 // NewValidator creates a new Validator.
-func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Validator, error) {
-	v := Validator{}
+func NewValidator(provider cloudprovider.Provider, conf *config.Config, log debugLog) (*Validator, error) {
+	v := Validator{log: log}
 	if provider == cloudprovider.Unknown {
 		return nil, errors.New("unknown cloud provider")
 	}
@@ -140,7 +141,7 @@ func (v *Validator) PCRS() measurements.M {
 }
 
 func (v *Validator) updateValidator(cmd *cobra.Command) {
-	log := warnLogger{cmd: cmd}
+	log := warnLogger{cmd: cmd, log: v.log}
 	switch v.provider {
 	case cloudprovider.GCP:
 		v.validator = gcp.NewValidator(v.pcrs, log)
@@ -160,10 +161,14 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 // warnLogger implements logging of warnings for validators.
 type warnLogger struct {
 	cmd *cobra.Command
+	log debugLog
 }
 
-// Infof is a no-op since we don't want extra info messages when using the CLI.
-func (wl warnLogger) Infof(format string, args ...any) {}
+// Infof messages are reduced to debug messages, since we don't want
+// the extra info when using the CLI without setting the debug flag.
+func (wl warnLogger) Infof(fmtStr string, args ...any) {
+	wl.log.Debugf(fmtStr, args...)
+}
 
 // Warnf prints a formatted warning from the validator.
 func (wl warnLogger) Warnf(fmtStr string, args ...any) {

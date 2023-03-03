@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -95,7 +96,7 @@ func TestNewValidator(t *testing.T) {
 				conf.Provider.QEMU = &config.QEMUConfig{Measurements: tc.pcrs}
 			}
 
-			validators, err := NewValidator(tc.provider, conf)
+			validators, err := NewValidator(tc.provider, conf, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)

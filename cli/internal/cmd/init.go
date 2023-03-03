@@ -136,7 +136,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		cmd.PrintErrf("License check failed: %v", err)
 	}
 	i.log.Debugf("Checked license")
-	validator, err := cloudcmd.NewValidator(provider, conf)
+	validator, err := cloudcmd.NewValidator(provider, conf, i.log)
 	if err != nil {
 		return err
 	}
@@ -288,7 +288,7 @@ func (i *initCmd) writeOutput(
 	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Wrote kubeconfig to file: %s", constants.AdminConfFilename)
+	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, fileHandler); err != nil {
@@ -303,7 +303,7 @@ func (i *initCmd) writeOutput(
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
-	i.log.Debugf("Wrote out Constellation ID file")
+	i.log.Debugf("Constellation ID file written to %s", constants.ClusterIDsFileName)
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
