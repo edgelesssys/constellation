@@ -66,7 +66,7 @@ The protocol can be used by clients to verify a server certificate, by a server 
 The challenge for Constellation is to lift a CVM's attestation statement to the Kubernetes software layer and make it end-to-end verifiable.
 From there, Constellation needs to expand the attestation from a single CVM to the entire cluster.
 
-The [*JoinService*](components.md#joinservice) and [*VerificationService*](components.md#verificationservice) are where all runs together.
+The [*JoinService*](microservices.md#joinservice) and [*VerificationService*](microservices.md#verificationservice) are where all runs together.
 Internally, the *JoinService* uses remote attestation to securely join CVM nodes to the cluster.
 Externally, the *VerificationService* provides an attestation statement for the cluster's CVMs and configuration.
 
@@ -114,7 +114,7 @@ The [signed image measurements](#chain-of-trust) include measurements that are k
 
 * **Measurements produced by the Constellation bootloader and boot chain**:
 The Constellation Bootloader takes over from the CVM firmware and [measures the rest of the boot chain](images.md).
-The Constellation [Bootstrapper](components.md#bootstrapper) is the first user mode component that runs in a Constellation image.
+The Constellation [Bootstrapper](microservices.md#bootstrapper) is the first user mode component that runs in a Constellation image.
 It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
 
 Constellation allows to specify in the config which measurements should be enforced during the attestation process.
@@ -222,9 +222,9 @@ The latter means that the value can be generated offline and compared to the one
 
 ## Cluster attestation
 
-Cluster-facing, Constellation's [*JoinService*](components.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
-User-facing, the [*VerificationService*](components.md#verificationservice) provides an interface to verify a node using remote attestation.
-By verifying the first node during the [initialization](components.md#bootstrapper) and configuring the ground truth measurements that are subsequently enforced by the *JoinService*, the whole cluster is verified in a transitive way.
+Cluster-facing, Constellation's [*JoinService*](microservices.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
+User-facing, the [*VerificationService*](microservices.md#verificationservice) provides an interface to verify a node using remote attestation.
+By verifying the first node during the [initialization](microservices.md#bootstrapper) and configuring the ground truth measurements that are subsequently enforced by the *JoinService*, the whole cluster is verified in a transitive way.
 
 ### Cluster-facing attestation
 
@@ -232,14 +232,14 @@ The *JoinService* is provided with the runtime measurements of the whitelisted C
 During the initialization and the cluster bootstrapping, each node connects to the *JoinService* using [aTLS](#attested-tls-atls).
 During the handshake, the node transmits an attestation statement including its runtime measurements.
 The *JoinService* verifies that statement and compares the measurements against the ground truth.
-For details of the initialization process check the [component descriptions](components.md).
+For details of the initialization process check the [microservice descriptions](microservices.md).
 
 After the initialization, every node updates its runtime measurements with the *clusterID* value, marking it irreversibly as initialized.
 When an initialized node tries to join another cluster, its measurements inevitably mismatch the measurements of an uninitialized node and it will be declined.
 
 ### User-facing attestation
 
-The [*VerificationService*](components.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
+The [*VerificationService*](microservices.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
 A user can [verify](../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
 
 ## Chain of trust

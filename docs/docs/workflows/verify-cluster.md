@@ -57,7 +57,7 @@ measurements:
 Each entry specifies the expected value of the Constellation node, and whether the measurement should be enforced (`warnOnly: false`), or only a warning should be logged (`warnOnly: true`).
 By default, the subset of the [available measurements](../architecture/attestation.md#runtime-measurements) that can be locally reproduced and verified is enforced.
 
-During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
+During attestation, the validating side (CLI or [join service](../architecture/microservices.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
 For mismatching measurements that have set `warnOnly` to `true` only a warning is emitted.
 For mismatching measurements that have set `warnOnly` to `false` an error is emitted and attestation fails.
 If attestation fails for a new node, it isn't permitted to join the cluster.
@@ -86,7 +86,7 @@ Once the above properties are verified, you know that you are talking to the rig
 
 The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need the following:
 
-* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verificationservice). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
+* The IP address of a running Constellation cluster's [VerificationService](../architecture/microservices.md#verificationservice). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
 
 For example:

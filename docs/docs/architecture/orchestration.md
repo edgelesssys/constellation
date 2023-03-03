@@ -34,10 +34,10 @@ In addition, the cluster's [identifier](orchestration.md#post-installation-confi
 
 1. The CLI `create` command creates the confidential VM (CVM) resources in your cloud environment and configures the network
 2. Each CVM boots the Constellation node image and measures every component in the boot chain
-3. The first component launched in each node is the [*Bootstrapper*](components.md#bootstrapper)
+3. The first microservice launched in each node is the [*Bootstrapper*](microservices.md#bootstrapper)
 4. The *Bootstrapper* waits until it either receives an initialization request or discovers an initialized cluster
 5. The CLI `init` command connects to the *Bootstrapper* of a selected node, sends the configuration, and initiates the initialization of the cluster
-6. The *Bootstrapper* of **that** node [initializes the Kubernetes cluster](components.md#bootstrapper) and deploys the other Constellation [components](components.md) including the [*JoinService*](components.md#joinservice)
+6. The *Bootstrapper* of **that** node [initializes the Kubernetes cluster](microservices.md#bootstrapper) and deploys the other Constellation [microservices](microservices.md) including the [*JoinService*](microservices.md#joinservice)
 7. Subsequently, the *Bootstrappers* of the other nodes discover the initialized cluster and send join requests to the *JoinService*
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication
 9. The *JoinService* verifies the attestation statements and joins the nodes to the Kubernetes cluster
@@ -66,7 +66,7 @@ The *clusterID* uniquely identifies a cluster and can be used to [verify your cl
 
 ## Upgrades
 
-Constellation images and components may need to be upgraded to new versions during the lifetime of a cluster.
+Constellation images and microservices may need to be upgraded to new versions during the lifetime of a cluster.
 Constellation implements a rolling update mechanism ensuring no downtime of the control or data plane.
 You can upgrade a Constellation cluster with a single operation by using the CLI.
 For step-by-step instructions on how to do this, refer to [Upgrade your cluster](../workflows/upgrade.md).
@@ -74,7 +74,7 @@ For step-by-step instructions on how to do this, refer to [Upgrade your cluster]
 ### Attestation of upgrades
 
 With every new image, corresponding measurements are released.
-During an update procedure, the CLI provides the new measurements to the [JoinService](components.md#joinservice) securely.
+During an update procedure, the CLI provides new measurements to the [JoinService](microservices.md#joinservice) securely.
 New measurements for an updated image are automatically pulled and verified by the CLI following the [supply chain security concept](attestation.md#chain-of-trust) of Constellation.
 The [attestation section](attestation.md#cluster-facing-attestation) describes in detail how these measurements are then used by the JoinService for the attestation of nodes.
 

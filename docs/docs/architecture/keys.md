@@ -27,7 +27,7 @@ On node boot, they're determined using the CVM's attestation mechanism and [meas
 
 The **clusterID** represents the identity of a single initialized Constellation cluster.
 It's derived from the master secret and a cryptographically random salt and unique for every Constellation cluster.
-The [Bootstrapper](components.md#bootstrapper) measures the *clusterID* into its own PCR before executing any code not measured as part of the *base measurements*.
+The [Bootstrapper](microservices.md#bootstrapper) measures the *clusterID* into its own PCR before executing any code not measured as part of the *base measurements*.
 See [Node attestation](attestation.md#node-attestation) for details.
 
 The remote attestation statement of a Constellation cluster combines the *base measurements* and the *clusterID* for a verifiable, unspoofable, unique identity.

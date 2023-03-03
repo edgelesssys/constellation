@@ -9,9 +9,9 @@ To learn more about Constellation and Kubernetes, see [product overview](../over
 As a cluster administrator, you can use the [Constellation CLI](orchestration.md) to install and deploy a cluster.
 Updates are provided in accordance with the [support policy](versions.md).
 
-## About the components and attestation
+## About microservices and attestation
 
-Constellation manages the nodes and network in your cluster. All nodes are bootstrapped by the [*Bootstrapper*](components.md#bootstrapper). They're verified and authenticated by the [*JoinService*](components.md#joinservice) before being added to the cluster and the network. Finally, the entire cluster can be verified via the [*VerificationService*](components.md#verificationservice) using [remote attestation](attestation.md).
+Constellation manages the nodes and network in your cluster. All nodes are bootstrapped by the [*Bootstrapper*](microservices.md#bootstrapper). They're verified and authenticated by the [*JoinService*](microservices.md#joinservice) before being added to the cluster and the network. Finally, the entire cluster can be verified via the [*VerificationService*](microservices.md#verificationservice) using [remote attestation](attestation.md).
 
 ## About node images and verified boot
 
