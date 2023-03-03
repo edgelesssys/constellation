@@ -37,7 +37,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"rejoinClient","caller":"rejoinclient/client.go:65","msg":"Starting RejoinClient"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/components.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -73,7 +73,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/components.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json
@@ -104,7 +104,7 @@ Similar output to the following means your node was restarted and needs to decry
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
 ```
 
-The node will then try to connect to the [*JoinService*](../architecture/components.md#joinservice) and obtain the decryption key.
+The node will then try to connect to the [*JoinService*](../architecture/microservices.md#joinservice) and obtain the decryption key.
 If this fails due to an unhealthy control plane, you will see log messages similar to the following:
 
 ```json

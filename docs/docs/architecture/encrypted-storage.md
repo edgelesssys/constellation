@@ -28,7 +28,7 @@ All cryptographic operations happen inside the trusted environment of the confid
 
 Note that for integrity-protected disks, [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) isn't supported.
 
-By default the driver uses data encryption keys (DEKs) issued by the Constellation [*KeyService*](components.md#keyservice).
+By default the driver uses data encryption keys (DEKs) issued by the Constellation [*KeyService*](microservices.md#keyservice).
 The DEKs are in turn derived from the Constellation's key encryption key (KEK), which is directly derived from the [master secret](keys.md#master-secret).
 This is the recommended mode of operation, and also requires the least amount of setup by the cluster administrator.
 

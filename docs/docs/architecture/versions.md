@@ -1,7 +1,7 @@
 # Versions and support policy
 
-All [components](components.md) of Constellation use a three-digit version number of the form `v<MAJOR>.<MINOR>.<PATCH>`.
-The components are released in lock step, usually on the first Tuesday of every month. This release primarily introduces new features, but may also include security or performance improvements. The `MINOR` version will be incremented as part of this release.
+All [microservices](microservices.md) of Constellation use a three-digit version number of the form `v<MAJOR>.<MINOR>.<PATCH>`.
+The microservices are released in lock step, usually on the first Tuesday of every month. This release primarily introduces new features, but may also include security or performance improvements. The `MINOR` version will be incremented as part of this release.
 
 Additional `PATCH` releases may be created on demand, to fix security issues or bugs before the next `MINOR` release window.
 

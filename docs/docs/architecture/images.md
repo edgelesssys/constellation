@@ -45,5 +45,5 @@ See the section on [keys and encryption](keys.md#storage-encryption) for more in
 
 ## Kubernetes components
 
-During initialization, the [*Bootstrapper*](components.md#bootstrapper) downloads and verifies the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) as configured by the user.
+During initialization, the [*Bootstrapper*](microservices.md#bootstrapper) downloads and verifies the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) as configured by the user.
 They're stored on the state partition and can be updated once new releases need to be installed.

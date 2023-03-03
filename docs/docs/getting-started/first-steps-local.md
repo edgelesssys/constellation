@@ -66,7 +66,7 @@ NAME              STATUS   ROLES           AGE   VERSION
 control-plane-0   Ready    control-plane   66s   v1.24.6
 ```
 
-A worker node will request to join the cluster shortly. Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/components.md#joinservice).
+A worker node will request to join the cluster shortly. Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
 If verification passes successfully, the new node receives keys and certificates to join the cluster.
 
 You can follow this process by viewing the logs of the JoinService:
