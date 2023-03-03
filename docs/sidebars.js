@@ -210,7 +210,7 @@ const sidebars = {
         {
           type: 'doc',
           label: 'Components',
-          id: 'architecture/components',
+          id: 'architecture/microservices',
         },
         {
           type: 'doc',
