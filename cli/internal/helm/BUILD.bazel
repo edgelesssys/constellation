@@ -181,7 +181,6 @@ go_library(
         "charts/edgeless/constellation-services/charts/autoscaler/Chart.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/aws-deployment.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/azure-deployment.yaml",
-        "charts/edgeless/constellation-services/charts/autoscaler/templates/azure-secret.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/clusterrole.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/clusterrolebinding.yaml",
         "charts/edgeless/constellation-services/charts/autoscaler/templates/gcp-deployment.yaml",

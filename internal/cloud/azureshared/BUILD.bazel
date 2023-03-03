@@ -5,6 +5,7 @@ go_library(
     name = "azureshared",
     srcs = [
         "appcredentials.go",
+        "authmethod_string.go",
         "azureshared.go",
         "metadata.go",
     ],

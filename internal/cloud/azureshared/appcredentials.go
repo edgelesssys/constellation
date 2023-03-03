@@ -9,15 +9,18 @@ package azureshared
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
 
-// ApplicationCredentials is a set of Azure AD application credentials.
+// ApplicationCredentials is a set of Azure API credentials.
+// It can contain a client secret and carries the preferred authentication method.
 // It is the equivalent of a service account key in other cloud providers.
 type ApplicationCredentials struct {
-	TenantID          string
-	AppClientID       string
-	ClientSecretValue string
-	Location          string
+	TenantID            string
+	AppClientID         string
+	ClientSecretValue   string
+	Location            string
+	PreferredAuthMethod AuthMethod
 }
 
 // ApplicationCredentialsFromURI converts a cloudServiceAccountURI into Azure ApplicationCredentials.
@@ -33,11 +36,13 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 		return ApplicationCredentials{}, fmt.Errorf("invalid service account URI: invalid host: %s", uri.Host)
 	}
 	query := uri.Query()
+	preferredAuthMethod := FromString(query.Get("preferred_auth_method"))
 	return ApplicationCredentials{
-		TenantID:          query.Get("tenant_id"),
-		AppClientID:       query.Get("client_id"),
-		ClientSecretValue: query.Get("client_secret"),
-		Location:          query.Get("location"),
+		TenantID:            query.Get("tenant_id"),
+		AppClientID:         query.Get("client_id"),
+		ClientSecretValue:   query.Get("client_secret"),
+		Location:            query.Get("location"),
+		PreferredAuthMethod: preferredAuthMethod,
 	}, nil
 }
 
@@ -45,9 +50,16 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 func (c ApplicationCredentials) ToCloudServiceAccountURI() string {
 	query := url.Values{}
 	query.Add("tenant_id", c.TenantID)
-	query.Add("client_id", c.AppClientID)
-	query.Add("client_secret", c.ClientSecretValue)
 	query.Add("location", c.Location)
+	if c.AppClientID != "" {
+		query.Add("client_id", c.AppClientID)
+	}
+	if c.ClientSecretValue != "" {
+		query.Add("client_secret", c.ClientSecretValue)
+	}
+	if c.PreferredAuthMethod != AuthMethodUnknown {
+		query.Add("preferred_auth_method", c.PreferredAuthMethod.String())
+	}
 	uri := url.URL{
 		Scheme:   "serviceaccount",
 		Host:     "azure",
@@ -55,3 +67,29 @@ func (c ApplicationCredentials) ToCloudServiceAccountURI() string {
 	}
 	return uri.String()
 }
+
+//go:generate stringer -type=AuthMethod -trimprefix=AuthMethod
+
+// AuthMethod is the authentication method used for the Azure API.
+type AuthMethod uint32
+
+// FromString converts a string into an AuthMethod.
+func FromString(s string) AuthMethod {
+	switch strings.ToLower(s) {
+	case strings.ToLower(AuthMethodServicePrincipal.String()):
+		return AuthMethodServicePrincipal
+	case strings.ToLower(AuthMethodUserAssignedIdentity.String()):
+		return AuthMethodUserAssignedIdentity
+	default:
+		return AuthMethodUnknown
+	}
+}
+
+const (
+	// AuthMethodUnknown is default value for AuthMethod.
+	AuthMethodUnknown AuthMethod = iota
+	// AuthMethodServicePrincipal uses a client ID and secret.
+	AuthMethodServicePrincipal
+	// AuthMethodUserAssignedIdentity uses a user assigned identity.
+	AuthMethodUserAssignedIdentity
+)

@@ -125,19 +125,22 @@ func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServic
 		return nil, fmt.Errorf("could not dereference load balancer name")
 	}
 
+	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
+
 	config := cloudConfig{
-		Cloud:               "AzurePublicCloud",
-		TenantID:            creds.TenantID,
-		SubscriptionID:      subscriptionID,
-		ResourceGroup:       resourceGroup,
-		LoadBalancerSku:     "standard",
-		SecurityGroupName:   securityGroupName,
-		LoadBalancerName:    *loadBalancer.Name,
-		UseInstanceMetadata: true,
-		VMType:              "vmss",
-		Location:            creds.Location,
-		AADClientID:         creds.AppClientID,
-		AADClientSecret:     creds.ClientSecretValue,
+		Cloud:                       "AzurePublicCloud",
+		TenantID:                    creds.TenantID,
+		SubscriptionID:              subscriptionID,
+		ResourceGroup:               resourceGroup,
+		LoadBalancerSku:             "standard",
+		SecurityGroupName:           securityGroupName,
+		LoadBalancerName:            *loadBalancer.Name,
+		UseInstanceMetadata:         true,
+		VMType:                      "vmss",
+		Location:                    creds.Location,
+		UseManagedIdentityExtension: useManagedIdentityExtension,
+		AADClientID:                 creds.AppClientID,
+		AADClientSecret:             creds.ClientSecretValue,
 	}
 
 	return json.Marshal(config)
@@ -383,23 +386,25 @@ func (c *Cloud) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMachin
 }
 
 type cloudConfig struct {
-	Cloud                      string `json:"cloud,omitempty"`
-	TenantID                   string `json:"tenantId,omitempty"`
-	SubscriptionID             string `json:"subscriptionId,omitempty"`
-	ResourceGroup              string `json:"resourceGroup,omitempty"`
-	Location                   string `json:"location,omitempty"`
-	SubnetName                 string `json:"subnetName,omitempty"`
-	SecurityGroupName          string `json:"securityGroupName,omitempty"`
-	SecurityGroupResourceGroup string `json:"securityGroupResourceGroup,omitempty"`
-	LoadBalancerName           string `json:"loadBalancerName,omitempty"`
-	LoadBalancerSku            string `json:"loadBalancerSku,omitempty"`
-	VNetName                   string `json:"vnetName,omitempty"`
-	VNetResourceGroup          string `json:"vnetResourceGroup,omitempty"`
-	CloudProviderBackoff       bool   `json:"cloudProviderBackoff,omitempty"`
-	UseInstanceMetadata        bool   `json:"useInstanceMetadata,omitempty"`
-	VMType                     string `json:"vmType,omitempty"`
-	AADClientID                string `json:"aadClientId,omitempty"`
-	AADClientSecret            string `json:"aadClientSecret,omitempty"`
+	Cloud                       string `json:"cloud,omitempty"`
+	TenantID                    string `json:"tenantId,omitempty"`
+	SubscriptionID              string `json:"subscriptionId,omitempty"`
+	ResourceGroup               string `json:"resourceGroup,omitempty"`
+	Location                    string `json:"location,omitempty"`
+	SubnetName                  string `json:"subnetName,omitempty"`
+	SecurityGroupName           string `json:"securityGroupName,omitempty"`
+	SecurityGroupResourceGroup  string `json:"securityGroupResourceGroup,omitempty"`
+	LoadBalancerName            string `json:"loadBalancerName,omitempty"`
+	LoadBalancerSku             string `json:"loadBalancerSku,omitempty"`
+	VNetName                    string `json:"vnetName,omitempty"`
+	VNetResourceGroup           string `json:"vnetResourceGroup,omitempty"`
+	CloudProviderBackoff        bool   `json:"cloudProviderBackoff,omitempty"`
+	UseInstanceMetadata         bool   `json:"useInstanceMetadata,omitempty"`
+	VMType                      string `json:"vmType,omitempty"`
+	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension,omitempty"`
+	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty"`
+	AADClientID                 string `json:"aadClientId,omitempty"`
+	AADClientSecret             string `json:"aadClientSecret,omitempty"`
 }
 
 // convertToInstanceMetadata converts a armcomputev2.VirtualMachineScaleSetVM to a metadata.InstanceMetadata.
