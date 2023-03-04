@@ -209,7 +209,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Components',
+          label: 'Microservices',
           id: 'architecture/microservices',
         },
         {
@@ -258,13 +258,13 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'SLSA adoption',
-          id: 'reference/slsa',
+          label: 'Terraform usage',
+          id: 'reference/terraform',
         },
         {
           type: 'doc',
-          label: 'Terraform Usage',
-          id: 'reference/terraform',
+          label: 'SLSA adoption',
+          id: 'reference/slsa',
         },
       ],
     },

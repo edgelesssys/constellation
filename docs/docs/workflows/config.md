@@ -63,8 +63,8 @@ Fill the desired VM type into the **instanceType** field in the `constellation-c
 
 ## Choosing a Kubernetes version
 
-To learn which Kubernetes versions can be installed with your current CLI you can run `constellation config kubernetes-versions`.
-Our support policy for Kubernetes versions is described in [Kubernetes support policy](../architecture/versions.md#kubernetes-support-policy).
+To learn which Kubernetes versions can be installed with your current CLI, you can run `constellation config kubernetes-versions`.
+See also Constellation's [Kubernetes support policy](../architecture/versions.md#kubernetes-support-policy).
 
 ## Creating an IAM configuration
 
@@ -231,13 +231,13 @@ The following describes the configuration fields and how you obtain the required
 
 * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
-  The resource can be created with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
 * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
 
-  The resource can be created with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
+  You can create the resource with [Terraform](https://www.terraform.io/). For that, use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
@@ -250,13 +250,9 @@ Now that you've configured your CSP, you can [create your cluster](./create.md).
 
 ## Deleting an IAM configuration
 
-You can keep created IAM configurations and reuse them for new clusters. Alternatively, you can also delete them if they aren't being used anymore.
+You can keep a created IAM configuration and reuse it for new clusters. Alternatively, you can also delete it if you don't want to use it anymore.
 
-**Prerequisites:**
-* [Terraform](https://developer.hashicorp.com/terraform/downloads) is installed on your machine.
-* Access to the [`constellation-iam-terraform`](../reference/terraform.md) directory created by the `constellation iam create` command.
-
-You can delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create`:
+Delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create` (the directory that contains [`constellation-iam-terraform`](../reference/terraform.md) as a subdirectory):
 ```bash
 constellation iam destroy
 ```
