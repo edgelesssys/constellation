@@ -16,14 +16,14 @@ Note that every operation on a cluster always has to be performed from the direc
 
 ## Cluster creation process
 
-To allow for fine-grained configuration of your cluster and cloud environment, Constellation supports an extensive configuration file with strong defaults. [Generating the configuration file](../workflows/create.md#configuration) is typically the first thing you do in the workspace.
+To allow for fine-grained configuration of your cluster and cloud environment, Constellation supports an extensive configuration file with strong defaults. [Generating the configuration file](../workflows/config.md) is typically the first thing you do in the workspace.
 
 Altogether, the following files are generated during the creation of a Constellation cluster and stored in the current workspace:
 
 * a configuration file
 * an ID file
 * a Base64-encoded master secret
-* [Terraform artifacts](../reference/terraform.md), stored in the `constellation-terraform` and `constellation-iam-terraform` subdirectories
+* [Terraform artifacts](../reference/terraform.md), stored in subdirectories
 * a Kubernetes `kubeconfig` file.
 
 After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
@@ -48,9 +48,6 @@ In addition, the cluster's [identifier](orchestration.md#post-installation-confi
 Post-installation the CLI provides a configuration for [accessing the cluster using the Kubernetes API](https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/).
 The `kubeconfig` file provides the credentials and configuration for connecting and authenticating to the API server.
 Once configured, orchestrate the Kubernetes cluster via `kubectl`.
-
-Make sure to keep the Terraform subdirectory such as `constellation-terraform` in the workspace directory to be able to manage your cluster later on.
-Without it, you won't be able to modify or terminate your cluster.
 
 After the initialization, the CLI will present you with a couple of tokens:
 
