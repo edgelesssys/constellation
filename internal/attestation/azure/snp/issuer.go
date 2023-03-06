@@ -66,7 +66,7 @@ func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 			client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 		},
 		reportGetter: &tpmReport{},
-		maa:          &maaClient{},
+		maa:          newMAAClient("https://snpattestationtester.neu.attest.azure.net"),
 	}
 
 	i.Issuer = vtpm.NewIssuer(

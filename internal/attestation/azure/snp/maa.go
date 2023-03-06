@@ -20,6 +20,13 @@ type maaClient struct {
 	client *http.Client
 }
 
+func newMAAClient(url string) *maaClient {
+	return &maaClient{
+		url:    url,
+		client: http.DefaultClient,
+	}
+}
+
 func (m *maaClient) createToken(ctx context.Context, data []byte) (string, error) {
 	return maa.Attest(ctx, data, m.url, m.client)
 }
