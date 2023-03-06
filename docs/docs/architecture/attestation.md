@@ -167,7 +167,7 @@ The latter means that the value can be generated offline and compared to the one
 
 | PCR         | Components                                                       | Measured by                   | Reproducible and verifiable |
 | ----------- | ---------------------------------------------------------------- | ----------------------------- | --------------------------- |
-| 0           | CVM constant string                                              | GCP                           | No                          |
+| 0           | CVM version and technology                                       | GCP                           | No                          |
 | 1           | Firmware                                                         | GCP                           | No                          |
 | 2           | Firmware                                                         | GCP                           | No                          |
 | 3           | Firmware                                                         | GCP                           | No                          |
