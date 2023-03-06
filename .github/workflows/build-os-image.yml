@@ -397,7 +397,8 @@ jobs:
           sudo apt-get install -y \
             pigz \
             qemu-utils \
-            python3-crc32c
+            python3-pip
+          pip install google_crc32c
           echo "::endgroup::"
 
       - name: Login to AWS
