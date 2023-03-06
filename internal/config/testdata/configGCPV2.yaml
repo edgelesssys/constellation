@@ -13,9 +13,6 @@ provider:
     stateDiskType: pd-ssd
     deployCSIDriver: true
     measurements:
-      0:
-        expected: 0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf
-        warnOnly: false
       4:
         expected: "1234123412341234123412341234123412341234123412341234123412341234"
         warnOnly: false

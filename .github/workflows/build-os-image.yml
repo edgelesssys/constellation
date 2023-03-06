@@ -663,8 +663,6 @@ jobs:
             gcp)
               yq e '.csp = "GCP" |
                 .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
-                .measurements.0.warnOnly = false |
-                .measurements.0.expected = "0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf" |
                 .measurements.1.warnOnly = true |
                 .measurements.1.expected = "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56" |
                 .measurements.2.warnOnly = true |
@@ -680,8 +678,6 @@ jobs:
                 .measurements.7.expected = "b1e9b305325c51b93da58cbf7f92512d8eebfa01143e4d8844e40e062e9b6cd5" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
-                .measurements.10.warnOnly = true |
-                .measurements.10.expected = "7f96fbc55e1d2a0de46e5d44658c06ef102d1198703efa69f2ea6b5aa1c9a176" |
                 .measurements.11.warnOnly = false |
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
