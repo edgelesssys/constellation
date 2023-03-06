@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
@@ -51,13 +52,14 @@ import (
 // The server handles initialization calls from the CLI and initializes the
 // Kubernetes cluster.
 type Server struct {
-	nodeLock    locker
-	initializer ClusterInitializer
-	disk        encryptedDisk
-	fileHandler file.Handler
-	grpcServer  serveStopper
-	cleaner     cleaner
-	issuer      atls.Issuer
+	nodeLock     locker
+	initializer  ClusterInitializer
+	disk         encryptedDisk
+	fileHandler  file.Handler
+	grpcServer   serveStopper
+	cleaner      cleaner
+	issuer       atls.Issuer
+	shutdownLock sync.Mutex
 
 	initSecretHash []byte
 
@@ -113,6 +115,9 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	s.shutdownLock.Lock()
+	defer s.shutdownLock.Unlock()
+
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
 
@@ -198,7 +203,9 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 func (s *Server) Stop() {
 	s.log.Infof("Stopping")
 
+	s.shutdownLock.Lock()
 	s.grpcServer.GracefulStop()
+	s.shutdownLock.Unlock()
 
 	s.log.Infof("Stopped")
 }
