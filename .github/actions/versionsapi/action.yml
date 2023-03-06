@@ -68,7 +68,7 @@ runs:
             ${{ inputs.ref != '' && format('--ref="{0}"', inputs.ref) || '' }} \
             ${{ inputs.stream != '' && format('--stream="{0}"', inputs.stream) || '' }} \
             ${{ inputs.version != '' && format('--version="{0}"', inputs.version) || '' }} \
-            ${{ inputs.kind != '' && format('--version="{0}"', inputs.kind) || '' }} \
+            ${{ inputs.kind != '' && format('--kind="{0}"', inputs.kind) || '' }} \
             ${{ inputs.version_path != '' && format('--version-path="{0}"', inputs.version_path) || '' }} \
             ${{ inputs.add_latest == 'true' && '--latest' || '' }} \
             ${{ inputs.add_release == 'true' && '--release' || '' }} \
