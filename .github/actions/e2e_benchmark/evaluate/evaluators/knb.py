@@ -18,8 +18,9 @@ def evaluate(log_path) -> Dict[str, Dict[str, float]]:
     data = knb['data']
     result = {'pod2pod': {}, 'pod2svc': {}}
     result['pod2pod']['tcp_bw_mbit'] = float(data['pod2pod']['tcp']['bandwidth'])
-    result['pod2pod']['upd_bw_mbit'] = float(data['pod2pod']['udp']['bandwidth'])
+    result['pod2pod']['udp_bw_mbit'] = float(data['pod2pod']['udp']['bandwidth'])
     result['pod2svc']['tcp_bw_mbit'] = float(data['pod2svc']['tcp']['bandwidth'])
-    result['pod2svc']['upd_bw_mbit'] = float(data['pod2svc']['udp']['bandwidth'])
+    result['pod2svc']['udp_bw_mbit'] = float(data['pod2svc']['udp']['bandwidth'])
+    result['mtu'] = int(data['mtu'])
 
     return result

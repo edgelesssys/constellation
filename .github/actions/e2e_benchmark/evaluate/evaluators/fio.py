@@ -33,4 +33,6 @@ def evaluate(log_path) -> Dict[str, Dict[str, float]]:
             raise Exception(
                 f"Error: Unexpected fio test: {test['jobname']}"
             )
+    # Get volume size. Format is 400Gi.
+    result['volumesize'] = int(fio[0]['Raw']['size'][:-2])
     return result
