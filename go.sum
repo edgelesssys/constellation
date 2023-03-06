@@ -405,8 +405,8 @@ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25Kn
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
-github.com/edgelesssys/go-azguestattestation v0.0.0-20230215110546-6dea66b92bbe h1:6fqEzlYpOOKKBFJqMOC/Z4/Qm29JNM1PUG/SzE1iqNs=
-github.com/edgelesssys/go-azguestattestation v0.0.0-20230215110546-6dea66b92bbe/go.mod h1:BeA70J66BT5d0Qsx+v0Bzs73YjjyW0ofmV40BFXGLMA=
+github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f h1:J9k1gV8YA5beC6jANKQy5O7UtaKS3ueuanxUan5Y5NU=
+github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f/go.mod h1:hX9gZBSvliJcBEAyrJDh7990hLRg/Is+6PBpDZWSMoc=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 h1:yUdfgN0XgIJw7foRItutHYUIhlcKzcSf5vDpdhQAKTc=
 github.com/emicklei/go-restful/v3 v3.9.0 h1:XwGDlfxEnQZzuopoqxwSEllNcCOM9DhhFyhFIIGKwxE=
@@ -1321,8 +1321,8 @@ github.com/tent/canonical-json-go v0.0.0-20130607151641-96e4ba3a7613 h1:iGnD/q91
 github.com/tent/canonical-json-go v0.0.0-20130607151641-96e4ba3a7613/go.mod h1:g6AnIpDSYMcphz193otpSIzN+11Rs+AAIIC6rm1enug=
 github.com/theupdateframework/go-tuf v0.5.2 h1:habfDzTmpbzBLIFGWa2ZpVhYvFBoK0C1onC3a4zuPRA=
 github.com/theupdateframework/go-tuf v0.5.2/go.mod h1:SyMV5kg5n4uEclsyxXJZI2UxPFJNDc4Y+r7wv+MlvTA=
-github.com/thomasten/go-tpm v0.0.0-20230214160935-ba3f2f52ece0 h1:OuIEq2kjy6qZFp+jfRHV/a9ckjzYNb1jERh0uAtqBbs=
-github.com/thomasten/go-tpm v0.0.0-20230214160935-ba3f2f52ece0/go.mod h1:9Hyn3rgnzWF9XBWVk6ml6A6hNkbWjNFlDQL51BeghL4=
+github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299 h1:4/WcA7Q05f5to+jVERKcZjU5NJ89DiRHP3UUZHLfAtw=
+github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299/go.mod h1:9Hyn3rgnzWF9XBWVk6ml6A6hNkbWjNFlDQL51BeghL4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=
 github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 h1:e/5i7d4oYZ+C1wj2THlRK+oAhjeS/TRQwMfkIuet3w0=

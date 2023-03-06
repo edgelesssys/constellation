@@ -33,7 +33,7 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
-	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230214160935-ba3f2f52ece0
+	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299
 	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230105122812-f7474d459dfc
 )
 
@@ -69,7 +69,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.22+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20230215110546-6dea66b92bbe
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1

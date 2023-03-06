@@ -114,7 +114,7 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0 // indirect
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20230215110546-6dea66b92bbe // indirect
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect

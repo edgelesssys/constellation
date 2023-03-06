@@ -60,7 +60,7 @@ func NewValidator(
 	}
 	v := &Validator{
 		hclValidator:       &azureInstanceInfo{},
-		maa:                &maaClient{},
+		maa:                newMAAClient("https://snpattestationtester.neu.attest.azure.net"),
 		idKeyDigests:       idKeyDigests,
 		enforceIDKeyDigest: enforce,
 		log:                log,
@@ -215,6 +215,7 @@ func (v *Validator) validateSNPReport(
 	if !hasExpectedIDKeyDigest {
 		switch v.enforceIDKeyDigest {
 		case idkeydigest.MAAFallback:
+			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
 			return v.maa.validateToken(context.TODO(), maaToken, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
