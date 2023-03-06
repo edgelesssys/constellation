@@ -57,7 +57,7 @@ func fakeGetInstanceInfo(tpm io.ReadWriteCloser) ([]byte, error) {
 func TestValidate(t *testing.T) {
 	require := require.New(t)
 
-	fakeValidateCVM := func(AttestationDocument) error { return nil }
+	fakeValidateCVM := func(AttestationDocument, *attest.MachineState) error { return nil }
 	fakeGetTrustedKey := func(aKPub, instanceInfo []byte) (crypto.PublicKey, error) {
 		pubArea, err := tpm2.DecodePublic(aKPub)
 		if err != nil {
@@ -186,7 +186,7 @@ func TestValidate(t *testing.T) {
 			validator: NewValidator(
 				testExpectedPCRs,
 				fakeGetTrustedKey,
-				func(attestation AttestationDocument) error {
+				func(AttestationDocument, *attest.MachineState) error {
 					return errors.New("untrusted")
 				},
 				warnLog),

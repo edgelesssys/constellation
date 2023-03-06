@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
@@ -54,7 +55,7 @@ func getTrustedKey(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error) 
 }
 
 // tpmEnabled verifies if the virtual machine has the tpm2.0 feature enabled.
-func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
+func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument, _ *attest.MachineState) error {
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
 	// 1. Get the vm's ami (from IdentiTyDocument.imageId)
 	// 2. Check the value of key "TpmSupport": {"Value": "v2.0"}"

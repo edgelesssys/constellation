@@ -61,7 +61,7 @@ type (
 	// GetInstanceInfo returns VM metdata.
 	GetInstanceInfo func(tpm io.ReadWriteCloser) ([]byte, error)
 	// ValidateCVM validates confidential computing capabilities of the instance issuing the attestation.
-	ValidateCVM func(attestation AttestationDocument) error
+	ValidateCVM func(attestation AttestationDocument, state *attest.MachineState) error
 )
 
 // AttestationLogger is a logger used to print warnings and infos during attestation validation.
@@ -199,7 +199,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	}
 
 	// Validate confidential computing capabilities of the VM
-	if err := v.validateCVM(attDoc); err != nil {
+	if err := v.validateCVM(attDoc, nil); err != nil {
 		return nil, fmt.Errorf("verifying VM confidential computing capabilities: %w", err)
 	}
 

@@ -104,7 +104,7 @@ func trustedKeyFromGCEAPI(getClient func(ctx context.Context, opts ...option.Cli
 
 // gceNonHostInfoEvent looks for the GCE Non-Host info event in an event log.
 // Returns an error if the event is not found, or if the event is missing the required flag to mark the VM confidential.
-func gceNonHostInfoEvent(attDoc vtpm.AttestationDocument) error {
+func gceNonHostInfoEvent(attDoc vtpm.AttestationDocument, _ *attest.MachineState) error {
 	if attDoc.Attestation == nil {
 		return errors.New("missing attestation in attestation document")
 	}

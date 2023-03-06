@@ -108,7 +108,7 @@ func TestTpmEnabled(t *testing.T) {
 				},
 			}
 
-			err := v.tpmEnabled(tc.attDoc)
+			err := v.tpmEnabled(tc.attDoc, nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

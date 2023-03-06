@@ -62,7 +62,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			err := gceNonHostInfoEvent(tc.attDoc)
+			err := gceNonHostInfoEvent(tc.attDoc, nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
