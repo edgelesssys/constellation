@@ -78,7 +78,7 @@ For step-by-step instructions on how to do this, refer to [Upgrade your cluster]
 ### Attestation of upgrades
 
 With every new image, corresponding measurements are released.
-During an update procedure, the CLI provides the new measurements to the [JoinService](components.md#joinservice) securely.
+During an update procedure, the CLI provides new measurements to the [JoinService](components.md#joinservice) securely.
 New measurements for an updated image are automatically pulled and verified by the CLI following the [supply chain security concept](attestation.md#chain-of-trust) of Constellation.
 The [attestation section](attestation.md#cluster-facing-attestation) describes in detail how these measurements are then used by the JoinService for the attestation of nodes.
 

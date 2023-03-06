@@ -32,7 +32,7 @@ constellation config generate aws
 
 This creates the file `constellation-conf.yaml` in the current directory.
 
-## Choosing VM types
+## Choosing a VM type
 
 Constellation supports the following VM types:
 <tabs groupId="csp">
