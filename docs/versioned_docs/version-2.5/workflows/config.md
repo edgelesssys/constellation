@@ -36,7 +36,7 @@ This creates the file `constellation-conf.yaml` in the current directory.
 You can also automatically generate a configuration file by adding the `--generate-config` flag to the `constellation iam create` command when [creating an IAM configuration](#creating-an-iam-configuration).
 :::
 
-## Choosing VM types
+## Choosing a VM type
 
 Constellation supports the following VM types:
 <tabs groupId="csp">
