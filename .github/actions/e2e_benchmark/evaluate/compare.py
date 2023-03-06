@@ -11,7 +11,7 @@ BIGGER_BETTER = [
     'iops',
     'bw_kbytes',
     'tcp_bw_mbit',
-    'upd_bw_mbit',
+    'udp_bw_mbit',
 ]
 
 # Lookup for test suite -> unit
@@ -19,7 +19,7 @@ UNIT_STR = {
     'iops': 'IOPS',
     'bw_kbytes': 'KiB/s',
     'tcp_bw_mbit': 'Mbit/s',
-    'upd_bw_mbit': 'Mbit/s',
+    'udp_bw_mbit': 'Mbit/s',
 }
 # API units are ms, so this is shorter than cluttering the dictionary:
 API_UNIT_STR = "ms"
@@ -29,7 +29,7 @@ ALLOWED_RATIO_DELTA = {
     'iops': 0.7,
     'bw_kbytes': 0.7,
     'tcp_bw_mbit': 0.7,
-    'upd_bw_mbit': 0.7,
+    'udp_bw_mbit': 0.7,
 }
 
 def is_bigger_better(bench_suite: str) -> bool:

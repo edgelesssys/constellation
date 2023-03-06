@@ -35,9 +35,9 @@ Example table:
 | read_bw | bw_kbytes (KiB/s) | 28302.0 | 28530.0 | 0.992 ⬇️ |
 | write_bw | bw_kbytes (KiB/s) | 4159.0 | 2584.0 | 1.61 ⬆️ |
 | pod2pod | tcp_bw_mbit (MiB/s) | 20450.0 | 929.0 | 22.013 ⬆️ |
-| pod2pod | upd_bw_mbit (MiB/s) | 1138.0 | 750.0 | 1.517 ⬆️ |
+| pod2pod | udp_bw_mbit (MiB/s) | 1138.0 | 750.0 | 1.517 ⬆️ |
 | pod2svc | tcp_bw_mbit (MiB/s) | 21188.0 | 905.0 | 23.412 ⬆️ |
-| pod2svc | upd_bw_mbit (MiB/s) | 1137.0 | 746.0 | 1.524 ⬆️ |
+| pod2svc | udp_bw_mbit (MiB/s) | 1137.0 | 746.0 | 1.524 ⬆️ |
 
 </details>
 
