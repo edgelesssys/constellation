@@ -7,13 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package gcp
 
 import (
-	"bytes"
 	"context"
 	"crypto"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"time"
 
@@ -23,10 +21,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm-tools/server"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
 )
+
+const minimumGceVersion = 1
 
 // Validator for GCP confidential VM attestation.
 type Validator struct {
@@ -40,7 +39,7 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 		Validator: vtpm.NewValidator(
 			pcrs,
 			trustedKeyFromGCEAPI(newInstanceClient),
-			gceNonHostInfoEvent,
+			validateCVM,
 			log,
 		),
 	}
@@ -102,22 +101,18 @@ func trustedKeyFromGCEAPI(getClient func(ctx context.Context, opts ...option.Cli
 	}
 }
 
-// gceNonHostInfoEvent looks for the GCE Non-Host info event in an event log.
-// Returns an error if the event is not found, or if the event is missing the required flag to mark the VM confidential.
-func gceNonHostInfoEvent(attDoc vtpm.AttestationDocument, _ *attest.MachineState) error {
-	if attDoc.Attestation == nil {
-		return errors.New("missing attestation in attestation document")
+// validateCVM checks that the machine state represents a GCE AMD-SEV VM.
+func validateCVM(_ vtpm.AttestationDocument, state *attest.MachineState) error {
+	gceVersion := state.Platform.GetGceVersion()
+	if gceVersion < minimumGceVersion {
+		return fmt.Errorf("outdated GCE version: %v (require >= %v)", gceVersion, minimumGceVersion)
 	}
-	// The event log of a GCE VM contains the GCE Non-Host info event
-	// This event is 32-bytes, followed by one byte 0x01 if it is confidential, 0x00 otherwise,
-	// followed by 15 reserved bytes.
-	// See https://pkg.go.dev/github.com/google/go-tpm-tools@v0.3.1/server#pkg-variables
-	idx := bytes.Index(attDoc.Attestation.EventLog, server.GCENonHostInfoSignature)
-	if idx <= 0 {
-		return fmt.Errorf("event log is missing GCE Non-Host info event")
+
+	tech := state.Platform.Technology
+	wantTech := attest.GCEConfidentialTechnology_AMD_SEV
+	if tech != wantTech {
+		return fmt.Errorf("unexpected confidential technology: %v (expected: %v)", tech, wantTech)
 	}
-	if attDoc.Attestation.EventLog[idx+len(server.GCENonHostInfoSignature)] != 0x01 {
-		return fmt.Errorf("GCE Non-Host info is missing confidential bit")
-	}
+
 	return nil
 }
