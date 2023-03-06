@@ -968,7 +968,7 @@ jobs:
 
   add-image-version-to-versionsapi:
     needs: [upload-artifacts, build-settings]
-    name: "Add version to versionsapi"
+    name: "Add image version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
       contents: read
@@ -984,7 +984,7 @@ jobs:
 
   add-cli-version-to-versionsapi:
     needs: [upload-artifacts, build-settings]
-    name: "Add version to versionsapi"
+    name: "Add CLI version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
       contents: read
