@@ -23,38 +23,35 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestGceNonHostInfoEvent(t *testing.T) {
+func TestValidateCVM(t *testing.T) {
 	testCases := map[string]struct {
-		attDoc  vtpm.AttestationDocument
+		state   *attest.MachineState
 		wantErr bool
 	}{
-		"is cvm": {
-			attDoc: vtpm.AttestationDocument{
-				Attestation: &attest.Attestation{
-					EventLog: []byte("\x00\x00\x00GCE NonHostInfo\x00\x01\x00\x00"),
-				},
-			},
+		"is current cvm": {
+			state: &attest.MachineState{Platform: &attest.PlatformState{
+				Firmware:   &attest.PlatformState_GceVersion{GceVersion: minimumGceVersion},
+				Technology: attest.GCEConfidentialTechnology_AMD_SEV,
+			}},
 		},
-		"attestation is nil": {
-			attDoc: vtpm.AttestationDocument{
-				Attestation: nil,
-			},
-			wantErr: true,
+		"is newer cvm": {
+			state: &attest.MachineState{Platform: &attest.PlatformState{
+				Firmware:   &attest.PlatformState_GceVersion{GceVersion: minimumGceVersion + 1},
+				Technology: attest.GCEConfidentialTechnology_AMD_SEV,
+			}},
 		},
-		"missing GCE Non-Host info event": {
-			attDoc: vtpm.AttestationDocument{
-				Attestation: &attest.Attestation{
-					EventLog: []byte("No GCE Event"),
-				},
-			},
+		"is older cvm": {
+			state: &attest.MachineState{Platform: &attest.PlatformState{
+				Firmware:   &attest.PlatformState_GceVersion{GceVersion: minimumGceVersion - 1},
+				Technology: attest.GCEConfidentialTechnology_AMD_SEV,
+			}},
 			wantErr: true,
 		},
 		"not a cvm": {
-			attDoc: vtpm.AttestationDocument{
-				Attestation: &attest.Attestation{
-					EventLog: []byte("\x00\x00\x00GCE NonHostInfo\x00\x00\x00\x00"),
-				},
-			},
+			state: &attest.MachineState{Platform: &attest.PlatformState{
+				Firmware:   &attest.PlatformState_GceVersion{GceVersion: minimumGceVersion},
+				Technology: attest.GCEConfidentialTechnology_NONE,
+			}},
 			wantErr: true,
 		},
 	}
@@ -62,7 +59,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			err := gceNonHostInfoEvent(tc.attDoc, nil)
+			err := validateCVM(vtpm.AttestationDocument{}, tc.state)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

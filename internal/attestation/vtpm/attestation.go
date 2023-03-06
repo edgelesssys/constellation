@@ -198,21 +198,22 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
 
-	// Validate confidential computing capabilities of the VM
-	if err := v.validateCVM(attDoc, nil); err != nil {
-		return nil, fmt.Errorf("verifying VM confidential computing capabilities: %w", err)
-	}
-
 	// Verify the TPM attestation
-	if _, err := tpmServer.VerifyAttestation(
+	state, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
 			Nonce:      makeExtraData(attDoc.UserData, nonce),
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf("verifying attestation document: %w", err)
+	}
+
+	// Validate confidential computing capabilities of the VM
+	if err := v.validateCVM(attDoc, state); err != nil {
+		return nil, fmt.Errorf("verifying VM confidential computing capabilities: %w", err)
 	}
 
 	// Verify PCRs
