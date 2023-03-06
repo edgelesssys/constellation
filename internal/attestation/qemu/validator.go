@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
@@ -27,7 +28,7 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 		Validator: vtpm.NewValidator(
 			pcrs,
 			unconditionalTrust,
-			func(attestation vtpm.AttestationDocument) error { return nil },
+			func(vtpm.AttestationDocument, *attest.MachineState) error { return nil },
 			log,
 		),
 	}

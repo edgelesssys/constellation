@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
@@ -97,7 +98,7 @@ func (v *Validator) verifyAttestationKey(akPub, instanceInfo []byte) (crypto.Pub
 }
 
 // validateVM returns nil.
-func validateVM(attestation vtpm.AttestationDocument) error {
+func validateVM(vtpm.AttestationDocument, *attest.MachineState) error {
 	return nil
 }
 

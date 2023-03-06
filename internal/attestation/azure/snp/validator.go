@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
@@ -55,7 +56,7 @@ func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, en
 }
 
 // validateCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
-func validateCVM(attestation vtpm.AttestationDocument) error {
+func validateCVM(vtpm.AttestationDocument, *attest.MachineState) error {
 	return nil
 }
 

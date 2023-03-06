@@ -307,28 +307,7 @@ func int32ToByte(val uint32) []byte {
 }
 
 func TestValidateAzureCVM(t *testing.T) {
-	testCases := map[string]struct {
-		attDoc  vtpm.AttestationDocument
-		wantErr bool
-	}{
-		"success": {
-			attDoc:  vtpm.AttestationDocument{},
-			wantErr: false,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			err := validateCVM(tc.attDoc)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
+	assert.NoError(t, validateCVM(vtpm.AttestationDocument{}, nil))
 }
 
 func TestNewSNPReportFromBytes(t *testing.T) {
