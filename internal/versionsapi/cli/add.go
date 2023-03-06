@@ -26,7 +26,7 @@ func newAddCmd() *cobra.Command {
 		Long: `Add a new version to the versions API.
 
 Developers should not use this command directly. It is invoked by the CI/CD pipeline.
-If you've build a local image, use an local override instead of adding a new version.
+If you've build a local image, use a local override instead of adding a new version.
 
 ❗ If you use the command nevertheless, you better know what you do.
 `,
@@ -36,6 +36,7 @@ If you've build a local image, use an local override instead of adding a new ver
 	cmd.Flags().String("ref", "", "Ref of the version to add")
 	cmd.Flags().String("stream", "", "Stream of the version to add")
 	cmd.Flags().String("version", "", "Version to add (format: \"v1.2.3\")")
+	cmd.Flags().String("kind", "", "Version kind to add (e.g. image, cli)")
 	cmd.Flags().Bool("latest", false, "Whether the version is the latest version of the ref/stream")
 	cmd.Flags().Bool("release", false, "Whether the version is a release version")
 	cmd.Flags().Bool("dryrun", false, "Whether to run in dry-run mode (no changes are made)")
@@ -64,7 +65,7 @@ func runAdd(cmd *cobra.Command, args []string) (retErr error) {
 		Ref:     flags.ref,
 		Stream:  flags.stream,
 		Version: flags.version,
-		Kind:    versionsapi.VersionKindImage,
+		Kind:    flags.kind,
 	}
 	if err := ver.Validate(); err != nil {
 		return err
@@ -83,16 +84,16 @@ func runAdd(cmd *cobra.Command, args []string) (retErr error) {
 	}(&retErr)
 
 	log.Infof("Adding version")
-	if err := ensureVersion(cmd.Context(), client, ver, versionsapi.GranularityMajor, log); err != nil {
+	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMajor, log); err != nil {
 		return err
 	}
 
-	if err := ensureVersion(cmd.Context(), client, ver, versionsapi.GranularityMinor, log); err != nil {
+	if err := ensureVersion(cmd.Context(), client, flags.kind, ver, versionsapi.GranularityMinor, log); err != nil {
 		return err
 	}
 
 	if flags.latest {
-		if err := updateLatest(cmd.Context(), client, ver, log); err != nil {
+		if err := updateLatest(cmd.Context(), client, flags.kind, ver, log); err != nil {
 			return fmt.Errorf("setting latest version: %w", err)
 		}
 	}
@@ -103,7 +104,7 @@ func runAdd(cmd *cobra.Command, args []string) (retErr error) {
 	return nil
 }
 
-func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsapi.Version, gran versionsapi.Granularity,
+func ensureVersion(ctx context.Context, client *verclient.Client, kind versionsapi.VersionKind, ver versionsapi.Version, gran versionsapi.Granularity,
 	log *logger.Logger,
 ) error {
 	verListReq := versionsapi.List{
@@ -111,7 +112,7 @@ func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsap
 		Stream:      ver.Stream,
 		Granularity: gran,
 		Base:        ver.WithGranularity(gran),
-		Kind:        versionsapi.VersionKindImage,
+		Kind:        kind,
 	}
 	verList, err := client.FetchVersionList(ctx, verListReq)
 	var notFoundErr *verclient.NotFoundError
@@ -143,11 +144,11 @@ func ensureVersion(ctx context.Context, client *verclient.Client, ver versionsap
 	return nil
 }
 
-func updateLatest(ctx context.Context, client *verclient.Client, ver versionsapi.Version, log *logger.Logger) error {
+func updateLatest(ctx context.Context, client *verclient.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *logger.Logger) error {
 	latest := versionsapi.Latest{
 		Ref:    ver.Ref,
 		Stream: ver.Stream,
-		Kind:   versionsapi.VersionKindImage,
+		Kind:   kind,
 	}
 	latest, err := client.FetchVersionLatest(ctx, latest)
 	var notFoundErr *verclient.NotFoundError
@@ -167,7 +168,7 @@ func updateLatest(ctx context.Context, client *verclient.Client, ver versionsapi
 		Ref:     ver.Ref,
 		Stream:  ver.Stream,
 		Version: ver.Version,
-		Kind:    versionsapi.VersionKindImage,
+		Kind:    kind,
 	}
 	if err := client.UpdateVersionLatest(ctx, latest); err != nil {
 		return fmt.Errorf("updating latest version: %w", err)
@@ -186,6 +187,7 @@ type addFlags struct {
 	region         string
 	bucket         string
 	distributionID string
+	kind           versionsapi.VersionKind
 	logLevel       zapcore.Level
 }
 
@@ -229,6 +231,19 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 	stream, err := cmd.Flags().GetString("stream")
 	if err != nil {
 		return addFlags{}, err
+	}
+	kindFlag, err := cmd.Flags().GetString("kind")
+	if err != nil {
+		return addFlags{}, err
+	}
+	var kind versionsapi.VersionKind
+	switch kindFlag {
+	case "image":
+		kind = versionsapi.VersionKindImage
+	case "cli":
+		kind = versionsapi.VersionKindCLI
+	default:
+		return addFlags{}, fmt.Errorf("invalid kind %q", kind)
 	}
 	version, err := cmd.Flags().GetString("version")
 	if err != nil {
@@ -278,5 +293,6 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 		bucket:         bucket,
 		distributionID: distributionID,
 		logLevel:       logLevel,
+		kind:           kind,
 	}, nil
 }

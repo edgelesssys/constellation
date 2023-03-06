@@ -67,12 +67,24 @@ jobs:
         working-directory: internal/versionsapi/cli
         run: go build -o versionsapi
 
-      - name: Add version to versionsapi
+      - name: Add image version to versionsapi
         working-directory: internal/versionsapi/cli
         run: |
           latest_flag=$([[ "${LATEST}" = "true" ]] && echo "--latest" || echo "")
           ./versionsapi add \
             --release \
             --stream "stable" \
+            --kind "image" \
+            --version "${TAG}" \
+            "${latest_flag}"
+
+      - name: Add CLI version to versionsapi
+        working-directory: internal/versionsapi/cli
+        run: |
+          latest_flag=$([[ "${LATEST}" = "true" ]] && echo "--latest" || echo "")
+          ./versionsapi add \
+            --release \
+            --stream "stable" \
+            --kind "cli" \
             --version "${TAG}" \
             "${latest_flag}"

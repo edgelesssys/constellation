@@ -24,6 +24,10 @@ on:
         description: --version flag
         required: false
         type: string
+      kind:
+        description: --kind flag
+        required: false
+        type: string
       version_path:
         description: --version-path flag
         required: false
@@ -64,6 +68,10 @@ on:
         type: string
       version:
         description: --version flag
+        required: false
+        type: string
+      kind:
+        description: --kind flag
         required: false
         type: string
       version_path:
@@ -180,6 +188,7 @@ jobs:
           ref: ${{ inputs.ref }}
           stream: ${{ inputs.stream }}
           version: ${{ inputs.version }}
+          kind: ${{ inputs.kind }}
           version_path: ${{ inputs.version_path }}
           add_latest: ${{ inputs.add_latest }}
           add_release: ${{ inputs.add_release }}
