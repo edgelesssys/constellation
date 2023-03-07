@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/go-tdx-qpl/tdx"
@@ -31,7 +32,7 @@ func MarkNodeAsBootstrapped(openDevice func() (io.ReadWriteCloser, error), clust
 	// *os.File or an emulated device over a unix socket.
 	// Therefore, we can't simply use a type switch here,
 	// since the TPM may implement the same methods as the TDX device
-	if handle, ok := device.(tdx.Device); ok && tdx.IsTDXDevice(handle) {
+	if handle, ok := isTDXDevice(device); ok {
 		return tdxMarkNodeAsBootstrapped(handle, clusterID)
 	}
 	return tpmMarkNodeAsBootstrapped(device, clusterID)
@@ -49,7 +50,7 @@ func IsNodeBootstrapped(openDevice func() (io.ReadWriteCloser, error)) (bool, er
 	// *os.File or an emulated device over a unix socket.
 	// Therefore, we can't simply use a type switch here,
 	// since the TPM may implement the same methods as the TDX device
-	if handle, ok := device.(tdx.Device); ok && tdx.IsTDXDevice(handle) {
+	if handle, ok := isTDXDevice(device); ok {
 		return tdxIsNodeBootstrapped(handle)
 	}
 	return tpmIsNodeBootstrapped(device)
@@ -126,4 +127,17 @@ func tpmMarkNodeAsBootstrapped(tpm io.ReadWriteCloser, clusterID []byte) error {
 // measurementInitialized checks if a PCR value is set to a non-zero value.
 func measurementInitialized(measurement []byte) bool {
 	return !bytes.Equal(measurement, bytes.Repeat([]byte{0x00}, len(measurement)))
+}
+
+// isTDXDevice checks if the given device is a TDX guest device.
+func isTDXDevice(device io.ReadWriteCloser) (tdx.Device, bool) {
+	handle, ok := device.(tdx.Device)
+	if !ok {
+		return nil, false
+	}
+	f, ok := device.(*os.File)
+	if !ok {
+		return nil, false
+	}
+	return handle, f.Name() == tdx.GuestDevice
 }
