@@ -31,8 +31,10 @@ runs:
         curl -fsSLo syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
         tar -xzf syft_${SYFT_VERSION}_${OS}_${ARCH}.tar.gz
         sudo install syft /usr/bin/syft
-        syft version
         curl -fsSLo grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
         tar -xzf grype_${GRYPE_VERSION}_${OS}_${ARCH}.tar.gz
         sudo install grype /usr/bin/grype
+
+        echo "::endgroup::"
+        syft version
         grype version
