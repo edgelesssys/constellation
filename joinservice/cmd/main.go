@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -115,17 +116,17 @@ func main() {
 }
 
 func getVPCIP(ctx context.Context, provider string) (string, error) {
-	var metadata metadataAPI
+	var metadataClient metadataAPI
 	var err error
 
 	switch cloudprovider.FromString(provider) {
 	case cloudprovider.AWS:
-		metadata, err = awscloud.New(ctx)
+		metadataClient, err = awscloud.New(ctx)
 		if err != nil {
 			return "", err
 		}
 	case cloudprovider.Azure:
-		metadata, err = azurecloud.New(ctx)
+		metadataClient, err = azurecloud.New(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -135,14 +136,19 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 			return "", err
 		}
 		defer gcpMeta.Close()
-		metadata = gcpMeta
+		metadataClient = gcpMeta
+	case cloudprovider.OpenStack:
+		metadataClient, err = openstack.New(ctx)
+		if err != nil {
+			return "", err
+		}
 	case cloudprovider.QEMU:
-		metadata = qemucloud.New()
+		metadataClient = qemucloud.New()
 	default:
 		return "", errors.New("unsupported cloud provider")
 	}
 
-	self, err := metadata.Self(ctx)
+	self, err := metadataClient.Self(ctx)
 	if err != nil {
 		return "", err
 	}

@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -64,7 +65,7 @@ func main() {
 	var err error
 	var diskPath string
 	var issuer atls.Issuer
-	var metadataAPI setup.MetadataAPI
+	var metadataClient setup.MetadataAPI
 	switch cloudprovider.FromString(*csp) {
 	case cloudprovider.AWS:
 		// on AWS Nitro platform, disks are attached over NVMe
@@ -74,9 +75,9 @@ func main() {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
 		}
-		metadataAPI, err = awscloud.New(context.Background())
+		metadataClient, err = awscloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
+			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata client")
 		}
 
 		issuer = aws.NewIssuer(log)
@@ -87,9 +88,9 @@ func main() {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
 		}
-		metadataAPI, err = azurecloud.New(context.Background())
+		metadataClient, err = azurecloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error).Fatalf("Failed to set up Azure metadata API")
+			log.With(zap.Error).Fatalf("Failed to set up Azure metadata client")
 		}
 
 		issuer = azure.NewIssuer(log)
@@ -103,26 +104,25 @@ func main() {
 		issuer = gcp.NewIssuer(log)
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error).Fatalf("Failed to create GCP client")
+			log.With(zap.Error).Fatalf("Failed to create GCP metadata client")
 		}
 		defer gcpMeta.Close()
-		metadataAPI = gcpMeta
+		metadataClient = gcpMeta
 
 	case cloudprovider.OpenStack:
 		diskPath = openstackStateDiskPath
-		// TODO(malt3): implement OpenStack metadata API and quote issuer
-		// issuer = ...
-		// metadataAPI = ...
-
-		// TODO(katexochen): Remove the following
+		metadataClient, err = openstack.New(context.Background())
+		if err != nil {
+			log.With(zap.Error).Fatalf("Failed to create OpenStack metadata client")
+		}
+		// TODO(malt3): implement OpenStack quote issuer
 		issuer = qemu.NewIssuer(log)
-		metadataAPI = qemucloud.New()
 		_ = exportPCRs()
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer(log)
-		metadataAPI = qemucloud.New()
+		metadataClient = qemucloud.New()
 		_ = exportPCRs()
 
 	default:
@@ -154,14 +154,14 @@ func main() {
 	if mapper.IsLUKSDevice() {
 		// set up rejoin client
 		var self metadata.InstanceMetadata
-		self, err = metadataAPI.Self(context.Background())
+		self, err = metadataClient.Self(context.Background())
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get self metadata")
 		}
 		rejoinClient := rejoinclient.New(
 			dialer.New(issuer, nil, &net.Dialer{}),
 			self,
-			metadataAPI,
+			metadataClient,
 			log.Named("rejoinClient"),
 		)
 
