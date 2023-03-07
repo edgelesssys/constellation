@@ -173,24 +173,27 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 	// On GCP we might want to have a higher MTU since we can use jumbo frames.
 	// Cilium's auto-detection usually handles this.
 	// However, it can get a wrong value when multiple network devices exist (e.g. from Podman).
-	// Thus, we set it manually here from the expected external interface
-	// Issue: https://github.com/cilium/cilium/issues/14339
+	// Thus, we set it manually here from the expected external interface.
+	// Tracking issue: https://github.com/cilium/cilium/issues/14339
 	// This part could be way easier using some tricks (e.g. just hardcode ens3).
 	// But not sure if this will blow up in the future, so let's better ask the operating system instead of doing tricks.
 	hostMTU, err := getHostMTU(nodeIP, h.log)
-	if err != nil {
-		return err
+	if err != nil || hostMTU == 0 {
+		h.log.Warnf("Failed to determine MTU from host network interface, falling back to Cilium's auto-detection", zap.Error(err))
+	} else {
+		h.log.Infof("Detected host MTU for Cilium", zap.Int("mtu", hostMTU))
 	}
 
 	// configure pod network CIDR
 	release.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
 	release.Values["strictModeCIDR"] = subnetworkPodCIDR
 	release.Values["k8sServiceHost"] = host
-	if hostMTU != 0 {
-		release.Values["MTU"] = hostMTU
-	}
 	if port != "" {
 		release.Values["k8sServicePort"] = port
+	}
+	// hostMTU == 0 also triggers auto-detection in Cilium, so we don't need to check for this here and can just pass it.
+	if hostMTU != -1 {
+		release.Values["MTU"] = hostMTU
 	}
 
 	if err := h.install(ctx, release.Chart, release.Values); err != nil {
@@ -255,14 +258,14 @@ func (i installDoer) Do(ctx context.Context) error {
 func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 	parsedNodeIP := net.ParseIP(nodeIP)
 	if parsedNodeIP == nil {
-		return 0, fmt.Errorf("failed to parse node IP from string to IP: %s", nodeIP)
+		return -1, fmt.Errorf("failed to parse node IP from string to IP: %s", nodeIP)
 	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return 0, fmt.Errorf("retrieving network interfaces: %w", err)
+		return -1, fmt.Errorf("retrieving network interfaces: %w", err)
 	}
 
-	var nodeNetworkInterfaceMTU int
+	nodeNetworkInterfaceMTU := -1
 	var foundNodeNetworkInterface bool
 	for _, i := range ifaces {
 		// Abort if network interface has already been found.
@@ -272,7 +275,7 @@ func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 
 		addrs, err := i.Addrs()
 		if err != nil {
-			log.Errorf("Failed to retrieve interface address", zap.String("interface", i.Name))
+			log.Warnf("Failed to retrieve interface address", zap.String("interface", i.Name))
 			continue
 		}
 		for _, addr := range addrs {
@@ -291,6 +294,10 @@ func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 				}
 			}
 		}
+	}
+
+	if nodeNetworkInterfaceMTU == -1 {
+		return -1, fmt.Errorf("did not find network interface with node IP: %s", nodeIP)
 	}
 
 	return nodeNetworkInterfaceMTU, nil
