@@ -1,22 +1,22 @@
 image:
   csiProvisioner:
-    repo: k8s.gcr.io/sig-storage/csi-provisioner
+    repo: registry.k8s.io/sig-storage/csi-provisioner
     tag: "v3.1.1"
     pullPolicy: IfNotPresent
   csiAttacher:
-    repo: k8s.gcr.io/sig-storage/csi-attacher
+    repo: registry.k8s.io/sig-storage/csi-attacher
     tag: "v3.5.0"
     pullPolicy: IfNotPresent
   csiResizer:
-    repo: k8s.gcr.io/sig-storage/csi-resizer
+    repo: registry.k8s.io/sig-storage/csi-resizer
     tag: "v1.5.0"
     pullPolicy: IfNotPresent
   csiSnapshotter:
-    repo: k8s.gcr.io/sig-storage/csi-snapshotter
+    repo: registry.k8s.io/sig-storage/csi-snapshotter
     tag: "v6.0.1"
     pullPolicy: IfNotPresent
   csiNodeRegistrar:
-    repo: k8s.gcr.io/sig-storage/csi-node-driver-registrar
+    repo: registry.k8s.io/sig-storage/csi-node-driver-registrar
     tag: "v2.5.1"
     pullPolicy: IfNotPresent
   gcepdDriver:
