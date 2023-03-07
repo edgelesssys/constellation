@@ -105,6 +105,9 @@ type UpgradeConfig struct {
 // if not required.
 type ProviderConfig struct {
 	// description: |
+	//   Attestation variant used to verify the integrity of a node.
+	AttestationVariant string `yaml:"attestationVariant" validate:"required,valid_attestation_variant"`
+	// description: |
 	//   Configuration for AWS as provider.
 	AWS *AWSConfig `yaml:"aws,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -573,7 +576,12 @@ func (c *Config) Validate(force bool) error {
 	if err := validate.RegisterTranslation("version_compatibility", trans, registerVersionCompatibilityError, translateVersionCompatibilityError); err != nil {
 		return err
 	}
+
 	if err := validate.RegisterTranslation("valid_name", trans, registerValidateNameError, c.translateValidateNameError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterTranslation("valid_attestation_variant", trans, registerValidAttestVariantError, c.translateValidAttestVariantError); err != nil {
 		return err
 	}
 
@@ -610,6 +618,10 @@ func (c *Config) Validate(force bool) error {
 
 	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
 	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("valid_attestation_variant", c.validAttestVariant); err != nil {
 		return err
 	}
 

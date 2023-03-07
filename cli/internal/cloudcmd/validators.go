@@ -21,39 +21,37 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/spf13/cobra"
 )
 
 // Validator validates Platform Configuration Registers (PCRs).
 type Validator struct {
-	provider           cloudprovider.Provider
+	attestationVariant oid.Getter
 	pcrs               measurements.M
 	idkeydigests       idkeydigest.IDKeyDigests
 	enforceIDKeyDigest bool
-	azureCVM           bool
 	validator          atls.Validator
 	log                debugLog
 }
 
 // NewValidator creates a new Validator.
-func NewValidator(provider cloudprovider.Provider, conf *config.Config, log debugLog) (*Validator, error) {
+func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	v := Validator{log: log}
-	if provider == cloudprovider.Unknown {
-		return nil, errors.New("unknown cloud provider")
+	variant, err := oid.FromString(conf.Provider.AttestationVariant)
+	if err != nil {
+		return nil, fmt.Errorf("parsing attestation variant: %w", err)
 	}
-	v.provider = provider
+	v.attestationVariant = variant
+
 	if err := v.setPCRs(conf); err != nil {
 		return nil, err
 	}
 
-	if v.provider == cloudprovider.Azure {
-		v.azureCVM = *conf.Provider.Azure.ConfidentialVM
-		if v.azureCVM {
-			v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
-			v.idkeydigests = conf.Provider.Azure.IDKeyDigest
-		}
+	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
+		v.enforceIDKeyDigest = conf.EnforcesIDKeyDigest()
+		v.idkeydigests = conf.IDKeyDigests()
 	}
 
 	return &v, nil
@@ -100,26 +98,26 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 }
 
 func (v *Validator) setPCRs(config *config.Config) error {
-	switch v.provider {
-	case cloudprovider.AWS:
+	switch v.attestationVariant {
+	case oid.AWSNitroTPM{}:
 		awsPCRs := config.Provider.AWS.Measurements
 		if len(awsPCRs) == 0 {
 			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = awsPCRs
-	case cloudprovider.Azure:
+	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
 		azurePCRs := config.Provider.Azure.Measurements
 		if len(azurePCRs) == 0 {
 			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = azurePCRs
-	case cloudprovider.GCP:
+	case oid.GCPSEVES{}:
 		gcpPCRs := config.Provider.GCP.Measurements
 		if len(gcpPCRs) == 0 {
 			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = gcpPCRs
-	case cloudprovider.QEMU:
+	case oid.QEMUVTPM{}:
 		qemuPCRs := config.Provider.QEMU.Measurements
 		if len(qemuPCRs) == 0 {
 			return errors.New("no expected measurement provided")
@@ -142,18 +140,16 @@ func (v *Validator) PCRS() measurements.M {
 
 func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd, log: v.log}
-	switch v.provider {
-	case cloudprovider.GCP:
+	switch v.attestationVariant {
+	case oid.GCPSEVES{}:
 		v.validator = gcp.NewValidator(v.pcrs, log)
-	case cloudprovider.Azure:
-		if v.azureCVM {
-			v.validator = snp.NewValidator(v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
-		} else {
-			v.validator = trustedlaunch.NewValidator(v.pcrs, log)
-		}
-	case cloudprovider.AWS:
+	case oid.AzureSEVSNP{}:
+		v.validator = snp.NewValidator(v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
+	case oid.AzureTrustedLaunch{}:
+		v.validator = trustedlaunch.NewValidator(v.pcrs, log)
+	case oid.AWSNitroTPM{}:
 		v.validator = aws.NewValidator(v.pcrs, log)
-	case cloudprovider.QEMU:
+	case oid.QEMUVTPM{}:
 		v.validator = qemu.NewValidator(v.pcrs, log)
 	}
 }

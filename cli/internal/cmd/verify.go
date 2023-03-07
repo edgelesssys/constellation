@@ -86,7 +86,7 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 
 	provider := conf.GetProvider()
 	v.log.Debugf("Creating aTLS Validator for %s", provider)
-	validators, err := cloudcmd.NewValidator(provider, conf, v.log)
+	validators, err := cloudcmd.NewValidator(conf, v.log)
 	if err != nil {
 		return err
 	}
