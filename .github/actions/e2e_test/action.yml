@@ -170,7 +170,7 @@ runs:
       uses: ./.github/actions/constellation_iam_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
-        awsZone: eu-central-1a
+        awsZone: eu-central-1c
         awsPrefix: e2e_${{ github.run_id }}_${{ github.run_attempt }}
         azureRegion: northeurope
         azureResourceGroup: e2e_${{ github.run_id }}_${{ github.run_attempt }}_rg
