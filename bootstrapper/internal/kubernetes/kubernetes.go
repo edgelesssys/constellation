@@ -175,6 +175,7 @@ func (k *KubeWrapper) InitCluster(
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
 		CloudProvider:        k.cloudProvider,
 		NodeName:             nodeName,
+		NodeIP:               nodeIP,
 		FirstNodePodCIDR:     nodePodCIDR,
 		SubnetworkPodCIDR:    subnetworkPodCIDR,
 		LoadBalancerEndpoint: controlPlaneEndpoint,
