@@ -41,6 +41,12 @@ resource "random_password" "initSecret" {
   override_special = "_%@"
 }
 
+resource "azurerm_attestation_provider" "attestation_provider" {
+  name                = format("%s-ap", var.name)
+  resource_group_name = var.resource_group
+  location            = var.location
+}
+
 resource "azurerm_application_insights" "insights" {
   name                = local.name
   location            = var.location
