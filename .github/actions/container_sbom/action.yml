@@ -32,6 +32,7 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       run: |
+        echo "::group::Generate SBOM"
         set -ex
         syft packages ${{ inputs.containerReference }} -o cyclonedx-json > container-image-predicate.json
         cosign attest ${{ inputs.containerReference }} --key env://COSIGN_PRIVATE_KEY --predicate container-image-predicate.json --type "https://cyclonedx.org/bom" > container-image.att.json
@@ -40,3 +41,4 @@ runs:
         # https://github.com/sigstore/cosign/issues/2264
         cosign verify-attestation ${{ inputs.containerReference }} --type "https://cyclonedx.org/bom" --key env://COSIGN_PUBLIC_KEY
         grype ${{ inputs.containerReference }} --fail-on high --only-fixed --add-cpes-if-none
+        echo "::endgroup::"
