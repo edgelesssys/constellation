@@ -14,17 +14,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup"
-	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -37,6 +34,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
@@ -61,10 +59,18 @@ func main() {
 	log.With(zap.String("version", constants.VersionInfo()), zap.String("cloudProvider", *csp)).
 		Infof("Starting disk-mapper")
 
-	// set up metadata API and quote issuer for aTLS connections
-	var err error
+	// set up quote issuer for aTLS connections
+	attestVariant, err := oid.FromString(os.Getenv(constants.AttestationVariant))
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+	}
+	issuer, err := choose.Issuer(attestVariant, log)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to select issuer")
+	}
+
+	// set up metadata API
 	var diskPath string
-	var issuer atls.Issuer
 	var metadataClient setup.MetadataAPI
 	switch cloudprovider.FromString(*csp) {
 	case cloudprovider.AWS:
@@ -80,8 +86,6 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata client")
 		}
 
-		issuer = aws.NewIssuer(log)
-
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
 		if err != nil {
@@ -93,15 +97,12 @@ func main() {
 			log.With(zap.Error).Fatalf("Failed to set up Azure metadata client")
 		}
 
-		issuer = azure.NewIssuer(log)
-
 	case cloudprovider.GCP:
 		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
 		if err != nil {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve GCP state disk path")
 		}
-		issuer = gcp.NewIssuer(log)
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create GCP metadata client")
@@ -115,13 +116,10 @@ func main() {
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create OpenStack metadata client")
 		}
-		// TODO(malt3): implement OpenStack quote issuer
-		issuer = qemu.NewIssuer(log)
 		_ = exportPCRs()
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
-		issuer = qemu.NewIssuer(log)
 		metadataClient = qemucloud.New()
 		_ = exportPCRs()
 

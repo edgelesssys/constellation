@@ -18,12 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
-	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
@@ -41,7 +36,7 @@ import (
 )
 
 const (
-	// ConstellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
+	// constellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
 	constellationCSP = "CONSTEL_CSP"
 )
 
@@ -66,7 +61,6 @@ func main() {
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
-	var issuer atls.Issuer
 	var openTPM vtpm.TPMOpenFunc
 	var fs afero.Fs
 
@@ -75,14 +69,21 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Helm client could not be initialized")
 	}
 
+	attestVariant, err := oid.FromString(os.Getenv(constants.AttestationVariant))
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+	}
+	issuer, err := choose.Issuer(attestVariant, log)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to select issuer")
+	}
+
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
 		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.AWSPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
-
-		issuer = aws.NewIssuer(log)
 
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
@@ -107,8 +108,6 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
-
-		issuer = gcp.NewIssuer(log)
 
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
@@ -136,13 +135,6 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		if _, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
-			issuer = snp.NewIssuer(log)
-		} else {
-			// assume we are running in a trusted-launch VM
-			issuer = trustedlaunch.NewIssuer(log)
-		}
-
 		metadata, err := azurecloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
@@ -166,8 +158,6 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = qemu.NewIssuer(log)
-
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
@@ -179,7 +169,6 @@ func main() {
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
-		issuer = atls.NewFakeIssuer(oid.Dummy{})
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
