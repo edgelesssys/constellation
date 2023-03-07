@@ -128,10 +128,20 @@ func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
 		return CreateOutput{}, errors.New("invalid type in uid output: not a string")
 	}
 
+	attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
+	if !ok {
+		return CreateOutput{}, errors.New("no attestationUrl output found")
+	}
+	attestationURL, ok := attestationURLOutput.Value.(string)
+	if !ok {
+		return CreateOutput{}, errors.New("invalid type in attestationUrl output: not a string")
+	}
+
 	return CreateOutput{
-		IP:     ip,
-		Secret: secret,
-		UID:    uid,
+		IP:             ip,
+		Secret:         secret,
+		UID:            uid,
+		AttestationURL: attestationURL,
 	}, nil
 }
 
@@ -140,6 +150,9 @@ type CreateOutput struct {
 	IP     string
 	Secret string
 	UID    string
+	// AttestationURL is the URL of the attestation provider.
+	// It is only set if the cluster is created on Azure.
+	AttestationURL string
 }
 
 // IAMOutput contains the output information of the Terraform IAM operations.

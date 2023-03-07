@@ -53,6 +53,25 @@ func TestCreator(t *testing.T) {
 			wantRollback:          true,
 			wantTerraformRollback: true,
 		},
+		"azure": {
+			tfClient: &stubTerraformClient{ip: ip},
+			provider: cloudprovider.Azure,
+			config:   config.Default(),
+		},
+		"azure newTerraformClient error": {
+			newTfClientErr: someErr,
+			provider:       cloudprovider.Azure,
+			config:         config.Default(),
+			wantErr:        true,
+		},
+		"azure create cluster error": {
+			tfClient:              &stubTerraformClient{createClusterErr: someErr},
+			provider:              cloudprovider.Azure,
+			config:                config.Default(),
+			wantErr:               true,
+			wantRollback:          true,
+			wantTerraformRollback: true,
+		},
 		"qemu": {
 			tfClient: &stubTerraformClient{ip: ip},
 			libvirt:  &stubLibvirtRunner{},

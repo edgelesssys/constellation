@@ -216,6 +216,9 @@ func TestCreateCluster(t *testing.T) {
 					"uid": {
 						Value: "12345abc",
 					},
+					"attestationURL": {
+						Value: "https://12345.neu.attest.azure.net",
+					},
 				},
 			},
 		}
@@ -330,6 +333,34 @@ func TestCreateCluster(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
+		"no attestation url": {
+			pathBase: "terraform",
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"attestation url has wrong type": {
+			pathBase: "terraform",
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"attestationURL": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -355,6 +386,7 @@ func TestCreateCluster(t *testing.T) {
 			assert.Equal("192.0.2.100", tfOutput.IP)
 			assert.Equal("initSecret", tfOutput.Secret)
 			assert.Equal("12345abc", tfOutput.UID)
+			assert.Equal("https://12345.neu.attest.azure.net", tfOutput.AttestationURL)
 		})
 	}
 }

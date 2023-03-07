@@ -10,3 +10,7 @@ output "initSecret" {
   value     = random_password.initSecret.result
   sensitive = true
 }
+
+output "attestationURL" {
+  value = azurerm_attestation_provider.attestation_provider.attestation_uri
+}

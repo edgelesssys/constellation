@@ -8,11 +8,13 @@ package cloudcmd
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"runtime"
@@ -215,12 +217,40 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
+	// very, very hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
+	// or the Go SDK gets updated to a recent API version.
+	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
+	cmd := exec.CommandContext(ctx,
+		"az", "rest",
+		"--method", "put",
+		"--url", fmt.Sprintf("%s/policies/AzureGuest?api-version=2022-08-01", tfOutput.AttestationURL),
+		"--resource", "https://attest.azure.net",
+		"--body", encodeAttestationPolicy(constants.EncodedAzureMAAPolicy),
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return clusterid.File{}, fmt.Errorf("update attestation policy: %w (%s)", err, out)
+	}
+
 	return clusterid.File{
-		CloudProvider: cloudprovider.Azure,
-		IP:            tfOutput.IP,
-		InitSecret:    []byte(tfOutput.Secret),
-		UID:           tfOutput.UID,
+		CloudProvider:  cloudprovider.Azure,
+		IP:             tfOutput.IP,
+		InitSecret:     []byte(tfOutput.Secret),
+		UID:            tfOutput.UID,
+		AttestationURL: tfOutput.AttestationURL,
 	}, nil
+}
+
+// encodeAttestationPolicy encodes the base64-encoded attestation policy in the JWS format specified here:
+// https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#creating-the-policy-file-in-json-web-signature-format
+func encodeAttestationPolicy(encodedPolicy string) string {
+	header := `{"alg":"none"}`
+	payload := fmt.Sprintf(`{"AttestationPolicy": "%s"}`, encodedPolicy)
+
+	encodedHeader := base64.RawStdEncoding.EncodeToString([]byte(header))
+	encodedPayload := base64.RawStdEncoding.EncodeToString([]byte(payload))
+
+	return fmt.Sprintf("%s.%s.", encodedHeader, encodedPayload)
 }
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.
