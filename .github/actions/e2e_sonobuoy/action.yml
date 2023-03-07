@@ -50,7 +50,7 @@ runs:
 
     - name: Publish test results
       if: (!env.ACT)
-      uses: mikepenz/action-junit-report@4604e7ac662394db76b6ccf33d40069c8f84c5da # v3.7.4
+      uses: mikepenz/action-junit-report@4fa23552acda20a6a1d44f16224a90efbeb6c5f1 # v3.7.5
       with:
         report_paths: "**/junit_01.xml"
         fail_on_failure: true
