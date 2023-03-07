@@ -28,6 +28,7 @@
 /internal/atls @thomasten
 /internal/attestation @daniel-weisse
 /internal/config @derpsteb
+/internal/cloud/openstack @katexochen
 /internal/crypto @thomasten
 /internal/license @thomasten
 /internal/logger @daniel-weisse
