@@ -38,7 +38,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
-	tdxapi "github.com/edgelesssys/go-tdx-qpl/tdx"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -166,7 +165,7 @@ func main() {
 	case cloudprovider.QEMU:
 		var measurements measurements.M
 		if tdx.Available() {
-			measurements, err = tdx.GetSelectedMeasurements(tdxapi.Open, []int{0, 1, 2, 3, 4})
+			measurements, err = tdx.GetSelectedMeasurements(tdx.Open, []int{0, 1, 2, 3, 4})
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
 			}
@@ -209,5 +208,5 @@ func main() {
 }
 
 func openTDXGuestDevice() (io.ReadWriteCloser, error) {
-	return tdxapi.Open()
+	return tdx.Open()
 }

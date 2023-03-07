@@ -29,7 +29,7 @@ func NewIssuer(log attestation.Logger) *Issuer {
 		log = attestation.NOPLogger{}
 	}
 	return &Issuer{
-		open: tdx.Open,
+		open: Open,
 		log:  log,
 	}
 }
