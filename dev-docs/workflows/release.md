@@ -53,3 +53,39 @@ Releases should be performed using [the automated release pipeline](https://gith
     git tag v${nextMinorVer}-pre
     git push origin refs/tags/v${nextMinorVer}-pre
     ```
+
+
+## Pipeline cleanup
+
+When testing changes to the pipeline or when the pipeline fails during a release it might become necessary to clean up the images created by the pipeline.
+These are the necessary steps.
+
+### GCP
+1. Navigate to [Images](https://console.cloud.google.com/compute/images?tab=images&project=constellation-images) tab of the "constellation-images" project
+2. Search for the image version "v1-3-0-stable"
+3. Select the image and press "DELETE" 
+
+### Azure
+1. Navigate to [Azure compute galleries](https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.Compute%2Fgalleries)
+2. Select "Constellation_CVM" (this is for confidential vms on AMD SEV SNP)
+3. Select image definition "constellation"
+4. Select "Versions" submenu and search for "1.3.0"
+5. Press "Delete" button NEXT TO THE IMAGE VERSION TABLE. Do no delete the image definition.
+6. Go back to "Azure compute galleries" page and select "Constellation" gallery (this is for trusted launch)
+7. Select image definition "constellation"
+8. Select "Versions" submenu and search for "1.3.0"
+9. Press "Delete" button NEXT TO THE IMAGE VERSION TABLE. Do no delete the image definition. 
+
+### AWS
+**Important:** You need to repeat the following steps for every region supported by Constellation!
+Currently, this includes: 
+- Frankfurt (eu-central-1)
+- Ohio (us-east-2)
+- Mumbai (ap-south-1) 
+
+1. Navigate to [AMI](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Images:visibility=owned-by-me)
+2. Search for release version "constellation-v1.3.0" and select the AMI
+3. On the "Actions" button (top right) select "Deregister AMI"
+4. Either follow the link on the deletion confirmation leading you to the [Snapshots](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Snapshots) panel or navigate there yourself
+5. Search for a snapshot by the same name "constellation-v1.3.0" and select it
+6. On the "Actions" button (top right) select "Delete snapshot"
