@@ -41,6 +41,7 @@ message LogRequest {
 
 message LogResponse {
   bytes log = 1;
+  bytes nonce = 2; // this is only send one time at the beginning
 }
 
 message KubernetesComponent {

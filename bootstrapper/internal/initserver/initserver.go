@@ -19,6 +19,10 @@ package initserver
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"net"
 	"strings"
@@ -62,6 +66,7 @@ type Server struct {
 	shutdownLock sync.RWMutex
 
 	initSecretHash []byte
+	initSecret     []byte
 
 	log *logger.Logger
 
@@ -121,6 +126,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
+
+	s.initSecret = req.InitSecret
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
 		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
@@ -206,8 +213,36 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return err
 	}
 
+	// create a salt and derive a key
+	salt := make([]byte, sha256.New().Size())
+	if _, err := rand.Read(salt); err != nil {
+		return err
+	}
+	key, err := crypto.DeriveKey(s.initSecret, salt, nil, 16) // 16 byte = 128 bit
+	if err != nil {
+		return err
+	}
+
+	// set up AES-128 in GCM mode and encrypt the logs
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return err
+	}
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return err
+	}
+	nonce := make([]byte, aesgcm.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return err
+	}
+	enc_logs := aesgcm.Seal(nil, nonce, systemd_logs, nil)
+
+	// send back the nonce
+	stream.Send(&initproto.LogResponse{Nonce: nonce})
+
 	// stream the systemd logs
-	for _, el := range systemd_logs {
+	for _, el := range enc_logs {
 		if err = stream.Send(&initproto.LogResponse{Log: []byte{el}}); err != nil {
 			return err
 		}

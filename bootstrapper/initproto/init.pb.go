@@ -250,7 +250,8 @@ type LogResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Log []byte `protobuf:"bytes,1,opt,name=log,proto3" json:"log,omitempty"`
+	Log   []byte `protobuf:"bytes,1,opt,name=log,proto3" json:"log,omitempty"`
+	Nonce []byte `protobuf:"bytes,2,opt,name=nonce,proto3" json:"nonce,omitempty"` // this is only send one time at the beginning
 }
 
 func (x *LogResponse) Reset() {
@@ -288,6 +289,13 @@ func (*LogResponse) Descriptor() ([]byte, []int) {
 func (x *LogResponse) GetLog() []byte {
 	if x != nil {
 		return x.Log
+	}
+	return nil
+}
+
+func (x *LogResponse) GetNonce() []byte {
+	if x != nil {
+		return x.Nonce
 	}
 	return nil
 }
