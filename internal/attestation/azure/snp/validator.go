@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -38,11 +39,11 @@ type Validator struct {
 
 	config *config.AzureSEVSNP
 
-	log vtpm.AttestationLogger
+	log attestation.Logger
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(cfg *config.AzureSEVSNP, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AzureSEVSNP, log attestation.Logger) *Validator {
 	if log == nil {
 		log = nopAttestationLogger{}
 	}

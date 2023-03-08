@@ -43,6 +43,7 @@ const (
 	azureSEVSNP        = "azure-sev-snp"
 	azureTrustedLaunch = "azure-trustedlaunch"
 	qemuVTPM           = "qemu-vtpm"
+	qemuTDX            = "qemu-tdx"
 )
 
 // Getter returns an ASN.1 Object Identifier.
@@ -72,6 +73,8 @@ func FromString(oid string) (Variant, error) {
 		return AzureTrustedLaunch{}, nil
 	case qemuVTPM:
 		return QEMUVTPM{}, nil
+	case qemuTDX:
+		return QEMUTDX{}, nil
 	}
 	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
@@ -182,4 +185,23 @@ func (QEMUVTPM) String() string {
 // Equal returns true if the other variant is also QEMUVTPM.
 func (QEMUVTPM) Equal(other Getter) bool {
 	return other.OID().Equal(QEMUVTPM{}.OID())
+}
+
+// QEMUTDX holds the QEMU TDX OID.
+// Placeholder for dev-cloud integration.
+type QEMUTDX struct{}
+
+// OID returns the struct's object identifier.
+// Placeholder for dev-cloud integration.
+func (QEMUTDX) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5, 99}
+}
+
+func (QEMUTDX) String() string {
+	return qemuTDX
+}
+
+// Equal returns true if the other variant is also QEMUTDX.
+func (QEMUTDX) Equal(other Getter) bool {
+	return other.OID().Equal(QEMUTDX{}.OID())
 }

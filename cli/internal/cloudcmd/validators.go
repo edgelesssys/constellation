@@ -59,7 +59,7 @@ func updatePCR(m measurements.M, pcrIndex uint32, encoded string) error {
 	oldExpected := m[pcrIndex].Expected
 	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
 	m[pcrIndex] = measurements.Measurement{
-		Expected:      expectedPcr,
+		Expected:      expectedPcr[:],
 		ValidationOpt: m[pcrIndex].ValidationOpt,
 	}
 	return nil

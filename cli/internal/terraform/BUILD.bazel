@@ -69,6 +69,7 @@ go_library(
         "terraform/openstack/modules/loadbalancer/variables.tf",
         "terraform/openstack/outputs.tf",
         "terraform/openstack/variables.tf",
+        "terraform/qemu/modules/instance_group/tdx_domain.xsl",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/terraform",
     visibility = ["//cli:__subpackages__"],

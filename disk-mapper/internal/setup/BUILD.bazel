@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//disk-mapper/internal/systemd",
         "//internal/attestation",
+        "//internal/attestation/initialize",
         "//internal/attestation/vtpm",
         "//internal/cloud/metadata",
         "//internal/constants",

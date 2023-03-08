@@ -14,6 +14,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 
@@ -28,7 +29,7 @@ type Issuer struct {
 }
 
 // NewIssuer creates a new OpenVTPM based issuer for AWS.
-func NewIssuer(log vtpm.AttestationLogger) *Issuer {
+func NewIssuer(log attestation.Logger) *Issuer {
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,

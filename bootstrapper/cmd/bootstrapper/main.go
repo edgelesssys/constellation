@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -63,7 +64,7 @@ func main() {
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
-	var openTPM vtpm.TPMOpenFunc
+	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
 	helmClient, err := helm.New(log)
@@ -97,7 +98,7 @@ func main() {
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.GCP:
@@ -117,7 +118,7 @@ func main() {
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 		log.Infof("Added load balancer IP to routing table")
 
@@ -136,7 +137,7 @@ func main() {
 			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
-		openTPM = vtpm.OpenVTPM
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
@@ -148,7 +149,16 @@ func main() {
 		)
 		metadataAPI = metadata
 
-		openTPM = vtpm.OpenVTPM
+		switch attestVariant {
+		case variant.QEMUVTPM{}:
+			openDevice = vtpm.OpenVTPM
+		case variant.QEMUTDX{}:
+			openDevice = func() (io.ReadWriteCloser, error) {
+				return tdx.Open()
+			}
+		default:
+			log.Fatalf("Unsupported attestation variant: %s", attestVariant)
+		}
 		fs = afero.NewOsFs()
 	case cloudprovider.OpenStack:
 		cloudLogger = &logging.NopLogger{}
@@ -162,19 +172,18 @@ func main() {
 		)
 		metadataAPI = metadata
 
-		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
 		var simulatedTPMCloser io.Closer
-		openTPM, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
+		openDevice, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
 		defer simulatedTPMCloser.Close()
 		fs = afero.NewMemMapFs()
 	}
 
 	fileHandler := file.NewHandler(fs)
 
-	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
+	run(issuer, openDevice, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
 }
