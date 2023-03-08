@@ -27,9 +27,9 @@ func Issuer(variant oid.Getter, log *logger.Logger) (atls.Issuer, error) {
 	case oid.AWSNitroTPM{}:
 		return aws.NewIssuer(log), nil
 	case oid.AzureTrustedLaunch{}:
-		return snp.NewIssuer(log), nil
-	case oid.AzureSEVSNP{}:
 		return trustedlaunch.NewIssuer(log), nil
+	case oid.AzureSEVSNP{}:
+		return snp.NewIssuer(log), nil
 	case oid.GCPSEVES{}:
 		return gcp.NewIssuer(log), nil
 	case oid.QEMUVTPM{}:
@@ -51,10 +51,10 @@ func Validator(
 	switch variant {
 	case oid.AWSNitroTPM{}:
 		return aws.NewValidator(measurements, log), nil
-	case oid.AzureSEVSNP{}:
-		return snp.NewValidator(measurements, idKeyDigest, enfoceIDKeyDigest, log), nil
 	case oid.AzureTrustedLaunch{}:
 		return trustedlaunch.NewValidator(measurements, log), nil
+	case oid.AzureSEVSNP{}:
+		return snp.NewValidator(measurements, idKeyDigest, enfoceIDKeyDigest, log), nil
 	case oid.GCPSEVES{}:
 		return gcp.NewValidator(measurements, log), nil
 	case oid.QEMUVTPM{}:
