@@ -16,12 +16,21 @@ set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI
 enable_testing()
 
 #
-# core-os disk-mapper
+# disk-mapper
 #
 add_custom_target(disk-mapper ALL
   DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target disk-mapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS disk-mapper
+)
+
+#
+# measurement-reader
+#
+add_custom_target(measurement-reader ALL
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target measurement-reader .
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  BYPRODUCTS measurement-reader
 )
 
 #

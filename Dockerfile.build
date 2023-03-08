@@ -42,6 +42,11 @@ WORKDIR /constellation/upgrade-agent/
 ARG PROJECT_VERSION
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o upgrade-agent -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.versionInfo=${PROJECT_VERSION}" ./cmd/
 
+FROM build AS build-measurement-reader
+WORKDIR /constellation/measurement-reader/
+
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o measurement-reader -ldflags "-s -w -buildid=''" ./cmd/
+
 FROM scratch AS bootstrapper
 COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /
 
@@ -50,3 +55,6 @@ COPY --from=build-disk-mapper /constellation/disk-mapper/disk-mapper /
 
 FROM scratch AS upgrade-agent
 COPY --from=build-upgrade-agent /constellation/upgrade-agent/upgrade-agent /
+
+FROM scratch AS measurement-reader
+COPY --from=build-measurement-reader /constellation/measurement-reader/measurement-reader /

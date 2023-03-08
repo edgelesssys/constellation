@@ -25,7 +25,7 @@ package oid
 
 import (
 	"encoding/asn1"
-	"errors"
+	"fmt"
 )
 
 // Getter returns an ASN.1 Object Identifier.
@@ -49,7 +49,7 @@ func FromString(oid string) (Getter, error) {
 	case qemuVTPM:
 		return QEMUVTPM{}, nil
 	}
-	return nil, errors.New("unknown OID")
+	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
 
 // Dummy OID for testing.
