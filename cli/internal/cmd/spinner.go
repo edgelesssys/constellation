@@ -84,6 +84,7 @@ func (s *spinner) Start(text string, showDots bool) {
 func (s *spinner) Stop() {
 	s.stop.Store(true)
 	s.wg.Wait()
+	s.stop.Store(false)
 }
 
 // Write stops the spinner and writes the given bytes to the underlying writer.
