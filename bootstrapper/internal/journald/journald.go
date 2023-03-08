@@ -32,8 +32,8 @@ func NewCollector(ctx context.Context, service string) (*Collector, error) {
 	return &Collector{cmd}, nil
 }
 
-// GetServiceLog gets all journald logs from a service and returns a byte array with the plain text logs.
-func GetServiceLog(jcmd collectionCommand) ([]byte, error) {
+// Collect gets all journald logs from a service and returns a byte array with the plain text logs.
+func Collect(jcmd collectionCommand) ([]byte, error) {
 	out, err := jcmd.executeCommand()
 	if err != nil {
 		return nil, err

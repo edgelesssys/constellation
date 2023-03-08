@@ -22,7 +22,7 @@ func (j *stubJournaldCommand) executeCommand() ([]byte, error) {
 	return j.executeCommandOutput, j.executeCommandError
 }
 
-func TestGetServiceLog(t *testing.T) {
+func TestCollect(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -47,7 +47,7 @@ func TestGetServiceLog(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := GetServiceLog(tc.command)
+			out, err := Collect(tc.command)
 			if tc.wantErr {
 				assert.Error(err)
 			}
