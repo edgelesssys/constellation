@@ -48,8 +48,11 @@ func main() {
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
-	log.With(zap.String("version", constants.VersionInfo()), zap.String("cloudProvider", *provider)).
-		Infof("Constellation Node Join Service")
+	log.With(
+		zap.String("version", constants.VersionInfo()),
+		zap.String("cloudProvider", *provider),
+		zap.String("attestationVariant", *attestationVariant),
+	).Infof("Constellation Node Join Service")
 
 	handler := file.NewHandler(afero.NewOsFs())
 
