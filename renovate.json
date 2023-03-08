@@ -32,6 +32,16 @@
       "matchDepTypes": [
         "indirect"
       ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump"
+      ],
       "enabled": true,
       "prPriority": -30
     },
