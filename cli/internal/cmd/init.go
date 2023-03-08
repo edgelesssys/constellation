@@ -479,8 +479,8 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.Precedence = []string{
-		configPath,                    // load our config first so it takes precedence
-		clientcmd.RecommendedHomeFile, // then load the default config
+		clientcmd.RecommendedHomeFile,
+		configPath, // our config should overwrite the default config
 	}
 	c.log.Debugf("Kubeconfig file loading precedence: %v", loadingRules.Precedence)
 
