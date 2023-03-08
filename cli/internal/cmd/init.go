@@ -44,7 +44,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
 	"sigs.k8s.io/yaml"
 )
@@ -292,9 +291,11 @@ func (i *initCmd) writeOutput(
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, fileHandler); err != nil {
-			return fmt.Errorf("merging kubeconfig: %w", err)
+			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
+			mergeConfig = false // Set to false so we don't print the wrong message below.
+		} else {
+			writeRow(tw, "Kubernetes configuration merged with default config", "")
 		}
-		writeRow(tw, "Kubernetes configuration merged with default config", "")
 	}
 
 	idFile.OwnerID = ownerID
@@ -478,18 +479,15 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.Precedence = []string{
-		configPath,                    // load our config first so it takes precedence
-		clientcmd.RecommendedHomeFile, // then load the default config
+		clientcmd.RecommendedHomeFile,
+		configPath, // our config should overwrite the default config
 	}
 	c.log.Debugf("Kubeconfig file loading precedence: %v", loadingRules.Precedence)
 
-	// merge and flatten the kubeconfigs
+	// merge the kubeconfigs
 	cfg, err := loadingRules.Load()
 	if err != nil {
 		return fmt.Errorf("loading merged kubeconfig: %w", err)
-	}
-	if err := clientcmdapi.FlattenConfig(cfg); err != nil {
-		return fmt.Errorf("flattening merged kubeconfig: %w", err)
 	}
 
 	// Set the current context to the cluster we just created
