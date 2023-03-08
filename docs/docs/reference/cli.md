@@ -266,8 +266,9 @@ constellation mini up [flags]
 ### Options
 
 ```
-      --config string   path to the configuration file to use for the cluster
-  -h, --help            help for up
+      --config string      path to the configuration file to use for the cluster
+  -h, --help               help for up
+      --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config (default true)
 ```
 
 ### Options inherited from parent commands
