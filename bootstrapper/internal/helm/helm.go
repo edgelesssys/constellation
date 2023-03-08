@@ -178,7 +178,7 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 	// This part could be way easier using some tricks (e.g. just hardcode ens3).
 	// But not sure if this will blow up in the future, so let's better ask the operating system instead of doing tricks.
 	hostMTU, err := getHostMTU(nodeIP, h.log)
-	if err != nil || hostMTU == 0 {
+	if err != nil {
 		h.log.Warnf("Failed to determine MTU from host network interface, falling back to Cilium's auto-detection", zap.Error(err))
 	} else {
 		h.log.Infof("Detected host MTU for Cilium", zap.Int("mtu", hostMTU))
@@ -191,8 +191,7 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 	if port != "" {
 		release.Values["k8sServicePort"] = port
 	}
-	// hostMTU == 0 also triggers auto-detection in Cilium, so we don't need to check for this here and can just pass it.
-	if hostMTU != -1 {
+	if hostMTU != 0 {
 		release.Values["MTU"] = hostMTU
 	}
 
@@ -258,14 +257,14 @@ func (i installDoer) Do(ctx context.Context) error {
 func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 	parsedNodeIP := net.ParseIP(nodeIP)
 	if parsedNodeIP == nil {
-		return -1, fmt.Errorf("failed to parse node IP from string to IP: %s", nodeIP)
+		return 0, fmt.Errorf("failed to parse node IP from string to IP: %s", nodeIP)
 	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return -1, fmt.Errorf("retrieving network interfaces: %w", err)
+		return 0, fmt.Errorf("retrieving network interfaces: %w", err)
 	}
 
-	nodeNetworkInterfaceMTU := -1
+	var nodeNetworkInterfaceMTU int
 	var foundNodeNetworkInterface bool
 	for _, i := range ifaces {
 		// Abort if network interface has already been found.
@@ -296,8 +295,8 @@ func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 		}
 	}
 
-	if nodeNetworkInterfaceMTU == -1 {
-		return -1, fmt.Errorf("did not find network interface with node IP: %s", nodeIP)
+	if nodeNetworkInterfaceMTU == 0 {
+		return 0, fmt.Errorf("did not find network interface with node IP: %s", nodeIP)
 	}
 
 	return nodeNetworkInterfaceMTU, nil
