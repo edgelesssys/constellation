@@ -44,7 +44,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
 	"sigs.k8s.io/yaml"
 )
@@ -489,9 +488,6 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 	cfg, err := loadingRules.Load()
 	if err != nil {
 		return fmt.Errorf("loading merged kubeconfig: %w", err)
-	}
-	if err := clientcmdapi.FlattenConfig(cfg); err != nil {
-		return fmt.Errorf("flattening merged kubeconfig: %w", err)
 	}
 
 	// Set the current context to the cluster we just created
