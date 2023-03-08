@@ -10,12 +10,16 @@ RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin
+ENV GOPRIVATE=github.com/edgelesssys/*
 
 # Download go dependencies
 WORKDIR /constellation/
 COPY go.mod ./
 COPY go.sum ./
-RUN go mod download all
+COPY ./operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.mod
+COPY ./operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.sum
+# TODO: remove secret to mounting once dependencies are public/merged into mono-repo
+RUN --mount=type=secret,id=netrc,dst=/root/.netrc,required=true go mod download all
 
 # Copy Repo
 COPY . /constellation

@@ -19,7 +19,7 @@ enable_testing()
 # disk-mapper
 #
 add_custom_target(disk-mapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target disk-mapper .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --secret id=netrc,src=$ENV{HOME}/.netrc --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target disk-mapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS disk-mapper
 )
@@ -37,7 +37,7 @@ add_custom_target(measurement-reader ALL
 # bootstrapper
 #
 add_custom_target(bootstrapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target bootstrapper .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --secret id=netrc,src=$ENV{HOME}/.netrc --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target bootstrapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS bootstrapper
 )
@@ -46,7 +46,7 @@ add_custom_target(bootstrapper ALL
 # upgrade-agent
 #
 add_custom_target(upgrade-agent ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target upgrade-agent .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --secret id=netrc,src=$ENV{HOME}/.netrc --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target upgrade-agent .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS upgrade-agent
 )

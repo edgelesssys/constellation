@@ -48,6 +48,8 @@ func FromString(oid string) (Getter, error) {
 		return AzureTrustedLaunch{}, nil
 	case qemuVTPM:
 		return QEMUVTPM{}, nil
+	case qemuTDX:
+		return QEMUTDX{}, nil
 	}
 	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
@@ -130,6 +132,16 @@ func (QEMUVTPM) String() string {
 	return qemuVTPM
 }
 
+// QEMUTDX holds the QEMU TDX OID.
+// Placeholder for dev-cloud integration.
+type QEMUTDX struct{}
+
+// OID returns the struct's object identifier.
+// Placeholder for dev-cloud integration.
+func (QEMUTDX) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5, 99}
+}
+
 const (
 	dummy              = "dummy"
 	awsNitroTPM        = "aws-nitro-tpm"
@@ -137,4 +149,5 @@ const (
 	azureSEVSNP        = "azure-sev-snp"
 	azureTrustedLaunch = "azure-trustedlaunch"
 	qemuVTPM           = "qemu-vtpm"
+	qemuTDX            = "qemu-tdx"
 )

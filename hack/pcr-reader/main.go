@@ -132,7 +132,7 @@ func validatePCRAttDoc(attDocRaw []byte) (measurements.M, error) {
 		}
 
 		m[idx] = measurements.Measurement{
-			Expected: *(*[32]byte)(pcr),
+			Expected: pcr,
 			WarnOnly: true,
 		}
 	}

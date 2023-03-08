@@ -67,6 +67,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.22+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
+	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230307140231-bb361f158928
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -119,6 +120,8 @@ require (
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/yaml v1.3.0
 )
+
+require github.com/vtolstov/go-ioctl v0.0.0-20151206205506-6be9cced4810 // indirect
 
 require (
 	cloud.google.com/go v0.107.0 // indirect

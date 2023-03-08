@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -56,7 +57,7 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new Azure Issuer.
-func NewIssuer(log vtpm.AttestationLogger) *Issuer {
+func NewIssuer(log attestation.Logger) *Issuer {
 	imdsAPI := imdsClient{
 		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}

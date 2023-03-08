@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -41,7 +42,11 @@ func main() {
 	case cloudprovider.Azure:
 		issuer = snp.NewIssuer(log) // TODO: dynamic selection
 	case cloudprovider.QEMU:
-		issuer = qemu.NewIssuer(log)
+		if tdx.Available() {
+			issuer = tdx.NewIssuer(log)
+		} else {
+			issuer = qemu.NewIssuer(log)
+		}
 	default:
 		log.With(zap.String("cloudProvider", *provider)).Fatalf("Unknown cloud provider")
 	}
