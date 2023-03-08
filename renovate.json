@@ -162,12 +162,15 @@
         "ghcr.io/edgelesssys/cloud-provider-gcp"
       ],
       "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "groupName": "K8s version constrained containers (missing v1 prefix)",
+      "groupName": "cloud-provider-gcp (K8s version constrained)",
       "prPriority": 15
     },
     {
       "matchPackagePrefixes": [
         "ghcr.io/edgelesssys/"
+      ],
+      "excludePackageNames": [
+        "ghcr.io/edgelesssys/cloud-provider-gcp"
       ],
       "versioning": "semver",
       "groupName": "Constellation containers",
