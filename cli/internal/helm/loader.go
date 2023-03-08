@@ -458,7 +458,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 		}
 
 	case cloudprovider.QEMU:
-		values["tags"] = map[string]interface{}{
+		values["tags"] = map[string]any{
 			"QEMU": true,
 		}
 

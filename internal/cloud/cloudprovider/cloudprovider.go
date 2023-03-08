@@ -47,7 +47,7 @@ func (p *Provider) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalYAML marshals the Provider to YAML string.
-func (p Provider) MarshalYAML() (interface{}, error) {
+func (p Provider) MarshalYAML() (any, error) {
 	return p.String(), nil
 }
 
