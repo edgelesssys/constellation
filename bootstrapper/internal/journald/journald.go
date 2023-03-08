@@ -18,18 +18,18 @@ type collectionCommand interface {
 	executeCommand() ([]byte, error)
 }
 
-// Command represents a command that is executed by journalctl.
-type Command struct {
+// Collector represents a command that is executed by journalctl.
+type Collector struct {
 	command *exec.Cmd
 }
 
-// NewCommand creates a new JournaldCommand.
-func NewCommand(ctx context.Context, service string) (*Command, error) {
+// NewCollector creates a new JournaldCommand.
+func NewCollector(ctx context.Context, service string) (*Collector, error) {
 	cmd := exec.CommandContext(ctx, "journalctl", "-u", service)
 	if cmd.Err != nil {
 		return nil, cmd.Err
 	}
-	return &Command{cmd}, nil
+	return &Collector{cmd}, nil
 }
 
 // GetServiceLog gets all journald logs from a service and returns a byte array with the plain text logs.
@@ -41,6 +41,6 @@ func GetServiceLog(jcmd collectionCommand) ([]byte, error) {
 	return out, nil
 }
 
-func (j *Command) executeCommand() ([]byte, error) {
+func (j *Collector) executeCommand() ([]byte, error) {
 	return j.command.Output()
 }
