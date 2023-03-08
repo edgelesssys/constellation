@@ -7,8 +7,10 @@
 # of the system and prints the message to the serial console
 
 main() {
-  pcr_state="$(tpm2_pcrread sha256)"
-  echo -e "PCR state:\n${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+  if [ -e /dev/tpm0 ] || [ -e /dev/tpmrm0 ]; then
+    pcr_state="$(tpm2_pcrread sha256)"
+    echo -e "PCR state:\n${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+  fi
   if [ -e /dev/tdx-guest ]; then
     rtmr_state="$(rtmr-reader)"
     echo -e "RTMR state:\n${rtmr_state}\n" >> /run/issue.d/35_constellation_pcrs.issue
