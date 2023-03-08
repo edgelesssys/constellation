@@ -36,7 +36,6 @@ func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error)
 		return qemu.NewIssuer(log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeIssuer(oid.Dummy{}), nil
-	// TODO(malt3): Add Openstack Issuer
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", variant)
 	}
@@ -61,7 +60,6 @@ func Validator(
 		return qemu.NewValidator(measurements, log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeValidator(oid.Dummy{}), nil
-	// TODO(malt3): Add Openstack Validator
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", variant)
 	}
