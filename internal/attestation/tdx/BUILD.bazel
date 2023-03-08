@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tdx",
+    srcs = [
+        "issuer.go",
+        "tdx.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/tdx",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation",
+        "//internal/attestation/measurements",
+        "//internal/config",
+        "//internal/variant",
+        "@com_github_edgelesssys_go_tdx_qpl//tdx",
+        "@com_github_edgelesssys_go_tdx_qpl//verification",
+        "@com_github_edgelesssys_go_tdx_qpl//verification/types",
+    ],
+)

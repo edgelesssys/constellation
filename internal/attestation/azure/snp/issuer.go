@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/go-azguestattestation/maa"
@@ -30,7 +31,7 @@ type Issuer struct {
 }
 
 // NewIssuer initializes a new Azure Issuer.
-func NewIssuer(log vtpm.AttestationLogger) *Issuer {
+func NewIssuer(log attestation.Logger) *Issuer {
 	i := &Issuer{
 		imds: newIMDSClient(),
 		maa:  newMAAClient(),

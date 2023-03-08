@@ -1889,6 +1889,14 @@ def go_dependencies():
         sum = "h1:J9k1gV8YA5beC6jANKQy5O7UtaKS3ueuanxUan5Y5NU=",
         version = "v0.0.0-20230303085714-62ede861d33f",
     )
+    go_repository(
+        name = "com_github_edgelesssys_go_tdx_qpl",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/edgelesssys/go-tdx-qpl",
+        sum = "h1:uQMmc/B1RGE2VeSsh/NqjRgEheqp1cjy8ELIDTFpaUw=",
+        version = "v0.0.0-20230307140231-bb361f158928",
+    )
 
     go_repository(
         name = "com_github_edsrzf_mmap_go",
@@ -6680,6 +6688,15 @@ def go_dependencies():
         sum = "h1:gpw/0Ku+6RgF3jsi7fnCLmlcikBHfKBCUcu1qgc16OU=",
         version = "v0.20.3",
     )
+    go_repository(
+        name = "com_github_vtolstov_go_ioctl",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/vtolstov/go-ioctl",
+        sum = "h1:X6ps8XHfpQjw8dUStzlMi2ybiKQ2Fmdw7UM+TinwvyM=",
+        version = "v0.0.0-20151206205506-6be9cced4810",
+    )
+
     go_repository(
         name = "com_github_weppos_publicsuffix_go",
         build_file_generation = "on",

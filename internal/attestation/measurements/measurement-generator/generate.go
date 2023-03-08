@@ -172,8 +172,8 @@ func verifyWithRekor(ctx context.Context, verifier rekorVerifier, hash string) e
 
 // byteArrayCompositeLit returns a *ast.CompositeLit representing a byte array literal.
 // The returned literal is of the form:
-// [32]byte{ 0x01, 0x02, 0x03, ... }.
-func byteArrayCompositeLit(hex [32]byte) *ast.CompositeLit {
+// []byte{ 0x01, 0x02, 0x03, ... }.
+func byteArrayCompositeLit(hex []byte) *ast.CompositeLit {
 	var elts []ast.Expr
 	// create list of byte literals
 	for _, b := range hex {
@@ -183,10 +183,9 @@ func byteArrayCompositeLit(hex [32]byte) *ast.CompositeLit {
 		})
 	}
 	// create the composite literal
-	// containing the byte literals as part of an [32]byte array
+	// containing the byte literals as part of an []byte slice
 	return &ast.CompositeLit{
 		Type: &ast.ArrayType{
-			Len: ast.NewIdent("32"),
 			Elt: ast.NewIdent("byte"),
 		},
 		Elts: elts,
@@ -197,7 +196,7 @@ func byteArrayCompositeLit(hex [32]byte) *ast.CompositeLit {
 // The returned expression is of the form:
 //
 //	0: {
-//		  Expected: [32]byte{ 0x01, 0x02, 0x03, ... },
+//		  Expected: []byte{ 0x01, 0x02, 0x03, ... },
 //		  WarnOnly: false,
 //	},
 func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measurement) *ast.KeyValueExpr {
@@ -235,11 +234,11 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 //
 //	M{
 //		0: {
-//			Expected: [32]byte{ 0x01, 0x02, 0x03, ... },
+//			Expected: []byte{ 0x01, 0x02, 0x03, ... },
 //			WarnOnly: false,
 //		},
 //		1: {
-//			Expected: [32]byte{ 0x01, 0x02, 0x03, ... },
+//			Expected: []byte{ 0x01, 0x02, 0x03, ... },
 //			WarnOnly: false,
 //		},
 //		...
