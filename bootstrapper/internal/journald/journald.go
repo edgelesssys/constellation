@@ -20,8 +20,6 @@ type collectionCommand interface {
 
 // Command represents a command that is executed by journalctl.
 type Command struct {
-	ctx     context.Context
-	service string
 	command *exec.Cmd
 }
 
@@ -31,7 +29,7 @@ func NewCommand(ctx context.Context, service string) (*Command, error) {
 	if cmd.Err != nil {
 		return nil, cmd.Err
 	}
-	return &Command{ctx, service, cmd}, nil
+	return &Command{cmd}, nil
 }
 
 // GetServiceLog gets all journald logs from a service and returns a byte array with the plain text logs.
