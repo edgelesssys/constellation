@@ -20,12 +20,12 @@ type command interface {
 	Output() ([]byte, error)
 }
 
-// Collector represents a command that is executed by journalctl.
+// Collector collects logs from journald.
 type Collector struct {
 	cmd command
 }
 
-// NewCollector creates a new JournaldCommand.
+// NewCollector creates a new Collector for journald logs.
 func NewCollector(ctx context.Context, service string) (*Collector, error) {
 	cmd := exec.CommandContext(ctx, "journalctl", "-u", service)
 	if cmd.Err != nil {
@@ -34,7 +34,7 @@ func NewCollector(ctx context.Context, service string) (*Collector, error) {
 	return &Collector{cmd}, nil
 }
 
-// Collect gets all journald logs from a service and returns a byte array with the plain text logs.
+// Collect gets all journald logs from a service and returns a byte slice with the plain text logs.
 func (c *Collector) Collect() ([]byte, error) {
 	out, err := c.cmd.Output()
 	var exitErr *exec.ExitError
