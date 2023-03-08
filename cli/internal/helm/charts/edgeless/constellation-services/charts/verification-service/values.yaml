@@ -1,3 +1,5 @@
+image: ""
+attestationVariant: ""
 httpContainerPort: 8080
 grpcContainerPort: 9090
 httpNodePort: 30080

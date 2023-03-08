@@ -11,39 +11,31 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/verify/server"
 	"go.uber.org/zap"
 )
 
 func main() {
-	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
+	attestationVariant := flag.String("attestation-variant", "", "attestation variant to use for aTLS connections")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
-	log.With(zap.String("version", constants.VersionInfo()), zap.String("cloudProvider", *provider)).
+	log.With(zap.String("version", constants.VersionInfo()), zap.String("attestationVariant", *attestationVariant)).
 		Infof("Constellation Verification Service")
 
-	var issuer server.AttestationIssuer
-	switch cloudprovider.FromString(*provider) {
-	case cloudprovider.AWS:
-		issuer = aws.NewIssuer(log)
-	case cloudprovider.GCP:
-		issuer = gcp.NewIssuer(log)
-	case cloudprovider.Azure:
-		issuer = snp.NewIssuer(log) // TODO: dynamic selection
-	case cloudprovider.QEMU:
-		issuer = qemu.NewIssuer(log)
-	default:
-		log.With(zap.String("cloudProvider", *provider)).Fatalf("Unknown cloud provider")
+	variant, err := oid.FromString(*attestationVariant)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
+	}
+	issuer, err := choose.Issuer(variant, log.Named("issuer"))
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create issuer")
 	}
 
 	server := server.New(log.Named("server"), issuer)

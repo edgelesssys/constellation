@@ -108,8 +108,6 @@ const (
 	ServiceBasePath = "/var/config"
 	// MeasurementsFilename is the filename of CC measurements.
 	MeasurementsFilename = "measurements"
-	// EnforcedPCRsFilename is the filename for a list PCRs that are required to pass attestation.
-	EnforcedPCRsFilename = "enforcedPCRs"
 	// MeasurementSaltFilename is the filename of the salt used in creation of the clusterID.
 	MeasurementSaltFilename = "measurementSalt"
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.

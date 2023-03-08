@@ -469,17 +469,17 @@ func (c *Config) validateName(fl validator.FieldLevel) bool {
 }
 
 func registerValidAttestVariantError(ut ut.Translator) error {
-	return ut.Add("valid_attestation_variant", "{0} is not a valid attestation variant for CSP {1}", true)
+	return ut.Add("valid_attestation_variant", `"{0}" is not a valid attestation variant for CSP {1}`, true)
 }
 
 func (c *Config) translateValidAttestVariantError(ut ut.Translator, fe validator.FieldError) string {
 	csp := c.GetProvider()
-	t, _ := ut.T("valid_attestation_variant", c.Provider.AttestationVariant, csp.String())
+	t, _ := ut.T("valid_attestation_variant", c.AttestationVariant, csp.String())
 	return t
 }
 
 func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
-	variant, err := oid.FromString(c.Provider.AttestationVariant)
+	variant, err := oid.FromString(c.AttestationVariant)
 	if err != nil {
 		return false
 	}

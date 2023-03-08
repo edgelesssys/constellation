@@ -43,8 +43,8 @@ func TestNewValidator(t *testing.T) {
 	}{
 		"gcp": {
 			config: &config.Config{
+				AttestationVariant: oid.GCPSEVES{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.GCPSEVES{}.String(),
 					GCP: &config.GCPConfig{
 						Measurements: testPCRs,
 					},
@@ -53,8 +53,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"azure cvm": {
 			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.AzureSEVSNP{}.String(),
 					Azure: &config.AzureConfig{
 						Measurements: testPCRs,
 					},
@@ -63,8 +63,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"azure trusted launch": {
 			config: &config.Config{
+				AttestationVariant: oid.AzureTrustedLaunch{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.AzureTrustedLaunch{}.String(),
 					Azure: &config.AzureConfig{
 						Measurements: testPCRs,
 					},
@@ -73,8 +73,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"qemu": {
 			config: &config.Config{
+				AttestationVariant: oid.QEMUVTPM{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.QEMUVTPM{}.String(),
 					QEMU: &config.QEMUConfig{
 						Measurements: testPCRs,
 					},
@@ -83,8 +83,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"no pcrs provided": {
 			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.AzureSEVSNP{}.String(),
 					Azure: &config.AzureConfig{
 						Measurements: measurements.M{},
 					},
@@ -94,8 +94,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"unknown variant": {
 			config: &config.Config{
+				AttestationVariant: "unknown",
 				Provider: config.ProviderConfig{
-					AttestationVariant: "unknown",
 					QEMU: &config.QEMUConfig{
 						Measurements: testPCRs,
 					},
@@ -105,8 +105,8 @@ func TestNewValidator(t *testing.T) {
 		},
 		"set idkeydigest": {
 			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
-					AttestationVariant: oid.AzureSEVSNP{}.String(),
 					Azure: &config.AzureConfig{
 						Measurements:       testPCRs,
 						IDKeyDigest:        idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
@@ -128,7 +128,7 @@ func TestNewValidator(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.config.GetMeasurements(), validators.pcrs)
-				variant, err := oid.FromString(tc.config.Provider.AttestationVariant)
+				variant, err := oid.FromString(tc.config.AttestationVariant)
 				require.NoError(t, err)
 				assert.Equal(variant, validators.attestationVariant)
 			}

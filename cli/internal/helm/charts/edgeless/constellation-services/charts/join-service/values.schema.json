@@ -28,13 +28,19 @@
             "description": "Salt used to generate node measurements",
             "type": "string",
             "examples": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
+        },
+        "attestationVariant": {
+            "description": "Attestation variant to use for aTLS connections.",
+            "type": "string",
+            "examples": ["azure-sev-snp", "azure-trusted-launch", "gcp-sev-es"]
         }
     },
     "required": [
         "csp",
         "measurements",
         "measurementSalt",
-        "image"
+        "image",
+        "attestationVariant"
     ],
     "if": {
         "properties": { "csp": { "const": "azure" } },

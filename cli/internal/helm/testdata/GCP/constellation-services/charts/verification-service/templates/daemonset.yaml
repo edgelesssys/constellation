@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - args:
-        - --cloud-provider=GCP
+        - --attestation-variant=gcp-sev-es
         image: verificationImage
         name: verification-service
         ports:

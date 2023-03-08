@@ -77,6 +77,9 @@ type Config struct {
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
+	//   Attestation variant used to verify the integrity of a node.
+	AttestationVariant string `yaml:"attestationVariant" validate:"required,valid_attestation_variant"`
+	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
@@ -104,9 +107,6 @@ type UpgradeConfig struct {
 // Fields should remain pointer-types so custom specific configs can nil them
 // if not required.
 type ProviderConfig struct {
-	// description: |
-	//   Attestation variant used to verify the integrity of a node.
-	AttestationVariant string `yaml:"attestationVariant" validate:"required,valid_attestation_variant"`
 	// description: |
 	//   Configuration for AWS as provider.
 	AWS *AWSConfig `yaml:"aws,omitempty" validate:"omitempty,dive"`

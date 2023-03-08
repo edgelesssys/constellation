@@ -109,13 +109,13 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 	// TODO(AB#2976): Replace hardcoded values with user input
 	switch provider {
 	case cloudprovider.AWS:
-		conf.Provider.AttestationVariant = oid.AWSNitroTPM{}.String()
+		conf.AttestationVariant = oid.AWSNitroTPM{}.String()
 	case cloudprovider.Azure:
-		conf.Provider.AttestationVariant = oid.AzureSEVSNP{}.String()
+		conf.AttestationVariant = oid.AzureSEVSNP{}.String()
 	case cloudprovider.GCP:
-		conf.Provider.AttestationVariant = oid.GCPSEVES{}.String()
+		conf.AttestationVariant = oid.GCPSEVES{}.String()
 	case cloudprovider.QEMU:
-		conf.Provider.AttestationVariant = oid.QEMUVTPM{}.String()
+		conf.AttestationVariant = oid.QEMUVTPM{}.String()
 	}
 
 	return conf

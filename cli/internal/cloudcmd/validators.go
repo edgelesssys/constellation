@@ -14,13 +14,9 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/spf13/cobra"
@@ -39,11 +35,11 @@ type Validator struct {
 // NewValidator creates a new Validator.
 func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	v := Validator{log: log}
-	variant, err := oid.FromString(conf.Provider.AttestationVariant)
+	variant, err := oid.FromString(conf.AttestationVariant)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation variant: %w", err)
 	}
-	v.attestationVariant = variant
+	v.attestationVariant = variant // valid variant
 
 	if err := v.setPCRs(conf); err != nil {
 		return nil, err
@@ -140,18 +136,9 @@ func (v *Validator) PCRS() measurements.M {
 
 func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd, log: v.log}
-	switch v.attestationVariant {
-	case oid.GCPSEVES{}:
-		v.validator = gcp.NewValidator(v.pcrs, log)
-	case oid.AzureSEVSNP{}:
-		v.validator = snp.NewValidator(v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
-	case oid.AzureTrustedLaunch{}:
-		v.validator = trustedlaunch.NewValidator(v.pcrs, log)
-	case oid.AWSNitroTPM{}:
-		v.validator = aws.NewValidator(v.pcrs, log)
-	case oid.QEMUVTPM{}:
-		v.validator = qemu.NewValidator(v.pcrs, log)
-	}
+
+	// Use of a valid variant has been check in NewValidator so we may drop the error
+	v.validator, _ = choose.Validator(v.attestationVariant, v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
 }
 
 // warnLogger implements logging of warnings for validators.
