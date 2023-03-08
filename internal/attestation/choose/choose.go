@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
@@ -17,12 +18,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
 
 // Issuer returns the issuer for the given variant.
-func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error) {
+func Issuer(variant oid.Getter, log attestation.Logger) (atls.Issuer, error) {
 	switch variant {
 	case oid.AWSNitroTPM{}:
 		return aws.NewIssuer(log), nil
@@ -34,6 +35,8 @@ func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error)
 		return gcp.NewIssuer(log), nil
 	case oid.QEMUVTPM{}:
 		return qemu.NewIssuer(log), nil
+	case oid.QEMUTDX{}:
+		return tdx.NewIssuer(log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeIssuer(oid.Dummy{}), nil
 	default:
@@ -45,7 +48,7 @@ func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error)
 func Validator(
 	variant oid.Getter, measurements measurements.M,
 	idKeyDigest idkeydigest.IDKeyDigests, enfoceIDKeyDigest bool,
-	log vtpm.AttestationLogger,
+	log attestation.Logger,
 ) (atls.Validator, error) {
 	switch variant {
 	case oid.AWSNitroTPM{}:
@@ -58,6 +61,8 @@ func Validator(
 		return gcp.NewValidator(measurements, log), nil
 	case oid.QEMUVTPM{}:
 		return qemu.NewValidator(measurements, log), nil
+	case oid.QEMUTDX{}:
+		return tdx.NewValidator(measurements, log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeValidator(oid.Dummy{}), nil
 	default:

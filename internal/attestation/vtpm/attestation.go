@@ -9,7 +9,6 @@ package vtpm
 import (
 	"bytes"
 	"crypto"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	tpmServer "github.com/google/go-tpm-tools/server"
 	"github.com/google/go-tpm/tpm2"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 )
 
@@ -65,12 +65,6 @@ type (
 	ValidateCVM func(attestation AttestationDocument, state *attest.MachineState) error
 )
 
-// AttestationLogger is a logger used to print warnings and infos during attestation validation.
-type AttestationLogger interface {
-	Infof(format string, args ...any)
-	Warnf(format string, args ...any)
-}
-
 // AttestationDocument contains the TPM attestation with signed user data.
 type AttestationDocument struct {
 	// Attestation contains the TPM event log, PCR values and quotes, and public key of the key used to sign the attestation.
@@ -86,16 +80,16 @@ type Issuer struct {
 	openTPM           TPMOpenFunc
 	getAttestationKey GetTPMAttestationKey
 	getInstanceInfo   GetInstanceInfo
-	log               AttestationLogger
+	log               attestation.Logger
 }
 
 // NewIssuer returns a new Issuer.
 func NewIssuer(
 	openTPM TPMOpenFunc, getAttestationKey GetTPMAttestationKey,
-	getInstanceInfo GetInstanceInfo, log AttestationLogger,
+	getInstanceInfo GetInstanceInfo, log attestation.Logger,
 ) *Issuer {
 	if log == nil {
-		log = &nopAttestationLogger{}
+		log = &attestation.NOPLogger{}
 	}
 	return &Issuer{
 		openTPM:           openTPM,
@@ -128,7 +122,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
 	defer aK.Close()
 
 	// Create an attestation using the loaded key
-	extraData := makeExtraData(userData, nonce)
+	extraData := attestation.MakeExtraData(userData, nonce)
 	tpmAttestation, err := aK.Attest(tpmClient.AttestOpts{Nonce: extraData})
 	if err != nil {
 		return nil, fmt.Errorf("creating attestation: %w", err)
@@ -161,15 +155,15 @@ type Validator struct {
 	getTrustedKey GetTPMTrustedAttestationPublicKey
 	validateCVM   ValidateCVM
 
-	log AttestationLogger
+	log attestation.Logger
 }
 
 // NewValidator returns a new Validator.
 func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
-	validateCVM ValidateCVM, log AttestationLogger,
+	validateCVM ValidateCVM, log attestation.Logger,
 ) *Validator {
 	if log == nil {
-		log = &nopAttestationLogger{}
+		log = &attestation.NOPLogger{}
 	}
 	return &Validator{
 		expected:      expected,
@@ -203,7 +197,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	state, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      makeExtraData(attDoc.UserData, nonce),
+			Nonce:      attestation.MakeExtraData(attDoc.UserData, nonce),
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},
@@ -273,25 +267,9 @@ func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (mea
 			return nil, fmt.Errorf("invalid measurement: invalid length: %d", len(pcr))
 		}
 		m[i] = measurements.Measurement{
-			Expected: *(*[32]byte)(pcr),
+			Expected: pcr,
 		}
 	}
 
 	return m, nil
 }
-
-func makeExtraData(userData []byte, nonce []byte) []byte {
-	data := append([]byte{}, userData...)
-	data = append(data, nonce...)
-	digest := sha256.Sum256(data)
-	return digest[:]
-}
-
-// nopAttestationLogger is a no-op implementation of AttestationLogger.
-type nopAttestationLogger struct{}
-
-// Infof is a no-op.
-func (nopAttestationLogger) Infof(string, ...interface{}) {}
-
-// Warnf is a no-op.
-func (nopAttestationLogger) Warnf(string, ...interface{}) {}

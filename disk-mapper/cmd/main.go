@@ -18,6 +18,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -110,6 +112,12 @@ func main() {
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
+		// TODO: Use Kernel CMD line to decide on attestation variant
+		if tdx.Available() {
+			issuer = tdx.NewIssuer(log)
+		} else {
+			issuer = qemu.NewIssuer(log)
+		}
 		metadataClient = qemucloud.New()
 
 	default:

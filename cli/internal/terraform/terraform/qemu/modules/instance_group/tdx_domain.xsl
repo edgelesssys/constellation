@@ -82,22 +82,6 @@
     <xsl:template match="/domain/vcpu">
         <vcpu placement="static"><xsl:apply-templates select="@*|node()"/></vcpu>
     </xsl:template>
-    <xsl:template match="/domain/cpu">
-        <xsl:copy>
-            <xsl:apply-templates select="node()|@*"/>
-            <xsl:element name ="topology">
-                <xsl:attribute name="sockets">
-                 <xsl:value-of select="'1'"/>
-                </xsl:attribute>
-                <xsl:attribute name="cores">
-                 <xsl:value-of select="'1'"/>
-                </xsl:attribute>
-                <xsl:attribute name="threads">
-                 <xsl:value-of select="'1'"/>
-                </xsl:attribute>
-            </xsl:element>
-        </xsl:copy>
-    </xsl:template>
     <xsl:template match="/domain/devices/console">
         <console type="pty">
             <target type="virtio" port="1" />
