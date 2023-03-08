@@ -42,6 +42,7 @@ func newMiniUpCmd() *cobra.Command {
 
 	// override global flag so we don't have a default value for the config
 	cmd.Flags().String("config", "", "path to the configuration file to use for the cluster")
+	cmd.Flags().Bool("merge-kubeconfig", true, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
 
 	return cmd
 }
