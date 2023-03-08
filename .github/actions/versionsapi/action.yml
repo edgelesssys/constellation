@@ -55,7 +55,7 @@ runs:
     - name: Get versionsapi binary
       shell: bash
       run: |
-        containerID=$(docker create "ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:feat-ci-delete-img-main")
+        containerID=$(docker create "ghcr.io/edgelesssys/constellation/versionsapi-ci-cli:feat-upload-cli-version-list")
         docker cp ${containerID}:/versionsapi .
 
     - name: Run versionsapi
