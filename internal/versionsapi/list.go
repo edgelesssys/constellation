@@ -74,7 +74,7 @@ func (l List) ValidateRequest() error {
 	if l.Granularity != GranularityMajor && l.Granularity != GranularityMinor {
 		retErr = errors.Join(retErr, fmt.Errorf("granularity %q is not supported", l.Granularity))
 	}
-	if l.Kind != VersionKindImage {
+	if l.Kind != VersionKindImage && l.Kind != VersionKindCLI {
 		retErr = errors.Join(retErr, fmt.Errorf("kind %q is not supported", l.Kind))
 	}
 	if !semver.IsValid(l.Base) {
