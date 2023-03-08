@@ -46,7 +46,15 @@ jobs:
       max-parallel: 5
       matrix:
         test:
-          ["sonobuoy full", "autoscaling", "perf-bench", "lb", "verify", "recover", "iamcreate"]
+          [
+            "sonobuoy full",
+            "autoscaling",
+            "perf-bench",
+            "lb",
+            "verify",
+            "recover",
+            "iamcreate",
+          ]
         provider: ["gcp", "azure", "aws"]
         version: ["v1.24", "v1.25", "v1.26"]
         exclude:
@@ -100,7 +108,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.20.1"
+          go-version: "1.20.2"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'

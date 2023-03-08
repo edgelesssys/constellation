@@ -4,7 +4,7 @@ RUN dnf -y update && \
     dnf -y install libvirt-devel @development-tools pkg-config wget git && \
     dnf clean all
 
-ARG GO_VER=1.20.1
+ARG GO_VER=1.20.2
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
