@@ -18,8 +18,10 @@ export CONSOLE_MOTD = $(AUTOLOGIN)
 csps := aws azure gcp openstack qemu
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
+SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
 AZURE_FIXED_KERNEL_RPMS := kernel-6.1.14-200.fc37.x86_64.rpm kernel-core-6.1.14-200.fc37.x86_64.rpm kernel-modules-6.1.14-200.fc37.x86_64.rpm
 GCP_FIXED_KERNEL_RPMS := kernel-5.19.17-300.fc37.x86_64.rpm kernel-core-5.19.17-300.fc37.x86_64.rpm kernel-modules-5.19.17-300.fc37.x86_64.rpm
+PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 
@@ -28,6 +30,11 @@ PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 all: $(csps)
 
 $(csps): %: mkosi.output.%/fedora~37/image.raw
+
+prebuilt/rpms/systemd/%.rpm:
+	@echo "Downloading $*"
+	@mkdir -p $(@D)
+	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/systemd/251.11/2.fc37/x86_64/$*.rpm
 
 prebuilt/rpms/gcp/%.rpm:
 	@echo "Downloading $*"
@@ -53,7 +60,7 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 	fi
 	@echo "Image is ready: $@"
 
-inject-bins: $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
+inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
