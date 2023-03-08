@@ -15,12 +15,12 @@ import (
 )
 
 type stubJournaldCommand struct {
-	OutputReturn []byte
-	OutputError  error
+	outputReturn []byte
+	outputError  error
 }
 
 func (j *stubJournaldCommand) Output() ([]byte, error) {
-	return j.OutputReturn, j.OutputError
+	return j.outputReturn, j.outputError
 }
 
 func TestCollect(t *testing.T) {
@@ -35,15 +35,15 @@ func TestCollect(t *testing.T) {
 			command: &stubJournaldCommand{},
 		},
 		"execution failed": {
-			command: &stubJournaldCommand{OutputError: someError},
+			command: &stubJournaldCommand{outputError: someError},
 			wantErr: true,
 		},
 		"exit error": {
-			command: &stubJournaldCommand{OutputError: &exec.ExitError{}},
+			command: &stubJournaldCommand{outputError: &exec.ExitError{}},
 			wantErr: true,
 		},
 		"output check": {
-			command:      &stubJournaldCommand{OutputReturn: []byte("asdf")},
+			command:      &stubJournaldCommand{outputReturn: []byte("asdf")},
 			wantedOutput: []byte("asdf"),
 		},
 	}
