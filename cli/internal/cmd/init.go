@@ -484,7 +484,7 @@ func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Hand
 	}
 	c.log.Debugf("Kubeconfig file loading precedence: %v", loadingRules.Precedence)
 
-	// merge and flatten the kubeconfigs
+	// merge the kubeconfigs
 	cfg, err := loadingRules.Load()
 	if err != nil {
 		return fmt.Errorf("loading merged kubeconfig: %w", err)
