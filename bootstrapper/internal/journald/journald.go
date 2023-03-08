@@ -11,16 +11,18 @@ package journald
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 )
 
-type collectionCommand interface {
-	executeCommand() ([]byte, error)
+type command interface {
+	Output() ([]byte, error)
 }
 
 // Collector represents a command that is executed by journalctl.
 type Collector struct {
-	command *exec.Cmd
+	cmd command
 }
 
 // NewCollector creates a new JournaldCommand.
@@ -33,14 +35,13 @@ func NewCollector(ctx context.Context, service string) (*Collector, error) {
 }
 
 // Collect gets all journald logs from a service and returns a byte array with the plain text logs.
-func Collect(jcmd collectionCommand) ([]byte, error) {
-	out, err := jcmd.executeCommand()
-	if err != nil {
-		return nil, err
+func (c *Collector) Collect() ([]byte, error) {
+	out, err := c.cmd.Output()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return nil, fmt.Errorf("executing %q failed: %s", c.cmd, exitErr.Stderr)
+	} else if err != nil {
+		return nil, fmt.Errorf("executing command: %w", err)
 	}
 	return out, nil
-}
-
-func (j *Collector) executeCommand() ([]byte, error) {
-	return j.command.Output()
 }

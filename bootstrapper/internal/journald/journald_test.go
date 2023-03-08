@@ -8,18 +8,19 @@ package journald
 
 import (
 	"errors"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type stubJournaldCommand struct {
-	executeCommandOutput []byte
-	executeCommandError  error
+	OutputReturn []byte
+	OutputError  error
 }
 
-func (j *stubJournaldCommand) executeCommand() ([]byte, error) {
-	return j.executeCommandOutput, j.executeCommandError
+func (j *stubJournaldCommand) Output() ([]byte, error) {
+	return j.OutputReturn, j.OutputError
 }
 
 func TestCollect(t *testing.T) {
@@ -34,11 +35,15 @@ func TestCollect(t *testing.T) {
 			command: &stubJournaldCommand{},
 		},
 		"execution failed": {
-			command: &stubJournaldCommand{executeCommandError: someError},
+			command: &stubJournaldCommand{OutputError: someError},
+			wantErr: true,
+		},
+		"exit error": {
+			command: &stubJournaldCommand{OutputError: &exec.ExitError{}},
 			wantErr: true,
 		},
 		"output check": {
-			command:      &stubJournaldCommand{executeCommandOutput: []byte("asdf")},
+			command:      &stubJournaldCommand{OutputReturn: []byte("asdf")},
 			wantedOutput: []byte("asdf"),
 		},
 	}
@@ -47,7 +52,9 @@ func TestCollect(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := Collect(tc.command)
+			collector := Collector{cmd: tc.command}
+
+			out, err := collector.Collect()
 			if tc.wantErr {
 				assert.Error(err)
 			}
