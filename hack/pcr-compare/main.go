@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -108,7 +109,7 @@ func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M
 		var foundMismatch bool
 		var coloredValue string
 		var coloredWarnOnly string
-		if actualValue.Expected == expectedValue.Expected {
+		if bytes.Equal(actualValue.Expected, expectedValue.Expected) {
 			coloredValue = greenPrint(hex.EncodeToString(actualValue.Expected[:]))
 		} else {
 			coloredValue = redPrint(hex.EncodeToString(actualValue.Expected[:]))

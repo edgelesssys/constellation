@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -64,8 +65,14 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler, azur
 			return gcp.NewValidator(m, log)
 		}
 	case cloudprovider.QEMU:
-		newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
-			return qemu.NewValidator(m, log)
+		if tdx.Available() {
+			newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
+				return tdx.NewValidator(m, log)
+			}
+		} else {
+			newValidator = func(m measurements.M, _ idkeydigest.IDKeyDigests, _ bool, log *logger.Logger) atls.Validator {
+				return qemu.NewValidator(m, log)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("unknown cloud service provider: %q", csp)

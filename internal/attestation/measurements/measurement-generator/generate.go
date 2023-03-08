@@ -173,7 +173,7 @@ func verifyWithRekor(ctx context.Context, verifier rekorVerifier, hash string) e
 // byteArrayCompositeLit returns a *ast.CompositeLit representing a byte array literal.
 // The returned literal is of the form:
 // [32]byte{ 0x01, 0x02, 0x03, ... }.
-func byteArrayCompositeLit(hex [32]byte, pos token.Pos) *ast.CompositeLit {
+func byteArrayCompositeLit(hex []byte, pos token.Pos) *ast.CompositeLit {
 	var elts []ast.Expr
 	// calculate the absolute byte offsets of the elements
 	// given the starting position

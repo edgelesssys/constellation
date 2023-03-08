@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
@@ -92,7 +93,7 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 	oldExpected := v.pcrs[pcrIndex].Expected
 	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
 	v.pcrs[pcrIndex] = measurements.Measurement{
-		Expected: expectedPcr,
+		Expected: expectedPcr[:],
 		WarnOnly: v.pcrs[pcrIndex].WarnOnly,
 	}
 	return nil
@@ -153,7 +154,19 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	case cloudprovider.AWS:
 		v.validator = aws.NewValidator(v.pcrs, log)
 	case cloudprovider.QEMU:
-		v.validator = qemu.NewValidator(v.pcrs, log)
+		// get the length of a measurement to determine if we are verifying TDX or TPM quotes
+		lenMeasurements := 0
+		for _, m := range v.pcrs {
+			lenMeasurements = len(m.Expected)
+			break
+		}
+
+		// TDX measurements are 48 bytes long, TPM measurements are 32 bytes long
+		if lenMeasurements == 48 {
+			v.validator = tdx.NewValidator(v.pcrs, log)
+		} else {
+			v.validator = qemu.NewValidator(v.pcrs, log)
+		}
 	}
 }
 

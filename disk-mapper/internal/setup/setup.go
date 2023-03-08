@@ -25,6 +25,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -106,7 +107,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	}
 
 	// taint the node as initialized
-	if err := vtpm.MarkNodeAsBootstrapped(s.openTPM, clusterID); err != nil {
+	if err := initialize.MarkNodeAsBootstrapped(s.openTPM, clusterID); err != nil {
 		return err
 	}
 

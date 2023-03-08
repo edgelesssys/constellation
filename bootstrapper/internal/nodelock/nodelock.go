@@ -10,6 +10,7 @@ package nodelock
 import (
 	"sync"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 )
 
@@ -40,5 +41,5 @@ func (l *Lock) TryLockOnce(clusterID []byte) (bool, error) {
 		return false, nil
 	}
 
-	return true, vtpm.MarkNodeAsBootstrapped(l.tpm, clusterID)
+	return true, initialize.MarkNodeAsBootstrapped(l.tpm, clusterID)
 }
