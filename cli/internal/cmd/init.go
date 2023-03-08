@@ -292,9 +292,11 @@ func (i *initCmd) writeOutput(
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, fileHandler); err != nil {
-			return fmt.Errorf("merging kubeconfig: %w", err)
+			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
+			mergeConfig = false // Set to false so we don't print the wrong message below.
+		} else {
+			writeRow(tw, "Kubernetes configuration merged with default config", "")
 		}
-		writeRow(tw, "Kubernetes configuration merged with default config", "")
 	}
 
 	idFile.OwnerID = ownerID
