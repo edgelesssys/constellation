@@ -17,12 +17,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
 
 // Issuer returns the issuer for the given variant.
-func Issuer(variant oid.Getter, log *logger.Logger) (atls.Issuer, error) {
+func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error) {
 	switch variant {
 	case oid.AWSNitroTPM{}:
 		return aws.NewIssuer(log), nil
@@ -46,7 +46,7 @@ func Issuer(variant oid.Getter, log *logger.Logger) (atls.Issuer, error) {
 func Validator(
 	variant oid.Getter, measurements measurements.M,
 	idKeyDigest idkeydigest.IDKeyDigests, enfoceIDKeyDigest bool,
-	log *logger.Logger,
+	log vtpm.AttestationLogger,
 ) (atls.Validator, error) {
 	switch variant {
 	case oid.AWSNitroTPM{}:
