@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -156,23 +155,18 @@ func main() {
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
-		// TODO: Use Kernel CMD line to decide on attestation variant
 		var measurements measurements.M
-		if tdx.Available() {
+		if attestVariant.OID().Equal(oid.QEMUTDX{}.OID()) {
 			measurements, err = tdx.GetSelectedMeasurements(tdx.Open, []int{0, 1, 2, 3, 4})
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected RTMRs")
 			}
-			issuer = tdx.NewIssuer(log)
-
 			openDevice = openTDXGuestDevice
 		} else {
 			measurements, err = vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 			if err != nil {
 				log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 			}
-
-			issuer = qemu.NewIssuer(log)
 			openDevice = vtpm.OpenVTPM
 		}
 
