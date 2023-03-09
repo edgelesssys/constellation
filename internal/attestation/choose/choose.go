@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
 
@@ -34,6 +35,8 @@ func Issuer(variant oid.Getter, log attestation.Logger) (atls.Issuer, error) {
 		return gcp.NewIssuer(log), nil
 	case oid.QEMUVTPM{}:
 		return qemu.NewIssuer(log), nil
+	case oid.QEMUTDX{}:
+		return tdx.NewIssuer(log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeIssuer(oid.Dummy{}), nil
 	default:
@@ -58,6 +61,8 @@ func Validator(
 		return gcp.NewValidator(measurements, log), nil
 	case oid.QEMUVTPM{}:
 		return qemu.NewValidator(measurements, log), nil
+	case oid.QEMUTDX{}:
+		return tdx.NewValidator(measurements, log), nil
 	case oid.Dummy{}:
 		return atls.NewFakeValidator(oid.Dummy{}), nil
 	default:
