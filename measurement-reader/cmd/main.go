@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/sorted"
+	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tdx"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/tpm"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,12 +35,19 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to read TPM measurements")
 		}
+	case oid.QEMUTDX{}:
+		m, err = tdx.Measurements()
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to read Intel TDX measurements")
+		}
 	default:
 		log.With(zap.String("attestationVariant", variantString)).Fatalf("Unsupported attestation variant")
 	}
 
 	fmt.Println("Measurements:")
 	for _, measurement := range m {
-		fmt.Printf("\t%s : 0x%0X\n", measurement.Index, measurement.Value)
+		// -7 should ensure consistent padding across all current prefixes: PCR[xx], MRTD, RTMR[x].
+		// If the prefix gets longer somewhen in the future, this might need adjustment for consistent padding.
+		fmt.Printf("\t%-7s : 0x%0X\n", measurement.Index, measurement.Value)
 	}
 }
