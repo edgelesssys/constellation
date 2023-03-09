@@ -17,7 +17,6 @@
 /hack/check-licenses.sh @thomasten
 /hack/clidocgen @thomasten
 /hack/fetch-broken-e2e @katexochen
-/hack/image-measurement @daniel-weisse
 /hack/pseudo-version @malt3
 /hack/qemu-metadata-api @daniel-weisse
 /hack/remove-tf-providers @katexochen
