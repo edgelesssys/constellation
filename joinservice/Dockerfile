@@ -18,8 +18,6 @@ COPY go.mod ./
 COPY go.sum ./
 COPY ./operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.mod
 COPY ./operators/constellation-node-operator/api/go.mod ./operators/constellation-node-operator/api/go.sum
-# TODO: remove secret to mounting once dependencies are public/merged into mono-repo
-RUN --mount=type=secret,id=netrc,dst=/root/.netrc,required=true go mod download all
 
 # Copy Repo
 COPY . /constellation
