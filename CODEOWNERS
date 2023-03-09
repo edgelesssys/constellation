@@ -18,7 +18,6 @@
 /hack/clidocgen @thomasten
 /hack/fetch-broken-e2e @katexochen
 /hack/image-measurement @daniel-weisse
-/hack/pcr-compare @nirusu
 /hack/pcr-reader @daniel-weisse
 /hack/pseudo-version @malt3
 /hack/qemu-metadata-api @daniel-weisse
