@@ -25,8 +25,6 @@ go_library(
         "//internal/logger",
         "//internal/oid",
         "//internal/role",
-        "@com_github_google_go_tpm//tpm2",
-        "@com_github_google_go_tpm_tools//client",
         "@com_github_spf13_afero//:afero",
         "@org_uber_go_zap//:zap",
     ],

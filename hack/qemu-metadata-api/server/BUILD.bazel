@@ -8,7 +8,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//hack/qemu-metadata-api/virtwrapper",
-        "//internal/attestation/measurements",
         "//internal/cloud/metadata",
         "//internal/logger",
         "//internal/role",
@@ -24,7 +23,6 @@ go_test(
     tags = ["manual"],
     deps = [
         "//hack/qemu-metadata-api/virtwrapper",
-        "//internal/attestation/measurements",
         "//internal/cloud/metadata",
         "//internal/logger",
         "@com_github_stretchr_testify//assert",
