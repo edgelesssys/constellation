@@ -203,6 +203,10 @@ func (f *addFlags) validate(log *logger.Logger) error {
 		return fmt.Errorf("either --ref or --release must be set")
 	}
 
+	if f.kind == versionsapi.VersionKindUnknown {
+		return fmt.Errorf("unknown version kind %q", f.kind)
+	}
+
 	if f.release {
 		log.Debugf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
 		f.ref = versionsapi.ReleaseRef
@@ -236,15 +240,7 @@ func parseAddFlags(cmd *cobra.Command) (addFlags, error) {
 	if err != nil {
 		return addFlags{}, err
 	}
-	var kind versionsapi.VersionKind
-	switch kindFlag {
-	case "image":
-		kind = versionsapi.VersionKindImage
-	case "cli":
-		kind = versionsapi.VersionKindCLI
-	default:
-		return addFlags{}, fmt.Errorf("invalid kind %q", kind)
-	}
+	kind := versionsapi.VersionKindFromString(kindFlag)
 	version, err := cmd.Flags().GetString("version")
 	if err != nil {
 		return addFlags{}, err
