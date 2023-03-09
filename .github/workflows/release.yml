@@ -304,8 +304,6 @@ jobs:
     with:
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       runner: ${{ matrix.runner }}
-      test: "sonobuoy full"
-      kubernetesVersion: "v1.25"
       keepMeasurements: true
       osImage: ${{ inputs.version }}
 
