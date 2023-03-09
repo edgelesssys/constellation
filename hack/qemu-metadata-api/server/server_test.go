@@ -17,7 +17,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -284,87 +283,6 @@ func TestPostLog(t *testing.T) {
 	}
 }
 
-func TestExportPCRs(t *testing.T) {
-	defaultConnect := &stubConnect{
-		network: stubNetwork{
-			leases: []libvirt.NetworkDHCPLease{
-				{
-					IPaddr:   "192.0.100.1",
-					Hostname: "control-plane-0",
-				},
-			},
-		},
-	}
-
-	testCases := map[string]struct {
-		remoteAddr string
-		connect    *stubConnect
-		message    string
-		method     string
-		wantErr    bool
-	}{
-		"success": {
-			remoteAddr: "192.0.100.1:1234",
-			connect:    defaultConnect,
-			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
-		},
-		"incorrect method": {
-			remoteAddr: "192.0.100.1:1234",
-			connect:    defaultConnect,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
-			method:     http.MethodGet,
-			wantErr:    true,
-		},
-		"listAll error": {
-			remoteAddr: "192.0.100.1:1234",
-			connect: &stubConnect{
-				getNetworkErr: errors.New("error"),
-			},
-			message: mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
-			method:  http.MethodPost,
-			wantErr: true,
-		},
-		"invalid message": {
-			remoteAddr: "192.0.100.1:1234",
-			connect:    defaultConnect,
-			method:     http.MethodPost,
-			message:    "message",
-			wantErr:    true,
-		},
-		"invalid remote address": {
-			remoteAddr: "localhost",
-			connect:    defaultConnect,
-			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
-
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
-			require.NoError(err)
-			req.RemoteAddr = tc.remoteAddr
-
-			w := httptest.NewRecorder()
-			server.exportPCRs(w, req)
-
-			if tc.wantErr {
-				assert.NotEqual(http.StatusOK, w.Code)
-				return
-			}
-
-			assert.Equal(http.StatusOK, w.Code)
-		})
-	}
-}
-
 func TestInitSecretHash(t *testing.T) {
 	defaultConnect := &stubConnect{
 		network: stubNetwork{
@@ -415,13 +333,6 @@ func TestInitSecretHash(t *testing.T) {
 			assert.Equal(tc.wantHash, w.Body.String())
 		})
 	}
-}
-
-func mustMarshal(t *testing.T, v any) string {
-	t.Helper()
-	b, err := json.Marshal(v)
-	require.NoError(t, err)
-	return string(b)
 }
 
 type stubConnect struct {

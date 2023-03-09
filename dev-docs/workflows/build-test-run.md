@@ -82,22 +82,7 @@ Instructions on how to set it up can be found in the [QEMU README](qemu.md).
 
 In order to verify your cluster we describe a [verification workflow](https://docs.edgeless.systems/constellation/workflows/verify-cluster) in our official docs.
 Apart from that you can also reproduce some of the measurements described in the [docs](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements) locally.
-To do so we built a tool that creates a VM, collects the PCR values and reports them to you.
-To run the tool execute the following command in `/hack/image-measurement`:
-
-```sh
-go run . -path <image_path> -type <image_type>
-```
-
-`<image_path>` needs to point to a valid image file.
-The image can be either in raw or QEMU's `qcow2` format.
-This format is specified in the `<image_type>` argument.
-
-You can compare the values of PCR 4, 8 and 9 to the ones you are seeing in your `constellation-conf.yaml`.
-The PCR values depend on the image you specify in the `path` argument.
-Therefore, if you want to verify a cluster deployed with a release image you will have to download the images first.
-
-After collecting the measurements you can put them into your `constellation-conf.yaml` under the `measurements` key in order to enforce them.
+Use the provided scripts in `/image/measured-boot` to generated measurements for a built image. Measurements for release images are also available in our image API.
 
 # Dependency management
 
