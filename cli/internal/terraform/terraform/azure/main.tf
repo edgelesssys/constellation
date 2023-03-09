@@ -42,7 +42,7 @@ resource "random_password" "initSecret" {
 }
 
 resource "azurerm_attestation_provider" "attestation_provider" {
-  name                = format("%s-ap", var.name)
+  name                = format("%sap", var.name)
   resource_group_name = var.resource_group
   location            = var.location
 }
