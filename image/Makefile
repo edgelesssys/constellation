@@ -5,6 +5,7 @@ BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
 DEBUGD_BINARY                    ?= $(BASE_PATH)/../build/debugd
+MEASUREMENT_READER_BINARY        ?= $(BASE_PATH)/../build/measurement-reader
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 IMAGE_VERSION                    ?= v0.0.0
@@ -65,9 +66,11 @@ inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
 	cp $(DISK_MAPPER_BINARY) $(MKOSI_EXTRA)/usr/sbin/disk-mapper
+	cp $(MEASUREMENT_READER_BINARY) $(MKOSI_EXTRA)/usr/sbin/measurement-reader
 	if [ "$(DEBUG)" = "true" ]; then \
 		cp $(DEBUGD_BINARY) $(MKOSI_EXTRA)/usr/bin/debugd; \
 		rm -f $(MKOSI_EXTRA)/usr/bin/bootstrapper; \
+		rm -f $(MKOSI_EXTRA)/usr/bin/upgrade-agent; \
 	else \
 		cp $(BOOTSTRAPPER_BINARY) $(MKOSI_EXTRA)/usr/bin/bootstrapper; \
 		rm -f $(MKOSI_EXTRA)/usr/bin/debugd; \

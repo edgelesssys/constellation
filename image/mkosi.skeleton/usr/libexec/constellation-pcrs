@@ -3,12 +3,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-# This script reads the PCR state of the system
+# This script reads the measurements of the system
 # and prints the message to the serial console
 
 main() {
-  pcr_state="$(tpm2_pcrread sha256)"
-  echo -e "PCR state:\n${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+  pcr_state="$(/usr/sbin/measurement-reader)"
+  echo -e "${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
 }
 
 main
