@@ -28,7 +28,7 @@ add_custom_target(disk-mapper ALL
 # measurement-reader
 #
 add_custom_target(measurement-reader ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target measurement-reader .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --secret id=netrc,src=$ENV{HOME}/.netrc --build-arg PROJECT_VERSION="${PROJECT_VERSION}" -f Dockerfile.build --target measurement-reader .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS measurement-reader
 )
