@@ -44,9 +44,7 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/mod v0.8.0
 	gopkg.in/square/go-jose.v2 v2.6.0
-	gopkg.in/yaml.v3 v3.0.1
 	libvirt.org/go/libvirt v1.8010.0
-	libvirt.org/go/libvirtxml v1.8009.0
 )
 
 require (
@@ -258,6 +256,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm v2.17.0+incompatible // indirect
 	helm.sh/helm/v3 v3.11.1 // indirect
 	k8s.io/api v0.26.2 // indirect
