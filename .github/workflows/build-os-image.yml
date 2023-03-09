@@ -55,6 +55,7 @@ jobs:
       bootstrapper-sha256: ${{ steps.collect-hashes.outputs.bootstrapper-sha256 }}
       disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
       upgrade-agent-sha256: ${{ steps.collect-hashes.outputs.upgrade-agent-sha256 }}
+      measurement-reader-sha256: ${{ steps.collect-hashes.outputs.measurement-reader-sha256 }}
     steps:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
@@ -89,6 +90,11 @@ jobs:
         with:
           outputPath: ${{ github.workspace }}/build/upgrade-agent
 
+      - name: Build measurement-reader
+        uses: ./.github/actions/build_measurement_reader
+        with:
+          outputPath: ${{ github.workspace }}/build/measurement-reader
+
       - name: Upload dependencies
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         env:
@@ -99,6 +105,7 @@ jobs:
             ${{ github.workspace }}/build/${{ env.MAIN_BINARY }}
             ${{ github.workspace }}/build/disk-mapper
             ${{ github.workspace }}/build/upgrade-agent
+            ${{ github.workspace }}/build/measurement-reader
 
       - name: Collect hashes
         id: collect-hashes
@@ -108,6 +115,7 @@ jobs:
             echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
             echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
             echo "upgrade-agent-sha256=$(sha256sum upgrade-agent | head -c 64)"
+            echo "measurement-reader-sha256=$(sha256sum measurement-reader | head -c 64)"
           } | tee "$GITHUB_OUTPUT"
 
   build-settings:
@@ -260,12 +268,13 @@ jobs:
           name: dependencies
           path: ${{ github.workspace }}/build
 
-      - name: Mark bootstrapper, debugd, disk-mapper, and upgrade-agent as executable
+      - name: Mark bootstrapper, debugd, disk-mapper, measurement-reader, and upgrade-agent as executable
         run: |
           chmod +x ${{ github.workspace }}/build/bootstrapper || true
           chmod +x ${{ github.workspace }}/build/debugd || true
           chmod +x ${{ github.workspace }}/build/disk-mapper
           chmod +x ${{ github.workspace }}/build/upgrade-agent
+          chmod +x ${{ github.workspace }}/build/measurement-reader
 
       - name: Setup mkosi
         uses: ./.github/actions/setup_mkosi
@@ -291,6 +300,7 @@ jobs:
           DEBUGD_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
           UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
+          MEASUREMENT_READER_BINARY: ${{ github.workspace }}/build/measurement-reader
           DEBUG: ${{ (needs.build-settings.outputs.stream == 'debug') && 'true' || 'false' }}
           AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
@@ -843,6 +853,7 @@ jobs:
           ${{ needs.build-dependencies.outputs.bootstrapper-sha256 }} bootstrapper
           ${{ needs.build-dependencies.outputs.disk-mapper-sha256 }} disk-mapper
           ${{ needs.build-dependencies.outputs.upgrade-agent-sha256 }} upgrade-agent
+          ${{ needs.build-dependencies.outputs.measurement-reader-sha256 }} measurement-reader
           ${{ needs.make-os-image.outputs.image-raw-aws-sha256 }} aws/image.raw
           ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.raw.changelog
           ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.raw.manifest

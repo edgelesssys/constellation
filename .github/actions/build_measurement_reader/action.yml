@@ -1,0 +1,22 @@
+name: Build measurement-reader
+description: Build the Constellation measurement-reader binary
+
+inputs:
+  outputPath:
+    description: "Output path of the binary"
+    default: "./measurement-reader"
+    required: true
+
+# Linux runner only (Docker required)
+runs:
+  using: "composite"
+  steps:
+    - name: Build the measurement-reader
+      shell: bash
+      run: |
+        echo "::group::Build the measurement-reader"
+        mkdir -p build && cd build
+        cmake ..
+        make measurement-reader
+        mv -n measurement-reader "${{ inputs.outputPath }}"
+        echo "::endgroup::"
