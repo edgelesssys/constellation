@@ -12,7 +12,7 @@ import (
 	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -39,7 +39,7 @@ func main() {
 	case cloudprovider.GCP:
 		issuer = gcp.NewIssuer(log)
 	case cloudprovider.Azure:
-		issuer = azure.NewIssuer(log)
+		issuer = snp.NewIssuer(log) // TODO: dynamic selection
 	case cloudprovider.QEMU:
 		issuer = qemu.NewIssuer(log)
 	default:

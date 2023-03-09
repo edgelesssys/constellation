@@ -31,6 +31,8 @@ const (
 	ConstellationSaltKey = "salt"
 	// ConstellationVerifyServiceUserData is the user data that the verification service includes in the attestation.
 	ConstellationVerifyServiceUserData = "VerifyService"
+	// AttestationVariant is the name of the environment variable that contains the attestation variant.
+	AttestationVariant = "CONSTEL_ATTESTATION_VARIANT"
 
 	//
 	// Ports.
