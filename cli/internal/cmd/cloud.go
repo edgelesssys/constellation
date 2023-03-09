@@ -22,6 +22,7 @@ type cloudCreator interface {
 		ctx context.Context,
 		provider cloudprovider.Provider,
 		config *config.Config,
+		azurePolicyPatcher cloudcmd.PolicyPatcher,
 		insType string,
 		coordCount, nodeCount int,
 	) (clusterid.File, error)

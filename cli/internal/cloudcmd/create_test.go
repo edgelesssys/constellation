@@ -30,6 +30,7 @@ func TestCreator(t *testing.T) {
 		libvirt               *stubLibvirtRunner
 		provider              cloudprovider.Provider
 		config                *config.Config
+		policyPatcher         *stubPolicyPatcher
 		wantErr               bool
 		wantRollback          bool // Use only together with stubClients.
 		wantTerraformRollback bool // When libvirt fails, don't call into Terraform.
@@ -54,20 +55,30 @@ func TestCreator(t *testing.T) {
 			wantTerraformRollback: true,
 		},
 		"azure": {
-			tfClient: &stubTerraformClient{ip: ip},
-			provider: cloudprovider.Azure,
-			config:   config.Default(),
+			tfClient:      &stubTerraformClient{ip: ip},
+			provider:      cloudprovider.Azure,
+			config:        config.Default(),
+			policyPatcher: &stubPolicyPatcher{},
+		},
+		"azure new policy patch error": {
+			tfClient:      &stubTerraformClient{ip: ip},
+			provider:      cloudprovider.Azure,
+			config:        config.Default(),
+			policyPatcher: &stubPolicyPatcher{someErr},
+			wantErr:       true,
 		},
 		"azure newTerraformClient error": {
 			newTfClientErr: someErr,
 			provider:       cloudprovider.Azure,
 			config:         config.Default(),
+			policyPatcher:  &stubPolicyPatcher{},
 			wantErr:        true,
 		},
 		"azure create cluster error": {
 			tfClient:              &stubTerraformClient{createClusterErr: someErr},
 			provider:              cloudprovider.Azure,
 			config:                config.Default(),
+			policyPatcher:         &stubPolicyPatcher{},
 			wantErr:               true,
 			wantRollback:          true,
 			wantTerraformRollback: true,
@@ -133,7 +144,7 @@ func TestCreator(t *testing.T) {
 				},
 			}
 
-			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, "type", 2, 3)
+			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, tc.policyPatcher, "type", 2, 3)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -154,6 +165,14 @@ func TestCreator(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stubPolicyPatcher struct {
+	patchErr error
+}
+
+func (s stubPolicyPatcher) Patch(ctx context.Context, attestationURL, policy string) error {
+	return s.patchErr
 }
 
 func TestNormalizeAzureURIs(t *testing.T) {
