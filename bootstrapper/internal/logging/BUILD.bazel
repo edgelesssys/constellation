@@ -1,0 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "logging",
+    srcs = ["logger.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging",
+    visibility = ["//bootstrapper:__subpackages__"],
+)

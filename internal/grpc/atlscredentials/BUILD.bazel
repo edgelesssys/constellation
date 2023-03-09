@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "atlscredentials",
+    srcs = ["atlscredentials.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/atls",
+        "@org_golang_google_grpc//credentials",
+    ],
+)
+
+go_test(
+    name = "atlscredentials_test",
+    srcs = ["atlscredentials_test.go"],
+    embed = [":atlscredentials"],
+    deps = [
+        "//bootstrapper/initproto",
+        "//internal/atls",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//test/bufconn",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

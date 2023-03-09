@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "dialer",
+    srcs = ["dialer.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/grpc/dialer",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/atls",
+        "//internal/grpc/atlscredentials",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure",
+    ],
+)
+
+go_test(
+    name = "dialer_test",
+    srcs = ["dialer_test.go"],
+    embed = [":dialer"],
+    deps = [
+        "//internal/atls",
+        "//internal/grpc/atlscredentials",
+        "//internal/grpc/testdialer",
+        "//internal/oid",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//test/grpc_testing",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

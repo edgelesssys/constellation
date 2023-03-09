@@ -13,8 +13,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	tpmclient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm-tools/simulator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ func TestGetAttestationKey(t *testing.T) {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	tpm, err := simulator.Get()
+	tpm, err := simulator.OpenSimulatedTPM()
 	require.NoError(err)
 	defer tpm.Close()
 
@@ -84,7 +84,7 @@ func TestGetInstanceInfo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			tpm, err := simulator.Get()
+			tpm, err := simulator.OpenSimulatedTPM()
 			assert.NoError(err)
 			defer tpm.Close()
 

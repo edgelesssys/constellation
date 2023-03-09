@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "openstack",
+    srcs = [
+        "api.go",
+        "imds.go",
+        "openstack.go",
+        "plumbing.go",
+        "wrappers.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/openstack",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud",
+        "//internal/cloud/metadata",
+        "//internal/role",
+        "@com_github_gophercloud_gophercloud//:gophercloud",
+        "@com_github_gophercloud_gophercloud//openstack/compute/v2/servers",
+        "@com_github_gophercloud_gophercloud//openstack/networking/v2/subnets",
+        "@com_github_gophercloud_gophercloud//pagination",
+        "@com_github_gophercloud_utils//openstack/clientconfig",
+    ],
+)
+
+go_test(
+    name = "openstack_test",
+    srcs = [
+        "api_test.go",
+        "imds_test.go",
+        "openstack_test.go",
+        "plumbing_test.go",
+    ],
+    embed = [":openstack"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/role",
+        "@com_github_gophercloud_gophercloud//:gophercloud",
+        "@com_github_gophercloud_gophercloud//openstack/compute/v2/servers",
+        "@com_github_gophercloud_gophercloud//openstack/networking/v2/subnets",
+        "@com_github_gophercloud_gophercloud//pagination",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

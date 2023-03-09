@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "azure",
+    srcs = ["azure.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/kms/azure",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/kms/kms",
+        "//internal/kms/kms/internal",
+        "//internal/kms/uri",
+        "@com_github_hashicorp_go_kms_wrapping_wrappers_azurekeyvault_v2//:azurekeyvault",
+    ],
+)

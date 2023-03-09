@@ -1,0 +1,56 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "bootstrapper_lib",
+    srcs = [
+        "main.go",
+        "run.go",
+        "test.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/cmd/bootstrapper",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//bootstrapper/internal/clean",
+        "//bootstrapper/internal/diskencryption",
+        "//bootstrapper/internal/helm",
+        "//bootstrapper/internal/initserver",
+        "//bootstrapper/internal/joinclient",
+        "//bootstrapper/internal/kubernetes",
+        "//bootstrapper/internal/kubernetes/k8sapi",
+        "//bootstrapper/internal/kubernetes/kubewaiter",
+        "//bootstrapper/internal/logging",
+        "//bootstrapper/internal/nodelock",
+        "//internal/atls",
+        "//internal/attestation/choose",
+        "//internal/attestation/simulator",
+        "//internal/attestation/vtpm",
+        "//internal/cloud/aws",
+        "//internal/cloud/azure",
+        "//internal/cloud/cloudprovider",
+        "//internal/cloud/gcp",
+        "//internal/cloud/metadata",
+        "//internal/cloud/qemu",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/grpc/dialer",
+        "//internal/kubernetes/kubectl",
+        "//internal/logger",
+        "//internal/oid",
+        "//internal/role",
+        "//internal/versions/components",
+        "@com_github_spf13_afero//:afero",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_binary(
+    name = "bootstrapper",
+    embed = [":bootstrapper_lib"],
+    # keep
+    gotags = select({
+        "//bazel/settings:tpm_simulator_enabled": [],
+        "//conditions:default": ["disable_tpm_simulator"],
+    }),
+    visibility = ["//visibility:public"],
+)

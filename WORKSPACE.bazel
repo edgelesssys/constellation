@@ -2,17 +2,6 @@ load("//toolchains:java_deps.bzl", "java_deps")
 
 java_deps()
 
-# proto toolchain
-load("//toolchains:proto_deps.bzl", "proto_deps")
-
-proto_deps()
-
-load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-
-rules_proto_dependencies()
-
-rules_proto_toolchains()
-
 # Go toolchain
 load("//toolchains:go_rules_deps.bzl", "go_deps")
 
@@ -32,6 +21,17 @@ go_register_toolchains(version = "1.20.2")
 gazelle_dependencies(go_repository_default_config = "//:WORKSPACE.bazel")
 
 # gazelle:repo bazel_gazelle
+
+# proto toolchain
+load("//toolchains:proto_deps.bzl", "proto_deps")
+
+proto_deps()
+
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
+rules_proto_dependencies()
+
+rules_proto_toolchains()
 
 # dnf / rpm toolchain
 
@@ -60,7 +60,18 @@ zig_cc_deps()
 
 load("@bazel-zig-cc//toolchain:defs.bzl", zig_toolchains = "toolchains")
 
-zig_toolchains()
+# See https://ziglang.org/download/ for the latest releases
+
+zig_toolchains(
+    host_platform_sha256 = {
+        "linux-aarch64": "b759a11993949531c692ccfc3d1a004b14df714a7a3515fe0b5c90c9a7631d61",
+        "linux-x86_64": "028dad5189e02b2058679b64df16e854a1c1ca0e6044b334d4f3be6e35544f07",
+        "macos-aarch64": "5709c27d581988f50f5e6fd5b69d92707787e803a1d04992e290b764617664e6",
+        "macos-x86_64": "88d194adb2f3c1a9edbb4a24d018007d5f827a57d1d26b2d9f3459236da1b7b6",
+        "windows-x86_64": "75e510bda108e4d78b89d5d1d09e70ea8595fac7c43b5611f280668881adb09d",
+    },
+    version = "0.11.0-dev.1638+7199d7c77",
+)
 
 register_toolchains(
     "@zig_sdk//libc_aware/toolchain:linux_amd64_gnu.2.34",
@@ -75,6 +86,29 @@ register_toolchains(
     "@zig_sdk//toolchain:darwin_arm64",
     "@zig_sdk//toolchain:windows_amd64",
 )
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rules_foreign_cc",
+    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
+    strip_prefix = "rules_foreign_cc-0.9.0",
+    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
+)
+
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+
+# This sets up some common toolchains for building targets. For more details, please see
+# https://bazelbuild.github.io/rules_foreign_cc/0.9.0/flatten.html#rules_foreign_cc_dependencies
+rules_foreign_cc_dependencies()
+
+load("//3rdparty/bazel/org_openssl:openssl_repositories.bzl", "openssl_repositories")
+
+openssl_repositories()
+
+load("//3rdparty/bazel/org_openssl:openssl_setup.bzl", "openssl_setup")
+
+openssl_setup()
 
 # Packaging rules (tar)
 load("//toolchains:pkg_deps.bzl", "pkg_deps")

@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubernetesca",
+    srcs = ["kubernetesca.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetesca",
+    visibility = ["//joinservice:__subpackages__"],
+    deps = [
+        "//internal/crypto",
+        "//internal/file",
+        "//internal/logger",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+    ],
+)
+
+go_test(
+    name = "kubernetesca_test",
+    srcs = ["kubernetesca_test.go"],
+    embed = [":kubernetesca"],
+    deps = [
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

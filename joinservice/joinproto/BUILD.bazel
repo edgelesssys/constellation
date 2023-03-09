@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "joinproto_proto",
+    srcs = ["join.proto"],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "joinproto_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/joinproto",
+    proto = ":joinproto_proto",
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "joinproto",
+    embed = [":joinproto_go_proto"],
+    importpath = "github.com/edgelesssys/constellation/v2/joinservice/joinproto",
+    visibility = ["//visibility:public"],
+)

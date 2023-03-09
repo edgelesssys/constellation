@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "constants",
+    srcs = [
+        "constants.go",
+        # keep
+        "enterprise.go",
+        # keep
+        "oss.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/constants",
+    visibility = ["//:__subpackages__"],
+    x_defs = {
+        "commit": "{STABLE_STAMP_COMMIT}",
+        "state": "{STABLE_STAMP_STATE}",
+        "timestamp": "{STABLE_STAMP_TIME}",
+        "versionInfo": "{STABLE_STAMP_VERSION}",
+    },
+)

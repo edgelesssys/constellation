@@ -2,14 +2,23 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazeldnf//:def.bzl", "bazeldnf")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 
-# gazelle:prefix github.com/edgelesssys/constellation
+# gazelle:map_kind go_test go_test //bazel/go:go_test.bzl
+# gazelle:prefix github.com/edgelesssys/constellation/v2
 gazelle(name = "gazelle")
+
+gazelle(
+    name = "gazelle-check",
+    command = "fix",
+    mode = "diff",
+)
 
 gazelle(
     name = "gazelle-update-repos",
     args = [
         "-from_file=go.work",
         "-to_macro=toolchains/go_module_deps.bzl%go_dependencies",
+        "-build_file_proto_mode=disable_global",
+        "-build_file_generation=on",
         "-prune",
     ],
     command = "update-repos",

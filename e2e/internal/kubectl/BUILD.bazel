@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "kubectl",
+    srcs = ["kubectl.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/e2e/internal/kubectl",
+    visibility = ["//e2e:__subpackages__"],
+    deps = [
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//tools/clientcmd",
+    ],
+)

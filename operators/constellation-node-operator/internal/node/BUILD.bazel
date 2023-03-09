@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "node",
+    srcs = ["node.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/node",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@io_k8s_api//core/v1:core",
+    ],
+)
+
+go_test(
+    name = "node_test",
+    srcs = ["node_test.go"],
+    embed = [":node"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+    ],
+)

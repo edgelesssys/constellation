@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cmd",
+    srcs = [
+        "deploy.go",
+        "root.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/cdbg/cmd",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//debugd/internal/debugd",
+        "//debugd/internal/debugd/logcollector",
+        "//debugd/internal/filetransfer",
+        "//debugd/internal/filetransfer/streamer",
+        "//debugd/service",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_spf13_cobra//:cobra",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure",
+    ],
+)

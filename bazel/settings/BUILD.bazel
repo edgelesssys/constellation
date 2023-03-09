@@ -1,0 +1,35 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+
+bool_flag(
+    # tpm_simulator is used to decide if the TPM simulator should be enabled
+    # and linked into the build.
+    #
+    # You can set enable at the command line with "$ bazel build
+    # --//bazel/settings:tpm_simulator ..."
+    # or in a .bazelrc file with "build --//bazel/settings:tpm_simulator".
+    # for details.
+    name = "tpm_simulator",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "tpm_simulator_enabled",
+    flag_values = {":tpm_simulator": "True"},
+    visibility = ["//visibility:public"],
+)
+
+string_flag(
+    # cryptsetup_provider is used to decide if you want to link against the
+    # cryptsetup library provided by the host system or the one provided by
+    # the Fedora RPMs.
+    # You can set this at the command line with "$ bazel build
+    # --//bazel/settings:cryptsetup_provider ..."
+    # or in a .bazelrc file with "build --//bazel/settings:cryptsetup_provider".
+    # for details.
+    name = "cryptsetup_provider",
+    build_setting_default = "fedora_rpm",
+    values = [
+        "fedora_rpm",
+        "host",
+    ],
+)

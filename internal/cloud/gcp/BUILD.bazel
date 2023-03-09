@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "gcp",
+    srcs = [
+        "gcp.go",
+        "interface.go",
+        "logger.go",
+        "wrappers.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/gcp",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud",
+        "//internal/cloud/gcpshared",
+        "//internal/cloud/metadata",
+        "//internal/role",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_google_cloud_go_compute//apiv1",
+        "@com_google_cloud_go_compute//apiv1/computepb",
+        "@com_google_cloud_go_compute_metadata//:metadata",
+        "@com_google_cloud_go_logging//:logging",
+        "@org_golang_google_api//iterator",
+        "@org_golang_google_protobuf//proto",
+    ],
+)
+
+go_test(
+    name = "gcp_test",
+    srcs = ["gcp_test.go"],
+    embed = [":gcp"],
+    deps = [
+        "//internal/cloud",
+        "//internal/cloud/metadata",
+        "//internal/role",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_compute//apiv1/computepb",
+        "@org_golang_google_api//iterator",
+        "@org_golang_google_protobuf//proto",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

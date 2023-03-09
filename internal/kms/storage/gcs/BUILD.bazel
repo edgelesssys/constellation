@@ -1,0 +1,26 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "gcs",
+    srcs = ["gcs.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/storage/gcs",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/kms/storage",
+        "//internal/kms/uri",
+        "@com_google_cloud_go_storage//:storage",
+        "@org_golang_google_api//option",
+    ],
+)
+
+go_test(
+    name = "gcs_test",
+    srcs = ["gcs_test.go"],
+    embed = [":gcs"],
+    deps = [
+        "//internal/kms/storage",
+        "@com_github_stretchr_testify//assert",
+        "@com_google_cloud_go_storage//:storage",
+    ],
+)

@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "azureblob",
+    srcs = ["azureblob.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/storage/azureblob",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/kms/config",
+        "//internal/kms/storage",
+        "//internal/kms/uri",
+        "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
+        "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//:azblob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//bloberror",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//container",
+    ],
+)
+
+go_test(
+    name = "azureblob_test",
+    srcs = ["azureblob_test.go"],
+    embed = [":azureblob"],
+    deps = [
+        "//internal/kms/storage",
+        "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//:azblob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blob",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//bloberror",
+        "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//container",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

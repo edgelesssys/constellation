@@ -1,0 +1,49 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "k8sapi",
+    srcs = [
+        "k8sapi.go",
+        "k8sutil.go",
+        "kubeadm_config.go",
+        "systemd.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = [
+        "//bootstrapper/internal/certificate",
+        "//bootstrapper/internal/kubernetes/k8sapi/resources",
+        "//internal/constants",
+        "//internal/crypto",
+        "//internal/file",
+        "//internal/installer",
+        "//internal/kubernetes",
+        "//internal/logger",
+        "//internal/role",
+        "//internal/versions/components",
+        "@com_github_coreos_go_systemd_v22//dbus",
+        "@com_github_spf13_afero//:afero",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apiserver//pkg/authentication/user",
+        "@io_k8s_kubelet//config/v1beta1",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/constants",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "k8sapi_test",
+    srcs = ["kubeadm_config_test.go"],
+    embed = [":k8sapi"],
+    deps = [
+        "//internal/kubernetes",
+        "//internal/versions",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/util",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

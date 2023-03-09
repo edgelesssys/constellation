@@ -1,0 +1,12 @@
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -95,6 +95,9 @@
+         "stream_helper.h",
+         "typedparams.go",
+     ],
++    cdeps = [
++        "@//rpm:libvirt",
++    ],
+     cgo = True,
+     importpath = "libvirt.org/go/libvirt",
+     visibility = ["//visibility:public"],

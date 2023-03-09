@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "certificate",
+    srcs = ["certificate.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = ["@io_k8s_kubernetes//cmd/kubeadm/app/constants"],
+)

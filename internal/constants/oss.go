@@ -17,3 +17,6 @@ b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 
 // VersionBuild is the category of the current build.
 const VersionBuild = "Open-source software build; AGPL-3.0-only applies"
+
+// Edition is the edition of the CLI.
+const Edition = "Community"

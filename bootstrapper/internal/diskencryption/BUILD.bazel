@@ -1,0 +1,33 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
+
+go_library(
+    name = "diskencryption",
+    srcs = ["diskencryption.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = [
+        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "diskencryption_test",
+    srcs = ["diskencryption_test.go"],
+    embed = [":diskencryption"],
+    # keep
+    tags = ["manual"],
+    deps = [
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)
+
+go_ld_test(
+    name = "diskencryption_ld_test",
+    src = "diskencryption_test",
+    ld = "//rpm:ld",
+)

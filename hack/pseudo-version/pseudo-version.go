@@ -22,12 +22,14 @@ import (
 func main() {
 	printSemVer := flag.Bool("semantic-version", false, "Only print semantic version")
 	printTimestamp := flag.Bool("print-timestamp", false, "Only print timestamp")
+	timestampFormat := flag.String("timestamp-format", "20060102150405", "Timestamp format")
 	printBranch := flag.Bool("print-branch", false, "Only print branch name")
 	printReleaseVersion := flag.Bool("print-release-branch", false, "Only print release branch version")
 	major := flag.String("major", "v0", "Optional major version")
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
 	revision := flag.String("revision", "", "Optional revision (git commit hash)")
+	skipV := flag.Bool("skip-v", false, "Skip 'v' prefix in version")
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
@@ -78,12 +80,15 @@ func main() {
 	}
 
 	version := module.PseudoVersion(*major, *base, headTime, *revision)
+	if *skipV {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	switch {
 	case *printSemVer:
 		fmt.Println(*base)
 	case *printTimestamp:
-		fmt.Println(headTime.Format("20060102150405"))
+		fmt.Println(headTime.Format(*timestampFormat))
 	case *printBranch:
 		fmt.Println(parsedBranch)
 	case *printReleaseVersion:

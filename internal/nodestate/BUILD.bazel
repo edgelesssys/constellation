@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "nodestate",
+    srcs = ["nodestate.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/nodestate",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/file",
+        "//internal/role",
+    ],
+)
+
+go_test(
+    name = "nodestate_test",
+    srcs = ["nodestate_test.go"],
+    embed = [":nodestate"],
+    deps = [
+        "//internal/file",
+        "//internal/role",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

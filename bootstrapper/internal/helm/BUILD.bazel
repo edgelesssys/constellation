@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "helm",
+    srcs = ["helm.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = [
+        "//bootstrapper/internal/kubernetes/k8sapi",
+        "//internal/constants",
+        "//internal/deploy/helm",
+        "//internal/logger",
+        "//internal/retry",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/util/wait",
+        "@org_uber_go_zap//:zap",
+        "@sh_helm_helm_v3//pkg/action",
+        "@sh_helm_helm_v3//pkg/chart",
+        "@sh_helm_helm_v3//pkg/chart/loader",
+        "@sh_helm_helm_v3//pkg/cli",
+    ],
+)
+
+go_test(
+    name = "helm_test",
+    srcs = ["helm_test.go"],
+    embed = [":helm"],
+)

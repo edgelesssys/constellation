@@ -12,8 +12,9 @@ import (
 	"runtime/debug"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 func TestVersionCmd(t *testing.T) {
@@ -22,6 +23,7 @@ func TestVersionCmd(t *testing.T) {
 	cmd := NewVersionCmd()
 	b := &bytes.Buffer{}
 	cmd.SetOut(b)
+	cmd.SetArgs([]string{})
 
 	err := cmd.Execute()
 	assert.NoError(err)

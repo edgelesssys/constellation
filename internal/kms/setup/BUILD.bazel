@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "setup",
+    srcs = ["setup.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kms/setup",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/kms/kms",
+        "//internal/kms/kms/aws",
+        "//internal/kms/kms/azure",
+        "//internal/kms/kms/cluster",
+        "//internal/kms/kms/gcp",
+        "//internal/kms/storage/awss3",
+        "//internal/kms/storage/azureblob",
+        "//internal/kms/storage/gcs",
+        "//internal/kms/uri",
+    ],
+)
+
+go_test(
+    name = "setup_test",
+    srcs = ["setup_test.go"],
+    embed = [":setup"],
+    deps = [
+        "//internal/kms/uri",
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

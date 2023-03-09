@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubernetes",
+    srcs = [
+        "configmaps.go",
+        "kubernetes.go",
+        "marshal.go",
+        "secrets.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/kubernetes",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/versions/components",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/serializer",
+        "@io_k8s_apimachinery//pkg/runtime/serializer/json",
+        "@io_k8s_client_go//kubernetes/scheme",
+    ],
+)
+
+go_test(
+    name = "kubernetes_test",
+    srcs = [
+        "configmaps_test.go",
+        "marshal_test.go",
+        "secrets_test.go",
+    ],
+    embed = [":kubernetes"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@org_golang_google_protobuf//proto",
+    ],
+)

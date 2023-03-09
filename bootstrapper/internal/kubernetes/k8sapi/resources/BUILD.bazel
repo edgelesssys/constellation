@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "resources",
+    srcs = [
+        "auditpolicy.go",
+        "konnectivity.go",
+        "resources.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources",
+    visibility = ["//bootstrapper:__subpackages__"],
+    deps = [
+        "//bootstrapper/internal/certificate",
+        "//internal/kubernetes",
+        "//internal/versions",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/util/intstr",
+        "@io_k8s_apiserver//pkg/apis/apiserver",
+        "@io_k8s_apiserver//pkg/apis/audit/v1:audit",
+    ],
+)
+
+go_test(
+    name = "resources_test",
+    srcs = ["auditpolicy_test.go"],
+    embed = [":resources"],
+    deps = [
+        "//internal/kubernetes",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

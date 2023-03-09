@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "choose",
+    srcs = ["choose.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/choose",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/atls",
+        "//internal/attestation/aws",
+        "//internal/attestation/azure/snp",
+        "//internal/attestation/azure/trustedlaunch",
+        "//internal/attestation/gcp",
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/attestation/qemu",
+        "//internal/attestation/vtpm",
+        "//internal/oid",
+    ],
+)
+
+go_test(
+    name = "choose_test",
+    srcs = ["choose_test.go"],
+    embed = [":choose"],
+    deps = [
+        "//internal/oid",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

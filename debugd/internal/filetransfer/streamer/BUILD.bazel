@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "streamer",
+    srcs = ["streamer.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer",
+    visibility = ["//debugd:__subpackages__"],
+    deps = [
+        "//debugd/service",
+        "@com_github_schollz_progressbar_v3//:progressbar",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "streamer_test",
+    srcs = ["streamer_test.go"],
+    embed = [":streamer"],
+    deps = [
+        "//debugd/service",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "controlplane",
+    srcs = ["controlplane.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/controlplane",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//operators/constellation-node-operator/internal/node",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
+
+go_test(
+    name = "controlplane_test",
+    srcs = ["controlplane_test.go"],
+    embed = [":controlplane"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)

@@ -1,0 +1,33 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "server",
+    srcs = ["server.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/upgrade-agent/internal/server",
+    visibility = ["//upgrade-agent:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/file",
+        "//internal/installer",
+        "//internal/logger",
+        "//internal/versions/components",
+        "//upgrade-agent/upgradeproto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_golang_x_mod//semver",
+    ],
+)
+
+go_test(
+    name = "server_test",
+    srcs = ["server_test.go"],
+    embed = [":server"],
+    deps = [
+        "//internal/versions/components",
+        "//upgrade-agent/upgradeproto",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

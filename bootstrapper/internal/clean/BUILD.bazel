@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "clean",
+    srcs = ["clean.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/clean",
+    visibility = ["//bootstrapper:__subpackages__"],
+)
+
+go_test(
+    name = "clean_test",
+    srcs = ["clean_test.go"],
+    embed = [":clean"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

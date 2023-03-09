@@ -2,6 +2,8 @@
 (pkgs.buildFHSUserEnv {
   name = "bazel";
   targetPkgs = pkgs: [
+    pkgs.git
+    pkgs.go
     pkgs.bazel_6
     pkgs.glibc
     pkgs.gcc

@@ -1,0 +1,48 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "snp",
+    srcs = [
+        "errors.go",
+        "imds.go",
+        "issuer.go",
+        "snp.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/attestation/vtpm",
+        "//internal/crypto",
+        "//internal/oid",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)
+
+go_test(
+    name = "snp_test",
+    srcs = [
+        "issuer_test.go",
+        "validator_test.go",
+    ],
+    embed = [":snp"],
+    # keep
+    gotags = select({
+        "//bazel/settings:tpm_simulator_enabled": [],
+        "//conditions:default": ["disable_tpm_simulator"],
+    }),
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/simulator",
+        "//internal/attestation/vtpm",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -16,7 +16,7 @@ runs:
       run: |
         echo "::group::Build the bootstrapper"
         mkdir -p build && cd build
-        cmake ..
+        cmake -DBAZEL:STRING=bazelisk ..
         make bootstrapper
         mv -n bootstrapper "${{ inputs.outputPath }}"
         echo "::endgroup::"

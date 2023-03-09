@@ -121,7 +121,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			confToWrite: func() *Config { // valid config with all, but clientSecretValue
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
-				c.Image = "v0.0.0"
+				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -140,7 +140,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			confToWrite: func() *Config {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
-				c.Image = "v0.0.0"
+				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -231,7 +231,7 @@ func TestValidate(t *testing.T) {
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.Image = "v0.0.0"
+				cnf.Image = "v" + constants.VersionInfo()
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
@@ -260,7 +260,7 @@ func TestValidate(t *testing.T) {
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.Image = "v0.0.0"
+				cnf.Image = "v" + constants.VersionInfo()
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"
