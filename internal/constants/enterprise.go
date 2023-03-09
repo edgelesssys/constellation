@@ -19,4 +19,4 @@ JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 const VersionBuild = "Enterprise build; see documentation for license agreement"
 
 // Edition is the edition of the CLI.
-const Edition = "Community"
+const Edition = "Enterprise"
