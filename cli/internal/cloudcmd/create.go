@@ -12,14 +12,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"runtime"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/attestation/attestation"
+	azpolicy "github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
@@ -246,19 +249,38 @@ type policyPatcher struct{}
 // Patch updates the attestation policy to the base64-encoded attestation policy JWT for the given attestation URL.
 // https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#next-steps
 func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string) error {
-	// very, very hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
+	// hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
 	// or the Go SDK gets updated to a recent API version.
 	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
-	cmd := exec.CommandContext(ctx,
-		"az", "rest",
-		"--method", "put",
-		"--url", fmt.Sprintf("%s/policies/AzureGuest?api-version=2022-08-01", attestationURL),
-		"--resource", "https://attest.azure.net",
-		"--body", p.encodeAttestationPolicy(policy),
-	)
-	out, err := cmd.CombinedOutput()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return fmt.Errorf("update attestation policy: %w (%s)", err, out)
+		return fmt.Errorf("failed to create default Azure credentials: %w", err)
+	}
+	token, err := cred.GetToken(context.Background(), azpolicy.TokenRequestOptions{
+		Scopes: []string{"https://attest.azure.net/.default"},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create default Azure credentials: %w", err)
+	}
+
+	client := attestation.NewPolicyClient()
+
+	// azureGuest is the id for the "Azure VM" attestation type. Other types are documented here:
+	// https://learn.microsoft.com/en-us/rest/api/attestation/policy/set
+	req, err := client.SetPreparer(context.Background(), attestationURL, "azureGuest", p.encodeAttestationPolicy(constants.EncodedAzureMAAPolicy))
+	req.Header.Set("Authorization", "Bearer "+token.Token)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	res, err := client.Send(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update attestation policy: %s", res.Status)
 	}
 
 	return nil
