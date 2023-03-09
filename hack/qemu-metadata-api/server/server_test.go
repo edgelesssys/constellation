@@ -335,13 +335,6 @@ func TestInitSecretHash(t *testing.T) {
 	}
 }
 
-func mustMarshal(t *testing.T, v any) string {
-	t.Helper()
-	b, err := json.Marshal(v)
-	require.NoError(t, err)
-	return string(b)
-}
-
 type stubConnect struct {
 	network       stubNetwork
 	getNetworkErr error
