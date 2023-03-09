@@ -274,7 +274,7 @@ func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 
 		addrs, err := i.Addrs()
 		if err != nil {
-			log.Warnf("Failed to retrieve interface address", zap.String("interface", i.Name))
+			log.Warnf("Failed to retrieve interface addresses", zap.String("interface", i.Name))
 			continue
 		}
 		for _, addr := range addrs {
