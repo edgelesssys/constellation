@@ -335,8 +335,8 @@ func TestCreateCluster(t *testing.T) {
 		},
 		"no attestation url": {
 			pathBase: "terraform",
-			provider: cloudprovider.QEMU,
-			vars:     qemuVars,
+			provider: cloudprovider.Azure,
+			vars:     qemuVars, // works for mocking azure vars
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
@@ -349,8 +349,8 @@ func TestCreateCluster(t *testing.T) {
 		},
 		"attestation url has wrong type": {
 			pathBase: "terraform",
-			provider: cloudprovider.QEMU,
-			vars:     qemuVars,
+			provider: cloudprovider.Azure,
+			vars:     qemuVars, // works for mocking azure vars
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
