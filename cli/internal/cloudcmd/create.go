@@ -56,7 +56,7 @@ func NewCreator(out io.Writer) *Creator {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, insType string, controlPlaneCount, workerCount int,
+func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, azurePolicyPatcher PolicyPatcher, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
 	image, err := c.image.FetchReference(ctx, config)
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
+		return c.createAzure(ctx, cl, config, azurePolicyPatcher, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.OpenStack:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
@@ -185,7 +185,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
-	insType string, controlPlaneCount, workerCount int, image string,
+	patcher PolicyPatcher, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -217,19 +217,9 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
-	// very, very hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
-	// or the Go SDK gets updated to a recent API version.
-	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
-	cmd := exec.CommandContext(ctx,
-		"az", "rest",
-		"--method", "put",
-		"--url", fmt.Sprintf("%s/policies/AzureGuest?api-version=2022-08-01", tfOutput.AttestationURL),
-		"--resource", "https://attest.azure.net",
-		"--body", encodeAttestationPolicy(constants.EncodedAzureMAAPolicy),
-	)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return clusterid.File{}, fmt.Errorf("update attestation policy: %w (%s)", err, out)
+	// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
+	if err := patcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
+		return clusterid.File{}, err
 	}
 
 	return clusterid.File{
@@ -241,9 +231,42 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 	}, nil
 }
 
+// PolicyPatcher interacts with Azure to update the attestation policy.
+type PolicyPatcher interface {
+	Patch(ctx context.Context, attestationURL, policy string) error
+}
+
+// NewPolicyPatcher returns a new PolicyPatcher.
+func NewPolicyPatcher() PolicyPatcher {
+	return policyPatcher{}
+}
+
+type policyPatcher struct{}
+
+// Patch updates the attestation policy to the base64-encoded attestation policy JWT for the given attestation URL.
+// https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#next-steps
+func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string) error {
+	// very, very hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
+	// or the Go SDK gets updated to a recent API version.
+	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
+	cmd := exec.CommandContext(ctx,
+		"az", "rest",
+		"--method", "put",
+		"--url", fmt.Sprintf("%s/policies/AzureGuest?api-version=2022-08-01", attestationURL),
+		"--resource", "https://attest.azure.net",
+		"--body", p.encodeAttestationPolicy(policy),
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("update attestation policy: %w (%s)", err, out)
+	}
+
+	return nil
+}
+
 // encodeAttestationPolicy encodes the base64-encoded attestation policy in the JWS format specified here:
 // https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#creating-the-policy-file-in-json-web-signature-format
-func encodeAttestationPolicy(encodedPolicy string) string {
+func (p policyPatcher) encodeAttestationPolicy(encodedPolicy string) string {
 	header := `{"alg":"none"}`
 	payload := fmt.Sprintf(`{"AttestationPolicy": "%s"}`, encodedPolicy)
 
