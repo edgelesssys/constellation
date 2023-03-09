@@ -31,9 +31,9 @@ def openssl_repositories():
     maybe(
         http_archive,
         name = "rules_perl",
-        sha256 = "391edb08802860ba733d402c6376cfe1002b598b90d2240d9d302ecce2289a64",
-        strip_prefix = "rules_perl-7f10dada09fcba1dc79a6a91da2facc25e72bd7d",
+        sha256 = "24957cea0a43ee70bff9b78256698a0a11e89455483b30b4c41d1f6bfd20d269",
+        strip_prefix = "rules_perl-db026ffa0d89fdff97de0c27199d84bd2c3b696c",
         urls = [
-            "https://github.com/bazelbuild/rules_perl/archive/7f10dada09fcba1dc79a6a91da2facc25e72bd7d.tar.gz",
+            "https://github.com/malt3/rules_perl/archive/db026ffa0d89fdff97de0c27199d84bd2c3b696c.tar.gz",
         ],
     )
