@@ -37,7 +37,7 @@ ENV SHELL=/bin/bash
 # need to  be escaped with additional \[ and \], see [2].
 # [1]: https://stackoverflow.com/a/33206814/2306355
 # [2]: https://stackoverflow.com/a/19501528/2306355
-RUN echo 'export PS1="\[\033[38;2;144;255;153m\]\`pwd\`\[\033[0m\]\r\n\[\033[38;2;139;4;221m\]$\[\033[0m\] "' >> /root/.bashrc
+RUN echo 'export PS1="\[\033[38;2;139;4;221m\]$\[\033[0m\] "' >> /root/.bashrc
 
 # Copy install scripts
 COPY ./*.expect /scripts/
