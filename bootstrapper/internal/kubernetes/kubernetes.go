@@ -195,7 +195,7 @@ func (k *KubeWrapper) InitCluster(
 	timeToStartWaiting := time.Now()
 	waitCtx, cancel = context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
-	if err := k.clusterUtil.WaitForCilium(ctx, log); err != nil {
+	if err := k.clusterUtil.WaitForCilium(waitCtx, log); err != nil {
 		return nil, fmt.Errorf("waiting for Cilium to become healthy: %w", err)
 	}
 	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
