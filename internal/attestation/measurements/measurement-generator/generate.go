@@ -35,6 +35,8 @@ import (
 // this tool is used to generate hardcoded measurements for the enterprise build.
 // Measurements are embedded in the constellation cli.
 
+// TODO(v2.8 | AB#3130): Update tool to use variant.Variant instead of cloudprovider.Provider
+
 func main() {
 	defaultConf := config.Default()
 	log.Printf("Generating measurements for %s\n", defaultConf.Image)

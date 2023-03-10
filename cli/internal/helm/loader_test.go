@@ -64,7 +64,7 @@ func TestConstellationServices(t *testing.T) {
 			config: &config.Config{
 				Provider: config.ProviderConfig{AWS: &config.AWSConfig{}},
 				Attestation: config.AttestationConfig{AWSNitroTPM: &config.AWSNitroTPM{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
 			valuesModifier: prepareAWSValues,
@@ -76,7 +76,7 @@ func TestConstellationServices(t *testing.T) {
 					DeployCSIDriver: toPtr(true),
 				}},
 				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 					FirmwareSignerConfig: config.SNPFirmwareSignerConfig{
 						AcceptedKeyDigests: idkeydigest.List{bytes.Repeat([]byte{0xAA}, 32)},
 						EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -95,7 +95,7 @@ func TestConstellationServices(t *testing.T) {
 					DeployCSIDriver: toPtr(true),
 				}},
 				Attestation: config.AttestationConfig{GCPSEVES: &config.GCPSEVES{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
 			valuesModifier: prepareGCPValues,
@@ -105,7 +105,7 @@ func TestConstellationServices(t *testing.T) {
 			config: &config.Config{
 				Provider: config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
 				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
 			valuesModifier: prepareOpenStackValues,
@@ -115,7 +115,7 @@ func TestConstellationServices(t *testing.T) {
 			config: &config.Config{
 				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
 				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
-					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
 			valuesModifier: prepareQEMUValues,
@@ -525,7 +525,6 @@ func prepareOpenStackValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -555,7 +554,6 @@ func prepareQEMUValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	verificationVals, ok := values["verification-service"].(map[string]any)

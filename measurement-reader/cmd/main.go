@@ -35,7 +35,7 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to read TPM measurements")
 		}
-	case oid.QEMUTDX{}:
+	case variant.QEMUTDX{}:
 		m, err = tdx.Measurements()
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to read Intel TDX measurements")

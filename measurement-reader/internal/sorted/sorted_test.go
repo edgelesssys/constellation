@@ -23,9 +23,9 @@ func TestSortMeasurements(t *testing.T) {
 		"pre sorted TPM": {
 			measurementType: TPM,
 			input: measurements.M{
-				0: measurements.WithAllBytes(0x11, measurements.Enforce),
-				1: measurements.WithAllBytes(0x22, measurements.Enforce),
-				2: measurements.WithAllBytes(0x33, measurements.Enforce),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce, measurements.PCRMeasurementLength),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce, measurements.PCRMeasurementLength),
 			},
 			want: []Measurement{
 				{
@@ -45,9 +45,9 @@ func TestSortMeasurements(t *testing.T) {
 		"unsorted TPM": {
 			measurementType: TPM,
 			input: measurements.M{
-				1: measurements.WithAllBytes(0x22, measurements.Enforce),
-				0: measurements.WithAllBytes(0x11, measurements.Enforce),
-				2: measurements.WithAllBytes(0x33, measurements.Enforce),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce, measurements.PCRMeasurementLength),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce, measurements.PCRMeasurementLength),
 			},
 			want: []Measurement{
 				{
@@ -67,44 +67,44 @@ func TestSortMeasurements(t *testing.T) {
 		"pre sorted TDX": {
 			measurementType: TDX,
 			input: measurements.M{
-				0: measurements.WithAllBytes(0x11, false),
-				1: measurements.WithAllBytes(0x22, false),
-				2: measurements.WithAllBytes(0x33, false),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce, measurements.TDXMeasurementLength),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce, measurements.TDXMeasurementLength),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce, measurements.TDXMeasurementLength),
 			},
 			want: []Measurement{
 				{
 					Index: "MRTD",
-					Value: bytes.Repeat([]byte{0x11}, 32),
+					Value: bytes.Repeat([]byte{0x11}, 48),
 				},
 				{
 					Index: "RTMR[0]",
-					Value: bytes.Repeat([]byte{0x22}, 32),
+					Value: bytes.Repeat([]byte{0x22}, 48),
 				},
 				{
 					Index: "RTMR[1]",
-					Value: bytes.Repeat([]byte{0x33}, 32),
+					Value: bytes.Repeat([]byte{0x33}, 48),
 				},
 			},
 		},
 		"unsorted TDX": {
 			measurementType: TDX,
 			input: measurements.M{
-				1: measurements.WithAllBytes(0x22, false),
-				0: measurements.WithAllBytes(0x11, false),
-				2: measurements.WithAllBytes(0x33, false),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce, measurements.TDXMeasurementLength),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce, measurements.TDXMeasurementLength),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce, measurements.TDXMeasurementLength),
 			},
 			want: []Measurement{
 				{
 					Index: "MRTD",
-					Value: bytes.Repeat([]byte{0x11}, 32),
+					Value: bytes.Repeat([]byte{0x11}, 48),
 				},
 				{
 					Index: "RTMR[0]",
-					Value: bytes.Repeat([]byte{0x22}, 32),
+					Value: bytes.Repeat([]byte{0x22}, 48),
 				},
 				{
 					Index: "RTMR[1]",
-					Value: bytes.Repeat([]byte{0x33}, 32),
+					Value: bytes.Repeat([]byte{0x33}, 48),
 				},
 			},
 		},
