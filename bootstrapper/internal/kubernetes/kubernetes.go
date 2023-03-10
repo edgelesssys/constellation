@@ -186,12 +186,11 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("unmarshalling helm releases: %w", err)
 	}
 
+	log.Infof("Installing Cilium")
 	if err = k.helmClient.InstallCilium(ctx, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
 		return nil, fmt.Errorf("installing pod network: %w", err)
 	}
 
-	// TODO: The timeout here is high as ghcr.io can be slow sometimes. Reduce this later when we move the repository.
-	// Also remove the logging later.
 	log.Infof("Waiting for Cilium to become healthy")
 	timeToStartWaiting := time.Now()
 	// TODO(Nirusu): Reduce the timeout when we switched the package repository - this is only this high because I once
@@ -238,24 +237,31 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
 
+	log.Infof("Installing Constellation microservices")
 	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
+	log.Infof("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
 	// cert-manager is necessary for our operator deployments.
+	log.Infof("Installing cert-manager")
+	timeToStartWaiting = time.Now()
 	if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
+	timeUntilFinishedWaiting = time.Since(timeToStartWaiting)
+	log.Infof("cert-manager took %s to be fully installed", timeUntilFinishedWaiting.Round(time.Second).String())
 
 	operatorVals, err := k.setupOperatorVals(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("setting up operator vals: %w", err)
 	}
 
+	log.Infof("Installing operators")
 	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
