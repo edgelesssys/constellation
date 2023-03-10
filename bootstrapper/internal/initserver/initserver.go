@@ -207,6 +207,10 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 
 // GetLogs gets and streams the requested systemd logs.
 func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogsServer) error {
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
+	log.Infof("GetLogs called")
+
+	log.Infof("Validating the init secret...")
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
 		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
@@ -234,7 +238,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return err
 	}
 
-	// derive a key from the master secret
+	log.Infof("Deriving a key from the master secret...")
 	key, err := crypto.DeriveKey(cfg.Key, cfg.Salt, nil, 16) // 16 byte = 128 bit
 	if err != nil {
 		return err
@@ -253,6 +257,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	if _, err := rand.Read(nonce); err != nil {
 		return err
 	}
+	log.Infof("Encrypting logs...")
 	enc_logs := aesgcm.Seal(nil, nonce, systemd_logs, nil)
 
 	// send back the nonce
@@ -265,6 +270,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		}
 	}
 
+	log.Infof("GetLogs finished")
 	return nil
 }
 
