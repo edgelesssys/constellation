@@ -49,11 +49,3 @@ docker run -it \
     -v "$(pwd)"/constellation:/constellation \
     screenrecodings /scripts/terminate-cluster.expect
 cp recordings/terminate-cluster.cast ../static/assets/terminate-cluster.cast
-
-# Delete IAM
-docker run -it \
-    -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
-    -v "$(pwd)"/recordings:/recordings \
-    -v "$(pwd)"/constellation:/constellation \
-    screenrecodings /scripts/delete-iam.expect
-cp recordings/delete-iam.cast ../static/assets/delete-iam.cast

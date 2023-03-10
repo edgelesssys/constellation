@@ -264,7 +264,3 @@ Delete the IAM configuration by executing the following command in the same dire
 ```bash
 constellation iam destroy
 ```
-
----
-
-<asciinemaWidget src="/constellation/assets/delete-iam.cast" rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />
