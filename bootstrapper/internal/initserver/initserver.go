@@ -24,7 +24,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -226,13 +225,6 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	}
 
 	// decode the master secret
-	url, err := url.Parse(s.kmsURI)
-	if err != nil {
-		return err
-	}
-	if url.Scheme != "kms" {
-		return fmt.Errorf("invalid KMS URI: invalid scheme: %s", url.Scheme)
-	}
 	cfg, err := uri.DecodeMasterSecretFromURI(s.kmsURI)
 	if err != nil {
 		return err
