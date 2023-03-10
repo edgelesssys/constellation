@@ -82,6 +82,7 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
+	h.Timeout = 10 * time.Minute
 
 	if err := h.install(ctx, release.Chart, release.Values); err != nil {
 		return err
@@ -187,7 +188,7 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 
 // install tries to install the given chart and aborts after ~5 tries.
 // The function will wait 30 seconds before retrying a failed installation attempt.
-// After 5 minutes the retrier will be canceld and the function returns with an error.
+// After 10 minutes the retrier will be canceled and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
 	retriable := func(err error) bool {
 		return errors.Is(err, wait.ErrWaitTimeout) ||
@@ -208,10 +209,10 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	}
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, retriable)
 
-	// Since we have no precise retry condition we want to stop retrying after 5 minutes.
+	// Since we have no precise retry condition we want to stop retrying after 10 minutes.
 	// The helm library only reports a timeout error in the error cases we currently know.
 	// Other errors will not be retried.
-	newCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	newCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 	if err := retrier.Do(newCtx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
