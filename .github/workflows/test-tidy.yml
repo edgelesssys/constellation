@@ -30,16 +30,28 @@ jobs:
           # No token available for forks, so we can't push changes
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "1.20.2"
+      - name: Run Bazel tidy
+        shell: bash
+        run: |
+          bazelisk run //bazel/ci:tidy
+          bazelisk run //:gazelle-check
 
-      - name: Go tidy check
+      - name: Check if tidy made modifications
         id: tidycheck
-        uses: katexochen/go-tidy-check@2f5d75dbd503b372466fa9d8bc85710558b953c7 # v2.0.0
-        with:
-          submodules: "true"
+        shell: bash
+        run: |
+          diff=$(git diff)
+          if [[ -z "$diff" ]]; then
+            echo "Everything is tidy"
+            exit 0
+          fi
+          cat << EOF >> "${GITHUB_STEP_SUMMARY}"
+          \`\`\`diff
+          ${diff}
+          \`\`\`
+          EOF
+          echo "::error::The repo is not tidy. Please run 'bazel run bazel/ci:tidy' and commit the changes."
+          exit 1
 
       # The following steps are only executed if the previous tidy check failed
       # and the action runs on an renovat branche. In this case, we tidy all
