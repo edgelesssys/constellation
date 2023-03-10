@@ -44,9 +44,10 @@ expect_prompt
 
 run_command "# Step 3: Connect to Constellation"
 expect_prompt
-run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
+run_command 'export KUBECONFIG="$PWD/constellation-admin.conf"'
 expect_prompt
 run_command "kubectl get nodes"
+expect_prompt
 
 # Stop recording
 send "exit"

@@ -45,9 +45,10 @@ run_command "# Step 4: Install the CLI"
 expect_prompt
 run_command "sudo install constellation-linux-amd64 /usr/local/bin/constellation"
 expect_prompt
-run_command "echo Done! You can now use the verified CLI"
+run_command "# Done! You can now use the verified CLI"
 expect_prompt
 run_command "constellation -h"
+expect_prompt
 
 # Stop recording
 send "exit"

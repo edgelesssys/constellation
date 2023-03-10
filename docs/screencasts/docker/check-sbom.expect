@@ -40,8 +40,6 @@ run_command "# Step 3: Check integrity of SBOM"
 expect_prompt
 run_command "slsa-verifier verify-artifact constellation.spdx.sbom --provenance-path constellation.intoto.jsonl --source-uri github.com/edgelesssys/constellation"
 expect_prompt
-run_command "curl -sLO https://github.com/edgelesssys/constellation/releases/latest/download/constellation.intoto.jsonl"
-expect_prompt
 
 run_command "# Step 4: Install grype (security scanner)"
 expect_prompt

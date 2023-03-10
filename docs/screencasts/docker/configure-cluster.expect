@@ -23,24 +23,12 @@ spawn asciinema rec --overwrite /recordings/configure-cluster.cast
 send "\r"
 expect_prompt
 
-run_command "# Step 1: Create IAM configuration"
+run_command "# Step 1: Create IAM configuration and Constellation configuration file"
 expect_prompt
 run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
 expect -re "y\/n"
 send "y"
 send "\r"
-expect_prompt
-
-# TODO: Delete step once #1149 released
-run_command "# Step 2: Fill in configuration"
-expect_prompt
-run_command "yq '.provider.gcp.project = \"constellation-331613\"' -i constellation-conf.yaml"
-expect_prompt
-run_command "yq '.provider.gcp.zone = \"europe-west3-b\"' -i constellation-conf.yaml"
-expect_prompt
-run_command "yq '.provider.gcp.region = \"europe-west3\"' -i constellation-conf.yaml"
-expect_prompt
-run_command "cat constellation-conf.yaml | head -n15"
 expect_prompt
 
 # Stop recording
