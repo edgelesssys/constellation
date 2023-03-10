@@ -23,6 +23,17 @@ jobs:
           echo "Latest version of guest-agent is $latest"
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
 
+      - name: Make tag a valid semver
+        id: latest-release-semver
+        run: |
+          semver="${{ steps.latest-release.outputs.latest }}"
+          beforeDot="${semver%%.*}"
+          afterDot="${semver#*.}"
+          afterDotEvaluated=$((afterDot))
+          semver="$beforeDot.$afterDotEvaluated"
+          echo "Semver tag of guest-agent is $semver"
+          echo "latest=$semver" >> "$GITHUB_OUTPUT"
+
       - name: Checkout GoogleCloudPlatform/guest-agent
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
@@ -45,7 +56,7 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=raw,value=${{ steps.latest-release.outputs.latest }}
+            type=raw,value=${{ steps.latest-release-semver.outputs.latest }}
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_name != 'main' }}
             type=sha,value=${{ github.sha }}
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
