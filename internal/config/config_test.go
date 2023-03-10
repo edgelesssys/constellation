@@ -130,7 +130,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ResourceGroup = "test"
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
+				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)}
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -151,7 +151,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
+				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)}
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -246,7 +246,7 @@ func TestValidate(t *testing.T) {
 				az.ClientSecretValue = "test-client-secret"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az
-				cnf.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
+				cnf.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)}
 				return cnf
 			}(),
 		},
@@ -273,7 +273,7 @@ func TestValidate(t *testing.T) {
 				gcp.ServiceAccountKeyPath = "test-key-path"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
-				cnf.Provider.GCP.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
+				cnf.Provider.GCP.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)}
 				return cnf
 			}(),
 		},
@@ -397,9 +397,9 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 func TestConfig_UpdateMeasurements(t *testing.T) {
 	assert := assert.New(t)
 	newMeasurements := measurements.M{
-		1: measurements.WithAllBytes(0x00, false),
-		2: measurements.WithAllBytes(0x01, false),
-		3: measurements.WithAllBytes(0x02, false),
+		1: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
+		2: measurements.WithAllBytes(0x01, false, measurements.PCRMeasurementLength),
+		3: measurements.WithAllBytes(0x02, false, measurements.PCRMeasurementLength),
 	}
 
 	{ // AWS

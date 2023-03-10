@@ -29,12 +29,12 @@ import (
 
 func TestNewValidator(t *testing.T) {
 	testPCRs := measurements.M{
-		0: measurements.WithAllBytes(0x00, false),
-		1: measurements.WithAllBytes(0xFF, false),
-		2: measurements.WithAllBytes(0x00, false),
-		3: measurements.WithAllBytes(0xFF, false),
-		4: measurements.WithAllBytes(0x00, false),
-		5: measurements.WithAllBytes(0x00, false),
+		0: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
+		1: measurements.WithAllBytes(0xFF, false, measurements.PCRMeasurementLength),
+		2: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
+		3: measurements.WithAllBytes(0xFF, false, measurements.PCRMeasurementLength),
+		4: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
+		5: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
 	}
 
 	testCases := map[string]struct {
@@ -139,19 +139,19 @@ func TestNewValidator(t *testing.T) {
 func TestValidatorV(t *testing.T) {
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
-			0:  measurements.WithAllBytes(0x00, true),
-			1:  measurements.WithAllBytes(0x00, true),
-			2:  measurements.WithAllBytes(0x00, true),
-			3:  measurements.WithAllBytes(0x00, true),
-			4:  measurements.WithAllBytes(0x00, true),
-			5:  measurements.WithAllBytes(0x00, true),
-			6:  measurements.WithAllBytes(0x00, true),
-			7:  measurements.WithAllBytes(0x00, true),
-			8:  measurements.WithAllBytes(0x00, true),
-			9:  measurements.WithAllBytes(0x00, true),
-			10: measurements.WithAllBytes(0x00, true),
-			11: measurements.WithAllBytes(0x00, true),
-			12: measurements.WithAllBytes(0x00, true),
+			0:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			1:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			2:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			3:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			4:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			5:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			6:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			7:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			8:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			9:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			10: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			11: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			12: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
 		}
 	}
 
@@ -196,37 +196,37 @@ func TestValidatorV(t *testing.T) {
 }
 
 func TestValidatorUpdateInitPCRs(t *testing.T) {
-	zero := measurements.WithAllBytes(0x00, true)
-	one := measurements.WithAllBytes(0x11, true)
+	zero := measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength)
+	one := measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength)
 	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
 	oneHash := sha256.Sum256(one.Expected[:])
 	pcrZeroUpdatedOne := sha256.Sum256(append(zero.Expected[:], oneHash[:]...))
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
-			0:  measurements.WithAllBytes(0x00, true),
-			1:  measurements.WithAllBytes(0x00, true),
-			2:  measurements.WithAllBytes(0x00, true),
-			3:  measurements.WithAllBytes(0x00, true),
-			4:  measurements.WithAllBytes(0x00, true),
-			5:  measurements.WithAllBytes(0x00, true),
-			6:  measurements.WithAllBytes(0x00, true),
-			7:  measurements.WithAllBytes(0x00, true),
-			8:  measurements.WithAllBytes(0x00, true),
-			9:  measurements.WithAllBytes(0x00, true),
-			10: measurements.WithAllBytes(0x00, true),
-			11: measurements.WithAllBytes(0x00, true),
-			12: measurements.WithAllBytes(0x00, true),
-			13: measurements.WithAllBytes(0x00, true),
-			14: measurements.WithAllBytes(0x00, true),
-			15: measurements.WithAllBytes(0x00, true),
-			16: measurements.WithAllBytes(0x00, true),
-			17: measurements.WithAllBytes(0x11, true),
-			18: measurements.WithAllBytes(0x11, true),
-			19: measurements.WithAllBytes(0x11, true),
-			20: measurements.WithAllBytes(0x11, true),
-			21: measurements.WithAllBytes(0x11, true),
-			22: measurements.WithAllBytes(0x11, true),
-			23: measurements.WithAllBytes(0x00, true),
+			0:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			1:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			2:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			3:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			4:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			5:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			6:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			7:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			8:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			9:  measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			10: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			11: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			12: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			13: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			14: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			15: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			16: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
+			17: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			18: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			19: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			20: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			21: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			22: measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength),
+			23: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
 		}
 	}
 
@@ -331,8 +331,8 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 func TestUpdatePCR(t *testing.T) {
 	emptyMap := measurements.M{}
 	defaultMap := measurements.M{
-		0: measurements.WithAllBytes(0xAA, false),
-		1: measurements.WithAllBytes(0xBB, false),
+		0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
+		1: measurements.WithAllBytes(0xBB, false, measurements.PCRMeasurementLength),
 	}
 
 	testCases := map[string]struct {
