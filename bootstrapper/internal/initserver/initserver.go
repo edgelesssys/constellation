@@ -22,9 +22,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +40,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -67,6 +68,8 @@ type Server struct {
 
 	initSecretHash []byte
 	initSecret     []byte
+
+	kmsURI string
 
 	log *logger.Logger
 
@@ -128,6 +131,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	log.Infof("Init called")
 
 	s.initSecret = req.InitSecret
+	s.kmsURI = req.KmsUri
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
 		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
@@ -217,12 +221,21 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return err
 	}
 
-	// create a salt and derive a key
-	salt := make([]byte, sha256.New().Size())
-	if _, err := rand.Read(salt); err != nil {
+	// decode the master secret
+	url, err := url.Parse(s.kmsURI)
+	if err != nil {
 		return err
 	}
-	key, err := crypto.DeriveKey(s.initSecret, salt, nil, 16) // 16 byte = 128 bit
+	if url.Scheme != "kms" {
+		return fmt.Errorf("invalid KMS URI: invalid scheme: %s", url.Scheme)
+	}
+	cfg, err := uri.DecodeMasterSecretFromURI(s.kmsURI)
+	if err != nil {
+		return err
+	}
+
+	// derive a key from the master secret
+	key, err := crypto.DeriveKey(cfg.Key, cfg.Salt, nil, 16) // 16 byte = 128 bit
 	if err != nil {
 		return err
 	}
