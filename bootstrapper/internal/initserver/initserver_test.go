@@ -8,6 +8,8 @@ package initserver
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"errors"
 	"net"
 	"strings"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
@@ -29,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
 )
 
 func TestMain(m *testing.M) {
@@ -221,6 +225,116 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func TestGetLogs(t *testing.T) {
+	initSecret := []byte("password")
+	initSecretHash, err := bcrypt.GenerateFromPassword(initSecret, bcrypt.DefaultCost)
+	require.NoError(t, err)
+
+	masterSecret := uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
+
+	key, err := crypto.DeriveKey(masterSecret.Key, masterSecret.Salt, nil, 16) // 16 byte = 128 bit
+	require.NoError(t, err)
+
+	block, err := aes.NewCipher(key)
+	require.NoError(t, err)
+	decryptor, err := cipher.NewGCM(block)
+	require.NoError(t, err)
+	testCases := map[string]struct {
+		initSecretHash  []byte
+		masterSecret    uri.MasterSecret
+		req             *initproto.LogRequest
+		stream          stubLogStream
+		decryptor       cipher.AEAD
+		wantErr         bool
+		wantNoRes       bool
+		wantDecryptable bool
+	}{
+		"success": {
+			initSecretHash:  initSecretHash,
+			masterSecret:    masterSecret,
+			req:             &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			stream:          stubLogStream{},
+			decryptor:       decryptor,
+			wantDecryptable: true,
+		},
+		"wrong init secret": {
+			initSecretHash: initSecretHash,
+			req:            &initproto.LogRequest{InitSecret: []byte("asdf")},
+			wantErr:        true,
+			wantNoRes:      true,
+		},
+		"error executing command": {
+			initSecretHash: initSecretHash,
+			req:            &initproto.LogRequest{InitSecret: initSecret},
+			wantErr:        true,
+			wantNoRes:      true,
+		},
+		"decode master secret fail": {
+			initSecretHash: initSecretHash,
+			req:            &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			masterSecret:   uri.MasterSecret{Key: nil, Salt: nil},
+			wantErr:        true,
+			wantNoRes:      true,
+		},
+		"send error": {
+			initSecretHash: initSecretHash,
+			req:            &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			stream:         stubLogStream{sendError: errors.New("failed")},
+			masterSecret:   masterSecret,
+			wantErr:        true,
+			wantNoRes:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			server := &Server{
+				initSecretHash: tc.initSecretHash,
+				kmsURI:         tc.masterSecret.EncodeToURI(),
+				log:            logger.NewTest(t),
+			}
+
+			err := server.GetLogs(tc.req, &tc.stream)
+
+			nonce := []byte{}
+			ciphertext := []byte{}
+			if len(tc.stream.res) > 0 {
+				nonce = tc.stream.res[0].Nonce
+				for _, res := range tc.stream.res[1:] {
+					ciphertext = append(ciphertext, res.Log...)
+				}
+			}
+
+			var decrypted []byte
+			if len(nonce) != 0 {
+				decrypted, err = tc.decryptor.Open(nil, nonce, ciphertext, nil)
+				require.NoError(err)
+			}
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+
+			if tc.wantNoRes {
+				assert.Empty(tc.stream.res)
+			} else {
+				assert.NotEmpty(tc.stream.res)
+			}
+
+			if tc.wantDecryptable {
+				assert.Equal("-- No entries --\n", string(decrypted))
+			} else {
+				assert.NotEqual("-- No entries --\n", string(decrypted))
+			}
+		})
+	}
+}
+
 func TestSetupDisk(t *testing.T) {
 	testCases := map[string]struct {
 		uuid      string
@@ -371,4 +485,19 @@ type stubMetadata struct {
 
 func (m *stubMetadata) InitSecretHash(context.Context) ([]byte, error) {
 	return m.initSecretHashVal, m.initSecretHashErr
+}
+
+type stubLogStream struct {
+	res       []*initproto.LogResponse
+	sendError error
+	grpc.ServerStream
+}
+
+func (s *stubLogStream) Send(m *initproto.LogResponse) error {
+	s.res = append(s.res, m)
+	return s.sendError
+}
+
+func (s *stubLogStream) Context() context.Context {
+	return context.Background()
 }
