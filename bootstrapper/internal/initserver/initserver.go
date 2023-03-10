@@ -66,7 +66,6 @@ type Server struct {
 	shutdownLock sync.RWMutex
 
 	initSecretHash []byte
-	initSecret     []byte
 
 	kmsURI string
 
@@ -129,7 +128,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
 
-	s.initSecret = req.InitSecret
 	s.kmsURI = req.KmsUri
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
@@ -221,6 +219,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 
 	systemd_logs, err := journald.GetServiceLog(jctl_command)
 	if err != nil {
+		log.Errorf("Failed to retrieve journal logs: %s", err)
 		return err
 	}
 
