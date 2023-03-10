@@ -18,37 +18,37 @@ import (
 )
 
 func TestValidatorUpdateInitPCRs(t *testing.T) {
-	zero := measurements.WithAllBytes(0x00, measurements.WarnOnly)
-	one := measurements.WithAllBytes(0x11, measurements.WarnOnly)
+	zero := measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength)
+	one := measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength)
 	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
 	oneHash := sha256.Sum256(one.Expected[:])
 	pcrZeroUpdatedOne := sha256.Sum256(append(zero.Expected[:], oneHash[:]...))
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
-			0:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			1:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			2:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			3:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			4:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			5:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			6:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			7:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			8:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			9:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			10: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			11: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			12: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			13: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			14: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			15: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			16: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			17: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			18: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			19: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			20: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			21: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			22: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			23: measurements.WithAllBytes(0x00, measurements.WarnOnly),
+			0:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			1:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			2:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			3:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			4:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			5:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			6:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			7:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			8:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			9:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			10: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			11: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			12: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			13: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			14: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			15: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			16: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			17: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			18: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			19: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			20: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			21: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			22: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			23: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 		}
 	}
 

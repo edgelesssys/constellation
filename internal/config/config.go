@@ -344,11 +344,11 @@ func Default() *Config {
 			},
 		},
 		Attestation: AttestationConfig{
-			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS)},
+			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
-			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure)},
-			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP)},
-			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU)},
+			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(variant.AzureTrustedLaunch{})},
+			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(variant.GCPSEVES{})},
+			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(variant.QEMUVTPM{})},
 		},
 	}
 }
@@ -727,7 +727,7 @@ type AzureSEVSNP struct {
 // TODO(AB#3042): replace with dynamic lookup for configurable values.
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
-		Measurements:      measurements.DefaultsFor(cloudprovider.Azure),
+		Measurements:      measurements.DefaultsFor(variant.AzureSEVSNP{}),
 		BootloaderVersion: 2,
 		TEEVersion:        0,
 		SNPVersion:        6,

@@ -265,7 +265,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
 				},
 			},
 			wantUpdate: true,
@@ -278,7 +278,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+					0: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength),
 				},
 			},
 		},
@@ -290,7 +290,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.WarnOnly),
+					0: measurements.WithAllBytes(0xAA, measurements.WarnOnly, measurements.PCRMeasurementLength),
 				},
 			},
 			wantUpdate: true,
@@ -303,7 +303,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+					0: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength),
 				},
 			},
 			wantUpdate: true,
@@ -312,7 +312,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			updater: &stubStableClient{getErr: someErr},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
 				},
 			},
 			wantErr: true,
@@ -326,7 +326,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
-					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
 				},
 			},
 			wantErr: true,

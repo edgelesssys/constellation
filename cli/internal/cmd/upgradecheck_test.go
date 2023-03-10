@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestBuildString(t *testing.T) {
 			upgrade: versionUpgrade{
 				newServices: "v2.5.0",
 				newImages: map[string]measurements.M{
-					"v2.5.0": measurements.DefaultsFor(cloudprovider.QEMU),
+					"v2.5.0": measurements.DefaultsFor(variant.QEMUVTPM{}),
 				},
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
 				newCLI:            []string{"v2.5.0", "v2.6.0"},
@@ -236,7 +237,7 @@ func TestUpgradeCheck(t *testing.T) {
 				supportedServicesVersions: "v2.5.0",
 				supportedImages:           []versionsapi.Version{v2_3},
 				supportedImageVersions: map[string]measurements.M{
-					"v2.3.0": measurements.DefaultsFor(cloudprovider.QEMU),
+					"v2.3.0": measurements.DefaultsFor(variant.QEMUVTPM{}),
 				},
 				supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
 				currentServicesVersions: "v2.4.0",

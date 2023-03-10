@@ -206,8 +206,8 @@ func TestEncodeM(t *testing.T) {
 	}{
 		"basic": {
 			m: M{
-				1: WithAllBytes(1, false),
-				2: WithAllBytes(2, true),
+				1: WithAllBytes(1, false, PCRMeasurementLength),
+				2: WithAllBytes(2, WarnOnly, PCRMeasurementLength),
 			},
 			want: `1:
     expected: "0101010101010101010101010101010101010101010101010101010101010101"
@@ -219,10 +219,10 @@ func TestEncodeM(t *testing.T) {
 		},
 		"output is sorted": {
 			m: M{
-				3:  WithAllBytes(0, false),
-				1:  WithAllBytes(0, false),
-				11: WithAllBytes(0, false),
-				2:  WithAllBytes(0, false),
+				3:  WithAllBytes(0, false, PCRMeasurementLength),
+				1:  WithAllBytes(0, false, PCRMeasurementLength),
+				11: WithAllBytes(0, false, PCRMeasurementLength),
+				2:  WithAllBytes(0, false, PCRMeasurementLength),
 			},
 			want: `1:
     expected: "0000000000000000000000000000000000000000000000000000000000000000"
@@ -261,48 +261,48 @@ func TestMeasurementsCopyFrom(t *testing.T) {
 		"add to empty": {
 			current: M{},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"keep existing": {
 			current: M{
-				4: WithAllBytes(0x01, Enforce),
-				5: WithAllBytes(0x02, WarnOnly),
+				4: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				5: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
-				4: WithAllBytes(0x01, Enforce),
-				5: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
+				4: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				5: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"overwrite existing": {
 			current: M{
-				2: WithAllBytes(0x04, Enforce),
-				3: WithAllBytes(0x05, Enforce),
+				2: WithAllBytes(0x04, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x05, Enforce, PCRMeasurementLength),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 	}
@@ -371,7 +371,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantSHA: "c04e13c1312b6f5659303871d14bf49b05c99a6515548763b6322f60bbb61a24",
 		},
@@ -382,7 +382,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEUCIQC9WI2ijlQjBktYFctKpbnqkUTey3U9W99Jp1NTLi5AbQIgNZxxOtiawgTkWPXLoH9D2CxpEjxQrqLn/zWF6NoKxWQ=",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantSHA: "648fcfd5d22e623a948ab2dd4eb334be2701d8f158231726084323003daab8d4",
 		},
@@ -492,15 +492,15 @@ func TestGetEnforced(t *testing.T) {
 	}{
 		"only warnings": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{},
 		},
 		"all enforced": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -509,9 +509,9 @@ func TestGetEnforced(t *testing.T) {
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, WarnOnly),
-				2: WithAllBytes(0x02, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -543,56 +543,56 @@ func TestSetEnforced(t *testing.T) {
 	}{
 		"no enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{},
 			wantM: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"all enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
-				2: WithAllBytes(0x02, Enforce),
-				3: WithAllBytes(0x03, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x03, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 2},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, WarnOnly),
-				2: WithAllBytes(0x02, Enforce),
-				3: WithAllBytes(0x03, WarnOnly),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x03, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"warn only to enforced": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 		},
 		"more enforced than measurements": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1, 2},
 			wantErr:  true,
@@ -622,7 +622,7 @@ func TestWithAllBytes(t *testing.T) {
 	}{
 		"0x00 warnOnly": {
 			b:        0x00,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 				ValidationOpt: WarnOnly,
@@ -630,7 +630,7 @@ func TestWithAllBytes(t *testing.T) {
 		},
 		"0x00": {
 			b:        0x00,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 				ValidationOpt: Enforce,
@@ -638,7 +638,7 @@ func TestWithAllBytes(t *testing.T) {
 		},
 		"0x01 warnOnly": {
 			b:        0x01,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 				ValidationOpt: WarnOnly,
@@ -646,7 +646,7 @@ func TestWithAllBytes(t *testing.T) {
 		},
 		"0x01": {
 			b:        0x01,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 				ValidationOpt: Enforce,
@@ -654,7 +654,7 @@ func TestWithAllBytes(t *testing.T) {
 		},
 		"0xFF warnOnly": {
 			b:        0xFF,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 				ValidationOpt: WarnOnly,
@@ -662,7 +662,7 @@ func TestWithAllBytes(t *testing.T) {
 		},
 		"0xFF": {
 			b:        0xFF,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
 				Expected:      []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 				ValidationOpt: Enforce,
@@ -673,7 +673,7 @@ func TestWithAllBytes(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			measurement := WithAllBytes(tc.b, tc.warnOnly)
+			measurement := WithAllBytes(tc.b, tc.warnOnly, PCRMeasurementLength)
 			assert.Equal(tc.wantMeasurement, measurement)
 		})
 	}
@@ -687,44 +687,44 @@ func TestEqualTo(t *testing.T) {
 	}{
 		"same values": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: true,
 		},
 		"different number of elements": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},
 		"different values": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0xFF, Enforce),
-				1: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},
 		"different warn settings": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, WarnOnly),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, WarnOnly, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},

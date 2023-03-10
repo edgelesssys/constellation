@@ -325,10 +325,12 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 	return nil
 }
 
-// WithAllBytes returns a measurement value where all 32 bytes are set to b.
-func WithAllBytes(b byte, validationOpt MeasurementValidationOption) Measurement {
+// WithAllBytes returns a measurement value where all bytes are set to b. Takes a dynamic length as input.
+// Expected are either 32 bytes (PCRMeasurementLength) or 48 bytes (TDXMeasurementLength).
+// Over inputs are possible in this function, but potentially rejected elsewhere.
+func WithAllBytes(b byte, validationOpt MeasurementValidationOption, len int) Measurement {
 	return Measurement{
-		Expected:      bytes.Repeat([]byte{b}, 32),
+		Expected:      bytes.Repeat([]byte{b}, len),
 		ValidationOpt: validationOpt,
 	}
 }
