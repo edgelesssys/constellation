@@ -170,14 +170,11 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
-	newCLI := filterCLIUpgrades(current.cli, supported.cli)
-	sort.Strings(newCLI)
-
 	upgrade := versionUpgrade{
 		newServices:       newServices,
 		newImages:         newImages,
 		newKubernetes:     newKubernetes,
-		newCLI:            newCLI,
+		newCLI:            supported.cli,
 		currentServices:   current.service,
 		currentImage:      current.image,
 		currentKubernetes: current.k8s,
@@ -228,20 +225,6 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 	result := []string{}
 	for i := range newVersions {
 		if err := compatibility.IsValidUpgrade(currentVersion, newVersions[i]); err != nil {
-			continue
-		}
-		result = append(result, newVersions[i])
-	}
-
-	return result
-}
-
-// filterCLIUpgrades filters out CLI versions that are not valid upgrades.
-func filterCLIUpgrades(currentVersion string, newVersions []string) []string {
-	result := []string{}
-	for i := range newVersions {
-		if err := compatibility.IsValidUpgrade(currentVersion, newVersions[i]); err != nil {
-			fmt.Println(err)
 			continue
 		}
 		result = append(result, newVersions[i])
@@ -335,7 +318,7 @@ func (v *versionCollector) supportedVersions(ctx context.Context, csp cloudprovi
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)
 	}
-	cliVersions, err := v.newCLIVersions(ctx, currentK8sVersion)
+	cliVersions, err := v.newCompatibleCLIVersions(ctx, currentK8sVersion)
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading cli versions: %w", err)
 	}
@@ -567,13 +550,13 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 	return upgrades, nil
 }
 
-// newCLIVersions returns a list of versions of the CLI which are compatible with the current Kubernetes version.
-func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+// newCompatibleCLIVersions returns a list of versions of the CLI which are compatible with the current Kubernetes version and a valid upgrade.
+func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
 	versionFetcher := fetcher.NewFetcher()
 
 	list := versionsapi.List{
-		Ref:         "feat-upload-cli-version-list",
-		Stream:      "debug",
+		Ref:         v.flags.ref,
+		Stream:      v.flags.stream,
 		Granularity: versionsapi.GranularityMajor,
 		Base:        "v2",
 		Kind:        versionsapi.VersionKindCLI,
@@ -585,9 +568,13 @@ func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetes
 
 	var patchVersions []string
 	for _, version := range minorList.Versions {
+		if err := compatibility.IsValidUpgrade(v.cliVersion, version); err != nil {
+			v.log.Debugf("Skipping incompatible minor version %q: %s", version, err)
+			continue
+		}
 		list := versionsapi.List{
-			Ref:         "feat-upload-cli-version-list",
-			Stream:      "debug",
+			Ref:         v.flags.ref,
+			Stream:      v.flags.stream,
 			Granularity: versionsapi.GranularityMinor,
 			Base:        version,
 			Kind:        versionsapi.VersionKindCLI,
@@ -602,9 +589,13 @@ func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetes
 	// filter out invalid upgrades and versions which are not compatible with the current Kubernetes version
 	var compatibleVersions []string
 	for _, version := range patchVersions {
+		if err := compatibility.IsValidUpgrade(v.cliVersion, version); err != nil {
+			v.log.Debugf("Skipping incompatible patch version %q: %s", version, err)
+			continue
+		}
 		req := versionsapi.CLIInfo{
-			Ref:     "feat-upload-cli-version-list",
-			Stream:  "debug",
+			Ref:     v.flags.ref,
+			Stream:  v.flags.stream,
 			Version: version,
 		}
 		info, err := versionFetcher.FetchCLIInfo(ctx, req)
