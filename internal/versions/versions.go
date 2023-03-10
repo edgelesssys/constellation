@@ -89,7 +89,7 @@ const (
 	// QEMUMetadataImage image of QEMU metadata api service.
 	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:db97a869391567415c436581345696fdbde572caee385a1b7fea40ced5c00528" // renovate:container
 	// LibvirtImage image that provides libvirt.
-	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.6.0@sha256:4e221138b1747ce367d4332d2d191def9a49069317fdde569a82b414ef66f95e" // renovate:container
+	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.7.0-pre.0.20230309142342-bdba9d8ba6c3@sha256:98e04e2732d53490f5e00d117c7e22863dc501660f939a244b7d94a09290c572" // renovate:container
 
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
 	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.5.0-pre.0.20230120132332-a31d79e9cb71@sha256:17f8555581d8916d8121c6ce00f85974e62df55898a890c9855e830856c8cdf7" // renovate:container
