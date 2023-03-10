@@ -245,6 +245,7 @@ type SetupPodNetworkInput struct {
 	LoadBalancerEndpoint string
 }
 
+// WaitForCilium waits until Cilium reports a healthy status over its /healthz endpoint.
 func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) error {
 	// wait for cilium pod to be healthy
 	client := http.Client{}
