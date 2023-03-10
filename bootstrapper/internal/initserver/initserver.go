@@ -252,7 +252,10 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	enc_logs := aesgcm.Seal(nil, nonce, systemd_logs, nil)
 
 	// send back the nonce
-	stream.Send(&initproto.LogResponse{Nonce: nonce})
+	err = stream.Send(&initproto.LogResponse{Nonce: nonce})
+	if err != nil {
+		return err
+	}
 
 	// stream the systemd logs
 	for _, el := range enc_logs {
