@@ -12,10 +12,10 @@ docker build -t screenrecodings docker
 
 # Create cast
 docker run -it \
-    -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
-    -v "$(pwd)"/recordings:/recordings \
-    -v "$(pwd)"/constellation:/constellation \
-    screenrecodings /scripts/github-readme.expect
+-v "${HOME}"/.config/gcloud:/root/.config/gcloud \
+-v "$(pwd)"/recordings:/recordings \
+-v "$(pwd)"/constellation:/constellation \
+screenrecodings /scripts/github-readme.expect
 
 # Fix meta data: width and height are always zero in Docker produced cast files.
 # Header is the first lint of cast file in JSON format, we read, fix and write it.

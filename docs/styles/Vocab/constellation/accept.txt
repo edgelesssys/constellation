@@ -1,5 +1,6 @@
 Affero
 agent
+Asciinema
 auditable
 autoscaler
 [Aa]utoscaling
@@ -14,6 +15,7 @@ config
 cyber
 datacenter
 deallocate
+Dockerfile
 [Ee]mojivoto
 etcd
 Filestore

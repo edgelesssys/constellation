@@ -35,17 +35,17 @@ There are three different locations were styling is applied:
 1. **The prompt** is styled using [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code).
 More explanation and the actual color codes can be found in [Dockerfile](docker/Dockerfile).
 2. **Player dimensions** are passed to the [`AsciinemaWidget`](../src/components/AsciinemaWidget/index.js)
-when it is [embedded in the docs](../docs/workflows/verify-cli.md#5). Check the `asciinema-player` for a
+when it's [embedded in the docs](../docs/workflows/verify-cli.md#5). Check the `asciinema-player` for a
 [full list of options](https://github.com/asciinema/asciinema-player#options).
-3. **Everything else** is [styled via CSS](../src/css/custom.css). This includes the option to build a custom
+1. **Everything else** is [styled via CSS](../src/css/custom.css). This includes the option to build a custom
 [player theme](https://github.com/asciinema/asciinema-player/wiki/Custom-terminal-themes).
 
 ###
 
 ## GitHub README.md
 
-The GitHub `README.md` does not support embedding the JavaScript `asciinema-player`, therefore we generate an
-`svg` file for that usecase.
+The GitHub `README.md` doesn't support embedding the JavaScript `asciinema-player`, therefore we generate an
+`svg` file for that use case.
 
 ```sh
 # Make sure to install the converter.

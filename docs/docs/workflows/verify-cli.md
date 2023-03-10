@@ -1,7 +1,7 @@
 # Verify the CLI
 
 :::info
-This recording presents the essence of this page. It is recommended to read it in full for the motivation and all details.
+This recording presents the essence of this page. It's recommended to read it in full for the motivation and all details.
 :::
 
 <asciinemaWidget src="/constellation/assets/verify-cli.cast" rows={20} cols={112} idleTimeLimit={3} preload={true} theme={'edgeless'} />
