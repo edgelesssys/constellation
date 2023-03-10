@@ -146,7 +146,7 @@ func TestUpdate(t *testing.T) {
 	// write measurement config
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)},
 	))
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
@@ -219,7 +219,7 @@ func TestOIDConcurrency(t *testing.T) {
 	handler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)},
 	))
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),

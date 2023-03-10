@@ -307,12 +307,12 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}),
 		},
 		"incorrect method": {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}),
 			method:     http.MethodGet,
 			wantErr:    true,
 		},
@@ -321,7 +321,7 @@ func TestExportPCRs(t *testing.T) {
 			connect: &stubConnect{
 				getNetworkErr: errors.New("error"),
 			},
-			message: mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
+			message: mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}),
 			method:  http.MethodPost,
 			wantErr: true,
 		},
@@ -336,7 +336,7 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "localhost",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}),
 			wantErr:    true,
 		},
 	}

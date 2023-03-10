@@ -218,7 +218,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xBB, false),
+				0: measurements.WithAllBytes(0xBB, false, measurements.PCRMeasurementLength),
 			},
 			wantUpdate: true,
 		},
@@ -231,7 +231,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, false),
+				0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
 			},
 		},
 		"trying to set warnOnly to true results in error": {
@@ -243,7 +243,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, true),
+				0: measurements.WithAllBytes(0xAA, true, measurements.PCRMeasurementLength),
 			},
 			wantErr: true,
 		},
@@ -256,7 +256,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, false),
+				0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
 			},
 			wantUpdate: true,
 		},
