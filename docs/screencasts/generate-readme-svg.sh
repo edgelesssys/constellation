@@ -12,16 +12,16 @@ docker build -t screenrecodings docker
 
 # Create cast
 docker run -it \
--v "${HOME}"/.config/gcloud:/root/.config/gcloud \
--v "$(pwd)"/recordings:/recordings \
--v "$(pwd)"/constellation:/constellation \
-screenrecodings /scripts/github-readme.expect
+    -v "${HOME}"/.config/gcloud:/root/.config/gcloud \
+    -v "$(pwd)"/recordings:/recordings \
+    -v "$(pwd)"/constellation:/constellation \
+    screenrecodings /scripts/github-readme.expect
 
 # Fix meta data: width and height are always zero in Docker produced cast files.
 # Header is the first lint of cast file in JSON format, we read, fix and write it.
-head recordings/github-readme.cast -n 1 | yq e -M '.width = 95 | .height = 17' - > new_header.cast
+head recordings/github-readme.cast -n 1 | yq e -M '.width = 95 | .height = 17' - >new_header.cast
 # Then append everything, expect first line from original cast file.
-tail -n+2 recordings/github-readme.cast >> new_header.cast
+tail -n+2 recordings/github-readme.cast >>new_header.cast
 
 # Then render cast into svg using:
 #   https://github.com/nbedos/termtosvg
