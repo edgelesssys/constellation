@@ -203,6 +203,10 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 
 // GetLogs gets and streams the requested systemd logs.
 func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogsServer) error {
+	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
+		return status.Errorf(codes.Internal, "invalid init secret %s", err)
+	}
+
 	jctl_command, err := journald.NewCommand(stream.Context(), req.Name)
 	if err != nil {
 		return err
