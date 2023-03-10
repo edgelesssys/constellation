@@ -200,7 +200,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Cilium to become healthy: %w", err)
 	}
 	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
-	log.Infof("Cilium took %s to become healthy", timeUntilFinishedWaiting.Round(time.Second).String())
+	log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("Cilium became healthy")
 
 	log.Infof("Restart Cilium")
 	if err := k.clusterUtil.FixCilium(ctx); err != nil {
@@ -253,8 +253,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
 	timeUntilFinishedWaiting = time.Since(timeToStartWaiting)
-	log.Infof("cert-manager took %s to be fully installed", timeUntilFinishedWaiting.Round(time.Second).String())
-
+	log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("cert-manager installation finished")
 	operatorVals, err := k.setupOperatorVals(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("setting up operator vals: %w", err)
