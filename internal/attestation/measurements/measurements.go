@@ -49,6 +49,11 @@ const (
 	TDXIndexClusterID = RTMRIndexClusterID + 1
 	// RTMRIndexClusterID is the RTMR we extend to mark the node as initialized.
 	RTMRIndexClusterID = 2
+
+	// PCRMeasurementLength holds the length for valid PCR measurements (SHA256).
+	PCRMeasurementLength = 32
+	// TDXMeasurementLength holds the length for valid TDX measurements (SHA384).
+	TDXMeasurementLength = 48
 )
 
 // M are Platform Configuration Register (PCR) values that make up the Measurements.

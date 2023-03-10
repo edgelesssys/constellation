@@ -163,7 +163,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 		}
 
 		// TDX measurements are 48 bytes long, TPM measurements are 32 bytes long
-		if lenMeasurements == 48 {
+		if lenMeasurements == measurements.TDXMeasurementLength {
 			v.validator = tdx.NewValidator(v.pcrs, log)
 		} else {
 			v.validator = qemu.NewValidator(v.pcrs, log)
