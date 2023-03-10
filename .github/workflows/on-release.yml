@@ -63,16 +63,32 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubAddReleaseVersion
           aws-region: eu-central-1
 
-      - name: Build versionsapi CLI
-        working-directory: internal/versionsapi/cli
-        run: go build -o versionsapi
+  add-image-version-to-versionsapi:
+    needs: [update]
+    name: "Add image version to versionsapi"
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/versionsapi.yml
+    with:
+      command: add
+      add_release: true
+      stream: stable
+      version: ${{ inputs.tag }}
+      kind: image
+      add_latest: true
 
-      - name: Add version to versionsapi
-        working-directory: internal/versionsapi/cli
-        run: |
-          latest_flag=$([[ "${LATEST}" = "true" ]] && echo "--latest" || echo "")
-          ./versionsapi add \
-            --release \
-            --stream "stable" \
-            --version "${TAG}" \
-            "${latest_flag}"
+  add-cli-version-to-versionsapi:
+    needs: [update]
+    name: "Add CLI version to versionsapi"
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/versionsapi.yml
+    with:
+      command: add
+      add_release: true
+      stream: stable
+      version: ${{ inputs.tag }}
+      kind: cli
+      add_latest: true

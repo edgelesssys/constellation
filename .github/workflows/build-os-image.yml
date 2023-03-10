@@ -977,9 +977,9 @@ jobs:
             --stream=${{  needs.build-settings.outputs.stream }} \
             --version=${{  needs.build-settings.outputs.imageVersion }} \
 
-  add-version-to-versionsapi:
+  add-image-version-to-versionsapi:
     needs: [upload-artifacts, build-settings]
-    name: "Add version to versionsapi"
+    name: "Add image version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
       contents: read
@@ -990,4 +990,21 @@ jobs:
       ref: ${{ needs.build-settings.outputs.ref }}
       stream: ${{ needs.build-settings.outputs.stream }}
       version: ${{ needs.build-settings.outputs.imageVersion }}
+      kind: "image"
+      add_latest: true
+
+  add-cli-version-to-versionsapi:
+    needs: [upload-artifacts, build-settings]
+    name: "Add CLI version to versionsapi"
+    if: needs.build-settings.outputs.ref != '-'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/versionsapi.yml
+    with:
+      command: add
+      ref: ${{ needs.build-settings.outputs.ref }}
+      stream: ${{ needs.build-settings.outputs.stream }}
+      version: ${{ needs.build-settings.outputs.imageVersion }}
+      kind: "cli"
       add_latest: true
