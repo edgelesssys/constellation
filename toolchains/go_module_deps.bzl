@@ -8396,14 +8396,7 @@ def go_dependencies():
         sum = "h1:q4UeuyzSp7GiYUB5T3ytzeXh41hp9JqNQu150NkO+7A=",
         version = "v1.8010.0",
     )
-    go_repository(
-        name = "org_libvirt_go_libvirtxml",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "libvirt.org/go/libvirtxml",
-        sum = "h1:29wyVe4m08S3JBSJnMJ/0WCWWcq8Xl5zF5NIa2RtXdI=",
-        version = "v1.8009.0",
-    )
+
     go_repository(
         name = "org_mongodb_go_mongo_driver",
         build_file_generation = "on",
