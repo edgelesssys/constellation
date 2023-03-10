@@ -247,23 +247,19 @@ type SetupPodNetworkInput struct {
 	LoadBalancerEndpoint string
 }
 
-// FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
-// the cilium daemonset, it only restarts the local cilium pod.
-func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
-	ctx := context.Background()
-
+// WaitForCilium waits until Cilium reports a healthy status over its /healthz endpoint.
+func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) error {
 	// wait for cilium pod to be healthy
 	client := http.Client{}
 	for {
 		time.Sleep(5 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
 		if err != nil {
-			log.With(zap.Error(err)).Errorf("Unable to create request")
-			continue
+			return fmt.Errorf("unable to create request: %w", err)
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.With(zap.Error(err)).Warnf("Waiting for local cilium daemonset pod not healthy")
+			log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
 			continue
 		}
 		resp.Body.Close()
@@ -272,42 +268,45 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 		}
 	}
 
+	return nil
+}
+
+// FixCilium fixes https://github.com/cilium/cilium/issues/19958
+// Instead of a rollout restart of the Cilium DaemonSet, it only restarts the local Cilium Pod.
+func (k *KubernetesUtil) FixCilium(ctx context.Context) error {
 	// get cilium container id
 	out, err := exec.CommandContext(ctx, "/run/state/bin/crictl", "ps", "--name", "cilium-agent", "-q").CombinedOutput()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Getting cilium container id failed: %s", out)
-		return
+		return fmt.Errorf("getting cilium container id failed: %s", out)
 	}
 	outLines := strings.Split(string(out), "\n")
 	if len(outLines) < 2 {
-		log.Errorf("Getting cilium container id returned invalid output: %s", out)
-		return
+		return fmt.Errorf("getting cilium container id returned invalid output: %s", out)
 	}
 	containerID := outLines[len(outLines)-2]
 
 	// get cilium pod id
 	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "inspect", "-o", "go-template", "--template", "{{ .info.sandboxID }}", containerID).CombinedOutput()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Getting cilium pod id failed: %s", out)
-		return
+		return fmt.Errorf("getting Cilium Pod ID failed: %s", out)
 	}
 	outLines = strings.Split(string(out), "\n")
 	if len(outLines) < 2 {
-		log.Errorf("Getting cilium pod id returned invalid output: %s", out)
-		return
+		return fmt.Errorf("getting Cilium Pod ID returned invalid output: %s", out)
 	}
 	podID := outLines[len(outLines)-2]
 
 	// stop and delete pod
 	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "stopp", podID).CombinedOutput()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Stopping cilium agent pod failed: %s", out)
-		return
+		return fmt.Errorf("stopping Cilium agent Pod failed: %s", out)
 	}
 	out, err = exec.CommandContext(ctx, "/run/state/bin/crictl", "rmp", podID).CombinedOutput()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Removing cilium agent pod failed: %s", out)
+		return fmt.Errorf("removing Cilium agent Pod failed: %s", out)
 	}
+
+	return nil
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.

@@ -510,7 +510,12 @@ func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
 }
 
-func (s *stubClusterUtil) FixCilium(log *logger.Logger) {
+func (s *stubClusterUtil) WaitForCilium(ctx context.Context, log *logger.Logger) error {
+	return nil
+}
+
+func (s *stubClusterUtil) FixCilium(ctx context.Context) error {
+	return nil
 }
 
 type stubConfigProvider struct {

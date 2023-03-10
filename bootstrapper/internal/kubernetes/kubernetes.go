@@ -189,6 +189,26 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing pod network: %w", err)
 	}
 
+	// TODO: The timeout here is high as ghcr.io can be slow sometimes. Reduce this later when we move the repository.
+	// Also remove the logging later.
+	log.Infof("Waiting for Cilium to become healthy")
+	timeToStartWaiting := time.Now()
+	// TODO(Nirusu): Reduce the timeout when we switched the package repository - this is only this high because I once
+	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
+	waitCtx, cancel = context.WithTimeout(ctx, 20*time.Minute)
+	defer cancel()
+	if err := k.clusterUtil.WaitForCilium(waitCtx, log); err != nil {
+		return nil, fmt.Errorf("waiting for Cilium to become healthy: %w", err)
+	}
+	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
+	log.Infof("Cilium took %s to become healthy", timeUntilFinishedWaiting.Round(time.Second).String())
+
+	log.Infof("Restart Cilium")
+	if err := k.clusterUtil.FixCilium(ctx); err != nil {
+		log.With(zap.Error(err)).Errorf("FixCilium failed")
+		// Continue and don't throw an error here - things might be okay.
+	}
+
 	var controlPlaneIP string
 	if strings.Contains(controlPlaneEndpoint, ":") {
 		controlPlaneIP, _, err = net.SplitHostPort(controlPlaneEndpoint)
@@ -238,8 +258,6 @@ func (k *KubeWrapper) InitCluster(
 	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
-
-	k.clusterUtil.FixCilium(log)
 
 	return kubeConfig, nil
 }
@@ -297,7 +315,16 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	k.clusterUtil.FixCilium(log)
+	log.Infof("Waiting for Cilium to become healthy")
+	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
+		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
+	}
+
+	log.Infof("Restart Cilium")
+	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
+		log.With(zap.Error(err)).Errorf("FixCilium failed")
+		// Continue and don't throw an error here - things might be okay.
+	}
 
 	return nil
 }
@@ -358,7 +385,17 @@ func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
 		return fmt.Errorf("starting kubelet: %w", err)
 	}
 
-	k.clusterUtil.FixCilium(log)
+	log.Infof("Waiting for Cilium to become healthy")
+	if err := k.clusterUtil.WaitForCilium(context.Background(), log); err != nil {
+		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
+	}
+
+	log.Infof("Restart Cilium")
+	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
+		log.With(zap.Error(err)).Errorf("FixCilium failed")
+		// Continue and don't throw an error here - things might be okay.
+	}
+
 	return nil
 }
 
