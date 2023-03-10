@@ -21,7 +21,8 @@ type clusterUtil interface {
 	InstallComponents(ctx context.Context, kubernetesComponents components.Components) error
 	InitCluster(ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) ([]byte, error)
 	JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error
-	FixCilium(log *logger.Logger)
+	WaitForCilium(ctx context.Context, log *logger.Logger) error
+	FixCilium(ctx context.Context) error
 	StartKubelet() error
 }
 
