@@ -26,8 +26,8 @@ type Collector struct {
 }
 
 // NewCollector creates a new Collector for journald logs.
-func NewCollector(ctx context.Context, service string) (*Collector, error) {
-	cmd := exec.CommandContext(ctx, "journalctl", "-u", service)
+func NewCollector(ctx context.Context) (*Collector, error) {
+	cmd := exec.CommandContext(ctx, "journalctl")
 	if cmd.Err != nil {
 		return nil, cmd.Err
 	}
