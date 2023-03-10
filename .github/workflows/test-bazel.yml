@@ -7,13 +7,11 @@ on:
       - main
       - "release/**"
     paths:
-      - "*.go"
       - "**.bzl"
       - "**.bazel"
       - ".github/workflows/test-bazel.yml"
   pull_request:
     paths:
-      - "*.go"
       - "**.bzl"
       - "**.bazel"
       - ".github/workflows/test-bazel.yml"
@@ -28,11 +26,10 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Run buildifier and gazelle test
+      - name: Run buildifier
         shell: bash
         run: |
           bazelisk test //:buildifier-check
-          bazelisk run //:gazelle-check
 
       # TODO(malt3): Find workflows to run bazel unit tests
       # - name: Run unit tests

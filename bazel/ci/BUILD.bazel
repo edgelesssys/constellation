@@ -1,0 +1,12 @@
+sh_binary(
+    name = "tidy",
+    srcs = ["tidy.sh"],
+    data = [
+        "@bazel_gazelle//cmd/gazelle",
+        "@go_sdk//:bin/go",
+    ],
+    env = {
+        "GAZELLE": "$(location @bazel_gazelle//cmd/gazelle)",
+        "GO": "$(location @go_sdk//:bin/go)",
+    },
+)
