@@ -37,7 +37,7 @@ replace (
 )
 
 require (
-	github.com/edgelesssys/constellation/v2 v2.5.2
+	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.2
