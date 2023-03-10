@@ -133,9 +133,9 @@ func TestPrintPCRs(t *testing.T) {
 			assert := assert.New(t)
 
 			pcrs := measurements.M{
-				0: measurements.WithAllBytes(0xAA, true),
-				1: measurements.WithAllBytes(0xBB, true),
-				2: measurements.WithAllBytes(0xCC, true),
+				0: measurements.WithAllBytes(0xAA, true, measurements.PCRMeasurementLength),
+				1: measurements.WithAllBytes(0xBB, true, measurements.PCRMeasurementLength),
+				2: measurements.WithAllBytes(0xCC, true, measurements.PCRMeasurementLength),
 			}
 
 			var out bytes.Buffer
@@ -180,9 +180,9 @@ func TestPrintPCRsWithMetadata(t *testing.T) {
 			require := require.New(t)
 
 			pcrs := measurements.M{
-				0: measurements.WithAllBytes(0xAA, true),
-				1: measurements.WithAllBytes(0xBB, true),
-				2: measurements.WithAllBytes(0xCC, true),
+				0: measurements.WithAllBytes(0xAA, true, measurements.PCRMeasurementLength),
+				1: measurements.WithAllBytes(0xBB, true, measurements.PCRMeasurementLength),
+				2: measurements.WithAllBytes(0xCC, true, measurements.PCRMeasurementLength),
 			}
 
 			outputWithMetadata := measurements.WithMetadata{

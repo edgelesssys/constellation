@@ -285,7 +285,7 @@ func prepareGCPValues(values map[string]any) error {
 	}
 
 	m := measurements.M{
-		1: measurements.WithAllBytes(0xAA, false),
+		1: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
 	}
 	mJSON, err := json.Marshal(m)
 	if err != nil {
@@ -361,7 +361,7 @@ func prepareAzureValues(values map[string]any) error {
 		return errors.New("missing 'join-service' key")
 	}
 	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}
 	mJSON, err := json.Marshal(m)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func prepareQEMUValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength)}
 	mJSON, err := json.Marshal(m)
 	if err != nil {
 		return err
