@@ -162,7 +162,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	newKubernetes := filterK8sUpgrades(current.k8s, supported.k8s)
-	sort.Strings(newKubernetes)
+	semver.Sort(newKubernetes)
 
 	supported.image = filterImageUpgrades(current.image, supported.image)
 	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, supported.image)
@@ -609,6 +609,8 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 			}
 		}
 	}
+
+	semver.Sort(compatibleVersions)
 
 	return compatibleVersions, nil
 }
