@@ -36,7 +36,6 @@ func runVersion(cmd *cobra.Command, args []string) {
 	}
 
 	cmd.Printf("Version:\t%s (%s)\n", constants.VersionInfo(), constants.VersionBuild)
-	cmd.Printf("Edition:\t%s\n", constants.Edition)
 	cmd.Printf("GitCommit:\t%s\n", commit)
 	cmd.Printf("GitTreeState:\t%s\n", state)
 	cmd.Printf("BuildDate:\t%s\n", date)
