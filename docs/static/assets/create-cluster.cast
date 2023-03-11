@@ -156,7 +156,6 @@
 [229.519352, "o", "Using community license.\r\n"]
 [230.763257, "o", "For details, see https://docs.edgeless.systems/constellation/overview/license\r\n"]
 [230.763717, "o", "Your Constellation master secret was successfully written to ./constellation-mastersecret.json\r\n"]
-[385.0294, "o", "Warning: Encountered untrusted PCR value at index 5\r\n"]
 [698.404666, "o", "Your Constellation cluster was successfully initialized.\r\n\r\nConstellation cluster identifier  29629a1275a29f75c068032461d7792ba3e50409081f9a5753a9e854b77038d5\r\nKubernetes configuration          constellation-admin.conf\r\n\r\n"]
 [698.404874, "o", "You can now connect to your cluster by executing:\r\n\texport KUBECONFIG=\"$PWD/constellation-admin.conf\"\r\n"]
 [698.408812, "o", "\u001b[38;2;139;4;221m$\u001b[0m "]
