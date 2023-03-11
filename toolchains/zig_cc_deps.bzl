@@ -2,7 +2,7 @@
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-BAZEL_ZIG_CC_VERSION = "v1.0.0"
+BAZEL_ZIG_CC_VERSION = "v1.0.1"
 
 def zig_cc_deps():
     """Loads the dependencies for bazel-zig-cc."""
@@ -18,7 +18,7 @@ def zig_cc_deps():
 
     http_archive(
         name = "bazel-zig-cc",
-        sha256 = "1f4a1d1e0f6b3e5aa6e1c225fcb23c032f8849441de97b9a38d6ea37362d28e2",
+        sha256 = "e9f82bfb74b3df5ca0e67f4d4989e7f1f7ce3386c295fd7fda881ab91f83e509",
         strip_prefix = "bazel-zig-cc-{}".format(BAZEL_ZIG_CC_VERSION),
         urls = ["https://git.sr.ht/~motiejus/bazel-zig-cc/archive/{}.tar.gz".format(BAZEL_ZIG_CC_VERSION)],
     )

@@ -63,14 +63,14 @@ load("@bazel-zig-cc//toolchain:defs.bzl", zig_toolchains = "toolchains")
 # See https://ziglang.org/download/ for the latest releases
 
 zig_toolchains(
-    host_platform_sha256 = {
-        "linux-aarch64": "b759a11993949531c692ccfc3d1a004b14df714a7a3515fe0b5c90c9a7631d61",
-        "linux-x86_64": "028dad5189e02b2058679b64df16e854a1c1ca0e6044b334d4f3be6e35544f07",
-        "macos-aarch64": "5709c27d581988f50f5e6fd5b69d92707787e803a1d04992e290b764617664e6",
-        "macos-x86_64": "88d194adb2f3c1a9edbb4a24d018007d5f827a57d1d26b2d9f3459236da1b7b6",
-        "windows-x86_64": "75e510bda108e4d78b89d5d1d09e70ea8595fac7c43b5611f280668881adb09d",
-    },
-    version = "0.11.0-dev.1638+7199d7c77",
+    # host_platform_sha256 = {
+    #     "linux-aarch64": "b759a11993949531c692ccfc3d1a004b14df714a7a3515fe0b5c90c9a7631d61",
+    #     "linux-x86_64": "028dad5189e02b2058679b64df16e854a1c1ca0e6044b334d4f3be6e35544f07",
+    #     "macos-aarch64": "5709c27d581988f50f5e6fd5b69d92707787e803a1d04992e290b764617664e6",
+    #     "macos-x86_64": "88d194adb2f3c1a9edbb4a24d018007d5f827a57d1d26b2d9f3459236da1b7b6",
+    #     "windows-x86_64": "75e510bda108e4d78b89d5d1d09e70ea8595fac7c43b5611f280668881adb09d",
+    # },
+    # version = "0.11.0-dev.1638+7199d7c77",
 )
 
 register_toolchains(
