@@ -119,17 +119,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	i.log.Debugf("Calculating cluster ID modification time")
-	var clusterIDModTime time.Time
-	stat, err := fileHandler.Stat(constants.ClusterIDsFileName)
-	if err != nil {
-		cmd.PrintErrln("Failed to retrieve stat from cluster ID file: %w", err)
-	}
-	if stat != nil && err == nil {
-		clusterIDModTime = stat.ModTime()
-		i.log.Debugf("Cluster ID modification time is %s", clusterIDModTime.String())
-	}
-
 	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion))
 	if err != nil {
 		return fmt.Errorf("validating kubernetes version: %w", err)
@@ -171,10 +160,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	clusterName := conf.Name + "-" + idFile.UID
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
-	if clusterIDModTime.Add(20 * time.Minute).After(time.Now()) {
-		cmd.PrintErrln("Note: Since you just created the cluster, it can take a few minutes to connect.")
-	}
-
+	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
 		KmsUri:                 masterSecret.EncodeToURI(),
