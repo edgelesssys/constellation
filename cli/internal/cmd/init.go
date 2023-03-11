@@ -160,7 +160,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	clusterName := conf.Name + "-" + idFile.UID
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
-	spinner.Start("Initializing cluster ", false)
+	spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
 		KmsUri:                 masterSecret.EncodeToURI(),
 		StorageUri:             uri.NoStoreURI,
@@ -175,7 +175,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		ClusterName:            clusterName,
 	}
 	i.log.Debugf("Sending initialization request")
-	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, spinner, req)
 	spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
@@ -195,12 +195,13 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	return nil
 }
 
-func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, spinner spinnerInterf, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	doer := &initDoer{
 		dialer:   dialer,
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
 		req:      req,
 		log:      i.log,
+		spinner:  spinner,
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -224,6 +225,7 @@ type initDoer struct {
 	req      *initproto.InitRequest
 	resp     *initproto.InitResponse
 	log      debugLog
+	spinner  spinnerInterf
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
@@ -262,6 +264,8 @@ func (d *initDoer) logGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, 
 		}
 		if state == connectivity.Ready {
 			d.log.Debugf("Connection ready")
+			d.spinner.Stop()
+			d.spinner.Start("Initializing cluster ", false)
 		} else {
 			d.log.Debugf("Connection state ended with %s", state)
 		}
