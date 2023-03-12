@@ -23,7 +23,7 @@ type imageFetcher interface {
 
 type terraformClient interface {
 	PrepareWorkspace(path string, input terraform.Variables) error
-	CreateCluster(ctx context.Context) (terraform.CreateOutput, error)
+	CreateCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.CreateOutput, error)
 	CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
 	Destroy(ctx context.Context) error
 	CleanUpWorkspace() error

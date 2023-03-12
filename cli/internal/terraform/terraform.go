@@ -87,7 +87,7 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, provider cloudprovider.Provider) (CreateOutput, error) {
 	if err := c.tf.Init(ctx); err != nil {
 		return CreateOutput{}, err
 	}
@@ -128,13 +128,16 @@ func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
 		return CreateOutput{}, errors.New("invalid type in uid output: not a string")
 	}
 
-	attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
-	if !ok {
-		return CreateOutput{}, errors.New("no attestationUrl output found")
-	}
-	attestationURL, ok := attestationURLOutput.Value.(string)
-	if !ok {
-		return CreateOutput{}, errors.New("invalid type in attestationUrl output: not a string")
+	var attestationURL string
+	if provider == cloudprovider.Azure {
+		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
+		if !ok {
+			return CreateOutput{}, errors.New("no attestationUrl output found")
+		}
+		attestationURL, ok = attestationURLOutput.Value.(string)
+		if !ok {
+			return CreateOutput{}, errors.New("invalid type in attestationUrl output: not a string")
+		}
 	}
 
 	return CreateOutput{
