@@ -56,6 +56,10 @@ build:rbe --jobs=1000
 build:rbe --nogoogle_default_credentials
 build:rbe --experimental_remote_build_event_upload=minimal
 build:rbe --experimental_remote_cache_compression
+build:rbe --remote_download_minimal
+build:rbe --host_platform=//:rbe_platform
+build:rbe --platforms=//:rbe_platform
+build:rbe --extra_execution_platforms=//:rbe_platform
 build:remote_cache --bes_results_url=https://app.buildbuddy.io/invocation/
 build:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
 build:remote_cache --remote_cache=grpcs://remote.buildbuddy.io

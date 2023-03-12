@@ -32,3 +32,15 @@ buildifier(
     mode = "fix",
     verbose = True,
 )
+
+platform(
+    name = "rbe_platform",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    exec_properties = {
+        "OSFamily": "Linux",
+        "container-image": "docker://ghcr.io/malt3/bazel-container:latest",
+    },
+)
