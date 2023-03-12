@@ -244,7 +244,11 @@ func TestCreateCluster(t *testing.T) {
 		vars     Variables
 		tf       *stubTerraform
 		fs       afero.Fs
-		wantErr  bool
+		// expectedAttestationURL is the expected attestation URL to be returned by
+		// the Terraform client. It is declared in the test case because it is
+		// provider-specific.
+		expectedAttestationURL string
+		wantErr                bool
 	}{
 		"works": {
 			pathBase: "terraform",
@@ -333,6 +337,21 @@ func TestCreateCluster(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
+		"working attestation url": {
+			pathBase: "terraform",
+			provider: cloudprovider.Azure,
+			vars:     qemuVars, // works for mocking azure vars
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{},
+					},
+				},
+			},
+			fs:                     afero.NewMemMapFs(),
+			expectedAttestationURL: "https://12345.neu.attest.azure.net",
+			wantErr:                true,
+		},
 		"no attestation url": {
 			pathBase: "terraform",
 			provider: cloudprovider.Azure,
@@ -376,7 +395,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.CreateCluster(context.Background())
+			tfOutput, err := c.CreateCluster(context.Background(), tc.provider)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -386,7 +405,7 @@ func TestCreateCluster(t *testing.T) {
 			assert.Equal("192.0.2.100", tfOutput.IP)
 			assert.Equal("initSecret", tfOutput.Secret)
 			assert.Equal("12345abc", tfOutput.UID)
-			assert.Equal("https://12345.neu.attest.azure.net", tfOutput.AttestationURL)
+			assert.Equal(tc.expectedAttestationURL, tfOutput.AttestationURL)
 		})
 	}
 }

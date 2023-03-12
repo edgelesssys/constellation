@@ -142,9 +142,10 @@ func TestCreator(t *testing.T) {
 						destination: "some-destination",
 					}
 				},
+				policyPatcher: tc.policyPatcher,
 			}
 
-			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, tc.policyPatcher, "type", 2, 3)
+			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, "type", 2, 3)
 
 			if tc.wantErr {
 				assert.Error(err)

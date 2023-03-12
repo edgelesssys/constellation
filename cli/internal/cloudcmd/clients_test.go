@@ -31,6 +31,7 @@ type stubTerraformClient struct {
 	initSecret             string
 	iamOutput              terraform.IAMOutput
 	uid                    string
+	attestationUrl         string
 	tfjsonState            *tfjson.State
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
@@ -44,11 +45,12 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context) (terraform.CreateOutput, error) {
+func (c *stubTerraformClient) CreateCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{
-		IP:     c.ip,
-		Secret: c.initSecret,
-		UID:    c.uid,
+		IP:             c.ip,
+		Secret:         c.initSecret,
+		UID:            c.uid,
+		AttestationURL: c.attestationUrl,
 	}, c.createClusterErr
 }
 

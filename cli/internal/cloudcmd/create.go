@@ -39,6 +39,7 @@ type Creator struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
 	newRawDownloader   func() rawDownloader
+	policyPatcher      PolicyPatcher
 }
 
 // NewCreator creates a new creator.
@@ -55,11 +56,12 @@ func NewCreator(out io.Writer) *Creator {
 		newRawDownloader: func() rawDownloader {
 			return image.NewDownloader()
 		},
+		policyPatcher: policyPatcher{},
 	}
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, azurePolicyPatcher PolicyPatcher, insType string, controlPlaneCount, workerCount int,
+func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
 	image, err := c.image.FetchReference(ctx, config)
 	if err != nil {
@@ -87,7 +89,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, config, azurePolicyPatcher, insType, controlPlaneCount, workerCount, image)
+		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.OpenStack:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
@@ -187,8 +189,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
-	patcher PolicyPatcher, insType string, controlPlaneCount, workerCount int, image string,
+func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -221,7 +222,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 	}
 
 	// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-	if err := patcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
+	if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
 		return clusterid.File{}, err
 	}
 
@@ -239,11 +240,6 @@ type PolicyPatcher interface {
 	Patch(ctx context.Context, attestationURL, policy string) error
 }
 
-// NewPolicyPatcher returns a new PolicyPatcher.
-func NewPolicyPatcher() PolicyPatcher {
-	return policyPatcher{}
-}
-
 type policyPatcher struct{}
 
 // Patch updates the attestation policy to the base64-encoded attestation policy JWT for the given attestation URL.
@@ -254,33 +250,33 @@ func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string)
 	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return fmt.Errorf("failed to create default Azure credentials: %w", err)
+		return fmt.Errorf("retrieving default Azure credentials: %w", err)
 	}
-	token, err := cred.GetToken(context.Background(), azpolicy.TokenRequestOptions{
+	token, err := cred.GetToken(ctx, azpolicy.TokenRequestOptions{
 		Scopes: []string{"https://attest.azure.net/.default"},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create default Azure credentials: %w", err)
+		return fmt.Errorf("retrieving token from default Azure credentials: %w", err)
 	}
 
 	client := attestation.NewPolicyClient()
 
 	// azureGuest is the id for the "Azure VM" attestation type. Other types are documented here:
 	// https://learn.microsoft.com/en-us/rest/api/attestation/policy/set
-	req, err := client.SetPreparer(context.Background(), attestationURL, "azureGuest", p.encodeAttestationPolicy(constants.EncodedAzureMAAPolicy))
-	req.Header.Set("Authorization", "Bearer "+token.Token)
+	req, err := client.SetPreparer(ctx, attestationURL, "azureGuest", p.encodeAttestationPolicy(constants.EncodedAzureMAAPolicy))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("preparing request: %w", err)
 	}
 
-	res, err := client.Send(req)
+	resp, err := client.Send(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("sending request: %w", err)
 	}
-	defer res.Body.Close()
+	resp.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to update attestation policy: %s", res.Status)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("updating attestation policy: unexpected status code: %s", resp.Status)
 	}
 
 	return nil
@@ -289,11 +285,11 @@ func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string)
 // encodeAttestationPolicy encodes the base64-encoded attestation policy in the JWS format specified here:
 // https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#creating-the-policy-file-in-json-web-signature-format
 func (p policyPatcher) encodeAttestationPolicy(encodedPolicy string) string {
-	header := `{"alg":"none"}`
-	payload := fmt.Sprintf(`{"AttestationPolicy": "%s"}`, encodedPolicy)
+	const header = `{"alg":"none"}`
+	payload := fmt.Sprintf(`{"AttestationPolicy":"%s"}`, encodedPolicy)
 
-	encodedHeader := base64.RawStdEncoding.EncodeToString([]byte(header))
-	encodedPayload := base64.RawStdEncoding.EncodeToString([]byte(payload))
+	encodedHeader := base64.RawURLEncoding.EncodeToString([]byte(header))
+	encodedPayload := base64.RawURLEncoding.EncodeToString([]byte(payload))
 
 	return fmt.Sprintf("%s.%s.", encodedHeader, encodedPayload)
 }
@@ -452,7 +448,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// Allow rollback of QEMU Terraform workspace from this point on
 	qemuRollbacker.createdWorkspace = true
 
-	tfOutput, err := cl.CreateCluster(ctx)
+	tfOutput, err := cl.CreateCluster(ctx, cloudprovider.QEMU)
 	if err != nil {
 		return clusterid.File{}, err
 	}

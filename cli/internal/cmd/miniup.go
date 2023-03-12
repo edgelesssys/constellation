@@ -230,7 +230,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 // createMiniCluster creates a new cluster using the given config.
 func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config) error {
 	m.log.Debugf("Creating mini cluster")
-	idFile, err := creator.Create(ctx, cloudprovider.QEMU, config, cloudcmd.NewPolicyPatcher(), "", 1, 1)
+	idFile, err := creator.Create(ctx, cloudprovider.QEMU, config, "", 1, 1)
 	if err != nil {
 		return err
 	}
