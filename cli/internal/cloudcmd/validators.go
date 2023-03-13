@@ -138,7 +138,11 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd, log: v.log}
 
 	// Use of a valid variant has been check in NewValidator so we may drop the error
-	v.validator, _ = choose.Validator(v.attestationVariant, v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
+	v.validator, _ = choose.Validator(
+		v.attestationVariant, v.pcrs,
+		idkeydigest.Config{IDKeyDigests: v.idkeydigests, EnforcementPolicy: v.enforceIDKeyDigest},
+		log,
+	)
 }
 
 // warnLogger implements logging of warnings for validators.

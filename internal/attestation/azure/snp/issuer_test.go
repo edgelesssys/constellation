@@ -134,7 +134,12 @@ func TestGetHCLAttestationKey(t *testing.T) {
 type stubImdsClient struct {
 	vcek      string
 	certChain string
+	maaURL    string
 	apiError  error
+}
+
+func (c stubImdsClient) getMAAURL(ctx context.Context) (string, error) {
+	return c.maaURL, c.apiError
 }
 
 func (c stubImdsClient) getVcek(ctx context.Context) (vcekResponse, error) {
@@ -165,6 +170,6 @@ type stubMaaTokenCreator struct {
 	err   error
 }
 
-func (s *stubMaaTokenCreator) createToken(context.Context, io.ReadWriter, []byte, []byte, []byte, []byte) (string, error) {
+func (s *stubMaaTokenCreator) createToken(context.Context, io.ReadWriter, string, []byte, []byte, []byte, []byte) (string, error) {
 	return s.token, s.err
 }

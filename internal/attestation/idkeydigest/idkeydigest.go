@@ -18,6 +18,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
+// Config contains the configuration for ID Key Digest validation.
+type Config struct {
+	IDKeyDigests      IDKeyDigests
+	EnforcementPolicy EnforceIDKeyDigest
+	MAAURL            string
+}
+
 //go:generate stringer -type=EnforceIDKeyDigest
 
 // EnforceIDKeyDigest defines the behavior of the validator when the ID key digest is not found in the expected list.

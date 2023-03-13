@@ -168,7 +168,11 @@ func TestValidatorV(t *testing.T) {
 		"azure cvm": {
 			variant: oid.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
-			wantVs:  snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, idkeydigest.WarnOnly, nil),
+			wantVs: snp.NewValidator(
+				newTestPCRs(),
+				idkeydigest.Config{IDKeyDigests: idkeydigest.IDKeyDigests{}, EnforcementPolicy: idkeydigest.WarnOnly},
+				nil,
+			),
 		},
 		"azure trusted launch": {
 			variant: oid.AzureTrustedLaunch{},

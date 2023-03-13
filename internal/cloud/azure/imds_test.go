@@ -197,7 +197,7 @@ func TestIMDSClient(t *testing.T) {
 					DialTLS:        tc.server.Dial,
 				},
 			}
-			iClient := imdsClient{client: &hClient}
+			iClient := IMDSClient{client: &hClient}
 
 			ctx := context.Background()
 

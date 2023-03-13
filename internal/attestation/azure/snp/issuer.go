@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
@@ -42,11 +41,9 @@ type Issuer struct {
 // NewIssuer initializes a new Azure Issuer.
 func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 	i := &Issuer{
-		imds: imdsClient{
-			client: &http.Client{Transport: &http.Transport{Proxy: nil}},
-		},
+		imds:         newIMDSClient(),
 		reportGetter: &tpmReport{},
-		maa:          newMAAClient("https://snpattestationtester.neu.attest.azure.net"),
+		maa:          newMAAClient(),
 	}
 
 	i.Issuer = vtpm.NewIssuer(
@@ -81,9 +78,17 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 	vcekCert := []byte(vcekResponse.VcekCert)
 	vcekChain := []byte(vcekResponse.CertificateChain)
 
-	maaToken, err := i.maa.createToken(ctx, tpm, userData, hclReport, vcekCert, vcekChain)
+	var maaToken string
+
+	maaURL, err := i.imds.getMAAURL(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("creating MAA token: %w", err)
+		return nil, fmt.Errorf("retrieving MAA URL from IMDS API: %w", err)
+	}
+	if maaURL != "" {
+		maaToken, err = i.maa.createToken(ctx, tpm, maaURL, userData, hclReport, vcekCert, vcekChain)
+		if err != nil {
+			return nil, fmt.Errorf("creating MAA token: %w", err)
+		}
 	}
 
 	instanceInfo := azureInstanceInfo{
@@ -132,8 +137,9 @@ type tpmReportGetter interface {
 
 type imdsAPI interface {
 	getVcek(ctx context.Context) (vcekResponse, error)
+	getMAAURL(ctx context.Context) (string, error)
 }
 
 type maaTokenCreator interface {
-	createToken(context.Context, io.ReadWriter, []byte, []byte, []byte, []byte) (string, error)
+	createToken(context.Context, io.ReadWriter, string, []byte, []byte, []byte, []byte) (string, error)
 }

@@ -96,7 +96,7 @@ func TestValidator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			validator, err := Validator(tc.variant, nil, nil, idkeydigest.StrictChecking, nil)
+			validator, err := Validator(tc.variant, nil, idkeydigest.Config{}, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
