@@ -352,6 +352,7 @@ go_test(
     data = glob(["testdata/**"]),
     embed = [":helm"],
     deps = [
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
