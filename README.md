@@ -71,7 +71,7 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ## Live demos
 
-We're running public instances of popular software on Constellation: 
+We're running public instances of popular software on Constellation:
 * Rocket.Chat: https://rocket.edgeless.systems/ ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
 * GitLab: https://gitlab.edgeless.systems/ ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
 
@@ -88,6 +88,7 @@ You may want to start with one of the following sections.
 
 ## Support
 
+* If something doesn't work, make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
 * Please file an [issue][github-issues] to get help or report a bug.
 * Join the [Discord] to have a chat on confidential computing and Constellation.
 * Visit our [blog](https://blog.edgeless.systems/) for technical deep-dives and tutorials and follow us on [Twitter] for news.

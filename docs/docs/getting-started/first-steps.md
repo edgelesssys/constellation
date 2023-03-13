@@ -7,6 +7,10 @@ and have access to a cloud subscription.
 If you don't have a cloud subscription, check out [MiniConstellation](first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
 :::
 
+:::note
+If you encounter any problem with the following steps, make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
+:::
+
 ## Create a cluster
 
 1. Create the configuration file and IAM resources for your selected cloud provider

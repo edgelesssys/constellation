@@ -2,6 +2,11 @@
 
 This section aids you in finding problems when working with Constellation.
 
+## Issues with creating new clusters
+
+When you create a new cluster, you should always use the [latest release](https://github.com/edgelesssys/constellation/releases/latest).
+If something doesn't work, check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
+
 ## Azure: Resource Providers can't be registered
 
 On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
