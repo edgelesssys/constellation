@@ -96,9 +96,9 @@ func reverseEndian(b []byte) {
 
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func (v *Validator) getTrustedKey(akPub, instanceInfoRaw, extraData []byte) (crypto.PublicKey, error) {
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
 	var instanceInfo azureInstanceInfo
-	if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
+	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
 		return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
 	}
 
@@ -112,11 +112,11 @@ func (v *Validator) getTrustedKey(akPub, instanceInfoRaw, extraData []byte) (cry
 		return nil, fmt.Errorf("validating VCEK: %w", err)
 	}
 
-	if err := v.validateSNPReport(vcek, report, instanceInfo.MAAToken, extraData); err != nil {
+	if err := v.validateSNPReport(ctx, vcek, report, instanceInfo.MAAToken, extraData); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 
-	pubArea, err := tpm2.DecodePublic(akPub)
+	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 }
 
 func (v *Validator) validateSNPReport(
-	cert *x509.Certificate, report snpAttestationReport, maaToken string, extraData []byte,
+	ctx context.Context, cert *x509.Certificate, report snpAttestationReport, maaToken string, extraData []byte,
 ) error {
 	if report.Policy.Debug() {
 		return errDebugEnabled
@@ -216,7 +216,7 @@ func (v *Validator) validateSNPReport(
 		switch v.enforceIDKeyDigest {
 		case idkeydigest.MAAFallback:
 			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
-			return v.maa.validateToken(context.TODO(), maaToken, extraData)
+			return v.maa.validateToken(ctx, maaToken, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
 		default:

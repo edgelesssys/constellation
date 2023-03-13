@@ -8,6 +8,7 @@ package snp
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
@@ -22,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -202,6 +204,14 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			if err != nil {
 				assert.Error(err)
 			}
+
+			attDoc := vtpm.AttestationDocument{
+				InstanceInfo: statement,
+				Attestation: &attest.Attestation{
+					AkPub: akPub,
+				},
+			}
+
 			validator := &Validator{
 				hclValidator:       &instanceInfo,
 				idKeyDigests:       tc.idkeydigests,
@@ -209,7 +219,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				log:                logger.NewTest(t),
 			}
 
-			key, err := validator.getTrustedKey(akPub, statement, nil)
+			key, err := validator.getTrustedKey(context.Background(), attDoc, nil)
 			if tc.wantErr {
 				tc.assertCorrectError(err)
 			} else {

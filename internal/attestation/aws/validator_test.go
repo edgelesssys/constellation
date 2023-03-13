@@ -16,23 +16,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGeTrustedKey(t *testing.T) {
 	testCases := map[string]struct {
-		attDoc  []byte
-		nonce   []byte
+		akPub   []byte
+		info    []byte
 		wantErr bool
 	}{
 		"nul byte docs": {
-			attDoc:  []byte{0x00, 0x00, 0x00, 0x00},
-			nonce:   []byte{0x00, 0x00, 0x00, 0x00},
+			akPub:   []byte{0x00, 0x00, 0x00, 0x00},
+			info:    []byte{0x00, 0x00, 0x00, 0x00},
 			wantErr: true,
 		},
 		"nil": {
-			attDoc:  nil,
-			nonce:   nil,
+			akPub:   nil,
+			info:    nil,
 			wantErr: true,
 		},
 	}
@@ -40,7 +41,16 @@ func TestGeTrustedKey(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			out, err := getTrustedKey(tc.attDoc, tc.nonce, nil)
+			out, err := getTrustedKey(
+				context.Background(),
+				vtpm.AttestationDocument{
+					Attestation: &attest.Attestation{
+						AkPub: tc.akPub,
+					},
+					InstanceInfo: tc.info,
+				},
+				nil,
+			)
 
 			if tc.wantErr {
 				assert.Error(err)
