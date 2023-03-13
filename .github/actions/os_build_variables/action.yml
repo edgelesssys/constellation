@@ -205,8 +205,6 @@ runs:
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
         semver: ${{ steps.version.outputs.semanticVersion }}
-        pseudover: ${{ steps.version.outputs.pseudoVersion }}
-        branchName: ${{ steps.version.outputs.branchName }}
         uploadVariant: ${{ inputs.uploadVariant }}
       run: |
         echo "resourceGroupName=constellation-images" >> $GITHUB_OUTPUT
@@ -265,7 +263,6 @@ runs:
         imageVersion: ${{ inputs.imageVersion }}
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
-        semver: ${{ steps.version.outputs.semanticVersion }}
       run: |
         echo "project=constellation-images" >> $GITHUB_OUTPUT
         echo "bucket=constellation-images" >> $GITHUB_OUTPUT

@@ -7,20 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package git
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/storer"
-)
-
-var (
-	versionRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+(?:-pre)?$`)
-	tagReference = regexp.MustCompile(`^refs/tags/([^/]+)$`)
 )
 
 // Git represents a git repository.
@@ -45,45 +37,6 @@ func (g *Git) Revision() (string, time.Time, error) {
 		return "", time.Time{}, err
 	}
 	return commitRef.Hash().String()[:12], commit.Committer.When, nil
-}
-
-// FirstParentWithVersionTag returns the first parent of the HEAD commit (or HEAD itself) that has a version tag.
-func (g *Git) FirstParentWithVersionTag() (revision string, versionTag string, err error) {
-	commitRef, err := g.repo.Head()
-	if err != nil {
-		return "", "", err
-	}
-	commit, err := g.repo.CommitObject(commitRef.Hash())
-	if err != nil {
-		return "", "", err
-	}
-	commitToHash, err := g.tagsByRevisionHash()
-	if err != nil {
-		return "", "", err
-	}
-
-	iter := object.NewCommitIterCTime(commit, nil, nil)
-	if err := iter.ForEach(
-		func(c *object.Commit) error {
-			tags, ok := commitToHash[c.Hash.String()]
-			if !ok {
-				return nil
-			}
-			version := g.findVersionTag(tags)
-			if version == nil {
-				return nil
-			}
-			versionTag = *version
-			revision = c.Hash.String()
-			return storer.ErrStop
-		},
-	); err != nil {
-		return "", "", err
-	}
-	if revision == "" || versionTag == "" {
-		return "", "", errors.New("no version tag found")
-	}
-	return revision, versionTag, nil
 }
 
 // ParsedBranchName returns the name of the current branch.
@@ -117,60 +70,11 @@ func (g *Git) BranchName() (string, error) {
 	return commitRef.Name().Short(), nil
 }
 
-// tagsByRevisionHash returns a map from revision hash to a list of associated tags.
-func (g *Git) tagsByRevisionHash() (map[string][]string, error) {
-	tags := make(map[string][]string)
-	refs, err := g.repo.Tags()
+// Path returns the path of the git repository.
+func (g *Git) Path() (string, error) {
+	worktree, err := g.repo.Worktree()
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("failed to get worktree: %w", err)
 	}
-	if err := refs.ForEach(
-		func(ref *plumbing.Reference) error {
-			hash, err := g.tagRefToHash(ref)
-			if err != nil {
-				return err
-			}
-			message, err := tagRefToName(ref)
-			if err != nil {
-				return err
-			}
-			tags[hash] = append(tags[hash], message)
-			return nil
-		},
-	); err != nil {
-		return nil, err
-	}
-	return tags, nil
-}
-
-// findVersionTag tries to find a tag for a semantic version (e.g.: v1.0.0).
-func (g *Git) findVersionTag(tags []string) *string {
-	for _, tag := range tags {
-		if versionRegex.MatchString(tag) {
-			return &tag
-		}
-	}
-	return nil
-}
-
-func (g *Git) tagRefToHash(tagRef *plumbing.Reference) (string, error) {
-	tagObject, err := g.repo.TagObject(tagRef.Hash())
-	switch err {
-	case nil:
-		return tagObject.Target.String(), nil
-	case plumbing.ErrObjectNotFound:
-		return tagRef.Hash().String(), nil
-	default:
-		// Some other error
-		return "", err
-	}
-}
-
-// tagRefToName extracts the name of a tag reference.
-func tagRefToName(tagRef *plumbing.Reference) (string, error) {
-	matches := tagReference.FindStringSubmatch(tagRef.Name().String())
-	if len(matches) != 2 {
-		return "", errors.New("invalid tag reference")
-	}
-	return matches[1], nil
+	return worktree.Filesystem.Root(), nil
 }

@@ -49,7 +49,7 @@ runs:
         tags: |
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
-          type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
+          type=raw,value=${{ steps.pseudo-version.outputs.version }},enable=${{ '' != steps.pseudo-version.outputs.version }}
           type=ref,event=branch
 
     - name: Log in to the Container registry

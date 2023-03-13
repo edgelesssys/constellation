@@ -30,7 +30,7 @@ jobs:
         uses: ./.github/actions/build_apko
         with:
           containerTags: |
-            ${{ steps.pseudo-version.outputs.pseudoVersion }}
+            ${{ steps.pseudo-version.outputs.version }}
             ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}

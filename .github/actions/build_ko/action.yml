@@ -83,11 +83,11 @@ runs:
           fi
         fi
 
-        if [[ -n "${{ steps.pseudo-version.outputs.pseudoVersion }}" ]]; then
+        if [[ -n "${{ steps.pseudo-version.outputs.version }}" ]]; then
           if [[ -n "${tags}" ]]; then
-            tags="${tags},${{ steps.pseudo-version.outputs.pseudoVersion }}"
+            tags="${tags},${{ steps.pseudo-version.outputs.version }}"
           else
-            tags="${{ steps.pseudo-version.outputs.pseudoVersion }}"
+            tags="${{ steps.pseudo-version.outputs.version }}"
           fi
         fi
 

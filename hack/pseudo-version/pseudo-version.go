@@ -9,6 +9,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,7 +26,6 @@ func main() {
 	printTimestamp := flag.Bool("print-timestamp", false, "Only print timestamp")
 	timestampFormat := flag.String("timestamp-format", "20060102150405", "Timestamp format")
 	printBranch := flag.Bool("print-branch", false, "Only print branch name")
-	printReleaseVersion := flag.Bool("print-release-branch", false, "Only print release branch version")
 	major := flag.String("major", "v0", "Optional major version")
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
@@ -44,18 +45,18 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to get parsed branch name")
 	}
 
-	rawBranch, err := gitc.BranchName()
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to get branch name")
-	}
-
 	if *base == "" {
-		_, versionTag, err := gitc.FirstParentWithVersionTag()
+		rootPath, err := gitc.Path()
 		if err != nil {
-			log.With(zap.Error(err)).Warnf("Failed to find base version. Using default.")
-			versionTag = ""
+			log.With(zap.Error(err)).Fatalf("Failed to get git root path. Using default base version.")
+		} else {
+			versionTag, err := os.ReadFile(filepath.Join(rootPath, "version.txt"))
+			if err != nil {
+				log.With(zap.Error(err)).Warnf("Failed to read version.txt. Using default base version.")
+			} else {
+				*base = strings.TrimSpace(string(versionTag))
+			}
 		}
-		*base = versionTag
 	}
 
 	var headRevision string
@@ -91,9 +92,13 @@ func main() {
 		fmt.Println(headTime.Format(*timestampFormat))
 	case *printBranch:
 		fmt.Println(parsedBranch)
-	case *printReleaseVersion:
-		fmt.Println(strings.TrimPrefix(rawBranch, "release/"))
 	default:
-		fmt.Println(version)
+		if !strings.Contains(*base, "pre") {
+			// "v2.7.0" inside the version.txt will lead to "v2.7.0" as version
+			fmt.Println(*base)
+		} else {
+			// "2.7.0-pre" inside the version.txt will lead to "v2.7.0-pre.0.20230313121936-bab76e8a9acf" as version
+			fmt.Println(version)
+		}
 	}
 }

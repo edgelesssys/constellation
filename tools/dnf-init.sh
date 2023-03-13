@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
 rm -f rpm/repo.yaml
 bazel run //:bazeldnf -- init \
   --fc 37 \
