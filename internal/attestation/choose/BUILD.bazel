@@ -25,6 +25,7 @@ go_test(
     srcs = ["choose_test.go"],
     embed = [":choose"],
     deps = [
+        "//internal/attestation/idkeydigest",
         "//internal/oid",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

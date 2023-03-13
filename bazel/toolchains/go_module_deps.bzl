@@ -1693,6 +1693,15 @@ def go_dependencies():
         version = "v1.1.0",
     )
     go_repository(
+        name = "com_github_edgelesssys_go_azguestattestation",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/edgelesssys/go-azguestattestation",
+        sum = "h1:J9k1gV8YA5beC6jANKQy5O7UtaKS3ueuanxUan5Y5NU=",
+        version = "v0.0.0-20230303085714-62ede861d33f",
+    )
+
+    go_repository(
         name = "com_github_edsrzf_mmap_go",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -2696,8 +2705,9 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-tpm",
-        sum = "h1:P/ZFNBZYXRxc+z7i5uyd8VP7MaDteuLZInzrH2idRGo=",
-        version = "v0.3.3",
+        replace = "github.com/thomasten/go-tpm",
+        sum = "h1:4/WcA7Q05f5to+jVERKcZjU5NJ89DiRHP3UUZHLfAtw=",
+        version = "v0.0.0-20230222180349-bb3cc5560299",
     )
     go_repository(
         name = "com_github_google_go_tpm_tools",

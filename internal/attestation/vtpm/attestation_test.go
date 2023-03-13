@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package vtpm
 
 import (
+	"context"
 	"crypto"
 	"encoding/json"
 	"errors"
@@ -51,7 +52,7 @@ func (s simTPMWithEventLog) EventLog() ([]byte, error) {
 	return header, nil
 }
 
-func fakeGetInstanceInfo(io.ReadWriteCloser, []byte) ([]byte, error) {
+func fakeGetInstanceInfo(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
 	return []byte("unit-test"), nil
 }
 
@@ -301,7 +302,7 @@ func TestFailIssuer(t *testing.T) {
 			issuer: NewIssuer(
 				newSimTPMWithEventLog,
 				tpmclient.AttestationKeyRSA,
-				func(io.ReadWriteCloser, []byte) ([]byte, error) { return nil, errors.New("failure") },
+				func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) { return nil, errors.New("failure") },
 				nil,
 			),
 			userData: []byte("Constellation"),

@@ -8,6 +8,7 @@ package vtpm
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/sha256"
 	"encoding/json"
@@ -60,7 +61,7 @@ type (
 	// GetTPMTrustedAttestationPublicKey verifies and returns the attestation public key.
 	GetTPMTrustedAttestationPublicKey func(akPub, instanceInfo, extraData []byte) (crypto.PublicKey, error)
 	// GetInstanceInfo returns VM metdata.
-	GetInstanceInfo func(tpm io.ReadWriteCloser, extraData []byte) ([]byte, error)
+	GetInstanceInfo func(ctx context.Context, tpm io.ReadWriteCloser, extraData []byte) ([]byte, error)
 	// ValidateCVM validates confidential computing capabilities of the instance issuing the attestation.
 	ValidateCVM func(attestation AttestationDocument, state *attest.MachineState) error
 )
@@ -135,7 +136,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
 	}
 
 	// Fetch instance info of the VM
-	instanceInfo, err := i.getInstanceInfo(tpm, extraData)
+	instanceInfo, err := i.getInstanceInfo(context.TODO(), tpm, extraData) // TODO(daniel-weisse): update Issue/Validate to use context
 	if err != nil {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
 	}

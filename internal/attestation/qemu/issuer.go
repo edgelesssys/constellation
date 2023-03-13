@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package qemu
 
 import (
+	"context"
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -26,7 +27,7 @@ func NewIssuer(log vtpm.AttestationLogger) *Issuer {
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			tpmclient.AttestationKeyRSA,
-			func(io.ReadWriteCloser, []byte) ([]byte, error) { return nil, nil },
+			func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) { return nil, nil },
 			log,
 		),
 	}

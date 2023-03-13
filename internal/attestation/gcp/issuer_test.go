@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package gcp
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -65,7 +66,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 			require := require.New(t)
 			var tpm io.ReadWriteCloser
 
-			out, err := getGCEInstanceInfo(tc.client)(tpm, nil)
+			out, err := getGCEInstanceInfo(tc.client)(context.Background(), tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

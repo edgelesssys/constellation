@@ -8,6 +8,7 @@ package trustedlaunch
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -183,7 +184,7 @@ func TestGetAttestationCert(t *testing.T) {
 			issuer := NewIssuer(logger.NewTest(t))
 			issuer.hClient = newTestClient(tc.crlServer)
 
-			certs, err := issuer.getAttestationCert(tpm, nil)
+			certs, err := issuer.getAttestationCert(context.Background(), tpm, nil)
 			if tc.wantIssueErr {
 				assert.Error(err)
 				return
