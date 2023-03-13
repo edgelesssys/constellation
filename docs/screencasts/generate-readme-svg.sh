@@ -19,9 +19,10 @@ docker run -it \
 
 # Fix meta data: width and height are always zero in Docker produced cast files.
 # Header is the first lint of cast file in JSON format, we read, fix and write it.
-head recordings/github-readme.cast -n 1 | yq -M '.width = 95 | .height = 17 + {"idle_time_limit": 0.5}' - > new_header.cast
+head -n 1 recordings/github-readme.cast | yq -M '.width = 95 | .height = 17 | . + {"idle_time_limit": 0.5}' - > new_header.cast
 # Then append everything, expect first line from original cast file.
 tail -n+2 recordings/github-readme.cast >> new_header.cast
+# Check if header containers "idle_time_limit": 0.5
 
 # Then render cast into svg using:
 #   https://github.com/nbedos/termtosvg
