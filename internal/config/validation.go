@@ -479,6 +479,9 @@ func (c *Config) translateValidAttestVariantError(ut ut.Translator, fe validator
 }
 
 func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
+	// TODO: v2.8: remove variant fallback and make variant a required field
+	c.addMissingVariant()
+
 	variant, err := oid.FromString(c.AttestationVariant)
 	if err != nil {
 		return false
@@ -496,5 +499,34 @@ func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
 		return c.Provider.QEMU != nil
 	default:
 		return false
+	}
+}
+
+func (c *Config) addMissingVariant() {
+	printWarning := func() {
+		fmt.Fprintln(os.Stderr, "WARNING: the config key `attestationVariant` is not set. This key will be required in the next version.")
+	}
+
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		if c.AttestationVariant == "" {
+			printWarning()
+			c.AttestationVariant = oid.AWSNitroTPM{}.String()
+		}
+	case cloudprovider.Azure:
+		if c.AttestationVariant == "" {
+			printWarning()
+			c.AttestationVariant = oid.AzureTrustedLaunch{}.String()
+		}
+	case cloudprovider.GCP:
+		if c.AttestationVariant == "" {
+			printWarning()
+			c.AttestationVariant = oid.GCPSEVES{}.String()
+		}
+	case cloudprovider.QEMU:
+		if c.AttestationVariant == "" {
+			printWarning()
+			c.AttestationVariant = oid.QEMUVTPM{}.String()
+		}
 	}
 }

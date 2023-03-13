@@ -63,7 +63,7 @@ func init() {
 	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
 	ConfigDoc.Fields[7].Name = "attestationVariant"
 	ConfigDoc.Fields[7].Type = "string"
-	ConfigDoc.Fields[7].Note = ""
+	ConfigDoc.Fields[7].Note = "TODO: v2.8: Mark required\n"
 	ConfigDoc.Fields[7].Description = "Attestation variant used to verify the integrity of a node."
 	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Attestation variant used to verify the integrity of a node."
 	ConfigDoc.Fields[8].Name = "provider"
