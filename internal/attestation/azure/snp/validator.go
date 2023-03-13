@@ -47,22 +47,22 @@ type Validator struct {
 
 	idKeyDigests       idkeydigest.IDKeyDigests
 	enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
+	maaURL             string
 
 	log vtpm.AttestationLogger
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(
-	pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforce idkeydigest.EnforceIDKeyDigest, log vtpm.AttestationLogger,
-) *Validator {
+func NewValidator(pcrs measurements.M, idKeyConf idkeydigest.Config, log vtpm.AttestationLogger) *Validator {
 	if log == nil {
 		log = nopAttestationLogger{}
 	}
 	v := &Validator{
 		hclValidator:       &azureInstanceInfo{},
-		maa:                newMAAClient("https://snpattestationtester.neu.attest.azure.net"),
-		idKeyDigests:       idKeyDigests,
-		enforceIDKeyDigest: enforce,
+		maa:                newMAAClient(),
+		idKeyDigests:       idKeyConf.IDKeyDigests,
+		enforceIDKeyDigest: idKeyConf.EnforcementPolicy,
+		maaURL:             idKeyConf.MAAURL,
 		log:                log,
 	}
 	v.Validator = vtpm.NewValidator(
@@ -216,7 +216,7 @@ func (v *Validator) validateSNPReport(
 		switch v.enforceIDKeyDigest {
 		case idkeydigest.MAAFallback:
 			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
-			return v.maa.validateToken(ctx, maaToken, extraData)
+			return v.maa.validateToken(ctx, maaToken, v.maaURL, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
 		default:
@@ -442,5 +442,5 @@ func (nopAttestationLogger) Infof(string, ...interface{}) {}
 func (nopAttestationLogger) Warnf(string, ...interface{}) {}
 
 type maaValidator interface {
-	validateToken(context.Context, string, []byte) error
+	validateToken(context.Context, string, string, []byte) error
 }

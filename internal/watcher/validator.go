@@ -98,7 +98,11 @@ func (u *Updatable) Update() error {
 		u.log.Debugf("New idkeydigest: %v", digest)
 	}
 
-	validator, err := choose.Validator(u.variant, measurements, digest, enforceIDKeyDigest, u.log)
+	validator, err := choose.Validator(
+		u.variant, measurements,
+		idkeydigest.Config{IDKeyDigests: digest, EnforcementPolicy: enforceIDKeyDigest},
+		u.log,
+	)
 	if err != nil {
 		return fmt.Errorf("updating validator: %w", err)
 	}

@@ -25,18 +25,19 @@ import (
 )
 
 type maaClient struct {
-	url    string // URL of the MAA service. Potentially configured at runtime.
 	client *http.Client
 }
 
-func newMAAClient(url string) *maaClient {
+func newMAAClient() *maaClient {
 	return &maaClient{
-		url:    url,
-		client: http.DefaultClient,
+		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}
 }
 
-func (m *maaClient) createToken(ctx context.Context, tpm io.ReadWriter, data, hclReport, vcekCert, vcekChain []byte) (string, error) {
+func (m *maaClient) createToken(
+	ctx context.Context, tpm io.ReadWriter, maaURL string,
+	data, hclReport, vcekCert, vcekChain []byte,
+) (string, error) {
 	attestation, err := tpmAttest(tpm, data)
 	if err != nil {
 		return "", fmt.Errorf("creating TPM attestation: %w", err)
@@ -58,7 +59,7 @@ func (m *maaClient) createToken(ctx context.Context, tpm io.ReadWriter, data, hc
 		EncKeyCertInfoSig: encKeyCertSig,
 	}
 
-	tokenEnc, err := maa.GetEncryptedToken(ctx, params, data, m.url, m.client)
+	tokenEnc, err := maa.GetEncryptedToken(ctx, params, data, maaURL, m.client)
 	if err != nil {
 		return "", fmt.Errorf("getting encrypted token: %w", err)
 	}
@@ -71,8 +72,8 @@ func (m *maaClient) createToken(ctx context.Context, tpm io.ReadWriter, data, hc
 	return token, nil
 }
 
-func (m *maaClient) validateToken(ctx context.Context, token string, extraData []byte) error {
-	keySet, err := maa.GetKeySet(ctx, m.url, m.client)
+func (m *maaClient) validateToken(ctx context.Context, maaURL, token string, extraData []byte) error {
+	keySet, err := maa.GetKeySet(ctx, maaURL, m.client)
 	if err != nil {
 		return fmt.Errorf("getting key set from MAA: %w", err)
 	}
