@@ -56,20 +56,11 @@ func main() {
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	cvmRaw, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.AzureCVM))
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to get azureCVM from config map")
-	}
-	azureCVM, err := strconv.ParseBool(string(cvmRaw))
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse content of AzureCVM: %s", cvmRaw)
-	}
-
 	variant, err := oid.FromString(*attestationVariant)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
-	validator, err := watcher.NewValidator(log.Named("validator"), variant, handler, azureCVM)
+	validator, err := watcher.NewValidator(log.Named("validator"), variant, handler)
 	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")

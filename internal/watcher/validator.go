@@ -30,17 +30,15 @@ type Updatable struct {
 	mux         sync.Mutex
 	fileHandler file.Handler
 	variant     oid.Getter
-	azureCVM    bool
 	atls.Validator
 }
 
 // NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant oid.Getter, fileHandler file.Handler, azureCVM bool) (*Updatable, error) {
+func NewValidator(log *logger.Logger, variant oid.Getter, fileHandler file.Handler) (*Updatable, error) {
 	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
 		variant:     variant,
-		azureCVM:    azureCVM,
 	}
 
 	if err := u.Update(); err != nil {

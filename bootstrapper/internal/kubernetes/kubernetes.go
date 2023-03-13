@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"net"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -82,7 +81,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string,
-	measurementSalt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, azureCVM bool,
+	measurementSalt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -222,7 +221,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
-	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
+	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
@@ -319,7 +318,7 @@ func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, component
 }
 
 // setupInternalConfigMap applies a ConfigMap (cf. server-side apply) to store information that is not supposed to be user-editable.
-func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM string) error {
+func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context) error {
 	config := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -329,9 +328,7 @@ func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM strin
 			Name:      constants.InternalConfigMap,
 			Namespace: "kube-system",
 		},
-		Data: map[string]string{
-			constants.AzureCVM: azureCVM,
-		},
+		Data: map[string]string{},
 	}
 
 	// We do not use the client's Apply method here since we are handling a kubernetes-native type.

@@ -29,7 +29,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
@@ -168,9 +167,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
 	}
 
-	// Check if we are running on a CVM
-	_, isCVM := s.issuer.(*snp.Issuer)
-
 	clusterName := req.ClusterName
 	if clusterName == "" {
 		clusterName = "constellation"
@@ -183,7 +179,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
-		isCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
 		components.NewComponentsFromInitProto(req.KubernetesComponents),
@@ -260,7 +255,6 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIDKeyDigest bool,
-		azureCVM bool,
 		helmDeployments []byte,
 		conformanceMode bool,
 		kubernetesComponents components.Components,

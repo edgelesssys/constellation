@@ -116,8 +116,6 @@ const (
 	IDKeyDigestFilename = "idkeydigests"
 	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
-	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
-	AzureCVM = "azureCVM"
 
 	// K8sVersionFieldName is the name of the of the key holding the wanted Kubernetes version.
 	K8sVersionFieldName = "cluster-version"
