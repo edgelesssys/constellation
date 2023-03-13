@@ -33,10 +33,12 @@ go_test(
     deps = [
         "//internal/attestation/measurements",
         "//internal/attestation/simulator",
+        "//internal/attestation/vtpm",
         "//internal/crypto",
         "//internal/logger",
         "@com_github_google_go_tpm//tpm2",
         "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

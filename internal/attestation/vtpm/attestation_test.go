@@ -60,8 +60,8 @@ func TestValidate(t *testing.T) {
 	require := require.New(t)
 
 	fakeValidateCVM := func(AttestationDocument, *attest.MachineState) error { return nil }
-	fakeGetTrustedKey := func(aKPub, instanceInfo, _ []byte) (crypto.PublicKey, error) {
-		pubArea, err := tpm2.DecodePublic(aKPub)
+	fakeGetTrustedKey := func(_ context.Context, attDoc AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+		pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +176,7 @@ func TestValidate(t *testing.T) {
 		"untrusted attestation public key": {
 			validator: NewValidator(
 				testExpectedPCRs,
-				func(_, _, _ []byte) (crypto.PublicKey, error) {
+				func(context.Context, AttestationDocument, []byte) (crypto.PublicKey, error) {
 					return nil, errors.New("untrusted")
 				},
 				fakeValidateCVM, warnLog),

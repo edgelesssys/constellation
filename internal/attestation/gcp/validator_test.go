@@ -146,7 +146,12 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := trustedKeyFromGCEAPI(tc.getClient)(nil, tc.instanceInfo, nil)
+			v := &Validator{
+				restClient: tc.getClient,
+			}
+			attDoc := vtpm.AttestationDocument{InstanceInfo: tc.instanceInfo}
+
+			out, err := v.trustedKeyFromGCEAPI(context.Background(), attDoc, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

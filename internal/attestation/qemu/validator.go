@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package qemu
 
 import (
+	"context"
 	"crypto"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -35,8 +36,8 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 }
 
 // unconditionalTrust returns the given public key as the trusted attestation key.
-func unconditionalTrust(akPub, instanceInfo, _ []byte) (crypto.PublicKey, error) {
-	pubArea, err := tpm2.DecodePublic(akPub)
+func unconditionalTrust(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return nil, err
 	}

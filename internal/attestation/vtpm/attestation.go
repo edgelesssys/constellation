@@ -59,7 +59,7 @@ type (
 	// GetTPMAttestationKey loads a TPM key to perform attestation.
 	GetTPMAttestationKey func(tpm io.ReadWriter) (*tpmClient.Key, error)
 	// GetTPMTrustedAttestationPublicKey verifies and returns the attestation public key.
-	GetTPMTrustedAttestationPublicKey func(akPub, instanceInfo, extraData []byte) (crypto.PublicKey, error)
+	GetTPMTrustedAttestationPublicKey func(context.Context, AttestationDocument, []byte) (crypto.PublicKey, error)
 	// GetInstanceInfo returns VM metdata.
 	GetInstanceInfo func(ctx context.Context, tpm io.ReadWriteCloser, extraData []byte) ([]byte, error)
 	// ValidateCVM validates confidential computing capabilities of the instance issuing the attestation.
@@ -197,7 +197,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	extraData := makeExtraData(attDoc.UserData, nonce)
 
 	// Verify and retrieve the trusted attestation public key using the provided instance info
-	aKP, err := v.getTrustedKey(attDoc.Attestation.AkPub, attDoc.InstanceInfo, extraData)
+	aKP, err := v.getTrustedKey(context.TODO(), attDoc, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
