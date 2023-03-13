@@ -59,6 +59,7 @@ go_library(
         "//internal/kubernetes/kubectl",
         "//internal/license",
         "//internal/logger",
+        "//internal/oid",
         "//internal/retry",
         "//internal/sigstore",
         "//internal/versions",
