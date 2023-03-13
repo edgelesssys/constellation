@@ -214,9 +214,14 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	// Other errors will not be retried.
 	newCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
+
+	retryLoopStartTime := time.Now()
 	if err := retrier.Do(newCtx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
 	}
+	retryLoopFinishDuration := time.Since(retryLoopStartTime)
+	h.log.With(zap.String("chart", chart.Name()), zap.Duration("duration", retryLoopFinishDuration)).Infof("Helm chart installation finished")
+
 	return nil
 }
 
@@ -230,7 +235,7 @@ type installDoer struct {
 
 // Do logs which chart is installed and tries to install it.
 func (i installDoer) Do(ctx context.Context) error {
-	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install helm chart")
+	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install Helm chart")
 
 	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
 
