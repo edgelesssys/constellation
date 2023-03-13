@@ -80,7 +80,7 @@ configure_make_variant(
         "libcrypto-1_1-x64.dll",
     ],
     targets = MAKE_TARGETS,
-    toolchain = "@rules_foreign_cc//toolchains:preinstalled_nmake_toolchain",
+    toolchain = "@rules_foreign_cc//bazel/toolchains:preinstalled_nmake_toolchain",
     toolchains = ["@rules_perl//:current_toolchain"],
 )
 
