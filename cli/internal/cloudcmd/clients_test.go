@@ -31,7 +31,7 @@ type stubTerraformClient struct {
 	initSecret             string
 	iamOutput              terraform.IAMOutput
 	uid                    string
-	attestationUrl         string
+	attestationURL         string
 	tfjsonState            *tfjson.State
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
@@ -50,7 +50,7 @@ func (c *stubTerraformClient) CreateCluster(ctx context.Context, provider cloudp
 		IP:             c.ip,
 		Secret:         c.initSecret,
 		UID:            c.uid,
-		AttestationURL: c.attestationUrl,
+		AttestationURL: c.attestationURL,
 	}, c.createClusterErr
 }
 
