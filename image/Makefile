@@ -40,8 +40,8 @@ prebuilt/rpms/systemd/%.rpm:
 # Currently, Azure and GCP use the same fixed kernels.
 # They will likely derive soon again, but for now we can just copy the file from Azure to save traffic.
 prebuilt/rpms/gcp/%.rpm: prebuilt/rpms/azure/%.rpm
-	# @echo "Downloading $*"
-	# @mkdir -p $(@D)
+	@echo "Downloading $*"
+	@mkdir -p $(@D)
 	# @curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
 	cp prebuilt/rpms/azure/$*.rpm prebuilt/rpms/gcp/$*.rpm
 
