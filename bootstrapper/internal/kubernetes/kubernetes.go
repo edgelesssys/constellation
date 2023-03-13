@@ -248,12 +248,10 @@ func (k *KubeWrapper) InitCluster(
 
 	// cert-manager is necessary for our operator deployments.
 	log.Infof("Installing cert-manager")
-	timeToStartWaiting = time.Now()
 	if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
-	timeUntilFinishedWaiting = time.Since(timeToStartWaiting)
-	log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("cert-manager installation finished")
+
 	operatorVals, err := k.setupOperatorVals(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("setting up operator vals: %w", err)
