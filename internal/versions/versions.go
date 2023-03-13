@@ -73,28 +73,28 @@ const (
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.1.1@sha256:b1389e7014425a1752aac55f5043ef4c52edaef0e223bf4d48ed1324e298087c" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:57dd650e85aaa8b44a117e0a4bdc052f1ad1330849ff46421ab71624337814b8" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.7.0-pre.0.20230310103644-64e1f553d10f@sha256:2f40f9d1825174876a816e9f2956dd22a35b86a467dbbad13a2893a9f7fc887e" // renovate:container
 	// KeyServiceImage image of Constellation KMS server.
-	KeyServiceImage = "ghcr.io/edgelesssys/constellation/key-service:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:817590b5937a382713b2a4e4d2b60bdfc7f99b010542705911bb0f93ef67e92b" // renovate:container
+	KeyServiceImage = "ghcr.io/edgelesssys/constellation/key-service:v2.7.0-pre.0.20230310103644-64e1f553d10f@sha256:b55ae3e8b588bc2b6cb04f8b9f4b55a6689abf83801805816e8821dbff876ffe" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:5d94eb6d6ae3ae0021ff7f656794f866840321f4aa27ff9ac67bcea7b9fd2044" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.7.0-pre.0.20230310103644-64e1f553d10f@sha256:609d98a5066538b180bae3713aa8d245438b5af1fcf7958fcc87be6b50934ce4" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20230221.0@sha256:8be328a5d8d601170b82481d413cf326b20c5219c016633f1651e35d95f1d6f1" // renovate:container
 	// ConstellationOperatorImage is the image for the constellation node operator.
-	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:48b23d4ba08751700f0fd55b93e1be32c0145fb24c13d9b2d9f0bff6c684f62c" // renovate:container
+	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v2.7.0-pre.0.20230310174017-cb2d2b0b89ea@sha256:fc8ca604fe192fd1168bb250b1312ec3b5957c23252bfeaccf89e432d8b49f5f" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
 	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.14.0@sha256:2dffb6ffdbbe997d317799fc709baf030d678bde0be0264931ff6b3e94fd89ab" // renovate:container
 
 	// QEMUMetadataImage image of QEMU metadata api service.
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.6.0-pre.0.20230228093604-90ed4701788f@sha256:db97a869391567415c436581345696fdbde572caee385a1b7fea40ced5c00528" // renovate:container
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.7.0-pre.0.20230310103644-64e1f553d10f@sha256:82218cff0aa080ae79948928a58769d230991fb6b59e5b24ddbef8a91c71d5c7" // renovate:container
 	// LibvirtImage image that provides libvirt.
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.7.0-pre.0.20230309142342-bdba9d8ba6c3@sha256:98e04e2732d53490f5e00d117c7e22863dc501660f939a244b7d94a09290c572" // renovate:container
 
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
-	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.5.0-pre.0.20230120132332-a31d79e9cb71@sha256:17f8555581d8916d8121c6ce00f85974e62df55898a890c9855e830856c8cdf7" // renovate:container
+	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.7.0-pre.0.20230313093557-a658368d4082@sha256:fd343d0d5d64ddbefafbc7256ef67b7c0b824188160d25f80b0443a0fb8c5cf4" // renovate:container
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
-	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.5.0-pre.0.20230120132332-a31d79e9cb71@sha256:9cdfa372c836325979aeeab74f23c1b31e9d757ef8ea95a362133c649a464b02" // renovate:container
+	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.7.0-pre.0.20230313093557-a658368d4082@sha256:947ece0e58a398e7a37a5c36b3c2f49c95b206e785d96f396cc15dddb262c1f8" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
