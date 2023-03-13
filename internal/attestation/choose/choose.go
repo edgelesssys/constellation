@@ -44,7 +44,7 @@ func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error)
 // Validator returns the validator for the given variant.
 func Validator(
 	variant oid.Getter, measurements measurements.M,
-	idKeyDigest idkeydigest.IDKeyDigests, enfoceIDKeyDigest bool,
+	idKeyDigest idkeydigest.IDKeyDigests, enfoceIDKeyDigest idkeydigest.EnforceIDKeyDigest,
 	log vtpm.AttestationLogger,
 ) (atls.Validator, error) {
 	switch variant {

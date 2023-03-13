@@ -73,7 +73,7 @@ func TestGetSNPAttestation(t *testing.T) {
 				maa:          &stubMaaTokenCreator{},
 			}
 
-			attestationJSON, err := issuer.getInstanceInfo(tpm, nil)
+			attestationJSON, err := issuer.getInstanceInfo(context.Background(), tpm, nil)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -165,6 +165,6 @@ type stubMaaTokenCreator struct {
 	err   error
 }
 
-func (s *stubMaaTokenCreator) createToken(context.Context, []byte) (string, error) {
+func (s *stubMaaTokenCreator) createToken(context.Context, io.ReadWriter, []byte, []byte, []byte, []byte) (string, error) {
 	return s.token, s.err
 }

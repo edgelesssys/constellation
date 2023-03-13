@@ -10,6 +10,7 @@ import (
 	"encoding/asn1"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,7 +96,7 @@ func TestValidator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			validator, err := Validator(tc.variant, nil, nil, false, nil)
+			validator, err := Validator(tc.variant, nil, nil, idkeydigest.StrictChecking, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
