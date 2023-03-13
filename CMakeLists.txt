@@ -92,9 +92,7 @@ add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WO
 # format
 #
 add_custom_target(format
-  COMMAND bash -c "${BAZEL} run //:buildifier-fix"
-  COMMAND bash -c "${BAZEL} run //:gazelle"
-  COMMAND bash -c "${BAZEL} run //bazel/ci:tidy"
+  COMMAND bash -c "${BAZEL} run //:tidy"
   COMMAND bash -c "shfmt -i 2 -s -w -sr $(shfmt -f ${CMAKE_SOURCE_DIR} | grep -v helm/charts/cilium)"
   COMMAND bash -c "gofumpt -l -w ${CMAKE_SOURCE_DIR}"
   VERBATIM

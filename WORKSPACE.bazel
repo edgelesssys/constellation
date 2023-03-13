@@ -11,7 +11,7 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("//bazel/toolchains:go_module_deps.bzl", "go_dependencies")
 
-# gazelle:repository_macro toolchains/go_module_deps.bzl%go_dependencies
+# gazelle:repository_macro bazel/toolchains/go_module_deps.bzl%go_dependencies
 go_dependencies()
 
 go_rules_dependencies()
@@ -135,3 +135,9 @@ oci_register_toolchains(
     crane_version = LATEST_CRANE_VERSION,
     zot_version = LATEST_ZOT_VERSION,
 )
+
+# Multirun
+
+load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")
+
+multirun_deps()

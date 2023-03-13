@@ -1,12 +1,86 @@
-sh_binary(
-    name = "tidy",
-    srcs = ["tidy.sh"],
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
+load(":def.bzl", "sh_template")
+
+gazelle(name = "gazelle_generate")
+
+gazelle(
+    name = "gazelle_check",
+    command = "fix",
+    mode = "diff",
+)
+
+gazelle(
+    name = "gazelle_update_repos",
+    args = [
+        "-from_file=go.work",
+        "-to_macro=bazel/toolchains/go_module_deps.bzl%go_dependencies",
+        "-build_file_proto_mode=disable_global",
+        "-build_file_generation=on",
+        "-prune",
+    ],
+    command = "update-repos",
+)
+
+buildifier_test(
+    name = "buildifier_check",
+    timeout = "short",
+    lint_mode = "warn",
+    lint_warnings = ["all"],
+    mode = "diff",
+    no_sandbox = True,
+    verbose = True,
+    workspace = "//:WORKSPACE.bazel",
+)
+
+buildifier(
+    name = "buildifier_fix",
+    lint_mode = "fix",
+    lint_warnings = ["all"],
+    mode = "fix",
+    verbose = True,
+)
+
+sh_library(
+    name = "base_lib",
+    srcs = [
+        "lib.bash",
+    ],
+)
+
+sh_template(
+    name = "go_mod_tidy",
     data = [
-        "@bazel_gazelle//cmd/gazelle",
+        ":base_lib",
         "@go_sdk//:bin/go",
     ],
-    env = {
-        "GAZELLE": "$(location @bazel_gazelle//cmd/gazelle)",
-        "GO": "$(location @go_sdk//:bin/go)",
+    substitutions = {
+        "@@BASE_LIB@@": "$(location :base_lib)",
+        "@@GO@@": "$(location @go_sdk//:bin/go)",
     },
+    template = "tidy.sh.in",
+)
+
+multirun(
+    name = "tidy",
+    commands = [
+        # execute sequentially
+        ":go_mod_tidy",
+        ":gazelle_update_repos",
+        ":gazelle_generate",
+        ":buildifier_fix",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "check",
+    testonly = True,
+    commands = [
+        ":gazelle_check",
+        ":buildifier_check",
+    ],
+    jobs = 0,
+    visibility = ["//visibility:public"],
 )
