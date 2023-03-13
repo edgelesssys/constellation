@@ -1,34 +1,20 @@
-load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@bazeldnf//:def.bzl", "bazeldnf")
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
 
-# gazelle:map_kind go_test go_test //bazel/go:go_test.bzl
-# gazelle:prefix github.com/edgelesssys/constellation/v2
-gazelle(name = "gazelle")
-
-gazelle(
-    name = "gazelle-check",
-    command = "fix",
-    mode = "diff",
-)
+exports_files([
+    "WORKSPACE.bazel",
+])
 
 bazeldnf(name = "bazeldnf")
 
-buildifier_test(
-    name = "buildifier-check",
-    timeout = "short",
-    lint_mode = "warn",
-    lint_warnings = ["all"],
-    mode = "diff",
-    no_sandbox = True,
-    verbose = True,
-    workspace = "WORKSPACE.bazel",
+alias(
+    name = "tidy",
+    actual = "//bazel/ci:tidy",
 )
 
-buildifier(
-    name = "buildifier-fix",
-    lint_mode = "fix",
-    lint_warnings = ["all"],
-    mode = "fix",
-    verbose = True,
+alias(
+    name = "check",
+    actual = "//bazel/ci:check",
 )
+
+# gazelle:map_kind go_test go_test //bazel/go:go_test.bzl
+# gazelle:prefix github.com/edgelesssys/constellation/v2

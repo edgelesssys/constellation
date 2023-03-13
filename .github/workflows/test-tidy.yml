@@ -1,4 +1,4 @@
-name: Go mod tidy check
+name: tidy-and-check
 
 on:
   workflow_dispatch:
@@ -19,8 +19,8 @@ on:
       - ".github/workflows/test-tidy.yml"
 
 jobs:
-  gotidycheck:
-    name: Go mod tidy check
+  tidycheck:
+    name: tidy and check
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -32,9 +32,11 @@ jobs:
 
       - name: Run Bazel tidy
         shell: bash
-        run: |
-          bazelisk run //bazel/ci:tidy
-          bazelisk run //:gazelle-check
+        run: bazelisk run //:tidy
+
+      - name: Run Bazel check
+        shell: bash
+        run: bazelisk run //:check
 
       - name: Check if tidy made modifications
         id: tidycheck
