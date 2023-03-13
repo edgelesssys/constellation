@@ -1,2 +1,5 @@
 log.level: warn
 config.reload.automatic: true
+pipeline:
+  workers: 1
+  ordered: true
