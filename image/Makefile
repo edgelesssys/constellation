@@ -20,8 +20,8 @@ csps := aws azure gcp openstack qemu
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
-AZURE_FIXED_KERNEL_RPMS := kernel-6.1.14-200.fc37.x86_64.rpm kernel-core-6.1.14-200.fc37.x86_64.rpm kernel-modules-6.1.14-200.fc37.x86_64.rpm
-GCP_FIXED_KERNEL_RPMS := kernel-5.19.17-300.fc37.x86_64.rpm kernel-core-5.19.17-300.fc37.x86_64.rpm kernel-modules-5.19.17-300.fc37.x86_64.rpm
+AZURE_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-200.fc37.x86_64.rpm kernel-modules-6.1.18-200.fc37.x86_64.rpm
+GCP_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-200.fc37.x86_64.rpm kernel-modules-6.1.18-200.fc37.x86_64.rpm
 PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
@@ -37,15 +37,18 @@ prebuilt/rpms/systemd/%.rpm:
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/systemd/251.11/2.fc37/x86_64/$*.rpm
 
-prebuilt/rpms/gcp/%.rpm:
+# Currently, Azure and GCP use the same fixed kernels.
+# They will likely derive soon again, but for now we can just copy the file from Azure to save traffic.
+prebuilt/rpms/gcp/%.rpm: prebuilt/rpms/azure/%.rpm
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.17/300.fc37/x86_64/$*.rpm
+	# @curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
+	cp prebuilt/rpms/azure/$*.rpm prebuilt/rpms/gcp/$*.rpm
 
 prebuilt/rpms/azure/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.14/200.fc37/x86_64/$*.rpm
+	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
 
 mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf \
