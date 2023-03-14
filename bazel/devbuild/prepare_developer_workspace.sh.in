@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# This script is run from the user's Constellation workspace (BUILD_WORKING_DIRECTORY).
+# It prepares the workspace by symlinking all required binaries into folder.
+
+lib=$(realpath @@BASE_LIB@@)
+bootstrapper=$(realpath @@BOOTSTRAPPER@@)
+upgrade_agent=$(realpath @@UPGRADE_AGENT@@)
+cli=$(realpath @@CLI@@)
+cdbg=$(realpath @@CDBG@@)
+
+# shellcheck source=../ci/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKING_DIRECTORY}" || exit 1
+
+if [[ $# -eq 0 ]] ; then
+    workdir="."
+else
+    workdir="$1"
+fi
+
+ln -sf "${bootstrapper}" "${workdir}/bootstrapper"
+ln -sf "${upgrade_agent}" "${workdir}/upgrade-agent"
+ln -sf "${cli}" "${workdir}/constellation"
+ln -sf "${cdbg}" "${workdir}/cdbg"

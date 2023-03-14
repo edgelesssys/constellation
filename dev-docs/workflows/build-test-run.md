@@ -21,13 +21,19 @@ Prerequisites:
   sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
   ```
 
-CMake wrapper:
+Developer workspace:
 
 ```sh
 mkdir build
 cd build
-cmake ..
-make
+# build required binaries for a dev build
+# and symlink them into the current directory
+bazel run //:devbuild
+./constellation ...
+# modify code
+# rerun to ensure that all binaries are up to date
+bazel run //:devbuild
+./constellation ...
 ```
 
 Bazel build:

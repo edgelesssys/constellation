@@ -47,6 +47,7 @@ sh_library(
     srcs = [
         "lib.bash",
     ],
+    visibility = ["//visibility:public"],
 )
 
 sh_template(
