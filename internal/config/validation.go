@@ -503,30 +503,19 @@ func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
 }
 
 func (c *Config) addMissingVariant() {
-	printWarning := func() {
-		fmt.Fprintln(os.Stderr, "WARNING: the config key `attestationVariant` is not set. This key will be required in the next version.")
+	if c.AttestationVariant != "" {
+		return
 	}
+	fmt.Fprintln(os.Stderr, "WARNING: the config key `attestationVariant` is not set. This key will be required in the next version.")
 
 	switch c.GetProvider() {
 	case cloudprovider.AWS:
-		if c.AttestationVariant == "" {
-			printWarning()
-			c.AttestationVariant = oid.AWSNitroTPM{}.String()
-		}
+		c.AttestationVariant = oid.AWSNitroTPM{}.String()
 	case cloudprovider.Azure:
-		if c.AttestationVariant == "" {
-			printWarning()
-			c.AttestationVariant = oid.AzureTrustedLaunch{}.String()
-		}
+		c.AttestationVariant = oid.AzureTrustedLaunch{}.String()
 	case cloudprovider.GCP:
-		if c.AttestationVariant == "" {
-			printWarning()
-			c.AttestationVariant = oid.GCPSEVES{}.String()
-		}
+		c.AttestationVariant = oid.GCPSEVES{}.String()
 	case cloudprovider.QEMU:
-		if c.AttestationVariant == "" {
-			printWarning()
-			c.AttestationVariant = oid.QEMUVTPM{}.String()
-		}
+		c.AttestationVariant = oid.QEMUVTPM{}.String()
 	}
 }
