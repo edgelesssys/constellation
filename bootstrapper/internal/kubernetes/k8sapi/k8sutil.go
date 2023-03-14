@@ -140,6 +140,12 @@ func (k *KubernetesUtil) InitCluster(
 		return nil, fmt.Errorf("creating signed kubelete certificate: %w", err)
 	}
 
+	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	log.Infof("Creating static Pod directory /etc/kubernetes/manifests")
+	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
+		return nil, fmt.Errorf("creating static pods directory: %w", err)
+	}
+
 	log.Infof("Preparing node for Konnectivity")
 	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
 		return nil, fmt.Errorf("setup konnectivity: %w", err)
@@ -185,10 +191,6 @@ func (k *KubernetesUtil) InitCluster(
 func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint string) error {
 	if !strings.Contains(loadBalancerEndpoint, ":") {
 		loadBalancerEndpoint = net.JoinHostPort(loadBalancerEndpoint, strconv.Itoa(constants.KubernetesPort))
-	}
-
-	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
-		return fmt.Errorf("creating static pods directory: %w", err)
 	}
 
 	konnectivityServerYaml, err := resources.NewKonnectivityServerStaticPod().Marshal()
@@ -326,6 +328,12 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 
 	if _, err := joinConfigFile.Write(joinConfig); err != nil {
 		return fmt.Errorf("writing kubeadm init yaml config %v: %w", joinConfigFile.Name(), err)
+	}
+
+	// Create static pods directory for all nodes (the Kubelets on the worker nodes also expect the path to exist)
+	log.Infof("Creating static Pod directory /etc/kubernetes/manifests")
+	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
+		return fmt.Errorf("creating static pods directory: %w", err)
 	}
 
 	if peerRole == role.ControlPlane {
