@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -21,6 +22,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestUpgradeApply(t *testing.T) {
@@ -53,12 +55,15 @@ func TestUpgradeApply(t *testing.T) {
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 
+			err := cmd.Flags().Set("yes", "true")
+			require.NoError(err)
+
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t)}
-			err := upgrader.upgradeApply(cmd, handler)
+			err = upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -79,4 +84,12 @@ func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) er
 
 func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ time.Duration, _ bool) error {
 	return u.helmErr
+}
+
+func (u stubUpgrader) UpdateMeasurements(_ context.Context, _ measurements.M) error {
+	return nil
+}
+
+func (u stubUpgrader) GetClusterMeasurements(_ context.Context) (measurements.M, *corev1.ConfigMap, error) {
+	return measurements.M{}, &corev1.ConfigMap{}, nil
 }

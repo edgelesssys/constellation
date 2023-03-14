@@ -14,11 +14,13 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func newUpgradeApplyCmd() *cobra.Command {
@@ -31,7 +33,8 @@ func newUpgradeApplyCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
-		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.")
+		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.\n"+
+		"WARNING: might unintentionally overwrite measurements in the running cluster.")
 	cmd.Flags().Duration("timeout", 3*time.Minute, "change helm upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
@@ -96,6 +99,38 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading NodeVersion: %w", err)
 	}
 
+	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
+	if err := u.upgradeMeasurementsIfDiff(cmd, conf.GetMeasurements(), flags); err != nil {
+		return fmt.Errorf("upgrading measurements: %w", err)
+	}
+
+	return nil
+}
+
+// upgradeMeasurementsIfDiff checks if the locally configured measurements are different from the cluster's measurements.
+// If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
+func (u *upgradeApplyCmd) upgradeMeasurementsIfDiff(cmd *cobra.Command, newMeasurements measurements.M, flags upgradeApplyFlags) error {
+	clusterMeasurements, _, err := u.upgrader.GetClusterMeasurements(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("getting cluster measurements: %w", err)
+	}
+	if clusterMeasurements.EqualTo(newMeasurements) {
+		return nil
+	}
+
+	if !flags.yes {
+		ok, err := askToConfirm(cmd, "You are about to change your cluster's measurements. Are you sure you want to continue?")
+		if err != nil {
+			return fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !ok {
+			cmd.Println("Aborting upgrade.")
+			return nil
+		}
+	}
+	if err := u.upgrader.UpdateMeasurements(cmd.Context(), newMeasurements); err != nil {
+		return fmt.Errorf("updating measurements: %w", err)
+	}
 	return nil
 }
 
@@ -153,4 +188,6 @@ type upgradeApplyFlags struct {
 type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
+	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
 }
