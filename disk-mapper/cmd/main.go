@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -22,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
@@ -134,6 +136,13 @@ func main() {
 	}
 	defer mapper.Close()
 
+	// Use TDX if available
+	openDevice := vtpm.OpenVTPM
+	if attestVariant.OID().Equal(oid.QEMUTDX{}.OID()) {
+		openDevice = func() (io.ReadWriteCloser, error) {
+			return tdx.Open()
+		}
+	}
 	setupManger := setup.New(
 		log.Named("setupManager"),
 		*csp,
@@ -141,7 +150,7 @@ func main() {
 		afero.Afero{Fs: afero.NewOsFs()},
 		mapper,
 		setup.DiskMounter{},
-		vtpm.OpenVTPM,
+		openDevice,
 	)
 
 	if err := setupManger.LogDevices(); err != nil {

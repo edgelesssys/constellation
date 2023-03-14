@@ -43,7 +43,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 		mapper          *stubMapper
 		mounter         *stubMounter
 		configGenerator *stubConfigurationGenerator
-		openTPM         vtpm.TPMOpenFunc
+		openDevice      vtpm.TPMOpenFunc
 		missingState    bool
 		wantErr         bool
 	}{
@@ -52,14 +52,14 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 		},
 		"WaitForDecryptionKey fails": {
 			recoveryDoer:    &stubRecoveryDoer{recoveryErr: someErr},
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
 		"MapDisk fails": {
@@ -70,7 +70,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
 		"MkdirAll fails": {
@@ -78,7 +78,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{mkdirAllErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
 		"Mount fails": {
@@ -86,7 +86,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{mountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
 		"Unmount fails": {
@@ -94,7 +94,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{unmountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
 		"MarkNodeAsBootstrapped fails": {
@@ -102,7 +102,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{unmountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         failOpener,
+			openDevice:      failOpener,
 			wantErr:         true,
 		},
 		"Generating config fails": {
@@ -110,7 +110,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{generateErr: someErr},
-			openTPM:         failOpener,
+			openDevice:      failOpener,
 			wantErr:         true,
 		},
 		"no state file": {
@@ -118,7 +118,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
-			openTPM:         vtpm.OpenNOPTPM,
+			openDevice:      vtpm.OpenNOPTPM,
 			missingState:    true,
 			wantErr:         true,
 		},
@@ -136,14 +136,14 @@ func TestPrepareExistingDisk(t *testing.T) {
 			}
 
 			setupManager := &Manager{
-				log:      logger.NewTest(t),
-				csp:      "test",
-				diskPath: "disk-path",
-				fs:       fs,
-				mapper:   tc.mapper,
-				mounter:  tc.mounter,
-				config:   tc.configGenerator,
-				openTPM:  tc.openTPM,
+				log:        logger.NewTest(t),
+				csp:        "test",
+				diskPath:   "disk-path",
+				fs:         fs,
+				mapper:     tc.mapper,
+				mounter:    tc.mounter,
+				config:     tc.configGenerator,
+				openDevice: tc.openDevice,
 			}
 
 			err := setupManager.PrepareExistingDisk(tc.recoveryDoer)
