@@ -216,7 +216,7 @@ func (v *Validator) validateSNPReport(
 		switch v.enforceIDKeyDigest {
 		case idkeydigest.MAAFallback:
 			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
-			return v.maa.validateToken(ctx, maaToken, v.maaURL, extraData)
+			return v.maa.validateToken(ctx, v.maaURL, maaToken, extraData)
 		case idkeydigest.WarnOnly:
 			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
 		default:
@@ -442,5 +442,5 @@ func (nopAttestationLogger) Infof(string, ...interface{}) {}
 func (nopAttestationLogger) Warnf(string, ...interface{}) {}
 
 type maaValidator interface {
-	validateToken(context.Context, string, string, []byte) error
+	validateToken(ctx context.Context, maaURL string, token string, extraData []byte) error
 }
