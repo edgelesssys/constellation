@@ -1,7 +1,3 @@
-load("//bazel/toolchains:java_deps.bzl", "java_deps")
-
-java_deps()
-
 # Go toolchain
 load("//bazel/toolchains:go_rules_deps.bzl", "go_deps")
 
