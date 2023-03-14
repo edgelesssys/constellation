@@ -63,7 +63,7 @@ func TestConstellationServices(t *testing.T) {
 			config: &config.Config{
 				AttestationVariant: oid.GCPSEVES{}.String(),
 				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
-					DeployCSIDriver: func() *bool { b := true; return &b }(),
+					DeployCSIDriver: toPtr(true),
 				}},
 			},
 			enforceIDKeyDigest: false,
@@ -74,8 +74,8 @@ func TestConstellationServices(t *testing.T) {
 			config: &config.Config{
 				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
-					DeployCSIDriver:    func() *bool { b := true; return &b }(),
-					EnforceIDKeyDigest: func() *bool { b := true; return &b }(),
+					DeployCSIDriver:    toPtr(true),
+					EnforceIDKeyDigest: toPtr(true),
 				}},
 			},
 			enforceIDKeyDigest: true,
@@ -439,4 +439,8 @@ func prepareQEMUValues(values map[string]any) error {
 	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
 	return nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
