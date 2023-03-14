@@ -12,8 +12,8 @@ sh_template(
     substitutions = {
         "@@BASE_LIB@@": "$(rootpath //bazel/ci:base_lib)",
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper)",
-        "@@CLI@@": "$(rootpath //cli:cli_oss_host)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
+        "@@CLI@@": "$(rootpath //cli:cli_oss_host)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd)",
     },
     template = "prepare_developer_workspace.sh.in",
