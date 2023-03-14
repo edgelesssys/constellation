@@ -224,7 +224,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				0: measurements.WithAllBytes(0xAA, measurements.Enforce),
 			},
 		},
-		"trying to set warnOnly to true results in error": {
+		"setting warnOnly to true is allowed": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
@@ -233,7 +233,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			newMeasurements: measurements.M{
 				0: measurements.WithAllBytes(0xAA, measurements.WarnOnly),
 			},
-			wantErr: true,
+			wantUpdate: true,
 		},
 		"setting warnOnly to false is allowed": {
 			updater: &stubStableClient{
@@ -271,7 +271,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				log:             logger.NewTest(t),
 			}
 
-			err := upgrader.updateMeasurements(context.Background(), tc.newMeasurements)
+			err := upgrader.UpdateMeasurements(context.Background(), tc.newMeasurements)
 			if tc.wantErr {
 				assert.Error(err)
 				return

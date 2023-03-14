@@ -139,7 +139,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return errors.Join(upgradeErrs...)
 	}
 
-	if err := u.updateMeasurements(ctx, conf.GetMeasurements()); err != nil {
+	if err := u.UpdateMeasurements(ctx, conf.GetMeasurements()); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
 
@@ -159,6 +159,76 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 	}
 
 	return errors.Join(upgradeErrs...)
+}
+
+// KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
+func (u *Upgrader) KubernetesVersion() (string, error) {
+	return u.stableInterface.kubernetesVersion()
+}
+
+// CurrentImage returns the currently used image version of the cluster.
+func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting constellation-version: %w", err)
+	}
+	return nodeVersion.Spec.ImageVersion, nil
+}
+
+// CurrentKubernetesVersion returns the currently used Kubernetes version.
+func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error) {
+	nodeVersion, err := u.getConstellationVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting constellation-version: %w", err)
+	}
+	return nodeVersion.Spec.KubernetesClusterVersion, nil
+}
+
+// UpdateMeasurements fetches the cluster's measurements, compares them to a set of new measurements
+// and updates the cluster's measurements if they are different from the new ones.
+func (u *Upgrader) UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
+	currentMeasurements, existingConf, err := u.GetClusterMeasurements(ctx)
+	if err != nil {
+		return fmt.Errorf("getting cluster measurements: %w", err)
+	}
+	if currentMeasurements.EqualTo(newMeasurements) {
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
+		return nil
+	}
+
+	// backup of previous measurements
+	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
+
+	measurementsJSON, err := json.Marshal(newMeasurements)
+	if err != nil {
+		return fmt.Errorf("marshaling measurements: %w", err)
+	}
+	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
+	u.log.Debugf("Triggering measurements config map update now")
+	if _, err = u.stableInterface.updateConfigMap(ctx, existingConf); err != nil {
+		return fmt.Errorf("setting new measurements: %w", err)
+	}
+
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's expected measurements")
+	return nil
+}
+
+// GetClusterMeasurements fetches the join-config configmap from the cluster, extracts the measurements
+// and returns both the full configmap and the measurements.
+func (u *Upgrader) GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error) {
+	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+	}
+	if _, ok := existingConf.Data[constants.MeasurementsFilename]; !ok {
+		return measurements.M{}, &corev1.ConfigMap{}, errors.New("measurements missing from join-config")
+	}
+	var currentMeasurements measurements.M
+	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
+		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+	}
+
+	return currentMeasurements, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
@@ -236,29 +306,6 @@ func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newCluster
 	return &configMap, nil
 }
 
-// KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
-func (u *Upgrader) KubernetesVersion() (string, error) {
-	return u.stableInterface.kubernetesVersion()
-}
-
-// CurrentImage returns the currently used image version of the cluster.
-func (u *Upgrader) CurrentImage(ctx context.Context) (string, error) {
-	nodeVersion, err := u.getConstellationVersion(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting constellation-version: %w", err)
-	}
-	return nodeVersion.Spec.ImageVersion, nil
-}
-
-// CurrentKubernetesVersion returns the currently used Kubernetes version.
-func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error) {
-	nodeVersion, err := u.getConstellationVersion(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting constellation-version: %w", err)
-	}
-	return nodeVersion.Spec.KubernetesClusterVersion, nil
-}
-
 // getFromConstellationVersion queries the constellation-version object for a given field.
 func (u *Upgrader) getConstellationVersion(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
 	raw, err := u.dynamicInterface.getCurrent(ctx, "constellation-version")
@@ -271,50 +318,6 @@ func (u *Upgrader) getConstellationVersion(ctx context.Context) (updatev1alpha1.
 	}
 
 	return nodeVersion, nil
-}
-
-func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
-	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
-	if err != nil {
-		return fmt.Errorf("retrieving current measurements: %w", err)
-	}
-	if _, ok := existingConf.Data[constants.MeasurementsFilename]; !ok {
-		return errors.New("measurements missing from join-config")
-	}
-	var currentMeasurements measurements.M
-	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
-		return fmt.Errorf("retrieving current measurements: %w", err)
-	}
-	if currentMeasurements.EqualTo(newMeasurements) {
-		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
-		return nil
-	}
-
-	// don't allow potential security downgrades by setting the warnOnly flag to true
-	for k, newM := range newMeasurements {
-		if currentM, ok := currentMeasurements[k]; ok &&
-			currentM.ValidationOpt != measurements.WarnOnly &&
-			newM.ValidationOpt == measurements.WarnOnly {
-			return fmt.Errorf("setting enforced measurement %d to warn only: not allowed", k)
-		}
-	}
-
-	// backup of previous measurements
-	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
-
-	measurementsJSON, err := json.Marshal(newMeasurements)
-	if err != nil {
-		return fmt.Errorf("marshaling measurements: %w", err)
-	}
-	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
-	u.log.Debugf("Triggering measurements config map update now")
-	_, err = u.stableInterface.updateConfigMap(ctx, existingConf)
-	if err != nil {
-		return fmt.Errorf("setting new measurements: %w", err)
-	}
-
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's expected measurements")
-	return nil
 }
 
 // upgradeInProgress checks if an upgrade is in progress.
