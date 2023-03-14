@@ -32,16 +32,16 @@ type EnforceIDKeyDigest uint32
 
 // TODO: Decide on final value naming.
 const (
+	// Unknown is reserved for invalid configurations.
+	Unknown EnforceIDKeyDigest = iota
 	// StrictChecking will return an error if the ID key digest is not found in the expected list.
-	StrictChecking EnforceIDKeyDigest = iota
+	StrictChecking
 	// MAAFallback attempts to verify the attestation using Microsoft Azure Attestation (MAA),
 	// if the ID key digest is not found in the expected list.
 	MAAFallback
 	// WarnOnly logs a warning if the ID key digest is not found in the expected list.
 	// No error is returned.
 	WarnOnly
-	// Unknown is reserved for invalid configurations.
-	Unknown EnforceIDKeyDigest = 0xFFFFFFFF
 )
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -70,6 +70,7 @@ func (e *EnforceIDKeyDigest) unmarshal(unmarshalFunc func(any) error) error {
 	// Check for legacy format: EnforceIDKeyDigest might be a boolean.
 	// If set to true, the value will be set to StrictChecking.
 	// If set to false, the value will be set to WarnOnly.
+	fmt.Println("Unmarsahling EnforceIDKeyDigest")
 	var legacyEnforce bool
 	legacyErr := unmarshalFunc(&legacyEnforce)
 	if legacyErr == nil {
