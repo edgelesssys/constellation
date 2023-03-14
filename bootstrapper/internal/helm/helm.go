@@ -179,9 +179,9 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 	// But not sure if this will blow up in the future, so let's better ask the operating system instead of doing tricks.
 	hostMTU, err := getHostMTU(nodeIP, h.log)
 	if err != nil {
-		h.log.Warnf("Failed to determine MTU from host network interface, falling back to Cilium's auto-detection", zap.Error(err))
+		h.log.With(zap.Error(err)).Warnf("Failed to determine MTU from host network interface, falling back to Cilium's auto-detection")
 	} else {
-		h.log.Infof("Detected host MTU for Cilium", zap.Int("mtu", hostMTU))
+		h.log.With(zap.Int("mtu", hostMTU)).Infof("Detected host MTU for Cilium")
 	}
 
 	// configure pod network CIDR
@@ -274,7 +274,7 @@ func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
 
 		addrs, err := i.Addrs()
 		if err != nil {
-			log.Warnf("Failed to retrieve interface addresses", zap.String("interface", i.Name))
+			log.With(zap.String("interface", i.Name)).Warnf("Failed to retrieve interface addresses")
 			continue
 		}
 		for _, addr := range addrs {
