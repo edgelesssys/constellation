@@ -8,6 +8,11 @@
 # screenrecordings container. A full script run takes ~20min.
 #
 
+# Create IAM configuration
+pushd constellation
+constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b
+popd
+
 docker build -t screenrecodings docker
 
 # Create cast
@@ -31,3 +36,11 @@ termtosvg render new_header.cast readme.svg -t window-frame.svg -D 1ms
 # Copy and cleanup
 cp readme.svg ../static/img/shell-windowframe.svg
 rm readme.svg new_header.cast
+
+# cleanup Constellation
+sudo chown -R $USER:$USER ./constellation
+pushd constellation
+constellation terminate -y
+constellation iam destroy -y
+rm -rf ./*
+popd

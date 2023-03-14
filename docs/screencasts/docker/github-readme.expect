@@ -18,13 +18,6 @@ proc run_command {cmd} {
     expect -timeout 1
 }
 
-# Create IAM configuration
-run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
-expect -re "y\/n"
-send "y"
-send "\r"
-expect_prompt
-
 # Start recording
 spawn asciinema rec --overwrite /recordings/github-readme.cast
 send "\r"
