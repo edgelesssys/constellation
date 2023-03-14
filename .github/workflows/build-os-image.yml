@@ -196,7 +196,7 @@ jobs:
         env:
           REF: ${{ steps.ref.outputs.ref }}
           STREAM: ${{ steps.stream.outputs.stream }}
-          IMAGE_VERSION: ${{ inputs.imageVersion || steps.version.outputs.pseudoVersion }}
+          IMAGE_VERSION: ${{ inputs.imageVersion || steps.version.outputs.version }}
         run: |
           {
             echo "imageVersion=${IMAGE_VERSION}"

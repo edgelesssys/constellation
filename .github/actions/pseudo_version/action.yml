@@ -2,15 +2,12 @@ name: Determine pseudo version
 description: "Determine go-like pseudo version to use as container image tag."
 
 outputs:
-  pseudoVersion:
-    description: "Pseudo version based on the current HEAD"
-    value: ${{ steps.pseudo-version.outputs.pseudoVersion }}
   semanticVersion:
     description: "Semantic version based on the current HEAD"
     value: ${{ steps.pseudo-version.outputs.semanticVersion }}
-  releaseVersion:
-    description: "Release version based on branch name"
-    value: ${{ steps.pseudo-version.outputs.releaseVersion }}
+  version:
+    description: "Version based on branch name"
+    value: ${{ steps.pseudo-version.outputs.version }}
   timestamp:
     description: "Commit timestamp based on the current HEAD"
     value: ${{ steps.pseudo-version.outputs.timestamp }}
@@ -22,27 +19,22 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: get pseudo version
+    - name: get version
       id: pseudo-version
       shell: bash
       working-directory: hack/pseudo-version
       run: |
-        if $(git rev-parse --is-shallow-repository); then
-          git fetch --prune --unshallow --tags -v
-        else
-          git fetch --tags -v
-        fi
         homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
         export GOCACHE=${homedir}/.cache/go-build
         export GOPATH=${homedir}/go
         export GOMODCACHE=${homedir}/.cache/go-mod
-        pseudoVersion=$(go run .)
+        
+        version=$(go run .)
         semanticVersion=$(go run . -semantic-version)
         timestamp=$(go run . -print-timestamp)
         branchName=$(go run . -print-branch)
-        releaseVersion=$(go run . -print-release-branch)
-        echo "pseudoVersion=${pseudoVersion}" >> $GITHUB_OUTPUT
+
+        echo "version=${version}" >> $GITHUB_OUTPUT
         echo "semanticVersion=${semanticVersion}" >> $GITHUB_OUTPUT
         echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
         echo "branchName=${branchName}" >> $GITHUB_OUTPUT
-        echo "releaseVersion=${releaseVersion}" >> $GITHUB_OUTPUT

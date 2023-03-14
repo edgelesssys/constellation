@@ -12,7 +12,7 @@ build --incompatible_enable_cc_toolchain_resolution
 build --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 # inject version information into binaries
-build --stamp --workspace_status_command=tools/workspace_status
+build --stamp --workspace_status_command=tools/workspace_status.sh
 
 # strip binaries for better reproducibility
 build --strip=always

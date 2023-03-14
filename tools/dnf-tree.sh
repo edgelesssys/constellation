@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
 bazel run //:bazeldnf -- fetch \
   --repofile rpm/repo.yaml
 bazel run //:bazeldnf -- rpmtree \

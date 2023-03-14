@@ -53,7 +53,7 @@ runs:
         tags: |
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
-          type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
+          type=raw,value=${{ steps.pseudo-version.outputs.version }},enable=${{ '' != steps.pseudo-version.outputs.version }}
           type=ref,event=branch
 
     - name: Build and push container image
@@ -75,11 +75,11 @@ runs:
         cosignPassword: ${{ inputs.cosignPassword }}
 
     - name: Bundle for pseudo version
-      if: steps.pseudo-version.outputs.pseudoVersion != '' && inputs.pushTag == ''
+      if: steps.pseudo-version.outputs.version != '' && inputs.pushTag == ''
       shell: bash
       working-directory: ${{ inputs.sourceDir }}
       env:
-        VERSION: ${{ steps.pseudo-version.outputs.pseudoVersion }}
+        VERSION: ${{ steps.pseudo-version.outputs.version }}
       run: make bundle VERSION=${VERSION#v}
 
     - name: Bundle for semantic version
@@ -99,7 +99,7 @@ runs:
         tags: |
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
-          type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
+          type=raw,value=${{ steps.pseudo-version.outputs.version }},enable=${{ '' != steps.pseudo-version.outputs.version }}
           type=ref,event=branch
 
     - name: Build and push bundle image
@@ -121,11 +121,11 @@ runs:
         cosignPassword: ${{ inputs.cosignPassword }}
 
     - name: Build and push catalog for pseudo versions
-      if: steps.pseudo-version.outputs.pseudoVersion != '' && inputs.pushTag == ''
+      if: steps.pseudo-version.outputs.version != '' && inputs.pushTag == ''
       shell: bash
       working-directory: ${{ inputs.sourceDir }}
       env:
-        VERSION: ${{ steps.pseudo-version.outputs.pseudoVersion }}
+        VERSION: ${{ steps.pseudo-version.outputs.version }}
       run: make VERSION=${VERSION#v} catalog-build catalog-push
 
     - name: Build and push catalog for releases

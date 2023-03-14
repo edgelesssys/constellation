@@ -13,12 +13,8 @@ ensure_pseudo_version_tool() {
 }
 
 pseudo_version() {
-  if [[ -f "${REPOSITORY_ROOT}/.version.txt" ]]; then
-    cat "${REPOSITORY_ROOT}/.version.txt"
-  else
-    ensure_pseudo_version_tool
-    "${REPOSITORY_ROOT}/tools/pseudo-version" -skip-v
-  fi
+  ensure_pseudo_version_tool
+  "${REPOSITORY_ROOT}/tools/pseudo-version" -skip-v
 }
 
 timestamp() {
