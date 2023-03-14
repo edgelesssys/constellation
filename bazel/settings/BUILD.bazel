@@ -33,3 +33,14 @@ string_flag(
         "host",
     ],
 )
+
+bool_flag(
+    name = "select_never",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "select_never_enabled",
+    flag_values = {":select_never": "True"},
+    visibility = ["//visibility:public"],
+)
