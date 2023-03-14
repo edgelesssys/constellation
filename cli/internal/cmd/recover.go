@@ -95,7 +95,7 @@ func (r *recoverCmd) recover(
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	validator, err := cloudcmd.NewValidator(provider, conf, r.log)
+	validator, err := cloudcmd.NewValidator(conf, r.log)
 	if err != nil {
 		return err
 	}

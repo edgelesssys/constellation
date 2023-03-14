@@ -11,7 +11,6 @@ go_library(
         "//bootstrapper/internal/diskencryption",
         "//internal/atls",
         "//internal/attestation",
-        "//internal/attestation/azure/snp",
         "//internal/crypto",
         "//internal/file",
         "//internal/grpc/atlscredentials",

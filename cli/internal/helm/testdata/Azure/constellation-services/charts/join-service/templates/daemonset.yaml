@@ -39,6 +39,7 @@ spec:
           args:
             - --cloud-provider=Azure
             - --key-service-endpoint=key-service.testNamespace:9000
+            - --attestation-variant=azure-sev-snp
           volumeMounts:
             - mountPath: /var/config
               name: config

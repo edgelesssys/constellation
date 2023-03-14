@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - args:
-        - --cloud-provider=QEMU
+        - --attestation-variant=qemu-vtpm
         image: verificationImage
         name: verification-service
         ports:

@@ -77,6 +77,9 @@ type Config struct {
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
+	//   Attestation variant used to verify the integrity of a node.
+	AttestationVariant string `yaml:"attestationVariant" validate:"valid_attestation_variant"` // TODO: v2.8: Mark required
+	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
@@ -573,7 +576,12 @@ func (c *Config) Validate(force bool) error {
 	if err := validate.RegisterTranslation("version_compatibility", trans, registerVersionCompatibilityError, translateVersionCompatibilityError); err != nil {
 		return err
 	}
+
 	if err := validate.RegisterTranslation("valid_name", trans, registerValidateNameError, c.translateValidateNameError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterTranslation("valid_attestation_variant", trans, registerValidAttestVariantError, c.translateValidAttestVariantError); err != nil {
 		return err
 	}
 
@@ -610,6 +618,10 @@ func (c *Config) Validate(force bool) error {
 
 	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
 	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("valid_attestation_variant", c.validAttestVariant); err != nil {
 		return err
 	}
 

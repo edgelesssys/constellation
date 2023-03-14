@@ -357,6 +357,7 @@ go_test(
         "//internal/deploy/helm",
         "//internal/file",
         "//internal/logger",
+        "//internal/oid",
         "@com_github_pkg_errors//:errors",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

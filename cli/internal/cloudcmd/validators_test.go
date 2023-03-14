@@ -19,11 +19,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewValidator(t *testing.T) {
@@ -37,47 +38,82 @@ func TestNewValidator(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		provider           cloudprovider.Provider
-		config             *config.Config
-		pcrs               measurements.M
-		enforceIDKeyDigest bool
-		digest             idkeydigest.IDKeyDigests
-		azureCVM           bool
-		wantErr            bool
+		config  *config.Config
+		wantErr bool
 	}{
 		"gcp": {
-			provider: cloudprovider.GCP,
-			pcrs:     testPCRs,
+			config: &config.Config{
+				AttestationVariant: oid.GCPSEVES{}.String(),
+				Provider: config.ProviderConfig{
+					GCP: &config.GCPConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
 		},
 		"azure cvm": {
-			provider: cloudprovider.Azure,
-			pcrs:     testPCRs,
-			azureCVM: true,
+			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				Provider: config.ProviderConfig{
+					Azure: &config.AzureConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
 		},
 		"azure trusted launch": {
-			provider: cloudprovider.Azure,
-			pcrs:     testPCRs,
-			azureCVM: false,
+			config: &config.Config{
+				AttestationVariant: oid.AzureTrustedLaunch{}.String(),
+				Provider: config.ProviderConfig{
+					Azure: &config.AzureConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
 		},
 		"qemu": {
-			provider: cloudprovider.QEMU,
-			pcrs:     testPCRs,
+			config: &config.Config{
+				AttestationVariant: oid.QEMUVTPM{}.String(),
+				Provider: config.ProviderConfig{
+					QEMU: &config.QEMUConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
 		},
 		"no pcrs provided": {
-			provider: cloudprovider.Azure,
-			pcrs:     measurements.M{},
-			wantErr:  true,
+			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				Provider: config.ProviderConfig{
+					Azure: &config.AzureConfig{
+						Measurements: measurements.M{},
+					},
+				},
+			},
+			wantErr: true,
 		},
-		"unknown provider": {
-			provider: cloudprovider.Unknown,
-			pcrs:     testPCRs,
-			wantErr:  true,
+		"unknown variant": {
+			config: &config.Config{
+				AttestationVariant: "unknown",
+				Provider: config.ProviderConfig{
+					QEMU: &config.QEMUConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
+			wantErr: true,
 		},
 		"set idkeydigest": {
-			provider:           cloudprovider.Azure,
-			pcrs:               testPCRs,
-			digest:             idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
-			enforceIDKeyDigest: true,
+			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				Provider: config.ProviderConfig{
+					Azure: &config.AzureConfig{
+						Measurements:       testPCRs,
+						IDKeyDigest:        idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
+						EnforceIDKeyDigest: &[]bool{true}[0],
+					},
+				},
+			},
 		},
 	}
 
@@ -85,25 +121,16 @@ func TestNewValidator(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			conf := &config.Config{Provider: config.ProviderConfig{}}
-			if tc.provider == cloudprovider.GCP {
-				conf.Provider.GCP = &config.GCPConfig{Measurements: tc.pcrs}
-			}
-			if tc.provider == cloudprovider.Azure {
-				conf.Provider.Azure = &config.AzureConfig{Measurements: tc.pcrs, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigest: tc.digest, ConfidentialVM: &tc.azureCVM}
-			}
-			if tc.provider == cloudprovider.QEMU {
-				conf.Provider.QEMU = &config.QEMUConfig{Measurements: tc.pcrs}
-			}
-
-			validators, err := NewValidator(tc.provider, conf, logger.NewTest(t))
+			validators, err := NewValidator(tc.config, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.pcrs, validators.pcrs)
-				assert.Equal(tc.provider, validators.provider)
+				assert.Equal(tc.config.GetMeasurements(), validators.pcrs)
+				variant, err := oid.FromString(tc.config.AttestationVariant)
+				require.NoError(t, err)
+				assert.Equal(variant, validators.attestationVariant)
 			}
 		})
 	}
@@ -129,31 +156,29 @@ func TestValidatorV(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		provider cloudprovider.Provider
-		pcrs     measurements.M
-		wantVs   atls.Validator
-		azureCVM bool
+		variant oid.Getter
+		pcrs    measurements.M
+		wantVs  atls.Validator
 	}{
 		"gcp": {
-			provider: cloudprovider.GCP,
-			pcrs:     newTestPCRs(),
-			wantVs:   gcp.NewValidator(newTestPCRs(), nil),
+			variant: oid.GCPSEVES{},
+			pcrs:    newTestPCRs(),
+			wantVs:  gcp.NewValidator(newTestPCRs(), nil),
 		},
 		"azure cvm": {
-			provider: cloudprovider.Azure,
-			pcrs:     newTestPCRs(),
-			wantVs:   snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
-			azureCVM: true,
+			variant: oid.AzureSEVSNP{},
+			pcrs:    newTestPCRs(),
+			wantVs:  snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
 		},
 		"azure trusted launch": {
-			provider: cloudprovider.Azure,
-			pcrs:     newTestPCRs(),
-			wantVs:   trustedlaunch.NewValidator(newTestPCRs(), nil),
+			variant: oid.AzureTrustedLaunch{},
+			pcrs:    newTestPCRs(),
+			wantVs:  trustedlaunch.NewValidator(newTestPCRs(), nil),
 		},
 		"qemu": {
-			provider: cloudprovider.QEMU,
-			pcrs:     newTestPCRs(),
-			wantVs:   qemu.NewValidator(newTestPCRs(), nil),
+			variant: oid.QEMUVTPM{},
+			pcrs:    newTestPCRs(),
+			wantVs:  qemu.NewValidator(newTestPCRs(), nil),
 		},
 	}
 
@@ -161,7 +186,7 @@ func TestValidatorV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs, azureCVM: tc.azureCVM}
+			validators := &Validator{attestationVariant: tc.variant, pcrs: tc.pcrs}
 
 			resultValidator := validators.V(&cobra.Command{})
 
@@ -206,53 +231,53 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		provider  cloudprovider.Provider
+		variant   oid.Getter
 		pcrs      measurements.M
 		ownerID   string
 		clusterID string
 		wantErr   bool
 	}{
 		"gcp update owner ID": {
-			provider: cloudprovider.GCP,
-			pcrs:     newTestPCRs(),
-			ownerID:  one64,
+			variant: oid.GCPSEVES{},
+			pcrs:    newTestPCRs(),
+			ownerID: one64,
 		},
 		"gcp update cluster ID": {
-			provider:  cloudprovider.GCP,
+			variant:   oid.GCPSEVES{},
 			pcrs:      newTestPCRs(),
 			clusterID: one64,
 		},
 		"gcp update both": {
-			provider:  cloudprovider.GCP,
+			variant:   oid.GCPSEVES{},
 			pcrs:      newTestPCRs(),
 			ownerID:   one64,
 			clusterID: one64,
 		},
 		"azure update owner ID": {
-			provider: cloudprovider.Azure,
-			pcrs:     newTestPCRs(),
-			ownerID:  one64,
+			variant: oid.AzureSEVSNP{},
+			pcrs:    newTestPCRs(),
+			ownerID: one64,
 		},
 		"azure update cluster ID": {
-			provider:  cloudprovider.Azure,
+			variant:   oid.AzureSEVSNP{},
 			pcrs:      newTestPCRs(),
 			clusterID: one64,
 		},
 		"azure update both": {
-			provider:  cloudprovider.Azure,
+			variant:   oid.AzureSEVSNP{},
 			pcrs:      newTestPCRs(),
 			ownerID:   one64,
 			clusterID: one64,
 		},
 		"owner ID and cluster ID empty": {
-			provider: cloudprovider.GCP,
-			pcrs:     newTestPCRs(),
+			variant: oid.GCPSEVES{},
+			pcrs:    newTestPCRs(),
 		},
 		"invalid encoding": {
-			provider: cloudprovider.GCP,
-			pcrs:     newTestPCRs(),
-			ownerID:  "invalid",
-			wantErr:  true,
+			variant: oid.GCPSEVES{},
+			pcrs:    newTestPCRs(),
+			ownerID: "invalid",
+			wantErr: true,
 		},
 	}
 
@@ -260,7 +285,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs}
+			validators := &Validator{attestationVariant: tc.variant, pcrs: tc.pcrs}
 
 			err := validators.UpdateInitPCRs(tc.ownerID, tc.clusterID)
 
@@ -392,8 +417,8 @@ func TestUpdatePCR(t *testing.T) {
 			}
 
 			validators := &Validator{
-				provider: cloudprovider.GCP,
-				pcrs:     pcrs,
+				attestationVariant: oid.GCPSEVES{},
+				pcrs:               pcrs,
 			}
 			err := validators.updatePCR(tc.pcrIndex, tc.encoded)
 

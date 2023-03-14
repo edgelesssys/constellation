@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	ut "github.com/go-playground/universal-translator"
@@ -465,4 +466,56 @@ func (c *Config) validateName(fl validator.FieldLevel) bool {
 		return len(fl.Field().String()) <= constants.AWSConstellationNameLength
 	}
 	return len(fl.Field().String()) <= constants.ConstellationNameLength
+}
+
+func registerValidAttestVariantError(ut ut.Translator) error {
+	return ut.Add("valid_attestation_variant", `"{0}" is not a valid attestation variant for CSP {1}`, true)
+}
+
+func (c *Config) translateValidAttestVariantError(ut ut.Translator, fe validator.FieldError) string {
+	csp := c.GetProvider()
+	t, _ := ut.T("valid_attestation_variant", c.AttestationVariant, csp.String())
+	return t
+}
+
+func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
+	// TODO: v2.8: remove variant fallback and make variant a required field
+	c.addMissingVariant()
+
+	variant, err := oid.FromString(c.AttestationVariant)
+	if err != nil {
+		return false
+	}
+
+	// make sure the variant is valid for the chosen CSP
+	switch variant {
+	case oid.AWSNitroTPM{}:
+		return c.Provider.AWS != nil
+	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
+		return c.Provider.Azure != nil
+	case oid.GCPSEVES{}:
+		return c.Provider.GCP != nil
+	case oid.QEMUVTPM{}:
+		return c.Provider.QEMU != nil
+	default:
+		return false
+	}
+}
+
+func (c *Config) addMissingVariant() {
+	if c.AttestationVariant != "" {
+		return
+	}
+	fmt.Fprintln(os.Stderr, "WARNING: the config key `attestationVariant` is not set. This key will be required in the next version.")
+
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		c.AttestationVariant = oid.AWSNitroTPM{}.String()
+	case cloudprovider.Azure:
+		c.AttestationVariant = oid.AzureTrustedLaunch{}.String()
+	case cloudprovider.GCP:
+		c.AttestationVariant = oid.GCPSEVES{}.String()
+	case cloudprovider.QEMU:
+		c.AttestationVariant = oid.QEMUVTPM{}.String()
+	}
 }

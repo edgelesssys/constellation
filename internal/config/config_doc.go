@@ -25,7 +25,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 9)
+	ConfigDoc.Fields = make([]encoder.Doc, 10)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -61,18 +61,23 @@ func init() {
 	ConfigDoc.Fields[6].Note = ""
 	ConfigDoc.Fields[6].Description = "DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
 	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
-	ConfigDoc.Fields[7].Name = "provider"
-	ConfigDoc.Fields[7].Type = "ProviderConfig"
-	ConfigDoc.Fields[7].Note = ""
-	ConfigDoc.Fields[7].Description = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[8].Name = "upgrade"
-	ConfigDoc.Fields[8].Type = "UpgradeConfig"
+	ConfigDoc.Fields[7].Name = "attestationVariant"
+	ConfigDoc.Fields[7].Type = "string"
+	ConfigDoc.Fields[7].Note = "TODO: v2.8: Mark required\n"
+	ConfigDoc.Fields[7].Description = "Attestation variant used to verify the integrity of a node."
+	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Attestation variant used to verify the integrity of a node."
+	ConfigDoc.Fields[8].Name = "provider"
+	ConfigDoc.Fields[8].Type = "ProviderConfig"
 	ConfigDoc.Fields[8].Note = ""
-	ConfigDoc.Fields[8].Description = "Configuration to apply during constellation upgrade."
-	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[8].Description = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[9].Name = "upgrade"
+	ConfigDoc.Fields[9].Type = "UpgradeConfig"
+	ConfigDoc.Fields[9].Note = ""
+	ConfigDoc.Fields[9].Description = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[9].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
 
-	ConfigDoc.Fields[8].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
+	ConfigDoc.Fields[9].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
 
 	UpgradeConfigDoc.Type = "UpgradeConfig"
 	UpgradeConfigDoc.Comments[encoder.LineComment] = "UpgradeConfig defines configuration used during constellation upgrade."

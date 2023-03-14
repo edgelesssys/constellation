@@ -135,7 +135,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		cmd.PrintErrf("License check failed: %v", err)
 	}
 	i.log.Debugf("Checked license")
-	validator, err := cloudcmd.NewValidator(provider, conf, i.log)
+	validator, err := cloudcmd.NewValidator(conf, i.log)
 	if err != nil {
 		return err
 	}

@@ -415,7 +415,6 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 			"image": i.autoscalerImage,
 		},
 		"verification-service": map[string]any{
-			"csp":   i.csp.String(),
 			"image": i.verificationServiceImage,
 		},
 		"gcp-guest-agent": map[string]any{
@@ -490,6 +489,18 @@ func extendConstellationServicesValues(in map[string]any, config *config.Config,
 	}
 	keyServiceValues["masterSecret"] = base64.StdEncoding.EncodeToString(masterSecret)
 	keyServiceValues["salt"] = base64.StdEncoding.EncodeToString(salt)
+
+	joinServiceVals, ok := in["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid join-service values")
+	}
+	joinServiceVals["attestationVariant"] = config.AttestationVariant
+
+	verifyServiceVals, ok := in["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid verification-service values")
+	}
+	verifyServiceVals["attestationVariant"] = config.AttestationVariant
 
 	csp := config.GetProvider()
 	switch csp {

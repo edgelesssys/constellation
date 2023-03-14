@@ -39,6 +39,7 @@ spec:
           args:
             - --cloud-provider={{ .Values.csp }}
             - --key-service-endpoint=key-service.{{ .Release.Namespace }}:{{ .Values.global.keyServicePort }}
+            - --attestation-variant={{ .Values.attestationVariant }}
           volumeMounts:
             - mountPath: {{ .Values.global.serviceBasePath | quote }}
               name: config

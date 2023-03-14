@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,25 +60,34 @@ func TestConstellationServices(t *testing.T) {
 		cnmImage           string
 	}{
 		"GCP": {
-			config: &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{
-				DeployCSIDriver: func() *bool { b := true; return &b }(),
-			}}},
+			config: &config.Config{
+				AttestationVariant: oid.GCPSEVES{}.String(),
+				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
+					DeployCSIDriver: toPtr(true),
+				}},
+			},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareGCPValues,
 			ccmImage:           "ccmImageForGCP",
 		},
 		"Azure": {
-			config: &config.Config{Provider: config.ProviderConfig{Azure: &config.AzureConfig{
-				DeployCSIDriver:    func() *bool { b := true; return &b }(),
-				EnforceIDKeyDigest: func() *bool { b := true; return &b }(),
-			}}},
+			config: &config.Config{
+				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
+					DeployCSIDriver:    toPtr(true),
+					EnforceIDKeyDigest: toPtr(true),
+				}},
+			},
 			enforceIDKeyDigest: true,
 			valuesModifier:     prepareAzureValues,
 			ccmImage:           "ccmImageForAzure",
 			cnmImage:           "cnmImageForAzure",
 		},
 		"QEMU": {
-			config:             &config.Config{Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}}},
+			config: &config.Config{
+				AttestationVariant: oid.QEMUVTPM{}.String(),
+				Provider:           config.ProviderConfig{QEMU: &config.QEMUConfig{}},
+			},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareQEMUValues,
 		},
@@ -429,4 +439,8 @@ func prepareQEMUValues(values map[string]any) error {
 	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
 	return nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - args:
-        - --cloud-provider=Azure
+        - --attestation-variant=azure-sev-snp
         image: verificationImage
         name: verification-service
         ports:

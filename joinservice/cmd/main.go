@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/watcher"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kms"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubeadm"
@@ -42,25 +43,24 @@ const vpcIPTimeout = 30 * time.Second
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
 	keyServiceEndpoint := flag.String("key-service-endpoint", "", "endpoint of Constellations key management service")
+	attestationVariant := flag.String("attestation-variant", "", "attestation variant to use for aTLS connections")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
-	log.With(zap.String("version", constants.VersionInfo()), zap.String("cloudProvider", *provider)).
-		Infof("Constellation Node Join Service")
+	log.With(
+		zap.String("version", constants.VersionInfo()),
+		zap.String("cloudProvider", *provider),
+		zap.String("attestationVariant", *attestationVariant),
+	).Infof("Constellation Node Join Service")
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	cvmRaw, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.AzureCVM))
+	variant, err := oid.FromString(*attestationVariant)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to get azureCVM from config map")
+		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}
-	azureCVM, err := strconv.ParseBool(string(cvmRaw))
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to parse content of AzureCVM: %s", cvmRaw)
-	}
-
-	validator, err := watcher.NewValidator(log.Named("validator"), *provider, handler, azureCVM)
+	validator, err := watcher.NewValidator(log.Named("validator"), variant, handler)
 	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")

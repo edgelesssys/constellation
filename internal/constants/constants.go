@@ -108,8 +108,6 @@ const (
 	ServiceBasePath = "/var/config"
 	// MeasurementsFilename is the filename of CC measurements.
 	MeasurementsFilename = "measurements"
-	// EnforcedPCRsFilename is the filename for a list PCRs that are required to pass attestation.
-	EnforcedPCRsFilename = "enforcedPCRs"
 	// MeasurementSaltFilename is the filename of the salt used in creation of the clusterID.
 	MeasurementSaltFilename = "measurementSalt"
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
@@ -118,8 +116,6 @@ const (
 	IDKeyDigestFilename = "idkeydigests"
 	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
-	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
-	AzureCVM = "azureCVM"
 
 	// K8sVersionFieldName is the name of the of the key holding the wanted Kubernetes version.
 	K8sVersionFieldName = "cluster-version"
