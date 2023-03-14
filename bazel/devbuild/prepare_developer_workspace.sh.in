@@ -17,10 +17,10 @@ fi
 
 cd "${BUILD_WORKING_DIRECTORY}" || exit 1
 
-if [[ $# -eq 0 ]] ; then
-    workdir="."
+if [[ $# -eq 0 ]]; then
+  workdir="."
 else
-    workdir="$1"
+  workdir="$1"
 fi
 
 ln -sf "${bootstrapper}" "${workdir}/bootstrapper"
