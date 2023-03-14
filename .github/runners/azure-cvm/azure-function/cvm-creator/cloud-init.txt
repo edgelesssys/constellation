@@ -32,5 +32,5 @@ runcmd:
  - [/bin/bash, -c, "cd /actions-runner && tar xzf /actions-runner/actions-runner-linux-x64-2.286.1.tar.gz"]
  - [chown, -R, github-actions-runner-user:github-actions-runner-user, /actions-runner]
  - [sudo, -u, github-actions-runner-user, /bin/bash, -c, "cd /actions-runner && /actions-runner/config.sh --url https://github.com/edgelesssys/constellation --ephemeral --labels azure-cvm --replace --unattended --token $(curl -X POST -H \"Accept: application/vnd.github+json\" -H \"Authorization: Bearer $(curl -s -H Metadata:true -H \"Authorization: Bearer $(curl -s -H Metadata:true --noproxy \"*\" \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net\" | jq -r .access_token)\" --noproxy \"*\" \"https://github-token.vault.azure.net/secrets/github-access-token?api-version=2016-10-01\" | jq -r .value)\" https://api.github.com/repos/edgelesssys/constellation/actions/runners/registration-token | jq -r .token)"]
- - [/bin/bash, -c, "cd /actions-runner && ./svc.sh install"]
+ - [/bin/bash, -c, "cd /actions-runner && ./svc.sh install github-actions-runner-user"]
  - [/bin/bash, -c, "systemctl enable --now actions.runner.edgelesssys-constellation.$(hostname | cut -c -31).service"]
