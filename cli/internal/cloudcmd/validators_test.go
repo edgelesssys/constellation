@@ -121,7 +121,7 @@ func TestNewValidator(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators, err := NewValidator(tc.config, logger.NewTest(t))
+			validators, err := NewValidator(tc.config, "https://192.0.2.1:8080/maa", logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)

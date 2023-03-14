@@ -95,7 +95,9 @@ func (r *recoverCmd) recover(
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	validator, err := cloudcmd.NewValidator(conf, r.log)
+	maaURL := "https://snpattestationtester.neu.attest.azure.net" // TODO(daniel-weisse): Get url from id file
+	r.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
+	validator, err := cloudcmd.NewValidator(conf, maaURL, r.log)
 	if err != nil {
 		return err
 	}

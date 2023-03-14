@@ -317,6 +317,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],
     deps = [
+        "//internal/attestation/idkeydigest",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
         "//internal/config",

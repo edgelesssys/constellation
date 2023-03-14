@@ -135,7 +135,10 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		cmd.PrintErrf("License check failed: %v", err)
 	}
 	i.log.Debugf("Checked license")
-	validator, err := cloudcmd.NewValidator(conf, i.log)
+
+	maaURL := "https://snpattestationtester.neu.attest.azure.net" // TODO(daniel-weisse): Get url from id file
+	i.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
+	validator, err := cloudcmd.NewValidator(conf, maaURL, i.log)
 	if err != nil {
 		return err
 	}
@@ -151,7 +154,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt, maaURL)
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)

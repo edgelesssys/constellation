@@ -14,10 +14,10 @@
             "description": "ID Key Digest enforcement policy.",
             "enum": ["StrictChecking", "MAAFallback", "WarnOnly"]
         },
-        "idkeydigests": {
-            "description": "List of expected idkeydigest values for Azure SNP attestation.",
+        "idKeyConfig": {
+            "description": "Configuration for validating the ID Key Digest of the SEV-SNP attestation.",
             "type": "string",
-            "examples": ["[\"57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696\", \"0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3\"]"]
+            "examples": ["{'EnforcementPolicy': 'MAAFallback', 'MAAURL': 'https://192.0.2.1:8080/maa', 'IDKeyDigests': ['57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696', '0356215882a825279a85b300b0b742931d113bf7e32dde2e50ffde7ec743ca491ecdd7f336dc28a6e0b2bb57af7a44a3'}"]
         },
         "image": {
             "description": "Container image to use for the spawned pods.",
@@ -46,7 +46,7 @@
         "properties": { "csp": { "const": "azure" } },
         "required": ["csp"]
     },
-    "then": { "required": ["enforceIdKeyDigest", "idkeydigests"] },
+    "then": { "required": ["idKeyConfig"] },
     "title": "Values",
     "type": "object"
 }
