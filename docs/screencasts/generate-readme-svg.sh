@@ -10,7 +10,7 @@
 
 # Create IAM configuration
 pushd constellation
-constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b
+constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b --yes
 popd
 
 docker build -t screenrecodings docker
@@ -25,7 +25,8 @@ docker run -it \
 # Fix meta data: width and height are always zero in Docker produced cast files.
 # Header is the first lint of cast file in JSON format, we read, fix and write it.
 head -n 1 recordings/github-readme.cast | yq -M '.width = 95 | .height = 17 | . + {"idle_time_limit": 0.5}' - > new_header.cast
-sed -i '' 's/idle_time_limit:/"idle_time_limit":/' new_header.cast
+# Does not work on MacOS due to a different sed
+sed -i 's/idle_time_limit:/"idle_time_limit":/' new_header.cast
 # Then append everything, expect first line from original cast file.
 tail -n+2 recordings/github-readme.cast >> new_header.cast
 
