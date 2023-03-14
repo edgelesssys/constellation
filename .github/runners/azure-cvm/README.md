@@ -22,5 +22,5 @@ To deploy your Azure CLI needs to be authenticated and [Azure Function Core Tool
 
 ```bash
 cd .github/runners/azure-cvm/azure-function
-func azure functionapp publish edgeless-snp-reporter
+func azure functionapp publish edgeless-snp-reporter --python
 ```
