@@ -1,16 +1,14 @@
-load("//bazel/ci:def.bzl", "sh_template")
+load("//bazel/sh:def.bzl", "sh_template")
 
 sh_template(
     name = "devbuild",
     data = [
-        "//bazel/ci:base_lib",
         "//bootstrapper/cmd/bootstrapper",
         "//cli:cli_oss_host",
         "//debugd/cmd/cdbg:cdbg_host",
         "//upgrade-agent/cmd",
     ],
     substitutions = {
-        "@@BASE_LIB@@": "$(rootpath //bazel/ci:base_lib)",
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
         "@@CLI@@": "$(rootpath //cli:cli_oss_host)",

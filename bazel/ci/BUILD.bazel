@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
-load(":def.bzl", "repo_command", "sh_template")
+load("//bazel/sh:def.bzl", "repo_command", "sh_template")
 
 gazelle(name = "gazelle_generate")
 
@@ -42,22 +42,12 @@ buildifier(
     verbose = True,
 )
 
-sh_library(
-    name = "base_lib",
-    srcs = [
-        "lib.bash",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 sh_template(
     name = "go_mod_tidy",
     data = [
-        ":base_lib",
         "@go_sdk//:bin/go",
     ],
     substitutions = {
-        "@@BASE_LIB@@": "$(rootpath :base_lib)",
         "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
     },
     template = "tidy.sh.in",
@@ -66,11 +56,9 @@ sh_template(
 sh_template(
     name = "shfmt",
     data = [
-        ":base_lib",
         "@com_github_katexochen_sh_v3//cmd/shfmt",
     ],
     substitutions = {
-        "@@BASE_LIB@@": "$(rootpath :base_lib)",
         "@@SHFMT@@": "$(rootpath @com_github_katexochen_sh_v3//cmd/shfmt)",
     },
     template = "shfmt.sh.in",

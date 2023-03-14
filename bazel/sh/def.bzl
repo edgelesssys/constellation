@@ -46,7 +46,9 @@ def sh_template(name, **kwargs):
 
     tags = kwargs.get("tags", [])
     data = kwargs.get("data", [])
+    data.append("//bazel/sh:base_lib")
     substitutions = kwargs.pop("substitutions", [])
+    substitutions["@@BASE_LIB@@"] = "$(rootpath //bazel/sh:base_lib)"
     template = kwargs.pop("template", [])
 
     _sh_template(
@@ -75,18 +77,16 @@ def repo_command(name, **kwargs):
 
     substitutions = {
         "@@ARGS@@": args,
-        "@@BASE_LIB@@": "$(rootpath :base_lib)",
         "@@CMD@@": "$(rootpath %s)" % cmd,
     }
 
     data = kwargs.pop("data", [])
-    data.append(":base_lib")
     data.append(cmd)
 
     sh_template(
         name = name,
         data = data,
         substitutions = substitutions,
-        template = "repo_command.sh.in",
+        template = "//bazel/sh:repo_command.sh.in",
         **kwargs
     )
