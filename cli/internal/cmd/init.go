@@ -197,12 +197,44 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 }
 
 func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, spinner spinnerInterf, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	initCtx, initCtxCancel := context.WithCancel(ctx)
+	defer initCtxCancel()
+
+	// This goroutine tracks if we established a gRPC connection successfully.
+	// If yes, it switches the spinner to "Initializing cluster".
+	// If it happens multiple times, we cancel the context and abort.
+	// This usually means we lost the connection and opened a new session (which will likely fail).
+	var connectedTwice bool
+	connReadyChan := make(chan bool)
+	go func() {
+		var connected bool
+		for {
+			select {
+			case <-connReadyChan:
+				if !connected {
+					i.log.Debugf("Marking init gRPC call as connected")
+					connected = true
+					spinner.Stop()
+					spinner.Start("Initializing cluster ", false)
+				} else {
+					i.log.Debugf("Multiple gRPC connection state change events to READY received - cancelling context")
+					connectedTwice = true
+					initCtxCancel()
+					return
+				}
+			case <-initCtx.Done():
+				i.log.Debugf("Init context cancelled")
+				return
+			}
+		}
+	}()
+
 	doer := &initDoer{
-		dialer:   dialer,
-		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
-		req:      req,
-		log:      i.log,
-		spinner:  spinner,
+		dialer:        dialer,
+		endpoint:      net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
+		req:           req,
+		log:           i.log,
+		connReadyChan: connReadyChan,
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -211,22 +243,25 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, sp
 		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
 		return isServiceUnavailable
 	}
-
 	i.log.Debugf("Making initialization call, doer is %+v", doer)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
-	if err := retrier.Do(ctx); err != nil {
+	err := retrier.Do(initCtx)
+	if err != nil {
+		if errors.Is(err, context.Canceled) && connectedTwice {
+			return nil, &nonRetriableError{fmt.Errorf("init call: temporarily lost gRPC connection but resumption is not supported")}
+		}
 		return nil, err
 	}
 	return doer.resp, nil
 }
 
 type initDoer struct {
-	dialer   grpcDialer
-	endpoint string
-	req      *initproto.InitRequest
-	resp     *initproto.InitResponse
-	log      debugLog
-	spinner  spinnerInterf
+	dialer        grpcDialer
+	endpoint      string
+	req           *initproto.InitRequest
+	resp          *initproto.InitResponse
+	log           debugLog
+	connReadyChan chan bool
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
@@ -265,8 +300,7 @@ func (d *initDoer) logGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, 
 		}
 		if state == connectivity.Ready {
 			d.log.Debugf("Connection ready")
-			d.spinner.Stop()
-			d.spinner.Start("Initializing cluster ", false)
+			d.connReadyChan <- true
 		} else {
 			d.log.Debugf("Connection state ended with %s", state)
 		}
