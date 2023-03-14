@@ -65,12 +65,12 @@ sh_template(
 multirun(
     name = "tidy",
     commands = [
-        # execute sequentially
         ":go_mod_tidy",
         ":gazelle_update_repos",
         ":gazelle_generate",
         ":buildifier_fix",
     ],
+    jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
 

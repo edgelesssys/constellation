@@ -34,10 +34,6 @@ jobs:
         shell: bash
         run: bazelisk run //:tidy
 
-      - name: Run Bazel check
-        shell: bash
-        run: bazelisk run //:check
-
       - name: Check if tidy made modifications
         id: tidycheck
         shell: bash
@@ -52,8 +48,12 @@ jobs:
           ${diff}
           \`\`\`
           EOF
-          echo "::error::The repo is not tidy. Please run 'bazel run bazel/ci:tidy' and commit the changes."
+          echo "::error::The repo is not tidy. Please run 'bazel run //:tidy' and commit the changes."
           exit 1
+
+      - name: Run Bazel check
+        shell: bash
+        run: bazelisk run //:check
 
       # The following steps are only executed if the previous tidy check failed
       # and the action runs on an renovat branche. In this case, we tidy all
