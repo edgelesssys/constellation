@@ -80,7 +80,6 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 	if err != nil {
 		return fmt.Errorf("preparing config: %w", err)
 	}
-	m.log.Debugf("Prepared configuration")
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
