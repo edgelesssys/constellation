@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04@sha256:b2175cd4cfdd5cdb1740b0e6ec6bbb4ea4892801c0ad5101a81f694152b6c559
 
 # Install requirements
 RUN apt-get update && apt-get install -y software-properties-common &&\
@@ -6,13 +6,13 @@ RUN apt-get update && apt-get install -y software-properties-common &&\
     apt-get install -y curl expect asciinema sudo unzip &&\
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -sLO https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64 &&\
+RUN curl -fsSLO https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64 &&\
     sudo install yq_linux_amd64 /usr/local/bin/yq && rm yq_linux_amd64
 
-RUN curl -sLO https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl &&\
+RUN curl -fsSLO https://dl.k8s.io/release/v1.26.0/bin/linux/amd64/kubectl &&\
     sudo install kubectl /usr/local/bin/kubectl && rm kubectl
 
-RUN curl -sLO https://releases.hashicorp.com/terraform/1.3.8/terraform_1.3.8_linux_amd64.zip &&\
+RUN curl -fsSLO https://releases.hashicorp.com/terraform/1.3.8/terraform_1.3.8_linux_amd64.zip &&\
     unzip terraform_1.3.8_linux_amd64.zip &&\
     sudo install terraform /usr/local/bin/terraform && rm terraform terraform_1.3.8_linux_amd64.zip
 
