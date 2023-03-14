@@ -84,9 +84,9 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return err
 	}
 
-	provider := conf.GetProvider()
-	v.log.Debugf("Creating aTLS Validator for %s", provider)
-	validators, err := cloudcmd.NewValidator(conf, v.log)
+	maaURL := "https://snpattestationtester.neu.attest.azure.net" // TODO(daniel-weisse): Get url from id file
+	v.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
+	validators, err := cloudcmd.NewValidator(conf, maaURL, v.log)
 	if err != nil {
 		return err
 	}

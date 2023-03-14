@@ -20,9 +20,9 @@ import (
 
 // Config contains the configuration for ID Key Digest validation.
 type Config struct {
-	IDKeyDigests      IDKeyDigests
-	EnforcementPolicy EnforceIDKeyDigest
-	MAAURL            string
+	IDKeyDigests      IDKeyDigests       `json:"idKeyDigests"`
+	EnforcementPolicy EnforceIDKeyDigest `json:"enforcementPolicy"`
+	MAAURL            string             `json:"maaURL,omitempty"`
 }
 
 //go:generate stringer -type=EnforceIDKeyDigest

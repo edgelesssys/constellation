@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -107,7 +108,7 @@ func AvailableServiceVersions() (string, error) {
 }
 
 // Load the embedded helm charts.
-func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
+func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte, maaURL string) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
@@ -128,7 +129,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
-	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt); err != nil {
+	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt, maaURL); err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 
@@ -467,7 +468,9 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 // reuse user input from the init step. However, we can't rely on reuse-values, because
 // during upgrades all values need to be set locally as they might have changed.
 // Also, the charts are not rendered correctly without all of these values.
-func extendConstellationServicesValues(in map[string]any, config *config.Config, masterSecret, salt []byte) error {
+func extendConstellationServicesValues(
+	in map[string]any, config *config.Config, masterSecret, salt []byte, maaURL string,
+) error {
 	keyServiceValues, ok := in["key-service"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'key-service' key")
@@ -494,13 +497,17 @@ func extendConstellationServicesValues(in map[string]any, config *config.Config,
 		if !ok {
 			return errors.New("invalid join-service values")
 		}
-		joinServiceVals["enforceIdKeyDigest"] = config.IDKeyDigestPolicy()
 
-		marshalledDigests, err := json.Marshal(config.IDKeyDigests())
-		if err != nil {
-			return fmt.Errorf("marshalling id key digests: %w", err)
+		idKeyCfg := idkeydigest.Config{
+			IDKeyDigests:      config.IDKeyDigests(),
+			EnforcementPolicy: config.IDKeyDigestPolicy(),
+			MAAURL:            maaURL,
 		}
-		joinServiceVals["idkeydigests"] = string(marshalledDigests)
+		marshalledCfg, err := json.Marshal(idKeyCfg)
+		if err != nil {
+			return fmt.Errorf("marshalling id key digest config: %w", err)
+		}
+		joinServiceVals["idKeyConfig"] = string(marshalledCfg)
 
 		in["azure"] = map[string]any{
 			"deployCSIDriver": config.DeployCSIDriver(),
