@@ -16,6 +16,11 @@ alias(
     actual = "//bazel/ci:check",
 )
 
+alias(
+    name = "devbuild",
+    actual = "//bazel/devbuild:devbuild",
+)
+
 # These magic Gazelle commands need to be in the top-level BUILD file.
 # gazelle:map_kind go_test go_test //bazel/go:go_test.bzl
 # gazelle:prefix github.com/edgelesssys/constellation/v2

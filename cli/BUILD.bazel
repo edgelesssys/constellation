@@ -43,3 +43,16 @@ go_binary(
         "enterprise",
     ]
 ]
+
+[
+    go_cross_binary(
+        name = "cli_%s_host" % edition,
+        platform = "@local_config_platform//:host",
+        target = ":cli_%s" % edition,
+        visibility = ["//visibility:public"],
+    )
+    for edition in [
+        "oss",
+        "enterprise",
+    ]
+]

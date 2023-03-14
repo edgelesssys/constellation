@@ -1,6 +1,7 @@
 /.github @katexochen
 /3rdparty/gcp-guest-agent @malt3
 /apko @katexochen
+/bazel @malt3
 /bootstrapper @3u13r
 /cli @katexochen
 /cli/internal/helm @derpsteb

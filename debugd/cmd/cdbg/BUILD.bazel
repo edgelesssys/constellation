@@ -30,3 +30,10 @@ go_binary(
         "linux_arm64",
     ]
 ]
+
+go_cross_binary(
+    name = "cdbg_host",
+    platform = "@local_config_platform//:host",
+    target = ":cdbg",
+    visibility = ["//visibility:public"],
+)
