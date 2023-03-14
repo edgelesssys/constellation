@@ -118,6 +118,8 @@ The VM image and cluster configuration file (`constellation-conf.yaml`) will be 
 
 ## Troubleshooting
 
+Make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
+
 ### VMs have no internet access
 
 `iptables` rules may prevent your VMs from accessing the internet.
