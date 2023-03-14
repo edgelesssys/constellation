@@ -1,0 +1,9 @@
+exports_files(["repo_command.sh.in"])
+
+sh_library(
+    name = "base_lib",
+    srcs = [
+        "lib.bash",
+    ],
+    visibility = ["//visibility:public"],
+)
