@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+shfmt=$(realpath @@SHFMT@@) || exit 1
+
+# shellcheck source=lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+
+scriptsStr=$(${shfmt} -f "${BUILD_WORKSPACE_DIRECTORY}")
+readarray -t <<< "${scriptsStr}"
+scripts=("${MAPFILE[@]}")
+
+excludeDirs=(
+  "helm/charts/cilium"
+)
+
+for exclude in "${excludeDirs[@]}"; do
+  for i in "${!scripts[@]}"; do
+    if [[ ${scripts[i]} == *"${exclude}"* ]]; then
+      unset 'scripts[i]'
+    fi
+  done
+done
+
+echo "Formatting the following scripts with shfmt:"
+for script in "${scripts[@]}"; do
+  echo "  ${script}"
+done
+
+${shfmt} -i 2 -s -w -sr "${scripts[@]}"

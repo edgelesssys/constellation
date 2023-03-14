@@ -63,6 +63,19 @@ sh_template(
     template = "tidy.sh.in",
 )
 
+sh_template(
+    name = "shfmt",
+    data = [
+        ":base_lib",
+        "@com_github_katexochen_sh_v3//cmd/shfmt",
+    ],
+    substitutions = {
+        "@@BASE_LIB@@": "$(rootpath :base_lib)",
+        "@@SHFMT@@": "$(rootpath @com_github_katexochen_sh_v3//cmd/shfmt)",
+    },
+    template = "shfmt.sh.in",
+)
+
 repo_command(
     name = "gofumpt",
     args = [
@@ -76,6 +89,7 @@ repo_command(
 multirun(
     name = "tidy",
     commands = [
+        ":shfmt",
         ":gofumpt",
         ":go_mod_tidy",
         ":gazelle_update_repos",
