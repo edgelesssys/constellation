@@ -20,12 +20,15 @@ proc run_command {cmd} {
 
 # Create IAM configuration
 run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
+expect -re "y\/n"
+send "y"
+send "\r"
 expect_prompt
 
 # Start recording
 spawn asciinema rec --overwrite /recordings/github-readme.cast
 send "\r"
-expect_promptß
+expect_prompt
 
 run_command "# Step 1: Create cloud environment"
 expect_prompt
