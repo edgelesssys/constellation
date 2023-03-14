@@ -18,20 +18,16 @@ proc run_command {cmd} {
     expect -timeout 1
 }
 
+# Create IAM configuration
+run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
+expect_prompt
+
 # Start recording
 spawn asciinema rec --overwrite /recordings/github-readme.cast
 send "\r"
-expect_prompt
+expect_promptß
 
-run_command "# Step 1: Create IAM configuration"
-expect_prompt
-run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
-expect -re "y\/n"
-send "y"
-send "\r"
-expect_prompt
-
-run_command "# Step 2: Create cloud environment"
+run_command "# Step 1: Create cloud environment"
 expect_prompt
 run_command "constellation create --control-plane-nodes 3 --worker-nodes 2"
 expect -re "y\/n"
@@ -39,12 +35,12 @@ send "y"
 send "\r"
 expect_prompt
 
-run_command "# Step 3: Initialize Constellation"
+run_command "# Step 2: Initialize Constellation"
 expect_prompt
 run_command "constellation init"
 expect_prompt
 
-run_command "# Step 4: Connect to Constellation"
+run_command "# Step 3: Connect to Constellation"
 expect_prompt
 run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
 expect_prompt
