@@ -3,11 +3,11 @@
 # This script is run from the user's Constellation workspace (BUILD_WORKING_DIRECTORY).
 # It prepares the workspace by symlinking all required binaries into folder.
 
-lib=$(realpath @@BASE_LIB@@)
-bootstrapper=$(realpath @@BOOTSTRAPPER@@)
-upgrade_agent=$(realpath @@UPGRADE_AGENT@@)
-cli=$(realpath @@CLI@@)
-cdbg=$(realpath @@CDBG@@)
+lib=$(realpath @@BASE_LIB@@) || exit 1
+bootstrapper=$(realpath @@BOOTSTRAPPER@@) || exit 1
+upgrade_agent=$(realpath @@UPGRADE_AGENT@@) || exit 1
+cli=$(realpath @@CLI@@) || exit 1
+cdbg=$(realpath @@CDBG@@) || exit 1
 
 # shellcheck source=../ci/lib.bash
 if ! source "${lib}"; then
