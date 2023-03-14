@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+# keep
+go_library(
+    name = "tools_lib",
+    srcs = ["tools.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/tools",
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//bazel/settings:select_never_enabled": [
+            "@cc_mvdan_gofumpt//:gofumpt",
+            "@com_github_katexochen_sh_v3//cmd/shfmt",
+        ],
+        "//conditions:default": [],
+    }),
+)

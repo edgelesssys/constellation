@@ -3,6 +3,7 @@ go 1.20
 use (
 	.
 	./hack
+	./hack/tools
 	./operators/constellation-node-operator/
 	./operators/constellation-node-operator/api
 	./3rdparty/node-maintenance-operator/

@@ -16,6 +16,23 @@ def go_dependencies():
         version = "v0.11.2",
     )
     go_repository(
+        name = "cc_mvdan_editorconfig",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "mvdan.cc/editorconfig",
+        sum = "h1:XL+7ys6ls/RKrkUNFQvEwIvNHh+JKx8Mj1pUV5wQxQE=",
+        version = "v0.2.0",
+    )
+    go_repository(
+        name = "cc_mvdan_gofumpt",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "mvdan.cc/gofumpt",
+        sum = "h1:JVf4NN1mIpHogBj7ABpgOyZc65/UUOkKQFkoURsz4MM=",
+        version = "v0.4.0",
+    )
+
+    go_repository(
         name = "co_honnef_go_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -1928,8 +1945,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/frankban/quicktest",
-        sum = "h1:FJKSZTDHjyhriyC81FLQ0LY93eSai0ZyR/ZIkd3ZUKE=",
-        version = "v1.14.3",
+        sum = "h1:g2rn0vABPOOXmZUj+vbmUp0lPoXEMuhTpIluN0XL9UY=",
+        version = "v1.14.4",
     )
     go_repository(
         name = "com_github_fsnotify_fsnotify",
@@ -2778,6 +2795,15 @@ def go_dependencies():
         sum = "h1:GOZbcHa3HfsPKPlmyPyN2KEohoMXOhdMbHrvbpl2QaA=",
         version = "v0.1.0",
     )
+    go_repository(
+        name = "com_github_google_renameio_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/google/renameio/v2",
+        sum = "h1:UifI23ZTGY8Tt29JbYFiuyIU3eX+RNFtUwefq9qAhxg=",
+        version = "v2.0.0",
+    )
+
     go_repository(
         name = "com_github_google_rpmpack",
         build_file_generation = "on",
@@ -3797,6 +3823,14 @@ def go_dependencies():
         importpath = "github.com/kataras/tunnel",
         sum = "h1:sCAqWuJV7nPzGrlb0os3j49lk2JhILT0rID38NHNLpA=",
         version = "v0.0.4",
+    )
+    go_repository(
+        name = "com_github_katexochen_sh_v3",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/katexochen/sh/v3",
+        sum = "h1:eIG0cBgpy2u2iQDFgi4fY0Yq38kVBzMSetzuU+ZIGRg=",
+        version = "v3.6.0",
     )
 
     go_repository(
