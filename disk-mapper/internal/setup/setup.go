@@ -48,29 +48,29 @@ const (
 
 // Manager handles formatting, mapping, mounting and unmounting of state disks.
 type Manager struct {
-	log      *logger.Logger
-	csp      string
-	diskPath string
-	fs       afero.Afero
-	mapper   DeviceMapper
-	mounter  Mounter
-	config   ConfigurationGenerator
-	openTPM  vtpm.TPMOpenFunc
+	log        *logger.Logger
+	csp        string
+	diskPath   string
+	fs         afero.Afero
+	mapper     DeviceMapper
+	mounter    Mounter
+	config     ConfigurationGenerator
+	openDevice vtpm.TPMOpenFunc
 }
 
 // New initializes a SetupManager with the given parameters.
 func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
-	mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc,
+	mapper DeviceMapper, mounter Mounter, openDevice vtpm.TPMOpenFunc,
 ) *Manager {
 	return &Manager{
-		log:      log,
-		csp:      csp,
-		diskPath: diskPath,
-		fs:       fs,
-		mapper:   mapper,
-		mounter:  mounter,
-		config:   systemd.New(fs),
-		openTPM:  openTPM,
+		log:        log,
+		csp:        csp,
+		diskPath:   diskPath,
+		fs:         fs,
+		mapper:     mapper,
+		mounter:    mounter,
+		config:     systemd.New(fs),
+		openDevice: openDevice,
 	}
 }
 
@@ -110,7 +110,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	}
 
 	// taint the node as initialized
-	if err := initialize.MarkNodeAsBootstrapped(s.openTPM, clusterID); err != nil {
+	if err := initialize.MarkNodeAsBootstrapped(s.openDevice, clusterID); err != nil {
 		return err
 	}
 
