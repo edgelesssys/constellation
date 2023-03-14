@@ -17,6 +17,7 @@ go_library(
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/vtpm",
+        "//internal/cloud/azure",
         "//internal/crypto",
         "//internal/oid",
         "@com_github_edgelesssys_go_azguestattestation//maa",
