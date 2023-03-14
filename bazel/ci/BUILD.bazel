@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
-load(":def.bzl", "sh_template")
+load(":def.bzl", "repo_command", "sh_template")
 
 gazelle(name = "gazelle_generate")
 
@@ -57,15 +57,26 @@ sh_template(
         "@go_sdk//:bin/go",
     ],
     substitutions = {
-        "@@BASE_LIB@@": "$(location :base_lib)",
-        "@@GO@@": "$(location @go_sdk//:bin/go)",
+        "@@BASE_LIB@@": "$(rootpath :base_lib)",
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
     },
     template = "tidy.sh.in",
+)
+
+repo_command(
+    name = "gofumpt",
+    args = [
+        "-l",
+        "-w",
+        ".",
+    ],
+    command = "@cc_mvdan_gofumpt//:gofumpt",
 )
 
 multirun(
     name = "tidy",
     commands = [
+        ":gofumpt",
         ":go_mod_tidy",
         ":gazelle_update_repos",
         ":gazelle_generate",

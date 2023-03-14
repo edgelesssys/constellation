@@ -8,7 +8,6 @@ def _sh_template_impl(ctx):
     substitutions = {}
     for k, v in ctx.attr.substitutions.items():
         sub = ctx.expand_location(v, ctx.attr.data)
-        sub = shell.quote(sub)
         substitutions[k] = sub
 
     ctx.actions.expand_template(
@@ -61,5 +60,33 @@ def sh_template(name, **kwargs):
     native.sh_binary(
         name = name,
         srcs = [script_name],
+        **kwargs
+    )
+
+def repo_command(name, **kwargs):
+    """Build a sh_binary that executes a single command.
+
+    Args:
+        name: name
+        **kwargs: **kwargs
+    """
+    cmd = kwargs.pop("command")
+    args = shell.array_literal(kwargs.pop("args", []))
+
+    substitutions = {
+        "@@ARGS@@": args,
+        "@@BASE_LIB@@": "$(rootpath :base_lib)",
+        "@@CMD@@": "$(rootpath %s)" % cmd,
+    }
+
+    data = kwargs.pop("data", [])
+    data.append(":base_lib")
+    data.append(cmd)
+
+    sh_template(
+        name = name,
+        data = data,
+        substitutions = substitutions,
+        template = "repo_command.sh.in",
         **kwargs
     )
