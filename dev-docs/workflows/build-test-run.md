@@ -96,7 +96,6 @@ Use the provided scripts in `/image/measured-boot` to generated measurements for
 
 Go dependencies are managed with [Go modules](https://blog.golang.org/using-go-modules) that are all linked from the main [go.work](/go.work) file.
 [Follow the go documentation](https://go.dev/doc/modules/managing-dependencies) on how to use Go modules.
-After updating a dependency, you will have to run `bazel run //:gazelle-update-repos` to update the Bazel workspace with changes from `go.mod` and `go.sum` files.
 
 # Bazel
 

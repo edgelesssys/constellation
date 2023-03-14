@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-lib=$(realpath @@BASE_LIB@@)
-go=$(realpath @@GO@@)
+lib=$(realpath @@BASE_LIB@@) || exit 1
+go=$(realpath @@GO@@) || exit 1
 
 # shellcheck source=lib.bash
 if ! source "${lib}"; then
