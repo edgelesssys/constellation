@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="terminal" baseProfile="full" viewBox="0 0 807 370" width="807" version="1.1">
+    <defs>
+        <termtosvg:template_settings xmlns:termtosvg="https://github.com/nbedos/termtosvg">
+            <termtosvg:screen_geometry columns="95" rows="17"/>
+            <termtosvg:animation type="css"/>
+        </termtosvg:template_settings>
+        <style type="text/css" id="generated-style"><![CDATA[#screen {
+                font-family: 'DejaVu Sans Mono', monospace;
+                font-style: normal;
+                font-size: 14px;
+            }
+
+        text {
+            dominant-baseline: text-before-edge;
+            white-space: pre;
+        }
+    ]]></style>
+        <style type="text/css" id="user-style">
+            /* The colors defined below are the default 16 colors used for rendering text of the terminal. Adjust
+               them as needed.
+               gjm8 color theme (source: https://terminal.sexy/) */
+            /* customized colors 10, 11, and 14 */
+            .foreground {fill: #f8f8f2}
+            .background {fill: #272822}
+            .color0 {fill: #272822}
+            .color1 {fill: #f92672}
+            .color2 {fill: #a6e22e}
+            .color3 {fill: #f4bf75}
+            .color4 {fill: #66d9ef}
+            .color5 {fill: #ae81ff}
+            .color6 {fill: #a1efe4}
+            .color7 {fill: #f8f8f2}
+            .color8 {fill: #75715e}
+            .color9 {fill: #fd971f}
+            .color10 {fill: #8b04dd}
+            .color11 {fill: #dcaf3b}
+            .color12 {fill: #a59f85}
+            .color13 {fill: #f5f4f1}
+            .color14 {fill: #90ff99}
+            .color15 {fill: #f9f8f5}
+        </style>
+    </defs>
+    <rect id="terminalui" class="background" width="100%" height="100%" ry="4.5826941"/>
+    <circle cx="24" cy="23" r="7" class="color1"/>
+    <circle cx="44" cy="23" r="7" class="color3"/>
+    <circle cx="64" cy="23" r="7" class="color2"/>
+    <svg id="screen" width="760" height="289" x="23" y="50" viewBox="0 0 760 289" preserveAspectRatio="xMidYMin slice"><rect class="background" height="100%" width="100%" x="0" y="0"/><defs><g id="g1"><text x="0" textLength="8" fill="#8b04dd">$</text><text x="8" textLength="280" class="foreground"> # Step 1: Create cloud environment</text></g><g id="g2"><text x="0" textLength="8" fill="#8b04dd">$</text><text x="8" textLength="496" class="foreground"> constellation create --control-plane-nodes 3 --worker-nodes 2</text></g><g id="g3"><text x="0" textLength="416" class="foreground">The following Constellation cluster will be created:</text></g><g id="g4"><text x="0" textLength="488" class="foreground">3 control-plane nodes of type n2d-standard-4 will be created.</text></g><g id="g5"><text x="0" textLength="432" class="foreground">2 worker nodes of type n2d-standard-4 will be created.</text></g><g id="g6"><text x="0" textLength="352" class="foreground">Do you want to create this cluster? [y/n]: y</text></g><g id="g7"><text x="0" textLength="416" class="foreground">Your Constellation cluster was created successfully.</text></g><g id="g8"><text x="0" textLength="8" fill="#8b04dd">$</text><text x="8" textLength="280" class="foreground"> # Step 2: Initialize Constellation</text></g><g id="g9"><text x="0" textLength="8" fill="#8b04dd">$</text><text x="8" textLength="152" class="foreground"> constellation init</text></g><g id="g10"><text x="0" textLength="192" class="foreground">Using community license.</text></g><g id="g11"><text x="0" textLength="8" class="background"> </text></g></defs><g><use xlink:href="#g1" y="0"/><use xlink:href="#g2" y="17"/><use xlink:href="#g3" y="34"/><use xlink:href="#g4" y="51"/><use xlink:href="#g5" y="68"/><use xlink:href="#g6" y="85"/><use xlink:href="#g7" y="102"/><use xlink:href="#g8" y="119"/><use xlink:href="#g9" y="136"/><use xlink:href="#g10" y="153"/><rect x="0" y="170" width="8" height="17" class="foreground"/><use xlink:href="#g11" y="170"/></g></svg>
+</svg>

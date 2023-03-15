@@ -67,7 +67,7 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 2. ⌨️ Create a Constellation cluster in the [cloud][first-steps] or [locally][first-steps-local]
 3. 🏎️ [Run your app][examples]
 
-![Constellation Shell](docs/static/img/animated.gif)
+![Constellation Shell](tmp/output/animated.gif)
 
 ## Live demos
 
