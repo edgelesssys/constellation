@@ -248,7 +248,7 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, sp
 	err := retrier.Do(initCtx)
 	if err != nil {
 		if errors.Is(err, context.Canceled) && connectedTwice {
-			return nil, &nonRetriableError{fmt.Errorf("init call: temporarily lost gRPC connection but resumption is not supported")}
+			return nil, &nonRetriableError{errors.New("init call: temporarily lost gRPC connection but resumption is not supported")}
 		}
 		return nil, err
 	}
