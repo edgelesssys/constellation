@@ -36,6 +36,8 @@ run_command "export KUBECONFIG=/constellation/constellation-admin.conf"
 expect_prompt
 run_command "kubectl get nodes"
 expect_prompt
+send "\r"
+expect_prompt
 
 # Stop recording
 send "exit"
