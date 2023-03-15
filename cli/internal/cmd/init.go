@@ -68,7 +68,6 @@ type initCmd struct {
 	log     debugLog
 	merger  configMerger
 	spinner spinnerInterf
-	wg      sync.WaitGroup
 }
 
 // runInitialize runs the initialize command.
