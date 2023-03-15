@@ -98,8 +98,8 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if conf.IsAzureNonCVM() {
 		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
-		if conf.IDKeyDigestPolicy() != idkeydigest.Unknown {
-			cmd.PrintErrln("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
+		if conf.IDKeyDigestPolicy() == idkeydigest.StrictChecking || conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
+			cmd.PrintErrln("Your config asks for validating the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
 		}
 	}
 
