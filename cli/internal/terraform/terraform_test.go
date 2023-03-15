@@ -395,7 +395,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.CreateCluster(context.Background(), tc.provider)
+			tfOutput, err := c.CreateCluster(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)

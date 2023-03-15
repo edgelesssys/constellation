@@ -448,7 +448,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// Allow rollback of QEMU Terraform workspace from this point on
 	qemuRollbacker.createdWorkspace = true
 
-	tfOutput, err := cl.CreateCluster(ctx, cloudprovider.QEMU)
+	tfOutput, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
