@@ -39,7 +39,7 @@ cp readme.svg ../static/img/shell-windowframe.svg
 rm readme.svg new_header.cast
 
 # cleanup Constellation
-sudo chown -R $USER:$USER ./constellation
+sudo chown -R "$USER":"$USER" ./constellation
 pushd constellation || exit
 constellation terminate -y
 constellation iam destroy -y
