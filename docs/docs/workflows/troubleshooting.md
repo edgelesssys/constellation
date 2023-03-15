@@ -106,3 +106,29 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
     ```sh
     kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
     ```
+
+## Nodes fail to join with error `untrusted PCR value`
+
+This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
+This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/attestation.md#runtime-measurements) in an unforeseen way.
+You can change the expected measurements to resolve the failure.
+
+:::caution
+
+Attestation and trusted measurements are crucial for the security of your cluster.
+Be extra careful when manually changing these settings.
+When in doubt, check if the encountered [issue is known](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22) or [contact support](https://github.com/edgelesssys/constellation#support).
+
+:::
+
+You can use the `upgrade apply` command to change measurements of a running cluster:
+
+1. Modify the `measurements` key in your local `constellation-conf.yaml` to the expected values.
+2. Run `constellation upgrade apply`.
+
+Keep in mind that running `upgrade apply` will also apply any version changes you made in your config to the cluster.
+
+You can run these commands to learn about the versions currently configured in the cluster:
+- Kubernetes API server version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.kubernetesClusterVersion`
+- image version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.imageVersion`
+- microservices versions: `helm list --filter 'constellation-services' -n kube-system`
