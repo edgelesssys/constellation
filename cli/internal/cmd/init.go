@@ -223,7 +223,6 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, sp
 					return
 				}
 			case <-initCtx.Done():
-				i.log.Debugf("Init context cancelled")
 				return
 			}
 		}
