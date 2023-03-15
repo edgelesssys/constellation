@@ -265,8 +265,8 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	}
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
-	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}}
-	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner); err != nil {
+	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}, spinner: spinner}
+	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient()); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")

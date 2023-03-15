@@ -15,6 +15,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,6 +49,64 @@ func TestInitArgumentValidation(t *testing.T) {
 	assert.NoError(cmd.ValidateArgs(nil))
 	assert.Error(cmd.ValidateArgs([]string{"something"}))
 	assert.Error(cmd.ValidateArgs([]string{"sth", "sth"}))
+}
+
+func TestHandleConnReadyEvent(t *testing.T) {
+	testCases := map[string]struct {
+		numEvents           int
+		wantCanceledContext bool
+	}{
+		"zero events": {
+			numEvents:           0,
+			wantCanceledContext: false,
+		},
+		"one event": {
+			numEvents:           1,
+			wantCanceledContext: false,
+		},
+		"two events": {
+			numEvents:           2,
+			wantCanceledContext: true,
+		},
+		// > 2 events will be blocking
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			var wg sync.WaitGroup // Use to prevent the sender goroutine to stay a bit too long alive after the test
+
+			ctx, ctxCancelFunc := context.WithCancelCause(context.Background())
+			defer ctxCancelFunc(errors.New("testCase exited"))
+
+			connEventChan := make(chan bool)
+			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
+			go i.handleConnReadyEvents(ctx, ctxCancelFunc, connEventChan)
+
+			// Send events to our channel as long as the context is alive
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for i := 0; i < tc.numEvents; i++ {
+					connEventChan <- true
+				}
+			}()
+			wg.Wait()
+
+			select {
+			case <-ctx.Done():
+				if tc.wantCanceledContext {
+					assert.Error(ctx.Err())
+				} else {
+					assert.Fail("context has been closed unexpectedly")
+				}
+			default:
+				if tc.wantCanceledContext {
+					assert.Fail("context has not been closed")
+				}
+			}
+		})
+	}
 }
 
 func TestInitialize(t *testing.T) {
@@ -173,8 +232,8 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := &initCmd{log: logger.NewTest(t)}
-			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, &nopSpinner{})
+			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
+			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -452,8 +511,8 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := &initCmd{log: logger.NewTest(t)}
-	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, &nopSpinner{})
+	i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
+	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -501,11 +560,15 @@ func (i *testIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 type stubInitServer struct {
 	initResp *initproto.InitResponse
 	initErr  error
+	slow     bool
 
 	initproto.UnimplementedAPIServer
 }
 
 func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	if s.slow {
+		time.Sleep(5 * time.Second)
+	}
 	return s.initResp, s.initErr
 }
 

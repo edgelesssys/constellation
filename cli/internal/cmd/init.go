@@ -65,8 +65,10 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log    debugLog
-	merger configMerger
+	log     debugLog
+	merger  configMerger
+	spinner spinnerInterf
+	wg      sync.WaitGroup
 }
 
 // runInitialize runs the initialize command.
@@ -90,13 +92,13 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}}
-	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}}
+	return i.initialize(cmd, newDialer, fileHandler, license.NewClient())
 }
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker, spinner spinnerInterf,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -161,7 +163,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
-	spinner.Start("Connecting ", false)
+	i.spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
 		KmsUri:                 masterSecret.EncodeToURI(),
 		StorageUri:             uri.NoStoreURI,
@@ -176,8 +178,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		ClusterName:            clusterName,
 	}
 	i.log.Debugf("Sending initialization request")
-	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, spinner, req)
-	spinner.Stop()
+	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	i.spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
 		if errors.As(err, &nonRetriable) {
@@ -196,37 +198,16 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	return nil
 }
 
-func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, spinner spinnerInterf, req *initproto.InitRequest) (*initproto.InitResponse, error) {
-	initCtx, initCtxCancel := context.WithCancel(ctx)
-	defer initCtxCancel()
+func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	initCtx, initCtxCancel := context.WithCancelCause(ctx)
+	defer initCtxCancel(&nonRetriableError{errors.New("initCall exited")})
 
 	// This goroutine tracks if we established a gRPC connection successfully.
 	// If yes, it switches the spinner to "Initializing cluster".
 	// If it happens multiple times, we cancel the context and abort.
 	// This usually means we lost the connection and opened a new session (which will likely fail).
-	var connectedTwice bool
 	connReadyChan := make(chan bool)
-	go func() {
-		var connected bool
-		for {
-			select {
-			case <-connReadyChan:
-				if !connected {
-					i.log.Debugf("Marking init gRPC call as connected")
-					connected = true
-					spinner.Stop()
-					spinner.Start("Initializing cluster ", false)
-				} else {
-					i.log.Debugf("Multiple gRPC connection state change events to READY received - cancelling context")
-					connectedTwice = true
-					initCtxCancel()
-					return
-				}
-			case <-initCtx.Done():
-				return
-			}
-		}
-	}()
+	go i.handleConnReadyEvents(initCtx, initCtxCancel, connReadyChan)
 
 	doer := &initDoer{
 		dialer:        dialer,
@@ -246,9 +227,6 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, sp
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	err := retrier.Do(initCtx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) && connectedTwice {
-			return nil, &nonRetriableError{errors.New("init call: temporarily lost gRPC connection but resumption is not supported")}
-		}
 		return nil, err
 	}
 	return doer.resp, nil
@@ -260,7 +238,29 @@ type initDoer struct {
 	req           *initproto.InitRequest
 	resp          *initproto.InitResponse
 	log           debugLog
-	connReadyChan chan bool
+	connReadyChan chan<- bool
+}
+
+func (i *initCmd) handleConnReadyEvents(initCtx context.Context, initCtxCancel context.CancelCauseFunc, connReadyChan <-chan bool) {
+	var connected bool
+	for {
+		select {
+		case <-connReadyChan:
+			if !connected {
+				i.log.Debugf("Marking init gRPC call as connected")
+				connected = true
+				i.spinner.Stop()
+				i.spinner.Start("Initializing cluster ", false)
+			} else {
+				i.log.Debugf("Multiple gRPC connection state change events to READY received - cancelling context")
+				initCtxCancel(&nonRetriableError{errors.New("init call: temporarily lost gRPC connection but resumption is not supported")})
+				return
+			}
+		case <-initCtx.Done():
+			i.log.Debugf("init context has been cancelled")
+			return
+		}
+	}
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
