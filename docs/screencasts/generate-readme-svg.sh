@@ -9,9 +9,9 @@
 #
 
 # Create IAM configuration
-pushd constellation
+pushd constellation || exit
 constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b --yes
-popd
+popd || exit
 
 docker build -t screenrecodings docker
 
@@ -40,8 +40,8 @@ rm readme.svg new_header.cast
 
 # cleanup Constellation
 sudo chown -R $USER:$USER ./constellation
-pushd constellation
+pushd constellation || exit
 constellation terminate -y
 constellation iam destroy -y
 rm -rf ./*
-popd
+popd || exit
