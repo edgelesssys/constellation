@@ -109,7 +109,7 @@ func TestConstellationServices(t *testing.T) {
 				konnectivityImage:        "konnectivityImage",
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 			}
-			chart, err := loadChartsDir(helmFS, conServicesPath)
+			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
@@ -180,7 +180,7 @@ func TestOperators(t *testing.T) {
 				constellationOperatorImage:   "constellationOperatorImage",
 				nodeMaintenanceOperatorImage: "nodeMaintenanceOperatorImage",
 			}
-			chart, err := loadChartsDir(helmFS, conOperatorsPath)
+			chart, err := loadChartsDir(helmFS, constellationOperatorsInfo.path)
 			require.NoError(err)
 			vals, err := chartLoader.loadOperatorsValues()
 			require.NoError(err)

@@ -69,10 +69,57 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
+func (c *Client) shouldUpgrade(releaseName string, localChart *chart.Chart) error {
+	currentVersion, err := c.currentVersion(releaseName)
+	if err != nil {
+		return fmt.Errorf("getting current version: %w", err)
+	}
+	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
+	c.log.Debugf("New %s version: %s", releaseName, localChart.Metadata.Version)
+
+	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
+	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
+	if err := compatibility.IsValidUpgrade(currentVersion, localChart.Metadata.Version); err != nil {
+		return err
+	}
+	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, localChart.Metadata.Version)
+
+	return nil
+}
+
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+	upgradeErrs := []error{}
+	upgradeReleases := []*chart.Chart{}
+	invalidUpgrade := &compatibility.InvalidUpgradeError{}
+
+	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo} {
+		chart, err := loadChartsDir(helmFS, info.path)
+		if err != nil {
+			return fmt.Errorf("loading chart: %w", err)
+		}
+		if info == constellationOperatorsInfo || info == constellationServicesInfo {
+			// ensure that the services chart has the same version as the CLI
+			updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+		}
+
+		err = c.shouldUpgrade(info.releaseName, chart)
+		switch {
+		case errors.As(err, &invalidUpgrade):
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
+		case err != nil:
+			return fmt.Errorf("upgrading %s: %w", info.releaseName, err)
+		case err == nil:
+			upgradeReleases = append(upgradeReleases, chart)
+		}
+	}
+
+	if len(upgradeReleases) == 0 {
+		return errors.Join(upgradeErrs...)
+	}
+
 	crds, err := c.backupCRDs(ctx)
 	if err != nil {
 		return fmt.Errorf("creating CRD backup: %w", err)
@@ -81,38 +128,11 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		return fmt.Errorf("creating CR backup: %w", err)
 	}
 
-	upgradeErrs := []error{}
-	invalidUpgrade := &compatibility.InvalidUpgradeError{}
-	err = c.upgradeRelease(ctx, timeout, config, ciliumPath, ciliumReleaseName, false, allowDestructive)
-	switch {
-	case errors.As(err, &invalidUpgrade):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Cilium upgrade: %w", err))
-	case err != nil:
-		return fmt.Errorf("upgrading cilium: %s", err)
-	}
-
-	err = c.upgradeRelease(ctx, timeout, config, certManagerPath, certManagerReleaseName, false, allowDestructive)
-	switch {
-	case errors.As(err, &invalidUpgrade):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping cert-manager upgrade: %w", err))
-	case err != nil:
-		return fmt.Errorf("upgrading cert-manager: %w", err)
-	}
-
-	err = c.upgradeRelease(ctx, timeout, config, conOperatorsPath, conOperatorsReleaseName, true, allowDestructive)
-	switch {
-	case errors.As(err, &invalidUpgrade):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping constellation operators upgrade: %w", err))
-	case err != nil:
-		return fmt.Errorf("upgrading constellation operators: %w", err)
-	}
-
-	err = c.upgradeRelease(ctx, timeout, config, conServicesPath, conServicesReleaseName, false, allowDestructive)
-	switch {
-	case errors.As(err, &invalidUpgrade):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping constellation-services upgrade: %w", err))
-	case err != nil:
-		return fmt.Errorf("upgrading constellation-services: %w", err)
+	for _, chart := range upgradeReleases {
+		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive)
+		if err != nil {
+			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
+		}
 	}
 
 	return errors.Join(upgradeErrs...)
@@ -120,7 +140,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
 func (c *Client) Versions() (string, error) {
-	serviceVersion, err := c.currentVersion(conServicesReleaseName)
+	serviceVersion, err := c.currentVersion(constellationServicesInfo.releaseName)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation-services version: %w", err)
 	}
@@ -153,13 +173,8 @@ func (c *Client) currentVersion(release string) (string, error) {
 var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chartPath string, releaseName string, hasCRDs bool, allowDestructive bool,
+	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
 ) error {
-	chart, err := loadChartsDir(helmFS, chartPath)
-	if err != nil {
-		return fmt.Errorf("loading chart: %w", err)
-	}
-
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
 	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
@@ -167,56 +182,45 @@ func (c *Client) upgradeRelease(
 		return fmt.Errorf("invalid k8s version: %w", err)
 	}
 	loader := NewLoader(conf.GetProvider(), k8sVersion)
+
 	var values map[string]any
-	switch releaseName {
-	case ciliumReleaseName:
+	var info chartInfo
+
+	switch chart.Metadata.Name {
+	case ciliumInfo.chartName:
+		info = ciliumInfo
 		values, err = loader.loadCiliumValues()
-	case certManagerReleaseName:
+	case certManagerInfo.chartName:
+		info = certManagerInfo
 		values = loader.loadCertManagerValues()
-	case conOperatorsReleaseName:
-		// ensure that the operator chart has the same version as the CLI
-		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+	case constellationOperatorsInfo.chartName:
+		info = constellationOperatorsInfo
 		values, err = loader.loadOperatorsValues()
-	case conServicesReleaseName:
-		// ensure that the services chart has the same version as the CLI
-		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+	case constellationServicesInfo.chartName:
+		info = constellationServicesInfo
 		values, err = loader.loadConstellationServicesValues()
 	default:
-		return fmt.Errorf("invalid release name: %s", releaseName)
+		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
 	if err != nil {
 		return fmt.Errorf("loading values: %w", err)
 	}
 
-	currentVersion, err := c.currentVersion(releaseName)
-	if err != nil {
-		return fmt.Errorf("getting current version: %w", err)
-	}
-	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
-	c.log.Debugf("New %s version: %s", releaseName, chart.Metadata.Version)
-
-	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
-	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
-	if err := compatibility.IsValidUpgrade(currentVersion, chart.Metadata.Version); err != nil {
-		return err
-	}
-
-	if releaseName == certManagerReleaseName && !allowDestructive {
+	if info == certManagerInfo && !allowDestructive {
 		return ErrConfirmationMissing
 	}
 
-	if hasCRDs {
+	if info == constellationOperatorsInfo {
 		if err := c.updateCRDs(ctx, chart); err != nil {
 			return fmt.Errorf("updating CRDs: %w", err)
 		}
 	}
-	values, err = c.prepareValues(values, releaseName)
+	values, err = c.prepareValues(values, info.releaseName)
 	if err != nil {
 		return fmt.Errorf("preparing values: %w", err)
 	}
 
-	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
-	err = c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
+	err = c.actions.upgradeAction(ctx, info.releaseName, chart, values, timeout)
 	if err != nil {
 		return err
 	}
@@ -231,7 +235,7 @@ func (c *Client) upgradeRelease(
 // reuse-values does not ensure this.
 func (c *Client) prepareValues(localValues map[string]any, releaseName string) (map[string]any, error) {
 	// Ensure installCRDs is set for cert-manager chart.
-	if releaseName == certManagerReleaseName {
+	if releaseName == certManagerInfo.releaseName {
 		localValues["installCRDs"] = true
 	}
 	clusterValues, err := c.actions.getValues(releaseName)
