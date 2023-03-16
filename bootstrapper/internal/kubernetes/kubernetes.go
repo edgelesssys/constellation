@@ -202,7 +202,7 @@ func (k *KubeWrapper) InitCluster(
 	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
 	log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("Cilium became healthy")
 
-	log.Infof("Restart Cilium")
+	log.Infof("Restarting Cilium")
 	if err := k.clusterUtil.FixCilium(ctx); err != nil {
 		log.With(zap.Error(err)).Errorf("FixCilium failed")
 		// Continue and don't throw an error here - things might be okay.
@@ -323,7 +323,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
 	}
 
-	log.Infof("Restart Cilium")
+	log.Infof("Restarting Cilium")
 	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
 		log.With(zap.Error(err)).Errorf("FixCilium failed")
 		// Continue and don't throw an error here - things might be okay.
@@ -393,7 +393,7 @@ func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
 		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
 	}
 
-	log.Infof("Restart Cilium")
+	log.Infof("Restarting Cilium")
 	if err := k.clusterUtil.FixCilium(context.Background()); err != nil {
 		log.With(zap.Error(err)).Errorf("FixCilium failed")
 		// Continue and don't throw an error here - things might be okay.
