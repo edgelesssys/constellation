@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel/go:platform.bzl", "platform_binary")
 
 go_library(
     name = "debugd_lib",
@@ -31,5 +32,12 @@ go_binary(
     embed = [":debugd_lib"],
     # keep
     pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+platform_binary(
+    name = "debugd_linux_amd64",
+    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34",
+    target_file = ":debugd",
     visibility = ["//visibility:public"],
 )
