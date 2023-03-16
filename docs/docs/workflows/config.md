@@ -84,6 +84,13 @@ If you haven't generated a configuration file yet, you can do so by adding the `
 
 You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session.
 
+Your Azure account also needs to have at least the following permissions:
+* `Microsoft.Authorization/roleDefinitions/*`
+* `Microsoft.Authorization/roleAssignments/*`
+* `*/register/action`
+* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+* `Microsoft.Resources/subscriptions/resourcegroups/*`
+
 ```bash
 constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
 ```
