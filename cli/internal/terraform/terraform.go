@@ -130,7 +130,7 @@ func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
 
 	var attestationURL string
 	if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
-		if attestationURLString, ok := attestationURLOutput.Value.(string); !ok {
+		if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
 			attestationURL = attestationURLString
 		}
 	}
