@@ -198,16 +198,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 }
 
 func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
-	initCtx, initCtxCancel := context.WithCancelCause(ctx)
-	defer initCtxCancel(&nonRetriableError{errors.New("initCall exited")})
-
-	// This goroutine tracks if we established a gRPC connection successfully.
-	// If yes, it switches the spinner to "Initializing cluster".
-	// If it happens multiple times, we cancel the context and abort.
-	// This usually means we lost the connection and opened a new session (which will likely fail).
 	connReadyChan := make(chan bool)
-	go i.handleConnReadyEvents(initCtx, initCtxCancel, connReadyChan)
-
 	doer := &initDoer{
 		dialer:        dialer,
 		endpoint:      net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
@@ -222,6 +213,16 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		i.log.Debugf("Encountered error (retriable: %t): %s", isServiceUnavailable, err)
 		return isServiceUnavailable
 	}
+
+	initCtx, initCtxCancel := context.WithCancelCause(ctx)
+	defer initCtxCancel(&nonRetriableError{errors.New("initCall exited")})
+
+	// This goroutine tracks if we established a gRPC connection successfully.
+	// If yes, it switches the spinner to "Initializing cluster".
+	// If it happens multiple times, we cancel the context and abort.
+	// This usually means we lost the connection and opened a new session (which will likely fail).
+	go i.handleConnReadyEvents(initCtx, initCtxCancel, connReadyChan)
+
 	i.log.Debugf("Making initialization call, doer is %+v", doer)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, serviceIsUnavailable)
 	err := retrier.Do(initCtx)
