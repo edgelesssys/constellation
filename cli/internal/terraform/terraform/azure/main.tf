@@ -198,16 +198,21 @@ resource "azurerm_network_security_group" "security_group" {
 module "scale_set_control_plane" {
   source = "./modules/scale_set"
 
-  name                      = "${local.name}-control-plane"
-  instance_count            = var.control_plane_count
-  state_disk_size           = var.state_disk_size
-  state_disk_type           = var.state_disk_type
-  resource_group            = var.resource_group
-  location                  = var.location
-  instance_type             = var.instance_type
-  confidential_vm           = var.confidential_vm
-  secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { constellation-role = "control-plane" }, { constellation-init-secret-hash = local.initSecretHash })
+  name            = "${local.name}-control-plane"
+  instance_count  = var.control_plane_count
+  state_disk_size = var.state_disk_size
+  state_disk_type = var.state_disk_type
+  resource_group  = var.resource_group
+  location        = var.location
+  instance_type   = var.instance_type
+  confidential_vm = var.confidential_vm
+  secure_boot     = var.secure_boot
+  tags = merge(
+    local.tags,
+    { constellation-role = "control-plane" },
+    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-maa-url = azurerm_attestation_provider.attestation_provider.attestation_uri },
+  )
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id
@@ -221,16 +226,21 @@ module "scale_set_control_plane" {
 module "scale_set_worker" {
   source = "./modules/scale_set"
 
-  name                      = "${local.name}-worker"
-  instance_count            = var.worker_count
-  state_disk_size           = var.state_disk_size
-  state_disk_type           = var.state_disk_type
-  resource_group            = var.resource_group
-  location                  = var.location
-  instance_type             = var.instance_type
-  confidential_vm           = var.confidential_vm
-  secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { constellation-role = "worker" }, { constellation-init-secret-hash = local.initSecretHash })
+  name            = "${local.name}-worker"
+  instance_count  = var.worker_count
+  state_disk_size = var.state_disk_size
+  state_disk_type = var.state_disk_type
+  resource_group  = var.resource_group
+  location        = var.location
+  instance_type   = var.instance_type
+  confidential_vm = var.confidential_vm
+  secure_boot     = var.secure_boot
+  tags = merge(
+    local.tags,
+    { constellation-role = "worker" },
+    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-maa-url = azurerm_attestation_provider.attestation_provider.attestation_uri },
+  )
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id
