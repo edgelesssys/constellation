@@ -1,4 +1,7 @@
-exports_files(["repo_command.sh.in"])
+exports_files([
+    "repo_command.sh.in",
+    "noop_warn.sh.in",
+])
 
 sh_library(
     name = "base_lib",

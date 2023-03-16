@@ -90,3 +90,23 @@ def repo_command(name, **kwargs):
         template = "//bazel/sh:repo_command.sh.in",
         **kwargs
     )
+
+def noop_warn(name, **kwargs):
+    """Build a sh_binary that warns about a step beeing replaced by a no-op.
+
+    Args:
+        name: name
+        **kwargs: **kwargs
+    """
+    warning = kwargs.pop("warning", "The binary that should have been executed is likely not available on your platform.")
+    warning = "\\033[0;33mWARNING:\\033[0m This step is a no-op. %s" % warning
+    substitutions = {
+        "@@WARNING@@": warning,
+    }
+
+    sh_template(
+        name = name,
+        substitutions = substitutions,
+        template = "//bazel/sh:noop_warn.sh.in",
+        **kwargs
+    )
