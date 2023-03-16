@@ -65,7 +65,7 @@ jobs:
 
           echo "Newest 10 versions shouldn't be deleted"
           deletable=$(echo "${versions}" | head -n -10)
-          if [ -z "${deletable}" ]; then
+          if [[ -z "${deletable}" ]]; then
             echo "No deletable versions found"
             exit 0
           fi

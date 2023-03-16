@@ -5198,6 +5198,14 @@ def go_dependencies():
         sum = "h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=",
         version = "v0.0.0-20181016184325-3113b8401b8a",
     )
+    go_repository(
+        name = "com_github_rhysd_actionlint",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/rhysd/actionlint",
+        sum = "h1:041VOXgZddfvSJa9Il+WT3Iwuo/j0Nmu4bhpAScrds4=",
+        version = "v1.6.23",
+    )
 
     go_repository(
         name = "com_github_rivo_uniseg",
@@ -5207,6 +5215,15 @@ def go_dependencies():
         sum = "h1:8TfxU8dW6PdqD27gjM8MVNuicgxIjxpm4K7x4jp8sis=",
         version = "v0.4.4",
     )
+    go_repository(
+        name = "com_github_robfig_cron",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/robfig/cron",
+        sum = "h1:ZjScXvvxeQ63Dbyxy76Fj3AT3Ut0aKsyd2/tl3DTMuQ=",
+        version = "v1.2.0",
+    )
+
     go_repository(
         name = "com_github_robfig_cron_v3",
         build_file_generation = "on",
@@ -6215,8 +6232,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/yuin/goldmark",
-        sum = "h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=",
-        version = "v1.4.13",
+        sum = "h1:3HUJmBFbQW9fhQOzMgseU134xfi6hU+mjWywx5Ty+/M=",
+        version = "v1.5.3",
     )
 
     go_repository(
