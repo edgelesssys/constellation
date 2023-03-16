@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+actionlint=$(realpath @@ACTIONLINT@@) || exit 1
+shellcheck=$(realpath @@SHELLCHECK@@ || echo) || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+
+${actionlint} -shellcheck="${shellcheck}"

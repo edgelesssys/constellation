@@ -92,6 +92,24 @@ sh_template(
     template = "shellcheck.sh.in",
 )
 
+sh_template(
+    name = "actionlint",
+    data = [
+        ":com_github_koalaman_shellcheck",
+        "@com_github_rhysd_actionlint//cmd/actionlint",
+    ],
+    substitutions = {
+        "@@ACTIONLINT@@": "$(rootpath @com_github_rhysd_actionlint//cmd/actionlint)",
+        "@@SHELLCHECK@@": "$(rootpath :com_github_koalaman_shellcheck)",
+    },
+    template = "actionlint.sh.in",
+)
+
+repo_command(
+    name = "actionlint_no_shellcheck",
+    command = "@com_github_rhysd_actionlint//cmd/actionlint",
+)
+
 repo_command(
     name = "gofumpt",
     args = [
@@ -112,6 +130,7 @@ multirun(
         ":gazelle_generate",
         ":buildifier_fix",
     ],
+    jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
 
@@ -122,8 +141,15 @@ multirun(
         ":gazelle_check",
         ":buildifier_check",
     ] + select({
-        "@io_bazel_rules_go//go/platform:darwin_arm64": [":shellcheck_noop_warning"],
-        "//conditions:default": [":shellcheck"],
+        "@io_bazel_rules_go//go/platform:darwin_arm64": [
+            ":shellcheck_noop_warning",
+            ":actionlint_no_shellcheck",
+        ],
+        "//conditions:default": [
+            ":shellcheck",
+            ":actionlint",
+        ],
     }),
+    jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
