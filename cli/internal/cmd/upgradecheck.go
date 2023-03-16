@@ -239,6 +239,7 @@ type collector interface {
 	newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
 	newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error)
+	newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error)
 }
 
 type versionCollector struct {

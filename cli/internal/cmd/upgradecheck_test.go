@@ -42,20 +42,24 @@ func TestBuildString(t *testing.T) {
 					"v2.5.0": measurements.DefaultsFor(cloudprovider.QEMU),
 				},
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
+				newCLI:            []string{"v2.5.0", "v2.6.0"},
 				currentServices:   "v2.4.0",
 				currentImage:      "v2.4.0",
 				currentKubernetes: "v1.24.5",
+				currentCLI:        "v2.4.0",
 			},
-			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
+			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  CLI: v2.4.0 --> v2.5.0 v2.6.0\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
 		},
 		"no upgrades": {
 			upgrade: versionUpgrade{
 				newServices:       "",
 				newImages:         map[string]measurements.M{},
 				newKubernetes:     []string{},
+				newCLI:            []string{},
 				currentServices:   "v2.5.0",
 				currentImage:      "v2.5.0",
 				currentKubernetes: "v1.25.6",
+				currentCLI:        "v2.5.0",
 			},
 			expected: "No upgrades available with this CLI.\nNewer versions may be available at: https://github.com/edgelesssys/constellation/releases\n",
 		},
@@ -217,6 +221,7 @@ func TestUpgradeCheck(t *testing.T) {
 				currentServicesVersions: "v2.4.0",
 				currentImageVersion:     "v2.4.0",
 				currentK8sVersion:       "v1.24.5",
+				currentCLIVersion:       "v2.4.0",
 				images:                  []versionsapi.Version{v2_5},
 				newCLIVersions:          []string{"v2.5.0", "v2.6.0"},
 			},
@@ -297,6 +302,10 @@ func (s *stubVersionCollector) newImages(_ context.Context, _ string) ([]version
 
 func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]versionsapi.Version, error) {
 	return s.images, nil
+}
+
+func (s *stubVersionCollector) newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+	return s.newCLIVersions, nil
 }
 
 type stubUpgradeChecker struct {
