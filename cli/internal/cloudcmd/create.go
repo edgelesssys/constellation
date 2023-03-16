@@ -206,6 +206,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		ImageID:              image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
+		CreateMAA:            *config.Provider.Azure.EnforceIDKeyDigest,
 		Debug:                config.IsDebugCluster(),
 	}
 
@@ -221,9 +222,11 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
-	// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-	if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
-		return clusterid.File{}, err
+	if vars.CreateMAA {
+		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
+		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
+			return clusterid.File{}, err
+		}
 	}
 
 	return clusterid.File{

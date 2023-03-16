@@ -12,5 +12,5 @@ output "initSecret" {
 }
 
 output "attestationURL" {
-  value = azurerm_attestation_provider.attestation_provider.attestation_uri
+  value = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : ""
 }
