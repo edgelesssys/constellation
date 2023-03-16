@@ -136,3 +136,8 @@ oci_register_toolchains(
 load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")
 
 multirun_deps()
+
+# CI deps
+load("//bazel/toolchains:ci_deps.bzl", "ci_deps")
+
+ci_deps()

@@ -1,7 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
-load("//bazel/sh:def.bzl", "repo_command", "sh_template")
+load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 
 gazelle(name = "gazelle_generate")
 
@@ -64,6 +64,34 @@ sh_template(
     template = "shfmt.sh.in",
 )
 
+noop_warn(
+    name = "shellcheck_noop_warning",
+    warning = "Shellcheck should have been executed, but is currently not available for your platform.",
+)
+
+alias(
+    name = "com_github_koalaman_shellcheck",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_koalaman_shellcheck_darwin_x86_64//:shellcheck_bin",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": ":shellcheck_noop_warning",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_koalaman_shellcheck_linux_x86_64//:shellcheck_bin",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_koalaman_shellcheck_linux_aaarch64//:shellcheck_bin",
+    }),
+)
+
+sh_template(
+    name = "shellcheck",
+    data = [
+        ":com_github_koalaman_shellcheck",
+        "@com_github_katexochen_sh_v3//cmd/shfmt",
+    ],
+    substitutions = {
+        "@@SHELLCHECK@@": "$(rootpath :com_github_koalaman_shellcheck)",
+        "@@SHFMT@@": "$(rootpath @com_github_katexochen_sh_v3//cmd/shfmt)",
+    },
+    template = "shellcheck.sh.in",
+)
+
 repo_command(
     name = "gofumpt",
     args = [
@@ -84,7 +112,6 @@ multirun(
         ":gazelle_generate",
         ":buildifier_fix",
     ],
-    jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
 
@@ -94,7 +121,9 @@ multirun(
     commands = [
         ":gazelle_check",
         ":buildifier_check",
-    ],
-    jobs = 0,
+    ] + select({
+        "@io_bazel_rules_go//go/platform:darwin_arm64": [":shellcheck_noop_warning"],
+        "//conditions:default": [":shellcheck"],
+    }),
     visibility = ["//visibility:public"],
 )

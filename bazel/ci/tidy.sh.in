@@ -3,7 +3,7 @@
 lib=$(realpath @@BASE_LIB@@) || exit 1
 go=$(realpath @@GO@@) || exit 1
 
-# shellcheck source=lib.bash
+# shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
   exit 1

@@ -9,7 +9,7 @@ upgrade_agent=$(realpath @@UPGRADE_AGENT@@) || exit 1
 cli=$(realpath @@CLI@@) || exit 1
 cdbg=$(realpath @@CDBG@@) || exit 1
 
-# shellcheck source=../ci/lib.bash
+# shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
   exit 1
