@@ -1,0 +1,8 @@
+genrule(
+    name = "gofumpt_bin",
+    srcs = ["gofumpt"],
+    outs = ["gofumpt_bin_out"],
+    cmd = "cp $< $@",  # Copy the binary to the output directory.
+    executable = True,
+    visibility = ["//visibility:public"],
+)

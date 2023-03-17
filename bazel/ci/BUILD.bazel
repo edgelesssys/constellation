@@ -120,6 +120,16 @@ repo_command(
     command = ":com_github_rhysd_actionlint",
 )
 
+alias(
+    name = "com_github_mvdan_gofumpt",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_mvdan_gofumpt_darwin_amd64//file",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_mvdan_gofumpt_darwin_arm64//file",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_mvdan_gofumpt_linux_amd64//file",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_mvdan_gofumpt_linux_arm64//file",
+    }),
+)
+
 repo_command(
     name = "gofumpt",
     args = [
@@ -127,7 +137,7 @@ repo_command(
         "-w",
         ".",
     ],
-    command = "@cc_mvdan_gofumpt//:gofumpt",
+    command = ":com_github_mvdan_gofumpt",
 )
 
 sh_template(
