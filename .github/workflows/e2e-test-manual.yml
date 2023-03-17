@@ -187,6 +187,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     permissions:
       id-token: write
+      checks: write
       contents: read
     needs: [find-latest-image]
     if: always() && !cancelled()
