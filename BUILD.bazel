@@ -17,6 +17,11 @@ alias(
 )
 
 alias(
+    name = "generate",
+    actual = "//bazel/ci:generate",
+)
+
+alias(
     name = "devbuild",
     actual = "//bazel/devbuild:devbuild",
 )

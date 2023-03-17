@@ -131,6 +131,40 @@ sh_template(
     template = "tfsec.sh.in",
 )
 
+alias(
+    name = "com_github_hashicorp_terraform",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_hashicorp_terraform_darwin_amd64//:terraform_bin",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_hashicorp_terraform_darwin_arm64//:terraform_bin",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_hashicorp_terraform_linux_amd64//:terraform_bin",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_hashicorp_terraform_linux_arm64//:terraform_bin",
+    }),
+)
+
+sh_template(
+    name = "terraform_gen",
+    data = [
+        ":com_github_hashicorp_terraform",
+    ],
+    substitutions = {
+        "@@MODE@@": "generate",
+        "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
+    },
+    template = "tf.sh.in",
+)
+
+sh_template(
+    name = "terraform_check",
+    data = [
+        ":com_github_hashicorp_terraform",
+    ],
+    substitutions = {
+        "@@MODE@@": "check",
+        "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
+    },
+    template = "tf.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -151,6 +185,7 @@ multirun(
     commands = [
         ":gazelle_check",
         ":buildifier_check",
+        ":terraform_check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
@@ -161,6 +196,15 @@ multirun(
             ":actionlint",
         ],
     }),
+    jobs = 1,  # execute sequentially
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "generate",
+    commands = [
+        ":terraform_gen",
+    ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
 )
