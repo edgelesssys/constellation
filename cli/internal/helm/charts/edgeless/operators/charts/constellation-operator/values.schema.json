@@ -28,9 +28,10 @@
         "csp": {
             "description": "CSP to which the chart is deployed.",
             "enum": [
+                "AWS",
                 "Azure",
                 "GCP",
-                "AWS",
+                "OpenStack",
                 "QEMU"
             ]
         },
