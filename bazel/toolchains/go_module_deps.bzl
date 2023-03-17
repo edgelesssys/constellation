@@ -23,14 +23,6 @@ def go_dependencies():
         sum = "h1:XL+7ys6ls/RKrkUNFQvEwIvNHh+JKx8Mj1pUV5wQxQE=",
         version = "v0.2.0",
     )
-    go_repository(
-        name = "cc_mvdan_gofumpt",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "mvdan.cc/gofumpt",
-        sum = "h1:JVf4NN1mIpHogBj7ABpgOyZc65/UUOkKQFkoURsz4MM=",
-        version = "v0.4.0",
-    )
 
     go_repository(
         name = "co_honnef_go_tools",

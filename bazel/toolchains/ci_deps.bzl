@@ -1,12 +1,13 @@
 """CI dependencies"""
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
 def ci_deps():
     """Install CI dependencies"""
     _shellcheck_deps()
     _terraform_deps()
     _actionlint_deps()
+    _gofumpt_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -103,4 +104,38 @@ def _actionlint_deps():
             "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_darwin_arm64.tar.gz",
         ],
         sha256 = "ddd0263968f7f024e49bd8721cd2b3d27c7a4d77081b81a4b376d5053ea25cdc",
+    )
+
+def _gofumpt_deps():
+    http_file(
+        name = "com_github_mvdan_gofumpt_linux_amd64",
+        urls = [
+            "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_linux_amd64",
+        ],
+        executable = True,
+        sha256 = "d3ca535e6b0b230a9c4f05a3ec54e358336b5e7474d239c15514e63a0b2a8041",
+    )
+    http_file(
+        name = "com_github_mvdan_gofumpt_linux_arm64",
+        urls = [
+            "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_linux_arm64",
+        ],
+        executable = True,
+        sha256 = "186faa7b7562cc4c1a34f2cb89f9b09d9fad949bc2f3ce293ea2726b23c28695",
+    )
+    http_file(
+        name = "com_github_mvdan_gofumpt_darwin_amd64",
+        urls = [
+            "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_darwin_amd64",
+        ],
+        executable = True,
+        sha256 = "3f550baa6d4c071b01e9c68b9308bd2ca3bae6b3b09d203f19ed8626ee0fe487",
+    )
+    http_file(
+        name = "com_github_mvdan_gofumpt_darwin_arm64",
+        urls = [
+            "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_darwin_arm64",
+        ],
+        executable = True,
+        sha256 = "768263452749a3a3cabf412f29f8a14e8bbdc7f6c6471427e977eebc6592ddb8",
     )
