@@ -22,6 +22,7 @@ def _shellcheck_deps():
         urls = [
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.aarch64.tar.xz",
         ],
+        sha256 = "179c579ef3481317d130adebede74a34dbbc2df961a70916dd4039ebf0735fae",
         strip_prefix = "shellcheck-v0.9.0",
         build_file = "//bazel/toolchains:BUILD.shellcheck.bazel",
     )
@@ -30,6 +31,7 @@ def _shellcheck_deps():
         urls = [
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.darwin.x86_64.tar.xz",
         ],
+        sha256 = "7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5",
         strip_prefix = "shellcheck-v0.9.0",
         build_file = "//bazel/toolchains:BUILD.shellcheck.bazel",
     )
