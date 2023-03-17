@@ -187,7 +187,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 26 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 31 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 9
 	const gcpErrCount = 6
 

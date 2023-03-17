@@ -493,6 +493,9 @@ func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
 		return c.Provider.AWS != nil
 	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
 		return c.Provider.Azure != nil
+	// TODO(malt3): remove this case once we have a vTPM for OpenStack
+	case oid.Dummy{}:
+		return c.Provider.OpenStack != nil
 	case oid.GCPSEVES{}:
 		return c.Provider.GCP != nil
 	case oid.QEMUVTPM{}:

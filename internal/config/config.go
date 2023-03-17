@@ -241,8 +241,23 @@ type OpenStackConfig struct {
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
 	// description: |
+	// AuthURL is the OpenStack Identity endpoint to use inside the cluster.
+	AuthURL string `yaml:"authURL" validate:"required"`
+	// description: |
+	//   ProjectID is the ID of the project where a user resides.
+	ProjectID string `yaml:"projectID" validate:"required"`
+	// description: |
+	//   ProjectName is the name of the project where a user resides.
+	ProjectName string `yaml:"projectName" validate:"required"`
+	// description: |
 	//   UserDomainName is the name of the domain where a user resides.
 	UserDomainName string `yaml:"userDomainName" validate:"required"`
+	// description: |
+	//   ProjectDomainName is the name of the domain where a project resides.
+	ProjectDomainName string `yaml:"projectDomainName" validate:"required"`
+	// description: |
+	// RegionName is the name of the region to use inside the cluster.
+	RegionName string `yaml:"regionName" validate:"required"`
 	// description: |
 	//   Username to use inside the cluster.
 	Username string `yaml:"username" validate:"required"`
