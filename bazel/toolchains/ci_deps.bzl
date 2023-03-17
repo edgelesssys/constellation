@@ -8,6 +8,7 @@ def ci_deps():
     _terraform_deps()
     _actionlint_deps()
     _gofumpt_deps()
+    _tfsec_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -138,4 +139,38 @@ def _gofumpt_deps():
         ],
         executable = True,
         sha256 = "768263452749a3a3cabf412f29f8a14e8bbdc7f6c6471427e977eebc6592ddb8",
+    )
+
+def _tfsec_deps():
+    http_archive(
+        name = "com_github_aquasecurity_tfsec_linux_amd64",
+        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        urls = [
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_linux_amd64.tar.gz",
+        ],
+        sha256 = "57b902b31da3eed12448a4e82a8aca30477e4bcd1bf99e3f65310eae0889f88d",
+    )
+    http_archive(
+        name = "com_github_aquasecurity_tfsec_linux_arm64",
+        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        urls = [
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_linux_arm64.tar.gz",
+        ],
+        sha256 = "20daad803d2a7a781f2ef0ee72ba4ed4ae17dcb41a43a330ae7b98347762bec9",
+    )
+    http_archive(
+        name = "com_github_aquasecurity_tfsec_darwin_amd64",
+        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        urls = [
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_darwin_amd64.tar.gz",
+        ],
+        sha256 = "6d9f5a747b1fcc1b6c314d30f4ff4d753371e5690309a99a5dd653d719d20d2d",
+    )
+    http_archive(
+        name = "com_github_aquasecurity_tfsec_darwin_arm64",
+        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        urls = [
+            "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_darwin_arm64.tar.gz",
+        ],
+        sha256 = "6d664dcdd37e2809d1b4f14b310ccda0973b4a29e4624e902286e4964d101e22",
     )

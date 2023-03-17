@@ -8,7 +8,6 @@ go_library(
     visibility = ["//visibility:private"],
     deps = select({
         "//bazel/settings:select_never_enabled": [
-            "@com_github_aquasecurity_tfsec//cmd/tfsec",
             "@com_github_katexochen_sh_v3//cmd/shfmt",
         ],
         "//conditions:default": [],

@@ -140,13 +140,23 @@ repo_command(
     command = ":com_github_mvdan_gofumpt",
 )
 
+alias(
+    name = "com_github_aquasecurity_tfsec",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_aquasecurity_tfsec_darwin_amd64//:tfsec_bin",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_aquasecurity_tfsec_darwin_arm64//:tfsec_bin",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_aquasecurity_tfsec_linux_amd64//:tfsec_bin",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_aquasecurity_tfsec_linux_arm64//:tfsec_bin",
+    }),
+)
+
 sh_template(
     name = "tfsec",
     data = [
-        "@com_github_aquasecurity_tfsec//cmd/tfsec",
+        ":com_github_aquasecurity_tfsec",
     ],
     substitutions = {
-        "@@TFSEC@@": "$(rootpath @com_github_aquasecurity_tfsec//cmd/tfsec)",
+        "@@TFSEC@@": "$(rootpath :com_github_aquasecurity_tfsec)",
     },
     template = "tfsec.sh.in",
 )
