@@ -321,3 +321,79 @@ func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
 func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string, error) {
 	return u.k8sVersion, u.err
 }
+
+func TestNewCompatibleCLIVersions(t *testing.T) {
+	someErr := errors.New("some error")
+	minorList := versionsapi.List{
+		Versions: []string{"v0.2.0"},
+	}
+	patchList := versionsapi.List{
+		Versions: []string{"v0.2.1"},
+	}
+	emptyVerList := versionsapi.List{}
+	verCollector := func(minorList, patchList versionsapi.List, verListErr, cliInfoErr error) versionCollector {
+		return versionCollector{
+			cliVersion: "v0.1.0",
+			verFetcher: stubVersionFetcher{
+				minorList:      minorList,
+				patchList:      patchList,
+				versionListErr: verListErr,
+				cliInfoErr:     cliInfoErr,
+			},
+		}
+	}
+
+	testCases := map[string]struct {
+		verCollector versionCollector
+		wantErr      bool
+	}{
+		"works": {
+			verCollector: verCollector(minorList, patchList, nil, nil),
+		},
+		"empty versions list": {
+			verCollector: verCollector(emptyVerList, emptyVerList, nil, nil),
+		},
+		"version list error": {
+			verCollector: verCollector(minorList, patchList, someErr, nil),
+			wantErr:      true,
+		},
+		"cli info error": {
+			verCollector: verCollector(minorList, patchList, nil, someErr),
+			wantErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			_, err := tc.verCollector.newCompatibleCLIVersions(context.Background(), "v1.24.5")
+			if tc.wantErr {
+				require.Error(err)
+				return
+			}
+			require.NoError(err)
+		})
+	}
+}
+
+type stubVersionFetcher struct {
+	minorList      versionsapi.List
+	patchList      versionsapi.List
+	versionListErr error
+	cliInfoErr     error
+}
+
+func (f stubVersionFetcher) FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error) {
+	switch list.Granularity {
+	case versionsapi.GranularityMajor:
+		return f.minorList, f.versionListErr
+	case versionsapi.GranularityMinor:
+		return f.patchList, f.versionListErr
+	}
+	return versionsapi.List{}, f.versionListErr
+}
+
+func (f stubVersionFetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
+	return versionsapi.CLIInfo{}, f.cliInfoErr
+}

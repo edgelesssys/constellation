@@ -81,6 +81,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
 			log:            log,
+			verFetcher:     fetcher.NewFetcher(),
 		},
 		log: log,
 	}
@@ -250,6 +251,7 @@ type versionCollector struct {
 	client         *http.Client
 	rekor          rekorVerifier
 	flags          upgradeCheckFlags
+	verFetcher     versionFetcher
 	cliVersion     string
 	log            debugLog
 }
@@ -551,10 +553,13 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 	return upgrades, nil
 }
 
+type versionFetcher interface {
+	FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error)
+	FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error)
+}
+
 // newCompatibleCLIVersions returns a list of versions of the CLI which are compatible with the current Kubernetes version and a valid upgrade.
 func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
-	versionFetcher := fetcher.NewFetcher()
-
 	list := versionsapi.List{
 		Ref:         v.flags.ref,
 		Stream:      v.flags.stream,
@@ -562,7 +567,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 		Base:        "v2",
 		Kind:        versionsapi.VersionKindCLI,
 	}
-	minorList, err := versionFetcher.FetchVersionList(ctx, list)
+	minorList, err := v.verFetcher.FetchVersionList(ctx, list)
 	if err != nil {
 		return nil, fmt.Errorf("listing minor versions: %w", err)
 	}
@@ -580,7 +585,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 			Base:        version,
 			Kind:        versionsapi.VersionKindCLI,
 		}
-		patchList, err := versionFetcher.FetchVersionList(ctx, list)
+		patchList, err := v.verFetcher.FetchVersionList(ctx, list)
 		if err != nil {
 			return nil, fmt.Errorf("listing minor versions: %w", err)
 		}
@@ -599,7 +604,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 			Stream:  v.flags.stream,
 			Version: version,
 		}
-		info, err := versionFetcher.FetchCLIInfo(ctx, req)
+		info, err := v.verFetcher.FetchCLIInfo(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("fetching CLI info: %w", err)
 		}
