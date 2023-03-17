@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
@@ -505,6 +506,17 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 				"resourceGroup":  resourceGroup,
 				"subscriptionID": subscriptionID,
 				"tenantID":       creds.TenantID,
+			},
+		}
+	case cloudprovider.OpenStack:
+		creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
+		if err != nil {
+			return nil, err
+		}
+		credsIni := creds.CloudINI().String()
+		extraVals["ccm"] = map[string]any{
+			"OpenStack": map[string]any{
+				"secretData": credsIni,
 			},
 		}
 
