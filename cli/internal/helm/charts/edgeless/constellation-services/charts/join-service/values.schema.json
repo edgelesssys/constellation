@@ -3,7 +3,7 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+            "enum": ["AWS", "Azure", "GCP", "OpenStack", "QEMU"]
         },
         "measurements": {
             "description": "JSON-string to describe the expected measurements.",
