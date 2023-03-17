@@ -184,28 +184,28 @@ func (c *Client) upgradeRelease(
 	loader := NewLoader(conf.GetProvider(), k8sVersion)
 
 	var values map[string]any
-	var info chartInfo
+	var releaseName string
 
 	switch chart.Metadata.Name {
 	case ciliumInfo.chartName:
-		info = ciliumInfo
+		releaseName = ciliumInfo.releaseName
 		values, err = loader.loadCiliumValues()
 	case certManagerInfo.chartName:
-		info = certManagerInfo
+		releaseName = certManagerInfo.releaseName
 		values = loader.loadCertManagerValues()
 
 		if !allowDestructive {
 			return ErrConfirmationMissing
 		}
 	case constellationOperatorsInfo.chartName:
-		info = constellationOperatorsInfo
+		releaseName = constellationOperatorsInfo.releaseName
 		values, err = loader.loadOperatorsValues()
 
 		if err := c.updateCRDs(ctx, chart); err != nil {
 			return fmt.Errorf("updating CRDs: %w", err)
 		}
 	case constellationServicesInfo.chartName:
-		info = constellationServicesInfo
+		releaseName = constellationServicesInfo.releaseName
 		values, err = loader.loadConstellationServicesValues()
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
@@ -215,12 +215,12 @@ func (c *Client) upgradeRelease(
 		return fmt.Errorf("loading values: %w", err)
 	}
 
-	values, err = c.prepareValues(values, info.releaseName)
+	values, err = c.prepareValues(values, releaseName)
 	if err != nil {
 		return fmt.Errorf("preparing values: %w", err)
 	}
 
-	err = c.actions.upgradeAction(ctx, info.releaseName, chart, values, timeout)
+	err = c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
 	if err != nil {
 		return err
 	}
