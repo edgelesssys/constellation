@@ -47,6 +47,7 @@ go_library(
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
+        "//internal/cloud/openstack",
         "//internal/compatibility",
         "//internal/config",
         "//internal/config/instancetypes",
