@@ -116,7 +116,7 @@ require (
 	k8s.io/kubelet v0.26.2
 	k8s.io/kubernetes v1.26.2
 	k8s.io/mount-utils v0.26.2
-	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
+	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -320,7 +320,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20230228151317-19cbebb19cb7 // indirect
 	k8s.io/kubectl v0.26.2 // indirect
 	oras.land/oras-go v1.2.2 // indirect
-	sigs.k8s.io/controller-runtime v0.14.4 // indirect
+	sigs.k8s.io/controller-runtime v0.14.5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
