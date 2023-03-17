@@ -203,7 +203,25 @@ func TestPrepareIAM(t *testing.T) {
 
 func TestCreateCluster(t *testing.T) {
 	someErr := errors.New("failed")
-	newTestState := func() *tfjson.State {
+	newQEMUState := func() *tfjson.State {
+		workingState := tfjson.State{
+			Values: &tfjson.StateValues{
+				Outputs: map[string]*tfjson.StateOutput{
+					"ip": {
+						Value: "192.0.2.100",
+					},
+					"initSecret": {
+						Value: "initSecret",
+					},
+					"uid": {
+						Value: "12345abc",
+					},
+				},
+			},
+		}
+		return &workingState
+	}
+	newAzureState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
 				Outputs: map[string]*tfjson.StateOutput{
@@ -254,7 +272,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{showState: newTestState()},
+			tf:       &stubTerraform{showState: newQEMUState()},
 			fs:       afero.NewMemMapFs(),
 		},
 		"init fails": {
@@ -338,19 +356,12 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"working attestation url": {
-			pathBase: "terraform",
-			provider: cloudprovider.Azure,
-			vars:     qemuVars, // works for mocking azure vars
-			tf: &stubTerraform{
-				showState: &tfjson.State{
-					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{},
-					},
-				},
-			},
+			pathBase:               "terraform",
+			provider:               cloudprovider.Azure,
+			vars:                   qemuVars, // works for mocking azure vars
+			tf:                     &stubTerraform{showState: newAzureState()},
 			fs:                     afero.NewMemMapFs(),
 			expectedAttestationURL: "https://12345.neu.attest.azure.net",
-			wantErr:                true,
 		},
 		"no attestation url": {
 			pathBase: "terraform",
