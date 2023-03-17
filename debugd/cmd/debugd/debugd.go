@@ -27,6 +27,7 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	platform "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	openstackcloud "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -81,9 +82,12 @@ func main() {
 		defer meta.Close()
 		fetcher = cloudprovider.New(meta)
 
-	// TODO(malt3): implement OpenStack
-	// case platform.OpenStack:
-
+	case platform.OpenStack:
+		meta, err := openstackcloud.New(ctx)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to initialize OpenStack metadata")
+		}
+		fetcher = cloudprovider.New(meta)
 	case platform.QEMU:
 		fetcher = cloudprovider.New(qemucloud.New())
 
