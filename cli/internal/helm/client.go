@@ -193,28 +193,28 @@ func (c *Client) upgradeRelease(
 	case certManagerInfo.chartName:
 		info = certManagerInfo
 		values = loader.loadCertManagerValues()
+
+		if !allowDestructive {
+			return ErrConfirmationMissing
+		}
 	case constellationOperatorsInfo.chartName:
 		info = constellationOperatorsInfo
 		values, err = loader.loadOperatorsValues()
+
+		if err := c.updateCRDs(ctx, chart); err != nil {
+			return fmt.Errorf("updating CRDs: %w", err)
+		}
 	case constellationServicesInfo.chartName:
 		info = constellationServicesInfo
 		values, err = loader.loadConstellationServicesValues()
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
+
 	if err != nil {
 		return fmt.Errorf("loading values: %w", err)
 	}
 
-	if info == certManagerInfo && !allowDestructive {
-		return ErrConfirmationMissing
-	}
-
-	if info == constellationOperatorsInfo {
-		if err := c.updateCRDs(ctx, chart); err != nil {
-			return fmt.Errorf("updating CRDs: %w", err)
-		}
-	}
 	values, err = c.prepareValues(values, info.releaseName)
 	if err != nil {
 		return fmt.Errorf("preparing values: %w", err)
