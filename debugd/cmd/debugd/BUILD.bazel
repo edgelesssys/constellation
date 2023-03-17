@@ -20,6 +20,7 @@ go_library(
         "//internal/cloud/azure",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcp",
+        "//internal/cloud/openstack",
         "//internal/cloud/qemu",
         "//internal/logger",
         "@com_github_spf13_afero//:afero",
