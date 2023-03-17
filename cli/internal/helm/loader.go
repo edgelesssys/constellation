@@ -77,6 +77,8 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 		cnmImage = versions.VersionConfigs[k8sVersion].CloudNodeManagerImageAzure
 	case cloudprovider.GCP:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP
+	case cloudprovider.OpenStack:
+		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageOpenStack
 	}
 
 	return &ChartLoader{
@@ -186,6 +188,8 @@ func (i *ChartLoader) loadCiliumValues() (map[string]any, error) {
 		values = azureVals
 	case cloudprovider.GCP:
 		values = gcpVals
+	case cloudprovider.OpenStack:
+		values = openStackVals
 	case cloudprovider.QEMU:
 		values = qemuVals
 	default:
@@ -300,6 +304,16 @@ func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 		},
 	}
 	switch i.csp {
+	case cloudprovider.AWS:
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "AWS"
+
+		values["tags"] = map[string]any{
+			"AWS": true,
+		}
 	case cloudprovider.Azure:
 		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
@@ -320,6 +334,16 @@ func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 		values["tags"] = map[string]any{
 			"GCP": true,
 		}
+	case cloudprovider.OpenStack:
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "OpenStack"
+
+		values["tags"] = map[string]any{
+			"OpenStack": true,
+		}
 	case cloudprovider.QEMU:
 		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
@@ -329,16 +353,6 @@ func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 
 		values["tags"] = map[string]any{
 			"QEMU": true,
-		}
-	case cloudprovider.AWS:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "AWS"
-
-		values["tags"] = map[string]any{
-			"AWS": true,
 		}
 	}
 
@@ -386,6 +400,18 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 	}
 
 	switch i.csp {
+	case cloudprovider.AWS:
+		ccmVals, ok := values["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["AWS"] = map[string]any{
+			"image": i.ccmImage,
+		}
+
+		values["tags"] = map[string]any{
+			"AWS": true,
+		}
 	case cloudprovider.Azure:
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
@@ -415,24 +441,23 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 		values["tags"] = map[string]any{
 			"GCP": true,
 		}
+	case cloudprovider.OpenStack:
+		ccmVals, ok := values["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["OpenStack"] = map[string]any{
+			"image": i.ccmImage,
+		}
 
+		values["tags"] = map[string]any{
+			"OpenStack": true,
+		}
 	case cloudprovider.QEMU:
 		values["tags"] = map[string]any{
 			"QEMU": true,
 		}
 
-	case cloudprovider.AWS:
-		ccmVals, ok := values["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["AWS"] = map[string]any{
-			"image": i.ccmImage,
-		}
-
-		values["tags"] = map[string]any{
-			"AWS": true,
-		}
 	}
 	return values, nil
 }

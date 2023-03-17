@@ -99,7 +99,7 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 	h.Wait = release.Wait
 
 	switch in.CloudProvider {
-	case "aws", "azure", "qemu":
+	case "aws", "azure", "openstack", "qemu":
 		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
 	case "gcp":
 		return h.installCiliumGCP(ctx, kubectl, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)

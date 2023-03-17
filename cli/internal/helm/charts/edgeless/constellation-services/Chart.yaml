@@ -7,23 +7,26 @@ dependencies:
   - name: key-service
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
   - name: join-service
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
   - name: ccm
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
   - name: cnm
     version: 0.0.0
     tags:
@@ -37,16 +40,18 @@ dependencies:
   - name: verification-service
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
   - name: konnectivity
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
   - name: gcp-guest-agent
     version: 0.0.0

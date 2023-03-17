@@ -313,6 +313,8 @@ go_library(
         "charts/edgeless/operators/charts/node-maintenance-operator/values.schema.json",
         "charts/edgeless/operators/charts/node-maintenance-operator/values.yaml",
         "charts/edgeless/operators/values.yaml",
+        "charts/edgeless/constellation-services/charts/ccm/templates/openstack-daemonset.yaml",
+        "charts/edgeless/constellation-services/charts/ccm/templates/openstack-secret.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],

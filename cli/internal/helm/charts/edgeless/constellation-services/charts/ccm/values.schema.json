@@ -3,7 +3,39 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+            "enum": ["AWS", "Azure", "GCP", "OpenStack", "QEMU"]
+        },
+        "AWS": {
+            "description": "Config values required for deployment on AWS",
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "Container image to use for the spawned pods.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "image"
+            ]
+        },
+        "Azure": {
+            "description": "Config values required for deployment on Azure",
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "Container image to use for the spawned pods.",
+                    "type": "string",
+                    "examples": ["mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:latest"]
+                },
+                "azureConfig": {
+                    "description": "Base64 encoded json string that hold required config parameters for Azure CCM.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "image",
+                "azureConfig"
+            ]
         },
         "GCP": {
             "description": "Config values required for deployment on GCP",
@@ -41,36 +73,22 @@
                 "subnetworkPodCIDR"
             ]
         },
-        "Azure": {
-            "description": "Config values required for deployment on Azure",
+        "OpenStack": {
+            "description": "Config values required for deployment on OpenStack",
             "type": "object",
             "properties": {
                 "image": {
                     "description": "Container image to use for the spawned pods.",
-                    "type": "string",
-                    "examples": ["mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:latest"]
+                    "type": "string"
                 },
-                "azureConfig": {
-                    "description": "Base64 encoded json string that hold required config parameters for Azure CCM.",
+                "secretData": {
+                    "description": "OpenStack service account key as a json-string",
                     "type": "string"
                 }
             },
             "required": [
                 "image",
-                "azureConfig"
-            ]
-        },
-        "AWS": {
-            "description": "Config values required for deployment on AWS",
-            "type": "object",
-            "properties": {
-                "image": {
-                    "description": "Container image to use for the spawned pods.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "image"
+                "secretData"
             ]
         }
     },
@@ -80,10 +98,10 @@
     "allOf": [
         {
             "if": {
-                "properties": { "csp": { "const": "GCP" } },
+                "properties": { "csp": { "const": "AWS" } },
                 "required": ["csp"]
             },
-            "then": { "required": ["GCP"] }
+            "then": { "required": ["AWS"] }
         },
         {
             "if": {
@@ -94,10 +112,17 @@
         },
         {
             "if": {
-                "properties": { "csp": { "const": "AWS" } },
+                "properties": { "csp": { "const": "GCP" } },
                 "required": ["csp"]
             },
-            "then": { "required": ["AWS"] }
+            "then": { "required": ["GCP"] }
+        },
+        {
+            "if": {
+                "properties": { "csp": { "const": "OpenStack" } },
+                "required": ["csp"]
+            },
+            "then": { "required": ["OpenStack"] }
         }
     ],
     "title": "Values",
