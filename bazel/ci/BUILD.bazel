@@ -120,6 +120,17 @@ repo_command(
     command = "@cc_mvdan_gofumpt//:gofumpt",
 )
 
+sh_template(
+    name = "tfsec",
+    data = [
+        "@com_github_aquasecurity_tfsec//cmd/tfsec",
+    ],
+    substitutions = {
+        "@@TFSEC@@": "$(rootpath @com_github_aquasecurity_tfsec//cmd/tfsec)",
+    },
+    template = "tfsec.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [

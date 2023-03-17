@@ -9,6 +9,7 @@ go_library(
     deps = select({
         "//bazel/settings:select_never_enabled": [
             "@cc_mvdan_gofumpt//:gofumpt",
+            "@com_github_aquasecurity_tfsec//cmd/tfsec",
             "@com_github_katexochen_sh_v3//cmd/shfmt",
             "@com_github_rhysd_actionlint//cmd/actionlint",
         ],
