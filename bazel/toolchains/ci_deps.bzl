@@ -6,6 +6,7 @@ def ci_deps():
     """Install CI dependencies"""
     _shellcheck_deps()
     _terraform_deps()
+    _actionlint_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -68,4 +69,38 @@ def _terraform_deps():
             "https://releases.hashicorp.com/terraform/1.4.2/terraform_1.4.2_darwin_arm64.zip",
         ],
         sha256 = "af8ff7576c8fc41496fdf97e9199b00d8d81729a6a0e821eaf4dfd08aa763540",
+    )
+
+def _actionlint_deps():
+    http_archive(
+        name = "com_github_rhysd_actionlint_linux_amd64",
+        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        urls = [
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_linux_amd64.tar.gz",
+        ],
+        sha256 = "b39e7cd53f4a317aecfb09edcebcc058df9ebef967866e11aa7f0df27339af3b",
+    )
+    http_archive(
+        name = "com_github_rhysd_actionlint_linux_arm64",
+        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        urls = [
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_linux_arm64.tar.gz",
+        ],
+        sha256 = "a36ba721621e861e900d36457836bfd6a29d6e10d9edebe547544a0e3dbf4348",
+    )
+    http_archive(
+        name = "com_github_rhysd_actionlint_darwin_amd64",
+        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        urls = [
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_darwin_amd64.tar.gz",
+        ],
+        sha256 = "54f000f84d3fe85012a8726cd731c4101202c787963c9f8b40d15086b003d48e",
+    )
+    http_archive(
+        name = "com_github_rhysd_actionlint_darwin_arm64",
+        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        urls = [
+            "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_darwin_arm64.tar.gz",
+        ],
+        sha256 = "ddd0263968f7f024e49bd8721cd2b3d27c7a4d77081b81a4b376d5053ea25cdc",
     )

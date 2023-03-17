@@ -11,6 +11,5 @@ package main
 import (
 	_ "github.com/aquasecurity/tfsec/cmd/tfsec"
 	_ "github.com/katexochen/sh/v3/cmd/shfmt"
-	_ "github.com/rhysd/actionlint/cmd/actionlint"
 	_ "mvdan.cc/gofumpt"
 )
