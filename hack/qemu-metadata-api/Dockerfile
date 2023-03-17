@@ -1,4 +1,4 @@
-FROM fedora:37@sha256:a9fed38b343ea8a2722c78d5ad97d691421bf46f20f20076d34dd6948a2a792d as build
+FROM fedora:37@sha256:3f987b7657e944cf87a129cc262982d4f80e38bd98f7db313ccaf90ca7069dd2 as build
 
 RUN dnf -y update && \
     dnf -y install libvirt-devel @development-tools pkg-config wget git && \
@@ -27,7 +27,7 @@ COPY . /qemu-metadata-api
 WORKDIR /qemu-metadata-api/hack/qemu-metadata-api
 RUN go build -o api-server .
 
-FROM fedora:37@sha256:a9fed38b343ea8a2722c78d5ad97d691421bf46f20f20076d34dd6948a2a792d as release
+FROM fedora:37@sha256:3f987b7657e944cf87a129cc262982d4f80e38bd98f7db313ccaf90ca7069dd2 as release
 RUN  dnf -y install libvirt-devel && \
     dnf clean all
 COPY --from=build /qemu-metadata-api/hack/qemu-metadata-api/api-server /server

@@ -1,4 +1,4 @@
-FROM fedora:37@sha256:a7f860aa3881649eae03f78adbce7dedd6bde85e31d61676683fd12b58e8c75e AS release
+FROM fedora:37@sha256:ca620b6a713882989f2dfb31dd34705834c95bc23e493687828080f6e5ad1be6 AS release
 RUN dnf -y update && \
     dnf -y install dnf-plugins-core \
     libvirt-daemon-config-network \
