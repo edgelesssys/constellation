@@ -19,12 +19,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	openstackcloud "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -167,6 +169,29 @@ func main() {
 		metadataAPI = metadata
 
 		openTPM = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
+	case cloudprovider.OpenStack:
+		// TODO(malt3): add OpenStack TPM support
+		measurements := measurements.M{
+			15: measurements.Measurement{
+				Expected: [32]byte{0x0000000000000000000000000000000000000000000000000000000000000000},
+				WarnOnly: true,
+			},
+		}
+
+		cloudLogger = &logging.NopLogger{}
+		metadata, err := openstackcloud.New(ctx)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
+		}
+		clusterInitJoiner = kubernetes.New(
+			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
+			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+		)
+		metadataAPI = metadata
+
+		// TODO(malt3): add OpenStack TPM support
+		openTPM = vtpm.OpenNOPTPM
 		fs = afero.NewOsFs()
 	default:
 		clusterInitJoiner = &clusterFake{}
