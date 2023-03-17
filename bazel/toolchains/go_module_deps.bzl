@@ -7934,8 +7934,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "sigs.k8s.io/controller-runtime",
-        sum = "h1:Kd/Qgx5pd2XUL08eOV2vwIq3L9GhIbJ5Nxengbd4/0M=",
-        version = "v0.14.4",
+        sum = "h1:6xaWFqzT5KuAQ9ufgUaj1G/+C4Y1GRkhrxl+BJ9i+5s=",
+        version = "v0.14.5",
     )
     go_repository(
         name = "io_k8s_sigs_json",
@@ -8006,8 +8006,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/utils",
-        sum = "h1:kmDqav+P+/5e1i9tFfHq1qcF3sOrDp+YEkVDAHu7Jwk=",
-        version = "v0.0.0-20230220204549-a5ecb0141aa5",
+        sum = "h1:xMMXJlJbsU8w3V5N2FLDQ8YgU8s1EoULdbQBcAeNJkY=",
+        version = "v0.0.0-20230313181309-38a27ef9d749",
     )
 
     go_repository(
