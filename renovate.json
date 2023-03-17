@@ -151,6 +151,14 @@
     },
     {
       "matchPackageNames": [
+        "docker.io/k8scloudprovider/openstack-cloud-controller-manager"
+      ],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained OpenStack versions",
+      "prPriority": 15
+    },
+    {
+      "matchPackageNames": [
         "registry.k8s.io/autoscaling/cluster-autoscaler"
       ],
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
