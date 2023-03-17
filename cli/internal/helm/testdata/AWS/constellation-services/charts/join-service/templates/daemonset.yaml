@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: join-service
+  namespace: testNamespace
+  labels:
+    component: join-service
+    k8s-app: join-service
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: join-service
+  template:
+    metadata:
+      labels:
+        k8s-app: join-service
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: join-service
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      containers:
+        - name: join-service
+          image: joinServiceImage
+          args:
+            - --cloud-provider=AWS
+            - --key-service-endpoint=key-service.testNamespace:9000
+            - --attestation-variant=aws-nitro-tpm
+          volumeMounts:
+            - mountPath: /var/config
+              name: config
+              readOnly: true
+            - mountPath: /etc/kubernetes
+              name: kubeadm
+              readOnly: true
+          ports:
+            - containerPort: 9090
+              name: tcp
+          resources: {}
+          securityContext:
+            privileged: true
+      volumes:
+        - name: config
+          projected:
+            sources:
+              - configMap:
+                  name: join-config
+              - configMap:
+                  name: internal-config
+        - name: kubeadm
+          hostPath:
+            path: /etc/kubernetes
+  updateStrategy: {}

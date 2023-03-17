@@ -1,0 +1,61 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: constellation-operator-leader-election-role
+  namespace: testNamespace
+  labels:
+    helm.sh/chart: constellation-operator-0.0.0
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: constellation-operator-leader-election-rolebinding
+  namespace: testNamespace
+  labels:
+    helm.sh/chart: constellation-operator-0.0.0
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: 'constellation-operator-leader-election-role'
+subjects:
+- kind: ServiceAccount
+  name: 'constellation-operator-controller-manager'
+  namespace: 'testNamespace'

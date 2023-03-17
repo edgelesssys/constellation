@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: constellation-operator-manager-config
+  namespace: testNamespace
+  labels:
+    helm.sh/chart: constellation-operator-0.0.0
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+data:
+  controller_manager_config.yaml: |
+    apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
+    health:
+      healthProbeBindAddress: ":8081"
+    kind: ControllerManagerConfig
+    leaderElection:
+      leaderElect: true
+      resourceName: "38cc1645.edgeless.systems"
+    metrics:
+      bindAddress: "127.0.0.1:8080"
+    webhook:
+      port: 9443

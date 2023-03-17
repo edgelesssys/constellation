@@ -1,0 +1,44 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-maintenance-operator-proxy-role
+  namespace: testNamespace
+  labels:
+    node-maintenance-operator: ""
+    helm.sh/chart: node-maintenance-operator-0.0.0
+    app.kubernetes.io/name: node-maintenance-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-maintenance-operator-proxy-rolebinding
+  namespace: testNamespace
+  labels:
+    node-maintenance-operator: ""
+    helm.sh/chart: node-maintenance-operator-0.0.0
+    app.kubernetes.io/name: node-maintenance-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'node-maintenance-operator-proxy-role'
+subjects:
+- kind: ServiceAccount
+  name: 'node-maintenance-operator-controller-manager'
+  namespace: 'testNamespace'

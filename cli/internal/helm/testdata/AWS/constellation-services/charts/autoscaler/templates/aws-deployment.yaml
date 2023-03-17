@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: constellation-cluster-autoscaler
+  namespace: testNamespace
+  labels:
+    app.kubernetes.io/instance: constellation
+    app.kubernetes.io/managed-by: Constellation
+    app.kubernetes.io/name: cluster-autoscaler
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: constellation
+      app.kubernetes.io/name: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: constellation
+        app.kubernetes.io/name: cluster-autoscaler
+    spec:
+      containers:
+      - name: cluster-autoscaler
+        image: autoscalerImage
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /health-check
+            port: 8085
+        ports:
+          - containerPort: 8085
+        resources: {}
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      priorityClassName: system-cluster-critical
+      serviceAccountName: constellation-cluster-autoscaler
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Equal
+          value: "true"

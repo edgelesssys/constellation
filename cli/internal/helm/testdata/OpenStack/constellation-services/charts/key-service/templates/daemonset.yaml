@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    component: key-service
+    k8s-app: key-service
+    kubernetes.io/cluster-service: "true"
+  name: key-service
+  namespace: testNamespace
+spec:
+  selector:
+    matchLabels:
+      k8s-app: key-service
+  template:
+    metadata:
+      labels:
+        k8s-app: key-service
+    spec:
+      containers:
+        - name: key-service
+          image: keyServiceImage
+          args:
+            - --port=9000
+          volumeMounts:
+            - mountPath: /var/config
+              name: config
+              readOnly: true
+          resources: {}
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      priorityClassName: system-cluster-critical
+      serviceAccountName: key-service
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+      volumes:
+        - name: config
+          projected:
+            sources:
+              - configMap:
+                  items:
+                    - key: measurements
+                      path: measurements
+                  name: join-config
+              - secret:
+                  items:
+                    - key: mastersecret
+                      path: mastersecret
+                    - key: salt
+                      path: salt
+                  name: constellation-mastersecret
+  updateStrategy: {}

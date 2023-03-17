@@ -59,16 +59,13 @@ func TestConstellationServices(t *testing.T) {
 		ccmImage           string
 		cnmImage           string
 	}{
-		"GCP": {
+		"AWS": {
 			config: &config.Config{
-				AttestationVariant: oid.GCPSEVES{}.String(),
-				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
-					DeployCSIDriver: toPtr(true),
-				}},
+				AttestationVariant: oid.AWSNitroTPM{}.String(),
+				Provider:           config.ProviderConfig{AWS: &config.AWSConfig{}},
 			},
-			enforceIDKeyDigest: false,
-			valuesModifier:     prepareGCPValues,
-			ccmImage:           "ccmImageForGCP",
+			valuesModifier: prepareAWSValues,
+			ccmImage:       "ccmImageForAWS",
 		},
 		"Azure": {
 			config: &config.Config{
@@ -83,13 +80,30 @@ func TestConstellationServices(t *testing.T) {
 			ccmImage:           "ccmImageForAzure",
 			cnmImage:           "cnmImageForAzure",
 		},
+		"GCP": {
+			config: &config.Config{
+				AttestationVariant: oid.GCPSEVES{}.String(),
+				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
+					DeployCSIDriver: toPtr(true),
+				}},
+			},
+			valuesModifier: prepareGCPValues,
+			ccmImage:       "ccmImageForGCP",
+		},
+		"OpenStack": {
+			config: &config.Config{
+				AttestationVariant: oid.Dummy{}.String(),
+				Provider:           config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
+			},
+			valuesModifier: prepareOpenStackValues,
+			ccmImage:       "ccmImageForOpenStack",
+		},
 		"QEMU": {
 			config: &config.Config{
 				AttestationVariant: oid.QEMUVTPM{}.String(),
 				Provider:           config.ProviderConfig{QEMU: &config.QEMUConfig{}},
 			},
-			enforceIDKeyDigest: false,
-			valuesModifier:     prepareQEMUValues,
+			valuesModifier: prepareQEMUValues,
 		},
 	}
 
@@ -288,6 +302,88 @@ func buildTestdataMap(csp string, expectedData map[string]string, require *requi
 	}
 }
 
+func prepareAWSValues(values map[string]any) error {
+	joinVals, ok := values["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'join-service' key")
+	}
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	mJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	joinVals["measurements"] = string(mJSON)
+	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+	ccmVals, ok := values["ccm"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'ccm' key")
+	}
+	ccmVals["AWS"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
+
+	verificationVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'verification-service' key")
+	}
+	verificationVals["loadBalancerIP"] = "127.0.0.1"
+
+	konnectivityVals, ok := values["konnectivity"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'konnectivity' key")
+	}
+	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
+
+	return nil
+}
+
+func prepareAzureValues(values map[string]any) error {
+	joinVals, ok := values["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'join-service' key")
+	}
+	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	mJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	joinVals["measurements"] = string(mJSON)
+	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+	ccmVals, ok := values["ccm"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'ccm' key")
+	}
+	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
+	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
+
+	autoscalerVals, ok := values["autoscaler"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'autoscaler' key")
+	}
+	autoscalerVals["Azure"] = map[string]any{
+		"clientID":       "AppClientID",
+		"clientSecret":   "ClientSecretValue",
+		"resourceGroup":  "resourceGroup",
+		"subscriptionID": "subscriptionID",
+		"tenantID":       "TenantID",
+	}
+
+	verificationVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'verification-service' key")
+	}
+	verificationVals["loadBalancerIP"] = "127.0.0.1"
+
+	konnectivityVals, ok := values["konnectivity"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'konnectivity' key")
+	}
+	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
+
+	return nil
+}
+
 func prepareGCPValues(values map[string]any) error {
 	joinVals, ok := values["join-service"].(map[string]any)
 	if !ok {
@@ -365,12 +461,11 @@ func prepareGCPValues(values map[string]any) error {
 	return nil
 }
 
-func prepareAzureValues(values map[string]any) error {
+func prepareOpenStackValues(values map[string]any) error {
 	joinVals, ok := values["join-service"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
 	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
 	mJSON, err := json.Marshal(m)
 	if err != nil {
@@ -383,20 +478,8 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
-	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
-
-	autoscalerVals, ok := values["autoscaler"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'autoscaler' key")
-	}
-	autoscalerVals["Azure"] = map[string]any{
-		"clientID":       "AppClientID",
-		"clientSecret":   "ClientSecretValue",
-		"resourceGroup":  "resourceGroup",
-		"subscriptionID": "subscriptionID",
-		"tenantID":       "TenantID",
-	}
+	ccmVals["OpenStack"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
+	ccmVals["OpenStack"].(map[string]any)["secretData"] = "baaaaaad"
 
 	verificationVals, ok := values["verification-service"].(map[string]any)
 	if !ok {

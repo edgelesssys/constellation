@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: constellation-operator-controller-manager-metrics-service
+  namespace: testNamespace
+  labels:
+    control-plane: controller-manager
+    helm.sh/chart: constellation-operator-0.0.0
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    control-plane: controller-manager
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
