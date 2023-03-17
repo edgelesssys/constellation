@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "openstack",
     srcs = [
+        "accountkey.go",
         "api.go",
         "imds.go",
         "openstack.go",
@@ -27,6 +28,7 @@ go_library(
 go_test(
     name = "openstack_test",
     srcs = [
+        "accountkey_test.go",
         "api_test.go",
         "imds_test.go",
         "openstack_test.go",
