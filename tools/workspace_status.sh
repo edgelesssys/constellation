@@ -22,6 +22,7 @@ timestamp() {
   "${REPOSITORY_ROOT}/tools/pseudo-version" -print-timestamp -timestamp-format '2006-01-02T15:04:05Z07:00'
 }
 
+echo "REPO_URL https://github.com/edgelesssys/constellation.git"
 echo "STABLE_STAMP_COMMIT $(git rev-parse HEAD)"
 echo "STABLE_STAMP_STATE $(git diff-index --quiet HEAD -- && echo "clean" || echo "dirty")"
 echo "STABLE_STAMP_VERSION $(pseudo_version)"

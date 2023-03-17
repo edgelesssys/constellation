@@ -38,3 +38,12 @@ build:linux_arm64_static --platforms @zig_sdk//libc_aware/platform:linux_arm64_m
 
 # bazel config to explicitly disable stamping (hide version information at build time)
 build:nostamp --nostamp --workspace_status_command=
+
+# bazel config to use remote cache
+build:remote_cache --bes_results_url=https://app.buildbuddy.io/invocation/
+build:remote_cache --bes_backend=grpcs://remote.buildbuddy.io
+build:remote_cache --remote_cache=grpcs://remote.buildbuddy.io
+build:remote_cache --remote_timeout=3600
+build:remote_cache --experimental_remote_build_event_upload=minimal
+build:remote_cache --experimental_remote_cache_compression
+build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
