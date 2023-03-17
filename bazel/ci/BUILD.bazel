@@ -92,14 +92,24 @@ sh_template(
     template = "shellcheck.sh.in",
 )
 
+alias(
+    name = "com_github_rhysd_actionlint",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_rhysd_actionlint_darwin_amd64//:actionlint_bin",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_rhysd_actionlint_darwin_arm64//:actionlint_bin",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_rhysd_actionlint_linux_amd64//:actionlint_bin",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_rhysd_actionlint_linux_arm64//:actionlint_bin",
+    }),
+)
+
 sh_template(
     name = "actionlint",
     data = [
         ":com_github_koalaman_shellcheck",
-        "@com_github_rhysd_actionlint//cmd/actionlint",
+        ":com_github_rhysd_actionlint",
     ],
     substitutions = {
-        "@@ACTIONLINT@@": "$(rootpath @com_github_rhysd_actionlint//cmd/actionlint)",
+        "@@ACTIONLINT@@": "$(rootpath :com_github_rhysd_actionlint)",
         "@@SHELLCHECK@@": "$(rootpath :com_github_koalaman_shellcheck)",
     },
     template = "actionlint.sh.in",
@@ -107,7 +117,7 @@ sh_template(
 
 repo_command(
     name = "actionlint_no_shellcheck",
-    command = "@com_github_rhysd_actionlint//cmd/actionlint",
+    command = ":com_github_rhysd_actionlint",
 )
 
 repo_command(

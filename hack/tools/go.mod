@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/aquasecurity/tfsec v1.28.1
 	github.com/katexochen/sh/v3 v3.6.0
-	github.com/rhysd/actionlint v1.6.23
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -28,7 +27,6 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gdamore/tcell/v2 v2.5.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -61,8 +59,6 @@ require (
 	github.com/liamg/jfather v0.0.7 // indirect
 	github.com/liamg/tml v0.6.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
@@ -75,7 +71,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/cobra v1.6.0 // indirect
@@ -106,6 +101,5 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mvdan.cc/editorconfig v0.2.0 // indirect
 )
