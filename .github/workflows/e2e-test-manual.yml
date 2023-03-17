@@ -193,7 +193,7 @@ jobs:
       always() &&
       !cancelled()
     steps:
-      - name: Install the basics tools (macOS)
+      - name: Install basic tools (macOS)
         if: runner.os == 'macOS'
         shell: bash
         run: brew install coreutils kubectl bash
