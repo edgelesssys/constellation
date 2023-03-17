@@ -1,6 +1,7 @@
 # Set one of the tags to true to indicate which CSP you are deploying to.
 tags:
-  Azure: false
-  GCP: false
   AWS: false
+  Azure: false
+  OpenStack: false
+  GCP: false
   QEMU: false

@@ -7,14 +7,16 @@ dependencies:
   - name: node-maintenance-operator
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
   - name: constellation-operator
     version: 0.0.0
     tags:
+      - AWS
       - Azure
       - GCP
-      - AWS
+      - OpenStack
       - QEMU
