@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloud-controller-manager
+  namespace: testNamespace
+  labels:
+    k8s-app: cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        k8s-app: cloud-controller-manager
+    spec:
+      containers:
+        - name: cloud-controller-manager
+          image: ccmImageForOpenStack
+          args:
+          - /bin/openstack-cloud-controller-manager
+          - --cloud-provider=openstack
+          - --cloud-config=/etc/config/cloud.conf
+          - --leader-elect=true
+          - --allocate-node-cidrs=false
+          - -v=2
+          volumeMounts:
+          - name: etckubernetes
+            mountPath: /etc/kubernetes
+            readOnly: true
+          - name: etcssl
+            mountPath: /etc/ssl
+            readOnly: true
+          - name: etcpki
+            mountPath: /etc/pki
+            readOnly: true
+          - name: etcconfig
+            mountPath: /etc/config
+            readOnly: true
+          resources: {}
+      serviceAccountName: cloud-controller-manager
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+      volumes:
+      - name: etckubernetes
+        hostPath:
+          path: /etc/kubernetes
+      - name: etcssl
+        hostPath:
+          path: /etc/ssl
+      - name: etcpki
+        hostPath:
+          path: /etc/pki
+      - name: etcconfig
+        secret:
+          secretName: openstackkey
+  updateStrategy: {}

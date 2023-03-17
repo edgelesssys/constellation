@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloud-controller-manager
+  namespace: testNamespace
+  labels:
+    k8s-app: cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        k8s-app: cloud-controller-manager
+    spec:
+      containers:
+        - name: cloud-controller-manager
+          image: ccmImageForAWS
+          args:
+          - --cloud-provider=aws
+          - --leader-elect=true
+          - --allocate-node-cidrs=false
+          - --configure-cloud-routes=false
+          - -v=2
+          volumeMounts:
+            - mountPath: /etc/kubernetes
+              name: etckubernetes
+              readOnly: true
+            - mountPath: /etc/ssl
+              name: etcssl
+              readOnly: true
+            - mountPath: /etc/pki
+              name: etcpki
+              readOnly: true
+          resources: {}
+      serviceAccountName: cloud-controller-manager
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+      volumes:
+        - name: etckubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: etcssl
+          hostPath:
+            path: /etc/ssl
+        - name: etcpki
+          hostPath:
+            path: /etc/pki
+  updateStrategy: {}

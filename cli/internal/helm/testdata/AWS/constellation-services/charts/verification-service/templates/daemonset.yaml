@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    component: verification-service
+    k8s-app: verification-service
+  name: verification-service
+  namespace: testNamespace
+spec:
+  selector:
+    matchLabels:
+      k8s-app: verification-service
+  template:
+    metadata:
+      labels:
+        k8s-app: verification-service
+    spec:
+      containers:
+      - args:
+        - --attestation-variant=aws-nitro-tpm
+        image: verificationImage
+        name: verification-service
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: grpc
+        resources: {}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /sys/kernel/security/
+          name: event-log
+          readOnly: true
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Equal
+        value: "true"
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /sys/kernel/security/
+        name: event-log
+  updateStrategy: {}

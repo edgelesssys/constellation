@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: join-service
+  namespace: testNamespace
+spec:
+  type: NodePort
+  selector:
+    k8s-app: join-service
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+    nodePort: 30090
+status:
+  loadBalancer: {}

@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: constellation-cluster-autoscaler
+  namespace: testNamespace
+  labels:
+    app.kubernetes.io/instance: constellation
+    app.kubernetes.io/managed-by: Constellation
+    app.kubernetes.io/name: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: constellation-cluster-autoscaler
+subjects:
+- kind: ServiceAccount
+  name: constellation-cluster-autoscaler
+  namespace: testNamespace
