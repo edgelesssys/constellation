@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -461,6 +462,19 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 			AppClientID:       config.Provider.Azure.AppClientID,
 			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
 			Location:          config.Provider.Azure.Location,
+		}
+		return creds.ToCloudServiceAccountURI(), nil
+
+	case cloudprovider.OpenStack:
+		creds := openstack.AccountKey{
+			AuthURL:           config.Provider.OpenStack.AuthURL,
+			Username:          config.Provider.OpenStack.Username,
+			Password:          config.Provider.OpenStack.Password,
+			ProjectID:         config.Provider.OpenStack.ProjectID,
+			ProjectName:       config.Provider.OpenStack.ProjectName,
+			UserDomainName:    config.Provider.OpenStack.UserDomainName,
+			ProjectDomainName: config.Provider.OpenStack.ProjectDomainName,
+			RegionName:        config.Provider.OpenStack.RegionName,
 		}
 		return creds.ToCloudServiceAccountURI(), nil
 
