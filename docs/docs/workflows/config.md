@@ -115,7 +115,15 @@ Since `clientSecretValue` is a sensitive value, you can leave it empty in the co
 You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session.
 
 Your GCP account also needs to have at least the following permissions:
+* `iam.serviceAccountKeys.create`
+* `iam.serviceAccountKeys.delete`
+* `iam.serviceAccountKeys.get`
 * `iam.serviceAccounts.create`
+* `iam.serviceAccounts.delete`
+* `iam.serviceAccounts.get`
+* `iam.serviceAccounts.getAccessToken`
+* `resourcemanager.projects.getIamPolicy`
+* `resourcemanager.projects.setIamPolicy`
 
 ```bash
 constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
