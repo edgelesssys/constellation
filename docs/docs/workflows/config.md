@@ -114,6 +114,9 @@ Since `clientSecretValue` is a sensitive value, you can leave it empty in the co
 
 You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session.
 
+Your GCP account also needs to have at least the following permissions:
+* `iam.serviceAccounts.create`
+
 ```bash
 constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
 ```
@@ -128,6 +131,27 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 <tabItem value="aws" label="AWS">
 
 You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session.
+
+Your AWS account also needs to have at least the following permissions:
+* `iam:CreatePolicy`
+* `iam:CreateRole`
+* `iam:GetPolicy`
+* `iam:GetRole`
+* `iam:GetPolicyVersion`
+* `iam:ListRolePolicies`
+* `iam:ListAttachedRolePolicies`
+* `iam:ListPolicyVersions`
+* `iam:ListInstanceProfilesForRole`
+* `iam:DeletePolicy`
+* `iam:DeleteRole`
+* `iam:AttachRolePolicy`
+* `iam:CreateInstanceProfile`
+* `iam:GetInstanceProfile`
+* `iam:RemoveRoleFromInstanceProfile`
+* `iam:DetachRolePolicy`
+* `iam:DeleteInstanceProfile`
+* `iam:AddRoleToInstanceProfile`
+* `iam:PassRole`
 
 ```bash
 constellation iam create aws --zone=eu-central-1a --prefix=constellTest
