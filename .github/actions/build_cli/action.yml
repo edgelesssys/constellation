@@ -1,6 +1,6 @@
 name: Build CLI
 description: |
-  Runs cmake and cli make target in build folder. Optionally, Sigstore tools
+  Builds CLI. Optionally, Sigstore tools
   are used to sign CLI when inputs are provided. A draft release is published
   when run on v* tag.
 inputs:
@@ -28,6 +28,9 @@ inputs:
     description: "Password for Cosign private key"
     required: false
     default: ""
+  outputPath:
+    description: "Output path of the binary"
+    required: false
 runs:
   using: "composite"
   steps:
@@ -39,20 +42,28 @@ runs:
 
     - name: Build CLI
       shell: bash
+      env:
+        GOOS: ${{ inputs.targetOS }}
+        GOARCH: ${{ inputs.targetArch }}
+        OUTPUT_PATH: ${{ inputs.outputPath || format('./build/constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}
       run: |
         echo "::group::Build CLI"
-        mkdir -p build
-        cd build
+        mkdir -p "$(dirname "${OUTPUT_PATH}")"
         if [ ${{ inputs.enterpriseCLI }} == 'true' ]
         then
-          cmake -DBAZEL:STRING=bazelisk -DCLI_BUILD_TAGS:STRING=enterprise ..
+          cli_variant=enterprise
         else
-          cmake -DBAZEL:STRING=bazelisk ..
+          cli_variant=oss
         fi
-        GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make cli
-        cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
-        echo "$(pwd)" >> $GITHUB_PATH
-        export PATH="$PATH:$(pwd)"
+        label="//cli:cli_${cli_variant}_${GOOS}_${GOARCH}"
+        bazel build "${label}"
+        repository_root=$(git rev-parse --show-toplevel)
+        out_rel=$(bazel cquery --output=files "${label}")
+        out_loc="$(realpath "${repository_root}/${out_rel}")"
+        cp "${out_loc}" "${OUTPUT_PATH}"
+        chmod +w "${OUTPUT_PATH}"
+        echo "$(dirname "${OUTPUT_PATH}")" >> $GITHUB_PATH
+        export PATH="$PATH:$(dirname "${OUTPUT_PATH}")"
         echo "::endgroup::"
 
     # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
@@ -80,15 +91,15 @@ runs:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+        OUTPUT_PATH: ${{ inputs.outputPath || format('./build/constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}
       run: |
-        SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
-        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY ${SIGN_TARGET} > ${SIGN_TARGET}.sig
+        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY "${OUTPUT_PATH}" > "${OUTPUT_PATH}.sig"
         # Verify - As documentation & check
         # Local Signature (input: artifact, key, signature)
-        cosign verify-blob --key cosign.pub --signature ${SIGN_TARGET}.sig ${SIGN_TARGET}
+        cosign verify-blob --key cosign.pub --signature "${OUTPUT_PATH}.sig" "${OUTPUT_PATH}"
         # Transparency Log Signature (input: artifact, key)
-        uuid=$(rekor-cli search --artifact ${SIGN_TARGET} | tail -n 1)
+        uuid=$(rekor-cli search --artifact "${OUTPUT_PATH}" | tail -n 1)
         sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
-        cosign verify-blob --key cosign.pub --signature <(echo $sig) ${SIGN_TARGET}
+        cosign verify-blob --key cosign.pub --signature <(echo $sig) "${OUTPUT_PATH}"

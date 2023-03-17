@@ -71,12 +71,14 @@ jobs:
         with:
           targetOS: "linux"
           targetArch: "amd64"
+          outputPath: ./build/cdbg_linux_amd64
 
       - name: Build cdbg (Linux, arm64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "linux"
           targetArch: "arm64"
+          outputPath: ./build/cdbg_linux_arm64
 
   build-cdbg-macos:
     runs-on: ubuntu-22.04
@@ -97,12 +99,14 @@ jobs:
         with:
           targetOS: "darwin"
           targetArch: "amd64"
+          outputPath: ./build/cdbg_darwin_amd64
 
       - name: Build cdbg (macOS, arm64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
           targetArch: "arm64"
+          outputPath: ./build/cdbg_darwin_arm64
 
   build-disk-mapper:
     runs-on: ubuntu-22.04

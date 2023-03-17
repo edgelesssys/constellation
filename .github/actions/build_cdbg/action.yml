@@ -10,15 +10,28 @@ inputs:
     description: "Build CLI for this architecture. [amd64, arm64]"
     required: true
     default: "amd64"
+  outputPath:
+    description: "Output path of the binary"
+    default: "./build/cdbg"
+    required: false
 
 runs:
   using: "composite"
   steps:
     - name: Build cdbg
       shell: bash
+      env:
+        GOOS: ${{ inputs.targetOS }}
+        GOARCH: ${{ inputs.targetArch }}
+        OUTPUT_PATH: ${{ inputs.outputPath }}
       run: |
         echo "::group::Build cdbg"
-        mkdir -p build && cd build
-        cmake ..
-        GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make cdbg
+        mkdir -p "$(dirname "${OUTPUT_PATH}")"
+        label="//debugd/cmd/cdbg:cdbg_${GOOS}_${GOARCH}"
+        bazel build "${label}"
+        repository_root=$(git rev-parse --show-toplevel)
+        out_rel=$(bazel cquery --output=files "${label}")
+        out_loc="$(realpath "${repository_root}/${out_rel}")"
+        cp "${out_loc}" "${OUTPUT_PATH}"
+        chmod +w "${OUTPUT_PATH}"
         echo "::endgroup::"
