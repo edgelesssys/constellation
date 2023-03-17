@@ -1,4 +1,4 @@
-name: tidy-and-check
+name: tidy-check-generate
 
 on:
   workflow_dispatch:
@@ -6,21 +6,11 @@ on:
     branches:
       - main
       - "release/**"
-    paths:
-      - "**.go"
-      - "**/go.mod"
-      - "**/go.sum"
-      - ".github/workflows/test-tidy.yml"
   pull_request:
-    paths:
-      - "**.go"
-      - "**/go.mod"
-      - "**/go.sum"
-      - ".github/workflows/test-tidy.yml"
 
 jobs:
   tidycheck:
-    name: tidy and check
+    name: tidy, check and generate
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
