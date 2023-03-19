@@ -20,13 +20,13 @@ type rollbacker interface {
 
 // rollbackOnError calls rollback on the rollbacker if the handed error is not nil,
 // and writes logs to the writer w.
-func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollbacker) {
+func rollbackOnError(w io.Writer, onErr *error, roll rollbacker) {
 	if *onErr == nil {
 		return
 	}
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
-	if err := roll.rollback(ctx); err != nil {
+	if err := roll.rollback(context.Background()); err != nil {
 		*onErr = errors.Join(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or return it?
 		return
 	}

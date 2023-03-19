@@ -152,7 +152,7 @@ func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider
 
 // createGCP creates the IAM configuration on GCP.
 func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := terraform.GCPIAMVariables{
 		ServiceAccountID: iamConfig.GCP.ServiceAccountID,
@@ -180,7 +180,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, iamConfi
 
 // createAzure creates the IAM configuration on Azure.
 func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := terraform.AzureIAMVariables{
 		Region:           iamConfig.Azure.Region,
@@ -211,7 +211,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, iamCon
 
 // createAWS creates the IAM configuration on AWS.
 func (c *IAMCreator) createAWS(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := terraform.AWSIAMVariables{
 		Region: iamConfig.AWS.Region,

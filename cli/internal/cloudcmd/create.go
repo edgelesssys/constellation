@@ -130,7 +130,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 	tfOutput, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
@@ -168,7 +168,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 	tfOutput, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
@@ -209,7 +209,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 	tfOutput, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
@@ -288,7 +288,7 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
 	tfOutput, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
@@ -306,7 +306,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	controlPlaneCount, workerCount int, source string,
 ) (idFile clusterid.File, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
-	defer rollbackOnError(context.Background(), c.out, &retErr, qemuRollbacker)
+	defer rollbackOnError(c.out, &retErr, qemuRollbacker)
 
 	// TODO: render progress bar
 	downloader := c.newRawDownloader()
