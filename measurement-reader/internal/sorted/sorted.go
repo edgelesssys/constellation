@@ -23,6 +23,7 @@ type Measurement struct {
 // MeasurementType are the supported attestation types we can sort.
 type MeasurementType uint32
 
+// Available measurement types.
 const (
 	TPM MeasurementType = iota
 	TDX

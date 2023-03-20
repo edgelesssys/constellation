@@ -5,12 +5,12 @@ go_library(
     name = "vtpm",
     srcs = [
         "attestation.go",
-        "initialize.go",
         "vtpm.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/vtpm",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/attestation",
         "//internal/attestation/measurements",
         "@com_github_google_go_tpm//tpm2",
         "@com_github_google_go_tpm_tools//client",
@@ -24,7 +24,6 @@ go_test(
     name = "vtpm_test",
     srcs = [
         "attestation_test.go",
-        "initialize_test.go",
         "vtpm_test.go",
     ],
     embed = [":vtpm"],
@@ -34,6 +33,7 @@ go_test(
         "//conditions:default": ["disable_tpm_simulator"],
     }),
     deps = [
+        "//internal/attestation/initialize",
         "//internal/attestation/measurements",
         "//internal/attestation/simulator",
         "//internal/logger",

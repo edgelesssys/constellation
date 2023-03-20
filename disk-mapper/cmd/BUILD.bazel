@@ -12,6 +12,7 @@ go_library(
         "//disk-mapper/internal/rejoinclient",
         "//disk-mapper/internal/setup",
         "//internal/attestation/choose",
+        "//internal/attestation/tdx",
         "//internal/attestation/vtpm",
         "//internal/cloud/aws",
         "//internal/cloud/azure",

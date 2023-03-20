@@ -10,7 +10,6 @@ RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin
-ENV GOPRIVATE=github.com/edgelesssys/*
 
 # Download go dependencies
 WORKDIR /constellation/

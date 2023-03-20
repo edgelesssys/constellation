@@ -8,6 +8,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/atls",
+        "//internal/attestation",
         "//internal/attestation/aws",
         "//internal/attestation/azure/snp",
         "//internal/attestation/azure/trustedlaunch",
@@ -15,7 +16,7 @@ go_library(
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/qemu",
-        "//internal/attestation/vtpm",
+        "//internal/attestation/tdx",
         "//internal/oid",
     ],
 )

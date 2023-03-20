@@ -77,7 +77,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 			if tc.writeFile {
 				require.NoError(handler.WriteJSON(
 					filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-					measurements.M{11: measurements.WithAllBytes(0x00, false)},
+					measurements.M{11: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)},
 				))
 				keyDigest, err := json.Marshal(idkeydigest.DefaultsFor(cloudprovider.Azure))
 				require.NoError(err)
@@ -220,7 +220,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength)},
 		file.OptNone,
 	))
 	require.NoError(handler.Write(
