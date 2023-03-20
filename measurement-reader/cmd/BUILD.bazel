@@ -25,7 +25,7 @@ go_binary(
 
 platform_binary(
     name = "measurement-reader_linux_amd64",
-    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34",
+    platform = "@com_grail_bazel_toolchain//platforms:linux-x86_64",
     target_file = ":cmd",
     visibility = ["//visibility:public"],
 )

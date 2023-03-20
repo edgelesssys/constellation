@@ -69,6 +69,13 @@ genrule(
 )
 
 rpmtree(
+    name = "sysroot",
+    rpms = [
+        "@glibc-0__2.36-9.fc37.x86_64//rpm",
+    ],
+)
+
+rpmtree(
     name = "cryptsetup-devel",
     rpms = [
         "@alternatives-0__1.21-1.fc37.x86_64//rpm",
@@ -450,5 +457,19 @@ tar2files(
         ],
     },
     tar = ":libvirt-devel",
+    visibility = ["//visibility:public"],
+)
+
+tar2files(
+    name = "sysroot-files",
+    files = {
+        "": [
+            "usr/lib64ld-linux-x86-64.so.2",
+            "usr/lib64libc.so.6",
+            "usr/lib64libpthread.so.0",
+            "usr/lib64libm.so.6",
+        ],
+    },
+    tar = ":sysroot",
     visibility = ["//visibility:public"],
 )
