@@ -232,7 +232,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	// connectedOnce is set in handleGRPCStateChanges when a connection was established in one retry attempt.
 	// This should cancel any other retry attempts when the connection is lost since the bootstrapper likely won't accept any new attempts anymore.
 	if d.connectedOnce {
-		return &nonRetriableError{errors.New("init already connected to the remote server in an previous attempt - resumption is not supported")}
+		return &nonRetriableError{errors.New("init already connected to the remote server in a previous attempt - resumption is not supported")}
 	}
 
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
