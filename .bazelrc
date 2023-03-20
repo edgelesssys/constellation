@@ -47,3 +47,5 @@ build:remote_cache --remote_timeout=3600
 build:remote_cache --experimental_remote_build_event_upload=minimal
 build:remote_cache --experimental_remote_cache_compression
 build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
+
+try-import .bazeloverwriterc 
