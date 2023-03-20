@@ -82,8 +82,7 @@ func (u *Updatable) Update() error {
 
 		err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename), &idKeyCfg)
 		if err != nil {
-			if errors.Is(err, afero.ErrFileNotFound) {
-			} else {
+			if !errors.Is(err, afero.ErrFileNotFound) {
 				return fmt.Errorf("reading ID Key config: %w", err)
 			}
 

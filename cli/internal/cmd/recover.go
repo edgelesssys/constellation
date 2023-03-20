@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -95,9 +96,8 @@ func (r *recoverCmd) recover(
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	maaURL := "https://snpattestationtester.neu.attest.azure.net" // TODO(daniel-weisse): Get url from id file
 	r.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
-	validator, err := cloudcmd.NewValidator(conf, maaURL, r.log)
+	validator, err := cloudcmd.NewValidator(conf, flags.maaURL, r.log)
 	if err != nil {
 		return err
 	}
@@ -210,20 +210,23 @@ type recoverFlags struct {
 	endpoint   string
 	secretPath string
 	configPath string
+	maaURL     string
 	force      bool
 }
 
 func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
+		return recoverFlags{}, err
+	}
+
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	r.log.Debugf("Endpoint flag is %s", endpoint)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
 	if endpoint == "" {
-		endpoint, err = readIPFromIDFile(fileHandler)
-		if err != nil {
-			return recoverFlags{}, fmt.Errorf("getting recovery endpoint: %w", err)
-		}
+		endpoint = idFile.IP
 	}
 	endpoint, err = addPortIfMissing(endpoint, constants.RecoveryPort)
 	if err != nil {
@@ -250,6 +253,7 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 		endpoint:   endpoint,
 		secretPath: masterSecretPath,
 		configPath: configPath,
+		maaURL:     idFile.AttestationURL,
 		force:      force,
 	}, nil
 }
