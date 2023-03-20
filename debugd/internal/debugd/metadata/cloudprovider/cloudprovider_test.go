@@ -176,18 +176,18 @@ type stubMetadata struct {
 	uidErr           error
 }
 
-func (m *stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
+func (m *stubMetadata) List(_ context.Context) ([]metadata.InstanceMetadata, error) {
 	return m.listRes, m.listErr
 }
 
-func (m *stubMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+func (m *stubMetadata) Self(_ context.Context) (metadata.InstanceMetadata, error) {
 	return m.selfRes, m.selfErr
 }
 
-func (m *stubMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (m *stubMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
 	return m.getLBEndpointRes, m.getLBEndpointErr
 }
 
-func (m *stubMetadata) UID(context.Context) (string, error) {
+func (m *stubMetadata) UID(_ context.Context) (string, error) {
 	return m.uid, m.uidErr
 }

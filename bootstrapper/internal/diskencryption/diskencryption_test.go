@@ -198,7 +198,7 @@ func (s *stubCryptdevice) GetUUID() string {
 	return s.uuid
 }
 
-func (s *stubCryptdevice) KeyslotChangeByPassphrase(currentKeyslot int, newKeyslot int, currentPassphrase string, newPassphrase string) error {
+func (s *stubCryptdevice) KeyslotChangeByPassphrase(_, _ int, _, _ string) error {
 	return s.keyslotChangeErr
 }
 

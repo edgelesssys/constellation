@@ -419,7 +419,7 @@ func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVers
 	return compatibility.BinaryWith(binaryVersion, configuredVersion)
 }
 
-func returnsTrue(fl validator.FieldLevel) bool {
+func returnsTrue(_ validator.FieldLevel) bool {
 	return true
 }
 
@@ -472,13 +472,13 @@ func registerValidAttestVariantError(ut ut.Translator) error {
 	return ut.Add("valid_attestation_variant", `"{0}" is not a valid attestation variant for CSP {1}`, true)
 }
 
-func (c *Config) translateValidAttestVariantError(ut ut.Translator, fe validator.FieldError) string {
+func (c *Config) translateValidAttestVariantError(ut ut.Translator, _ validator.FieldError) string {
 	csp := c.GetProvider()
 	t, _ := ut.T("valid_attestation_variant", c.AttestationVariant, csp.String())
 	return t
 }
 
-func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
+func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
 	// TODO: v2.8: remove variant fallback and make variant a required field
 	c.addMissingVariant()
 

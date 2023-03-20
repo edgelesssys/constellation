@@ -33,7 +33,7 @@ type KMSClient struct {
 }
 
 // New initializes a KMS client for Google Cloud Platform.
-func New(ctx context.Context, store kmsInterface.Storage, cfg uri.GCPConfig) (*KMSClient, error) {
+func New(_ context.Context, store kmsInterface.Storage, cfg uri.GCPConfig) (*KMSClient, error) {
 	if store == nil {
 		return nil, errors.New("no storage backend provided for KMS")
 	}

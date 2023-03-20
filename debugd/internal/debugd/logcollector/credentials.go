@@ -244,7 +244,7 @@ func newQemuCloudCredentialGetter(infoMap *info.Map) (*qemuCloudCredentialGetter
 	}, nil
 }
 
-func (q *qemuCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
+func (q *qemuCloudCredentialGetter) GetOpensearchCredentials(_ context.Context) (credentials, error) {
 	return q.creds, nil
 }
 

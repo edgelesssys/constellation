@@ -320,7 +320,7 @@ type stubDbus struct {
 	connErr error
 }
 
-func (s *stubDbus) NewSystemConnectionContext(ctx context.Context) (dbusConn, error) {
+func (s *stubDbus) NewSystemConnectionContext(_ context.Context) (dbusConn, error) {
 	return s.conn, s.connErr
 }
 
@@ -339,28 +339,28 @@ type fakeDbusConn struct {
 	reloadErr error
 }
 
-func (c *fakeDbusConn) StartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
+func (c *fakeDbusConn) StartUnitContext(_ context.Context, name string, mode string, ch chan<- string) (int, error) {
 	c.inputs = append(c.inputs, dbusConnActionInput{name: name, mode: mode})
 	ch <- c.result
 
 	return c.jobID, c.actionErr
 }
 
-func (c *fakeDbusConn) StopUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
+func (c *fakeDbusConn) StopUnitContext(_ context.Context, name string, mode string, ch chan<- string) (int, error) {
 	c.inputs = append(c.inputs, dbusConnActionInput{name: name, mode: mode})
 	ch <- c.result
 
 	return c.jobID, c.actionErr
 }
 
-func (c *fakeDbusConn) RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
+func (c *fakeDbusConn) RestartUnitContext(_ context.Context, name string, mode string, ch chan<- string) (int, error) {
 	c.inputs = append(c.inputs, dbusConnActionInput{name: name, mode: mode})
 	ch <- c.result
 
 	return c.jobID, c.actionErr
 }
 
-func (c *fakeDbusConn) ReloadContext(ctx context.Context) error {
+func (c *fakeDbusConn) ReloadContext(_ context.Context) error {
 	c.reloadCalls++
 
 	return c.reloadErr

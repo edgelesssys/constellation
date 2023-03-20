@@ -156,7 +156,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 
 // createCompletion handles the completion of the create command. It is frequently called
 // while the user types arguments of the command to suggest completion.
-func generateCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {
 	case 0:
 		return []string{"aws", "gcp", "azure", "qemu"}, cobra.ShellCompDirectiveNoFileComp

@@ -47,7 +47,7 @@ If you've build a local image, use a local override instead of adding a new vers
 	return cmd
 }
 
-func runAdd(cmd *cobra.Command, args []string) (retErr error) {
+func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	flags, err := parseAddFlags(cmd)
 	if err != nil {
 		return err

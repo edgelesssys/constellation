@@ -371,7 +371,7 @@ func newStubAzureInstanceInfo(vcek string, certChain string, report string, runt
 	}, nil
 }
 
-func (s *stubAzureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error {
+func (s *stubAzureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte, _ *tpm2.RSAParams) error {
 	var runtimeData runtimeData
 	if err := json.Unmarshal(runtimeDataRaw, &runtimeData); err != nil {
 		return fmt.Errorf("unmarshalling json: %w", err)

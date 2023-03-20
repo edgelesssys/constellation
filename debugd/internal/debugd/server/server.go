@@ -46,7 +46,7 @@ func New(log *logger.Logger, serviceManager serviceManager, transfer fileTransfe
 }
 
 // SetInfo sets the info of the debugd instance.
-func (s *debugdServer) SetInfo(ctx context.Context, req *pb.SetInfoRequest) (*pb.SetInfoResponse, error) {
+func (s *debugdServer) SetInfo(_ context.Context, req *pb.SetInfoRequest) (*pb.SetInfoResponse, error) {
 	s.log.Infof("Received SetInfo request")
 
 	if len(req.Info) == 0 {
@@ -73,7 +73,7 @@ func (s *debugdServer) SetInfo(ctx context.Context, req *pb.SetInfoRequest) (*pb
 }
 
 // GetInfo returns the info of the debugd instance.
-func (s *debugdServer) GetInfo(ctx context.Context, req *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
+func (s *debugdServer) GetInfo(_ context.Context, _ *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
 	s.log.Infof("Received GetInfo request")
 
 	info, err := s.info.GetProto()
@@ -131,7 +131,7 @@ func (s *debugdServer) UploadFiles(stream pb.Debugd_UploadFilesServer) error {
 }
 
 // DownloadFiles streams the previously received files to other instances.
-func (s *debugdServer) DownloadFiles(request *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
+func (s *debugdServer) DownloadFiles(_ *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
 	s.log.Infof("Sending files to other instance")
 	if !s.transfer.CanSend() {
 		return errors.New("cannot send files at this time")

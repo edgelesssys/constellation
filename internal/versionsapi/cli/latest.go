@@ -33,7 +33,7 @@ func newLatestCmd() *cobra.Command {
 	return cmd
 }
 
-func runLatest(cmd *cobra.Command, args []string) error {
+func runLatest(cmd *cobra.Command, _ []string) error {
 	flags, err := parseLatestFlags(cmd)
 	if err != nil {
 		return err

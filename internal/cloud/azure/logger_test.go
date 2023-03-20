@@ -176,7 +176,7 @@ type stubApplicationsInsightsAPI struct {
 	pager *stubApplicationKeyPager
 }
 
-func (a *stubApplicationsInsightsAPI) NewListByResourceGroupPager(resourceGroupName string, options *armapplicationinsights.ComponentsClientListByResourceGroupOptions,
+func (a *stubApplicationsInsightsAPI) NewListByResourceGroupPager(_ string, _ *armapplicationinsights.ComponentsClientListByResourceGroupOptions,
 ) *runtime.Pager[armapplicationinsights.ComponentsClientListByResourceGroupResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armapplicationinsights.ComponentsClientListByResourceGroupResponse]{
 		More:    a.pager.moreFunc(),

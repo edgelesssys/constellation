@@ -263,7 +263,7 @@ type stubVerifyClient struct {
 	endpoint  string
 }
 
-func (c *stubVerifyClient) Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error {
+func (c *stubVerifyClient) Verify(_ context.Context, endpoint string, _ *verifyproto.GetAttestationRequest, _ atls.Validator) error {
 	c.endpoint = endpoint
 	return c.verifyErr
 }

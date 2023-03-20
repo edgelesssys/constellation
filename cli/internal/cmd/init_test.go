@@ -464,7 +464,7 @@ type testValidator struct {
 	pcrs measurements.M
 }
 
-func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+func (v *testValidator) Validate(attDoc []byte, _ []byte) ([]byte, error) {
 	var attestation struct {
 		UserData []byte
 		PCRs     map[uint32][]byte
@@ -486,7 +486,7 @@ type testIssuer struct {
 	pcrs map[uint32][]byte
 }
 
-func (i *testIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (i *testIssuer) Issue(userData []byte, _ []byte) ([]byte, error) {
 	return json.Marshal(
 		struct {
 			UserData []byte
@@ -505,7 +505,7 @@ type stubInitServer struct {
 	initproto.UnimplementedAPIServer
 }
 
-func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (s *stubInitServer) Init(_ context.Context, _ *initproto.InitRequest) (*initproto.InitResponse, error) {
 	return s.initResp, s.initErr
 }
 
@@ -563,7 +563,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 type stubLicenseClient struct{}
 
-func (c *stubLicenseClient) QuotaCheck(ctx context.Context, checkRequest license.QuotaCheckRequest) (license.QuotaCheckResponse, error) {
+func (c *stubLicenseClient) QuotaCheck(_ context.Context, _ license.QuotaCheckRequest) (license.QuotaCheckResponse, error) {
 	return license.QuotaCheckResponse{
 		Quota: 25,
 	}, nil

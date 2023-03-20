@@ -159,7 +159,7 @@ type stubKMS struct {
 	getDEKErr error
 }
 
-func (s *stubKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+func (s *stubKMS) GetDEK(_ context.Context, _ string, _ int) ([]byte, error) {
 	if s.getDEKErr != nil {
 		return nil, s.getDEKErr
 	}

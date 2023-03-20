@@ -213,12 +213,12 @@ type stubServiceManager struct {
 	overrideServiceUnitExecStartErr error
 }
 
-func (s *stubServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
+func (s *stubServiceManager) SystemdAction(_ context.Context, request ServiceManagerRequest) error {
 	s.requests = append(s.requests, request)
 	return s.systemdActionErr
 }
 
-func (s *stubServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error {
+func (s *stubServiceManager) OverrideServiceUnitExecStart(_ context.Context, unitName string, execStart string) error {
 	s.overrideCalls = append(s.overrideCalls, struct {
 		UnitName, ExecStart string
 	}{UnitName: unitName, ExecStart: execStart})
@@ -245,7 +245,7 @@ type stubDownloadServer struct {
 	pb.UnimplementedDebugdServer
 }
 
-func (s *stubDownloadServer) DownloadFiles(request *pb.DownloadFilesRequest, stream pb.Debugd_DownloadFilesServer) error {
+func (s *stubDownloadServer) DownloadFiles(_ *pb.DownloadFilesRequest, _ pb.Debugd_DownloadFilesServer) error {
 	return s.downladErr
 }
 
@@ -255,7 +255,7 @@ type stubDebugdServer struct {
 	pb.UnimplementedDebugdServer
 }
 
-func (s *stubDebugdServer) GetInfo(ctx context.Context, request *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
+func (s *stubDebugdServer) GetInfo(_ context.Context, _ *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
 	return &pb.GetInfoResponse{Info: s.info}, s.getInfoErr
 }
 

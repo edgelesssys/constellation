@@ -25,8 +25,8 @@ func (a stubProjectAPI) Close() error {
 	return nil
 }
 
-func (a stubProjectAPI) Get(ctx context.Context, req *computepb.GetProjectRequest,
-	opts ...gax.CallOption,
+func (a stubProjectAPI) Get(_ context.Context, _ *computepb.GetProjectRequest,
+	_ ...gax.CallOption,
 ) (*computepb.Project, error) {
 	return a.project, a.getErr
 }
@@ -40,8 +40,8 @@ func (a stubInstanceAPI) Close() error {
 	return nil
 }
 
-func (a stubInstanceAPI) Get(ctx context.Context, req *computepb.GetInstanceRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceAPI) Get(_ context.Context, _ *computepb.GetInstanceRequest,
+	_ ...gax.CallOption,
 ) (*computepb.Instance, error) {
 	return a.instance, a.getErr
 }
@@ -57,14 +57,14 @@ func (a stubInstanceTemplateAPI) Close() error {
 	return nil
 }
 
-func (a stubInstanceTemplateAPI) Get(ctx context.Context, req *computepb.GetInstanceTemplateRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceTemplateAPI) Get(_ context.Context, _ *computepb.GetInstanceTemplateRequest,
+	_ ...gax.CallOption,
 ) (*computepb.InstanceTemplate, error) {
 	return a.template, a.getErr
 }
 
-func (a stubInstanceTemplateAPI) Delete(ctx context.Context, req *computepb.DeleteInstanceTemplateRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceTemplateAPI) Delete(_ context.Context, _ *computepb.DeleteInstanceTemplateRequest,
+	_ ...gax.CallOption,
 ) (Operation, error) {
 	return &stubOperation{
 		&computepb.Operation{
@@ -73,8 +73,8 @@ func (a stubInstanceTemplateAPI) Delete(ctx context.Context, req *computepb.Dele
 	}, a.deleteErr
 }
 
-func (a stubInstanceTemplateAPI) Insert(ctx context.Context, req *computepb.InsertInstanceTemplateRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceTemplateAPI) Insert(_ context.Context, _ *computepb.InsertInstanceTemplateRequest,
+	_ ...gax.CallOption,
 ) (Operation, error) {
 	return &stubOperation{
 		&computepb.Operation{
@@ -96,14 +96,14 @@ func (a stubInstanceGroupManagersAPI) Close() error {
 	return nil
 }
 
-func (a stubInstanceGroupManagersAPI) Get(ctx context.Context, req *computepb.GetInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceGroupManagersAPI) Get(_ context.Context, _ *computepb.GetInstanceGroupManagerRequest,
+	_ ...gax.CallOption,
 ) (*computepb.InstanceGroupManager, error) {
 	return a.instanceGroupManager, a.getErr
 }
 
-func (a stubInstanceGroupManagersAPI) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceGroupManagersAPI) AggregatedList(_ context.Context, _ *computepb.AggregatedListInstanceGroupManagersRequest,
+	_ ...gax.CallOption,
 ) InstanceGroupManagerScopedListIterator {
 	return &stubInstanceGroupManagerScopedListIterator{
 		pairs: []compute.InstanceGroupManagersScopedListPair{
@@ -120,8 +120,8 @@ func (a stubInstanceGroupManagersAPI) AggregatedList(ctx context.Context, req *c
 	}
 }
 
-func (a stubInstanceGroupManagersAPI) SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceGroupManagersAPI) SetInstanceTemplate(_ context.Context, _ *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
+	_ ...gax.CallOption,
 ) (Operation, error) {
 	return &stubOperation{
 		&computepb.Operation{
@@ -130,8 +130,8 @@ func (a stubInstanceGroupManagersAPI) SetInstanceTemplate(ctx context.Context, r
 	}, a.setInstanceTemplateErr
 }
 
-func (a stubInstanceGroupManagersAPI) CreateInstances(ctx context.Context, req *computepb.CreateInstancesInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceGroupManagersAPI) CreateInstances(_ context.Context, _ *computepb.CreateInstancesInstanceGroupManagerRequest,
+	_ ...gax.CallOption,
 ) (Operation, error) {
 	return &stubOperation{
 		&computepb.Operation{
@@ -140,8 +140,8 @@ func (a stubInstanceGroupManagersAPI) CreateInstances(ctx context.Context, req *
 	}, a.createInstancesErr
 }
 
-func (a stubInstanceGroupManagersAPI) DeleteInstances(ctx context.Context, req *computepb.DeleteInstancesInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
+func (a stubInstanceGroupManagersAPI) DeleteInstances(_ context.Context, _ *computepb.DeleteInstancesInstanceGroupManagerRequest,
+	_ ...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteInstancesErr != nil {
 		return nil, a.deleteInstancesErr
@@ -162,8 +162,8 @@ func (a stubDiskAPI) Close() error {
 	return nil
 }
 
-func (a stubDiskAPI) Get(ctx context.Context, req *computepb.GetDiskRequest,
-	opts ...gax.CallOption,
+func (a stubDiskAPI) Get(_ context.Context, _ *computepb.GetDiskRequest,
+	_ ...gax.CallOption,
 ) (*computepb.Disk, error) {
 	return a.disk, a.getErr
 }
@@ -180,7 +180,7 @@ func (o *stubOperation) Done() bool {
 	return true
 }
 
-func (o *stubOperation) Wait(ctx context.Context, opts ...gax.CallOption) error {
+func (o *stubOperation) Wait(_ context.Context, _ ...gax.CallOption) error {
 	return nil
 }
 

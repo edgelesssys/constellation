@@ -300,7 +300,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 	k8sComponents := components.NewComponentsFromJoinProto(ticket.KubernetesComponents)
 
-	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesVersion, k8sComponents, c.log); err != nil {
+	if err := c.joiner.JoinCluster(ctx, btd, c.role, k8sComponents, c.log); err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 
@@ -412,7 +412,6 @@ type ClusterJoiner interface {
 		ctx context.Context,
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
-		k8sVersion string,
 		k8sComponents components.Components,
 		log *logger.Logger,
 	) error

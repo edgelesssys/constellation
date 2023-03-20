@@ -60,12 +60,12 @@ type stubKMS struct {
 	deriveKeyErr error
 }
 
-func (c *stubKMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
+func (c *stubKMS) CreateKEK(_ context.Context, _ string, kek []byte) error {
 	c.masterKey = kek
 	return nil
 }
 
-func (c *stubKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+func (c *stubKMS) GetDEK(_ context.Context, _ string, _ int) ([]byte, error) {
 	if c.deriveKeyErr != nil {
 		return nil, c.deriveKeyErr
 	}

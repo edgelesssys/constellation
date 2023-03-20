@@ -53,7 +53,7 @@ type configFetchMeasurementsCmd struct {
 	log debugLog
 }
 
-func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
+func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

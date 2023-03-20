@@ -84,8 +84,8 @@ type stubGCPSecretManagerAPI struct {
 	accessSecretVersionErr  error
 }
 
-func (s stubGCPSecretManagerAPI) AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest,
-	opts ...gax.CallOption,
+func (s stubGCPSecretManagerAPI) AccessSecretVersion(_ context.Context, _ *secretmanagerpb.AccessSecretVersionRequest,
+	_ ...gax.CallOption,
 ) (*secretmanagerpb.AccessSecretVersionResponse, error) {
 	return s.assessSecretVersionResp, s.accessSecretVersionErr
 }
@@ -144,7 +144,7 @@ type stubAzureSecretsAPI struct {
 	getSecretErr  error
 }
 
-func (s stubAzureSecretsAPI) GetSecret(ctx context.Context, name string, version string, options *azsecrets.GetSecretOptions,
+func (s stubAzureSecretsAPI) GetSecret(_ context.Context, _, _ string, _ *azsecrets.GetSecretOptions,
 ) (azsecrets.GetSecretResponse, error) {
 	return s.getSecretResp, s.getSecretErr
 }
@@ -201,8 +201,8 @@ type stubAWSSecretsAPI struct {
 	getSecretValueErr  error
 }
 
-func (s stubAWSSecretsAPI) GetSecretValue(ctx context.Context, params *awssecretmanager.GetSecretValueInput,
-	optFns ...func(*awssecretmanager.Options),
+func (s stubAWSSecretsAPI) GetSecretValue(_ context.Context, _ *awssecretmanager.GetSecretValueInput,
+	_ ...func(*awssecretmanager.Options),
 ) (*awssecretmanager.GetSecretValueOutput, error) {
 	return s.getSecretValueResp, s.getSecretValueErr
 }

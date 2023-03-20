@@ -423,7 +423,7 @@ func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	conf.Provider.AWS.IAMProfileWorkerNodes = iamFile.AWSOutput.WorkerNodeInstanceProfile
 }
 
-func (c *awsIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
+func (c *awsIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
 	return nil
 }
 
@@ -488,7 +488,7 @@ func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags i
 	conf.Provider.Azure.ClientSecretValue = iamFile.AzureOutput.ApplicationClientSecretValue
 }
 
-func (c *azureIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
+func (c *azureIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
 	return nil
 }
 
@@ -552,14 +552,14 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Zone:\t\t\t%s\n\n", flags.gcp.zone)
 }
 
-func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
+func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, _ iamFlags, _ iamid.File) {
 	cmd.Printf("projectID:\t\t%s\n", constants.GCPServiceAccountKeyFile)
 	cmd.Printf("region:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
 	cmd.Printf("zone:\t\t\t%s\n", constants.GCPServiceAccountKeyFile)
 	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", constants.GCPServiceAccountKeyFile)
 }
 
-func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ iamid.File) {
 	conf.Provider.GCP.Project = flags.gcp.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
 	conf.Provider.GCP.Region = flags.gcp.region

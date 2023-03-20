@@ -354,17 +354,17 @@ type stubServiceManager struct {
 	overrideServiceUnitExecStartErr error
 }
 
-func (s *stubServiceManager) SystemdAction(ctx context.Context, request deploy.ServiceManagerRequest) error {
+func (s *stubServiceManager) SystemdAction(_ context.Context, request deploy.ServiceManagerRequest) error {
 	s.requests = append(s.requests, request)
 	return s.systemdActionErr
 }
 
-func (s *stubServiceManager) WriteSystemdUnitFile(ctx context.Context, unit deploy.SystemdUnit) error {
+func (s *stubServiceManager) WriteSystemdUnitFile(_ context.Context, unit deploy.SystemdUnit) error {
 	s.unitFiles = append(s.unitFiles, unit)
 	return s.writeSystemdUnitFileErr
 }
 
-func (s *stubServiceManager) OverrideServiceUnitExecStart(ctx context.Context, unitName string, execStart string) error {
+func (s *stubServiceManager) OverrideServiceUnitExecStart(_ context.Context, unitName string, execStart string) error {
 	s.overrideCalls = append(s.overrideCalls, struct {
 		UnitName, ExecStart string
 	}{UnitName: unitName, ExecStart: execStart})
@@ -372,7 +372,7 @@ func (s *stubServiceManager) OverrideServiceUnitExecStart(ctx context.Context, u
 }
 
 type netDialer interface {
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+	DialContext(_ context.Context, network, address string) (net.Conn, error)
 }
 
 func dial(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {

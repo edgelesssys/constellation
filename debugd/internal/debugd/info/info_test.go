@@ -265,7 +265,7 @@ func TestGetProto(t *testing.T) {
 	}
 }
 
-func TestConcurrency(t *testing.T) {
+func TestConcurrency(_ *testing.T) {
 	i := NewMap()
 
 	get := func() {
@@ -308,4 +308,5 @@ func TestConcurrency(t *testing.T) {
 	go received()
 	go received()
 	go received()
+	// TODO(katexochen): fix this test, wait for routines to finish
 }

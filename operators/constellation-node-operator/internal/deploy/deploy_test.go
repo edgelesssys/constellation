@@ -347,7 +347,7 @@ type fakeK8sClient struct {
 	client.Client
 }
 
-func (s *fakeK8sClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+func (s *fakeK8sClient) Create(_ context.Context, obj client.Object, _ ...client.CreateOption) error {
 	for _, o := range s.createdObjects {
 		if obj.GetName() == o.GetName() {
 			return k8sErrors.NewAlreadyExists(schema.GroupResource{}, obj.GetName())
@@ -358,7 +358,7 @@ func (s *fakeK8sClient) Create(ctx context.Context, obj client.Object, opts ...c
 	return s.createErr
 }
 
-func (s *fakeK8sClient) Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error {
+func (s *fakeK8sClient) Get(_ context.Context, key types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
 	if ObjNodeVersion, ok := obj.(*updatev1alpha1.NodeVersion); ok {
 		for _, o := range s.createdObjects {
 			if createdNodeVersion, ok := o.(*updatev1alpha1.NodeVersion); ok && createdNodeVersion != nil {
@@ -375,7 +375,7 @@ func (s *fakeK8sClient) Get(ctx context.Context, key types.NamespacedName, obj c
 	return s.getErr
 }
 
-func (s *fakeK8sClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (s *fakeK8sClient) Update(_ context.Context, obj client.Object, _ ...client.UpdateOption) error {
 	if updatedObjectNodeVersion, ok := obj.(*updatev1alpha1.NodeVersion); ok {
 		for i, o := range s.createdObjects {
 			if createdObjectNodeVersion, ok := o.(*updatev1alpha1.NodeVersion); ok && createdObjectNodeVersion != nil {
@@ -389,7 +389,7 @@ func (s *fakeK8sClient) Update(ctx context.Context, obj client.Object, opts ...c
 	return s.updateErr
 }
 
-func (s *fakeK8sClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (s *fakeK8sClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	if configMapList, ok := list.(*corev1.ConfigMapList); ok {
 		configMapList.Items = append(configMapList.Items, s.listConfigMaps...)
 	}
@@ -425,7 +425,7 @@ func newScalingGroupGetter(items []scalingGroupStoreItem, imageErr, nameErr, lis
 	}
 }
 
-func (g *stubScalingGroupGetter) GetScalingGroupImage(ctx context.Context, scalingGroupID string) (string, error) {
+func (g *stubScalingGroupGetter) GetScalingGroupImage(_ context.Context, scalingGroupID string) (string, error) {
 	return g.store[scalingGroupID].image, g.imageErr
 }
 
@@ -437,7 +437,7 @@ func (g *stubScalingGroupGetter) GetAutoscalingGroupName(scalingGroupID string) 
 	return g.store[scalingGroupID].name, g.nameErr
 }
 
-func (g *stubScalingGroupGetter) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (g *stubScalingGroupGetter) ListScalingGroups(_ context.Context, _ string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
 	for _, item := range g.store {
 		if item.isControlPlane {
 			controlPlaneGroupIDs = append(controlPlaneGroupIDs, item.groupID)

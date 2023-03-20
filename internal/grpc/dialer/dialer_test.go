@@ -109,6 +109,6 @@ type testAPI struct {
 	grpc_testing.UnimplementedTestServiceServer
 }
 
-func (s *testAPI) EmptyCall(ctx context.Context, in *grpc_testing.Empty) (*grpc_testing.Empty, error) {
+func (s *testAPI) EmptyCall(_ context.Context, _ *grpc_testing.Empty) (*grpc_testing.Empty, error) {
 	return &grpc_testing.Empty{}, nil
 }

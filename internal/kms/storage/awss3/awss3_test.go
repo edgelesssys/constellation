@@ -28,13 +28,13 @@ type stubAWSS3StorageClient struct {
 	createBucketErr     error
 }
 
-func (s *stubAWSS3StorageClient) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+func (s *stubAWSS3StorageClient) GetObject(_ context.Context, _ *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	return &s3.GetObjectOutput{
 		Body: io.NopCloser(bytes.NewReader(s.getObjectOutputData)),
 	}, s.getObjectErr
 }
 
-func (s *stubAWSS3StorageClient) PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+func (s *stubAWSS3StorageClient) PutObject(_ context.Context, params *s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
 	out, err := io.ReadAll(params.Body)
 	if err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func (s *stubAWSS3StorageClient) PutObject(ctx context.Context, params *s3.PutOb
 	return &s3.PutObjectOutput{}, s.putObjectErr
 }
 
-func (s *stubAWSS3StorageClient) CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
+func (s *stubAWSS3StorageClient) CreateBucket(_ context.Context, _ *s3.CreateBucketInput, _ ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
 	s.createBucketCalled = true
 	return &s3.CreateBucketOutput{}, s.createBucketErr
 }

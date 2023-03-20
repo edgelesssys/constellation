@@ -69,7 +69,7 @@ Most developers won't have the required permissions to use this command.
 	return cmd
 }
 
-func runRemove(cmd *cobra.Command, args []string) (retErr error) {
+func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 	flags, err := parseRmFlags(cmd)
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func runRemove(cmd *cobra.Command, args []string) (retErr error) {
 	}
 
 	log.Debugf("Creating AWS client")
-	awsClient, err := newAWSClient(cmd.Context(), flags.region)
+	awsClient, err := newAWSClient()
 	if err != nil {
 		return fmt.Errorf("creating AWS client: %w", err)
 	}
@@ -393,7 +393,7 @@ type awsClient struct {
 
 // newAWSClient creates a new awsClient.
 // Requires IAM permission 'ec2:DeregisterImage'.
-func newAWSClient(ctx context.Context, region string) (*awsClient, error) {
+func newAWSClient() (*awsClient, error) {
 	return &awsClient{}, nil
 }
 

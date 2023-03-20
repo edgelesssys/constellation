@@ -33,7 +33,7 @@ func newIAMDestroyCmd() *cobra.Command {
 	return cmd
 }
 
-func runIAMDestroy(cmd *cobra.Command, _args []string) error {
+func runIAMDestroy(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

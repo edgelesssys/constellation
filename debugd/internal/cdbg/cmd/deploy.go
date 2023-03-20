@@ -49,7 +49,7 @@ func newDeployCmd() *cobra.Command {
 	return deployCmd
 }
 
-func runDeploy(cmd *cobra.Command, args []string) error {
+func runDeploy(cmd *cobra.Command, _ []string) error {
 	verbosity, err := cmd.Flags().GetInt("verbosity")
 	if err != nil {
 		return err

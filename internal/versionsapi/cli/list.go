@@ -37,7 +37,7 @@ func newListCmd() *cobra.Command {
 	return cmd
 }
 
-func runList(cmd *cobra.Command, args []string) error {
+func runList(cmd *cobra.Command, _ []string) error {
 	flags, err := parseListFlags(cmd)
 	if err != nil {
 		return err

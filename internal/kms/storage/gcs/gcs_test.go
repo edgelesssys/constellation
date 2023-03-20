@@ -28,11 +28,11 @@ type stubGCPStorageAPI struct {
 	writer             *stubWriteCloser
 }
 
-func (s *stubGCPStorageAPI) stubClientFactory(ctx context.Context) (gcpStorageAPI, error) {
+func (s *stubGCPStorageAPI) stubClientFactory(_ context.Context) (gcpStorageAPI, error) {
 	return s, s.newClientErr
 }
 
-func (s *stubGCPStorageAPI) Attrs(ctx context.Context, bucketName string) (*gcstorage.BucketAttrs, error) {
+func (s *stubGCPStorageAPI) Attrs(_ context.Context, _ string) (*gcstorage.BucketAttrs, error) {
 	return &gcstorage.BucketAttrs{}, s.attrsErr
 }
 
@@ -40,16 +40,16 @@ func (s *stubGCPStorageAPI) Close() error {
 	return nil
 }
 
-func (s *stubGCPStorageAPI) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *gcstorage.BucketAttrs) error {
+func (s *stubGCPStorageAPI) CreateBucket(_ context.Context, _, _ string, _ *gcstorage.BucketAttrs) error {
 	s.createBucketCalled = true
 	return s.createBucketErr
 }
 
-func (s *stubGCPStorageAPI) NewWriter(ctx context.Context, bucketName, objectName string) io.WriteCloser {
+func (s *stubGCPStorageAPI) NewWriter(_ context.Context, _, _ string) io.WriteCloser {
 	return s.writer
 }
 
-func (s *stubGCPStorageAPI) NewReader(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error) {
+func (s *stubGCPStorageAPI) NewReader(_ context.Context, _, _ string) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(s.newReaderOutput)), s.newReaderErr
 }
 

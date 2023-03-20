@@ -50,7 +50,7 @@ type verifyCmd struct {
 	log debugLog
 }
 
-func runVerify(cmd *cobra.Command, args []string) error {
+func runVerify(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

@@ -124,7 +124,7 @@ type stubDescribeAPI struct {
 }
 
 func (a *stubDescribeAPI) DescribeImages(
-	ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options),
+	_ context.Context, _ *ec2.DescribeImagesInput, _ ...func(*ec2.Options),
 ) (*ec2.DescribeImagesOutput, error) {
 	output := &ec2.DescribeImagesOutput{
 		Images: []types.Image{

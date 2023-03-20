@@ -73,10 +73,10 @@ func (a *stubActionWrapper) listAction(_ string) ([]*release.Release, error) {
 	return []*release.Release{{Chart: &chart.Chart{Metadata: &chart.Metadata{Version: a.version}}}}, nil
 }
 
-func (a *stubActionWrapper) getValues(release string) (map[string]any, error) {
+func (a *stubActionWrapper) getValues(_ string) (map[string]any, error) {
 	return nil, nil
 }
 
-func (a *stubActionWrapper) upgradeAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error {
+func (a *stubActionWrapper) upgradeAction(_ context.Context, _ string, _ *chart.Chart, _ map[string]any, _ time.Duration) error {
 	return nil
 }

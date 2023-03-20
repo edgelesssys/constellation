@@ -340,7 +340,7 @@ type stubConnect struct {
 	getNetworkErr error
 }
 
-func (c stubConnect) LookupNetworkByName(name string) (*virtwrapper.Network, error) {
+func (c stubConnect) LookupNetworkByName(_ string) (*virtwrapper.Network, error) {
 	return &virtwrapper.Network{Net: c.network}, c.getNetworkErr
 }
 

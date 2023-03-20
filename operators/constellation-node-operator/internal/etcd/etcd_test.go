@@ -172,7 +172,7 @@ type stubK8sClient struct {
 	client.Client
 }
 
-func (c *stubK8sClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (c *stubK8sClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	list.(*corev1.NodeList).Items = c.nodes
 	return c.listErr
 }
@@ -185,19 +185,19 @@ type stubEtcdClient struct {
 	closeErr  error
 }
 
-func (c *stubEtcdClient) MemberList(ctx context.Context) (*clientv3.MemberListResponse, error) {
+func (c *stubEtcdClient) MemberList(_ context.Context) (*clientv3.MemberListResponse, error) {
 	return &clientv3.MemberListResponse{
 		Members: c.members,
 	}, c.listErr
 }
 
-func (c *stubEtcdClient) MemberRemove(ctx context.Context, memberID uint64) (*clientv3.MemberRemoveResponse, error) {
+func (c *stubEtcdClient) MemberRemove(_ context.Context, _ uint64) (*clientv3.MemberRemoveResponse, error) {
 	return &clientv3.MemberRemoveResponse{
 		Members: c.members,
 	}, c.removeErr
 }
 
-func (c *stubEtcdClient) Sync(ctx context.Context) error {
+func (c *stubEtcdClient) Sync(_ context.Context) error {
 	return c.syncErr
 }
 

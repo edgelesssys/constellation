@@ -236,7 +236,7 @@ func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 }
 
 // ProviderID returns the providerID of the current instance.
-func (c *Cloud) ProviderID(ctx context.Context) (string, error) {
+func (c *Cloud) ProviderID(_ context.Context) (string, error) {
 	project, zone, instanceName, err := c.retrieveInstanceInfo()
 	if err != nil {
 		return "", err

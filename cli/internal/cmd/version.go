@@ -26,7 +26,7 @@ func NewVersionCmd() *cobra.Command {
 	return cmd
 }
 
-func runVersion(cmd *cobra.Command, args []string) {
+func runVersion(cmd *cobra.Command, _ []string) {
 	buildInfo, ok := debug.ReadBuildInfo()
 	var commit, state, date, goVersion, compiler, platform string
 	if ok {

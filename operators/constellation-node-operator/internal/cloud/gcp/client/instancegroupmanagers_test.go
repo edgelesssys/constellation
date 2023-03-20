@@ -73,6 +73,6 @@ type stubRng struct {
 	result int
 }
 
-func (r *stubRng) Intn(n int) int {
+func (r *stubRng) Intn(_ int) int {
 	return r.result
 }

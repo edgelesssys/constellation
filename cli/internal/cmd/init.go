@@ -71,7 +71,7 @@ type initCmd struct {
 }
 
 // runInitialize runs the initialize command.
-func runInitialize(cmd *cobra.Command, args []string) error {
+func runInitialize(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

@@ -76,7 +76,7 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 }
 
 // UID returns the UID of the constellation.
-func (c *Cloud) UID(ctx context.Context) (string, error) {
+func (c *Cloud) UID(_ context.Context) (string, error) {
 	// We expect only one constellation to be deployed in the same QEMU / libvirt environment.
 	// the UID can be an empty string.
 	return "", nil

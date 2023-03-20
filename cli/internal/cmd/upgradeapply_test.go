@@ -73,10 +73,10 @@ type stubUpgrader struct {
 	helmErr        error
 }
 
-func (u stubUpgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) error {
+func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) error {
 	return u.nodeVersionErr
 }
 
-func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
+func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ time.Duration, _ bool) error {
 	return u.helmErr
 }

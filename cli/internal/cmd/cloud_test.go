@@ -33,11 +33,11 @@ type stubCloudCreator struct {
 }
 
 func (c *stubCloudCreator) Create(
-	ctx context.Context,
+	_ context.Context,
 	provider cloudprovider.Provider,
-	config *config.Config,
-	insType string,
-	coordCount, nodeCount int,
+	_ *config.Config,
+	_ string,
+	_, _ int,
 ) (clusterid.File, error) {
 	c.createCalled = true
 	c.id.CloudProvider = provider
@@ -65,9 +65,9 @@ type stubIAMCreator struct {
 }
 
 func (c *stubIAMCreator) Create(
-	ctx context.Context,
+	_ context.Context,
 	provider cloudprovider.Provider,
-	iamConfig *cloudcmd.IAMConfig,
+	_ *cloudcmd.IAMConfig,
 ) (iamid.File, error) {
 	c.createCalled = true
 	c.id.CloudProvider = provider
@@ -82,12 +82,12 @@ type stubIAMDestroyer struct {
 	getTfstateKeyErr    error
 }
 
-func (d *stubIAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
+func (d *stubIAMDestroyer) DestroyIAMConfiguration(_ context.Context) error {
 	d.destroyCalled = true
 	return d.destroyErr
 }
 
-func (d *stubIAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
+func (d *stubIAMDestroyer) GetTfstateServiceAccountKey(_ context.Context) (gcpshared.ServiceAccountKey, error) {
 	d.getTfstateKeyCalled = true
 	return d.gcpSaKey, d.getTfstateKeyErr
 }

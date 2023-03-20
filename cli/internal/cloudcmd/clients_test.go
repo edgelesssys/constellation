@@ -45,7 +45,7 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context) (terraform.CreateOutput, error) {
+func (c *stubTerraformClient) CreateCluster(_ context.Context) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{
 		IP:             c.ip,
 		Secret:         c.initSecret,
@@ -54,15 +54,15 @@ func (c *stubTerraformClient) CreateCluster(ctx context.Context) (terraform.Crea
 	}, c.createClusterErr
 }
 
-func (c *stubTerraformClient) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error) {
+func (c *stubTerraformClient) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider) (terraform.IAMOutput, error) {
 	return c.iamOutput, c.iamOutputErr
 }
 
-func (c *stubTerraformClient) PrepareWorkspace(path string, input terraform.Variables) error {
+func (c *stubTerraformClient) PrepareWorkspace(_ string, _ terraform.Variables) error {
 	return c.prepareWorkspaceErr
 }
 
-func (c *stubTerraformClient) Destroy(ctx context.Context) error {
+func (c *stubTerraformClient) Destroy(_ context.Context) error {
 	c.destroyCalled = true
 	return c.destroyErr
 }
@@ -76,7 +76,7 @@ func (c *stubTerraformClient) RemoveInstaller() {
 	c.removeInstallerCalled = true
 }
 
-func (c *stubTerraformClient) Show(ctx context.Context) (*tfjson.State, error) {
+func (c *stubTerraformClient) Show(_ context.Context) (*tfjson.State, error) {
 	c.showCalled = true
 	return c.tfjsonState, c.showErr
 }

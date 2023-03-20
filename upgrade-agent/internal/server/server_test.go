@@ -100,6 +100,6 @@ type stubOsInstaller struct {
 	InstallErr error
 }
 
-func (s stubOsInstaller) Install(ctx context.Context, kubernetesComponent components.Component) error {
+func (s stubOsInstaller) Install(_ context.Context, _ components.Component) error {
 	return s.InstallErr
 }

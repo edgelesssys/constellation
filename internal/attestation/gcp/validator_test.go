@@ -183,6 +183,6 @@ func (c *fakeInstanceClient) Close() error {
 	return nil
 }
 
-func (c *fakeInstanceClient) GetShieldedInstanceIdentity(ctx context.Context, req *computepb.GetShieldedInstanceIdentityInstanceRequest, opts ...gax.CallOption) (*computepb.ShieldedInstanceIdentity, error) {
+func (c *fakeInstanceClient) GetShieldedInstanceIdentity(_ context.Context, _ *computepb.GetShieldedInstanceIdentityInstanceRequest, _ ...gax.CallOption) (*computepb.ShieldedInstanceIdentity, error) {
 	return c.ident, c.getIdentErr
 }

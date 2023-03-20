@@ -197,6 +197,6 @@ type stubIssuer struct {
 	issueErr    error
 }
 
-func (i stubIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (i stubIssuer) Issue(_ []byte, _ []byte) ([]byte, error) {
 	return i.attestation, i.issueErr
 }

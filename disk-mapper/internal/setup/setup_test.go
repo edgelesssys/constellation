@@ -421,17 +421,17 @@ type stubMounter struct {
 	mkdirAllErr   error
 }
 
-func (s *stubMounter) Mount(source string, target string, fstype string, flags uintptr, data string) error {
+func (s *stubMounter) Mount(_ string, _ string, _ string, _ uintptr, _ string) error {
 	s.mountCalled = true
 	return s.mountErr
 }
 
-func (s *stubMounter) Unmount(target string, flags int) error {
+func (s *stubMounter) Unmount(_ string, _ int) error {
 	s.unmountCalled = true
 	return s.unmountErr
 }
 
-func (s *stubMounter) MkdirAll(path string, perm fs.FileMode) error {
+func (s *stubMounter) MkdirAll(_ string, _ fs.FileMode) error {
 	return s.mkdirAllErr
 }
 
@@ -441,7 +441,7 @@ type stubRecoveryDoer struct {
 	recoveryErr error
 }
 
-func (s *stubRecoveryDoer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
+func (s *stubRecoveryDoer) Do(_, _ string) (passphrase, measurementSecret []byte, err error) {
 	return s.passphrase, s.secret, s.recoveryErr
 }
 
@@ -449,6 +449,6 @@ type stubConfigurationGenerator struct {
 	generateErr error
 }
 
-func (s *stubConfigurationGenerator) Generate(volumeName, encryptedDevice, keyFile, options string) error {
+func (s *stubConfigurationGenerator) Generate(_, _, _, _ string) error {
 	return s.generateErr
 }

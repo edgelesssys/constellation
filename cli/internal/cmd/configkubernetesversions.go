@@ -25,7 +25,7 @@ func newConfigKubernetesVersionsCmd() *cobra.Command {
 	return cmd
 }
 
-func printSupportedKubernetesVersions(cmd *cobra.Command, args []string) {
+func printSupportedKubernetesVersions(cmd *cobra.Command, _ []string) {
 	cmd.Printf("Supported Kubernetes Versions:\n\t%s\n", formatKubernetesVersions())
 }
 

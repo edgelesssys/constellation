@@ -142,8 +142,8 @@ func TestBackupCRs(t *testing.T) {
 
 type stubLog struct{}
 
-func (s stubLog) Debugf(format string, args ...any) {}
-func (s stubLog) Sync()                             {}
+func (s stubLog) Debugf(_ string, _ ...any) {}
+func (s stubLog) Sync()                     {}
 
 type stubCrdClient struct {
 	crds         []apiextensionsv1.CustomResourceDefinition
@@ -153,14 +153,14 @@ type stubCrdClient struct {
 	crdClient
 }
 
-func (c stubCrdClient) GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (c stubCrdClient) GetCRDs(_ context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	if c.getCRDsError != nil {
 		return nil, c.getCRDsError
 	}
 	return c.crds, nil
 }
 
-func (c stubCrdClient) GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
+func (c stubCrdClient) GetCRs(_ context.Context, _ schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
 	if c.getCRsError != nil {
 		return nil, c.getCRsError
 	}

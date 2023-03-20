@@ -33,14 +33,14 @@ type stubProviderMetadata struct {
 	uidResp string
 }
 
-func (m *stubProviderMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (m *stubProviderMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
 	return m.getLoadBalancerEndpointResp, m.getLoadBalancerEndpointErr
 }
 
-func (m *stubProviderMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+func (m *stubProviderMetadata) Self(_ context.Context) (metadata.InstanceMetadata, error) {
 	return m.selfResp, m.selfErr
 }
 
-func (m *stubProviderMetadata) UID(ctx context.Context) (string, error) {
+func (m *stubProviderMetadata) UID(_ context.Context) (string, error) {
 	return m.uidResp, m.uidErr
 }

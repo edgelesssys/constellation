@@ -51,7 +51,7 @@ type miniUpCmd struct {
 	log debugLog
 }
 
-func runUp(cmd *cobra.Command, args []string) error {
+func runUp(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

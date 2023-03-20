@@ -20,11 +20,11 @@ import (
 type Checker struct{}
 
 // NewChecker creates a new Checker.
-func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
+func NewChecker(_ QuotaChecker, _ file.Handler) *Checker {
 	return &Checker{}
 }
 
 // CheckLicense is a no-op for open source version of Constellation.
-func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, providerCfg config.ProviderConfig, printer func(string, ...any)) error {
+func (c *Checker) CheckLicense(_ context.Context, _ cloudprovider.Provider, _ config.ProviderConfig, _ func(string, ...any)) error {
 	return nil
 }

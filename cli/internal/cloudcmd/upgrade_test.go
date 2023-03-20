@@ -431,7 +431,7 @@ type stubDynamicClient struct {
 	updateErr     error
 }
 
-func (u *stubDynamicClient) getCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error) {
+func (u *stubDynamicClient) getCurrent(_ context.Context, _ string) (*unstructured.Unstructured, error) {
 	return u.object, u.getErr
 }
 
@@ -450,16 +450,16 @@ type stubStableClient struct {
 	k8sErr           error
 }
 
-func (s *stubStableClient) getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) getCurrentConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
 	return s.configMap, s.getErr
 }
 
-func (s *stubStableClient) updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) updateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	s.updatedConfigMap = configMap
 	return s.updatedConfigMap, s.updateErr
 }
 
-func (s *stubStableClient) createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) createConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	s.configMap = configMap
 	return s.configMap, s.createErr
 }

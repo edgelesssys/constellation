@@ -1025,27 +1025,27 @@ type stubIMDSAPI struct {
 	initSecretHashErr error
 }
 
-func (a *stubIMDSAPI) providerID(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) providerID(_ context.Context) (string, error) {
 	return a.providerIDVal, a.providerIDErr
 }
 
-func (a *stubIMDSAPI) subscriptionID(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) subscriptionID(_ context.Context) (string, error) {
 	return a.subscriptionIDVal, a.subscriptionIDErr
 }
 
-func (a *stubIMDSAPI) resourceGroup(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) resourceGroup(_ context.Context) (string, error) {
 	return a.resourceGroupVal, a.resourceGroupErr
 }
 
-func (a *stubIMDSAPI) uid(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) uid(_ context.Context) (string, error) {
 	return a.uidVal, a.uidErr
 }
 
-func (a *stubIMDSAPI) name(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) name(_ context.Context) (string, error) {
 	return a.nameVal, a.nameErr
 }
 
-func (a *stubIMDSAPI) initSecretHash(ctx context.Context) (string, error) {
+func (a *stubIMDSAPI) initSecretHash(_ context.Context) (string, error) {
 	return a.initSecretHashVal, a.initSecretHashErr
 }
 
@@ -1265,7 +1265,7 @@ type stubLoadBalancersAPI struct {
 	pager *stubLoadBalancersClientListPager
 }
 
-func (a *stubLoadBalancersAPI) NewListPager(resourceGroupName string, options *armnetwork.LoadBalancersClientListOptions,
+func (a *stubLoadBalancersAPI) NewListPager(_ string, _ *armnetwork.LoadBalancersClientListOptions,
 ) *runtime.Pager[armnetwork.LoadBalancersClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armnetwork.LoadBalancersClientListResponse]{
 		More:    a.pager.moreFunc(),

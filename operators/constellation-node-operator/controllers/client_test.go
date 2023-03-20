@@ -50,7 +50,7 @@ func newStubReaderClient(t *testing.T, objects []runtime.Object, getErr, listErr
 	}
 }
 
-func (c *stubReaderClient) Get(_ context.Context, key client.ObjectKey, out client.Object, opts ...client.GetOption) error {
+func (c *stubReaderClient) Get(_ context.Context, key client.ObjectKey, out client.Object, _ ...client.GetOption) error {
 	gvks, _, err := c.scheme.ObjectKinds(out)
 	if err != nil {
 		panic(err)
@@ -71,7 +71,7 @@ func (c *stubReaderClient) Get(_ context.Context, key client.ObjectKey, out clie
 	return c.getErr
 }
 
-func (c *stubReaderClient) List(_ context.Context, out client.ObjectList, opts ...client.ListOption) error {
+func (c *stubReaderClient) List(_ context.Context, out client.ObjectList, _ ...client.ListOption) error {
 	gvks, _, err := c.scheme.ObjectKinds(out)
 	if err != nil {
 		panic(err)
@@ -102,23 +102,23 @@ type stubWriterClient struct {
 	client.Client
 }
 
-func (c *stubWriterClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
+func (c *stubWriterClient) Create(_ context.Context, _ client.Object, _ ...client.CreateOption) error {
 	return c.createErr
 }
 
-func (c *stubWriterClient) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
+func (c *stubWriterClient) Delete(_ context.Context, _ client.Object, _ ...client.DeleteOption) error {
 	return c.deleteErr
 }
 
-func (c *stubWriterClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (c *stubWriterClient) Update(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
 	return c.updateErr
 }
 
-func (c *stubWriterClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *stubWriterClient) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
 	return c.patchErr
 }
 
-func (c *stubWriterClient) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
+func (c *stubWriterClient) DeleteAllOf(_ context.Context, _ client.Object, _ ...client.DeleteAllOfOption) error {
 	return c.deleteAllOfErr
 }
 
@@ -170,14 +170,14 @@ type stubStatusWriter struct {
 	patchErr  error
 }
 
-func (w *stubStatusWriter) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+func (w *stubStatusWriter) Create(_ context.Context, _ client.Object, _ client.Object, _ ...client.SubResourceCreateOption) error {
 	return w.createErr
 }
 
-func (w *stubStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+func (w *stubStatusWriter) Update(_ context.Context, _ client.Object, _ ...client.SubResourceUpdateOption) error {
 	return w.updateErr
 }
 
-func (w *stubStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+func (w *stubStatusWriter) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.SubResourcePatchOption) error {
 	return w.patchErr
 }

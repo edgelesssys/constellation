@@ -21,14 +21,14 @@ type clusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
 func (c *clusterFake) InitCluster(
-	context.Context, string, string, string, []byte, []uint32, bool,
+	context.Context, string, string, string, []byte, []uint32,
 	[]byte, bool, components.Components, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }
 
 // JoinCluster will fake joining the current node to an existing cluster.
-func (c *clusterFake) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, components.Components, *logger.Logger) error {
+func (c *clusterFake) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, components.Components, *logger.Logger) error {
 	return nil
 }
 
@@ -44,7 +44,7 @@ func (f *providerMetadataFake) List(ctx context.Context) ([]metadata.InstanceMet
 	return []metadata.InstanceMetadata{self}, err
 }
 
-func (f *providerMetadataFake) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+func (f *providerMetadataFake) Self(_ context.Context) (metadata.InstanceMetadata, error) {
 	return metadata.InstanceMetadata{
 		Name:       "instanceName",
 		ProviderID: "fake://instance-id",
@@ -53,10 +53,10 @@ func (f *providerMetadataFake) Self(ctx context.Context) (metadata.InstanceMetad
 	}, nil
 }
 
-func (f *providerMetadataFake) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (f *providerMetadataFake) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
 	return "", nil
 }
 
-func (f *providerMetadataFake) InitSecretHash(ctx context.Context) ([]byte, error) {
+func (f *providerMetadataFake) InitSecretHash(_ context.Context) ([]byte, error) {
 	return nil, nil
 }

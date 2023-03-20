@@ -764,25 +764,25 @@ type stubNodeReplacer struct {
 	deleteErr         error
 }
 
-func (r *stubNodeReplacer) GetNodeImage(ctx context.Context, providerID string) (string, error) {
+func (r *stubNodeReplacer) GetNodeImage(_ context.Context, providerID string) (string, error) {
 	r.RLock()
 	defer r.RUnlock()
 	return r.nodeImages[providerID], r.nodeImageErr
 }
 
-func (r *stubNodeReplacer) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+func (r *stubNodeReplacer) GetScalingGroupID(_ context.Context, providerID string) (string, error) {
 	r.RLock()
 	defer r.RUnlock()
 	return r.scalingGroups[providerID], r.scalingGroupIDErr
 }
 
-func (r *stubNodeReplacer) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
+func (r *stubNodeReplacer) CreateNode(_ context.Context, _ string) (nodeName, providerID string, err error) {
 	r.RLock()
 	defer r.RUnlock()
 	return r.createNodeName, r.createProviderID, r.createErr
 }
 
-func (r *stubNodeReplacer) DeleteNode(ctx context.Context, providerID string) error {
+func (r *stubNodeReplacer) DeleteNode(_ context.Context, _ string) error {
 	r.RLock()
 	defer r.RUnlock()
 	return r.deleteErr
@@ -833,11 +833,11 @@ type stubNodeReplacerReader struct {
 	unimplementedNodeReplacer
 }
 
-func (r *stubNodeReplacerReader) GetNodeImage(ctx context.Context, providerID string) (string, error) {
+func (r *stubNodeReplacerReader) GetNodeImage(_ context.Context, _ string) (string, error) {
 	return r.nodeImage, r.nodeImageErr
 }
 
-func (r *stubNodeReplacerReader) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+func (r *stubNodeReplacerReader) GetScalingGroupID(_ context.Context, _ string) (string, error) {
 	return r.scalingGroupID, r.scalingGroupIDErr
 }
 
@@ -853,30 +853,30 @@ type stubNodeReplacerWriter struct {
 	unimplementedNodeReplacer
 }
 
-func (r *stubNodeReplacerWriter) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
+func (r *stubNodeReplacerWriter) CreateNode(_ context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
 	r.createCalls = append(r.createCalls, scalingGroupID)
 	return r.createNodeName, r.createProviderID, r.createErr
 }
 
-func (r *stubNodeReplacerWriter) DeleteNode(ctx context.Context, providerID string) error {
+func (r *stubNodeReplacerWriter) DeleteNode(_ context.Context, providerID string) error {
 	r.deleteCalls = append(r.deleteCalls, providerID)
 	return r.deleteErr
 }
 
 type unimplementedNodeReplacer struct{}
 
-func (*unimplementedNodeReplacer) GetNodeImage(ctx context.Context, providerID string) (string, error) {
+func (*unimplementedNodeReplacer) GetNodeImage(_ context.Context, _ string) (string, error) {
 	panic("unimplemented")
 }
 
-func (*unimplementedNodeReplacer) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+func (*unimplementedNodeReplacer) GetScalingGroupID(_ context.Context, _ string) (string, error) {
 	panic("unimplemented")
 }
 
-func (*unimplementedNodeReplacer) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
+func (*unimplementedNodeReplacer) CreateNode(_ context.Context, _ string) (nodeName, providerID string, err error) {
 	panic("unimplemented")
 }
 
-func (*unimplementedNodeReplacer) DeleteNode(ctx context.Context, providerID string) error {
+func (*unimplementedNodeReplacer) DeleteNode(_ context.Context, _ string) error {
 	panic("unimplemented")
 }
