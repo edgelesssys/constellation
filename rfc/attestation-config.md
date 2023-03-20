@@ -42,7 +42,7 @@ attestation:
         - 7486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740cc96
       # Key digest enforcement policy. One of {'equal', 'maaFallback', 'warnOnly'}
       #     - 'equal'       : Error if the reported signing key digest does not match any of the values in 'acceptedKeyDigests'
-      #     - 'maaFallback' : Use 'equal' checking for validation, but fallback to using MAA for validation if the reported digest does not match any of the values in 'acceptedKeyDigests'
+      #     - 'maaFallback' : Use 'equal' checking for validation, but fallback to using Microsoft Azure Attestation (MAA) for validation if the reported digest does not match any of the values in 'acceptedKeyDigests'. See the Azure docs for more details: https://learn.microsoft.com/en-us/azure/attestation/overview#amd-sev-snp-attestation
       #     - 'warnOnly'    : Same as 'equal', but only prints a warning instead of returning an error if no match is found
       enforcementPolicy: maaFallback
     # Lowest acceptable microcode version
