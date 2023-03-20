@@ -89,8 +89,8 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 	oldExpected := v.pcrs[pcrIndex].Expected
 	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
 	v.pcrs[pcrIndex] = measurements.Measurement{
-		Expected: expectedPcr,
-		WarnOnly: v.pcrs[pcrIndex].WarnOnly,
+		Expected:      expectedPcr,
+		ValidationOpt: v.pcrs[pcrIndex].ValidationOpt,
 	}
 	return nil
 }

@@ -218,7 +218,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xBB, false),
+				0: measurements.WithAllBytes(0xBB, measurements.Enforce),
 			},
 			wantUpdate: true,
 		},
@@ -231,7 +231,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, false),
+				0: measurements.WithAllBytes(0xAA, measurements.Enforce),
 			},
 		},
 		"trying to set warnOnly to true results in error": {
@@ -243,7 +243,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, true),
+				0: measurements.WithAllBytes(0xAA, measurements.WarnOnly),
 			},
 			wantErr: true,
 		},
@@ -256,7 +256,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				},
 			},
 			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, false),
+				0: measurements.WithAllBytes(0xAA, measurements.Enforce),
 			},
 			wantUpdate: true,
 		},

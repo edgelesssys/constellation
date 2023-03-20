@@ -226,7 +226,7 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 	warnOnlyColon := warnOnlyKeyPos + 9                              // 9 = len("WarnOnly")
 	warnOnlyValuePos := warnOnlyColon + 2                            // 2 = len(": ")
 	var rbrace token.Pos
-	if measuremnt.WarnOnly {
+	if measuremnt.ValidationOpt {
 		rbrace = warnOnlyValuePos + 9 // 9 = len("true") + padding
 	} else {
 		rbrace = warnOnlyValuePos + 10 // 10 = len("false") + padding
@@ -250,7 +250,7 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 				&ast.KeyValueExpr{
 					Key:   &ast.Ident{NamePos: warnOnlyKeyPos, Name: "WarnOnly"},
 					Colon: warnOnlyColon,
-					Value: &ast.Ident{NamePos: warnOnlyValuePos, Name: strconv.FormatBool(measuremnt.WarnOnly)},
+					Value: &ast.Ident{NamePos: warnOnlyValuePos, Name: strconv.FormatBool(bool(measuremnt.ValidationOpt))},
 				},
 			},
 			Rbrace: rbrace,

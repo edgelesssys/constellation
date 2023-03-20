@@ -16,42 +16,42 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	case cloudprovider.AWS:
 		return M{
 			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, false),
+			8:                         WithAllBytes(0x00, Enforce),
 			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, Enforce),
 			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, false),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, Enforce),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
 		}
 	case cloudprovider.Azure:
 		return M{
 			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, false),
+			8:                         WithAllBytes(0x00, Enforce),
 			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, Enforce),
 			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, false),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, Enforce),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
 		}
 	case cloudprovider.GCP:
 		return M{
 			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, false),
+			8:                         WithAllBytes(0x00, Enforce),
 			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, Enforce),
 			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, false),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, Enforce),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
 		}
 	case cloudprovider.QEMU:
 		return M{
 			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, false),
+			8:                         WithAllBytes(0x00, Enforce),
 			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, Enforce),
 			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, false),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, Enforce),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
 		}
 	default:
 		return nil

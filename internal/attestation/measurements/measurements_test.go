@@ -37,8 +37,8 @@ func TestMarshal(t *testing.T) {
 		},
 		"warn only": {
 			m: Measurement{
-				Expected: [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
-				WarnOnly: true,
+				Expected:      [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
+				ValidationOpt: WarnOnly,
 			},
 			wantYAML: "expected: \"0102030400000000000000000000000000000000000000000000000000000000\"\nwarnOnly: true",
 			wantJSON: `{"expected":"0102030400000000000000000000000000000000000000000000000000000000","warnOnly":true}`,
@@ -242,48 +242,48 @@ func TestMeasurementsCopyFrom(t *testing.T) {
 		"add to empty": {
 			current: M{},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
 			},
 		},
 		"keep existing": {
 			current: M{
-				4: WithAllBytes(0x01, false),
-				5: WithAllBytes(0x02, true),
+				4: WithAllBytes(0x01, Enforce),
+				5: WithAllBytes(0x02, WarnOnly),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
-				4: WithAllBytes(0x01, false),
-				5: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
+				4: WithAllBytes(0x01, Enforce),
+				5: WithAllBytes(0x02, WarnOnly),
 			},
 		},
 		"overwrite existing": {
 			current: M{
-				2: WithAllBytes(0x04, false),
-				3: WithAllBytes(0x05, false),
+				2: WithAllBytes(0x04, Enforce),
+				3: WithAllBytes(0x05, Enforce),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, true),
-				2: WithAllBytes(0x01, true),
-				3: WithAllBytes(0x02, true),
+				1: WithAllBytes(0x00, WarnOnly),
+				2: WithAllBytes(0x01, WarnOnly),
+				3: WithAllBytes(0x02, WarnOnly),
 			},
 		},
 	}
@@ -318,7 +318,7 @@ func urlMustParse(raw string) *url.URL {
 }
 
 func TestMeasurementsFetchAndVerify(t *testing.T) {
-	// Cosign private key used to sign the measurements.
+	// Cosign private key used to sign the
 	// Generated with: cosign generate-key-pair
 	// Password left empty.
 	//
@@ -352,7 +352,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, false),
+				0: WithAllBytes(0x00, Enforce),
 			},
 			wantSHA: "c04e13c1312b6f5659303871d14bf49b05c99a6515548763b6322f60bbb61a24",
 		},
@@ -363,7 +363,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEUCIQC9WI2ijlQjBktYFctKpbnqkUTey3U9W99Jp1NTLi5AbQIgNZxxOtiawgTkWPXLoH9D2CxpEjxQrqLn/zWF6NoKxWQ=",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, false),
+				0: WithAllBytes(0x00, Enforce),
 			},
 			wantSHA: "648fcfd5d22e623a948ab2dd4eb334be2701d8f158231726084323003daab8d4",
 		},
@@ -417,8 +417,8 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		},
 	}
 
-	measurementsURL := urlMustParse("https://somesite.com/measurements.yaml")
-	signatureURL := urlMustParse("https://somesite.com/measurements.yaml.sig")
+	measurementsURL := urlMustParse("https://somesite.com/yaml")
+	signatureURL := urlMustParse("https://somesite.com/yaml.sig")
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -473,15 +473,15 @@ func TestGetEnforced(t *testing.T) {
 	}{
 		"only warnings": {
 			input: M{
-				0: WithAllBytes(0x00, true),
-				1: WithAllBytes(0x01, true),
+				0: WithAllBytes(0x00, WarnOnly),
+				1: WithAllBytes(0x01, WarnOnly),
 			},
 			want: map[uint32]struct{}{},
 		},
 		"all enforced": {
 			input: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -490,9 +490,9 @@ func TestGetEnforced(t *testing.T) {
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, true),
-				2: WithAllBytes(0x02, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, WarnOnly),
+				2: WithAllBytes(0x02, Enforce),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -524,56 +524,56 @@ func TestSetEnforced(t *testing.T) {
 	}{
 		"no enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
 			},
 			enforced: []uint32{},
 			wantM: M{
-				0: WithAllBytes(0x00, true),
-				1: WithAllBytes(0x01, true),
+				0: WithAllBytes(0x00, WarnOnly),
+				1: WithAllBytes(0x01, WarnOnly),
 			},
 		},
 		"all enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
 			},
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
-				2: WithAllBytes(0x02, false),
-				3: WithAllBytes(0x03, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
+				2: WithAllBytes(0x02, Enforce),
+				3: WithAllBytes(0x03, Enforce),
 			},
 			enforced: []uint32{0, 2},
 			wantM: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, true),
-				2: WithAllBytes(0x02, false),
-				3: WithAllBytes(0x03, true),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, WarnOnly),
+				2: WithAllBytes(0x02, Enforce),
+				3: WithAllBytes(0x03, WarnOnly),
 			},
 		},
 		"warn only to enforced": {
 			input: M{
-				0: WithAllBytes(0x00, true),
-				1: WithAllBytes(0x01, true),
+				0: WithAllBytes(0x00, WarnOnly),
+				1: WithAllBytes(0x01, WarnOnly),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0x01, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0x01, Enforce),
 			},
 		},
 		"more enforced than measurements": {
 			input: M{
-				0: WithAllBytes(0x00, true),
-				1: WithAllBytes(0x01, true),
+				0: WithAllBytes(0x00, WarnOnly),
+				1: WithAllBytes(0x01, WarnOnly),
 			},
 			enforced: []uint32{0, 1, 2},
 			wantErr:  true,
@@ -598,55 +598,55 @@ func TestSetEnforced(t *testing.T) {
 func TestWithAllBytes(t *testing.T) {
 	testCases := map[string]struct {
 		b               byte
-		warnOnly        bool
+		warnOnly        MeasurementValidationOption
 		wantMeasurement Measurement
 	}{
 		"0x00 warnOnly": {
 			b:        0x00,
 			warnOnly: true,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-				WarnOnly: true,
+				Expected:      [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				ValidationOpt: WarnOnly,
 			},
 		},
 		"0x00": {
 			b:        0x00,
 			warnOnly: false,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-				WarnOnly: false,
+				Expected:      [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				ValidationOpt: Enforce,
 			},
 		},
 		"0x01 warnOnly": {
 			b:        0x01,
 			warnOnly: true,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
-				WarnOnly: true,
+				Expected:      [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				ValidationOpt: WarnOnly,
 			},
 		},
 		"0x01": {
 			b:        0x01,
 			warnOnly: false,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
-				WarnOnly: false,
+				Expected:      [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				ValidationOpt: Enforce,
 			},
 		},
 		"0xFF warnOnly": {
 			b:        0xFF,
 			warnOnly: true,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-				WarnOnly: true,
+				Expected:      [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				ValidationOpt: WarnOnly,
 			},
 		},
 		"0xFF": {
 			b:        0xFF,
 			warnOnly: false,
 			wantMeasurement: Measurement{
-				Expected: [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-				WarnOnly: false,
+				Expected:      [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				ValidationOpt: Enforce,
 			},
 		},
 	}
@@ -668,44 +668,44 @@ func TestEqualTo(t *testing.T) {
 	}{
 		"same values": {
 			given: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, Enforce),
 			},
 			other: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, Enforce),
 			},
 			wantEqual: true,
 		},
 		"different number of elements": {
 			given: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, Enforce),
 			},
 			other: M{
-				0: WithAllBytes(0x00, false),
+				0: WithAllBytes(0x00, Enforce),
 			},
 			wantEqual: false,
 		},
 		"different values": {
 			given: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, Enforce),
 			},
 			other: M{
-				0: WithAllBytes(0xFF, false),
-				1: WithAllBytes(0x00, false),
+				0: WithAllBytes(0xFF, Enforce),
+				1: WithAllBytes(0x00, Enforce),
 			},
 			wantEqual: false,
 		},
 		"different warn settings": {
 			given: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, false),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, Enforce),
 			},
 			other: M{
-				0: WithAllBytes(0x00, false),
-				1: WithAllBytes(0xFF, true),
+				0: WithAllBytes(0x00, Enforce),
+				1: WithAllBytes(0xFF, WarnOnly),
 			},
 			wantEqual: false,
 		},

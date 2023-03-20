@@ -173,10 +173,7 @@ func main() {
 	case cloudprovider.OpenStack:
 		// TODO(malt3): add OpenStack TPM support
 		measurements := measurements.M{
-			15: measurements.Measurement{
-				Expected: [32]byte{0x0000000000000000000000000000000000000000000000000000000000000000},
-				WarnOnly: true,
-			},
+			15: measurements.WithAllBytes(0x0, measurements.WarnOnly),
 		}
 
 		cloudLogger = &logging.NopLogger{}
