@@ -42,8 +42,9 @@ resource "random_password" "initSecret" {
 }
 
 resource "azurerm_attestation_provider" "attestation_provider" {
-  count               = var.create_maa ? 1 : 0
-  name                = format("%sap", var.name)
+  count = var.create_maa ? 1 : 0
+  # name must be between 3 and 24 characters in length and use numbers and lower-case letters only.
+  name                = format("%sap", replace(var.name, "/[^a-z0-9]/", ""))
   resource_group_name = var.resource_group
   location            = var.location
 }
