@@ -573,11 +573,7 @@ func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file
 		return err
 	}
 
-	if err := fileHandler.WriteJSON(constants.GCPServiceAccountKeyFile, tmpOut, file.OptNone); err != nil {
-		return err
-	}
-
-	return nil
+	return fileHandler.WriteJSON(constants.GCPServiceAccountKeyFile, tmpOut, file.OptNone)
 }
 
 // parseIDFile parses the given base64 encoded JSON string of the GCP service account key and returns a map.

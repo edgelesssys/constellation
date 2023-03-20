@@ -188,11 +188,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	i.log.Debugf("Initialization request succeeded")
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
-	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler); err != nil {
-		return err
-	}
 
-	return nil
+	return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
 }
 
 func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {

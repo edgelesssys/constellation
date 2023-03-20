@@ -430,11 +430,7 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 		conf.UpdateMeasurements(v.newImages[imageUpgrade])
 	}
 
-	if err := fileHandler.WriteYAML(configPath, conf, file.OptOverwrite); err != nil {
-		return err
-	}
-
-	return nil
+	return fileHandler.WriteYAML(configPath, conf, file.OptOverwrite)
 }
 
 // getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
