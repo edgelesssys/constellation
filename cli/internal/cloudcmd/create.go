@@ -266,7 +266,7 @@ func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string)
 
 	// azureGuest is the id for the "Azure VM" attestation type. Other types are documented here:
 	// https://learn.microsoft.com/en-us/rest/api/attestation/policy/set
-	req, err := client.SetPreparer(ctx, attestationURL, "azureGuest", p.encodeAttestationPolicy(constants.EncodedAzureMAAPolicy))
+	req, err := client.SetPreparer(ctx, attestationURL, "azureGuest", p.encodeAttestationPolicy())
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
 	if err != nil {
 		return fmt.Errorf("preparing request: %w", err)
@@ -287,7 +287,24 @@ func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string)
 
 // encodeAttestationPolicy encodes the base64-encoded attestation policy in the JWS format specified here:
 // https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#creating-the-policy-file-in-json-web-signature-format
-func (p policyPatcher) encodeAttestationPolicy(encodedPolicy string) string {
+func (p policyPatcher) encodeAttestationPolicy() string {
+	const policy = `
+                version= 1.0;
+                authorizationrules
+                {
+                    [type=="x-ms-azurevm-default-securebootkeysvalidated", value==false] => deny();
+                    [type=="x-ms-azurevm-debuggersdisabled", value==false] => deny();
+                    // The line below was edited by the Constellation CLI. Do not edit manually.
+                    //[type=="secureboot", value==false] => deny();
+                    [type=="x-ms-azurevm-signingdisabled", value==false] => deny();
+                    [type=="x-ms-azurevm-dbvalidated", value==false] => deny();
+                    [type=="x-ms-azurevm-dbxvalidated", value==false] => deny();
+                    => permit();
+                };
+                issuancerules
+                {
+                };`
+	encodedPolicy := base64.RawURLEncoding.EncodeToString([]byte(policy))
 	const header = `{"alg":"none"}`
 	payload := fmt.Sprintf(`{"AttestationPolicy":"%s"}`, encodedPolicy)
 
