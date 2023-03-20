@@ -48,6 +48,7 @@ go_test(
         "//internal/config/instancetypes",
         "//internal/constants",
         "//internal/file",
+        "//internal/variant",
         "@com_github_go_playground_locales//en",
         "@com_github_go_playground_universal_translator//:universal-translator",
         "@com_github_go_playground_validator_v10//:validator",
