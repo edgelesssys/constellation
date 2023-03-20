@@ -37,11 +37,11 @@ type IMDSClient struct {
 }
 
 // NewIMDSClient creates a new IMDSClient.
-func NewIMDSClient() IMDSClient {
+func NewIMDSClient() *IMDSClient {
 	// The default http client may use a system-wide proxy and it is recommended to disable the proxy explicitly:
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=linux#proxies
 	// See also: https://github.com/microsoft/azureimds/blob/master/imdssample.go#L10
-	return IMDSClient{
+	return &IMDSClient{
 		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}
 }

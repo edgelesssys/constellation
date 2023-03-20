@@ -16,7 +16,7 @@ import (
 const tagMAAURL = "constellation-maa-url"
 
 type imdsClient struct {
-	imdsClient azure.IMDSClient
+	imdsClient *azure.IMDSClient
 }
 
 func newIMDSClient() *imdsClient {

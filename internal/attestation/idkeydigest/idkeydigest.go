@@ -70,7 +70,6 @@ func (e *EnforceIDKeyDigest) unmarshal(unmarshalFunc func(any) error) error {
 	// Check for legacy format: EnforceIDKeyDigest might be a boolean.
 	// If set to true, the value will be set to StrictChecking.
 	// If set to false, the value will be set to WarnOnly.
-	fmt.Println("Unmarsahling EnforceIDKeyDigest")
 	var legacyEnforce bool
 	legacyErr := unmarshalFunc(&legacyEnforce)
 	if legacyErr == nil {

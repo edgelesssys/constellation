@@ -92,6 +92,11 @@ func TestIMDSClient(t *testing.T) {
 		},
 	}
 
+	defaultWantTags := map[string]string{
+		cloud.TagUID:  "uid",
+		cloud.TagRole: "worker",
+	}
+
 	testCases := map[string]struct {
 		server               httpBufconnServer
 		wantProviderIDErr    bool
@@ -106,6 +111,8 @@ func TestIMDSClient(t *testing.T) {
 		wantName             string
 		wantSubscriptionErr  bool
 		wantSubscriptionID   string
+		wantTagsErr          bool
+		wantTags             map[string]string
 	}{
 		"metadata response parsed": {
 			server:             newHTTPBufconnServerWithMetadataResponse(response),
@@ -115,6 +122,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:           role.Worker,
 			wantName:           "computer-name",
 			wantSubscriptionID: "subscription-id",
+			wantTags:           defaultWantTags,
 		},
 		"metadata response without resource ID": {
 			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutID),
@@ -124,6 +132,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:           role.Worker,
 			wantName:           "computer-name",
 			wantSubscriptionID: "subscription-id",
+			wantTags:           defaultWantTags,
 		},
 		"metadata response without UID tag": {
 			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutUID),
@@ -133,6 +142,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:           role.Worker,
 			wantName:           "computer-name",
 			wantSubscriptionID: "subscription-id",
+			wantTags:           map[string]string{cloud.TagRole: "worker"},
 		},
 		"metadata response without role tag": {
 			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutRole),
@@ -142,6 +152,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRoleErr:        true,
 			wantName:           "computer-name",
 			wantSubscriptionID: "subscription-id",
+			wantTags:           map[string]string{cloud.TagUID: "uid"},
 		},
 		"metadata response without resource group": {
 			server:               newHTTPBufconnServerWithMetadataResponse(responseWithoutGroup),
@@ -151,6 +162,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:             role.Worker,
 			wantName:             "computer-name",
 			wantSubscriptionID:   "subscription-id",
+			wantTags:             defaultWantTags,
 		},
 		"metadata response without name": {
 			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutName),
@@ -160,6 +172,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:           role.Worker,
 			wantNameErr:        true,
 			wantSubscriptionID: "subscription-id",
+			wantTags:           defaultWantTags,
 		},
 		"metadata response without subscription ID": {
 			server:              newHTTPBufconnServerWithMetadataResponse(responseWithoutSubscriptionID),
@@ -169,6 +182,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRole:            role.Worker,
 			wantName:            "computer-name",
 			wantSubscriptionErr: true,
+			wantTags:            defaultWantTags,
 		},
 		"invalid imds response detected": {
 			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
@@ -180,6 +194,7 @@ func TestIMDSClient(t *testing.T) {
 			wantRoleErr:          true,
 			wantNameErr:          true,
 			wantSubscriptionErr:  true,
+			wantTagsErr:          true,
 		},
 	}
 
@@ -247,6 +262,14 @@ func TestIMDSClient(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.wantSubscriptionID, subscriptionID)
+			}
+
+			tags, err := iClient.Tags(ctx)
+			if tc.wantTagsErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantTags, tags)
 			}
 		})
 	}

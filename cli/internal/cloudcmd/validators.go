@@ -45,12 +45,11 @@ func NewValidator(conf *config.Config, maaURL string, log debugLog) (*Validator,
 	}
 
 	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
-		idKeyCfg := idkeydigest.Config{
+		v.idKeyConfig = idkeydigest.Config{
 			IDKeyDigests:      conf.Provider.Azure.IDKeyDigest,
 			EnforcementPolicy: conf.IDKeyDigestPolicy(),
 			MAAURL:            maaURL,
 		}
-		v.idKeyConfig = idKeyCfg
 	}
 
 	return &v, nil

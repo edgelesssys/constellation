@@ -86,7 +86,7 @@ func New(ctx context.Context) (*Cloud, error) {
 	}
 
 	return &Cloud{
-		imds:            &imdsAPI,
+		imds:            imdsAPI,
 		netIfacAPI:      networkInterfacesAPI,
 		virtNetAPI:      virtualNetworksAPI,
 		secGroupAPI:     securityGroupsAPI,
