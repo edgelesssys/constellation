@@ -1,5 +1,5 @@
 """
-This module contains rules and macros for building and testing Go code.
+This module contains rules and macros for building and testing Go tests.
 """
 
 load("@io_bazel_rules_go//go:def.bzl", _go_test = "go_test")

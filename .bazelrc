@@ -20,6 +20,9 @@ build --strip=always
 # set build mode to opt by default (better reproducibility and performance)
 build --compilation_mode=opt
 
+# use pure go implementation of netdns
+build --define=gotags=netgo
+
 # enable tpm simulator for tests
 test --//bazel/settings:tpm_simulator
 

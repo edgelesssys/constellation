@@ -50,8 +50,11 @@ go_binary(
     embed = [":bootstrapper_lib"],
     # keep
     gotags = select({
-        "//bazel/settings:tpm_simulator_enabled": [],
-        "//conditions:default": ["disable_tpm_simulator"],
+        "//bazel/settings:tpm_simulator_enabled": ["netgo"],
+        "//conditions:default": [
+            "netgo",
+            "disable_tpm_simulator",
+        ],
     }),
     visibility = ["//visibility:public"],
 )
