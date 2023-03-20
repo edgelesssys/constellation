@@ -172,7 +172,7 @@ type stubPolicyPatcher struct {
 	patchErr error
 }
 
-func (s stubPolicyPatcher) Patch(ctx context.Context, attestationURL, policy string) error {
+func (s stubPolicyPatcher) Patch(ctx context.Context, attestationURL string) error {
 	return s.patchErr
 }
 
