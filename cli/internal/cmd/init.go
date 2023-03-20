@@ -222,15 +222,22 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 }
 
 type initDoer struct {
-	dialer   grpcDialer
-	endpoint string
-	req      *initproto.InitRequest
-	resp     *initproto.InitResponse
-	log      debugLog
-	spinner  spinnerInterf
+	dialer        grpcDialer
+	endpoint      string
+	req           *initproto.InitRequest
+	resp          *initproto.InitResponse
+	log           debugLog
+	spinner       spinnerInterf
+	connectedOnce bool
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
+	// connectedOnce is set in handleGRPCStateChanges when a connection was established in one retry attempt.
+	// This should cancel any other retry attempts when the connection is lost since the bootstrapper likely won't accept any new attempts anymore.
+	if d.connectedOnce {
+		return &nonRetriableError{errors.New("init already connected to the remote server in an previous attempt - resumption is not supported")}
+	}
+
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
 	if err != nil {
 		d.log.Debugf("Dialing init server failed: %w. Retrying...", err)
@@ -266,6 +273,7 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 		}
 		if state == connectivity.Ready {
 			d.log.Debugf("Connection ready")
+			d.connectedOnce = true
 			d.spinner.Stop()
 			d.spinner.Start("Initializing cluster ", false)
 		} else {
