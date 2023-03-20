@@ -512,7 +512,7 @@ func (c *Config) addMissingVariant() {
 	case cloudprovider.AWS:
 		c.AttestationVariant = oid.AWSNitroTPM{}.String()
 	case cloudprovider.Azure:
-		c.AttestationVariant = oid.AzureTrustedLaunch{}.String()
+		c.AttestationVariant = oid.AzureSEVSNP{}.String()
 	case cloudprovider.GCP:
 		c.AttestationVariant = oid.GCPSEVES{}.String()
 	case cloudprovider.QEMU:
