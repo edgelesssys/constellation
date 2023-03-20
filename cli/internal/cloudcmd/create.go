@@ -224,7 +224,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 	if vars.CreateMAA {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL, constants.EncodedAzureMAAPolicy); err != nil {
+		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
 			return clusterid.File{}, err
 		}
 	}
@@ -240,14 +240,14 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 // PolicyPatcher interacts with Azure to update the attestation policy.
 type PolicyPatcher interface {
-	Patch(ctx context.Context, attestationURL, policy string) error
+	Patch(ctx context.Context, attestationURL string) error
 }
 
 type policyPatcher struct{}
 
 // Patch updates the attestation policy to the base64-encoded attestation policy JWT for the given attestation URL.
 // https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#next-steps
-func (p policyPatcher) Patch(ctx context.Context, attestationURL, policy string) error {
+func (p policyPatcher) Patch(ctx context.Context, attestationURL string) error {
 	// hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
 	// or the Go SDK gets updated to a recent API version.
 	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
