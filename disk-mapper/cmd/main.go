@@ -127,7 +127,7 @@ func main() {
 
 	// Use TDX if available
 	openDevice := vtpm.OpenVTPM
-	if attestVariant.OID().Equal(oid.QEMUTDX{}.OID()) {
+	if attestVariant.OID().Equal(variant.QEMUTDX{}.OID()) {
 		openDevice = func() (io.ReadWriteCloser, error) {
 			return tdx.Open()
 		}
