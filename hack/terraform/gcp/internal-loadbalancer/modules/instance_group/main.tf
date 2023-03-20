@@ -56,7 +56,7 @@ resource "google_compute_instance_template" "template" {
     subnetwork = var.subnetwork
     alias_ip_range {
       ip_cidr_range         = "/24"
-      subnetwork_range_name = var.name
+      subnetwork_range_name = var.alias_ip_range_name
     }
   }
 
