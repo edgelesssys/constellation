@@ -34,7 +34,7 @@ func teardown(devicePath string) {
 	_ = exec.Command("/bin/rm", "-f", devicePath).Run()
 }
 
-func copy(source, target string) error {
+func cp(source, target string) error {
 	return exec.Command("cp", source, target).Run()
 }
 
@@ -142,7 +142,7 @@ func TestDeviceCloning(t *testing.T) {
 	_, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
 	assert.NoError(err)
 
-	require.NoError(copy(DevicePath, DevicePath+"-copy"))
+	require.NoError(cp(DevicePath, DevicePath+"-copy"))
 	defer teardown(DevicePath + "-copy")
 
 	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath+"-copy", DeviceName+"-copy", false)

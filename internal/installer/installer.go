@@ -223,17 +223,17 @@ func (i *OsInstaller) copy(oldname, newname string, perm fs.FileMode) (err error
 	if err := i.fs.MkdirAll(path.Dir(newname), fs.ModePerm); err != nil {
 		return fmt.Errorf("copying %q to %q: unable to create destination folder: %w", oldname, newname, err)
 	}
-	new, openNewErr := i.fs.OpenFile(newname, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, perm)
+	newFile, openNewErr := i.fs.OpenFile(newname, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, perm)
 	if openNewErr != nil {
 		return fmt.Errorf("copying %q to %q: cannot open destination file for writing: %w", oldname, newname, openNewErr)
 	}
 	defer func() {
-		_ = new.Close()
+		_ = newFile.Close()
 		if err != nil {
 			_ = i.fs.Remove(newname)
 		}
 	}()
-	if _, err := io.Copy(new, old); err != nil {
+	if _, err := io.Copy(newFile, old); err != nil {
 		return fmt.Errorf("copying %q to %q: copying file contents: %w", oldname, newname, err)
 	}
 
