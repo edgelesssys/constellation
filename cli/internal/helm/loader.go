@@ -38,16 +38,17 @@ import (
 //go:embed all:charts/*
 var helmFS embed.FS
 
-const (
-	ciliumReleaseName       = "cilium"
-	conServicesReleaseName  = "constellation-services"
-	conOperatorsReleaseName = "constellation-operators"
-	certManagerReleaseName  = "cert-manager"
+type chartInfo struct {
+	releaseName string
+	chartName   string
+	path        string
+}
 
-	conServicesPath  = "charts/edgeless/constellation-services"
-	conOperatorsPath = "charts/edgeless/operators"
-	certManagerPath  = "charts/cert-manager"
-	ciliumPath       = "charts/cilium"
+var (
+	ciliumInfo                 = chartInfo{releaseName: "cilium", chartName: "cilium", path: "charts/cilium"}
+	certManagerInfo            = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
+	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
+	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
 )
 
 // ChartLoader loads embedded helm charts.
@@ -95,7 +96,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 
 // AvailableServiceVersions returns the chart version number of the bundled service versions.
 func AvailableServiceVersions() (string, error) {
-	servicesChart, err := loadChartsDir(helmFS, conServicesPath)
+	servicesChart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 	if err != nil {
 		return "", fmt.Errorf("loading constellation-services chart: %w", err)
 	}
@@ -140,7 +141,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 
 // loadCilium prepares a helm release for use in a helm install action.
 func (i *ChartLoader) loadCilium() (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, ciliumPath)
+	chart, err := loadChartsDir(helmFS, ciliumInfo.path)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
@@ -154,7 +155,7 @@ func (i *ChartLoader) loadCilium() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging cilium chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: ciliumReleaseName, Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: ciliumInfo.releaseName, Wait: false}, nil
 }
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.
@@ -194,7 +195,7 @@ func extendCiliumValues(in map[string]any, conformanceMode bool) {
 }
 
 func (i *ChartLoader) loadCertManager() (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, certManagerPath)
+	chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cert-manager chart: %w", err)
 	}
@@ -205,7 +206,7 @@ func (i *ChartLoader) loadCertManager() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging cert-manager chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: certManagerReleaseName, Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: certManagerInfo.releaseName, Wait: false}, nil
 }
 
 // loadCertManagerHelper is used to separate the marshalling step from the loading step.
@@ -278,7 +279,7 @@ func (i *ChartLoader) loadCertManagerValues() map[string]any {
 }
 
 func (i *ChartLoader) loadOperators() (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, conOperatorsPath)
+	chart, err := loadChartsDir(helmFS, constellationOperatorsInfo.path)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
 	}
@@ -295,7 +296,7 @@ func (i *ChartLoader) loadOperators() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging operators chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: conOperatorsReleaseName, Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: constellationOperatorsInfo.releaseName, Wait: false}, nil
 }
 
 // loadOperatorsHelper is used to separate the marshalling step from the loading step.
@@ -365,9 +366,9 @@ func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 
 // loadConstellationServices prepares a helm release for use in a helm install action.
 func (i *ChartLoader) loadConstellationServices() (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, conServicesPath)
+	chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
+		return helm.Release{}, fmt.Errorf("loadingg constellation-services chart: %w", err)
 	}
 
 	updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
@@ -382,7 +383,7 @@ func (i *ChartLoader) loadConstellationServices() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging constellation-services chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: conServicesReleaseName, Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: constellationServicesInfo.releaseName, Wait: false}, nil
 }
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.

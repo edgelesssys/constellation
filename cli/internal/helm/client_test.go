@@ -15,9 +15,48 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
 )
+
+func TestShouldUpgrade(t *testing.T) {
+	testCases := map[string]struct {
+		version            string
+		assertCorrectError func(t *testing.T, err error) bool
+		wantError          bool
+	}{
+		"valid upgrade": {
+			version: "1.9.0",
+		},
+		"not a valid upgrade": {
+			version: "1.0.0",
+			assertCorrectError: func(t *testing.T, err error) bool {
+				target := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &target)
+			},
+			wantError: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
+
+			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
+			require.NoError(err)
+			err = client.shouldUpgrade(certManagerInfo.releaseName, chart)
+			if tc.wantError {
+				tc.assertCorrectError(t, err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
 
 func TestUpgradeRelease(t *testing.T) {
 	testCases := map[string]struct {
@@ -29,15 +68,6 @@ func TestUpgradeRelease(t *testing.T) {
 		"allow": {
 			allowDestructive: true,
 			version:          "1.9.0",
-		},
-		"not a valid upgrade": {
-			allowDestructive: true,
-			version:          "1.0.0",
-			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
-				return assert.ErrorAs(t, err, &target)
-			},
-			wantError: true,
 		},
 		"deny": {
 			allowDestructive: false,
@@ -52,9 +82,13 @@ func TestUpgradeRelease(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			client := Client{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
-			err := client.upgradeRelease(context.Background(), 0, config.Default(), certManagerPath, certManagerReleaseName, false, tc.allowDestructive)
+
+			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
+			require.NoError(err)
+			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart, tc.allowDestructive)
 			if tc.wantError {
 				tc.assertCorrectError(t, err)
 				return
