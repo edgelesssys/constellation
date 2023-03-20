@@ -4,7 +4,7 @@ description: Build the Constellation debugd binary
 inputs:
   outputPath:
     description: "Output path of the binary"
-    default: "./debugd"
+    default: "./build/debugd"
     required: true
 
 # Linux runner only (homedir trick does not work on macOS, required for private runner)
@@ -13,14 +13,16 @@ runs:
   steps:
     - name: Build debugd
       shell: bash
+      env:
+        OUTPUT_PATH: ${{ inputs.outputPath }}
       run: |
         echo "::group::Build debugd"
-        homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
-        mkdir -p build && cd build
-        cmake -DBAZEL:STRING=bazelisk ..
-        export GOCACHE=${homedir}/.cache/go-build
-        export GOPATH=${homedir}/go
-        export GOMODCACHE=${homedir}/.cache/go-mod
-        make debugd
-        mv -n debugd "${{ inputs.outputPath }}"
+        mkdir -p "$(dirname "${OUTPUT_PATH}")"
+        label=//debugd/cmd/debugd:debugd_linux_amd64
+        bazel build "${label}"
+        repository_root=$(git rev-parse --show-toplevel)
+        out_rel=$(bazel cquery --output=files "${label}")
+        out_loc="$(realpath "${repository_root}/${out_rel}")"
+        cp "${out_loc}" "${OUTPUT_PATH}"
+        chmod +w "${OUTPUT_PATH}"
         echo "::endgroup::"

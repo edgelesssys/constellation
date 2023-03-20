@@ -50,6 +50,17 @@ bazel build //cli:cli_oss_darwin_amd64 # cross compile CLI for mac amd64
 bazel build //cli:cli_oss_darwin_arm64 # cross compile CLI for mac arm64
 ```
 
+## Remote caching and execution
+
+We use BuildBuddy for remote caching (and maybe remote execution in the future). To use it, you need to join the BuildBuddy organization and get an API key. Then, you can write it to `~/.bazelrc`:
+
+```
+build --remote_header=x-buildbuddy-api-key=<redacted>
+```
+
+To use the remote cache, build the project with `bazel build --config remote_cache //path/to:target`.
+You can also copy the `remote_cache` config from `.bazelrc` to your `~/.bazelrc` and remove the `remote_cache` prefix to make it the default.
+
 # Test
 
 You can run all integration and unitttests like this:

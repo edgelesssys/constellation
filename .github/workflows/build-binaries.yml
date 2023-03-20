@@ -26,6 +26,12 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Build the bootstrapper
         uses: ./.github/actions/build_bootstrapper
 
@@ -36,6 +42,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build debugd
         uses: ./.github/actions/build_debugd
@@ -48,17 +60,25 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Build cdbg (Linux, amd64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "linux"
           targetArch: "amd64"
+          outputPath: ./build/cdbg_linux_amd64
 
       - name: Build cdbg (Linux, arm64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "linux"
           targetArch: "arm64"
+          outputPath: ./build/cdbg_linux_arm64
 
   build-cdbg-macos:
     runs-on: ubuntu-22.04
@@ -68,17 +88,25 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Build cdbg (macOS, amd64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
           targetArch: "amd64"
+          outputPath: ./build/cdbg_darwin_amd64
 
       - name: Build cdbg (macOS, arm64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
           targetArch: "arm64"
+          outputPath: ./build/cdbg_darwin_arm64
 
   build-disk-mapper:
     runs-on: ubuntu-22.04
@@ -87,6 +115,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build disk-mapper
         uses: ./.github/actions/build_disk_mapper
@@ -99,6 +133,12 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Build measurement-reader
         uses: ./.github/actions/build_measurement_reader
 
@@ -109,6 +149,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build CLI (Linux, amd64)
         uses: ./.github/actions/build_cli
@@ -129,6 +175,12 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
       - name: Build CLI (macOS, amd64)
         uses: ./.github/actions/build_cli

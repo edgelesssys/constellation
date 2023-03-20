@@ -11,6 +11,9 @@ inputs:
   azureTenantID:
     description: "Azure tenant to use for login with OIDC"
     required: true
+  buildBuddyApiKey:
+    description: "BuildBuddy API key for caching Bazel artifacts"
+    required: true
 
 runs:
   using: "composite"
@@ -25,10 +28,17 @@ runs:
       with:
         go-version: "1.20.2"
 
+    - name: Setup bazel
+      uses: ./.github/actions/setup_bazel
+      with:
+        useCache: "true"
+        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
+
     - name: Build Constellation CLI
       uses: ./.github/actions/build_cli
       with:
         enterpriseCLI: true
+        outputPath: build/constellation
 
     - name: MiniConstellation E2E
       shell: bash

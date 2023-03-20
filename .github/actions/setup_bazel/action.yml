@@ -1,0 +1,55 @@
+name: Setup bazel
+description: Setup Bazel for CI builds and tests
+
+inputs:
+  useCache:
+    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, and 'false' to disable."
+    default: "false"
+    required: true
+  buildBuddyApiKey:
+    description: "BuildBuddy API key for caching Bazel artifacts"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check inputs
+      shell: bash
+      run: |
+        echo "::group::Check inputs"
+        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "false" ]]; then
+          echo "Invalid value for 'useCache' input: '${{ inputs.useCache }}'. Must be 'true', 'readonly', or 'false'."
+          exit 1
+        fi
+        if [[ "${{ inputs.useCache }}" == "true" || "${{ inputs.useCache }}" == "readonly" ]] && [[ -z "${{ inputs.buildBuddyApiKey }}" ]]; then
+          echo "BuildBuddy API key is required when cache is enabled."
+          exit 1
+        fi
+        echo "::endgroup::"
+    - name: Configure Bazel
+      shell: bash
+      if: inputs.useCache == 'true' || inputs.useCache == 'readonly'
+      env:
+        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
+      run: |
+        echo "::group::Configure Bazel"
+        cat <<EOF >> ~/.bazelrc
+        build --bes_results_url=https://app.buildbuddy.io/invocation/
+        build --bes_backend=grpcs://remote.buildbuddy.io
+        build --remote_cache=grpcs://remote.buildbuddy.io
+        build --remote_timeout=3600
+        build --experimental_remote_build_event_upload=minimal
+        build --experimental_remote_cache_compression
+        build --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
+        EOF
+        echo "::endgroup::"
+    - name: Configure Bazel (readonly)
+      shell: bash
+      if: inputs.useCache == 'readonly'
+      run: |
+        echo "::group::Configure Bazel (readonly)"
+        echo "build --remote_upload_local_results=false" >> ~/.bazelrc
+        echo "::endgroup::"
+    - name: Check bazel version
+      shell: bash
+      run: bazel version
