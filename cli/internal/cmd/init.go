@@ -65,8 +65,9 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log    debugLog
-	merger configMerger
+	log     debugLog
+	merger  configMerger
+	spinner spinnerInterf
 }
 
 // runInitialize runs the initialize command.
@@ -90,13 +91,13 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}}
-	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}}
+	return i.initialize(cmd, newDialer, fileHandler, license.NewClient())
 }
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker, spinner spinnerInterf,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -160,7 +161,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	clusterName := conf.Name + "-" + idFile.UID
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
-	spinner.Start("Initializing cluster ", false)
+	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
+	i.spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
 		KmsUri:                 masterSecret.EncodeToURI(),
 		StorageUri:             uri.NoStoreURI,
@@ -176,7 +178,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
-	spinner.Stop()
+	i.spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
 		if errors.As(err, &nonRetriable) {
@@ -201,6 +203,7 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
 		req:      req,
 		log:      i.log,
+		spinner:  i.spinner,
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -224,6 +227,7 @@ type initDoer struct {
 	req      *initproto.InitRequest
 	resp     *initproto.InitResponse
 	log      debugLog
+	spinner  spinnerInterf
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
@@ -239,8 +243,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 
 	grpcStateLogCtx, grpcStateLogCancel := context.WithCancel(ctx)
 	defer grpcStateLogCancel()
-	wg.Add(1)
-	d.logGRPCStateChanges(grpcStateLogCtx, &wg, conn)
+	d.handleGRPCStateChanges(grpcStateLogCtx, &wg, conn)
 
 	protoClient := initproto.NewAPIClient(conn)
 	d.log.Debugf("Created protoClient")
@@ -252,7 +255,8 @@ func (d *initDoer) Do(ctx context.Context) error {
 	return nil
 }
 
-func (d *initDoer) logGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
+func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		state := conn.GetState()
@@ -262,6 +266,8 @@ func (d *initDoer) logGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, 
 		}
 		if state == connectivity.Ready {
 			d.log.Debugf("Connection ready")
+			d.spinner.Stop()
+			d.spinner.Start("Initializing cluster ", false)
 		} else {
 			d.log.Debugf("Connection state ended with %s", state)
 		}
