@@ -111,34 +111,14 @@ runs:
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
         enterpriseCLI: ${{ inputs.keepMeasurements }}
 
-    # macOS runners don't have Docker preinstalled, so they cannot build the bootstrapper.
-    # But we can use a Linux runner to build it and store/retrieve it from the action cache.
-    - name: Download the bootstrapper from cache
-      id: download-bootstrapper-cache
-      if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0 # v3.2.6
-      with:
-        key: bootstrapper-${{ github.sha }}
-        path: "build/bootstrapper"
-
     - name: Build the bootstrapper
       id: build-bootstrapper
-      if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
+      if: inputs.isDebugImage == 'true'
       uses: ./.github/actions/build_bootstrapper
-
-    # macOS runners don't have Docker preinstalled, so they cannot build the upgrade-agent.
-    # But we can use a Linux runner to build it and store/retrieve it from the action cache.
-    - name: Download the upgrade-agent from cache
-      id: download-upgrade-agent-cache
-      if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
-      uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0 # v3.2.6
-      with:
-        key: upgrade-agent-${{ github.sha }}
-        path: "build/upgrade-agent"
 
     - name: Build the upgrade-agent
       id: build-upgrade-agent
-      if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
+      if: inputs.isDebugImage == 'true'
       uses: ./.github/actions/build_upgrade_agent
 
     - name: Build cdbg
