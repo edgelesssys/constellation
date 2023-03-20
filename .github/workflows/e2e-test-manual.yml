@@ -189,9 +189,7 @@ jobs:
       id-token: write
       contents: read
     needs: [find-latest-image]
-    if: |
-      always() &&
-      !cancelled()
+    if: always() && !cancelled()
     steps:
       - name: Install basic tools (macOS)
         if: runner.os == 'macOS'
