@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -206,7 +207,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		ImageID:              image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
-		CreateMAA:            *config.Provider.Azure.EnforceIDKeyDigest,
+		CreateMAA:            config.Provider.Azure.EnforceIDKeyDigest == idkeydigest.MAAFallback,
 		Debug:                config.IsDebugCluster(),
 	}
 
