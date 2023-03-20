@@ -50,6 +50,7 @@ go-licenses csv ./... | {
 
     Unknown)
       case ${pkg} in
+      github.com/edgelesssys/go-tdx-qpl/*) ;;
 
       *)
         not_allowed
