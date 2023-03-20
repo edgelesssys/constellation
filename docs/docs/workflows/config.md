@@ -169,7 +169,7 @@ The following describes the configuration fields and how you obtain the required
 
 * **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). You should create the identity in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
 
-  Add two role assignments to the identity: `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created cluster resource group.
+  Add three role assignments to the identity: `Owner`, `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of all three should refer to the previously created cluster resource group.
 
   Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`. You can get it by opening the `JSON View` from the `Overview` section of the identity.
 
