@@ -24,4 +24,7 @@ type File struct {
 	IP string `json:"ip,omitempty"`
 	// InitSecret is the secret the first Bootstrapper uses to verify the user.
 	InitSecret []byte `json:"initsecret,omitempty"`
+	// AttestationURL is the URL of the attestation service.
+	// It is only set if the cluster is created on Azure.
+	AttestationURL string `json:"attestationURL,omitempty"`
 }

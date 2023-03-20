@@ -8,9 +8,11 @@ package cloudcmd
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -18,6 +20,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/attestation/attestation"
+	azpolicy "github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
@@ -34,6 +39,7 @@ type Creator struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
 	newRawDownloader   func() rawDownloader
+	policyPatcher      PolicyPatcher
 }
 
 // NewCreator creates a new creator.
@@ -50,6 +56,7 @@ func NewCreator(out io.Writer) *Creator {
 		newRawDownloader: func() rawDownloader {
 			return image.NewDownloader()
 		},
+		policyPatcher: policyPatcher{},
 	}
 }
 
@@ -182,8 +189,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
-	insType string, controlPlaneCount, workerCount int, image string,
+func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -200,6 +206,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		ImageID:              image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
+		CreateMAA:            *config.Provider.Azure.EnforceIDKeyDigest,
 		Debug:                config.IsDebugCluster(),
 	}
 
@@ -215,12 +222,96 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
+	if vars.CreateMAA {
+		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
+		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
+			return clusterid.File{}, err
+		}
+	}
+
 	return clusterid.File{
-		CloudProvider: cloudprovider.Azure,
-		IP:            tfOutput.IP,
-		InitSecret:    []byte(tfOutput.Secret),
-		UID:           tfOutput.UID,
+		CloudProvider:  cloudprovider.Azure,
+		IP:             tfOutput.IP,
+		InitSecret:     []byte(tfOutput.Secret),
+		UID:            tfOutput.UID,
+		AttestationURL: tfOutput.AttestationURL,
 	}, nil
+}
+
+// PolicyPatcher interacts with Azure to update the attestation policy.
+type PolicyPatcher interface {
+	Patch(ctx context.Context, attestationURL string) error
+}
+
+type policyPatcher struct{}
+
+// Patch updates the attestation policy to the base64-encoded attestation policy JWT for the given attestation URL.
+// https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#next-steps
+func (p policyPatcher) Patch(ctx context.Context, attestationURL string) error {
+	// hacky way to update the MAA attestation policy. This should be changed as soon as either the Terraform provider supports it
+	// or the Go SDK gets updated to a recent API version.
+	// https://github.com/hashicorp/terraform-provider-azurerm/issues/20804
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return fmt.Errorf("retrieving default Azure credentials: %w", err)
+	}
+	token, err := cred.GetToken(ctx, azpolicy.TokenRequestOptions{
+		Scopes: []string{"https://attest.azure.net/.default"},
+	})
+	if err != nil {
+		return fmt.Errorf("retrieving token from default Azure credentials: %w", err)
+	}
+
+	client := attestation.NewPolicyClient()
+
+	// azureGuest is the id for the "Azure VM" attestation type. Other types are documented here:
+	// https://learn.microsoft.com/en-us/rest/api/attestation/policy/set
+	req, err := client.SetPreparer(ctx, attestationURL, "azureGuest", p.encodeAttestationPolicy())
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
+	if err != nil {
+		return fmt.Errorf("preparing request: %w", err)
+	}
+
+	resp, err := client.Send(req)
+	if err != nil {
+		return fmt.Errorf("sending request: %w", err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("updating attestation policy: unexpected status code: %s", resp.Status)
+	}
+
+	return nil
+}
+
+// encodeAttestationPolicy encodes the base64-encoded attestation policy in the JWS format specified here:
+// https://learn.microsoft.com/en-us/azure/attestation/author-sign-policy#creating-the-policy-file-in-json-web-signature-format
+func (p policyPatcher) encodeAttestationPolicy() string {
+	const policy = `
+                version= 1.0;
+                authorizationrules
+                {
+                    [type=="x-ms-azurevm-default-securebootkeysvalidated", value==false] => deny();
+                    [type=="x-ms-azurevm-debuggersdisabled", value==false] => deny();
+                    // The line below was edited by the Constellation CLI. Do not edit manually.
+                    //[type=="secureboot", value==false] => deny();
+                    [type=="x-ms-azurevm-signingdisabled", value==false] => deny();
+                    [type=="x-ms-azurevm-dbvalidated", value==false] => deny();
+                    [type=="x-ms-azurevm-dbxvalidated", value==false] => deny();
+                    => permit();
+                };
+                issuancerules
+                {
+                };`
+	encodedPolicy := base64.RawURLEncoding.EncodeToString([]byte(policy))
+	const header = `{"alg":"none"}`
+	payload := fmt.Sprintf(`{"AttestationPolicy":"%s"}`, encodedPolicy)
+
+	encodedHeader := base64.RawURLEncoding.EncodeToString([]byte(header))
+	encodedPayload := base64.RawURLEncoding.EncodeToString([]byte(payload))
+
+	return fmt.Sprintf("%s.%s.", encodedHeader, encodedPayload)
 }
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.

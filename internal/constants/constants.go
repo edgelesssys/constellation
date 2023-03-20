@@ -116,17 +116,14 @@ const (
 	IDKeyDigestFilename = "idkeydigests"
 	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
-
 	// K8sVersionFieldName is the name of the of the key holding the wanted Kubernetes version.
 	K8sVersionFieldName = "cluster-version"
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
 	// NodeVersionResourceName resource name used for NodeVersion in constellation-operator and CLI.
 	NodeVersionResourceName = "constellation-version"
-
 	// NodeKubernetesComponentsAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.
 	NodeKubernetesComponentsAnnotationKey = "constellation.edgeless.systems/kubernetes-components"
-
 	// JoiningNodesConfigMapName is the name of the configMap holding the joining nodes with the components hashes the node-operator should annotate the nodes with.
 	JoiningNodesConfigMapName = "joining-nodes"
 
