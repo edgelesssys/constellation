@@ -32,31 +32,31 @@ type stubIMDSClient struct {
 	vpcIPErr             error
 }
 
-func (c *stubIMDSClient) providerID(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) providerID(_ context.Context) (string, error) {
 	return c.providerIDResult, c.providerIDErr
 }
 
-func (c *stubIMDSClient) name(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) name(_ context.Context) (string, error) {
 	return c.nameResult, c.nameErr
 }
 
-func (c *stubIMDSClient) projectID(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) projectID(_ context.Context) (string, error) {
 	return c.projectIDResult, c.projectIDErr
 }
 
-func (c *stubIMDSClient) uid(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) uid(_ context.Context) (string, error) {
 	return c.uidResult, c.uidErr
 }
 
-func (c *stubIMDSClient) initSecretHash(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) initSecretHash(_ context.Context) (string, error) {
 	return c.initSecretHashResult, c.initSecretHashErr
 }
 
-func (c *stubIMDSClient) role(ctx context.Context) (role.Role, error) {
+func (c *stubIMDSClient) role(_ context.Context) (role.Role, error) {
 	return c.roleResult, c.roleErr
 }
 
-func (c *stubIMDSClient) vpcIP(ctx context.Context) (string, error) {
+func (c *stubIMDSClient) vpcIP(_ context.Context) (string, error) {
 	return c.vpcIPResult, c.vpcIPErr
 }
 
@@ -65,11 +65,11 @@ type stubServersClient struct {
 	subnetsPager stubPager
 }
 
-func (c *stubServersClient) ListServers(opts servers.ListOptsBuilder) pagerAPI {
+func (c *stubServersClient) ListServers(_ servers.ListOptsBuilder) pagerAPI {
 	return &c.serversPager
 }
 
-func (c *stubServersClient) ListSubnets(opts subnets.ListOpts) pagerAPI {
+func (c *stubServersClient) ListSubnets(_ subnets.ListOpts) pagerAPI {
 	return &c.subnetsPager
 }
 

@@ -28,7 +28,7 @@ func NewBufconnDialer() *BufconnDialer {
 }
 
 // DialContext implements the Dialer interface.
-func (b *BufconnDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (b *BufconnDialer) DialContext(ctx context.Context, _, address string) (net.Conn, error) {
 	b.mut.Lock()
 	listener, ok := b.listeners[address]
 	b.mut.Unlock()

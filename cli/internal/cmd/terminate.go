@@ -34,7 +34,7 @@ func NewTerminateCmd() *cobra.Command {
 }
 
 // runTerminate runs the terminate command.
-func runTerminate(cmd *cobra.Command, args []string) error {
+func runTerminate(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {

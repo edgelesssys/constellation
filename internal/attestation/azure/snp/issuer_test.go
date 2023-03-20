@@ -131,7 +131,7 @@ type stubImdsClient struct {
 	apiError  error
 }
 
-func (c stubImdsClient) getVcek(ctx context.Context) (vcekResponse, error) {
+func (c stubImdsClient) getVcek(_ context.Context) (vcekResponse, error) {
 	if c.apiError != nil {
 		return vcekResponse{}, c.apiError
 	}
@@ -147,7 +147,7 @@ type stubTpmReport struct {
 	err        error
 }
 
-func (s *stubTpmReport) get(tpm io.ReadWriteCloser) ([]byte, error) {
+func (s *stubTpmReport) get(_ io.ReadWriteCloser) ([]byte, error) {
 	if s.err != nil {
 		return nil, s.err
 	}

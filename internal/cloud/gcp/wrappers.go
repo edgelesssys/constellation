@@ -31,7 +31,7 @@ func (c *globalForwardingRulesClient) Close() error {
 }
 
 func (c *globalForwardingRulesClient) List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest,
-	opts ...gax.CallOption,
+	_ ...gax.CallOption,
 ) forwardingRuleIterator {
 	return c.GlobalForwardingRulesClient.List(ctx, req)
 }
@@ -45,7 +45,7 @@ func (c *regionalForwardingRulesClient) Close() error {
 }
 
 func (c *regionalForwardingRulesClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest,
-	opts ...gax.CallOption,
+	_ ...gax.CallOption,
 ) forwardingRuleIterator {
 	return c.ForwardingRulesClient.List(ctx, req)
 }
@@ -59,7 +59,7 @@ func (c *instanceClient) Close() error {
 }
 
 func (c *instanceClient) List(ctx context.Context, req *computepb.ListInstancesRequest,
-	opts ...gax.CallOption,
+	_ ...gax.CallOption,
 ) instanceIterator {
 	return c.InstancesClient.List(ctx, req)
 }

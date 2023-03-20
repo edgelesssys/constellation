@@ -460,7 +460,7 @@ func TestIsIntegrityFS(t *testing.T) {
 
 type fakeKMS struct{}
 
-func (k *fakeKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+func (k *fakeKMS) GetDEK(_ context.Context, _ string, dekSize int) ([]byte, error) {
 	key := make([]byte, dekSize)
 	for i := range key {
 		key[i] = 0x41

@@ -50,7 +50,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 	return cmd
 }
 
-func runUpgradeCheck(cmd *cobra.Command, args []string) error {
+func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
@@ -144,7 +144,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
-	supportedServices, supportedImages, supportedK8s, err := u.collect.supportedVersions(cmd.Context(), currentImage, csp)
+	supportedServices, supportedImages, supportedK8s, err := u.collect.supportedVersions(cmd.Context(), currentImage)
 	if err != nil {
 		return err
 	}
@@ -229,10 +229,10 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 
 type collector interface {
 	currentVersions(ctx context.Context) (serviceVersions string, imageVersion string, k8sVersion string, err error)
-	supportedVersions(ctx context.Context, version string, csp cloudprovider.Provider) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error)
-	newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error)
+	supportedVersions(ctx context.Context, version string) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error)
+	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
 	newMeasurementes(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
-	newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error)
+	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
 }
 
 type versionCollector struct {
@@ -283,13 +283,13 @@ func (v *versionCollector) currentVersions(ctx context.Context) (serviceVersion 
 }
 
 // supportedVersions returns slices of supported versions.
-func (v *versionCollector) supportedVersions(ctx context.Context, version string, csp cloudprovider.Provider) (serviceVersion string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
+func (v *versionCollector) supportedVersions(ctx context.Context, version string) (serviceVersion string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
 	k8sVersions = versions.SupportedK8sVersions()
 	serviceVersion, err = helm.AvailableServiceVersions()
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("loading service versions: %w", err)
 	}
-	imageVersions, err = v.newImages(ctx, version, csp)
+	imageVersions, err = v.newImages(ctx, version)
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("loading image versions: %w", err)
 	}
@@ -297,7 +297,7 @@ func (v *versionCollector) supportedVersions(ctx context.Context, version string
 	return serviceVersion, imageVersions, k8sVersions, nil
 }
 
-func (v *versionCollector) newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error) {
+func (v *versionCollector) newImages(ctx context.Context, version string) ([]versionsapi.Version, error) {
 	// find compatible images
 	// image updates should always be possible for the current minor version of the cluster
 	// (e.g. 0.1.0 -> 0.1.1, 0.1.2, 0.1.3, etc.)
@@ -329,7 +329,7 @@ func (v *versionCollector) newImages(ctx context.Context, version string, csp cl
 	}
 	v.log.Debugf("Allowed minor versions are %#v", allowedMinorVersions)
 
-	newerImages, err := v.newerVersions(ctx, currentImageMinorVer, allowedMinorVersions)
+	newerImages, err := v.newerVersions(ctx, allowedMinorVersions)
 	if err != nil {
 		return nil, fmt.Errorf("newer versions: %w", err)
 	}
@@ -337,7 +337,7 @@ func (v *versionCollector) newImages(ctx context.Context, version string, csp cl
 	return newerImages, nil
 }
 
-func (v *versionCollector) newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error) {
+func (v *versionCollector) newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error) {
 	var updateCandidates []versionsapi.Version
 	for _, minorVer := range allowedVersions {
 		patchList := versionsapi.List{

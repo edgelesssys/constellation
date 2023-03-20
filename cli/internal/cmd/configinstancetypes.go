@@ -25,7 +25,7 @@ func newConfigInstanceTypesCmd() *cobra.Command {
 	return cmd
 }
 
-func printSupportedInstanceTypes(cmd *cobra.Command, args []string) {
+func printSupportedInstanceTypes(cmd *cobra.Command, _ []string) {
 	cmd.Printf(`AWS instance families:
 %v
 Azure Confidential VM instance types:

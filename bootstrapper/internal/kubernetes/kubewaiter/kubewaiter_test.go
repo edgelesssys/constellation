@@ -55,6 +55,6 @@ type stubKubernetesClient struct {
 	listAllNamespacesErr error
 }
 
-func (c *stubKubernetesClient) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+func (c *stubKubernetesClient) ListAllNamespaces(_ context.Context) (*corev1.NamespaceList, error) {
 	return nil, c.listAllNamespacesErr
 }

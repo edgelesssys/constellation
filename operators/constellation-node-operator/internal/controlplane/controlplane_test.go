@@ -77,7 +77,7 @@ type stubClient struct {
 	client.Client
 }
 
-func (c *stubClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+func (c *stubClient) List(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
 	list.(*corev1.NodeList).Items = c.nodes
 	return c.listErr
 }

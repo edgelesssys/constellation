@@ -267,23 +267,23 @@ type stubVersionCollector struct {
 	someErr                   error
 }
 
-func (s *stubVersionCollector) newMeasurementes(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
+func (s *stubVersionCollector) newMeasurementes(_ context.Context, _ cloudprovider.Provider, _ []versionsapi.Version) (map[string]measurements.M, error) {
 	return s.supportedImageVersions, nil
 }
 
-func (s *stubVersionCollector) currentVersions(ctx context.Context) (serviceVersions string, imageVersion string, k8sVersion string, err error) {
+func (s *stubVersionCollector) currentVersions(_ context.Context) (serviceVersions string, imageVersion string, k8sVersion string, err error) {
 	return s.currentServicesVersions, s.currentImageVersion, s.currentK8sVersion, s.someErr
 }
 
-func (s *stubVersionCollector) supportedVersions(ctx context.Context, version string, csp cloudprovider.Provider) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
+func (s *stubVersionCollector) supportedVersions(_ context.Context, _ string) (serviceVersions string, imageVersions []versionsapi.Version, k8sVersions []string, err error) {
 	return s.supportedServicesVersions, s.supportedImages, s.supportedK8sVersions, s.someErr
 }
 
-func (s *stubVersionCollector) newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error) {
+func (s *stubVersionCollector) newImages(_ context.Context, _ string) ([]versionsapi.Version, error) {
 	return s.images, nil
 }
 
-func (s *stubVersionCollector) newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error) {
+func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]versionsapi.Version, error) {
 	return s.images, nil
 }
 
@@ -297,6 +297,6 @@ func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
 	return u.image, u.err
 }
 
-func (u stubUpgradeChecker) CurrentKubernetesVersion(ctx context.Context) (string, error) {
+func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string, error) {
 	return u.k8sVersion, u.err
 }

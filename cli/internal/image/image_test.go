@@ -321,7 +321,7 @@ type stubVersionsAPIImageFetcher struct {
 	fetchImageInfoErr  error
 }
 
-func (f *stubVersionsAPIImageFetcher) FetchImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) (
+func (f *stubVersionsAPIImageFetcher) FetchImageInfo(_ context.Context, _ versionsapi.ImageInfo) (
 	versionsapi.ImageInfo, error,
 ) {
 	return f.fetchImageInfoInfo, f.fetchImageInfoErr

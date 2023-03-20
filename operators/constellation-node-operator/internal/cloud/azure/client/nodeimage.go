@@ -37,7 +37,7 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 }
 
 // GetScalingGroupID returns the scaling group ID of the node.
-func (c *Client) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+func (c *Client) GetScalingGroupID(_ context.Context, providerID string) (string, error) {
 	subscriptionID, resourceGroup, scaleSet, _, err := scaleSetInformationFromProviderID(providerID)
 	if err != nil {
 		return "", err
@@ -146,7 +146,7 @@ func (h *capacityPollingHandler) Poll(ctx context.Context) error {
 	return nil
 }
 
-func (h *capacityPollingHandler) Result(ctx context.Context, out *int64) error {
+func (h *capacityPollingHandler) Result(_ context.Context, out *int64) error {
 	if !h.done {
 		return fmt.Errorf("failed to scale up")
 	}

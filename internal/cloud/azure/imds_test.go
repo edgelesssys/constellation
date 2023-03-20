@@ -257,11 +257,11 @@ type httpBufconnServer struct {
 	*bufconn.Listener
 }
 
-func (s *httpBufconnServer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+func (s *httpBufconnServer) DialContext(ctx context.Context, _, _ string) (net.Conn, error) {
 	return s.Listener.DialContext(ctx)
 }
 
-func (s *httpBufconnServer) Dial(network, addr string) (net.Conn, error) {
+func (s *httpBufconnServer) Dial(_, _ string) (net.Conn, error) {
 	return s.Listener.Dial()
 }
 

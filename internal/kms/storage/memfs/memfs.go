@@ -29,7 +29,7 @@ func New() *Storage {
 }
 
 // Get returns a DEK from Storage by key ID.
-func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
+func (s *Storage) Get(_ context.Context, keyID string) ([]byte, error) {
 	encDEK, ok := s.dekPool[keyID]
 	if ok {
 		return encDEK, nil
@@ -38,7 +38,7 @@ func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 }
 
 // Put saves a DEK to Storage by key ID.
-func (s *Storage) Put(ctx context.Context, keyID string, encDEK []byte) error {
+func (s *Storage) Put(_ context.Context, keyID string, encDEK []byte) error {
 	s.dekPool[keyID] = encDEK
 	return nil
 }

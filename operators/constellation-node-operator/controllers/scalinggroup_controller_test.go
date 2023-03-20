@@ -22,13 +22,13 @@ func newFakeScalingGroupUpdater() *fakeScalingGroupUpdater {
 	}
 }
 
-func (u *fakeScalingGroupUpdater) GetScalingGroupImage(ctx context.Context, scalingGroupID string) (string, error) {
+func (u *fakeScalingGroupUpdater) GetScalingGroupImage(_ context.Context, scalingGroupID string) (string, error) {
 	u.RLock()
 	defer u.RUnlock()
 	return u.scalingGroupImage[scalingGroupID], nil
 }
 
-func (u *fakeScalingGroupUpdater) SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error {
+func (u *fakeScalingGroupUpdater) SetScalingGroupImage(_ context.Context, scalingGroupID, imageURI string) error {
 	u.Lock()
 	defer u.Unlock()
 	u.scalingGroupImage[scalingGroupID] = imageURI

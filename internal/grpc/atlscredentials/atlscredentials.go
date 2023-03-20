@@ -62,6 +62,6 @@ func (c *Credentials) Clone() credentials.TransportCredentials {
 }
 
 // OverrideServerName is not supported and will fail.
-func (c *Credentials) OverrideServerName(s string) error {
+func (c *Credentials) OverrideServerName(_ string) error {
 	return errors.New("cannot override server name")
 }

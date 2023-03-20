@@ -41,7 +41,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 	return cmd
 }
 
-func runUpgradeApply(cmd *cobra.Command, args []string) error {
+func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)

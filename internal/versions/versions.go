@@ -58,7 +58,7 @@ func IsSupportedK8sVersion(version string) bool {
 }
 
 // IsPreviewK8sVersion checks if a given Kubernetes version is still in preview and not fully supported.
-func IsPreviewK8sVersion(version ValidK8sVersion) bool {
+func IsPreviewK8sVersion(_ ValidK8sVersion) bool {
 	return false
 }
 

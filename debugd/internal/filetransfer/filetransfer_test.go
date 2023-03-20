@@ -368,11 +368,11 @@ type stubStreamReadWriter struct {
 	writeStreamErr error
 }
 
-func (s *stubStreamReadWriter) ReadStream(filename string, _ streamer.WriteChunkStream, _ uint, _ bool) error {
+func (s *stubStreamReadWriter) ReadStream(_ string, _ streamer.WriteChunkStream, _ uint, _ bool) error {
 	return s.readStreamErr
 }
 
-func (s *stubStreamReadWriter) WriteStream(filename string, _ streamer.ReadChunkStream, _ bool) error {
+func (s *stubStreamReadWriter) WriteStream(_ string, _ streamer.ReadChunkStream, _ bool) error {
 	return s.writeStreamErr
 }
 

@@ -24,7 +24,7 @@ type CloudLogger interface {
 type NopLogger struct{}
 
 // Disclose does nothing.
-func (l *NopLogger) Disclose(msg string) {}
+func (l *NopLogger) Disclose(_ string) {}
 
 // Close does nothing.
 func (l *NopLogger) Close() error {

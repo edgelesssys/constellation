@@ -236,13 +236,13 @@ type stubNodeStateGetter struct {
 	deleteNodeErr error
 }
 
-func (g *stubNodeStateGetter) GetNodeState(ctx context.Context, providerID string) (updatev1alpha1.CSPNodeState, error) {
+func (g *stubNodeStateGetter) GetNodeState(_ context.Context, _ string) (updatev1alpha1.CSPNodeState, error) {
 	g.RLock()
 	defer g.RUnlock()
 	return g.nodeState, g.nodeStateErr
 }
 
-func (g *stubNodeStateGetter) DeleteNode(ctx context.Context, providerID string) error {
+func (g *stubNodeStateGetter) DeleteNode(_ context.Context, _ string) error {
 	g.RLock()
 	defer g.RUnlock()
 	return g.deleteNodeErr

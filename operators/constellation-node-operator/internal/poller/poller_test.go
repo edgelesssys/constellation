@@ -170,7 +170,7 @@ type stubPoller[T any] struct {
 	resultErr error
 }
 
-func (s *stubPoller[T]) Poll(ctx context.Context) error {
+func (s *stubPoller[T]) Poll(_ context.Context) error {
 	return s.pollErr
 }
 
@@ -178,7 +178,7 @@ func (s *stubPoller[T]) Done() bool {
 	return s.done
 }
 
-func (s *stubPoller[T]) Result(ctx context.Context, out *T) error {
+func (s *stubPoller[T]) Result(_ context.Context, out *T) error {
 	*out = *s.result
 	return s.resultErr
 }
@@ -197,7 +197,7 @@ type fakePoller[T any] struct {
 	pollC chan error
 }
 
-func (s *fakePoller[T]) Poll(ctx context.Context) error {
+func (s *fakePoller[T]) Poll(_ context.Context) error {
 	return <-s.pollC
 }
 
@@ -205,7 +205,7 @@ func (s *fakePoller[T]) Done() bool {
 	return <-s.doneC
 }
 
-func (s *fakePoller[T]) Result(ctx context.Context, out *T) error {
+func (s *fakePoller[T]) Result(_ context.Context, out *T) error {
 	*out = *s.result
 	return s.resultErr
 }

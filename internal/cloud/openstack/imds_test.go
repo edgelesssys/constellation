@@ -383,7 +383,7 @@ func newStubHTTPClientJSONFunc(response metadataResponse, err error) httpClientJ
 	}
 }
 
-func (c *stubHTTPClientJSON) Do(req *http.Request) (*http.Response, error) {
+func (c *stubHTTPClientJSON) Do(_ *http.Request) (*http.Response, error) {
 	c.called = true
 	body, err := json.Marshal(c.response)
 	c.require.NoError(err)
@@ -396,7 +396,7 @@ type stubHTTPClient struct {
 	called   bool
 }
 
-func (c *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
+func (c *stubHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 	c.called = true
 	return &http.Response{Body: io.NopCloser(strings.NewReader(c.response))}, c.err
 }

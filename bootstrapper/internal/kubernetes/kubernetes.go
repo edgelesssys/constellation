@@ -81,8 +81,8 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string,
-	measurementSalt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
+	measurementSalt []byte, enforcedPCRs []uint32, helmReleasesRaw []byte, conformanceMode bool,
+	kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
@@ -266,7 +266,7 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents components.Components, log *logger.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sComponents components.Components, log *logger.Logger) error {
 	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
 		return fmt.Errorf("installing kubernetes components: %w", err)

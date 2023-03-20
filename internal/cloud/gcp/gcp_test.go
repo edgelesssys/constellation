@@ -960,7 +960,7 @@ type stubGlobalForwardingRulesAPI struct {
 }
 
 func (s *stubGlobalForwardingRulesAPI) List(
-	ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest, opts ...gax.CallOption,
+	_ context.Context, _ *computepb.ListGlobalForwardingRulesRequest, _ ...gax.CallOption,
 ) forwardingRuleIterator {
 	return s.iterator
 }
@@ -972,7 +972,7 @@ type stubRegionalForwardingRulesAPI struct {
 }
 
 func (s *stubRegionalForwardingRulesAPI) List(
-	ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption,
+	_ context.Context, _ *computepb.ListForwardingRulesRequest, _ ...gax.CallOption,
 ) forwardingRuleIterator {
 	return s.iterator
 }
@@ -1022,13 +1022,13 @@ type stubInstanceAPI struct {
 }
 
 func (s *stubInstanceAPI) Get(
-	ctx context.Context, req *computepb.GetInstanceRequest, opts ...gax.CallOption,
+	_ context.Context, _ *computepb.GetInstanceRequest, _ ...gax.CallOption,
 ) (*computepb.Instance, error) {
 	return s.instance, s.instanceErr
 }
 
 func (s *stubInstanceAPI) List(
-	ctx context.Context, req *computepb.ListInstancesRequest, opts ...gax.CallOption,
+	_ context.Context, _ *computepb.ListInstancesRequest, _ ...gax.CallOption,
 ) instanceIterator {
 	return s.iterator
 }
@@ -1058,7 +1058,7 @@ type stubSubnetAPI struct {
 }
 
 func (s *stubSubnetAPI) Get(
-	ctx context.Context, req *computepb.GetSubnetworkRequest, opts ...gax.CallOption,
+	_ context.Context, _ *computepb.GetSubnetworkRequest, _ ...gax.CallOption,
 ) (*computepb.Subnetwork, error) {
 	return s.subnet, s.subnetErr
 }

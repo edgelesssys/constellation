@@ -51,7 +51,7 @@ func (s simTPMWithEventLog) EventLog() ([]byte, error) {
 	return header, nil
 }
 
-func fakeGetInstanceInfo(tpm io.ReadWriteCloser) ([]byte, error) {
+func fakeGetInstanceInfo(_ io.ReadWriteCloser) ([]byte, error) {
 	return []byte("unit-test"), nil
 }
 

@@ -277,11 +277,11 @@ type stubCA struct {
 	getNameErr error
 }
 
-func (f stubCA) GetCertificate(csr []byte) ([]byte, error) {
+func (f stubCA) GetCertificate(_ []byte) ([]byte, error) {
 	return f.cert, f.getCertErr
 }
 
-func (f stubCA) GetNodeNameFromCSR(csr []byte) (string, error) {
+func (f stubCA) GetNodeNameFromCSR(_ []byte) (string, error) {
 	return f.nodeName, f.getNameErr
 }
 
@@ -297,15 +297,15 @@ type stubKubeClient struct {
 	componentsRef            string
 }
 
-func (s *stubKubeClient) GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error) {
+func (s *stubKubeClient) GetK8sComponentsRefFromNodeVersionCRD(_ context.Context, _ string) (string, error) {
 	return s.getK8sComponentsRefFromNodeVersionCRDVal, s.getK8sComponentsRefFromNodeVersionCRDErr
 }
 
-func (s *stubKubeClient) GetComponents(ctx context.Context, configMapName string) (components.Components, error) {
+func (s *stubKubeClient) GetComponents(_ context.Context, _ string) (components.Components, error) {
 	return s.getComponentsVal, s.getComponentsErr
 }
 
-func (s *stubKubeClient) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsRef string, isControlPlane bool) error {
+func (s *stubKubeClient) AddNodeToJoiningNodes(_ context.Context, nodeName string, componentsRef string, _ bool) error {
 	s.joiningNodeName = nodeName
 	s.componentsRef = componentsRef
 	return s.addNodeToJoiningNodesErr

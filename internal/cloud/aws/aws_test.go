@@ -739,7 +739,7 @@ type stubLoadbalancer struct {
 }
 
 func (s *stubLoadbalancer) DescribeLoadBalancers(_ context.Context,
-	in *elasticloadbalancingv2.DescribeLoadBalancersInput,
+	_ *elasticloadbalancingv2.DescribeLoadBalancersInput,
 	_ ...func(*elasticloadbalancingv2.Options)) (
 	*elasticloadbalancingv2.DescribeLoadBalancersOutput, error,
 ) {

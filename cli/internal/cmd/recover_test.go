@@ -343,4 +343,4 @@ func (d *stubDoer) Do(context.Context) error {
 
 func (d *stubDoer) setDialer(grpcDialer, string) {}
 
-func (d *stubDoer) setURIs(kmsURI, storageURI string) {}
+func (d *stubDoer) setURIs(_, _ string) {}

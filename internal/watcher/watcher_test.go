@@ -160,7 +160,7 @@ type testWatcher struct {
 	errors    chan error
 }
 
-func (w *testWatcher) Add(path string) error {
+func (w *testWatcher) Add(_ string) error {
 	w.addCalled++
 	return w.addErr
 }

@@ -89,7 +89,7 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 	return sigCtx, cancelFunc
 }
 
-func preRunRoot(cmd *cobra.Command, args []string) {
+func preRunRoot(cmd *cobra.Command, _ []string) {
 	cmd.SilenceUsage = true
 }
 

@@ -216,7 +216,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion), "kubernetes",
-				nil, nil, false, []byte("{}"), false, nil, logger.NewTest(t),
+				nil, nil, []byte("{}"), false, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -242,7 +242,6 @@ func TestJoinCluster(t *testing.T) {
 	}
 
 	privateIP := "192.0.2.1"
-	k8sVersion := versions.Default
 
 	k8sComponents := components.Components{
 		{
@@ -390,7 +389,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), tc.k8sComponents, logger.NewTest(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, tc.k8sComponents, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -468,40 +467,40 @@ type stubClusterUtil struct {
 	joinConfigs [][]byte
 }
 
-func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error {
+func (s *stubClusterUtil) SetupKonnectivity(_ k8sapi.Client, _ kubernetes.Marshaler) error {
 	return s.setupKonnectivityError
 }
 
-func (s *stubClusterUtil) InstallComponents(ctx context.Context, kubernetesComponents components.Components) error {
+func (s *stubClusterUtil) InstallComponents(_ context.Context, _ components.Components) error {
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) ([]byte, error) {
+func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _ string, _ bool, _ *logger.Logger) ([]byte, error) {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.kubeconfig, s.initClusterErr
 }
 
-func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
+func (s *stubClusterUtil) SetupAutoscaling(_ k8sapi.Client, _ kubernetes.Marshaler, _ kubernetes.Marshaler) error {
 	return s.setupAutoscalingError
 }
 
-func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error {
+func (s *stubClusterUtil) SetupGCPGuestAgent(_ k8sapi.Client, _ kubernetes.Marshaler) error {
 	return s.setupGCPGuestAgentErr
 }
 
-func (s *stubClusterUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
+func (s *stubClusterUtil) SetupOperatorLifecycleManager(_ context.Context, _ k8sapi.Client, _, _ kubernetes.Marshaler, _ []string) error {
 	return s.setupOLMErr
 }
 
-func (s *stubClusterUtil) SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error {
+func (s *stubClusterUtil) SetupNodeMaintenanceOperator(_ k8sapi.Client, _ kubernetes.Marshaler) error {
 	return s.setupNMOErr
 }
 
-func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration kubernetes.Marshaler) error {
+func (s *stubClusterUtil) SetupNodeOperator(_ context.Context, _ k8sapi.Client, _ kubernetes.Marshaler) error {
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ role.Role, _ string, _ *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }
@@ -510,11 +509,11 @@ func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
 }
 
-func (s *stubClusterUtil) WaitForCilium(ctx context.Context, log *logger.Logger) error {
+func (s *stubClusterUtil) WaitForCilium(_ context.Context, _ *logger.Logger) error {
 	return nil
 }
 
-func (s *stubClusterUtil) FixCilium(ctx context.Context) error {
+func (s *stubClusterUtil) FixCilium(_ context.Context) error {
 	return nil
 }
 
@@ -549,31 +548,31 @@ type stubKubectl struct {
 	listAllNamespacesResp *corev1.NamespaceList
 }
 
-func (s *stubKubectl) Initialize(kubeconfig []byte) error {
+func (s *stubKubectl) Initialize(_ []byte) error {
 	return nil
 }
 
-func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
+func (s *stubKubectl) CreateConfigMap(_ context.Context, _ corev1.ConfigMap) error {
 	return s.createConfigMapErr
 }
 
-func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
+func (s *stubKubectl) AddTolerationsToDeployment(_ context.Context, _ []corev1.Toleration, _, _ string) error {
 	return s.addTolerationsToDeploymentErr
 }
 
-func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
+func (s *stubKubectl) AddNodeSelectorsToDeployment(_ context.Context, _ map[string]string, _, _ string) error {
 	return s.addTNodeSelectorsToDeploymentErr
 }
 
-func (s *stubKubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error {
+func (s *stubKubectl) AnnotateNode(_ context.Context, _, _, _ string) error {
 	return s.annotateNodeErr
 }
 
-func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {
+func (s *stubKubectl) WaitForCRDs(_ context.Context, _ []string) error {
 	return s.waitForCRDsErr
 }
 
-func (s *stubKubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+func (s *stubKubectl) ListAllNamespaces(_ context.Context) (*corev1.NamespaceList, error) {
 	return s.listAllNamespacesResp, s.listAllNamespacesErr
 }
 
@@ -584,19 +583,19 @@ type stubHelmClient struct {
 	servicesError    error
 }
 
-func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
+func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ helm.Release, _ k8sapi.SetupPodNetworkInput) error {
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallCertManager(ctx context.Context, release helm.Release) error {
+func (s *stubHelmClient) InstallCertManager(_ context.Context, _ helm.Release) error {
 	return s.certManagerError
 }
 
-func (s *stubHelmClient) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
+func (s *stubHelmClient) InstallOperators(_ context.Context, _ helm.Release, _ map[string]any) error {
 	return s.operatorsError
 }
 
-func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
+func (s *stubHelmClient) InstallConstellationServices(_ context.Context, _ helm.Release, _ map[string]any) error {
 	return s.servicesError
 }
 

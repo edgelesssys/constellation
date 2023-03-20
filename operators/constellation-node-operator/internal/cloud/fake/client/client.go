@@ -22,37 +22,37 @@ const (
 type Client struct{}
 
 // GetNodeImage retrieves the image currently used by a node.
-func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, error) {
+func (c *Client) GetNodeImage(_ context.Context, _ string) (string, error) {
 	panic("not implemented")
 }
 
 // GetScalingGroupID retrieves the scaling group that a node is part of.
-func (c *Client) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+func (c *Client) GetScalingGroupID(_ context.Context, _ string) (string, error) {
 	panic("not implemented")
 }
 
 // CreateNode creates a new node inside a specified scaling group at the CSP and returns its future name and provider id.
-func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
+func (c *Client) CreateNode(_ context.Context, _ string) (nodeName, _ string, err error) {
 	panic("not implemented")
 }
 
 // DeleteNode starts the termination of the node at the CSP.
-func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
+func (c *Client) DeleteNode(_ context.Context, _ string) error {
 	panic("not implemented")
 }
 
 // GetNodeState retrieves the state of a pending node from a CSP.
-func (c *Client) GetNodeState(ctx context.Context, providerID string) (updatev1alpha1.CSPNodeState, error) {
+func (c *Client) GetNodeState(_ context.Context, _ string) (updatev1alpha1.CSPNodeState, error) {
 	panic("not implemented")
 }
 
 // SetScalingGroupImage sets the image to be used by newly created nodes in a scaling group.
-func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image string) error {
+func (c *Client) SetScalingGroupImage(_ context.Context, _, _ string) error {
 	panic("not implemented")
 }
 
 // GetScalingGroupImage retrieves the image currently used by a scaling group.
-func (c *Client) GetScalingGroupImage(ctx context.Context, scalingGroupID string) (string, error) {
+func (c *Client) GetScalingGroupImage(_ context.Context, _ string) (string, error) {
 	return "unsupportedCSP", nil
 }
 
@@ -81,7 +81,7 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
-func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (c *Client) ListScalingGroups(_ context.Context, _ string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
 	return []string{controlPlanesID}, []string{workersID}, nil
 }
 

@@ -93,7 +93,7 @@ type stubFetcher struct {
 	discoverCalls  int
 }
 
-func (s *stubFetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
+func (s *stubFetcher) DiscoverDebugdIPs(_ context.Context) ([]string, error) {
 	s.discoverCalls++
 	var err error
 	if s.discoverErrIdx < len(s.discoverErrs) {
@@ -113,7 +113,7 @@ type stubDownloader struct {
 	downloadInfoIPs          []string
 }
 
-func (s *stubDownloader) DownloadDeployment(ctx context.Context, ip string) error {
+func (s *stubDownloader) DownloadDeployment(_ context.Context, ip string) error {
 	s.downloadDeploymentIPs = append(s.downloadDeploymentIPs, ip)
 	var err error
 	if s.downloadDeploymentErrIdx < len(s.downloadDeploymentErrs) {
@@ -123,7 +123,7 @@ func (s *stubDownloader) DownloadDeployment(ctx context.Context, ip string) erro
 	return err
 }
 
-func (s *stubDownloader) DownloadInfo(ctx context.Context, ip string) error {
+func (s *stubDownloader) DownloadInfo(_ context.Context, ip string) error {
 	s.downloadInfoIPs = append(s.downloadInfoIPs, ip)
 	var err error
 	if s.downloadInfoErrIdx < len(s.downloadInfoErrs) {

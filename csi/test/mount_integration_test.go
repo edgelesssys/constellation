@@ -154,7 +154,7 @@ func TestDeviceCloning(t *testing.T) {
 
 type fakeKMS struct{}
 
-func (k *fakeKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+func (k *fakeKMS) GetDEK(_ context.Context, _ string, dekSize int) ([]byte, error) {
 	key := make([]byte, dekSize)
 	for i := range key {
 		key[i] = 0x41
@@ -164,7 +164,7 @@ func (k *fakeKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte
 
 type dynamicKMS struct{}
 
-func (k *dynamicKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+func (k *dynamicKMS) GetDEK(_ context.Context, dekID string, dekSize int) ([]byte, error) {
 	key := make([]byte, dekSize)
 	for i := range key {
 		key[i] = 0x41 ^ dekID[i%len(dekID)]

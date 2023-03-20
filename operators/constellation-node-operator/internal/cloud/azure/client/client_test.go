@@ -25,14 +25,14 @@ type stubScaleSetsAPI struct {
 	pager          *stubVMSSPager
 }
 
-func (a *stubScaleSetsAPI) Get(ctx context.Context, resourceGroupName string, vmScaleSetName string,
-	options *armcompute.VirtualMachineScaleSetsClientGetOptions,
+func (a *stubScaleSetsAPI) Get(_ context.Context, _, _ string,
+	_ *armcompute.VirtualMachineScaleSetsClientGetOptions,
 ) (armcompute.VirtualMachineScaleSetsClientGetResponse, error) {
 	return a.scaleSet, a.getErr
 }
 
-func (a *stubScaleSetsAPI) BeginUpdate(ctx context.Context, resourceGroupName string, vmScaleSetName string, parameters armcompute.VirtualMachineScaleSetUpdate,
-	options *armcompute.VirtualMachineScaleSetsClientBeginUpdateOptions,
+func (a *stubScaleSetsAPI) BeginUpdate(_ context.Context, _, _ string, _ armcompute.VirtualMachineScaleSetUpdate,
+	_ *armcompute.VirtualMachineScaleSetsClientBeginUpdateOptions,
 ) (*runtime.Poller[armcompute.VirtualMachineScaleSetsClientUpdateResponse], error) {
 	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armcompute.VirtualMachineScaleSetsClientUpdateResponse]{
 		Handler: &stubPoller[armcompute.VirtualMachineScaleSetsClientUpdateResponse]{
@@ -46,8 +46,8 @@ func (a *stubScaleSetsAPI) BeginUpdate(ctx context.Context, resourceGroupName st
 	return poller, a.updateErr
 }
 
-func (a *stubScaleSetsAPI) BeginDeleteInstances(ctx context.Context, resourceGroupName string, vmScaleSetName string, vmInstanceIDs armcompute.VirtualMachineScaleSetVMInstanceRequiredIDs,
-	options *armcompute.VirtualMachineScaleSetsClientBeginDeleteInstancesOptions,
+func (a *stubScaleSetsAPI) BeginDeleteInstances(_ context.Context, _, _ string, _ armcompute.VirtualMachineScaleSetVMInstanceRequiredIDs,
+	_ *armcompute.VirtualMachineScaleSetsClientBeginDeleteInstancesOptions,
 ) (*runtime.Poller[armcompute.VirtualMachineScaleSetsClientDeleteInstancesResponse], error) {
 	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armcompute.VirtualMachineScaleSetsClientDeleteInstancesResponse]{
 		Handler: &stubPoller[armcompute.VirtualMachineScaleSetsClientDeleteInstancesResponse]{
@@ -61,7 +61,7 @@ func (a *stubScaleSetsAPI) BeginDeleteInstances(ctx context.Context, resourceGro
 	return poller, a.deleteErr
 }
 
-func (a *stubScaleSetsAPI) NewListPager(resourceGroupName string, options *armcompute.VirtualMachineScaleSetsClientListOptions,
+func (a *stubScaleSetsAPI) NewListPager(_ string, _ *armcompute.VirtualMachineScaleSetsClientListOptions,
 ) *runtime.Pager[armcompute.VirtualMachineScaleSetsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armcompute.VirtualMachineScaleSetsClientListResponse]{
 		More:    a.pager.moreFunc(),
@@ -77,20 +77,20 @@ type stubvirtualMachineScaleSetVMsAPI struct {
 	pager           *stubVMSSVMPager
 }
 
-func (a *stubvirtualMachineScaleSetVMsAPI) Get(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string,
-	options *armcompute.VirtualMachineScaleSetVMsClientGetOptions,
+func (a *stubvirtualMachineScaleSetVMsAPI) Get(_ context.Context, _, _, _ string,
+	_ *armcompute.VirtualMachineScaleSetVMsClientGetOptions,
 ) (armcompute.VirtualMachineScaleSetVMsClientGetResponse, error) {
 	return a.scaleSetVM, a.getErr
 }
 
-func (a *stubvirtualMachineScaleSetVMsAPI) GetInstanceView(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string,
-	options *armcompute.VirtualMachineScaleSetVMsClientGetInstanceViewOptions,
+func (a *stubvirtualMachineScaleSetVMsAPI) GetInstanceView(_ context.Context, _, _, _ string,
+	_ *armcompute.VirtualMachineScaleSetVMsClientGetInstanceViewOptions,
 ) (armcompute.VirtualMachineScaleSetVMsClientGetInstanceViewResponse, error) {
 	return a.instanceView, a.instanceViewErr
 }
 
-func (a *stubvirtualMachineScaleSetVMsAPI) NewListPager(resourceGroupName string, virtualMachineScaleSetName string,
-	options *armcompute.VirtualMachineScaleSetVMsClientListOptions,
+func (a *stubvirtualMachineScaleSetVMsAPI) NewListPager(_, _ string,
+	_ *armcompute.VirtualMachineScaleSetVMsClientListOptions,
 ) *runtime.Pager[armcompute.VirtualMachineScaleSetVMsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armcompute.VirtualMachineScaleSetVMsClientListResponse]{
 		More:    a.pager.moreFunc(),
@@ -112,7 +112,7 @@ func (p *stubPoller[T]) Poll(context.Context) (*http.Response, error) {
 	return nil, p.pollErr
 }
 
-func (p *stubPoller[T]) Result(ctx context.Context, out *T) error {
+func (p *stubPoller[T]) Result(_ context.Context, out *T) error {
 	*out = p.result
 	return p.resultErr
 }
