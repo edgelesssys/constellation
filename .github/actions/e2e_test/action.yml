@@ -71,6 +71,9 @@ inputs:
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
     required: false
+  buildBuddyApiKey:
+    description: "BuildBuddy API key for caching Bazel artifacts"
+    required: true
 
 outputs:
   kubeconfig:
@@ -104,12 +107,19 @@ runs:
         echo "hostOS=$(go env GOOS)" >> $GITHUB_OUTPUT
         echo "hostArch=$(go env GOARCH)" >> $GITHUB_OUTPUT
 
+    - name: Setup bazel
+      uses: ./.github/actions/setup_bazel
+      with:
+        useCache: "true"
+        buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
+
     - name: Build CLI
       uses: ./.github/actions/build_cli
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
         enterpriseCLI: ${{ inputs.keepMeasurements }}
+        outputPath: "build/constellation"
 
     - name: Build the bootstrapper
       id: build-bootstrapper

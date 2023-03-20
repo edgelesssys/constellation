@@ -29,6 +29,11 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "false"
+
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
@@ -106,6 +111,11 @@ jobs:
 
       - name: Download Syft & Grype
         uses: ./.github/actions/install_syft_grype
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "false"
 
       # Build one CLI since Syft's go-module catalog will default to binary parsing.
       # Binary parsing has the advantage that it will not include other dependencies from our repo not included in the CLI.
