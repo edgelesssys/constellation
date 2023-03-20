@@ -79,11 +79,7 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 		return err
 	}
 
-	if err := c.writeVars(vars); err != nil {
-		return err
-	}
-
-	return nil
+	return c.writeVars(vars)
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
@@ -303,11 +299,7 @@ func (c *Client) RemoveInstaller() {
 
 // CleanUpWorkspace removes terraform files from the current directory.
 func (c *Client) CleanUpWorkspace() error {
-	if err := cleanUpWorkspace(c.file, c.workingDir); err != nil {
-		return err
-	}
-
-	return nil
+	return cleanUpWorkspace(c.file, c.workingDir)
 }
 
 // GetExecutable returns a Terraform executable either from the local filesystem,

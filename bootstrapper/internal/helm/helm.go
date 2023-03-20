@@ -71,11 +71,7 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
-	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
-		return err
-	}
-
-	return nil
+	return h.install(ctx, release.Chart, mergedVals)
 }
 
 // InstallCertManager installs the cert-manager chart.
@@ -84,11 +80,7 @@ func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) e
 	h.Wait = release.Wait
 	h.Timeout = 10 * time.Minute
 
-	if err := h.install(ctx, release.Chart, release.Values); err != nil {
-		return err
-	}
-
-	return nil
+	return h.install(ctx, release.Chart, release.Values)
 }
 
 // InstallOperators installs the Constellation Operators.
@@ -98,11 +90,7 @@ func (h *Client) InstallOperators(ctx context.Context, release helm.Release, ext
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
-	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
-		return err
-	}
-
-	return nil
+	return h.install(ctx, release.Chart, mergedVals)
 }
 
 // InstallCilium sets up the cilium pod network.
@@ -128,10 +116,7 @@ func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release,
 	release.Values["k8sServiceHost"] = host
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
-	if err := h.install(ctx, release.Chart, release.Values); err != nil {
-		return err
-	}
-	return nil
+	return h.install(ctx, release.Chart, release.Values)
 }
 
 func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
@@ -179,11 +164,7 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 		release.Values["k8sServicePort"] = port
 	}
 
-	if err := h.install(ctx, release.Chart, release.Values); err != nil {
-		return err
-	}
-
-	return nil
+	return h.install(ctx, release.Chart, release.Values)
 }
 
 // install tries to install the given chart and aborts after ~5 tries.
