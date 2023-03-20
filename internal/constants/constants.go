@@ -122,10 +122,8 @@ const (
 	ComponentsListKey = "components"
 	// NodeVersionResourceName resource name used for NodeVersion in constellation-operator and CLI.
 	NodeVersionResourceName = "constellation-version"
-
 	// NodeKubernetesComponentsAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.
 	NodeKubernetesComponentsAnnotationKey = "constellation.edgeless.systems/kubernetes-components"
-
 	// JoiningNodesConfigMapName is the name of the configMap holding the joining nodes with the components hashes the node-operator should annotate the nodes with.
 	JoiningNodesConfigMapName = "joining-nodes"
 
