@@ -49,6 +49,11 @@ runs:
         path: "*_sonobuoy_*.tar.gz"
 
     # Only works on "sonobuoy full" tests (e2e plugin)
+    - name: Extract test results
+      if: (!env.ACT) && contains(inputs.sonobuoyTestSuiteCmd, '--plugin e2e')
+      shell: bash
+      run: tar -xf *_sonobuoy_*.tar.gz
+
     - name: Publish test results
       if: (!env.ACT) && contains(inputs.sonobuoyTestSuiteCmd, '--plugin e2e')
       uses: mikepenz/action-junit-report@4fa23552acda20a6a1d44f16224a90efbeb6c5f1 # v3.7.5
