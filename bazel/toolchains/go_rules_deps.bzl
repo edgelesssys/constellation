@@ -17,11 +17,11 @@ def go_deps():
     )
     http_archive(
         name = "bazel_gazelle",
-        strip_prefix = "bazel-gazelle-af021617bef884e1e40afb01b692092a471d9a48",
-        sha256 = "cf4f8a87304f417840e5b854eabf4f296e6fd808f7e963ee4d1fbb0c2c190f8a",
+        strip_prefix = "bazel-gazelle-97a754c6e45848828b27152fa64ca5dd3003d832",
+        sha256 = "2591fe5c9ff639317c5144665f2b97f3e45dac7ebb0b9357f8ddb3533b60a16f",
         urls = [
             # Depending on main until the next release, needed change from https://github.com/bazelbuild/bazel-gazelle/pull/1432
             # so that "go:embed all:" directives work.
-            "https://github.com/bazelbuild/bazel-gazelle/archive/af021617bef884e1e40afb01b692092a471d9a48.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/archive/97a754c6e45848828b27152fa64ca5dd3003d832.tar.gz",
         ],
     )
