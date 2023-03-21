@@ -42,8 +42,8 @@ jobs:
         env:
           REFSTREAM: ${{ matrix.refStream }}
         run: |
-          echo "ref=${REFSTREAM%-*}" | tee "$GITHUB_OUTPUT"
-          echo "stream=${REFSTREAM#*-}" | tee "$GITHUB_OUTPUT"
+          echo "ref=${REFSTREAM%-*}" | tee -a "$GITHUB_OUTPUT"
+          echo "stream=${REFSTREAM#*-}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Find latest image
         id: find-latest-image
