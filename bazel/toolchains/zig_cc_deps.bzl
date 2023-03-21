@@ -19,7 +19,7 @@ def zig_cc_deps():
     # See also https://github.com/uber/bazel-zig-cc/pull/23
     http_archive(
         name = "bazel-zig-cc",
-        sha256 = "9e7592d5714829b769473ec7a7c04de456cd266a117481d2e8f350432d03b7f8",
-        strip_prefix = "bazel-zig-cc-6d2ee8cad0b1170883dd13ffddc7b355ee232f07",
-        urls = ["https://github.com/uber/bazel-zig-cc/archive/6d2ee8cad0b1170883dd13ffddc7b355ee232f07.tar.gz"],
+        sha256 = "bea372f7f9bd8541f7b0a152c76c7b9396201c36a0ed229b36c48301815c3141",
+        strip_prefix = "bazel-zig-cc-f3e4542bd62f4aef794a3d184140a9d30b8fadb8",
+        urls = ["https://github.com/uber/bazel-zig-cc/archive/f3e4542bd62f4aef794a3d184140a9d30b8fadb8.tar.gz"],
     )
