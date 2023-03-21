@@ -46,6 +46,7 @@ ALLOWED_RATIO_DELTA = {
     'udp_bw_mbit': 0.7,
 }
 
+
 def is_bigger_better(bench_suite: str) -> bool:
     return bench_suite in BIGGER_BETTER
 
@@ -67,6 +68,7 @@ def get_paths() -> Tuple[str, str]:
         raise TypeError(
             'Both ENV variables PREV_BENCH and CURR_BENCH are required.')
     return path_prev, path_curr
+
 
 class BenchmarkComparer:
     def __init__(self, path_prev, path_curr):
@@ -113,8 +115,10 @@ class BenchmarkComparer:
             '',
             '<details>',
             '',
-            '- Commit of current benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(ch=bench_curr['metadata']['github.sha']),
-            '- Commit of previous benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(ch=bench_prev['metadata']['github.sha']),
+            '- Commit of current benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(
+                ch=bench_curr['metadata']['github.sha']),
+            '- Commit of previous benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(
+                ch=bench_prev['metadata']['github.sha']),
             '',
             '| Benchmark suite | Metric | Current | Previous | Ratio |',
             '|-|-|-|-|-|',
@@ -131,49 +135,50 @@ class BenchmarkComparer:
         for subtest in KNB_TESTS:
             if subtest not in bench_prev['knb']:
                 raise ValueError(f'Previous benchmnarks do not include the "{subtest}" test.')
-            for metric  in bench_prev['knb'][subtest].keys():
+            for metric in bench_prev['knb'][subtest].keys():
                 md_lines.append(self.compare_test('knb', subtest, metric, bench_prev, bench_curr))
 
         md_lines += ['', '</details>']
         return '\n'.join(md_lines)
 
-
     def compare_test(self, test, subtest, metric, bench_prev, bench_curr) -> str:
-            if subtest not in bench_curr[test]:
-                raise ValueError(
-                    'Benchmark record from previous benchmark not in current.')
-            val_prev = bench_prev[test][subtest][metric]
-            val_curr = bench_curr[test][subtest][metric]
+        if subtest not in bench_curr[test]:
+            raise ValueError(
+                'Benchmark record from previous benchmark not in current.')
+        val_prev = bench_prev[test][subtest][metric]
+        val_curr = bench_curr[test][subtest][metric]
 
-            # get unit string or use default API unit string
-            unit = UNIT_STR.get(metric, API_UNIT_STR)
+        # get unit string or use default API unit string
+        unit = UNIT_STR.get(metric, API_UNIT_STR)
 
-            if val_curr == 0 or val_prev == 0:
-                ratio = 'N/A'
+        if val_curr == 0 or val_prev == 0:
+            ratio = 'N/A'
+        else:
+            if is_bigger_better(bench_suite=metric):
+                ratio_num = val_curr / val_prev
+                if ratio_num < ALLOWED_RATIO_DELTA.get(metric, 1):
+                    self.set_failed()
             else:
-                if is_bigger_better(bench_suite=metric):
-                    ratio_num = val_curr / val_prev
-                    if ratio_num < ALLOWED_RATIO_DELTA.get(metric, 1):
-                        self.set_failed()
-                else:
-                    ratio_num = val_prev / val_curr
-                    if ratio_num > ALLOWED_RATIO_DELTA.get(metric, 1):
-                        self.set_failed()
-                    
-                ratio_num = round(ratio_num, 3)
-                emoji = PROGRESS[int(ratio_num >= 1)]
-                ratio = f'{ratio_num} {emoji}'
+                ratio_num = val_prev / val_curr
+                if ratio_num > ALLOWED_RATIO_DELTA.get(metric, 1):
+                    self.set_failed()
 
-            return f'| {subtest} | {metric} ({unit}) | {val_curr} | {val_prev} | {ratio} |'
+            ratio_num = round(ratio_num, 3)
+            emoji = PROGRESS[int(ratio_num >= 1)]
+            ratio = f'{ratio_num} {emoji}'
+
+        return f'| {subtest} | {metric} ({unit}) | {val_curr} | {val_prev} | {ratio} |'
 
     def set_failed(self) -> None:
         os.environ['COMPARISON_SUCCESS'] = str(False)
+
 
 def main():
     path_prev, path_curr = get_paths()
     c = BenchmarkComparer(path_prev, path_curr)
     output = c.compare()
     print(output)
+
 
 if __name__ == '__main__':
     main()

@@ -8,6 +8,7 @@ import compare
 TEST_INPUTS = "./test-inputs"
 RESULT_FNAME_AZURE = "constellation-azure.json"
 
+
 class TestParse(unittest.TestCase):
     def test_parse(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -43,6 +44,7 @@ expected_comparison_result = '''# constellation-azure
 | pod2svc | udp_bw_mbit (Mbit/s) | 564.0 | 564.0 | 1.0 ⬆️ |
 
 </details>'''
+
 
 class TestCompare(unittest.TestCase):
     def test_compare(self):
