@@ -13,6 +13,12 @@ Existing attestation options, like `measurements` and `idKeyDigests` will be mov
 
 This entry will replace the `attestationVariant` entry.
 
+Configuration entries that specify a minimum acceptable version, for example `microcodeVersion` for `azure-sev-snp`,
+may instead use the meta value `latest`.
+This will configure the CLI to use the latest available settings for the given environment.
+The `latest` value will not be static for a given release, but is dynamically updated for all releases,
+as it is independent of out images, and may need changing if a CSP makes changes to their infrastructure.
+
 Example configuration for Azure SEV-SNP:
 
 ```yaml
@@ -50,7 +56,7 @@ attestation:
     # Lowest acceptable SNP version
     snpVersion: 8
     # Lowest acceptable bootloader version
-    bootloaderVersion: 3
+    bootloaderVersion: latest
 ```
 
 ## In our code
@@ -73,4 +79,8 @@ This should work similar to how we retrieve the CSP using `*Config.GetProvider()
 Creation of a Validator should require using a concrete type, so the attestation config interface needs to be cast to the configuration required by the validator.
 
 Additional methods to set/retrieve common values of the config interface may be defined, for example to set expected measurements,
-since these are currently used by all attestation variants
+since these are currently used by all attestation variants.
+
+If an attestation config specifies the minimum version of a parameter as `latest`,
+that value is substituted with the most recent version of that parameter for the given CSP from our API.
+The value substitution is part of the unmarshalling logic.
