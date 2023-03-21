@@ -172,6 +172,24 @@ func (c *Client) currentVersion(release string) (string, error) {
 // ErrConfirmationMissing signals that an action requires user confirmation.
 var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
+// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
+// setAttestationVariant sets the attesationVariant value on verification-service and join-service value maps.
+func setAttestationVariant(values map[string]any, variant string) error {
+	joinServiceVals, ok := values["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid join-service values")
+	}
+	joinServiceVals["attestationVariant"] = variant
+
+	verifyServiceVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid verification-service values")
+	}
+	verifyServiceVals["attestationVariant"] = variant
+
+	return nil
+}
+
 func (c *Client) upgradeRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
 ) error {
@@ -207,6 +225,13 @@ func (c *Client) upgradeRelease(
 	case constellationServicesInfo.chartName:
 		releaseName = constellationServicesInfo.releaseName
 		values, err = loader.loadConstellationServicesValues()
+
+		// TODO: v2.8: remove this call.
+		// Manually setting attestationVariant is required here since upgrade normally isn't allowed to change this value.
+		// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
+		if err := setAttestationVariant(values, conf.AttestationVariant); err != nil {
+			return fmt.Errorf("setting attestationVariant: %w", err)
+		}
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
