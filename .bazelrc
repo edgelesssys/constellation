@@ -20,6 +20,9 @@ build --strip=always
 # set build mode to opt by default (better reproducibility and performance)
 build --compilation_mode=opt
 
+# use pure go implementation of netdns
+build --define=gotags=netgo
+
 # enable tpm simulator for tests
 test --//bazel/settings:tpm_simulator
 
@@ -48,4 +51,4 @@ build:remote_cache --experimental_remote_build_event_upload=minimal
 build:remote_cache --experimental_remote_cache_compression
 build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
 
-try-import .bazeloverwriterc 
+try-import .bazeloverwriterc
