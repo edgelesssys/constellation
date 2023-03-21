@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package vtpm
 
 import (
+	"context"
 	"crypto"
 	"encoding/json"
 	"errors"
@@ -51,7 +52,7 @@ func (s simTPMWithEventLog) EventLog() ([]byte, error) {
 	return header, nil
 }
 
-func fakeGetInstanceInfo(_ io.ReadWriteCloser) ([]byte, error) {
+func fakeGetInstanceInfo(_ context.Context, _ io.ReadWriteCloser, _ []byte) ([]byte, error) {
 	return []byte("unit-test"), nil
 }
 
@@ -59,8 +60,8 @@ func TestValidate(t *testing.T) {
 	require := require.New(t)
 
 	fakeValidateCVM := func(AttestationDocument, *attest.MachineState) error { return nil }
-	fakeGetTrustedKey := func(aKPub, instanceInfo []byte) (crypto.PublicKey, error) {
-		pubArea, err := tpm2.DecodePublic(aKPub)
+	fakeGetTrustedKey := func(_ context.Context, attDoc AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+		pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +176,7 @@ func TestValidate(t *testing.T) {
 		"untrusted attestation public key": {
 			validator: NewValidator(
 				testExpectedPCRs,
-				func(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
+				func(context.Context, AttestationDocument, []byte) (crypto.PublicKey, error) {
 					return nil, errors.New("untrusted")
 				},
 				fakeValidateCVM, warnLog),
@@ -301,7 +302,7 @@ func TestFailIssuer(t *testing.T) {
 			issuer: NewIssuer(
 				newSimTPMWithEventLog,
 				tpmclient.AttestationKeyRSA,
-				func(io.ReadWriteCloser) ([]byte, error) { return nil, errors.New("failure") },
+				func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) { return nil, errors.New("failure") },
 				nil,
 			),
 			userData: []byte("Constellation"),

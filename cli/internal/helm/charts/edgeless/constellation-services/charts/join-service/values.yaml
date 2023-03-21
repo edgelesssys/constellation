@@ -1,4 +1,7 @@
 csp: "gcp"
 attestationVariant: ""
+measurements: ""
+idKeyConfig: ""
+measurementSalt: ""
 joinServicePort: 9090
 joinServiceNodePort: 30090

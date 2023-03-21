@@ -110,7 +110,7 @@ func TestNewValidator(t *testing.T) {
 					Azure: &config.AzureConfig{
 						Measurements:       testPCRs,
 						IDKeyDigest:        idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
-						EnforceIDKeyDigest: &[]bool{true}[0],
+						EnforceIDKeyDigest: idkeydigest.StrictChecking,
 					},
 				},
 			},
@@ -121,7 +121,7 @@ func TestNewValidator(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators, err := NewValidator(tc.config, logger.NewTest(t))
+			validators, err := NewValidator(tc.config, "https://192.0.2.1:8080/maa", logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -168,7 +168,11 @@ func TestValidatorV(t *testing.T) {
 		"azure cvm": {
 			variant: oid.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
-			wantVs:  snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
+			wantVs: snp.NewValidator(
+				newTestPCRs(),
+				idkeydigest.Config{IDKeyDigests: idkeydigest.IDKeyDigests{}, EnforcementPolicy: idkeydigest.WarnOnly},
+				nil,
+			),
 		},
 		"azure trusted launch": {
 			variant: oid.AzureTrustedLaunch{},

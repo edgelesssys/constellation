@@ -8,6 +8,7 @@ package vtpm
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/sha256"
 	"encoding/json"
@@ -58,9 +59,9 @@ type (
 	// GetTPMAttestationKey loads a TPM key to perform attestation.
 	GetTPMAttestationKey func(tpm io.ReadWriter) (*tpmClient.Key, error)
 	// GetTPMTrustedAttestationPublicKey verifies and returns the attestation public key.
-	GetTPMTrustedAttestationPublicKey func(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error)
+	GetTPMTrustedAttestationPublicKey func(context.Context, AttestationDocument, []byte) (crypto.PublicKey, error)
 	// GetInstanceInfo returns VM metdata.
-	GetInstanceInfo func(tpm io.ReadWriteCloser) ([]byte, error)
+	GetInstanceInfo func(ctx context.Context, tpm io.ReadWriteCloser, extraData []byte) ([]byte, error)
 	// ValidateCVM validates confidential computing capabilities of the instance issuing the attestation.
 	ValidateCVM func(attestation AttestationDocument, state *attest.MachineState) error
 )
@@ -135,7 +136,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
 	}
 
 	// Fetch instance info of the VM
-	instanceInfo, err := i.getInstanceInfo(tpm)
+	instanceInfo, err := i.getInstanceInfo(context.TODO(), tpm, extraData) // TODO(daniel-weisse): update Issue/Validate to use context
 	if err != nil {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
 	}
@@ -193,8 +194,10 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 		return nil, fmt.Errorf("unmarshaling TPM attestation document: %w", err)
 	}
 
+	extraData := makeExtraData(attDoc.UserData, nonce)
+
 	// Verify and retrieve the trusted attestation public key using the provided instance info
-	aKP, err := v.getTrustedKey(attDoc.Attestation.AkPub, attDoc.InstanceInfo)
+	aKP, err := v.getTrustedKey(context.TODO(), attDoc, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
@@ -203,7 +206,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	state, err := tpmServer.VerifyAttestation(
 		attDoc.Attestation,
 		tpmServer.VerifyOpts{
-			Nonce:      makeExtraData(attDoc.UserData, nonce),
+			Nonce:      extraData,
 			TrustedAKs: []crypto.PublicKey{aKP},
 			AllowSHA1:  false,
 		},

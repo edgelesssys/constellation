@@ -31,7 +31,7 @@ func NewLogger(ctx context.Context) (*Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	imdsAPI := &imdsClient{
+	imdsAPI := &IMDSClient{
 		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}
 	subscriptionID, err := imdsAPI.subscriptionID(ctx)

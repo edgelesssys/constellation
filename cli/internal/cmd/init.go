@@ -137,7 +137,9 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		cmd.PrintErrf("License check failed: %v", err)
 	}
 	i.log.Debugf("Checked license")
-	validator, err := cloudcmd.NewValidator(conf, i.log)
+
+	i.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
+	validator, err := cloudcmd.NewValidator(conf, idFile.AttestationURL, i.log)
 	if err != nil {
 		return err
 	}
@@ -153,7 +155,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt, idFile.AttestationURL)
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -172,7 +174,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           conf.EnforcedPCRs(),
-		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
 		ClusterName:            clusterName,
@@ -424,17 +425,6 @@ func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler fi
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return secret, nil
-}
-
-func readIPFromIDFile(fileHandler file.Handler) (string, error) {
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
-		return "", err
-	}
-	if idFile.IP == "" {
-		return "", fmt.Errorf("missing IP address in %q", constants.ClusterIDsFileName)
-	}
-	return idFile.IP, nil
 }
 
 func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {

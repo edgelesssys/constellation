@@ -7,9 +7,7 @@ data:
   {{/* mustToJson is required so the json-strings passed from go are of type string in the rendered yaml. */}}
   measurements: {{ .Values.measurements | mustToJson }}
   {{- if eq .Values.csp "Azure" }}
-  {{/* ConfigMap.data is of type map[string]string. quote will not quote a quoted string. */}}
-  enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest | quote }}
-  idkeydigests: {{ .Values.idkeydigests | mustToJson }}
+  idKeyConfig: {{ .Values.idKeyConfig | mustToJson }}
   {{- end }}
 binaryData:
   measurementSalt: {{ .Values.measurementSalt }}

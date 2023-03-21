@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -38,7 +39,7 @@ func TestLoad(t *testing.T) {
 
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"))
+	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"), "https://192.0.2.1:8080/maa")
 	require.NoError(err)
 
 	var helmReleases helm.Releases
@@ -72,7 +73,11 @@ func TestConstellationServices(t *testing.T) {
 				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
 					DeployCSIDriver:    toPtr(true),
-					EnforceIDKeyDigest: toPtr(true),
+					EnforceIDKeyDigest: idkeydigest.StrictChecking,
+					IDKeyDigest: [][]byte{
+						{0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad},
+						{0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa},
+					},
 				}},
 			},
 			enforceIDKeyDigest: true,
@@ -127,7 +132,7 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
-			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "https://192.0.2.1:8080/maa")
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{

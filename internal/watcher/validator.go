@@ -9,9 +9,9 @@ package watcher
 import (
 	"encoding/asn1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"sync"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/spf13/afero"
 )
 
 // Updatable implements an updatable atls.Validator.
@@ -74,32 +75,48 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New measurements: %+v", measurements)
 
-	var digest idkeydigest.IDKeyDigests
-	var enforceIDKeyDigest bool
+	// Read ID Key config
+	var idKeyCfg idkeydigest.Config
 	if u.variant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
-		u.log.Infof("Updating encforceIdKeyDigest value")
-		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename))
-		if err != nil {
-			return err
-		}
-		enforceIDKeyDigest, err = strconv.ParseBool(string(enforceRaw))
-		if err != nil {
-			return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
-		}
-		u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIDKeyDigest)
+		u.log.Infof("Updating SEV-SNP ID Key config")
 
-		u.log.Infof("Updating expected idkeydigest")
-		idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename))
+		err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename), &idKeyCfg)
 		if err != nil {
-			return err
+			if !errors.Is(err, afero.ErrFileNotFound) {
+				return fmt.Errorf("reading ID Key config: %w", err)
+			}
+
+			u.log.Warnf("ID Key config file not found, falling back to old format (v2.6 or earlier)")
+
+			// v2.6 fallback
+			// TODO: Remove after v2.7 release
+			var digest idkeydigest.IDKeyDigests
+			var enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
+			enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename))
+			if err != nil {
+				return err
+			}
+			enforceIDKeyDigest = idkeydigest.EnforcePolicyFromString(string(enforceRaw))
+			if err != nil {
+				return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
+			}
+
+			idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename))
+			if err != nil {
+				return err
+			}
+			if err = json.Unmarshal(idkeydigestRaw, &digest); err != nil {
+				return fmt.Errorf("unmarshaling content of IDKeyDigestFilename: %s: %w", idkeydigestRaw, err)
+			}
+
+			idKeyCfg.IDKeyDigests = digest
+			idKeyCfg.EnforcementPolicy = enforceIDKeyDigest
 		}
-		if err = json.Unmarshal(idkeydigestRaw, &digest); err != nil {
-			return fmt.Errorf("unmarshaling content of IDKeyDigestFilename: %s: %w", idkeydigestRaw, err)
-		}
-		u.log.Debugf("New idkeydigest: %v", digest)
+
+		u.log.Debugf("New ID Key config: %+v", idKeyCfg)
 	}
 
-	validator, err := choose.Validator(u.variant, measurements, digest, enforceIDKeyDigest, u.log)
+	validator, err := choose.Validator(u.variant, measurements, idKeyCfg, u.log)
 	if err != nil {
 		return fmt.Errorf("updating validator: %w", err)
 	}

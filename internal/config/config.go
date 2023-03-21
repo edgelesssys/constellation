@@ -192,7 +192,7 @@ type AzureConfig struct {
 	IDKeyDigest Digests `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
-	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
+	EnforceIDKeyDigest idkeydigest.EnforceIDKeyDigest `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
@@ -329,7 +329,7 @@ func Default() *Config {
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      toPtr(true),
 				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
-				EnforceIDKeyDigest:   toPtr(true),
+				EnforceIDKeyDigest:   idkeydigest.MAAFallback,
 				ConfidentialVM:       toPtr(true),
 				SecureBoot:           toPtr(false),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
@@ -514,9 +514,12 @@ func (c *Config) GetMeasurements() measurements.M {
 	return nil
 }
 
-// EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
-func (c *Config) EnforcesIDKeyDigest() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
+// IDKeyDigestPolicy returns the IDKeyDigest checking policy for a cloud provider.
+func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
+	if c.Provider.Azure != nil {
+		return c.Provider.Azure.EnforceIDKeyDigest
+	}
+	return idkeydigest.Unknown
 }
 
 // EnforcedPCRs returns the list of enforced PCRs for the configured cloud provider.

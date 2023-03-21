@@ -52,8 +52,8 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 
 // getInstanceInfo returns information about the current instance using the aws Metadata SDK.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
-	return func(io.ReadWriteCloser) ([]byte, error) {
+func getInstanceInfo(client awsMetaData) func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
+	return func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
 		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(context.Background(), &imds.GetInstanceIdentityDocumentInput{})
 		if err != nil {
 			return nil, errors.New("unable to fetch instance identity document")

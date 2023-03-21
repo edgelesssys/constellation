@@ -43,6 +43,7 @@ go_library(
         "//cli/internal/terraform",
         "//disk-mapper/recoverproto",
         "//internal/atls",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",

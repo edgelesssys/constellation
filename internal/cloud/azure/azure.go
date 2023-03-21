@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"path"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -51,12 +50,8 @@ func New(ctx context.Context) (*Cloud, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	// The default http client may use a system-wide proxy and it is recommended to disable the proxy explicitly:
-	// https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=linux#proxies
-	// See also: https://github.com/microsoft/azureimds/blob/master/imdssample.go#L10
-	imdsAPI := imdsClient{
-		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
-	}
+
+	imdsAPI := NewIMDSClient()
 	subscriptionID, err := imdsAPI.subscriptionID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving subscription ID: %w", err)
@@ -91,7 +86,7 @@ func New(ctx context.Context) (*Cloud, error) {
 	}
 
 	return &Cloud{
-		imds:            &imdsAPI,
+		imds:            imdsAPI,
 		netIfacAPI:      networkInterfacesAPI,
 		virtNetAPI:      virtualNetworksAPI,
 		secGroupAPI:     securityGroupsAPI,

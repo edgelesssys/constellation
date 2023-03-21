@@ -3,7 +3,10 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "idkeydigest",
-    srcs = ["idkeydigest.go"],
+    srcs = [
+        "enforceidkeydigest_string.go",
+        "idkeydigest.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest",
     visibility = ["//:__subpackages__"],
     deps = ["//internal/cloud/cloudprovider"],

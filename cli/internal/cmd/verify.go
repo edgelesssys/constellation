@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net"
 	"strconv"
 	"strings"
@@ -84,9 +83,8 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return err
 	}
 
-	provider := conf.GetProvider()
-	v.log.Debugf("Creating aTLS Validator for %s", provider)
-	validators, err := cloudcmd.NewValidator(conf, v.log)
+	v.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
+	validators, err := cloudcmd.NewValidator(conf, flags.maaURL, v.log)
 	if err != nil {
 		return err
 	}
@@ -143,24 +141,24 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 	v.log.Debugf("Flag 'force' set to %t", force)
 
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
+		return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
+	}
+
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
 		v.log.Debugf("Trying to supplement empty flag values from %q", constants.ClusterIDsFileName)
-		var idFile clusterid.File
-		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err == nil {
-			if emptyEndpoint {
-				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
-				endpoint = idFile.IP
-			}
-			if emptyIDs {
-				cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", constants.ClusterIDsFileName)
-				ownerID = idFile.OwnerID
-				clusterID = idFile.ClusterID
-			}
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
+		if emptyEndpoint {
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
+			endpoint = idFile.IP
+		}
+		if emptyIDs {
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", constants.ClusterIDsFileName)
+			ownerID = idFile.OwnerID
+			clusterID = idFile.ClusterID
 		}
 	}
 
@@ -178,6 +176,7 @@ func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 		configPath: configPath,
 		ownerID:    ownerID,
 		clusterID:  clusterID,
+		maaURL:     idFile.AttestationURL,
 		force:      force,
 	}, nil
 }
@@ -187,6 +186,7 @@ type verifyFlags struct {
 	ownerID    string
 	clusterID  string
 	configPath string
+	maaURL     string
 	force      bool
 }
 

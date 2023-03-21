@@ -26,14 +26,13 @@ import (
 type Validator struct {
 	attestationVariant oid.Getter
 	pcrs               measurements.M
-	idkeydigests       idkeydigest.IDKeyDigests
-	enforceIDKeyDigest bool
+	idKeyConfig        idkeydigest.Config
 	validator          atls.Validator
 	log                debugLog
 }
 
 // NewValidator creates a new Validator.
-func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
+func NewValidator(conf *config.Config, maaURL string, log debugLog) (*Validator, error) {
 	v := Validator{log: log}
 	variant, err := oid.FromString(conf.AttestationVariant)
 	if err != nil {
@@ -46,8 +45,11 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	}
 
 	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
-		v.enforceIDKeyDigest = conf.EnforcesIDKeyDigest()
-		v.idkeydigests = conf.IDKeyDigests()
+		v.idKeyConfig = idkeydigest.Config{
+			IDKeyDigests:      conf.Provider.Azure.IDKeyDigest,
+			EnforcementPolicy: conf.IDKeyDigestPolicy(),
+			MAAURL:            maaURL,
+		}
 	}
 
 	return &v, nil
@@ -138,7 +140,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd, log: v.log}
 
 	// Use of a valid variant has been check in NewValidator so we may drop the error
-	v.validator, _ = choose.Validator(v.attestationVariant, v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
+	v.validator, _ = choose.Validator(v.attestationVariant, v.pcrs, v.idKeyConfig, log)
 }
 
 // warnLogger implements logging of warnings for validators.

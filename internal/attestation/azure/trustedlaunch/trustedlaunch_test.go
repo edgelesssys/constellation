@@ -8,6 +8,7 @@ package trustedlaunch
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -19,9 +20,11 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	tpmclient "github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,12 +186,19 @@ func TestGetAttestationCert(t *testing.T) {
 			issuer := NewIssuer(logger.NewTest(t))
 			issuer.hClient = newTestClient(tc.crlServer)
 
-			certs, err := issuer.getAttestationCert(tpm)
+			certs, err := issuer.getAttestationCert(context.Background(), tpm, nil)
 			if tc.wantIssueErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
+
+			attDoc := vtpm.AttestationDocument{
+				InstanceInfo: certs,
+				Attestation: &attest.Attestation{
+					AkPub: akPub,
+				},
+			}
 
 			validator := NewValidator(measurements.M{}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
@@ -197,7 +207,7 @@ func TestGetAttestationCert(t *testing.T) {
 			roots.AddCert(cert)
 			validator.roots = roots
 
-			key, err := validator.verifyAttestationKey(akPub, certs)
+			key, err := validator.verifyAttestationKey(context.Background(), attDoc, nil)
 			if tc.wantValidateErr {
 				assert.Error(err)
 				return

@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package trustedlaunch
 
 import (
+	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
@@ -49,14 +50,14 @@ func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 
 // verifyAttestationKey establishes trust in an attestation key.
 // It does so by verifying the certificate chain of the attestation key certificate.
-func (v *Validator) verifyAttestationKey(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
-	pubArea, err := tpm2.DecodePublic(akPub)
+func (v *Validator) verifyAttestationKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
 		return nil, fmt.Errorf("decoding attestation key public area: %w", err)
 	}
 
 	var akSigner akSigner
-	if err := json.Unmarshal(instanceInfo, &akSigner); err != nil {
+	if err := json.Unmarshal(attDoc.InstanceInfo, &akSigner); err != nil {
 		return nil, fmt.Errorf("unmarshaling attestation key signer info: %w", err)
 	}
 

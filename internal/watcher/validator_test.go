@@ -79,15 +79,13 @@ func TestNewUpdateableValidator(t *testing.T) {
 					filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
 					measurements.M{11: measurements.WithAllBytes(0x00, false)},
 				))
-				keyDigest, err := json.Marshal(idkeydigest.DefaultsFor(cloudprovider.Azure))
-				require.NoError(err)
-				require.NoError(handler.Write(
-					filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
-					keyDigest,
-				))
-				require.NoError(handler.Write(
-					filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
-					[]byte("false"),
+
+				require.NoError(handler.WriteJSON(
+					filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
+					idkeydigest.Config{
+						IDKeyDigests:      idkeydigest.DefaultsFor(cloudprovider.Azure),
+						EnforcementPolicy: idkeydigest.WarnOnly,
+					},
 				))
 			}
 
@@ -126,13 +124,12 @@ func TestUpdate(t *testing.T) {
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
 		measurements.M{11: measurements.WithAllBytes(0x00, false)},
 	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
-		[]byte{},
-	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
-		[]byte("false"),
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
+		idkeydigest.Config{
+			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
+			EnforcementPolicy: idkeydigest.WarnOnly,
+		},
 	))
 
 	// call update once to initialize the server's validator
@@ -167,6 +164,18 @@ func TestUpdate(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	assert.Error(err)
+
+	// test old ID Key Digest format
+	require.NoError(handler.Write(
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
+		[]byte{},
+	))
+	require.NoError(handler.Write(
+		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
+		[]byte("false"),
+	))
+
+	assert.NoError(validator.Update())
 }
 
 func TestOIDConcurrency(t *testing.T) {
@@ -178,9 +187,12 @@ func TestOIDConcurrency(t *testing.T) {
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
 		measurements.M{11: measurements.WithAllBytes(0x00, false)},
 	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
-		[]byte{},
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
+		idkeydigest.Config{
+			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
+			EnforcementPolicy: idkeydigest.WarnOnly,
+		},
 	))
 
 	// create server
@@ -223,13 +235,12 @@ func TestUpdateConcurrency(t *testing.T) {
 		measurements.M{11: measurements.WithAllBytes(0x00, false)},
 		file.OptNone,
 	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
-		[]byte{},
-	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
-		[]byte("false"),
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
+		idkeydigest.Config{
+			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
+			EnforcementPolicy: idkeydigest.WarnOnly,
+		},
 	))
 
 	var wg sync.WaitGroup

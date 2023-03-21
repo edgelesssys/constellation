@@ -8,6 +8,7 @@ package snp
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/sha256"
 	"crypto/x509"
@@ -41,18 +42,36 @@ const (
 type Validator struct {
 	oid.AzureSEVSNP
 	*vtpm.Validator
+	hclValidator hclAkValidator
+	maa          maaValidator
+
+	idKeyDigests       idkeydigest.IDKeyDigests
+	enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
+	maaURL             string
+
+	log vtpm.AttestationLogger
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, idKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
-	return &Validator{
-		Validator: vtpm.NewValidator(
-			pcrs,
-			getTrustedKey(&azureInstanceInfo{}, idKeyDigests, enforceIDKeyDigest, log),
-			validateCVM,
-			log,
-		),
+func NewValidator(pcrs measurements.M, idKeyConf idkeydigest.Config, log vtpm.AttestationLogger) *Validator {
+	if log == nil {
+		log = nopAttestationLogger{}
 	}
+	v := &Validator{
+		hclValidator:       &azureInstanceInfo{},
+		maa:                newMAAClient(),
+		idKeyDigests:       idKeyConf.IDKeyDigests,
+		enforceIDKeyDigest: idKeyConf.EnforcementPolicy,
+		maaURL:             idKeyConf.MAAURL,
+		log:                log,
+	}
+	v.Validator = vtpm.NewValidator(
+		pcrs,
+		v.getTrustedKey,
+		validateCVM,
+		log,
+	)
+	return v
 }
 
 // validateCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
@@ -77,40 +96,36 @@ func reverseEndian(b []byte) {
 
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func getTrustedKey(
-	hclAk HCLAkValidator, idKeyDigest idkeydigest.IDKeyDigests, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
-) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
-	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
-		var instanceInfo azureInstanceInfo
-		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
-			return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
-		}
-
-		report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
-		if err != nil {
-			return nil, fmt.Errorf("parsing attestation report: %w", err)
-		}
-
-		vcek, err := validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
-		if err != nil {
-			return nil, fmt.Errorf("validating VCEK: %w", err)
-		}
-
-		if err := validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
-			return nil, fmt.Errorf("validating SNP report: %w", err)
-		}
-
-		pubArea, err := tpm2.DecodePublic(akPub)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = hclAk.validateAk(instanceInfo.RuntimeData, report.ReportData[:], pubArea.RSAParameters); err != nil {
-			return nil, fmt.Errorf("validating HCLAkPub: %w", err)
-		}
-
-		return pubArea.Key()
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, extraData []byte) (crypto.PublicKey, error) {
+	var instanceInfo azureInstanceInfo
+	if err := json.Unmarshal(attDoc.InstanceInfo, &instanceInfo); err != nil {
+		return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
 	}
+
+	report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
+	if err != nil {
+		return nil, fmt.Errorf("parsing attestation report: %w", err)
+	}
+
+	vcek, err := validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
+	if err != nil {
+		return nil, fmt.Errorf("validating VCEK: %w", err)
+	}
+
+	if err := v.validateSNPReport(ctx, vcek, report, instanceInfo.MAAToken, extraData); err != nil {
+		return nil, fmt.Errorf("validating SNP report: %w", err)
+	}
+
+	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = v.hclValidator.validateAk(instanceInfo.RuntimeData, report.ReportData[:], pubArea.RSAParameters); err != nil {
+		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
+	}
+
+	return pubArea.Key()
 }
 
 // validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
@@ -143,9 +158,8 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	return vcek, nil
 }
 
-func validateSNPReport(
-	cert *x509.Certificate, expectedIDKeyDigests idkeydigest.IDKeyDigests, enforceIDKeyDigest bool,
-	report snpAttestationReport, log vtpm.AttestationLogger,
+func (v *Validator) validateSNPReport(
+	ctx context.Context, cert *x509.Certificate, report snpAttestationReport, maaToken string, extraData []byte,
 ) error {
 	if report.Policy.Debug() {
 		return errDebugEnabled
@@ -191,7 +205,7 @@ func validateSNPReport(
 	}
 
 	hasExpectedIDKeyDigest := false
-	for _, digest := range expectedIDKeyDigests {
+	for _, digest := range v.idKeyDigests {
 		if bytes.Equal(digest, report.IDKeyDigest[:]) {
 			hasExpectedIDKeyDigest = true
 			break
@@ -199,11 +213,14 @@ func validateSNPReport(
 	}
 
 	if !hasExpectedIDKeyDigest {
-		if enforceIDKeyDigest {
-			return &idKeyError{report.IDKeyDigest[:], expectedIDKeyDigests}
-		}
-		if log != nil {
-			log.Warnf("configured idkeydigests %x doesn't contain reported idkeydigest %x", expectedIDKeyDigests, report.IDKeyDigest[:])
+		switch v.enforceIDKeyDigest {
+		case idkeydigest.MAAFallback:
+			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
+			return v.maa.validateToken(ctx, v.maaURL, maaToken, extraData)
+		case idkeydigest.WarnOnly:
+			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
+		default:
+			return &idKeyError{report.IDKeyDigest[:], v.idKeyDigests}
 		}
 	}
 
@@ -270,6 +287,7 @@ type azureInstanceInfo struct {
 	CertChain         []byte
 	AttestationReport []byte
 	RuntimeData       []byte
+	MAAToken          string
 }
 
 // validateAk validates that the attestation key from the TPM is trustworthy. The steps are:
@@ -320,10 +338,10 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 	return nil
 }
 
-// HCLAkValidator validates an attestation key issued by the Host Compatibility Layer (HCL).
+// hclAkValidator validates an attestation key issued by the Host Compatibility Layer (HCL).
 // The HCL is written by Azure, and sits between the Hypervisor and CVM OS.
 // The HCL runs in the protected context of the CVM.
-type HCLAkValidator interface {
+type hclAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
 
@@ -412,4 +430,17 @@ type akPub struct {
 
 type runtimeData struct {
 	Keys []akPub
+}
+
+// nopAttestationLogger is a no-op implementation of AttestationLogger.
+type nopAttestationLogger struct{}
+
+// Infof is a no-op.
+func (nopAttestationLogger) Infof(string, ...interface{}) {}
+
+// Warnf is a no-op.
+func (nopAttestationLogger) Warnf(string, ...interface{}) {}
+
+type maaValidator interface {
+	validateToken(ctx context.Context, maaURL string, token string, extraData []byte) error
 }

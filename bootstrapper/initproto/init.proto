@@ -21,7 +21,7 @@ message InitRequest {
   // bytes salt = 10; removed
   bytes helm_deployments = 11;
   repeated uint32 enforced_pcrs = 12;
-  bool enforce_idkeydigest = 13;
+  // bool enforce_idkeydigest = 13; removed
   bool conformance_mode = 14;
   repeated KubernetesComponent kubernetes_components = 15;
   bytes init_secret = 16;

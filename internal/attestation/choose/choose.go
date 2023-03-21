@@ -43,9 +43,7 @@ func Issuer(variant oid.Getter, log vtpm.AttestationLogger) (atls.Issuer, error)
 
 // Validator returns the validator for the given variant.
 func Validator(
-	variant oid.Getter, measurements measurements.M,
-	idKeyDigest idkeydigest.IDKeyDigests, enfoceIDKeyDigest bool,
-	log vtpm.AttestationLogger,
+	variant oid.Getter, measurements measurements.M, idKeyCfg idkeydigest.Config, log vtpm.AttestationLogger,
 ) (atls.Validator, error) {
 	switch variant {
 	case oid.AWSNitroTPM{}:
@@ -53,7 +51,7 @@ func Validator(
 	case oid.AzureTrustedLaunch{}:
 		return trustedlaunch.NewValidator(measurements, log), nil
 	case oid.AzureSEVSNP{}:
-		return snp.NewValidator(measurements, idKeyDigest, enfoceIDKeyDigest, log), nil
+		return snp.NewValidator(measurements, idKeyCfg, log), nil
 	case oid.GCPSEVES{}:
 		return gcp.NewValidator(measurements, log), nil
 	case oid.QEMUVTPM{}:

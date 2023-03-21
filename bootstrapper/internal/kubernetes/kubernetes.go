@@ -81,9 +81,8 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string,
-	measurementSalt []byte, enforcedPCRs []uint32, helmReleasesRaw []byte, conformanceMode bool,
-	kubernetesComponents components.Components, log *logger.Logger,
+	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string, measurementSalt []byte, enforcedPCRs []uint32,
+	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {

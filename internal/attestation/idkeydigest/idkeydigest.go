@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// Package idkeydigest contains policies and type definitions
+// for checking the ID Key Digest value in SEV-SNP attestation.
 package idkeydigest
 
 import (
@@ -11,9 +13,104 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
+
+// Config contains the configuration for ID Key Digest validation.
+type Config struct {
+	IDKeyDigests      IDKeyDigests       `json:"idKeyDigests"`
+	EnforcementPolicy EnforceIDKeyDigest `json:"enforcementPolicy"`
+	MAAURL            string             `json:"maaURL,omitempty"`
+}
+
+//go:generate stringer -type=EnforceIDKeyDigest
+
+// EnforceIDKeyDigest defines the behavior of the validator when the ID key digest is not found in the expected list.
+type EnforceIDKeyDigest uint32
+
+// TODO: Decide on final value naming.
+const (
+	// Unknown is reserved for invalid configurations.
+	Unknown EnforceIDKeyDigest = iota
+	// StrictChecking will return an error if the ID key digest is not found in the expected list.
+	StrictChecking
+	// MAAFallback attempts to verify the attestation using Microsoft Azure Attestation (MAA),
+	// if the ID key digest is not found in the expected list.
+	MAAFallback
+	// WarnOnly logs a warning if the ID key digest is not found in the expected list.
+	// No error is returned.
+	WarnOnly
+)
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (e *EnforceIDKeyDigest) UnmarshalJSON(b []byte) error {
+	return e.unmarshal(func(val any) error {
+		return json.Unmarshal(b, val)
+	})
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (e EnforceIDKeyDigest) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.String())
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (e *EnforceIDKeyDigest) UnmarshalYAML(unmarshal func(any) error) error {
+	return e.unmarshal(unmarshal)
+}
+
+// MarshalYAML implements the yaml.Marshaler interface.
+func (e EnforceIDKeyDigest) MarshalYAML() (any, error) {
+	return e.String(), nil
+}
+
+func (e *EnforceIDKeyDigest) unmarshal(unmarshalFunc func(any) error) error {
+	// Check for legacy format: EnforceIDKeyDigest might be a boolean.
+	// If set to true, the value will be set to StrictChecking.
+	// If set to false, the value will be set to WarnOnly.
+	var legacyEnforce bool
+	legacyErr := unmarshalFunc(&legacyEnforce)
+	if legacyErr == nil {
+		if legacyEnforce {
+			*e = StrictChecking
+		} else {
+			*e = WarnOnly
+		}
+		return nil
+	}
+
+	var enforce string
+	if err := unmarshalFunc(&enforce); err != nil {
+		return errors.Join(
+			err,
+			fmt.Errorf("trying legacy format: %w", legacyErr),
+		)
+	}
+
+	*e = EnforcePolicyFromString(enforce)
+	if *e == Unknown {
+		return fmt.Errorf("unknown EnforceIDKeyDigest value: %q", enforce)
+	}
+
+	return nil
+}
+
+// EnforcePolicyFromString returns EnforceIDKeyDigest from string.
+func EnforcePolicyFromString(s string) EnforceIDKeyDigest {
+	s = strings.ToLower(s)
+	switch s {
+	case "strictchecking":
+		return StrictChecking
+	case "maafallback":
+		return MAAFallback
+	case "warnonly":
+		return WarnOnly
+	default:
+		return Unknown
+	}
+}
 
 // IDKeyDigests is a list of trusted digest values for the ID key.
 type IDKeyDigests [][]byte

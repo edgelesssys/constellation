@@ -28,15 +28,42 @@ const (
 	maxCacheAge    = 12 * time.Hour
 )
 
-type imdsClient struct {
+// IMDSClient is a client for the Azure Instance Metadata Service.
+type IMDSClient struct {
 	client *http.Client
 
 	cache     metadataResponse
 	cacheTime time.Time
 }
 
+// NewIMDSClient creates a new IMDSClient.
+func NewIMDSClient() *IMDSClient {
+	// The default http client may use a system-wide proxy and it is recommended to disable the proxy explicitly:
+	// https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=linux#proxies
+	// See also: https://github.com/microsoft/azureimds/blob/master/imdssample.go#L10
+	return &IMDSClient{
+		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
+	}
+}
+
+// Tags returns the tags of the instance the function is called from.
+func (c *IMDSClient) Tags(ctx context.Context) (map[string]string, error) {
+	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
+		if err := c.update(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	tags := make(map[string]string, len(c.cache.Compute.Tags))
+	for _, tag := range c.cache.Compute.Tags {
+		tags[tag.Name] = tag.Value
+	}
+
+	return tags, nil
+}
+
 // providerID returns the provider ID of the instance the function is called from.
-func (c *imdsClient) providerID(ctx context.Context) (string, error) {
+func (c *IMDSClient) providerID(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.ResourceID == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -50,7 +77,7 @@ func (c *imdsClient) providerID(ctx context.Context) (string, error) {
 	return c.cache.Compute.ResourceID, nil
 }
 
-func (c *imdsClient) name(ctx context.Context) (string, error) {
+func (c *IMDSClient) name(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.OSProfile.ComputerName == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -66,7 +93,7 @@ func (c *imdsClient) name(ctx context.Context) (string, error) {
 
 // subscriptionID returns the subscription ID of the instance the function
 // is called from.
-func (c *imdsClient) subscriptionID(ctx context.Context) (string, error) {
+func (c *IMDSClient) subscriptionID(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.SubscriptionID == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -82,7 +109,7 @@ func (c *imdsClient) subscriptionID(ctx context.Context) (string, error) {
 
 // resourceGroup returns the resource group of the instance the function
 // is called from.
-func (c *imdsClient) resourceGroup(ctx context.Context) (string, error) {
+func (c *IMDSClient) resourceGroup(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.ResourceGroup == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -98,7 +125,7 @@ func (c *imdsClient) resourceGroup(ctx context.Context) (string, error) {
 
 // uid returns the UID of the cluster, based on the tags on the instance
 // the function is called from, which are inherited from the scale set.
-func (c *imdsClient) uid(ctx context.Context) (string, error) {
+func (c *IMDSClient) uid(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -116,7 +143,7 @@ func (c *imdsClient) uid(ctx context.Context) (string, error) {
 
 // initSecretHash returns the hash of the init secret of the cluster, based on the tags on the instance
 // the function is called from, which are inherited from the scale set.
-func (c *imdsClient) initSecretHash(ctx context.Context) (string, error) {
+func (c *IMDSClient) initSecretHash(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -133,7 +160,7 @@ func (c *imdsClient) initSecretHash(ctx context.Context) (string, error) {
 }
 
 // role returns the role of the instance the function is called from.
-func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
+func (c *IMDSClient) role(ctx context.Context) (role.Role, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
 		if err := c.update(ctx); err != nil {
 			return role.Unknown, err
@@ -150,12 +177,12 @@ func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
 }
 
 // timeForUpdate checks whether an update is needed due to cache age.
-func (c *imdsClient) timeForUpdate() bool {
+func (c *IMDSClient) timeForUpdate() bool {
 	return time.Since(c.cacheTime) > maxCacheAge
 }
 
 // update updates instance metadata from the azure imds API.
-func (c *imdsClient) update(ctx context.Context) error {
+func (c *IMDSClient) update(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imdsURL, http.NoBody)
 	if err != nil {
 		return err

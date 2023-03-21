@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
@@ -55,7 +54,7 @@ type akSigner struct {
 }
 
 // getAttestationCert returns the DER encoded certificate of the TPM's attestation key and it's CA.
-func (i *Issuer) getAttestationCert(tpm io.ReadWriteCloser) ([]byte, error) {
+func (i *Issuer) getAttestationCert(ctx context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byte, error) {
 	certDER, err := tpm2.NVReadEx(tpm, tpmAkCertIdx, tpm2.HandleOwner, "", 0)
 	if err != nil {
 		return nil, fmt.Errorf("reading attestation key certificate from TPM: %w", err)
@@ -71,8 +70,6 @@ func (i *Issuer) getAttestationCert(tpm io.ReadWriteCloser) ([]byte, error) {
 	// if no CA certificate can be loaded, an error is returned
 	var caCert *x509.Certificate
 	for _, caCertURL := range cert.IssuingCertificateURL {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel()
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, caCertURL, nil)
 		if err != nil {
 			continue
