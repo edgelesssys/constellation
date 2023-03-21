@@ -42,4 +42,4 @@ runs:
           echo "ref=$ref"
           echo "stream=$stream"
           echo "version=$version"
-        }  | tee "$GITHUB_OUTPUT" "$GITHUB_ENV"
+        }  | tee -a "$GITHUB_OUTPUT" "$GITHUB_ENV"
