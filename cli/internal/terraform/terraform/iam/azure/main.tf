@@ -59,6 +59,16 @@ resource "azurerm_role_assignment" "application_insights_component_contributor_r
   principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
 }
 
+resource "azurerm_role_assignment" "uami_owner_role" {
+  scope                = azurerm_resource_group.base_resource_group.id
+  role_definition_name = "Owner"
+  principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
+}
+
+# the app registration, application secrets
+# and role assignments below will be removed in the future
+# TODO(malt3): remove app registration as planned by AB#2961
+
 # Create application registration
 resource "azuread_application" "base_application" {
   display_name = "${var.resource_group_name}-application"
@@ -72,7 +82,7 @@ resource "azuread_service_principal" "application_principal" {
 }
 
 # Set identity as base resource group owner
-resource "azurerm_role_assignment" "owner_role" {
+resource "azurerm_role_assignment" "app_registration_owner_role" {
   scope                = azurerm_resource_group.base_resource_group.id
   role_definition_name = "Owner"
   principal_id         = azuread_service_principal.application_principal.object_id
