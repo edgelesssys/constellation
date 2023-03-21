@@ -16,6 +16,8 @@ filebeat.config:
     # reload.enabled: true
     # reload.period: 10s
 
+timestamp.precision: nanosecond
+
 processors:
   - dissect:
       when:
