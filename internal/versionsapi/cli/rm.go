@@ -529,7 +529,13 @@ type gcpComputeAPI interface {
 	io.Closer
 }
 
-func (g *gcpClient) deleteImage(ctx context.Context, image string, dryrun bool, log *logger.Logger) error {
+func (g *gcpClient) deleteImage(ctx context.Context, imageURI string, dryrun bool, log *logger.Logger) error {
+	// Extract image name from image URI
+	// Expected input into function: "projects/constellation-images/global/images/v2-6-0-stable"
+	// Required for computepb.DeleteImageRequest: "v2-6-0-stable"
+	imageURIParts := strings.Split(imageURI, "/")
+	image := imageURIParts[len(imageURIParts)-1] // Don't need to check if len(imageURIParts) == 0 since sep is not empty and thus length must be ≥ 1
+
 	req := &computepb.DeleteImageRequest{
 		Image:   image,
 		Project: g.project,
