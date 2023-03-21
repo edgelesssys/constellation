@@ -1,4 +1,4 @@
-name: E2E meta test
+name: e2e meta test
 description: "This test does the infrastructure management and runs the e2e test of your choice."
 
 inputs:
@@ -90,7 +90,7 @@ runs:
       if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "nop", "iamcreate"]'), inputs.test))
       shell: bash
       run: |
-        echo "Invalid input for test field: ${{ inputs.test }}"
+        echo "::error::Invalid input for test field: ${{ inputs.test }}"
         exit 1
 
     # Perf-bench's network benchmarks require at least two distinct worker nodes.
@@ -125,7 +125,7 @@ runs:
         enterpriseCLI: ${{ inputs.keepMeasurements }}
         outputPath: "build/constellation"
 
-    - name: Fetch CLI
+    - name: Download CLI
       if: inputs.cliVersion != ''
       shell: bash
       run: |
