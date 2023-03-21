@@ -79,3 +79,8 @@ variable "debug" {
   default     = false
   description = "Enable debug mode. This will enable serial port access on the instances."
 }
+
+variable "alias_ip_range_name" {
+  type        = string
+  description = "Name of the alias IP range to use."
+}
