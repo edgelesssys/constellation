@@ -1,4 +1,4 @@
-name: Build and Upload OS image
+name: Build and Upload OS image (scheduled)
 
 on:
   schedule:
