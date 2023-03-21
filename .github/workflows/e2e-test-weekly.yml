@@ -13,13 +13,18 @@ env:
 
 jobs:
   find-latest-image:
-    name: Find latest debug image
+    strategy:
+      fail-fast: false
+      matrix:
+        refStream: ["main-debug", "release-stable"]
+    name: Find latest image
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.output }}
+      image-main-debug: ${{ steps.relabel-output.outputs.image-main-debug }}
+      image-release-stable: ${{ steps.relabel-output.outputs.image-release-stable }}
     steps:
       - name: Checkout
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
@@ -32,13 +37,25 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
           aws-region: eu-central-1
 
+      - name: Separate ref and stream from matrix
+        id: separate-ref-stream
+        env:
+          REFSTREAM: ${{ matrix.refStream }}
+        run: |
+          echo "ref=${REFSTREAM%-*}" | tee "$GITHUB_OUTPUT"
+          echo "stream=${REFSTREAM#*-}" | tee "$GITHUB_OUTPUT"
+
       - name: Find latest image
         id: find-latest-image
         uses: ./.github/actions/versionsapi
         with:
           command: latest
-          ref: main
-          stream: debug
+          ref: ${{ steps.separate-ref-stream.outputs.ref == 'release' && '-' || steps.separate-ref-stream.outputs.ref }}
+          stream: ${{ steps.separate-ref-stream.outputs.stream }}
+
+      - name: Relabel output
+        id: relabel-output
+        run: echo "image-${{ matrix.refStream }}=${{ steps.find-latest-image.outputs.output }}" | tee -a "$GITHUB_OUTPUT"
 
   e2e-weekly:
     strategy:
@@ -56,43 +73,61 @@ jobs:
             "iamcreate",
           ]
         provider: ["gcp", "azure", "aws"]
-        version: ["v1.24", "v1.25", "v1.26"]
+        kubernetes-version: ["v1.24", "v1.25", "v1.26"]
+        refStream: ["main-debug", "release-stable"]
         exclude:
-          # IAM create test runs only on latest version.
+          # IAM create test runs only on latest kubernetes-version.
           - test: "iamcreate"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "iamcreate"
-            version: "v1.25"
-          # Verify test runs only on latest version.
+            kubernetes-version: "v1.25"
+          # Verify test runs only on latest kubernetes-version.
           - test: "verify"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "verify"
-            version: "v1.25"
-          # Recover test runs only on latest version.
+            kubernetes-version: "v1.25"
+          # Recover test runs only on latest kubernetes-version.
           - test: "recover"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "recover"
-            version: "v1.25"
-          # Autoscaling test runs only on latest version.
+            kubernetes-version: "v1.25"
+          # Autoscaling test runs only on latest kubernetes-version.
           - test: "autoscaling"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "autoscaling"
-            version: "v1.25"
-          # Perf-Bench test runs only on latest version.
+            kubernetes-version: "v1.25"
+          # Perf-Bench test runs only on latest kubernetes-version.
           - test: "perf-bench"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "perf-bench"
-            version: "v1.25"
-          # lb test runs only on latest version.
+            kubernetes-version: "v1.25"
+          # lb test runs only on latest kubernetes-version.
           - test: "lb"
-            version: "v1.24"
+            kubernetes-version: "v1.24"
           - test: "lb"
-            version: "v1.25"
+            kubernetes-version: "v1.25"
           # Currently not supported on AWS.
           - test: "autoscaling"
             provider: "aws"
           - test: "perf-bench"
             provider: "aws"
+          # Only iamcreate for K8s v1.25 on all providers.
+          - refStream: "release-stable"
+            kubernetes-version: "v1.24"
+          - refStream: "release-stable"
+            kubernetes-version: "v1.26"
+          - refStream: "release-stable"
+            test: "lb"
+          - refStream: "release-stable"
+            test: "perf-bench"
+          - refStream: "release-stable"
+            test: "autoscaling"
+          - refStream: "release-stable"
+            test: "sonobuoy full"
+          - refStream: "release-stable"
+            test: "verify"
+          - refStream: "release-stable"
+            test: "recover"
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -134,8 +169,10 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: ${{ needs.find-latest-image.outputs.image }}
-          kubernetesVersion: ${{ matrix.version }}
+          osImage: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
+          isDebugImage: ${{ matrix.refStream == 'main-debug' }}
+          cliVersion: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || '' }}
+          kubernetesVersion: ${{ matrix.kubernetes-version }}
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
