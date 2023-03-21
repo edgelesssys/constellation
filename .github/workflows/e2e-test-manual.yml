@@ -195,7 +195,7 @@ jobs:
       - name: Install basic tools (macOS)
         if: runner.os == 'macOS'
         shell: bash
-        run: brew install coreutils kubectl bash
+        run: brew install coreutils kubectl bash terraform
 
       - name: Checkout head
         if: inputs.git-ref == 'head'
