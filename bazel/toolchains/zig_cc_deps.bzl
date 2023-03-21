@@ -2,8 +2,6 @@
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-BAZEL_ZIG_CC_VERSION = "v1.0.0"
-
 def zig_cc_deps():
     """Loads the dependencies for bazel-zig-cc."""
 
@@ -16,9 +14,12 @@ def zig_cc_deps():
         ],
     )
 
+    # TODO(malt3): Update to a release version once the next release is out.
+    # Upgraded to work around https://github.com/uber/bazel-zig-cc/issues/22
+    # See also https://github.com/uber/bazel-zig-cc/pull/23
     http_archive(
         name = "bazel-zig-cc",
-        sha256 = "1f4a1d1e0f6b3e5aa6e1c225fcb23c032f8849441de97b9a38d6ea37362d28e2",
-        strip_prefix = "bazel-zig-cc-{}".format(BAZEL_ZIG_CC_VERSION),
-        urls = ["https://git.sr.ht/~motiejus/bazel-zig-cc/archive/{}.tar.gz".format(BAZEL_ZIG_CC_VERSION)],
+        sha256 = "bea372f7f9bd8541f7b0a152c76c7b9396201c36a0ed229b36c48301815c3141",
+        strip_prefix = "bazel-zig-cc-f3e4542bd62f4aef794a3d184140a9d30b8fadb8",
+        urls = ["https://github.com/uber/bazel-zig-cc/archive/f3e4542bd62f4aef794a3d184140a9d30b8fadb8.tar.gz"],
     )
