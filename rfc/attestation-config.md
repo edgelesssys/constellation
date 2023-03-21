@@ -84,3 +84,15 @@ since these are currently used by all attestation variants.
 If an attestation config specifies the minimum version of a parameter as `latest`,
 that value is substituted with the most recent version of that parameter for the given CSP from our API.
 The value substitution is part of the unmarshalling logic.
+
+## Attestation config API
+
+Config values are uploaded to S3 and can be accessed via HTTP.
+
+The attestation config API uses the same CSP names as [the image API](./image-api.md#image-api-endpoints).
+
+The following HTTP endpoint is available:
+
+- `GET /constellation/v1/attestation/<ATTESTATION_VARIANT>/`
+  - `latest` returns the latest configuration available for a given attestation variant, as well as a reference to all past configurations
+  - `<YEAR>-<MONTH>-<DAY>-<HOUR>-<MINUTE>.json`, e.g. `2023-01-23-14-32.json` returns an attestation config for the given date, if it exists. A list of available configs can be queried using the `latest` endpoint.
