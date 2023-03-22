@@ -115,13 +115,24 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 	upgradeErrs := []error{}
 	upgradeErr := &compatibility.InvalidUpgradeError{}
 	err = u.updateImage(&nodeVersion, imageReference, imageVersion.Version)
-	if errors.As(err, &upgradeErr) {
+	switch {
+	case errors.As(err, &upgradeErr):
 		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
+	case err != nil:
+		return fmt.Errorf("updating image version: %w", err)
 	}
 
 	components, err := u.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
-	if errors.As(err, &upgradeErr) {
+	switch {
+	case err == nil:
+		err := u.applyComponentsCM(ctx, components)
+		if err != nil {
+			return fmt.Errorf("applying k8s components ConfigMap: %w", err)
+		}
+	case errors.As(err, &upgradeErr):
 		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping Kubernetes upgrades: %w", err))
+	default:
+		return fmt.Errorf("updating Kubernetes version: %w", err)
 	}
 
 	if len(upgradeErrs) == 2 {
@@ -131,32 +142,41 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 	if err := u.updateMeasurements(ctx, conf.GetMeasurements()); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
-	updatedNodeVersion, err := u.applyUpgrade(ctx, &components, nodeVersion)
+
+	updatedNodeVersion, err := u.applyNodeVersion(ctx, nodeVersion)
 	if err != nil {
 		return fmt.Errorf("applying upgrade: %w", err)
 	}
-	if updatedNodeVersion.Spec.ImageReference != imageReference ||
-		updatedNodeVersion.Spec.ImageVersion != imageVersion.Version ||
-		updatedNodeVersion.Spec.KubernetesComponentsReference != components.ObjectMeta.Name ||
-		updatedNodeVersion.Spec.KubernetesClusterVersion != versionConfig.ClusterVersion {
-		return errors.New("unexpected value in updated nodeVersion object")
+	switch {
+	case updatedNodeVersion.Spec.ImageReference != imageReference:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", imageReference, updatedNodeVersion.Spec.ImageReference)
+	case updatedNodeVersion.Spec.ImageVersion != imageVersion.Version:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", imageVersion.Version, updatedNodeVersion.Spec.ImageVersion)
+	case updatedNodeVersion.Spec.KubernetesComponentsReference != nodeVersion.Spec.KubernetesComponentsReference:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.KubernetesComponentsReference, updatedNodeVersion.Spec.KubernetesComponentsReference)
+	case updatedNodeVersion.Spec.KubernetesClusterVersion != versionConfig.ClusterVersion:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", versionConfig.ClusterVersion, updatedNodeVersion.Spec.KubernetesClusterVersion)
 	}
 
 	return errors.Join(upgradeErrs...)
 }
 
-func (u *Upgrader) applyUpgrade(ctx context.Context, components *corev1.ConfigMap, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
+// applyComponentsCM applies the k8s components ConfigMap to the cluster.
+func (u *Upgrader) applyComponentsCM(ctx context.Context, components *corev1.ConfigMap) error {
 	_, err := u.stableInterface.createConfigMap(ctx, components)
 	// If the map already exists we can use that map and assume it has the same content as 'configMap'.
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return updatev1alpha1.NodeVersion{}, fmt.Errorf("creating k8s-components ConfigMap: %w. %T", err, err)
+		return fmt.Errorf("creating k8s-components ConfigMap: %w. %T", err, err)
 	}
+	return nil
+}
 
+func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
 	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting nodeVersion to unstructured: %w", err)
 	}
-	u.log.Debugf("Triggering Kubernetes version upgrade now")
+	u.log.Debugf("Triggering NodeVersion upgrade now")
 	// Send the updated NodeVersion resource
 	updated, err := u.dynamicInterface.update(ctx, &unstructured.Unstructured{Object: raw})
 	if err != nil {
@@ -199,21 +219,21 @@ func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImage
 	return nil
 }
 
-func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components) (corev1.ConfigMap, error) {
+func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components) (*corev1.ConfigMap, error) {
 	configMap, err := internalk8s.ConstructK8sComponentsCM(components, newClusterVersion)
 	if err != nil {
-		return corev1.ConfigMap{}, fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
+		return nil, fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
 	}
 
 	if err := compatibility.IsValidUpgrade(nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion); err != nil {
-		return corev1.ConfigMap{}, err
+		return nil, err
 	}
 
 	u.log.Debugf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion)
 	nodeVersion.Spec.KubernetesComponentsReference = configMap.ObjectMeta.Name
 	nodeVersion.Spec.KubernetesClusterVersion = newClusterVersion
 
-	return configMap, nil
+	return &configMap, nil
 }
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
