@@ -23,12 +23,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: tfsec
-        uses: aquasecurity/tfsec-pr-commenter-action@7a44c5dcde5dfab737363e391800629e27b6376b
+        uses: aquasecurity/tfsec-pr-commenter-action@5b483d46fb4fd0cbe2259cf68354a3fb23aa70fe
         with:
           soft_fail_commenter: true
           tfsec_formats: default,text

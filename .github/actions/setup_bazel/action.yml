@@ -28,7 +28,7 @@ runs:
         echo "::endgroup::"
 
     - name: Bazel repository cache (Linux)
-      uses: actions/cache/restore@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0 # v3.2.6
+      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
       if: runner.os == 'Linux' && (inputs.useCache == 'true' || inputs.useCache == 'readonly')
       with:
         path: |
