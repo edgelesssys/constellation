@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/cobra"
 )
 
@@ -27,33 +29,56 @@ func NewValidator(cmd *cobra.Command, config config.AttestationCfg, log debugLog
 // UpdateInitMeasurements sets the owner and cluster measurement values.
 func UpdateInitMeasurements(config config.AttestationCfg, ownerID, clusterID string) error {
 	m := config.GetMeasurements()
-	if err := updateMeasurement(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
-		return err
+
+	switch config.GetVariant() {
+	case variant.AWSNitroTPM{}, variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
+		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
+			return err
+		}
+		return updateMeasurementTPM(m, uint32(measurements.PCRIndexClusterID), clusterID)
+	case variant.QEMUTDX{}:
+		// Measuring ownerID is currently not implemented for Constellation
+		// Since adding support for measuring ownerID to TDX would require additional code changes,
+		// the current implementation does not support it, but can be changed if we decide to add support in the future
+		return updateMeasurementTDX(m, uint32(measurements.TDXIndexClusterID), clusterID)
+	default:
+		return fmt.Errorf("UpdateInitMeasurements: unknown attestation variant")
 	}
-	return updateMeasurement(m, uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
-// updateMeasurement adds a new entry to the measurements of v, or removes the key if the input is an empty string.
-//
-// When adding, the input is first decoded from hex or base64.
-// We then calculate the expected measurement by hashing the input using SHA256,
-// appending expected measurement for initialization, and then hashing once more.
-func updateMeasurement(m measurements.M, measurementIdx uint32, encoded string) error {
+func updateMeasurementTDX(m measurements.M, measurementIdx uint32, encoded string) error {
 	if encoded == "" {
 		delete(m, measurementIdx)
 		return nil
 	}
-
-	// decode from hex or base64
-	decoded, err := hex.DecodeString(encoded)
+	decoded, err := decodeMeasurement(encoded)
 	if err != nil {
-		hexErr := err
-		decoded, err = base64.StdEncoding.DecodeString(encoded)
-		if err != nil {
-			return fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
-		}
+		return err
 	}
-	// new_measurement_value := hash(old_pcr_value || data_to_extend)
+
+	// new_measurement_value := hash(old_measurement_value || data_to_extend)
+	// Since we use the DG.MR.RTMR.EXTEND call to extend the register, data_to_extend is the hash of our input
+	hashedInput := sha512.Sum384(decoded)
+	oldExpected := m[measurementIdx].Expected
+	expectedMeasurementSum := sha512.Sum384(append(oldExpected[:], hashedInput[:]...))
+	m[measurementIdx] = measurements.Measurement{
+		Expected:      expectedMeasurementSum[:],
+		ValidationOpt: m[measurementIdx].ValidationOpt,
+	}
+	return nil
+}
+
+func updateMeasurementTPM(m measurements.M, measurementIdx uint32, encoded string) error {
+	if encoded == "" {
+		delete(m, measurementIdx)
+		return nil
+	}
+	decoded, err := decodeMeasurement(encoded)
+	if err != nil {
+		return err
+	}
+
+	// new_pcr_value := hash(old_pcr_value || data_to_extend)
 	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
 	hashedInput := sha256.Sum256(decoded)
 	oldExpected := m[measurementIdx].Expected
@@ -63,6 +88,18 @@ func updateMeasurement(m measurements.M, measurementIdx uint32, encoded string) 
 		ValidationOpt: m[measurementIdx].ValidationOpt,
 	}
 	return nil
+}
+
+func decodeMeasurement(encoded string) ([]byte, error) {
+	decoded, err := hex.DecodeString(encoded)
+	if err != nil {
+		hexErr := err
+		decoded, err = base64.StdEncoding.DecodeString(encoded)
+		if err != nil {
+			return nil, fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
+		}
+	}
+	return decoded, nil
 }
 
 // warnLogger implements logging of warnings for validators.
