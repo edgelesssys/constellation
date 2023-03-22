@@ -495,7 +495,7 @@ func (c *Config) validAttestVariant(fl validator.FieldLevel) bool {
 		return c.Provider.Azure != nil
 	case oid.GCPSEVES{}:
 		return c.Provider.GCP != nil
-	case oid.QEMUVTPM{}:
+	case oid.QEMUVTPM{}, oid.QEMUTDX{}:
 		return c.Provider.QEMU != nil
 	default:
 		return false
