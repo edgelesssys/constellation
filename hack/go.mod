@@ -285,13 +285,13 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm v2.17.0+incompatible // indirect
 	helm.sh/helm/v3 v3.11.1 // indirect
-	k8s.io/api v0.26.2 // indirect
-	k8s.io/apiextensions-apiserver v0.26.2 // indirect
-	k8s.io/apimachinery v0.26.2 // indirect
-	k8s.io/apiserver v0.26.2 // indirect
-	k8s.io/cli-runtime v0.26.2 // indirect
-	k8s.io/client-go v0.26.2 // indirect
-	k8s.io/component-base v0.26.2 // indirect
+	k8s.io/api v0.26.3 // indirect
+	k8s.io/apiextensions-apiserver v0.26.3 // indirect
+	k8s.io/apimachinery v0.26.3 // indirect
+	k8s.io/apiserver v0.26.3 // indirect
+	k8s.io/cli-runtime v0.26.3 // indirect
+	k8s.io/client-go v0.26.3 // indirect
+	k8s.io/component-base v0.26.3 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230228151317-19cbebb19cb7 // indirect
 	k8s.io/kubectl v0.26.2 // indirect
