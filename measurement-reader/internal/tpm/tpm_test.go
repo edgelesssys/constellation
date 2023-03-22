@@ -22,9 +22,9 @@ func TestSortMeasurements(t *testing.T) {
 	}{
 		"pre sorted": {
 			input: measurements.M{
-				0: measurements.WithAllBytes(0x11, false),
-				1: measurements.WithAllBytes(0x22, false),
-				2: measurements.WithAllBytes(0x33, false),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce),
 			},
 			want: []sorted.Measurement{
 				{
@@ -43,9 +43,9 @@ func TestSortMeasurements(t *testing.T) {
 		},
 		"unsorted": {
 			input: measurements.M{
-				1: measurements.WithAllBytes(0x22, false),
-				0: measurements.WithAllBytes(0x11, false),
-				2: measurements.WithAllBytes(0x33, false),
+				1: measurements.WithAllBytes(0x22, measurements.Enforce),
+				0: measurements.WithAllBytes(0x11, measurements.Enforce),
+				2: measurements.WithAllBytes(0x33, measurements.Enforce),
 			},
 			want: []sorted.Measurement{
 				{

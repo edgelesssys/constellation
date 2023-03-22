@@ -131,7 +131,7 @@ func (m *M) EqualTo(other M) bool {
 		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
 			return false
 		}
-		if v.WarnOnly != other[k].WarnOnly {
+		if v.ValidationOpt != other[k].ValidationOpt {
 			return false
 		}
 	}
@@ -143,7 +143,7 @@ func (m *M) EqualTo(other M) bool {
 func (m *M) GetEnforced() []uint32 {
 	var enforced []uint32
 	for idx, measurement := range *m {
-		if !measurement.WarnOnly {
+		if !measurement.ValidationOpt {
 			enforced = append(enforced, idx)
 		}
 	}
@@ -158,8 +158,8 @@ func (m *M) SetEnforced(enforced []uint32) error {
 	// set all measurements to warn only
 	for idx, measurement := range *m {
 		newM[idx] = Measurement{
-			Expected: measurement.Expected,
-			WarnOnly: true,
+			Expected:      measurement.Expected,
+			ValidationOpt: WarnOnly,
 		}
 	}
 
@@ -169,7 +169,7 @@ func (m *M) SetEnforced(enforced []uint32) error {
 		if !ok {
 			return fmt.Errorf("measurement %d not in list, but set to enforced", idx)
 		}
-		measurement.WarnOnly = false
+		measurement.ValidationOpt = Enforce
 		newM[idx] = measurement
 	}
 
@@ -181,9 +181,19 @@ func (m *M) SetEnforced(enforced []uint32) error {
 type Measurement struct {
 	// Expected measurement value.
 	Expected [32]byte `json:"expected" yaml:"expected"`
-	// WarnOnly if set to true, a mismatching measurement will only result in a warning.
-	WarnOnly bool `json:"warnOnly" yaml:"warnOnly"`
+	// ValidationOpt indicates how measurement mismatches should be handled.
+	ValidationOpt MeasurementValidationOption `json:"warnOnly" yaml:"warnOnly"`
 }
+
+// MeasurementValidationOption indicates how measurement mismatches should be handled.
+type MeasurementValidationOption bool
+
+const (
+	// WarnOnly will only result in a warning in case of a mismatching measurement.
+	WarnOnly MeasurementValidationOption = true
+	// Enforce will result in an error in case of a mismatching measurement, and operation will be aborted.
+	Enforce MeasurementValidationOption = false
+)
 
 // UnmarshalJSON reads a Measurement either as json object,
 // or as a simple hex or base64 encoded string.
@@ -210,7 +220,7 @@ func (m *Measurement) UnmarshalJSON(b []byte) error {
 func (m Measurement) MarshalJSON() ([]byte, error) {
 	return json.Marshal(encodedMeasurement{
 		Expected: hex.EncodeToString(m.Expected[:]),
-		WarnOnly: m.WarnOnly,
+		WarnOnly: m.ValidationOpt,
 	})
 }
 
@@ -239,7 +249,7 @@ func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
 func (m Measurement) MarshalYAML() (any, error) {
 	return encodedMeasurement{
 		Expected: hex.EncodeToString(m.Expected[:]),
-		WarnOnly: m.WarnOnly,
+		WarnOnly: m.ValidationOpt,
 	}, nil
 }
 
@@ -264,24 +274,24 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 	}
 
 	m.Expected = *(*[32]byte)(expected)
-	m.WarnOnly = eM.WarnOnly
+	m.ValidationOpt = eM.WarnOnly
 
 	return nil
 }
 
 // WithAllBytes returns a measurement value where all 32 bytes are set to b.
-func WithAllBytes(b byte, warnOnly bool) Measurement {
+func WithAllBytes(b byte, validationOpt MeasurementValidationOption) Measurement {
 	return Measurement{
-		Expected: *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
-		WarnOnly: warnOnly,
+		Expected:      *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
+		ValidationOpt: validationOpt,
 	}
 }
 
 // PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
 func PlaceHolderMeasurement() Measurement {
 	return Measurement{
-		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
-		WarnOnly: false,
+		Expected:      *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		ValidationOpt: Enforce,
 	}
 }
 
@@ -307,8 +317,8 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 }
 
 type encodedMeasurement struct {
-	Expected string `json:"expected" yaml:"expected"`
-	WarnOnly bool   `json:"warnOnly" yaml:"warnOnly"`
+	Expected string                      `json:"expected" yaml:"expected"`
+	WarnOnly MeasurementValidationOption `json:"warnOnly" yaml:"warnOnly"`
 }
 
 // mYamlContent is the Content of a yaml.Node encoding of an M. It implements sort.Interface.

@@ -77,7 +77,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 			if tc.writeFile {
 				require.NoError(handler.WriteJSON(
 					filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-					measurements.M{11: measurements.WithAllBytes(0x00, false)},
+					measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
 				))
 
 				require.NoError(handler.WriteJSON(
@@ -122,7 +122,7 @@ func TestUpdate(t *testing.T) {
 	// write measurement config
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
 	))
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
@@ -185,7 +185,7 @@ func TestOIDConcurrency(t *testing.T) {
 	handler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
 	))
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
@@ -232,7 +232,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, false)},
+		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
 		file.OptNone,
 	))
 	require.NoError(handler.WriteJSON(
