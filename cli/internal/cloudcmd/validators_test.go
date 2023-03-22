@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"testing"
 
@@ -150,6 +151,74 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 					} else {
 						assert.Equal(zero, m[uint32(i)])
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestValidatorUpdateInitMeasurementsTDX(t *testing.T) {
+	zero := measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength)
+	one := measurements.WithAllBytes(0x11, true, measurements.TDXMeasurementLength)
+	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
+	oneHash := sha512.Sum384(one.Expected[:])
+	tdxZeroUpdatedOne := sha512.Sum384(append(zero.Expected[:], oneHash[:]...))
+	newTestTDXMeasurements := func() measurements.M {
+		return measurements.M{
+			0: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			1: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			2: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			3: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			4: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+		}
+	}
+
+	testCases := map[string]struct {
+		measurements measurements.M
+		clusterID    string
+		wantErr      bool
+	}{
+		"QEMUT TDX update update cluster ID": {
+			measurements: newTestTDXMeasurements(),
+			clusterID:    one64,
+		},
+		"cluster ID empty": {
+			measurements: newTestTDXMeasurements(),
+		},
+		"invalid encoding": {
+			measurements: newTestTDXMeasurements(),
+			clusterID:    "invalid",
+			wantErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cfg := &config.QEMUTDX{Measurements: tc.measurements}
+
+			err := UpdateInitMeasurements(cfg, "", tc.clusterID)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			for i := 0; i < len(tc.measurements); i++ {
+				switch {
+				case i == measurements.TDXIndexClusterID && tc.clusterID == "":
+					// should be deleted
+					_, ok := cfg.Measurements[uint32(i)]
+					assert.False(ok)
+
+				case i == measurements.TDXIndexClusterID:
+					pcr, ok := cfg.Measurements[uint32(i)]
+					assert.True(ok)
+					assert.Equal(tdxZeroUpdatedOne[:], pcr.Expected)
+
+				default:
+					assert.Equal(zero, cfg.Measurements[uint32(i)])
 				}
 			}
 		})
