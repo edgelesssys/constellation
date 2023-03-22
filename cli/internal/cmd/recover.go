@@ -97,7 +97,7 @@ func (r *recoverCmd) recover(
 
 	validator, err := cloudcmd.NewValidator(conf, r.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating new validator: %w", err)
 	}
 	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)

@@ -88,12 +88,12 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	v.log.Debugf("Creating aTLS Validator for %s", provider)
 	validators, err := cloudcmd.NewValidator(conf, v.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating new validator: %w", err)
 	}
 
 	v.log.Debugf("Updating expected measurements")
 	if err := validators.UpdateInitMeasurements(flags.ownerID, flags.clusterID); err != nil {
-		return err
+		return fmt.Errorf("updating expected measurements: %w", err)
 	}
 
 	nonce, err := crypto.GenerateRandomBytes(32)

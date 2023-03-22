@@ -45,7 +45,7 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	v.attestationVariant = variant // valid variant
 
 	if err := v.setMeasurements(conf); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("setting validator measurements: %w", err)
 	}
 
 	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
@@ -64,7 +64,7 @@ func (v *Validator) UpdateInitMeasurements(ownerID, clusterID string) error {
 	case oid.QEMUTDX{}:
 		return v.updateInitMeasurementsTDX(clusterID)
 	default:
-		return fmt.Errorf("validator: UpdateInitMeasurements: unknown attestation type")
+		return fmt.Errorf("selecting attestation variant: unknown attestation variant")
 	}
 }
 
@@ -115,7 +115,7 @@ func (v *Validator) updateMeasurement(measurementIndex uint32, encoded string) e
 		expectedMeasurementSum := sha512.Sum384(append(oldExpected[:], hashedInput[:]...))
 		expectedMeasurement = expectedMeasurementSum[:]
 	default:
-		return fmt.Errorf("validator: updateMeasurement: unknown attestation type")
+		return fmt.Errorf("updating measurement [%d]: unknown attestation variant", measurementIndex)
 	}
 	v.measurements[measurementIndex] = measurements.Measurement{
 		Expected: expectedMeasurement,
@@ -129,27 +129,29 @@ func (v *Validator) setMeasurements(config *config.Config) error {
 	case oid.AWSNitroTPM{}:
 		awsMeasurements := config.Provider.AWS.Measurements
 		if len(awsMeasurements) == 0 {
-			return errors.New("no expected measurement provided")
+			return errors.New("no expected AWS measurements provided")
 		}
 		v.measurements = awsMeasurements
 	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
 		azureMeasurements := config.Provider.Azure.Measurements
 		if len(azureMeasurements) == 0 {
-			return errors.New("no expected measurement provided")
+			return errors.New("no expected Azure measurements provided")
 		}
 		v.measurements = azureMeasurements
 	case oid.GCPSEVES{}:
 		gcpMeasurements := config.Provider.GCP.Measurements
 		if len(gcpMeasurements) == 0 {
-			return errors.New("no expected measurement provided")
+			return errors.New("no expected GCP measurements provided")
 		}
 		v.measurements = gcpMeasurements
 	case oid.QEMUVTPM{}, oid.QEMUTDX{}:
 		qemuMeasurements := config.Provider.QEMU.Measurements
 		if len(qemuMeasurements) == 0 {
-			return errors.New("no expected measurement provided")
+			return errors.New("no expected QEMU measurements provided")
 		}
 		v.measurements = qemuMeasurements
+	default:
+		return errors.New("selecting measurements from config: unknown attestation variant")
 	}
 	return nil
 }

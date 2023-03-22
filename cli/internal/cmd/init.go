@@ -137,7 +137,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	i.log.Debugf("Checked license")
 	validator, err := cloudcmd.NewValidator(conf, i.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
 	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf, fileHandler)
