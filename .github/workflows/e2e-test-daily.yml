@@ -13,13 +13,18 @@ env:
 
 jobs:
   find-latest-image:
-    name: Find latest debug image
+    strategy:
+      fail-fast: false
+      matrix:
+        refStream: ["main-debug", "release-stable"]
+    name: Find latest image
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.find-latest-image.outputs.output }}
+      image-main-debug: ${{ steps.relabel-output.outputs.image-main-debug }}
+      image-release-stable: ${{ steps.relabel-output.outputs.image-release-stable }}
     steps:
       - name: Checkout
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
@@ -32,19 +37,33 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
           aws-region: eu-central-1
 
+      - name: Separate ref and stream from matrix
+        id: separate-ref-stream
+        env:
+          REFSTREAM: ${{ matrix.refStream }}
+        run: |
+          echo "ref=${REFSTREAM%-*}" | tee -a "$GITHUB_OUTPUT"
+          echo "stream=${REFSTREAM#*-}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Find latest image
         id: find-latest-image
         uses: ./.github/actions/versionsapi
         with:
           command: latest
-          ref: main
-          stream: debug
+          ref: ${{ steps.separate-ref-stream.outputs.ref == 'release' && '-' || steps.separate-ref-stream.outputs.ref }}
+          stream: ${{ steps.separate-ref-stream.outputs.stream }}
+
+      - name: Relabel output
+        id: relabel-output
+        run: echo "image-${{ matrix.refStream }}=${{ steps.find-latest-image.outputs.output }}" | tee -a "$GITHUB_OUTPUT"
 
   e2e-daily:
     strategy:
       fail-fast: false
+      max-parallel: 5
       matrix:
         provider: ["gcp", "azure", "aws"]
+        refStream: ["main-debug", "release-stable"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -86,7 +105,9 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
-          osImage: ${{ needs.find-latest-image.outputs.image }}
+          osImage: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
+          isDebugImage: ${{ matrix.refStream == 'main-debug' }}
+          cliVersion: ${{ matrix.refStream == 'release-stable' && needs.find-latest-image.outputs.image-release-stable || '' }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
