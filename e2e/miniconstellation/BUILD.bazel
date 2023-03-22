@@ -1,0 +1,33 @@
+load("//bazel/sh:def.bzl", "sh_template")
+
+filegroup(
+    name = "dependencies",
+    srcs = [
+        ".terraform.lock.hcl",
+        "cloud-init.yaml",
+        "main.tf",
+        "output.tf",
+        "test-remote.sh",
+    ],
+)
+
+sh_library(
+    name = "dependencies_lib",
+    srcs = [
+        ":dependencies",
+    ],
+)
+
+sh_template(
+    name = "remote_test",
+    data = [
+        "//cli:cli_enterprise_linux_amd64",
+    ],
+    substitutions = {
+        "@@PATH_CLI@@": "$(rootpath //cli:cli_enterprise_linux_amd64)",
+    },
+    template = "main.sh.in",
+    deps = [
+        ":dependencies_lib",
+    ],
+)

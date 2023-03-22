@@ -1,0 +1,39 @@
+#cloud-config
+
+users:
+ - default
+ - name: adminuser
+   groups: docker
+   sudo: ALL=(ALL) NOPASSWD:ALL
+   homedir: /home/adminuser
+
+groups:
+  - docker
+
+package_update: true
+packages:
+ - git
+ - cryptsetup
+ - build-essential
+ - libguestfs-tools
+ - apt-transport-https
+ - ca-certificates
+ - curl
+ - gnupg
+ - lsb-release
+ - jq
+ - pv
+ - xsltproc
+ - qemu-guest-agent
+ - libvirt-clients
+ - libvirt-daemon
+ - libvirt-daemon-system
+
+runcmd:
+ - [/bin/bash, -c, "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"]
+ - [/bin/bash, -c, "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null "]
+ - [apt-get, update]
+ - [apt-get, install, -y, docker-ce, docker-ce-cli, containerd.io, libssl-dev, pigz]
+ - [/bin/bash, -c, "systemctl enable docker.service && systemctl start docker.service"]
+ - [/bin/bash, -c, "curl -fsSLO \"https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\" && install kubectl /usr/local/bin/kubectl"]
+ - [/bin/bash, -c, "echo \"127.0.0.1 license.confidential.cloud\" >> /etc/hosts"]

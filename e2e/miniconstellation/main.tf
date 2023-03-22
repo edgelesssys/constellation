@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "4.0.4"
     }
+    cloudinit = {
+      source  = "hashicorp/cloudinit"
+      version = "2.3.2"
+    }
   }
 }
 
@@ -30,6 +34,16 @@ resource "random_string" "suffix" {
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
+}
+
+data "cloudinit_config" "cloud_init" {
+  base64_encode = true
+  part {
+    filename     = "cloud-init.yaml"
+    content_type = "text/cloud-config"
+
+    content = file("${path.module}/cloud-init.yaml")
+  }
 }
 
 data "azurerm_resource_group" "main" {
@@ -98,18 +112,20 @@ resource "azurerm_linux_virtual_machine" "main" {
   name                = "e2e-mini-${random_string.suffix.result}"
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
-  # Dv3-series provides nested virtualization support
-  # https://learn.microsoft.com/en-us/azure/virtual-machines/dv3-dsv3-series#dv3-series
-  size           = "Standard_D8_v3"
+
+  # Standard_D8as_v5 provides nested virtualization support
+  size = "Standard_D8as_v5"
+
   admin_username = "adminuser"
-  network_interface_ids = [
-    azurerm_network_interface.main.id,
-  ]
 
   admin_ssh_key {
     username   = "adminuser"
     public_key = tls_private_key.ssh_key.public_key_openssh
   }
+
+  network_interface_ids = [
+    azurerm_network_interface.main.id,
+  ]
 
   source_image_reference {
     publisher = "Canonical"
@@ -122,4 +138,6 @@ resource "azurerm_linux_virtual_machine" "main" {
     storage_account_type = "Standard_LRS"
     caching              = "ReadWrite"
   }
+
+  user_data = data.cloudinit_config.cloud_init.rendered
 }

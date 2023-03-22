@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+clean_up() {
+  echo "::group::Terminate"
+
+  terraform destroy -auto-approve
+
+  echo "::endgroup::"
+}
+
+path_lib=$(realpath @@BASE_LIB@@) || exit 1
+path_cli=$(realpath @@PATH_CLI@@) || exit 1
+
+# shellcheck source=../../bazel/sh/lib.bash
+if ! source "${path_lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+registerExitHandler clean_up
+
+cd e2e/miniconstellation
+
+echo "::group::Terraform"
+
+terraform init
+terraform apply -auto-approve
+terraform output -raw ssh_private_key > id_rsa
+chmod 600 id_rsa
+
+azure_vm_ip=$(terraform output -raw public_ip)
+
+echo "::endgroup::"
+
+echo "Waiting for SSH server to come online..."
+
+# Wait for SSH to come online, at most 10*30s=5min
+count=0
+until ssh -i id_rsa -o StrictHostKeyChecking=no adminuser@"${azure_vm_ip}" date || [[ ${count} -eq 10 ]]; do
+  sleep 30
+  count=$((count + 1))
+done
+
+echo "Done waiting."
+
+# Copy locally build Constellation CLI and run e2e script.
+echo "::group::Copy files to remote VM"
+scp -i id_rsa "${path_cli}" adminuser@"${azure_vm_ip}":constellation
+echo "::endgroup::"
+
+ssh -i id_rsa adminuser@"${azure_vm_ip}" 'bash -s' < test-remote.sh
