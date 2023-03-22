@@ -236,6 +236,27 @@ sh_template(
     template = "golangci.sh.in",
 )
 
+alias(
+    name = "com_github_bufbuild_buf",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_bufbuild_buf_darwin_amd64//:bin/buf",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_bufbuild_buf_darwin_arm64//:bin/buf",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_bufbuild_buf_linux_amd64//:bin/buf",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_bufbuild_buf_linux_arm64//:bin/buf",
+    }),
+)
+
+sh_template(
+    name = "buf_fmt",
+    data = [
+        ":com_github_bufbuild_buf",
+    ],
+    substitutions = {
+        "@@BUF@@": "$(rootpath :com_github_bufbuild_buf)",
+    },
+    template = "buf.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -246,6 +267,7 @@ multirun(
         ":gazelle_generate",
         ":buildifier_fix",
         ":terraform_fmt",
+        ":buf_fmt",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
