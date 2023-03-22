@@ -127,14 +127,14 @@ class BenchmarkComparer:
         # compare FIO results
         for subtest in FIO_TESTS:
             if subtest not in bench_prev['fio']:
-                raise ValueError(f'Previous benchmnarks do not include the "{subtest}" test.')
+                raise ValueError(f'Previous benchmarks do not include the "{subtest}" test.')
             for metric in bench_prev['fio'][subtest].keys():
                 md_lines.append(self.compare_test('fio', subtest, metric, bench_prev, bench_curr))
 
         # compare knb results
         for subtest in KNB_TESTS:
             if subtest not in bench_prev['knb']:
-                raise ValueError(f'Previous benchmnarks do not include the "{subtest}" test.')
+                raise ValueError(f'Previous benchmarks do not include the "{subtest}" test.')
             for metric in bench_prev['knb'][subtest].keys():
                 md_lines.append(self.compare_test('knb', subtest, metric, bench_prev, bench_curr))
 
