@@ -101,7 +101,7 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
 	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), r.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating new validator: %w", err)
 	}
 	r.log.Debugf("Created a new validator")
 	doer.setDialer(newDialer(validator), flags.endpoint)
