@@ -57,6 +57,14 @@ case ${mode} in
   done
   ;;
 
+"format")
+  echo "Formatting the following Terraform modules:"
+  for module in "${terraformModules[@]}"; do
+    echo "  ${module}"
+    ${terraform} -chdir="${module}" fmt -recursive > /dev/null
+  done
+  ;;
+
 "generate")
   echo "Formatting and generating lock files for the following Terraform modules:"
   for script in "${terraformModules[@]}"; do
@@ -70,7 +78,6 @@ case ${mode} in
     ${terraform} -chdir="${module}" providers lock -platform=darwin_arm64 > /dev/null
     ${terraform} -chdir="${module}" providers lock -platform=darwin_amd64 > /dev/null
     ${terraform} -chdir="${module}" providers lock -platform=windows_amd64 > /dev/null
-    ${terraform} -chdir="${module}" fmt -recursive > /dev/null
     rm -rf "${module}/.terraform"
   done
   ;;
