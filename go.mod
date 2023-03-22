@@ -223,7 +223,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/gophercloud/gophercloud v1.2.0
-	github.com/gophercloud/utils v0.0.0-20230301065655-769528992f29
+	github.com/gophercloud/utils v0.0.0-20230316075016-e15d7ee3ba3b
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
