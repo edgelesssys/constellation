@@ -34,7 +34,7 @@ provider:
 # See our docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
 attestation:
   # Azure SEV-SNP attestation configuration
-  # See our docs for information on about configurable values [Link to our docs explaining SEV-SNP on Azure]
+  # See our docs for information about configurable values [Link to our docs explaining SEV-SNP on Azure]
   azureSEVSNP:
     # Expected confidential VM image measurements.
     measurements:
