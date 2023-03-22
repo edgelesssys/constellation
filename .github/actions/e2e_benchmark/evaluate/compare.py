@@ -157,11 +157,11 @@ class BenchmarkComparer:
             if is_bigger_better(bench_suite=metric):
                 ratio_num = val_curr / val_prev
                 if ratio_num < ALLOWED_RATIO_DELTA.get(metric, 1):
-                    self.set_failed()
+                    set_failed()
             else:
                 ratio_num = val_prev / val_curr
                 if ratio_num > ALLOWED_RATIO_DELTA.get(metric, 1):
-                    self.set_failed()
+                    set_failed()
 
             ratio_num = round(ratio_num, 3)
             emoji = PROGRESS[int(ratio_num >= 1)]
@@ -169,8 +169,8 @@ class BenchmarkComparer:
 
         return f'| {subtest} | {metric} ({unit}) | {val_curr} | {val_prev} | {ratio} |'
 
-    def set_failed(self) -> None:
-        os.environ['COMPARISON_SUCCESS'] = str(False)
+def set_failed() -> None:
+    os.environ['COMPARISON_SUCCESS'] = str(False)
 
 
 def main():
