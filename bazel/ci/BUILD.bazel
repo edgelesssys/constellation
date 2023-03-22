@@ -195,6 +195,18 @@ sh_template(
     template = "tf.sh.in",
 )
 
+sh_template(
+    name = "terraform_fmt",
+    data = [
+        ":com_github_hashicorp_terraform",
+    ],
+    substitutions = {
+        "@@MODE@@": "format",
+        "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
+    },
+    template = "tf.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -204,6 +216,7 @@ multirun(
         ":gazelle_update_repos",
         ":gazelle_generate",
         ":buildifier_fix",
+        ":terraform_fmt",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
