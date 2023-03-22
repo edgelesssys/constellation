@@ -91,8 +91,8 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return err
 	}
 
-	v.log.Debugf("Updating expected PCRs")
-	if err := validators.UpdateInitPCRs(flags.ownerID, flags.clusterID); err != nil {
+	v.log.Debugf("Updating expected measurements")
+	if err := validators.UpdateInitMeasurements(flags.ownerID, flags.clusterID); err != nil {
 		return err
 	}
 

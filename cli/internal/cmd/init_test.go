@@ -400,7 +400,7 @@ func TestAttestation(t *testing.T) {
 	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
 		validator := &testValidator{
 			Getter: oid.QEMUVTPM{},
-			pcrs:   v.PCRS(),
+			pcrs:   v.Measurements(),
 		}
 		return dialer.New(nil, validator, netDialer)
 	}

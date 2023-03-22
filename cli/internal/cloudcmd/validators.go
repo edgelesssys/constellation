@@ -22,10 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Validator validates Platform Configuration Registers (PCRs).
+// Validator validates Measurements (Platform Control Registers = PCRs).
 type Validator struct {
 	attestationVariant oid.Getter
-	pcrs               measurements.M
+	measurements       measurements.M
 	idkeydigests       idkeydigest.IDKeyDigests
 	enforceIDKeyDigest bool
 	validator          atls.Validator
@@ -41,7 +41,7 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	}
 	v.attestationVariant = variant // valid variant
 
-	if err := v.setPCRs(conf); err != nil {
+	if err := v.setMeasurements(conf); err != nil {
 		return nil, err
 	}
 
@@ -53,22 +53,22 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 	return &v, nil
 }
 
-// UpdateInitPCRs sets the owner and cluster PCR values.
-func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
-	if err := v.updatePCR(uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
+// UpdateInitMeasurements sets the owner and cluster measurement values.
+func (v *Validator) UpdateInitMeasurements(ownerID, clusterID string) error {
+	if err := v.updateMeasurement(uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 		return err
 	}
-	return v.updatePCR(uint32(measurements.PCRIndexClusterID), clusterID)
+	return v.updateMeasurement(uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
-// updatePCR adds a new entry to the measurements of v, or removes the key if the input is an empty string.
+// updateMeasurement adds a new entry to the measurements of v, or removes the key if the input is an empty string.
 //
 // When adding, the input is first decoded from hex or base64.
-// We then calculate the expected PCR by hashing the input using SHA256,
-// appending expected PCR for initialization, and then hashing once more.
-func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
+// We then calculate the expected measurement by hashing the input using SHA256,
+// appending expected measurement for initialization, and then hashing once more.
+func (v *Validator) updateMeasurement(measurementIndex uint32, encoded string) error {
 	if encoded == "" {
-		delete(v.pcrs, pcrIndex)
+		delete(v.measurements, measurementIndex)
 		return nil
 	}
 
@@ -81,44 +81,44 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 			return fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
 		}
 	}
-	// new_pcr_value := hash(old_pcr_value || data_to_extend)
+	// new_measurement_value := hash(old_pcr_value || data_to_extend)
 	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
 	hashedInput := sha256.Sum256(decoded)
-	oldExpected := v.pcrs[pcrIndex].Expected
-	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
-	v.pcrs[pcrIndex] = measurements.Measurement{
-		Expected: expectedPcr[:],
-		WarnOnly: v.pcrs[pcrIndex].WarnOnly,
+	oldExpected := v.measurements[measurementIndex].Expected
+	expectedMeasurement := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+	v.measurements[measurementIndex] = measurements.Measurement{
+		Expected: expectedMeasurement[:],
+		WarnOnly: v.measurements[measurementIndex].WarnOnly,
 	}
 	return nil
 }
 
-func (v *Validator) setPCRs(config *config.Config) error {
+func (v *Validator) setMeasurements(config *config.Config) error {
 	switch v.attestationVariant {
 	case oid.AWSNitroTPM{}:
-		awsPCRs := config.Provider.AWS.Measurements
-		if len(awsPCRs) == 0 {
+		awsMeasurements := config.Provider.AWS.Measurements
+		if len(awsMeasurements) == 0 {
 			return errors.New("no expected measurement provided")
 		}
-		v.pcrs = awsPCRs
+		v.measurements = awsMeasurements
 	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
-		azurePCRs := config.Provider.Azure.Measurements
-		if len(azurePCRs) == 0 {
+		azureMeasurements := config.Provider.Azure.Measurements
+		if len(azureMeasurements) == 0 {
 			return errors.New("no expected measurement provided")
 		}
-		v.pcrs = azurePCRs
+		v.measurements = azureMeasurements
 	case oid.GCPSEVES{}:
-		gcpPCRs := config.Provider.GCP.Measurements
-		if len(gcpPCRs) == 0 {
+		gcpMeasurements := config.Provider.GCP.Measurements
+		if len(gcpMeasurements) == 0 {
 			return errors.New("no expected measurement provided")
 		}
-		v.pcrs = gcpPCRs
+		v.measurements = gcpMeasurements
 	case oid.QEMUVTPM{}:
-		qemuPCRs := config.Provider.QEMU.Measurements
-		if len(qemuPCRs) == 0 {
+		qemuMeasurements := config.Provider.QEMU.Measurements
+		if len(qemuMeasurements) == 0 {
 			return errors.New("no expected measurement provided")
 		}
-		v.pcrs = qemuPCRs
+		v.measurements = qemuMeasurements
 	}
 	return nil
 }
@@ -129,16 +129,16 @@ func (v *Validator) V(cmd *cobra.Command) atls.Validator {
 	return v.validator
 }
 
-// PCRS returns the validator's PCR map.
-func (v *Validator) PCRS() measurements.M {
-	return v.pcrs
+// Measurements returns the validator's measurements map.
+func (v *Validator) Measurements() measurements.M {
+	return v.measurements
 }
 
 func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd, log: v.log}
 
 	// Use of a valid variant has been check in NewValidator so we may drop the error
-	v.validator, _ = choose.Validator(v.attestationVariant, v.pcrs, v.idkeydigests, v.enforceIDKeyDigest, log)
+	v.validator, _ = choose.Validator(v.attestationVariant, v.measurements, v.idkeydigests, v.enforceIDKeyDigest, log)
 }
 
 // warnLogger implements logging of warnings for validators.

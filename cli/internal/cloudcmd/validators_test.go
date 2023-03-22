@@ -81,7 +81,7 @@ func TestNewValidator(t *testing.T) {
 				},
 			},
 		},
-		"no pcrs provided": {
+		"no measurements provided": {
 			config: &config.Config{
 				AttestationVariant: oid.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
@@ -127,7 +127,7 @@ func TestNewValidator(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.config.GetMeasurements(), validators.pcrs)
+				assert.Equal(tc.config.GetMeasurements(), validators.measurements)
 				variant, err := oid.FromString(tc.config.AttestationVariant)
 				require.NoError(t, err)
 				assert.Equal(variant, validators.attestationVariant)
@@ -156,29 +156,29 @@ func TestValidatorV(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		variant oid.Getter
-		pcrs    measurements.M
-		wantVs  atls.Validator
+		variant      oid.Getter
+		measurements measurements.M
+		wantVs       atls.Validator
 	}{
 		"gcp": {
-			variant: oid.GCPSEVES{},
-			pcrs:    newTestPCRs(),
-			wantVs:  gcp.NewValidator(newTestPCRs(), nil),
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
+			wantVs:       gcp.NewValidator(newTestPCRs(), nil),
 		},
 		"azure cvm": {
-			variant: oid.AzureSEVSNP{},
-			pcrs:    newTestPCRs(),
-			wantVs:  snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
+			variant:      oid.AzureSEVSNP{},
+			measurements: newTestPCRs(),
+			wantVs:       snp.NewValidator(newTestPCRs(), idkeydigest.IDKeyDigests{}, false, nil),
 		},
 		"azure trusted launch": {
-			variant: oid.AzureTrustedLaunch{},
-			pcrs:    newTestPCRs(),
-			wantVs:  trustedlaunch.NewValidator(newTestPCRs(), nil),
+			variant:      oid.AzureTrustedLaunch{},
+			measurements: newTestPCRs(),
+			wantVs:       trustedlaunch.NewValidator(newTestPCRs(), nil),
 		},
 		"qemu": {
-			variant: oid.QEMUVTPM{},
-			pcrs:    newTestPCRs(),
-			wantVs:  qemu.NewValidator(newTestPCRs(), nil),
+			variant:      oid.QEMUVTPM{},
+			measurements: newTestPCRs(),
+			wantVs:       qemu.NewValidator(newTestPCRs(), nil),
 		},
 	}
 
@@ -186,7 +186,7 @@ func TestValidatorV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{attestationVariant: tc.variant, pcrs: tc.pcrs}
+			validators := &Validator{attestationVariant: tc.variant, measurements: tc.measurements}
 
 			resultValidator := validators.V(&cobra.Command{})
 
@@ -195,7 +195,7 @@ func TestValidatorV(t *testing.T) {
 	}
 }
 
-func TestValidatorUpdateInitPCRs(t *testing.T) {
+func TestValidatorUpdateInitMeasurements(t *testing.T) {
 	zero := measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength)
 	one := measurements.WithAllBytes(0x11, true, measurements.PCRMeasurementLength)
 	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
@@ -231,53 +231,53 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		variant   oid.Getter
-		pcrs      measurements.M
-		ownerID   string
-		clusterID string
-		wantErr   bool
+		variant      oid.Getter
+		measurements measurements.M
+		ownerID      string
+		clusterID    string
+		wantErr      bool
 	}{
 		"gcp update owner ID": {
-			variant: oid.GCPSEVES{},
-			pcrs:    newTestPCRs(),
-			ownerID: one64,
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
+			ownerID:      one64,
 		},
 		"gcp update cluster ID": {
-			variant:   oid.GCPSEVES{},
-			pcrs:      newTestPCRs(),
-			clusterID: one64,
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
+			clusterID:    one64,
 		},
 		"gcp update both": {
-			variant:   oid.GCPSEVES{},
-			pcrs:      newTestPCRs(),
-			ownerID:   one64,
-			clusterID: one64,
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
+			ownerID:      one64,
+			clusterID:    one64,
 		},
 		"azure update owner ID": {
-			variant: oid.AzureSEVSNP{},
-			pcrs:    newTestPCRs(),
-			ownerID: one64,
+			variant:      oid.AzureSEVSNP{},
+			measurements: newTestPCRs(),
+			ownerID:      one64,
 		},
 		"azure update cluster ID": {
-			variant:   oid.AzureSEVSNP{},
-			pcrs:      newTestPCRs(),
-			clusterID: one64,
+			variant:      oid.AzureSEVSNP{},
+			measurements: newTestPCRs(),
+			clusterID:    one64,
 		},
 		"azure update both": {
-			variant:   oid.AzureSEVSNP{},
-			pcrs:      newTestPCRs(),
-			ownerID:   one64,
-			clusterID: one64,
+			variant:      oid.AzureSEVSNP{},
+			measurements: newTestPCRs(),
+			ownerID:      one64,
+			clusterID:    one64,
 		},
 		"owner ID and cluster ID empty": {
-			variant: oid.GCPSEVES{},
-			pcrs:    newTestPCRs(),
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
 		},
 		"invalid encoding": {
-			variant: oid.GCPSEVES{},
-			pcrs:    newTestPCRs(),
-			ownerID: "invalid",
-			wantErr: true,
+			variant:      oid.GCPSEVES{},
+			measurements: newTestPCRs(),
+			ownerID:      "invalid",
+			wantErr:      true,
 		},
 	}
 
@@ -285,42 +285,42 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{attestationVariant: tc.variant, pcrs: tc.pcrs}
+			validators := &Validator{attestationVariant: tc.variant, measurements: tc.measurements}
 
-			err := validators.UpdateInitPCRs(tc.ownerID, tc.clusterID)
+			err := validators.UpdateInitMeasurements(tc.ownerID, tc.clusterID)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
-			for i := 0; i < len(tc.pcrs); i++ {
+			for i := 0; i < len(tc.measurements); i++ {
 				switch {
 				case i == int(measurements.PCRIndexClusterID) && tc.clusterID == "":
 					// should be deleted
-					_, ok := validators.pcrs[uint32(i)]
+					_, ok := validators.measurements[uint32(i)]
 					assert.False(ok)
 
 				case i == int(measurements.PCRIndexClusterID):
-					pcr, ok := validators.pcrs[uint32(i)]
+					pcr, ok := validators.measurements[uint32(i)]
 					assert.True(ok)
 					assert.Equal(pcrZeroUpdatedOne[:], pcr.Expected)
 
 				case i == int(measurements.PCRIndexOwnerID) && tc.ownerID == "":
 					// should be deleted
-					_, ok := validators.pcrs[uint32(i)]
+					_, ok := validators.measurements[uint32(i)]
 					assert.False(ok)
 
 				case i == int(measurements.PCRIndexOwnerID):
-					pcr, ok := validators.pcrs[uint32(i)]
+					pcr, ok := validators.measurements[uint32(i)]
 					assert.True(ok)
 					assert.Equal(pcrZeroUpdatedOne[:], pcr.Expected)
 
 				default:
 					if i >= 17 && i <= 22 {
-						assert.Equal(one, validators.pcrs[uint32(i)])
+						assert.Equal(one, validators.measurements[uint32(i)])
 					} else {
-						assert.Equal(zero, validators.pcrs[uint32(i)])
+						assert.Equal(zero, validators.measurements[uint32(i)])
 					}
 				}
 			}
@@ -328,82 +328,82 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 	}
 }
 
-func TestUpdatePCR(t *testing.T) {
+func TestUpdateMeasurement(t *testing.T) {
 	emptyMap := measurements.M{}
-	defaultMap := measurements.M{
+	defaultMapPCRs := measurements.M{
 		0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
 		1: measurements.WithAllBytes(0xBB, false, measurements.PCRMeasurementLength),
 	}
 
 	testCases := map[string]struct {
-		pcrMap      measurements.M
-		pcrIndex    uint32
-		encoded     string
-		wantEntries int
-		wantErr     bool
+		measurementMap   measurements.M
+		measurementIndex uint32
+		encoded          string
+		wantEntries      int
+		wantErr          bool
 	}{
 		"empty input, empty map": {
-			pcrMap:      emptyMap,
-			pcrIndex:    10,
-			encoded:     "",
-			wantEntries: 0,
-			wantErr:     false,
+			measurementMap:   emptyMap,
+			measurementIndex: 10,
+			encoded:          "",
+			wantEntries:      0,
+			wantErr:          false,
 		},
 		"empty input, default map": {
-			pcrMap:      defaultMap,
-			pcrIndex:    10,
-			encoded:     "",
-			wantEntries: len(defaultMap),
-			wantErr:     false,
+			measurementMap:   defaultMapPCRs,
+			measurementIndex: 10,
+			encoded:          "",
+			wantEntries:      len(defaultMapPCRs),
+			wantErr:          false,
 		},
 		"correct input, empty map": {
-			pcrMap:      emptyMap,
-			pcrIndex:    10,
-			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			wantEntries: 1,
-			wantErr:     false,
+			measurementMap:   emptyMap,
+			measurementIndex: 10,
+			encoded:          base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:      1,
+			wantErr:          false,
 		},
 		"correct input, default map": {
-			pcrMap:      defaultMap,
-			pcrIndex:    10,
-			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			wantEntries: len(defaultMap) + 1,
-			wantErr:     false,
+			measurementMap:   defaultMapPCRs,
+			measurementIndex: 10,
+			encoded:          base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:      len(defaultMapPCRs) + 1,
+			wantErr:          false,
 		},
 		"hex input, empty map": {
-			pcrMap:      emptyMap,
-			pcrIndex:    10,
-			encoded:     hex.EncodeToString([]byte("Constellation")),
-			wantEntries: 1,
-			wantErr:     false,
+			measurementMap:   emptyMap,
+			measurementIndex: 10,
+			encoded:          hex.EncodeToString([]byte("Constellation")),
+			wantEntries:      1,
+			wantErr:          false,
 		},
 		"hex input, default map": {
-			pcrMap:      defaultMap,
-			pcrIndex:    10,
-			encoded:     hex.EncodeToString([]byte("Constellation")),
-			wantEntries: len(defaultMap) + 1,
-			wantErr:     false,
+			measurementMap:   defaultMapPCRs,
+			measurementIndex: 10,
+			encoded:          hex.EncodeToString([]byte("Constellation")),
+			wantEntries:      len(defaultMapPCRs) + 1,
+			wantErr:          false,
 		},
 		"unencoded input, empty map": {
-			pcrMap:      emptyMap,
-			pcrIndex:    10,
-			encoded:     "Constellation",
-			wantEntries: 0,
-			wantErr:     true,
+			measurementMap:   emptyMap,
+			measurementIndex: 10,
+			encoded:          "Constellation",
+			wantEntries:      0,
+			wantErr:          true,
 		},
 		"unencoded input, default map": {
-			pcrMap:      defaultMap,
-			pcrIndex:    10,
-			encoded:     "Constellation",
-			wantEntries: len(defaultMap),
-			wantErr:     true,
+			measurementMap:   defaultMapPCRs,
+			measurementIndex: 10,
+			encoded:          "Constellation",
+			wantEntries:      len(defaultMapPCRs),
+			wantErr:          true,
 		},
 		"empty input at occupied index": {
-			pcrMap:      defaultMap,
-			pcrIndex:    0,
-			encoded:     "",
-			wantEntries: len(defaultMap) - 1,
-			wantErr:     false,
+			measurementMap:   defaultMapPCRs,
+			measurementIndex: 0,
+			encoded:          "",
+			wantEntries:      len(defaultMapPCRs) - 1,
+			wantErr:          false,
 		},
 	}
 
@@ -411,23 +411,23 @@ func TestUpdatePCR(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			pcrs := make(measurements.M)
-			for k, v := range tc.pcrMap {
-				pcrs[k] = v
+			measurements := make(measurements.M)
+			for k, v := range tc.measurementMap {
+				measurements[k] = v
 			}
 
 			validators := &Validator{
 				attestationVariant: oid.GCPSEVES{},
-				pcrs:               pcrs,
+				measurements:       measurements,
 			}
-			err := validators.updatePCR(tc.pcrIndex, tc.encoded)
+			err := validators.updateMeasurement(tc.measurementIndex, tc.encoded)
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 			}
-			assert.Len(pcrs, tc.wantEntries)
+			assert.Len(measurements, tc.wantEntries)
 		})
 	}
 }
