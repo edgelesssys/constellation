@@ -94,7 +94,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	conf.UpdateMAAURL(flags.maaURL)
 	c.log.Debugf("Updating expected PCRs")
 	attConfig := conf.GetAttestationConfig()
-	if err := cloudcmd.UpdateInitPCRs(attConfig, flags.ownerID, flags.clusterID); err != nil {
+	if err := cloudcmd.UpdateInitMeasurements(attConfig, flags.ownerID, flags.clusterID); err != nil {
 		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 

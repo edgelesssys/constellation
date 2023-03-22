@@ -24,23 +24,23 @@ func NewValidator(cmd *cobra.Command, config config.AttestationCfg, log debugLog
 	return choose.Validator(config, warnLogger{cmd: cmd, log: log})
 }
 
-// UpdateInitPCRs sets the owner and cluster PCR values.
-func UpdateInitPCRs(config config.AttestationCfg, ownerID, clusterID string) error {
+// UpdateInitMeasurements sets the owner and cluster measurement values.
+func UpdateInitMeasurements(config config.AttestationCfg, ownerID, clusterID string) error {
 	m := config.GetMeasurements()
-	if err := updatePCR(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
+	if err := updateMeasurement(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 		return err
 	}
-	return updatePCR(m, uint32(measurements.PCRIndexClusterID), clusterID)
+	return updateMeasurement(m, uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
-// updatePCR adds a new entry to the measurements of v, or removes the key if the input is an empty string.
+// updateMeasurement adds a new entry to the measurements of v, or removes the key if the input is an empty string.
 //
 // When adding, the input is first decoded from hex or base64.
-// We then calculate the expected PCR by hashing the input using SHA256,
-// appending expected PCR for initialization, and then hashing once more.
-func updatePCR(m measurements.M, pcrIndex uint32, encoded string) error {
+// We then calculate the expected measurement by hashing the input using SHA256,
+// appending expected measurement for initialization, and then hashing once more.
+func updateMeasurement(m measurements.M, measurementIdx uint32, encoded string) error {
 	if encoded == "" {
-		delete(m, pcrIndex)
+		delete(m, measurementIdx)
 		return nil
 	}
 
@@ -53,14 +53,14 @@ func updatePCR(m measurements.M, pcrIndex uint32, encoded string) error {
 			return fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
 		}
 	}
-	// new_pcr_value := hash(old_pcr_value || data_to_extend)
+	// new_measurement_value := hash(old_pcr_value || data_to_extend)
 	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
 	hashedInput := sha256.Sum256(decoded)
-	oldExpected := m[pcrIndex].Expected
-	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
-	m[pcrIndex] = measurements.Measurement{
-		Expected:      expectedPcr[:],
-		ValidationOpt: m[pcrIndex].ValidationOpt,
+	oldExpected := m[measurementIdx].Expected
+	expectedMeasurement := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+	m[measurementIdx] = measurements.Measurement{
+		Expected:      expectedMeasurement[:],
+		ValidationOpt: m[measurementIdx].ValidationOpt,
 	}
 	return nil
 }

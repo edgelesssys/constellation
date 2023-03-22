@@ -114,7 +114,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := UpdateInitPCRs(tc.config, tc.ownerID, tc.clusterID)
+			err := UpdateInitMeasurements(tc.config, tc.ownerID, tc.clusterID)
 
 			if tc.wantErr {
 				assert.Error(err)
