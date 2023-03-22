@@ -50,8 +50,8 @@ on:
         type: boolean
         default: false
         required: false
-      osImage:
-        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+      cliImageVersion:
+        description: "Version of a released CLI to download:Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
         type: string
         default: ""
         required: false
@@ -95,8 +95,8 @@ on:
         description: "Keep measurements embedded in the CLI."
         type: boolean
         required: true
-      osImage:
-        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+      cliImageVersion:
+        description: "Version of a released CLI to download and full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main. Must be in the form of 'cliVersion:image'."
         type: string
         required: true
       machineType:
@@ -115,9 +115,35 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
+  split-cliImageVersion:
+    name: Split cliImageVersion
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.split-cliImageVersion.outputs.image }}
+      cliVersion: ${{ steps.split-cliImageVersion.outputs.cliVersion }}
+    steps:
+      - name: Split cliImageVersion
+        id: split-cliImageVersion
+        shell: bash
+        run: |
+          if [[ -z "${{ inputs.cliImageVersion }}" ]]; then
+            echo "Using latest debug image from main."
+            exit 0
+          fi
+
+          cliImageVersion="${{ inputs.cliImageVersion }}"
+          image="${cliImageVersion##*:}"
+          cliVersion="${cliImageVersion%%:*}"
+          echo "image=${image}" | tee -a "$GITHUB_OUTPUT"
+          echo "cliVersion=${cliVersion}" | tee -a "$GITHUB_OUTPUT"
+
   find-latest-image:
     name: Select image
     runs-on: ubuntu-22.04
+    needs: [split-cliImageVersion]
     permissions:
       id-token: write
       contents: read
@@ -129,27 +155,27 @@ jobs:
         id: check-input
         shell: bash
         run: |
-          if [[ -z "${{ inputs.osImage }}" ]]; then
+          if [[ -z "${{ needs.split-cliImageVersion.outputs.image }}" ]]; then
             echo "Using latest debug image from main."
             exit 0
           else
-            echo "image=${{ inputs.osImage }}" | tee -a "$GITHUB_OUTPUT"
+            echo "image=${{ needs.split-cliImageVersion.outputs.image }}" | tee -a "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout head
-        if: inputs.osImage == '' && inputs.git-ref == 'head'
+        if: needs.split-cliImageVersion.outputs.image == '' && inputs.git-ref == 'head'
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
-        if: inputs.osImage == '' && inputs.git-ref != 'head'
+        if: needs.split-cliImageVersion.outputs.image == '' && inputs.git-ref != 'head'
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           ref: ${{ inputs.git-ref }}
 
       - name: Login to AWS
-        if: inputs.osImage == ''
+        if: needs.split-cliImageVersion.outputs.image == ''
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
@@ -157,7 +183,7 @@ jobs:
 
       - name: Find latest image
         id: find-latest-image
-        if: inputs.osImage == ''
+        if: needs.split-cliImageVersion.outputs.image == ''
         uses: ./.github/actions/versionsapi
         with:
           command: latest
@@ -168,7 +194,7 @@ jobs:
         id: isDebugImage
         shell: bash
         run: |
-          case "${{ inputs.osImage }}" in
+          case "${{ needs.split-cliImageVersion.outputs.image }}" in
             "")
               echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
               echo "Image is debug image."
@@ -189,7 +215,7 @@ jobs:
       id-token: write
       checks: write
       contents: read
-    needs: [find-latest-image]
+    needs: [find-latest-image, split-cliImageVersion]
     if: always() && !cancelled()
     steps:
       - name: Install basic tools (macOS)
@@ -258,7 +284,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
-          cliVersion: ${{ startsWith(needs.find-latest-image.outputs.image, 'v') && needs.find-latest-image.outputs.image || '' }}
+          cliVersion: ${{ needs.split-cliImageVersion.outputs.cliVersion }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 

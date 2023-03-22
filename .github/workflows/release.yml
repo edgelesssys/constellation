@@ -117,6 +117,15 @@ jobs:
           git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
           git push origin "${BRANCH}"
 
+      - name: Write version to version.txt
+        run: |
+          echo "${{ inputs.version }}" > version.txt
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git add version.txt
+          git commit -m "chore: update stamping version to ${{ inputs.version }}"
+          git push origin "${BRANCH}"
+
   micro-services:
     name: Build micro services
     runs-on: ubuntu-22.04
@@ -216,11 +225,6 @@ jobs:
           sed -i "s/defaultImage = \"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/defaultImage = \"${VERSION}\"/" internal/config/images_enterprise.go
           git add internal/config/images_enterprise.go
 
-      - name: Update CMakeLists.txt
-        run: |
-          sed -i "s/project(constellation LANGUAGES C VERSION [0-9]\+\.[0-9]\+\.[0-9]\+)/project(constellation LANGUAGES C VERSION ${WITHOUT_V})/" CMakeLists.txt
-          git add CMakeLists.txt
-
       - name: Update micro service versions
         run: |
           for service in node-operator join-service key-service verification-service qemu-metadata-api; do
@@ -234,7 +238,7 @@ jobs:
         run: |
           git config --global user.name "release[bot]"
           git config --global user.email "release[bot]@users.noreply.github.com"
-          git commit -m "deps: update version to ${VERSION}"
+          git commit -m "deps: update images to ${VERSION}"
           git push
 
   os-image:
@@ -302,6 +306,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      checks: write
     with:
       workerNodesCount: 2
       controlNodesCount: 3
@@ -310,7 +315,7 @@ jobs:
       test: "sonobuoy full"
       kubernetesVersion: "v1.25"
       keepMeasurements: true
-      osImage: ${{ inputs.version }}
+      cliImageVersion: ":${{ inputs.version }}"
       machineType: "default"
       git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
