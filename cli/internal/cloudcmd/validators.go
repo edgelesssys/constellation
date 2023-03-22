@@ -113,7 +113,7 @@ func (v *Validator) setMeasurements(config *config.Config) error {
 			return errors.New("no expected measurement provided")
 		}
 		v.measurements = gcpMeasurements
-	case oid.QEMUVTPM{}:
+	case oid.QEMUVTPM{}, oid.QEMUTDX{}:
 		qemuMeasurements := config.Provider.QEMU.Measurements
 		if len(qemuMeasurements) == 0 {
 			return errors.New("no expected measurement provided")
