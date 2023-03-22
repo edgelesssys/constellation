@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -22,7 +23,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Validator validates Measurements (Platform Control Registers = PCRs).
+// Validator validates Measurements
+// TPM: Platform Control Registers (PCRs)
+// Intel TDX: Measurement of Trust Domain (MRTD) + Run-time Measurement Registers (RTMRs).
 type Validator struct {
 	attestationVariant oid.Getter
 	measurements       measurements.M
@@ -55,16 +58,32 @@ func NewValidator(conf *config.Config, log debugLog) (*Validator, error) {
 
 // UpdateInitMeasurements sets the owner and cluster measurement values.
 func (v *Validator) UpdateInitMeasurements(ownerID, clusterID string) error {
+	switch v.attestationVariant {
+	case oid.AWSNitroTPM{}, oid.AzureTrustedLaunch{}, oid.AzureSEVSNP{}, oid.GCPSEVES{}, oid.QEMUVTPM{}:
+		return v.updateInitMeasurementsTPM(ownerID, clusterID)
+	case oid.QEMUTDX{}:
+		return v.updateInitMeasurementsTDX(clusterID)
+	default:
+		return fmt.Errorf("validator: UpdateInitMeasurements: unknown attestation type")
+	}
+}
+
+func (v *Validator) updateInitMeasurementsTPM(ownerID, clusterID string) error {
 	if err := v.updateMeasurement(uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 		return err
 	}
 	return v.updateMeasurement(uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
+func (v *Validator) updateInitMeasurementsTDX(clusterID string) error {
+	// OwnerID not implemented yet.
+	return v.updateMeasurement(uint32(measurements.TDXIndexClusterID), clusterID)
+}
+
 // updateMeasurement adds a new entry to the measurements of v, or removes the key if the input is an empty string.
 //
 // When adding, the input is first decoded from hex or base64.
-// We then calculate the expected measurement by hashing the input using SHA256,
+// We then calculate the expected measurement by hashing the input using SHA256 (TPM) or SHA384 (TDX),
 // appending expected measurement for initialization, and then hashing once more.
 func (v *Validator) updateMeasurement(measurementIndex uint32, encoded string) error {
 	if encoded == "" {
@@ -81,13 +100,25 @@ func (v *Validator) updateMeasurement(measurementIndex uint32, encoded string) e
 			return fmt.Errorf("input [%s] could neither be hex decoded (%w) nor base64 decoded (%w)", encoded, hexErr, err)
 		}
 	}
-	// new_measurement_value := hash(old_pcr_value || data_to_extend)
-	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
-	hashedInput := sha256.Sum256(decoded)
-	oldExpected := v.measurements[measurementIndex].Expected
-	expectedMeasurement := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+	// new_measurement_value := hash(old_measurement_value || data_to_extend)
+	// Since we use the TPM2_PCR_Event (TPM) / TDG.MR.RTMR.EXTEND (TDX) call to extend the register, data_to_extend is the hash of our input
+	var expectedMeasurement []byte
+	switch v.attestationVariant {
+	case oid.AWSNitroTPM{}, oid.AzureTrustedLaunch{}, oid.AzureSEVSNP{}, oid.GCPSEVES{}, oid.QEMUVTPM{}:
+		hashedInput := sha256.Sum256(decoded)
+		oldExpected := v.measurements[measurementIndex].Expected
+		expectedMeasurementSum := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+		expectedMeasurement = expectedMeasurementSum[:]
+	case oid.QEMUTDX{}:
+		hashedInput := sha512.Sum384(decoded)
+		oldExpected := v.measurements[measurementIndex].Expected
+		expectedMeasurementSum := sha512.Sum384(append(oldExpected[:], hashedInput[:]...))
+		expectedMeasurement = expectedMeasurementSum[:]
+	default:
+		return fmt.Errorf("validator: updateMeasurement: unknown attestation type")
+	}
 	v.measurements[measurementIndex] = measurements.Measurement{
-		Expected: expectedMeasurement[:],
+		Expected: expectedMeasurement,
 		WarnOnly: v.measurements[measurementIndex].WarnOnly,
 	}
 	return nil

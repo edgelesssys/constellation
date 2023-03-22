@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
@@ -35,6 +37,14 @@ func TestNewValidator(t *testing.T) {
 		3: measurements.WithAllBytes(0xFF, false, measurements.PCRMeasurementLength),
 		4: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
 		5: measurements.WithAllBytes(0x00, false, measurements.PCRMeasurementLength),
+	}
+	testTDXMeasurements := measurements.M{
+		0: measurements.WithAllBytes(0x00, false, measurements.TDXMeasurementLength),
+		1: measurements.WithAllBytes(0xFF, false, measurements.TDXMeasurementLength),
+		2: measurements.WithAllBytes(0x00, false, measurements.TDXMeasurementLength),
+		3: measurements.WithAllBytes(0xFF, false, measurements.TDXMeasurementLength),
+		4: measurements.WithAllBytes(0x00, false, measurements.TDXMeasurementLength),
+		5: measurements.WithAllBytes(0x00, false, measurements.TDXMeasurementLength),
 	}
 
 	testCases := map[string]struct {
@@ -71,12 +81,22 @@ func TestNewValidator(t *testing.T) {
 				},
 			},
 		},
-		"qemu": {
+		"qemu vTPM": {
 			config: &config.Config{
 				AttestationVariant: oid.QEMUVTPM{}.String(),
 				Provider: config.ProviderConfig{
 					QEMU: &config.QEMUConfig{
 						Measurements: testPCRs,
+					},
+				},
+			},
+		},
+		"qemu TDX": {
+			config: &config.Config{
+				AttestationVariant: oid.QEMUTDX{}.String(),
+				Provider: config.ProviderConfig{
+					QEMU: &config.QEMUConfig{
+						Measurements: testTDXMeasurements,
 					},
 				},
 			},
@@ -154,6 +174,16 @@ func TestValidatorV(t *testing.T) {
 			12: measurements.WithAllBytes(0x00, true, measurements.PCRMeasurementLength),
 		}
 	}
+	newTestRTMRs := func() measurements.M {
+		return measurements.M{
+			0: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			1: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			2: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			3: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			4: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			5: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+		}
+	}
 
 	testCases := map[string]struct {
 		variant      oid.Getter
@@ -175,10 +205,15 @@ func TestValidatorV(t *testing.T) {
 			measurements: newTestPCRs(),
 			wantVs:       trustedlaunch.NewValidator(newTestPCRs(), nil),
 		},
-		"qemu": {
+		"qemu vTPM": {
 			variant:      oid.QEMUVTPM{},
 			measurements: newTestPCRs(),
 			wantVs:       qemu.NewValidator(newTestPCRs(), nil),
+		},
+		"qemu TDX": {
+			variant:      oid.QEMUTDX{},
+			measurements: newTestRTMRs(),
+			wantVs:       tdx.NewValidator(newTestRTMRs(), nil),
 		},
 	}
 
@@ -328,82 +363,240 @@ func TestValidatorUpdateInitMeasurements(t *testing.T) {
 	}
 }
 
+func TestValidatorUpdateInitMeasurementsTDX(t *testing.T) {
+	zero := measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength)
+	one := measurements.WithAllBytes(0x11, true, measurements.TDXMeasurementLength)
+	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
+	oneHash := sha512.Sum384(one.Expected[:])
+	tdxZeroUpdatedOne := sha512.Sum384(append(zero.Expected[:], oneHash[:]...))
+	newTestTDXMeasurements := func() measurements.M {
+		return measurements.M{
+			0: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			1: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			2: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			3: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			4: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+		}
+	}
+
+	testCases := map[string]struct {
+		variant      oid.Getter
+		measurements measurements.M
+		clusterID    string
+		wantErr      bool
+	}{
+		"QEMUT TDX update update cluster ID": {
+			variant:      oid.QEMUTDX{},
+			measurements: newTestTDXMeasurements(),
+			clusterID:    one64,
+		},
+		"cluster ID empty": {
+			variant:      oid.QEMUTDX{},
+			measurements: newTestTDXMeasurements(),
+		},
+		"invalid encoding": {
+			variant:      oid.QEMUTDX{},
+			measurements: newTestTDXMeasurements(),
+			clusterID:    "invalid",
+			wantErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			validators := &Validator{attestationVariant: tc.variant, measurements: tc.measurements}
+
+			err := validators.UpdateInitMeasurements("", tc.clusterID)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			for i := 0; i < len(tc.measurements); i++ {
+				switch {
+				case i == measurements.TDXIndexClusterID && tc.clusterID == "":
+					// should be deleted
+					_, ok := validators.measurements[uint32(i)]
+					assert.False(ok)
+
+				case i == measurements.TDXIndexClusterID:
+					pcr, ok := validators.measurements[uint32(i)]
+					assert.True(ok)
+					assert.Equal(tdxZeroUpdatedOne[:], pcr.Expected)
+
+				default:
+					assert.Equal(zero, validators.measurements[uint32(i)])
+				}
+			}
+		})
+	}
+}
+
 func TestUpdateMeasurement(t *testing.T) {
 	emptyMap := measurements.M{}
 	defaultMapPCRs := measurements.M{
 		0: measurements.WithAllBytes(0xAA, false, measurements.PCRMeasurementLength),
 		1: measurements.WithAllBytes(0xBB, false, measurements.PCRMeasurementLength),
 	}
+	defaultMapTDXMeasurements := measurements.M{
+		0: measurements.WithAllBytes(0xAA, false, measurements.TDXMeasurementLength),
+		1: measurements.WithAllBytes(0xBB, false, measurements.TDXMeasurementLength),
+	}
 
 	testCases := map[string]struct {
-		measurementMap   measurements.M
-		measurementIndex uint32
-		encoded          string
-		wantEntries      int
-		wantErr          bool
+		attestationVariant oid.Getter
+		measurementMap     measurements.M
+		measurementIndex   uint32
+		encoded            string
+		wantEntries        int
+		wantErr            bool
 	}{
-		"empty input, empty map": {
-			measurementMap:   emptyMap,
-			measurementIndex: 10,
-			encoded:          "",
-			wantEntries:      0,
-			wantErr:          false,
+		"TPM: empty input, empty map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     emptyMap,
+			measurementIndex:   10,
+			encoded:            "",
+			wantEntries:        0,
+			wantErr:            false,
 		},
-		"empty input, default map": {
-			measurementMap:   defaultMapPCRs,
-			measurementIndex: 10,
-			encoded:          "",
-			wantEntries:      len(defaultMapPCRs),
-			wantErr:          false,
+		"TPM: empty input, default map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     defaultMapPCRs,
+			measurementIndex:   10,
+			encoded:            "",
+			wantEntries:        len(defaultMapPCRs),
+			wantErr:            false,
 		},
-		"correct input, empty map": {
-			measurementMap:   emptyMap,
-			measurementIndex: 10,
-			encoded:          base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			wantEntries:      1,
-			wantErr:          false,
+		"TPM: correct input, empty map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     emptyMap,
+			measurementIndex:   10,
+			encoded:            base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:        1,
+			wantErr:            false,
 		},
-		"correct input, default map": {
-			measurementMap:   defaultMapPCRs,
-			measurementIndex: 10,
-			encoded:          base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			wantEntries:      len(defaultMapPCRs) + 1,
-			wantErr:          false,
+		"TPM: correct input, default map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     defaultMapPCRs,
+			measurementIndex:   10,
+			encoded:            base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:        len(defaultMapPCRs) + 1,
+			wantErr:            false,
 		},
-		"hex input, empty map": {
-			measurementMap:   emptyMap,
-			measurementIndex: 10,
-			encoded:          hex.EncodeToString([]byte("Constellation")),
-			wantEntries:      1,
-			wantErr:          false,
+		"TPM: hex input, empty map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     emptyMap,
+			measurementIndex:   10,
+			encoded:            hex.EncodeToString([]byte("Constellation")),
+			wantEntries:        1,
+			wantErr:            false,
 		},
-		"hex input, default map": {
-			measurementMap:   defaultMapPCRs,
-			measurementIndex: 10,
-			encoded:          hex.EncodeToString([]byte("Constellation")),
-			wantEntries:      len(defaultMapPCRs) + 1,
-			wantErr:          false,
+		"TPM: hex input, default map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     defaultMapPCRs,
+			measurementIndex:   10,
+			encoded:            hex.EncodeToString([]byte("Constellation")),
+			wantEntries:        len(defaultMapPCRs) + 1,
+			wantErr:            false,
 		},
-		"unencoded input, empty map": {
-			measurementMap:   emptyMap,
-			measurementIndex: 10,
-			encoded:          "Constellation",
-			wantEntries:      0,
-			wantErr:          true,
+		"TPM: unencoded input, empty map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     emptyMap,
+			measurementIndex:   10,
+			encoded:            "Constellation",
+			wantEntries:        0,
+			wantErr:            true,
 		},
-		"unencoded input, default map": {
-			measurementMap:   defaultMapPCRs,
-			measurementIndex: 10,
-			encoded:          "Constellation",
-			wantEntries:      len(defaultMapPCRs),
-			wantErr:          true,
+		"TPM: unencoded input, default map": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     defaultMapPCRs,
+			measurementIndex:   10,
+			encoded:            "Constellation",
+			wantEntries:        len(defaultMapPCRs),
+			wantErr:            true,
 		},
-		"empty input at occupied index": {
-			measurementMap:   defaultMapPCRs,
-			measurementIndex: 0,
-			encoded:          "",
-			wantEntries:      len(defaultMapPCRs) - 1,
-			wantErr:          false,
+		"TPM: empty input at occupied index": {
+			attestationVariant: oid.GCPSEVES{},
+			measurementMap:     defaultMapPCRs,
+			measurementIndex:   0,
+			encoded:            "",
+			wantEntries:        len(defaultMapPCRs) - 1,
+			wantErr:            false,
+		},
+		"TDX: empty input, empty map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     emptyMap,
+			measurementIndex:   3,
+			encoded:            "",
+			wantEntries:        0,
+			wantErr:            false,
+		},
+		"TDX: empty input, default map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     defaultMapTDXMeasurements,
+			measurementIndex:   3,
+			encoded:            "",
+			wantEntries:        len(defaultMapTDXMeasurements),
+			wantErr:            false,
+		},
+		"TDX: correct input, empty map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     emptyMap,
+			measurementIndex:   3,
+			encoded:            base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:        1,
+			wantErr:            false,
+		},
+		"TDX: correct input, default map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     defaultMapTDXMeasurements,
+			measurementIndex:   3,
+			encoded:            base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries:        len(defaultMapPCRs) + 1,
+			wantErr:            false,
+		},
+		"TDX: hex input, empty map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     emptyMap,
+			measurementIndex:   3,
+			encoded:            hex.EncodeToString([]byte("Constellation")),
+			wantEntries:        1,
+			wantErr:            false,
+		},
+		"TDX: hex input, default map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     defaultMapTDXMeasurements,
+			measurementIndex:   3,
+			encoded:            hex.EncodeToString([]byte("Constellation")),
+			wantEntries:        len(defaultMapTDXMeasurements) + 1,
+			wantErr:            false,
+		},
+		"TDX: unencoded input, empty map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     emptyMap,
+			measurementIndex:   3,
+			encoded:            "Constellation",
+			wantEntries:        0,
+			wantErr:            true,
+		},
+		"TDX: unencoded input, default map": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     defaultMapTDXMeasurements,
+			measurementIndex:   3,
+			encoded:            "Constellation",
+			wantEntries:        len(defaultMapTDXMeasurements),
+			wantErr:            true,
+		},
+		"TDX: empty input at occupied index": {
+			attestationVariant: oid.QEMUTDX{},
+			measurementMap:     defaultMapTDXMeasurements,
+			measurementIndex:   0,
+			encoded:            "",
+			wantEntries:        len(defaultMapTDXMeasurements) - 1,
+			wantErr:            false,
 		},
 	}
 
@@ -417,7 +610,7 @@ func TestUpdateMeasurement(t *testing.T) {
 			}
 
 			validators := &Validator{
-				attestationVariant: oid.GCPSEVES{},
+				attestationVariant: tc.attestationVariant,
 				measurements:       measurements,
 			}
 			err := validators.updateMeasurement(tc.measurementIndex, tc.encoded)

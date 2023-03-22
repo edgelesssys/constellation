@@ -74,6 +74,7 @@ go_test(
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/attestation/qemu",
+        "//internal/attestation/tdx",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
         "//internal/compatibility",
