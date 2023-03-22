@@ -94,9 +94,9 @@ The attestation config API uses the same CSP names as [the image API](./image-ap
 The following HTTP endpoint is available:
 
 - `GET /constellation/v1/attestation/<ATTESTATION_VARIANT>/`
-  - `latest` returns the latest configuration available for a given attestation variant, as well as a reference to all past configurations
-  - `<YEAR>-<MONTH>-<DAY>-<HOUR>-<MINUTE>.json`, e.g. `2023-01-23-14-32.json` returns an attestation config for the given date, if it exists. A list of available configs can be queried using the `latest` endpoint.
+  - `list` returns a sorted list of available configurations for a given attestation variant
+  - `<YEAR>-<MONTH>-<DAY>-<HOUR>-<MINUTE>.json`, e.g. `2023-01-23-14-32.json` returns an attestation config for the given date, if it exists. A list of available configs can be queried using the `list` endpoint.
 
 While this API should stay compatible with old release, extensive changes to our code may require breaking changes to the format of the attestation config files.
 In this case a new API version will be used to retrieve the config in the updated format, e.g. `/constellation/v2/attestation/<ATTESTATION_VARIANT>/`.
-The old API will still receive updates for at least the next release cycle, during this time this API version will also return a deprecation warning when requesting `latest`.
+The old API will still receive updates for at least the next release cycle, during this time this API version will also return a deprecation warning when requesting `list`.
