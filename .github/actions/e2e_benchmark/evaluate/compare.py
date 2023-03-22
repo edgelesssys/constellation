@@ -169,6 +169,7 @@ class BenchmarkComparer:
 
         return f'| {subtest} | {metric} ({unit}) | {val_curr} | {val_prev} | {ratio} |'
 
+
 def set_failed() -> None:
     os.environ['COMPARISON_SUCCESS'] = str(False)
 
