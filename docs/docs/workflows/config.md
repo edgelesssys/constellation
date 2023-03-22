@@ -82,14 +82,7 @@ If you haven't generated a configuration file yet, you can do so by adding the `
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session.
-
-Your Azure account also needs to have at least the following permissions:
-* `Microsoft.Authorization/roleDefinitions/*`
-* `Microsoft.Authorization/roleAssignments/*`
-* `*/register/action`
-* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
-* `Microsoft.Resources/subscriptions/resourcegroups/*`
+You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
@@ -112,18 +105,7 @@ Since `clientSecretValue` is a sensitive value, you can leave it empty in the co
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session.
-
-Your GCP account also needs to have at least the following permissions:
-* `iam.serviceAccountKeys.create`
-* `iam.serviceAccountKeys.delete`
-* `iam.serviceAccountKeys.get`
-* `iam.serviceAccounts.create`
-* `iam.serviceAccounts.delete`
-* `iam.serviceAccounts.get`
-* `iam.serviceAccounts.getAccessToken`
-* `resourcemanager.projects.getIamPolicy`
-* `resourcemanager.projects.setIamPolicy`
+You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
@@ -138,28 +120,7 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session.
-
-Your AWS account also needs to have at least the following permissions:
-* `iam:CreatePolicy`
-* `iam:CreateRole`
-* `iam:GetPolicy`
-* `iam:GetRole`
-* `iam:GetPolicyVersion`
-* `iam:ListRolePolicies`
-* `iam:ListAttachedRolePolicies`
-* `iam:ListPolicyVersions`
-* `iam:ListInstanceProfilesForRole`
-* `iam:DeletePolicy`
-* `iam:DeleteRole`
-* `iam:AttachRolePolicy`
-* `iam:CreateInstanceProfile`
-* `iam:GetInstanceProfile`
-* `iam:RemoveRoleFromInstanceProfile`
-* `iam:DetachRolePolicy`
-* `iam:DeleteInstanceProfile`
-* `iam:AddRoleToInstanceProfile`
-* `iam:PassRole`
+You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create aws --zone=eu-central-1a --prefix=constellTest
