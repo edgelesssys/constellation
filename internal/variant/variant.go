@@ -197,6 +197,7 @@ func (QEMUTDX) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 5, 99}
 }
 
+// String returns the string representation of the OID.
 func (QEMUTDX) String() string {
 	return qemuTDX
 }
