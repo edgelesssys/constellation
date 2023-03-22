@@ -52,10 +52,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			stable: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			wantUpdate: true,
@@ -70,10 +68,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			stable: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			wantUpdate: true,
@@ -93,10 +89,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			stable: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			wantUpdate: true,
@@ -211,10 +205,8 @@ func TestUpdateMeasurements(t *testing.T) {
 	}{
 		"success": {
 			updater: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			newMeasurements: measurements.M{
@@ -224,10 +216,8 @@ func TestUpdateMeasurements(t *testing.T) {
 		},
 		"measurements are the same": {
 			updater: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			newMeasurements: measurements.M{
@@ -236,10 +226,8 @@ func TestUpdateMeasurements(t *testing.T) {
 		},
 		"trying to set warnOnly to true results in error": {
 			updater: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
 			newMeasurements: measurements.M{
@@ -249,10 +237,8 @@ func TestUpdateMeasurements(t *testing.T) {
 		},
 		"setting warnOnly to false is allowed": {
 			updater: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
 				},
 			},
 			newMeasurements: measurements.M{
@@ -266,10 +252,8 @@ func TestUpdateMeasurements(t *testing.T) {
 		},
 		"update error": {
 			updater: &stubStableClient{
-				configMap: &corev1.ConfigMap{
-					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
-					},
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 				updateErr: someErr,
 			},
@@ -297,9 +281,9 @@ func TestUpdateMeasurements(t *testing.T) {
 			if tc.wantUpdate {
 				newMeasurementsJSON, err := json.Marshal(tc.newMeasurements)
 				require.NoError(t, err)
-				assert.JSONEq(string(newMeasurementsJSON), tc.updater.updatedConfigMap.Data[constants.MeasurementsFilename])
+				assert.JSONEq(string(newMeasurementsJSON), tc.updater.updatedConfigMaps[constants.JoinConfigMap].Data[constants.MeasurementsFilename])
 			} else {
-				assert.Nil(tc.updater.updatedConfigMap)
+				assert.Nil(tc.updater.updatedConfigMaps)
 			}
 		})
 	}
@@ -424,6 +408,17 @@ func TestUpdateK8s(t *testing.T) {
 	}
 }
 
+func newJoinConfigMap(data string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: constants.JoinConfigMap,
+		},
+		Data: map[string]string{
+			constants.MeasurementsFilename: data,
+		},
+	}
+}
+
 type stubDynamicClient struct {
 	object        *unstructured.Unstructured
 	updatedObject *unstructured.Unstructured
@@ -441,27 +436,33 @@ func (u *stubDynamicClient) update(_ context.Context, updatedObject *unstructure
 }
 
 type stubStableClient struct {
-	configMap        *corev1.ConfigMap
-	updatedConfigMap *corev1.ConfigMap
-	k8sVersion       string
-	getErr           error
-	updateErr        error
-	createErr        error
-	k8sErr           error
+	configMaps        map[string]*corev1.ConfigMap
+	updatedConfigMaps map[string]*corev1.ConfigMap
+	k8sVersion        string
+	getErr            error
+	updateErr         error
+	createErr         error
+	k8sErr            error
 }
 
-func (s *stubStableClient) getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
-	return s.configMap, s.getErr
+func (s *stubStableClient) getCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
+	return s.configMaps[name], s.getErr
 }
 
-func (s *stubStableClient) updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	s.updatedConfigMap = configMap
-	return s.updatedConfigMap, s.updateErr
+func (s *stubStableClient) updateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	if s.updatedConfigMaps == nil {
+		s.updatedConfigMaps = map[string]*corev1.ConfigMap{}
+	}
+	s.updatedConfigMaps[configMap.ObjectMeta.Name] = configMap
+	return s.updatedConfigMaps[configMap.ObjectMeta.Name], s.updateErr
 }
 
-func (s *stubStableClient) createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	s.configMap = configMap
-	return s.configMap, s.createErr
+func (s *stubStableClient) createConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	if s.configMaps == nil {
+		s.configMaps = map[string]*corev1.ConfigMap{}
+	}
+	s.configMaps[configMap.ObjectMeta.Name] = configMap
+	return s.configMaps[configMap.ObjectMeta.Name], s.createErr
 }
 
 func (s *stubStableClient) kubernetesVersion() (string, error) {
