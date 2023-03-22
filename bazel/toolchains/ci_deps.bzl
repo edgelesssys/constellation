@@ -9,6 +9,7 @@ def ci_deps():
     _actionlint_deps()
     _gofumpt_deps()
     _tfsec_deps()
+    _golangci_lint_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -173,4 +174,42 @@ def _tfsec_deps():
             "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_darwin_arm64.tar.gz",
         ],
         sha256 = "6d664dcdd37e2809d1b4f14b310ccda0973b4a29e4624e902286e4964d101e22",
+    )
+
+def _golangci_lint_deps():
+    http_archive(
+        name = "com_github_golangci_golangci_lint_linux_amd64",
+        build_file = "//bazel/toolchains:BUILD.golangci.bazel",
+        urls = [
+            "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz",
+        ],
+        strip_prefix = "golangci-lint-1.51.2-linux-amd64",
+        sha256 = "4de479eb9d9bc29da51aec1834e7c255b333723d38dbd56781c68e5dddc6a90b",
+    )
+    http_archive(
+        name = "com_github_golangci_golangci_lint_linux_arm64",
+        build_file = "//bazel/toolchains:BUILD.golangci.bazel",
+        urls = [
+            "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-arm64.tar.gz",
+        ],
+        strip_prefix = "golangci-lint-1.51.2-linux-arm64",
+        sha256 = "9e03c47b7628d49f950445d74881a0e3cb3a1e6b3c5ac3b67672d600124c1b08",
+    )
+    http_archive(
+        name = "com_github_golangci_golangci_lint_darwin_amd64",
+        build_file = "//bazel/toolchains:BUILD.golangci.bazel",
+        urls = [
+            "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-darwin-amd64.tar.gz",
+        ],
+        strip_prefix = "golangci-lint-1.51.2-darwin-amd64",
+        sha256 = "0549cbaa2df451cf3a2011a9d73a9cb127784d26749d9cd14c9f4818af104d44",
+    )
+    http_archive(
+        name = "com_github_golangci_golangci_lint_darwin_arm64",
+        build_file = "//bazel/toolchains:BUILD.golangci.bazel",
+        urls = [
+            "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-darwin-arm64.tar.gz",
+        ],
+        strip_prefix = "golangci-lint-1.51.2-darwin-arm64",
+        sha256 = "36e69882205a0e42a63ad57ec3015639c11051e03f0beb9cf7949c6451408960",
     )

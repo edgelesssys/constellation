@@ -1,0 +1,8 @@
+genrule(
+    name = "golangci_lint_bin",
+    srcs = ["golangci-lint"],
+    outs = ["golangci_lint_bin_out"],
+    cmd = "cp $< $@",  # Copy the binary to the output directory.
+    executable = True,
+    visibility = ["//visibility:public"],
+)

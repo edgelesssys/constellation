@@ -65,6 +65,36 @@ def sh_template(name, **kwargs):
         **kwargs
     )
 
+def sh_test_template(name, **kwargs):
+    """Build a sh_test from a template
+
+    Args:
+        name: name
+        **kwargs: **kwargs
+    """
+    script_name = name + "-script"
+
+    tags = kwargs.get("tags", [])
+    data = kwargs.get("data", [])
+    data.append("//bazel/sh:base_lib")
+    substitutions = kwargs.pop("substitutions", [])
+    substitutions["@@BASE_LIB@@"] = "$(rootpath //bazel/sh:base_lib)"
+    template = kwargs.pop("template", [])
+
+    _sh_template(
+        name = script_name,
+        tags = tags,
+        data = data,
+        substitutions = substitutions,
+        template = template,
+    )
+
+    native.sh_test(
+        name = name,
+        srcs = [script_name],
+        **kwargs
+    )
+
 def repo_command(name, **kwargs):
     """Build a sh_binary that executes a single command.
 
