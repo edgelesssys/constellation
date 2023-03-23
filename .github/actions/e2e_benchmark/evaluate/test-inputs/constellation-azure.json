@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "github.sha": "N/A",
+    "github.ref-name": "N/A",
+    "github.actor": "N/A",
+    "github.workflow": "N/A"
+  },
+  "@timestamp": "2023-03-20T12:01:30.283191Z",
+  "provider": "constellation-azure",
+  "fio": {
+    "read_iops": {
+      "iops": 2165.847
+    },
+    "write_iops": {
+      "iops": 219.97105
+    },
+    "read_bw": {
+      "bw_kbytes": 184151.0
+    },
+    "write_bw": {
+      "bw_kbytes": 18604.0
+    },
+    "volumesize": 400
+  },
+  "knb": {
+    "pod2pod": {
+      "tcp_bw_mbit": 943.0,
+      "udp_bw_mbit": 595.0
+    },
+    "pod2svc": {
+      "tcp_bw_mbit": 932.0,
+      "udp_bw_mbit": 564.0
+    },
+    "mtu": 1500
+  }
+}

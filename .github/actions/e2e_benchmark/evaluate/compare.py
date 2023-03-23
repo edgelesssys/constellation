@@ -14,6 +14,20 @@ BIGGER_BETTER = [
     'udp_bw_mbit',
 ]
 
+# List of FIO tests
+FIO_TESTS = [
+    "read_iops",
+    "write_iops",
+    "read_bw",
+    "write_bw",
+]
+
+# List KNB tests
+KNB_TESTS = [
+    "pod2pod",
+    "pod2svc"
+]
+
 # Lookup for test suite -> unit
 UNIT_STR = {
     'iops': 'IOPS',
@@ -31,6 +45,7 @@ ALLOWED_RATIO_DELTA = {
     'tcp_bw_mbit': 0.7,
     'udp_bw_mbit': 0.7,
 }
+
 
 def is_bigger_better(bench_suite: str) -> bool:
     return bench_suite in BIGGER_BETTER
@@ -55,69 +70,78 @@ def get_paths() -> Tuple[str, str]:
     return path_prev, path_curr
 
 
-def main() -> None:
-    """Compare the current benchmark data against the previous.
+class BenchmarkComparer:
+    def __init__(self, path_prev, path_curr):
+        self.path_prev = path_prev
+        self.path_curr = path_curr
 
-    Create a markdown table showing the benchmark progressions.
+    def compare(self) -> str:
+        """Compare the current benchmark data against the previous.
 
-    Print the result to stdout.
-    """
-    path_prev, path_curr = get_paths()
-    try:
-        with open(path_prev) as f_prev:
-            bench_prev = json.load(f_prev)
-        with open(path_curr) as f_curr:
-            bench_curr = json.load(f_curr)
-    except OSError as e:
-        raise ValueError('Failed reading benchmark file: {e}'.format(e=e))
+        Create a markdown table showing the benchmark progressions.
 
-    try:
-        name = bench_curr['provider']
-    except KeyError:
-        raise ValueError(
-            'Current benchmark record file does not contain provider.')
-    try:
-        prev_name = bench_prev['provider']
-    except KeyError:
-        raise ValueError(
-            'Previous benchmark record file does not contain provider.')
-    if name != prev_name:
-        raise ValueError(
-            'Cloud providers of previous and current benchmark data do not match.')
+        Print the result to stdout.
+        """
+        try:
+            with open(self.path_prev) as f_prev:
+                bench_prev = json.load(f_prev)
+            with open(self.path_curr) as f_curr:
+                bench_curr = json.load(f_curr)
+        except OSError as e:
+            raise ValueError('Failed reading benchmark file: {e}'.format(e=e))
 
-    if 'fio' not in bench_prev.keys() or 'fio' not in bench_curr.keys():
-        raise ValueError('Benchmarks do not both contain fio records.')
+        try:
+            name = bench_curr['provider']
+        except KeyError:
+            raise ValueError(
+                'Current benchmark record file does not contain provider.')
+        try:
+            prev_name = bench_prev['provider']
+        except KeyError:
+            raise ValueError(
+                'Previous benchmark record file does not contain provider.')
+        if name != prev_name:
+            raise ValueError(
+                'Cloud providers of previous and current benchmark data do not match.')
 
-    if 'knb' not in bench_prev.keys() or 'knb' not in bench_curr.keys():
-        raise ValueError('Benchmarks do not both contain knb records.')
+        if 'fio' not in bench_prev.keys() or 'fio' not in bench_curr.keys():
+            raise ValueError('Benchmarks do not both contain fio records.')
 
-    md_lines = [
-        '# {name}'.format(name=name),
-        '',
-        '<details>',
-        '',
-        '- Commit of current benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(ch=bench_curr['metadata']['github.sha']),
-        '- Commit of previous benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(ch=bench_prev['metadata']['github.sha']),
-        '',
-        '| Benchmark suite | Metric | Current | Previous | Ratio |',
-        '|-|-|-|-|-|',
-    ]
+        if 'knb' not in bench_prev.keys() or 'knb' not in bench_curr.keys():
+            raise ValueError('Benchmarks do not both contain knb records.')
 
-    # compare FIO results
-    for subtest, metrics in bench_prev['fio'].items():
-        for metric in metrics.keys():
-            md_lines.append(compare_test('fio', subtest, metric, bench_prev, bench_curr))
+        md_lines = [
+            '# {name}'.format(name=name),
+            '',
+            '<details>',
+            '',
+            '- Commit of current benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(
+                ch=bench_curr['metadata']['github.sha']),
+            '- Commit of previous benchmark: [{ch}](https://github.com/edgelesssys/constellation/commit/{ch})'.format(
+                ch=bench_prev['metadata']['github.sha']),
+            '',
+            '| Benchmark suite | Metric | Current | Previous | Ratio |',
+            '|-|-|-|-|-|',
+        ]
 
-    # compare knb results
-    for subtest, metrics in bench_prev['knb'].items():
-        for metric  in metrics.keys():
-            md_lines.append(compare_test('knb', subtest, metric, bench_prev, bench_curr))
+        # compare FIO results
+        for subtest in FIO_TESTS:
+            if subtest not in bench_prev['fio']:
+                raise ValueError(f'Previous benchmarks do not include the "{subtest}" test.')
+            for metric in bench_prev['fio'][subtest].keys():
+                md_lines.append(self.compare_test('fio', subtest, metric, bench_prev, bench_curr))
 
-    md_lines += ['', '</details>']
-    print('\n'.join(md_lines))
+        # compare knb results
+        for subtest in KNB_TESTS:
+            if subtest not in bench_prev['knb']:
+                raise ValueError(f'Previous benchmarks do not include the "{subtest}" test.')
+            for metric in bench_prev['knb'][subtest].keys():
+                md_lines.append(self.compare_test('knb', subtest, metric, bench_prev, bench_curr))
 
+        md_lines += ['', '</details>']
+        return '\n'.join(md_lines)
 
-def compare_test(test, subtest, metric, bench_prev, bench_curr) -> str:
+    def compare_test(self, test, subtest, metric, bench_prev, bench_curr) -> str:
         if subtest not in bench_curr[test]:
             raise ValueError(
                 'Benchmark record from previous benchmark not in current.')
@@ -138,15 +162,24 @@ def compare_test(test, subtest, metric, bench_prev, bench_curr) -> str:
                 ratio_num = val_prev / val_curr
                 if ratio_num > ALLOWED_RATIO_DELTA.get(metric, 1):
                     set_failed()
-                
+
             ratio_num = round(ratio_num, 3)
             emoji = PROGRESS[int(ratio_num >= 1)]
             ratio = f'{ratio_num} {emoji}'
 
         return f'| {subtest} | {metric} ({unit}) | {val_curr} | {val_prev} | {ratio} |'
 
+
 def set_failed() -> None:
     os.environ['COMPARISON_SUCCESS'] = str(False)
+
+
+def main():
+    path_prev, path_curr = get_paths()
+    c = BenchmarkComparer(path_prev, path_curr)
+    output = c.compare()
+    print(output)
+
 
 if __name__ == '__main__':
     main()

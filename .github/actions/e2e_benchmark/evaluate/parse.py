@@ -37,60 +37,73 @@ def configure() -> Tuple[str, str, str, str | None, str, str, str, str]:
     workflow = os.environ.get('GITHUB_WORKFLOW', 'N/A')
     return base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow
 
+class BenchmarkParser:
+    def __init__(self, base_path, csp, out_dir, ext_provider_name=None, commit_hash="N/A", commit_ref="N/A", actor="N/A", workflow="N/A"):
+        self.base_path = base_path
+        self.csp= csp
+        self.out_dir = out_dir
+        self.ext_provider_name = ext_provider_name
+        if not self.ext_provider_name:
+            self.ext_provider_name = f'constellation-{csp}'
+        self.commit_hash = commit_hash
+        self.commit_ref = commit_ref
+        self.actor = actor
+        self.workflow = workflow
 
-def main() -> None:
-    """Read and parse the K-Bench tests.
 
-    Write results of the current environment to a JSON file.
-    """
+    def parse(self) -> None:
+        """Read and parse the K-Bench tests.
+
+        Write results of the current environment to a JSON file.
+        """
+
+        # Expect the results in directory:
+        fio_path = os.path.join(
+            self.base_path,
+            f'fio-{self.ext_provider_name}.json',
+        )
+        knb_path = os.path.join(
+            self.base_path,
+            f'knb-{self.ext_provider_name}.json',
+        )
+        out_file_name = f'{self.ext_provider_name}.json'
+
+        if not os.path.exists(fio_path) or not os.path.exists(knb_path):
+            raise ValueError(
+                f'Benchmarks do not exist at {fio_path} or {knb_path}.')
+
+        # Parse subtest
+        knb_results = knb.evaluate(knb_path)
+        fio_results = fio.evaluate(fio_path)
+
+        # Get timestamp
+        now = datetime.now()
+        timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+        combined_results = {'metadata': {
+                                'github.sha': self.commit_hash,
+                                'github.ref-name': self.commit_ref,
+                                'github.actor': self.actor,
+                                'github.workflow': self.workflow,
+                            },
+                            '@timestamp': str(timestamp),
+                            'provider': self.ext_provider_name,
+                            'fio': {}, 
+                            'knb': {}}
+
+        combined_results['knb'].update(knb_results)
+        combined_results['fio'].update(fio_results)
+
+        # Write the compact results.
+        save_path = os.path.join(self.out_dir, out_file_name)
+        with open(save_path, 'w+') as w:
+            json.dump(combined_results, fp=w, sort_keys=False, indent=2)
+
+
+def main():
     base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow = configure()
-
-    if ext_provider_name is None:
-        # Constellation benchmark.
-        ext_provider_name = f'constellation-{csp}'
-
-    # Expect the results in directory:
-    fio_path = os.path.join(
-        base_path,
-        f'fio-{ext_provider_name}.json',
-    )
-    knb_path = os.path.join(
-        base_path,
-        f'knb-{ext_provider_name}.json',
-    )
-    out_file_name = f'{ext_provider_name}.json'
-
-    if not os.path.exists(fio_path) or not os.path.exists(knb_path):
-        raise ValueError(
-            f'Benchmarks do not exist at {fio_path} or {knb_path}.')
-
-    # Parse subtest
-    knb_results = knb.evaluate(knb_path)
-    fio_results = fio.evaluate(fio_path)
-
-    # Get timestamp
-    now = datetime.now()
-    timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
-    combined_results = {'metadata': {
-                            'github.sha': commit_hash,
-                            'github.ref-name': commit_ref,
-                            'github.actor': actor,
-                            'github.workflow': workflow,
-                        },
-                        '@timestamp': str(timestamp),
-                        'provider': ext_provider_name,
-                        'fio': {}, 
-                        'knb': {}}
-
-    combined_results['knb'].update(knb_results)
-    combined_results['fio'].update(fio_results)
-
-    # Write the compact results.
-    save_path = os.path.join(out_dir, out_file_name)
-    with open(save_path, 'w+') as w:
-        json.dump(combined_results, fp=w, sort_keys=False, indent=2)
-
+    p = BenchmarkParser(base_path, csp, out_dir, ext_provider_name, commit_hash, commit_ref, actor, workflow)
+    p.parse()
 
 if __name__ == '__main__':
     main()

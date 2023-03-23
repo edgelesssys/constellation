@@ -1,0 +1,391 @@
+[
+    {
+        "TestName": "FIO test results",
+        "Status": [
+            {
+                "StatusCode": "OK",
+                "StatusMessage": "\nFIO version - fio-3.30\nGlobal options - ioengine=libaio verify=0 direct=1 gtod_reduce=1\n\nJobName: read_iops\n  blocksize=4K filesize=2G iodepth=64 rw=randread\nread:\n  IOPS=2165.846924 BW(KiB/s)=8679\n  iops: min=1064 max=4184 avg=2199.766602\n  bw(KiB/s): min=4256 max=16736 avg=8799.066406\n\nJobName: write_iops\n  blocksize=4K filesize=2G iodepth=64 rw=randwrite\nwrite:\n  IOPS=219.971054 BW(KiB/s)=896\n  iops: min=56 max=360 avg=222.333328\n  bw(KiB/s): min=224 max=1440 avg=890.000000\n\nJobName: read_bw\n  blocksize=128K filesize=2G iodepth=64 rw=randread\nread:\n  IOPS=1434.548828 BW(KiB/s)=184151\n  iops: min=920 max=2168 avg=1457.500000\n  bw(KiB/s): min=117760 max=277504 avg=186562.031250\n\nJobName: write_bw\n  blocksize=128k filesize=2G iodepth=64 rw=randwrite\nwrite:\n  IOPS=141.218124 BW(KiB/s)=18604\n  iops: min=2 max=288 avg=142.800003\n  bw(KiB/s): min=256 max=36864 avg=18293.966797\n\nDisk stats (read/write):\n  dm-3: ios=65084/6657 merge=0/0 ticks=2133228/2168554 in_queue=4301782, util=99.246300%\n  sdc: ios=65082/6623 merge=2/202 ticks=2098593/918415 in_queue=3017008, util=99.402611%\n"
+            }
+        ],
+        "Raw": {
+            "size": "400Gi",
+            "storageClass": {
+                "metadata": {
+                    "name": "encrypted-rwo",
+                    "uid": "a6687a94-da84-4c43-8c75-31a893d5e736",
+                    "resourceVersion": "425",
+                    "creationTimestamp": "2023-03-09T12:51:20Z",
+                    "labels": {
+                        "app.kubernetes.io/managed-by": "Helm"
+                    },
+                    "annotations": {
+                        "meta.helm.sh/release-name": "constellation-services",
+                        "meta.helm.sh/release-namespace": "kube-system",
+                        "storageclass.kubernetes.io/is-default-class": "true"
+                    },
+                    "managedFields": [
+                        {
+                            "manager": "bootstrapper",
+                            "operation": "Update",
+                            "apiVersion": "storage.k8s.io/v1",
+                            "time": "2023-03-09T12:51:20Z",
+                            "fieldsType": "FieldsV1",
+                            "fieldsV1": {
+                                "f:allowVolumeExpansion": {},
+                                "f:metadata": {
+                                    "f:annotations": {
+                                        ".": {},
+                                        "f:meta.helm.sh/release-name": {},
+                                        "f:meta.helm.sh/release-namespace": {},
+                                        "f:storageclass.kubernetes.io/is-default-class": {}
+                                    },
+                                    "f:labels": {
+                                        ".": {},
+                                        "f:app.kubernetes.io/managed-by": {}
+                                    }
+                                },
+                                "f:parameters": {
+                                    ".": {},
+                                    "f:skuname": {}
+                                },
+                                "f:provisioner": {},
+                                "f:reclaimPolicy": {},
+                                "f:volumeBindingMode": {}
+                            }
+                        }
+                    ]
+                },
+                "provisioner": "azuredisk.csi.confidential.cloud",
+                "parameters": {
+                    "skuname": "StandardSSD_LRS"
+                },
+                "reclaimPolicy": "Delete",
+                "allowVolumeExpansion": true,
+                "volumeBindingMode": "Immediate"
+            },
+            "fioConfig": "[global]\nrandrepeat=0\nverify=0\nioengine=libaio\ndirect=1\ngtod_reduce=1\n[job1]\nname=read_iops\nbs=4K\niodepth=64\nsize=2G\nreadwrite=randread\ntime_based\nramp_time=2s\nruntime=15s\n[job2]\nname=write_iops\nbs=4K\niodepth=64\nsize=2G\nreadwrite=randwrite\ntime_based\nramp_time=2s\nruntime=15s\n[job3]\nname=read_bw\nbs=128K\niodepth=64\nsize=2G\nreadwrite=randread\ntime_based\nramp_time=2s\nruntime=15s\n[job4]\nname=write_bw\nbs=128k\niodepth=64\nsize=2G\nreadwrite=randwrite\ntime_based\nramp_time=2s\nruntime=15s\n",
+            "result": {
+                "fio version": "fio-3.30",
+                "timestamp": 1678366708,
+                "timestamp_ms": 1678366708715,
+                "time": "Thu Mar  9 12:58:28 2023",
+                "global options": {
+                    "directory": "/dataset",
+                    "randrepeat": "0",
+                    "verify": "0",
+                    "ioengine": "libaio",
+                    "direct": "1",
+                    "gtod_reduce": "1"
+                },
+                "jobs": [
+                    {
+                        "jobname": "read_iops",
+                        "elapsed": 18,
+                        "job options": {
+                            "name": "read_iops",
+                            "bs": "4K",
+                            "iodepth": "64",
+                            "size": "2G",
+                            "rw": "randread",
+                            "ramp_time": "2s",
+                            "runtime": "15s"
+                        },
+                        "read": {
+                            "io_bytes": 135536640,
+                            "io_kbytes": 132360,
+                            "bw_bytes": 8888231,
+                            "bw": 8679,
+                            "iops": 2165.847,
+                            "runtime": 15249,
+                            "total_ios": 33027,
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {},
+                            "bw_min": 4256,
+                            "bw_max": 16736,
+                            "bw_agg": 4.563348,
+                            "bw_mean": 8799.066,
+                            "bw_dev": 3406.0356,
+                            "bw_samples": 30,
+                            "iops_min": 1064,
+                            "iops_max": 4184,
+                            "iops_mean": 2199.7666,
+                            "iops_stddev": 851.5089,
+                            "iops_samples": 30
+                        },
+                        "write": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "trim": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "sync": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "job_runtime": 15248,
+                        "usr_cpu": 0.209864,
+                        "sys_cpu": 1.974029,
+                        "ctx": 1425,
+                        "minf": 37,
+                        "iodepth_level": {
+                            "\u003e=64": 100
+                        },
+                        "iodepth_submit": {
+                            "4": 100
+                        },
+                        "iodepth_complete": {
+                            "4": 99.99697,
+                            "64": 0.1
+                        },
+                        "latency_ns": {},
+                        "latency_us": {},
+                        "latency_ms": {},
+                        "latency_depth": 64,
+                        "latency_percentile": 100
+                    },
+                    {
+                        "jobname": "write_iops",
+                        "elapsed": 18,
+                        "job options": {
+                            "name": "write_iops",
+                            "bs": "4K",
+                            "iodepth": "64",
+                            "size": "2G",
+                            "rw": "randwrite",
+                            "ramp_time": "2s",
+                            "runtime": "15s"
+                        },
+                        "read": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "write": {
+                            "io_bytes": 13955072,
+                            "io_kbytes": 13628,
+                            "bw_bytes": 917976,
+                            "bw": 896,
+                            "iops": 219.97105,
+                            "runtime": 15202,
+                            "total_ios": 3344,
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {},
+                            "bw_min": 224,
+                            "bw_max": 1440,
+                            "bw_agg": 4.559427,
+                            "bw_mean": 890,
+                            "bw_dev": 263.00085,
+                            "bw_samples": 30,
+                            "iops_min": 56,
+                            "iops_max": 360,
+                            "iops_mean": 222.33333,
+                            "iops_stddev": 65.6618,
+                            "iops_samples": 30
+                        },
+                        "trim": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "sync": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "job_runtime": 15201,
+                        "usr_cpu": 0.072364,
+                        "sys_cpu": 0.66443,
+                        "ctx": 2157,
+                        "minf": 36,
+                        "iodepth_level": {
+                            "\u003e=64": 100
+                        },
+                        "iodepth_submit": {
+                            "4": 100
+                        },
+                        "iodepth_complete": {
+                            "4": 99.97011,
+                            "64": 0.1
+                        },
+                        "latency_ns": {},
+                        "latency_us": {},
+                        "latency_ms": {},
+                        "latency_depth": 64,
+                        "latency_percentile": 100
+                    },
+                    {
+                        "jobname": "read_bw",
+                        "elapsed": 18,
+                        "job options": {
+                            "name": "read_bw",
+                            "bs": "128K",
+                            "iodepth": "64",
+                            "size": "2G",
+                            "rw": "randread",
+                            "ramp_time": "2s",
+                            "runtime": "15s"
+                        },
+                        "read": {
+                            "io_bytes": 2875326464,
+                            "io_kbytes": 2807936,
+                            "bw_bytes": 188570728,
+                            "bw": 184151,
+                            "iops": 1434.5488,
+                            "runtime": 15248,
+                            "total_ios": 21874,
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {},
+                            "bw_min": 117760,
+                            "bw_max": 277504,
+                            "bw_agg": 96.75502,
+                            "bw_mean": 186562.03,
+                            "bw_dev": 46217.277,
+                            "bw_samples": 30,
+                            "iops_min": 920,
+                            "iops_max": 2168,
+                            "iops_mean": 1457.5,
+                            "iops_stddev": 361.0814,
+                            "iops_samples": 30
+                        },
+                        "write": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "trim": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "sync": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "job_runtime": 15247,
+                        "usr_cpu": 0.275464,
+                        "sys_cpu": 3.469535,
+                        "ctx": 1933,
+                        "minf": 37,
+                        "iodepth_level": {
+                            "\u003e=64": 100
+                        },
+                        "iodepth_submit": {
+                            "4": 100
+                        },
+                        "iodepth_complete": {
+                            "4": 99.99543,
+                            "64": 0.1
+                        },
+                        "latency_ns": {},
+                        "latency_us": {},
+                        "latency_ms": {},
+                        "latency_depth": 64,
+                        "latency_percentile": 100
+                    },
+                    {
+                        "jobname": "write_bw",
+                        "elapsed": 18,
+                        "job options": {
+                            "name": "write_bw",
+                            "bs": "128k",
+                            "iodepth": "64",
+                            "size": "2G",
+                            "rw": "randwrite",
+                            "ramp_time": "2s",
+                            "runtime": "15s"
+                        },
+                        "read": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "write": {
+                            "io_bytes": 290586624,
+                            "io_kbytes": 283776,
+                            "bw_bytes": 19051112,
+                            "bw": 18604,
+                            "iops": 141.21812,
+                            "runtime": 15253,
+                            "total_ios": 2154,
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {},
+                            "bw_min": 256,
+                            "bw_max": 36864,
+                            "bw_agg": 93.819565,
+                            "bw_mean": 18293.967,
+                            "bw_dev": 7049.828,
+                            "bw_samples": 30,
+                            "iops_min": 2,
+                            "iops_max": 288,
+                            "iops_mean": 142.8,
+                            "iops_stddev": 55.03754,
+                            "iops_samples": 30
+                        },
+                        "trim": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "sync": {
+                            "slat_ns": {},
+                            "clat_ns": {},
+                            "lat_ns": {}
+                        },
+                        "job_runtime": 15252,
+                        "usr_cpu": 0.059009,
+                        "sys_cpu": 0.445843,
+                        "ctx": 1601,
+                        "minf": 36,
+                        "iodepth_level": {
+                            "\u003e=64": 100
+                        },
+                        "iodepth_submit": {
+                            "4": 100
+                        },
+                        "iodepth_complete": {
+                            "4": 99.9536,
+                            "64": 0.1
+                        },
+                        "latency_ns": {},
+                        "latency_us": {},
+                        "latency_ms": {},
+                        "latency_depth": 64,
+                        "latency_percentile": 100
+                    }
+                ],
+                "disk_util": [
+                    {
+                        "name": "dm-3",
+                        "read_ios": 65084,
+                        "write_ios": 6657,
+                        "read_ticks": 2133228,
+                        "write_ticks": 2168554,
+                        "in_queue": 4301782,
+                        "util": 99.2463
+                    },
+                    {
+                        "name": "sdc",
+                        "read_ios": 65082,
+                        "write_ios": 6623,
+                        "read_merges": 2,
+                        "write_merges": 202,
+                        "read_ticks": 2098593,
+                        "write_ticks": 918415,
+                        "in_queue": 3017008,
+                        "util": 99.40261
+                    }
+                ]
+            }
+        }
+    }
+]
