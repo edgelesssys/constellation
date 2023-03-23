@@ -23,14 +23,21 @@ def go_dependencies():
         sum = "h1:XL+7ys6ls/RKrkUNFQvEwIvNHh+JKx8Mj1pUV5wQxQE=",
         version = "v0.2.0",
     )
-
+    go_repository(
+        name = "cc_mvdan_unparam",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "mvdan.cc/unparam",
+        sum = "h1:Jh3LAeMt1eGpxomyu3jVkmVZWW2MxZ1qIIV2TZ/nRio=",
+        version = "v0.0.0-20211214103731-d0ef000c54e5",
+    )
     go_repository(
         name = "co_honnef_go_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "honnef.co/go/tools",
-        sum = "h1:UoveltGrhghAA7ePc+e+QYDHXrBps2PqFZiHkGR/xK8=",
-        version = "v0.0.1-2020.1.4",
+        sum = "h1:MNh1AVMyVX23VUHE2O27jm6lNj3vjO5DexS4A1xvnzk=",
+        version = "v0.2.2",
     )
     go_repository(
         name = "com_github_acomagu_bufpipe",
@@ -2680,6 +2687,14 @@ def go_dependencies():
         importpath = "github.com/google/go-attestation",
         sum = "h1:V3P3BqDEVzAAEw0nlx7OhVRynBUUNgL4znTlqg2Udbc=",
         version = "v0.4.4-0.20221011162210-17f9c05652a9",
+    )
+    go_repository(
+        name = "com_github_google_go_cmdtest",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/google/go-cmdtest",
+        sum = "h1:rcv+Ippz6RAtvaGgKxc+8FQIpxHgsF+HBzPyYL2cyVU=",
+        version = "v0.4.1-0.20220921163831-55ab3332a786",
     )
     go_repository(
         name = "com_github_google_go_cmp",
@@ -8526,9 +8541,18 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/tools",
-        sum = "h1:BOw41kyTf3PuCW1pVQf8+Cyg8pMlkYB1oo9iJ6D/lKM=",
-        version = "v0.6.0",
+        sum = "h1:IuFp2CklNBim6OdHXn/1P4VoeKt5pA2jcDKWlboqtlQ=",
+        version = "v0.6.1-0.20230217175706-3102dad5faf9",
     )
+    go_repository(
+        name = "org_golang_x_vuln",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "golang.org/x/vuln",
+        sum = "h1:D+fLQz4/9B7Fdtbh8DpmoYjuVukotDPky6ZDsFtiVwk=",
+        version = "v0.0.0-20230322160202-f2d9b5a6e023",
+    )
+
     go_repository(
         name = "org_golang_x_xerrors",
         build_file_generation = "on",
