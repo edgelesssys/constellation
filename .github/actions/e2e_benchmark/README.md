@@ -51,7 +51,7 @@ Follow the [Azure documentation](https://learn.microsoft.com/en-us/azure/aks/lea
 
 For example:
 ```bash
-az aks create -g moritz-constellation -n benchmark --node-count 2
+az aks create -g moritz-constellation -n benchmark --node-count 2 -s Standard_DC4as_v5
 az aks get-credentials -g moritz-constellation -n benchmark
 ```
 
@@ -71,10 +71,29 @@ curl -fsSLO https://github.com/kastenhq/kubestr/releases/download/v${KUBESTR_VER
 tar -xzf kubestr_${KUBESTR_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
 install kubestr /usr/local/bin
 
+# Clone Constellation
+git clone https://github.com/edgelesssys/constellation.git
+
+# Create storage class without cloud caching
+cat <<EOF | kubectl apply -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: default-no-cache
+allowVolumeExpansion: true
+allowedTopologies: []
+mountOptions: []
+parameters:
+  skuname: StandardSSD_LRS
+  cachingMode: None
+provisioner: disk.csi.azure.com
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+EOF
 
 # Run kubestr
 mkdir -p out
-kubestr fio -e "out/fio-AKS.json" -o json -s default -z 400Gi
+kubestr fio -e "out/fio-AKS.json" -o json -s default -z 400Gi -f constellation/.github/actions/e2e_benchmark/fio.ini
 
 # Run knb
 workers="$(kubectl get nodes | grep nodepool)"
@@ -86,7 +105,6 @@ knb -f "out/knb-AKS.json" -o json --server-node $server --client-node $client
 # Benchmarks done, do processing.
 
 # Parse
-git clone https://github.com/edgelesssys/constellation.git
 mkdir -p benchmarks
 export BDIR=benchmarks
 export CSP=azure
@@ -96,7 +114,7 @@ export BENCH_RESULTS=out/
 python constellation/.github/actions/e2e_benchmark/evaluate/parse.py
 
 # Upload result to S3
-S3_PATH=s3://edgeless-artifact-store/constellation/benchmarks
+S3_PATH=s3://edgeless-artifact-store/constellation/benchmarks/<version>
 aws s3 cp benchmarks/AKS.json ${S3_PATH}/AKS.json
 ```
 
@@ -111,18 +129,6 @@ gcloud container clusters create benchmark \
     --machine-type n2d-standard-4 \
     --num-nodes 2
 gcloud container clusters get-credentials benchmark --region europe-west3-b
-# create storage class for pd-standard
-cat <<EOF | kubectl apply -f -
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: pd-standard
-provisioner: pd.csi.storage.gke.io
-volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: true
-parameters:
-  type: pd-standard
-EOF
 ```
 
 Once the cluster is ready, set up managing access via `kubectl` and take the benchmark:
@@ -141,9 +147,12 @@ curl -fsSLO https://github.com/kastenhq/kubestr/releases/download/v${KUBESTR_VER
 tar -xzf kubestr_${KUBESTR_VER}_${HOSTOS}_${HOSTARCH}.tar.gz
 install kubestr /usr/local/bin
 
+# Clone Constellation
+git clone https://github.com/edgelesssys/constellation.git
+
 # Run kubestr
 mkdir -p out
-kubestr fio -e "out/fio-GKE.json" -o json -s pd-standard -z 400Gi
+kubestr fio -e "out/fio-GKE.json" -o json -s standard-rwo -z 400Gi -f constellation/.github/actions/e2e_benchmark/fio.ini
 
 # Run knb
 workers="$(kubectl get nodes | grep default-pool)"
@@ -153,7 +162,6 @@ knb -f "out/knb-GKE.json" -o json --server-node "$server" --client-node "$client
 
 
 # Parse
-git clone https://github.com/edgelesssys/constellation.git
 mkdir -p benchmarks
 export BDIR=benchmarks
 export CSP=gcp
@@ -163,7 +171,7 @@ export BENCH_RESULTS=out/
 python constellation/.github/actions/e2e_benchmark/evaluate/parse.py
 
 # Upload result to S3
-S3_PATH=s3://edgeless-artifact-store/constellation/benchmarks
+S3_PATH=s3://edgeless-artifact-store/constellation/benchmarks/<version>
 aws s3 cp benchmarks/GKE.json ${S3_PATH}/GKE.json
 ```
 

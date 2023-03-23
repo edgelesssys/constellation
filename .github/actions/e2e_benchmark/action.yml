@@ -46,13 +46,50 @@ runs:
         ref: 1698974913b7b18ad54cf5860838029c295c77b1
         path: k8s-bench-suite
 
-    - name: Run FIO benchmark
+
+    - name: Run FIO benchmark without caching in Azure
+      if: inputs.cloudProvider == 'azure'
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: encrypted-rwo-no-cache
+        allowVolumeExpansion: true
+        allowedTopologies: []
+        mountOptions: []
+        parameters:
+          skuname: StandardSSD_LRS
+          cachingMode: None
+        provisioner: azuredisk.csi.confidential.cloud
+        reclaimPolicy: Delete
+        volumeBindingMode: Immediate
+        EOF
         mkdir -p out
-        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-rwo -z 400Gi
+        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-rwo-no-cache -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
+
+    - name: Run FIO benchmark
+      if: inputs.cloudProvider == 'gcp'
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: encrypted-balanced-rwo
+        provisioner: gcp.csi.confidential.cloud
+        volumeBindingMode: Immediate
+        allowVolumeExpansion: true
+        parameters:
+          type: pd-balanced
+        EOF
+        mkdir -p out
+        kubestr fio -e "out/fio-constellation-${{ inputs.cloudProvider }}.json" -o json -s encrypted-balanced-rwo -z 400Gi -f .github/actions/e2e_benchmark/fio.ini
 
     - name: Upload raw FIO benchmark results
       if: (!env.ACT)

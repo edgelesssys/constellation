@@ -1,5 +1,6 @@
 Affero
 agent
+Ansys
 Asciinema
 auditable
 autoscaler
@@ -27,6 +28,7 @@ gcp
 Grype
 iam
 IAM
+iodepth
 initramfs
 [Kk]3s
 Kata
