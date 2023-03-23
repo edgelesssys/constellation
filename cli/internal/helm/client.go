@@ -8,11 +8,14 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -128,8 +131,10 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		return fmt.Errorf("creating CR backup: %w", err)
 	}
 
+	// TODO: v2.8: remove fileHanlder.
+	fileHandler := file.NewHandler(afero.NewOsFs())
 	for _, chart := range upgradeReleases {
-		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive)
+		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive, fileHandler)
 		if err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
@@ -172,26 +177,9 @@ func (c *Client) currentVersion(release string) (string, error) {
 // ErrConfirmationMissing signals that an action requires user confirmation.
 var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
-// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
-// setAttestationVariant sets the attesationVariant value on verification-service and join-service value maps.
-func setAttestationVariant(values map[string]any, variant string) error {
-	joinServiceVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid join-service values")
-	}
-	joinServiceVals["attestationVariant"] = variant
-
-	verifyServiceVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid verification-service values")
-	}
-	verifyServiceVals["attestationVariant"] = variant
-
-	return nil
-}
-
+// TODO: v2.8: remove fileHandler argument.
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
+	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool, fileHandler file.Handler,
 ) error {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -232,6 +220,22 @@ func (c *Client) upgradeRelease(
 		if err := setAttestationVariant(values, conf.AttestationVariant); err != nil {
 			return fmt.Errorf("setting attestationVariant: %w", err)
 		}
+
+		// TODO: v2.8: remove from here...
+		// Manually setting idKeyConfig is required here since upgrade normally isn't allowed to change this value.
+		// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
+		var idFile clusterid.File
+		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+			return fmt.Errorf("reading cluster ID file: %w", err)
+		}
+		// Disallow users to set MAAFallback as ID key digest policy for upgrades, since it requires extra cloud resources.
+		if conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
+			return fmt.Errorf("ID key digest policy %s is not supported for upgrades", conf.IDKeyDigestPolicy())
+		}
+		if err := setIdkeyConfig(values, conf, idFile.AttestationURL); err != nil {
+			return fmt.Errorf("setting id key config: %w", err)
+		}
+		// TODO: v2.8: to here.
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
@@ -298,6 +302,46 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 			}
 		}
 	}
+	return nil
+}
+
+// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
+// setAttestationVariant sets the attesationVariant value on verification-service and join-service value maps.
+func setAttestationVariant(values map[string]any, variant string) error {
+	joinServiceVals, ok := values["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid join-service values")
+	}
+	joinServiceVals["attestationVariant"] = variant
+
+	verifyServiceVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid verification-service values")
+	}
+	verifyServiceVals["attestationVariant"] = variant
+
+	return nil
+}
+
+// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
+// setIdkeyConfig sets the idkeyconfig value on the join-service value maps.
+func setIdkeyConfig(values map[string]any, config *config.Config, maaURL string) error {
+	joinServiceVals, ok := values["join-service"].(map[string]any)
+	if !ok {
+		return errors.New("invalid join-service values")
+	}
+
+	idKeyCfg := idkeydigest.Config{
+		IDKeyDigests:      config.IDKeyDigests(),
+		EnforcementPolicy: config.IDKeyDigestPolicy(),
+		MAAURL:            maaURL,
+	}
+	marshalledCfg, err := json.Marshal(idKeyCfg)
+	if err != nil {
+		return fmt.Errorf("marshalling id key digest config: %w", err)
+	}
+	joinServiceVals["idKeyConfig"] = string(marshalledCfg)
+
 	return nil
 }
 
