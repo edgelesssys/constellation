@@ -10,6 +10,7 @@ def ci_deps():
     _gofumpt_deps()
     _tfsec_deps()
     _golangci_lint_deps()
+    _buf_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -212,4 +213,34 @@ def _golangci_lint_deps():
         ],
         strip_prefix = "golangci-lint-1.51.2-darwin-arm64",
         sha256 = "36e69882205a0e42a63ad57ec3015639c11051e03f0beb9cf7949c6451408960",
+    )
+
+def _buf_deps():
+    http_archive(
+        name = "com_github_bufbuild_buf_linux_amd64",
+        sha256 = "39b58126938e265a7dd60fc4716a4a43931896e62db3d69c704d7dd63d5889dd",
+        url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Linux-x86_64.tar.gz",
+        strip_prefix = "buf",
+        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_bufbuild_buf_linux_aarch64",
+        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Linux-aarch64.tar.gz",
+        strip_prefix = "buf",
+        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_bufbuild_buf_darwin_amd64",
+        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Darwin-x86_64.tar.gz",
+        strip_prefix = "buf",
+        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_bufbuild_buf_darwin_arm64",
+        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Darwin-arm64.tar.gz",
+        strip_prefix = "buf",
+        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
     )

@@ -1,87 +1,87 @@
 syntax = "proto3";
 
-option go_package = "github.com/edgelesssys/constellation/v2/debugd/service";
-
 package debugd;
 
+option go_package = "github.com/edgelesssys/constellation/v2/debugd/service";
+
 service Debugd {
-    rpc SetInfo (SetInfoRequest) returns (SetInfoResponse) {}
-    rpc GetInfo (GetInfoRequest) returns (GetInfoResponse) {}
-    rpc UploadFiles(stream FileTransferMessage) returns (UploadFilesResponse) {}
-    rpc DownloadFiles(DownloadFilesRequest) returns (stream FileTransferMessage) {}
-    rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
+  rpc SetInfo(SetInfoRequest) returns (SetInfoResponse) {}
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {}
+  rpc UploadFiles(stream FileTransferMessage) returns (UploadFilesResponse) {}
+  rpc DownloadFiles(DownloadFilesRequest) returns (stream FileTransferMessage) {}
+  rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
 }
 
 message SetInfoRequest {
-    repeated Info info = 1;
+  repeated Info info = 1;
 }
 
 message SetInfoResponse {
-    SetInfoStatus status = 1;
+  SetInfoStatus status = 1;
 }
 
 enum SetInfoStatus {
-    SET_INFO_SUCCESS = 0;
-    SET_INFO_ALREADY_SET = 1;
+  SET_INFO_SUCCESS = 0;
+  SET_INFO_ALREADY_SET = 1;
 }
 
 message GetInfoRequest {}
 
 message GetInfoResponse {
-    repeated Info info = 1;
+  repeated Info info = 1;
 }
 
 message Info {
-    string key = 1;
-    string value = 2;
+  string key = 1;
+  string value = 2;
 }
 
 message DownloadFilesRequest {}
 
 message FileTransferMessage {
-    oneof kind {
-        FileTransferHeader header = 1; // start of transfer
-        Chunk chunk = 2; // file content as chunks
-    }
+  oneof kind {
+    FileTransferHeader header = 1; // start of transfer
+    Chunk chunk = 2; // file content as chunks
+  }
 }
 
 message FileTransferHeader {
-    string targetPath = 1;
-    uint32 mode = 3;
-    optional string overrideServiceUnit = 4;
+  string targetPath = 1;
+  uint32 mode = 3;
+  optional string overrideServiceUnit = 4;
 }
 
 message Chunk {
-    bytes content = 1;
-    bool last = 2;
+  bytes content = 1;
+  bool last = 2;
 }
 
 message UploadFilesResponse {
-    UploadFilesStatus status = 1;
+  UploadFilesStatus status = 1;
 }
 
 enum UploadFilesStatus {
-    UPLOAD_FILES_SUCCESS = 0;
-    UPLOAD_FILES_UPLOAD_FAILED = 1;
-    UPLOAD_FILES_ALREADY_STARTED = 2;
-    UPLOAD_FILES_ALREADY_FINISHED = 3;
-    UPLOAD_FILES_START_FAILED = 4;
+  UPLOAD_FILES_SUCCESS = 0;
+  UPLOAD_FILES_UPLOAD_FAILED = 1;
+  UPLOAD_FILES_ALREADY_STARTED = 2;
+  UPLOAD_FILES_ALREADY_FINISHED = 3;
+  UPLOAD_FILES_START_FAILED = 4;
 }
 
 message ServiceUnit {
-    string name = 1;
-    string contents = 2;
+  string name = 1;
+  string contents = 2;
 }
 
 message UploadSystemdServiceUnitsRequest {
-    repeated ServiceUnit units = 1;
+  repeated ServiceUnit units = 1;
 }
 
 message UploadSystemdServiceUnitsResponse {
-    UploadSystemdServiceUnitsStatus status = 1;
+  UploadSystemdServiceUnitsStatus status = 1;
 }
 
 enum UploadSystemdServiceUnitsStatus {
-    UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS = 0;
-    UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE = 1;
+  UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS = 0;
+  UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE = 1;
 }

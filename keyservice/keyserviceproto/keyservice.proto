@@ -5,14 +5,14 @@ package kms;
 option go_package = "github.com/edgelesssys/constellation/v2/keyservice/keyserviceproto";
 
 service API {
-    rpc GetDataKey(GetDataKeyRequest) returns (GetDataKeyResponse);
+  rpc GetDataKey(GetDataKeyRequest) returns (GetDataKeyResponse);
 }
 
 message GetDataKeyRequest {
-    string data_key_id = 1;
-    uint32 length = 2;
+  string data_key_id = 1;
+  uint32 length = 2;
 }
 
 message GetDataKeyResponse {
-    bytes data_key = 1;
+  bytes data_key = 1;
 }
