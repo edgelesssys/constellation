@@ -2710,8 +2710,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-licenses",
-        sum = "h1:JtmsUf+m+KdwCOgLG578T0Mvd0+l+dezPrJh5KYnXZg=",
-        version = "v0.0.0-20210329231322-ce1d9163b77d",
+        sum = "h1:MM+VCXf0slYkpWO0mECvdYDVCxZXIQNal5wqUIXEZ/A=",
+        version = "v1.6.0",
     )
     go_repository(
         name = "com_github_google_go_querystring",
@@ -2734,8 +2734,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-replayers/httpreplay",
-        sum = "h1:AX7FUb4BjrrzNvblr/OlgwrmFiep6soj5K2QSDW7BGk=",
-        version = "v0.1.0",
+        sum = "h1:H91sIMlt1NZzN7R+/ASswyouLJfW0WLW7fhyUFvDEkY=",
+        version = "v1.1.1",
     )
     go_repository(
         name = "com_github_google_go_sev_guest",
@@ -2790,8 +2790,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/licenseclassifier",
-        sum = "h1:EfzlPF5MRmoWsCGvSkPZ1Nh9uVzHf4FfGnDQ6CXd2NA=",
-        version = "v0.0.0-20210325184830-bb04aff29e72",
+        sum = "h1:TJsAqW6zLRMDTyGmc9TPosfn9OyVlHs8Hrn3pY6ONSY=",
+        version = "v0.0.0-20210722185704-3043a050f148",
     )
     go_repository(
         name = "com_github_google_logger",
@@ -4965,8 +4965,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/otiai10/copy",
-        sum = "h1:HvG945u96iNadPoG2/Ja2+AUJeW5YuFQMixq9yirC+k=",
-        version = "v1.2.0",
+        sum = "h1:IinKAryFFuPONZ7cm6T6E2QX/vcJwSnlaA5lfoaXIiQ=",
+        version = "v1.6.0",
     )
     go_repository(
         name = "com_github_otiai10_curr",
@@ -4981,8 +4981,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/otiai10/mint",
-        sum = "h1:BCmzIS3n71sGfHB5NMNDB3lHYPz8fWSkCAErHed//qc=",
-        version = "v1.3.1",
+        sum = "h1:VYWnrP5fXmz1MXvjuUvcBrXSjGE6xjON+axB/UrpO3E=",
+        version = "v1.3.2",
     )
 
     go_repository(

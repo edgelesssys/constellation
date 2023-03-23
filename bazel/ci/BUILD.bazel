@@ -257,6 +257,26 @@ sh_template(
     template = "buf.sh.in",
 )
 
+sh_template(
+    name = "golicenses_check",
+    data = [
+        "@com_github_google_go_licenses//:go-licenses",
+        "@go_sdk//:bin/go",
+    ],
+    substitutions = {
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GO_LICENSES@@": "$(rootpath @com_github_google_go_licenses//:go-licenses)",
+    },
+    template = "golicenses.sh.in",
+)
+
+sh_template(
+    name = "license_header_check",
+    data = [],
+    substitutions = {},
+    template = "licenseheader.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -281,6 +301,8 @@ multirun(
         ":buildifier_check",
         ":golangci_lint",
         ":terraform_check",
+        ":golicenses_check",
+        ":license_header_check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",

@@ -8,6 +8,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = select({
         "//bazel/settings:select_never_enabled": [
+            "@com_github_google_go_licenses//go-licenses",
             "@com_github_katexochen_sh_v3//cmd/shfmt",
         ],
         "//conditions:default": [],

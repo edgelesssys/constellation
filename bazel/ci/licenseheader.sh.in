@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Compare licenses of Go dependencies against a whitelist.
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+
+echo "Checking files for missing company license header..."
+
+noHeader=$(
+  grep \
+    -rL \
+    --include='*.go' \
+    --exclude-dir 3rdparty \
+    -e'SPDX-License-Identifier: AGPL-3.0-only' \
+    -e'DO NOT EDIT'
+)
+
+if [[ -z ${noHeader} ]]; then
+  exit 0
+fi
+
+echo "The following files are missing a license header:"
+readarray -t <<< "${noHeader}"
+for file in "${MAPFILE[@]}"; do
+  echo "  ${file}"
+done
+
+exit 1
