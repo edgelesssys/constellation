@@ -35,7 +35,7 @@ inputs:
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
-  gcpClusterServiceAccountKey:
+  gcpInClusterServiceAccountKey:
     description: "The GCP Service account to use inside the created Constellation cluster."
     required: false
   #
@@ -162,7 +162,7 @@ runs:
       if: inputs.cloudProvider == 'gcp' && !inputs.existingConfig # Skip if using existing config. serviceAccountKey.json is already present in that case.
       shell: bash
       env:
-        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
+        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpInClusterServiceAccountKey }}
       run: |
         echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
 

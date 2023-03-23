@@ -35,10 +35,13 @@ inputs:
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
-  gcp_service_account:
-    description: "Service account with permissions to create Constellation on GCP."
+  gcpIAMServiceAccount:
+    description: "Service account with permissions to create IAM configuration on GCP."
     required: false
-  gcpClusterServiceAccountKey:
+  gcpClusterServiceAccount:
+    description: "Service account with permissions to create a Constellation cluster on GCP."
+    required: false
+  gcpInClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
     required: false
   awsOpenSearchDomain:
@@ -56,20 +59,26 @@ inputs:
   azureTenant:
     description: "The Azure tenant ID to deploy Constellation in."
     required: false
-  azureClientID:
-    description: "The client ID of the application registration created for Constellation in Azure."
+  azureIAMClientID:
+    description: "The client ID of the application registration created for Constellation in Azure. (IAM creation)"
     required: false
-  azureClientSecret:
-    description: "The client secret value of the used secret"
+  azureIAMClientSecret:
+    description: "The client secret value of the used secret. (IAM creation)"
     required: false
-  azureUserAssignedIdentity:
-    description: "The Azure user assigned identity to use for Constellation."
+  azureClusterClientID:
+    description: "The client ID of the application registration created for Constellation in Azure. (cluster creation)"
     required: false
-  azureResourceGroup:
-    description: "The resource group to use"
+  azureClusterClientSecret:
+    description: "The client secret value of the used secret. (cluster creation)"
     required: false
+  azureClusterCredentials:
+    description: "Azure credentials authorized to create a Constellation cluster."
+    required: true
+  azureIAMCredentials:
+    description: "Azure credentials authorized to create an IAM configuration."
+    required: true
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, nop, iamcreate]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, perf-bench, verify, recover, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -87,7 +96,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "nop", "iamcreate"]'), inputs.test))
+      if: (!contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "perf-bench", "verify", "lb", "recover", "nop"]'), inputs.test))
       shell: bash
       run: |
         echo "::error::Invalid input for test field: ${{ inputs.test }}"
@@ -155,25 +164,35 @@ runs:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
 
-    - name: Login to GCP
+    - name: Login to GCP (IAM service account)
       if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/login_gcp
       with:
-        service_account: ${{ inputs.gcp_service_account }}
+        service_account: ${{ inputs.gcpIAMServiceAccount }}
 
-    - name: Login to AWS
+    - name: Login to AWS (IAM role)
       if: inputs.cloudProvider == 'aws'
       uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
       with:
-        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2E
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
         aws-region: eu-central-1
         # extend token expiry to 6 hours to ensure constellation can terminate
         role-duration-seconds: 21600
 
+    - name: Login to Azure (IAM service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureIAMCredentials }}
+
     - name: Create IAM configuration
       id: constellation-iam-create
-      if: inputs.test == 'iamcreate' && inputs.cloudProvider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
       uses: ./.github/actions/constellation_iam_create
+      env:
+        ARM_CLIENT_ID: ${{ inputs.azureIAMClientID }}
+        ARM_CLIENT_SECRET: ${{ inputs.azureIAMClientSecret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscription }}
+        ARM_TENANT_ID: ${{ inputs.azureTenant }}
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         awsZone: eu-central-1c
@@ -185,13 +204,38 @@ runs:
         gcpZone: europe-west3-b
         gcpServiceAccountID: e2e-${{ github.run_id }}-${{ github.run_attempt }}-sa
 
+    - name: Login to GCP (Cluster service account)
+      if: inputs.cloudProvider == 'gcp'
+      uses: ./.github/actions/login_gcp
+      with:
+        service_account: ${{ inputs.gcpClusterServiceAccount }}
+
+    - name: Login to AWS (Cluster role)
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Login to Azure (Cluster service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureClusterCredentials }}
+
     - name: Create cluster
       id: constellation-create
       uses: ./.github/actions/constellation_create
+      env:
+        ARM_CLIENT_ID: ${{ inputs.azureClusterClientID }}
+        ARM_CLIENT_SECRET: ${{ inputs.azureClusterClientSecret }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscription }}
+        ARM_TENANT_ID: ${{ inputs.azureTenant }}
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
-        gcpProject: ${{ inputs.gcpProject }}
-        gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
+        gcpInClusterServiceAccountKey: ${{ inputs.gcpInClusterServiceAccountKey }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
@@ -199,12 +243,6 @@ runs:
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         keepMeasurements: ${{ inputs.keepMeasurements }}
-        azureSubscription: ${{ inputs.azureSubscription }}
-        azureTenant: ${{ inputs.azureTenant }}
-        azureClientID: ${{ inputs.azureClientID }}
-        azureClientSecret: ${{ inputs.azureClientSecret }}
-        azureUserAssignedIdentity: ${{ inputs.azureUserAssignedIdentity }}
-        azureResourceGroup: ${{ inputs.azureResourceGroup }}
         existingConfig: ${{ steps.constellation-iam-create.outputs.existingConfig }}
 
     #

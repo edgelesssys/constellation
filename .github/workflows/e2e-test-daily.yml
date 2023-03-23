@@ -97,17 +97,20 @@ jobs:
           osImage: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || needs.find-latest-image.outputs.image-main-debug }}
           isDebugImage: ${{ matrix.refStream == 'ref/main/stream/debug/?' }}
           cliVersion: ${{ matrix.refStream == 'ref/release/stream/stable/?' && needs.find-latest-image.outputs.image-release-stable || '' }}
-          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
-          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
-          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
-          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
-          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
-          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          gcpClusterServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+          gcpIAMServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: "sonobuoy full"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          azureClusterCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          azureIAMClientID: ${{ secrets.AZURE_E2E_IAM_CLIENT_ID }}
+          azureIAMClientSecret: ${{ secrets.AZURE_E2E_IAM_CLIENT_SECRET }}
+          azureClusterClientID: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_ID }}
+          azureClusterClientSecret: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_SECRET }}
+          azureSubscription: ${{ secrets.AZURE_E2E_IAM_SUBSCRIPTION_ID }}
+          azureTenant: ${{ secrets.AZURE_E2E_IAM_TENANT_ID }}
 
       - name: Always terminate cluster
         if: always()
@@ -115,6 +118,15 @@ jobs:
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
+
+      - name: Always delete IAM configuration
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_iam_destroy
+        with:
+          cloudProvider: ${{ matrix.provider }}
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
       - name: Notify teams channel
         if: failure() && github.ref == 'refs/heads/main'
