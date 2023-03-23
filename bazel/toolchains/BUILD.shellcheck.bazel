@@ -1,8 +1,0 @@
-genrule(
-    name = "shellcheck_bin",
-    srcs = ["shellcheck"],
-    outs = ["shellcheck_bin_out"],
-    cmd = "cp $< $@",  # Copy the binary to the output directory.
-    executable = True,
-    visibility = ["//visibility:public"],
-)

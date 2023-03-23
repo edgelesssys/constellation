@@ -78,10 +78,10 @@ noop_warn(
 alias(
     name = "com_github_koalaman_shellcheck",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_koalaman_shellcheck_darwin_x86_64//:shellcheck_bin",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_koalaman_shellcheck_darwin_x86_64//:shellcheck",
         "@io_bazel_rules_go//go/platform:darwin_arm64": ":shellcheck_noop_warning",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_koalaman_shellcheck_linux_x86_64//:shellcheck_bin",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_koalaman_shellcheck_linux_aaarch64//:shellcheck_bin",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_koalaman_shellcheck_linux_x86_64//:shellcheck",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_koalaman_shellcheck_linux_aaarch64//:shellcheck",
     }),
 )
 
@@ -101,10 +101,10 @@ sh_template(
 alias(
     name = "com_github_rhysd_actionlint",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_rhysd_actionlint_darwin_amd64//:actionlint_bin",
-        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_rhysd_actionlint_darwin_arm64//:actionlint_bin",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_rhysd_actionlint_linux_amd64//:actionlint_bin",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_rhysd_actionlint_linux_arm64//:actionlint_bin",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_rhysd_actionlint_darwin_amd64//:actionlint",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_rhysd_actionlint_darwin_arm64//:actionlint",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_rhysd_actionlint_linux_amd64//:actionlint",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_rhysd_actionlint_linux_arm64//:actionlint",
     }),
 )
 
@@ -149,10 +149,10 @@ repo_command(
 alias(
     name = "com_github_aquasecurity_tfsec",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_aquasecurity_tfsec_darwin_amd64//:tfsec_bin",
-        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_aquasecurity_tfsec_darwin_arm64//:tfsec_bin",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_aquasecurity_tfsec_linux_amd64//:tfsec_bin",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_aquasecurity_tfsec_linux_arm64//:tfsec_bin",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_aquasecurity_tfsec_darwin_amd64//:tfsec",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_aquasecurity_tfsec_darwin_arm64//:tfsec",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_aquasecurity_tfsec_linux_amd64//:tfsec",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_aquasecurity_tfsec_linux_arm64//:tfsec",
     }),
 )
 
@@ -170,10 +170,10 @@ sh_template(
 alias(
     name = "com_github_hashicorp_terraform",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_hashicorp_terraform_darwin_amd64//:terraform_bin",
-        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_hashicorp_terraform_darwin_arm64//:terraform_bin",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_hashicorp_terraform_linux_amd64//:terraform_bin",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_hashicorp_terraform_linux_arm64//:terraform_bin",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_hashicorp_terraform_darwin_amd64//:terraform",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_hashicorp_terraform_darwin_arm64//:terraform",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_hashicorp_terraform_linux_amd64//:terraform",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_hashicorp_terraform_linux_arm64//:terraform",
     }),
 )
 

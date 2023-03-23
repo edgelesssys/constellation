@@ -1,8 +1,0 @@
-genrule(
-    name = "terraform_bin",
-    srcs = ["terraform"],
-    outs = ["terraform_bin_out"],
-    cmd = "cp $< $@",  # Copy the binary to the output directory.
-    executable = True,
-    visibility = ["//visibility:public"],
-)

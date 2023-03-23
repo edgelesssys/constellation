@@ -18,7 +18,7 @@ def _shellcheck_deps():
         ],
         sha256 = "700324c6dd0ebea0117591c6cc9d7350d9c7c5c287acbad7630fa17b1d4d9e2f",
         strip_prefix = "shellcheck-v0.9.0",
-        build_file = "//bazel/toolchains:BUILD.shellcheck.bazel",
+        build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_linux_aaarch64",
@@ -27,7 +27,7 @@ def _shellcheck_deps():
         ],
         sha256 = "179c579ef3481317d130adebede74a34dbbc2df961a70916dd4039ebf0735fae",
         strip_prefix = "shellcheck-v0.9.0",
-        build_file = "//bazel/toolchains:BUILD.shellcheck.bazel",
+        build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
     )
     http_archive(
         name = "com_github_koalaman_shellcheck_darwin_x86_64",
@@ -36,13 +36,13 @@ def _shellcheck_deps():
         ],
         sha256 = "7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5",
         strip_prefix = "shellcheck-v0.9.0",
-        build_file = "//bazel/toolchains:BUILD.shellcheck.bazel",
+        build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
     )
 
 def _terraform_deps():
     http_archive(
         name = "com_github_hashicorp_terraform_linux_amd64",
-        build_file = "//bazel/toolchains:BUILD.terraform.bazel",
+        build_file_content = """exports_files(["terraform"], visibility = ["//visibility:public"])""",
         urls = [
             "https://releases.hashicorp.com/terraform/1.4.2/terraform_1.4.2_linux_amd64.zip",
         ],
@@ -50,7 +50,7 @@ def _terraform_deps():
     )
     http_archive(
         name = "com_github_hashicorp_terraform_linux_arm64",
-        build_file = "//bazel/toolchains:BUILD.terraform.bazel",
+        build_file_content = """exports_files(["terraform"], visibility = ["//visibility:public"])""",
         urls = [
             "https://releases.hashicorp.com/terraform/1.4.2/terraform_1.4.2_linux_arm64.zip",
         ],
@@ -58,7 +58,7 @@ def _terraform_deps():
     )
     http_archive(
         name = "com_github_hashicorp_terraform_darwin_amd64",
-        build_file = "//bazel/toolchains:BUILD.terraform.bazel",
+        build_file_content = """exports_files(["terraform"], visibility = ["//visibility:public"])""",
         urls = [
             "https://releases.hashicorp.com/terraform/1.4.2/terraform_1.4.2_darwin_amd64.zip",
         ],
@@ -66,7 +66,7 @@ def _terraform_deps():
     )
     http_archive(
         name = "com_github_hashicorp_terraform_darwin_arm64",
-        build_file = "//bazel/toolchains:BUILD.terraform.bazel",
+        build_file_content = """exports_files(["terraform"], visibility = ["//visibility:public"])""",
         urls = [
             "https://releases.hashicorp.com/terraform/1.4.2/terraform_1.4.2_darwin_arm64.zip",
         ],
@@ -76,7 +76,7 @@ def _terraform_deps():
 def _actionlint_deps():
     http_archive(
         name = "com_github_rhysd_actionlint_linux_amd64",
-        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_linux_amd64.tar.gz",
         ],
@@ -84,7 +84,7 @@ def _actionlint_deps():
     )
     http_archive(
         name = "com_github_rhysd_actionlint_linux_arm64",
-        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_linux_arm64.tar.gz",
         ],
@@ -92,7 +92,7 @@ def _actionlint_deps():
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_amd64",
-        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_darwin_amd64.tar.gz",
         ],
@@ -100,7 +100,7 @@ def _actionlint_deps():
     )
     http_archive(
         name = "com_github_rhysd_actionlint_darwin_arm64",
-        build_file = "//bazel/toolchains:BUILD.actionlint.bazel",
+        build_file_content = """exports_files(["actionlint"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/rhysd/actionlint/releases/download/v1.6.23/actionlint_1.6.23_darwin_arm64.tar.gz",
         ],
@@ -144,7 +144,7 @@ def _gofumpt_deps():
 def _tfsec_deps():
     http_archive(
         name = "com_github_aquasecurity_tfsec_linux_amd64",
-        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_linux_amd64.tar.gz",
         ],
@@ -152,7 +152,7 @@ def _tfsec_deps():
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_linux_arm64",
-        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_linux_arm64.tar.gz",
         ],
@@ -160,7 +160,7 @@ def _tfsec_deps():
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_darwin_amd64",
-        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_darwin_amd64.tar.gz",
         ],
@@ -168,7 +168,7 @@ def _tfsec_deps():
     )
     http_archive(
         name = "com_github_aquasecurity_tfsec_darwin_arm64",
-        build_file = "//bazel/toolchains:BUILD.tfsec.bazel",
+        build_file_content = """exports_files(["tfsec"], visibility = ["//visibility:public"])""",
         urls = [
             "https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec_1.28.1_darwin_arm64.tar.gz",
         ],
