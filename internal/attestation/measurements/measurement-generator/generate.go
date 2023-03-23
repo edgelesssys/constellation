@@ -20,7 +20,6 @@ import (
 	"os"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -81,7 +80,7 @@ func main() {
 			// retrieve and validate measurements for the given CSP and image
 			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, defaultConf.Image)
 			// replace the return statement with a composite literal containing the validated measurements
-			returnStmt.Results[0] = measurementsCompositeLiteral(measuremnts, returnStmt.Return+7)
+			returnStmt.Results[0] = measurementsCompositeLiteral(measuremnts)
 		}
 		return true
 	}, nil,
@@ -173,35 +172,23 @@ func verifyWithRekor(ctx context.Context, verifier rekorVerifier, hash string) e
 // byteArrayCompositeLit returns a *ast.CompositeLit representing a byte array literal.
 // The returned literal is of the form:
 // [32]byte{ 0x01, 0x02, 0x03, ... }.
-func byteArrayCompositeLit(hex [32]byte, pos token.Pos) *ast.CompositeLit {
+func byteArrayCompositeLit(hex [32]byte) *ast.CompositeLit {
 	var elts []ast.Expr
-	// calculate the absolute byte offsets of the elements
-	// given the starting position
-	curPos := pos + 16 // 16 = len("[32]byte{") + padding
 	// create list of byte literals
-	for i, b := range hex {
+	for _, b := range hex {
 		elts = append(elts, &ast.BasicLit{
-			ValuePos: curPos,
-			Kind:     token.INT,
-			Value:    fmt.Sprintf("0x%02x", b),
+			Kind:  token.INT,
+			Value: fmt.Sprintf("0x%02x", b),
 		})
-		if (i+1)%8 == 0 {
-			curPos += 11 // line break
-		} else {
-			curPos += 6 // 6 = len("0x00, ")
-		}
 	}
 	// create the composite literal
 	// containing the byte literals as part of an [32]byte array
 	return &ast.CompositeLit{
 		Type: &ast.ArrayType{
-			Lbrack: pos,
-			Len:    ast.NewIdent("32"),
-			Elt:    ast.NewIdent("byte"),
+			Len: ast.NewIdent("32"),
+			Elt: ast.NewIdent("byte"),
 		},
-		Lbrace: pos + 8, // 8 = len("[32]byte")
-		Elts:   elts,
-		Rbrace: pos + 223, // 223 = len("[32]byte{0x00, 0x01, ...}") - 1
+		Elts: elts,
 	}
 }
 
@@ -212,50 +199,34 @@ func byteArrayCompositeLit(hex [32]byte, pos token.Pos) *ast.CompositeLit {
 //		  Expected: [32]byte{ 0x01, 0x02, 0x03, ... },
 //		  WarnOnly: false,
 //	},
-func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measurement, pos token.Pos) (*ast.KeyValueExpr, token.Pos) {
-	// calculate the absolute byte offsets of the elements
-	// given the starting position
+func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measurement) *ast.KeyValueExpr {
 	key := fmt.Sprintf("%d", pcr)
-	keyLen := len(key)
-	colon := pos + token.Pos(keyLen)                                 // len(key)
-	valuePos := colon + 2                                            // 2 = len(": ")
-	expectedKeyPos := valuePos + 5                                   // 5 = padding + newline
-	expectedColon := expectedKeyPos + 8                              // 8 = len("Expected")
-	expectedValuePos := expectedColon + 2                            // 2 = len(": ")
-	warnOnlyKeyPos := expectedColon + 1 + byteArrayCompositeLitWidth // 1 = space
-	warnOnlyColon := warnOnlyKeyPos + 9                              // 9 = len("WarnOnly")
-	warnOnlyValuePos := warnOnlyColon + 2                            // 2 = len(": ")
-	var rbrace token.Pos
+
+	var validationOptString string
 	if measuremnt.ValidationOpt {
-		rbrace = warnOnlyValuePos + 9 // 9 = len("true") + padding
+		validationOptString = "WarnOnly"
 	} else {
-		rbrace = warnOnlyValuePos + 10 // 10 = len("false") + padding
+		validationOptString = "Enforce"
 	}
 
 	return &ast.KeyValueExpr{
 		Key: &ast.BasicLit{
-			ValuePos: pos,
-			Kind:     token.INT,
-			Value:    key,
+			Kind:  token.INT,
+			Value: key,
 		},
-		Colon: colon,
 		Value: &ast.CompositeLit{
-			Lbrace: valuePos,
 			Elts: []ast.Expr{
 				&ast.KeyValueExpr{
-					Key:   &ast.Ident{NamePos: expectedKeyPos, Name: "Expected"},
-					Colon: expectedColon,
-					Value: byteArrayCompositeLit(measuremnt.Expected, expectedValuePos),
+					Key:   &ast.Ident{Name: "Expected"},
+					Value: byteArrayCompositeLit(measuremnt.Expected),
 				},
 				&ast.KeyValueExpr{
-					Key:   &ast.Ident{NamePos: warnOnlyKeyPos, Name: "WarnOnly"},
-					Colon: warnOnlyColon,
-					Value: &ast.Ident{NamePos: warnOnlyValuePos, Name: strconv.FormatBool(bool(measuremnt.ValidationOpt))},
+					Key:   &ast.Ident{Name: "ValidationOpt"},
+					Value: &ast.Ident{Name: validationOptString},
 				},
 			},
-			Rbrace: rbrace,
 		},
-	}, rbrace + 1 // 1 = len(",")
+	}
 }
 
 // measurementsCompositeLiteral returns a *ast.CompositeLit representing a measurements.M literal.
@@ -272,32 +243,24 @@ func measurementsEntryKeyValueExpr(pcr uint32, measuremnt measurements.Measureme
 //		},
 //		...
 //	}
-func measurementsCompositeLiteral(measurements measurements.M, pos token.Pos) *ast.CompositeLit {
-	lbrace := pos + 1 // 1 = len("M")
+func measurementsCompositeLiteral(measurements measurements.M) *ast.CompositeLit {
 	var elts []ast.Expr
 	pcrs := make([]uint32, 0, len(measurements))
 	for pcr := range measurements {
 		pcrs = append(pcrs, pcr)
 	}
 	sort.Slice(pcrs, func(i, j int) bool { return pcrs[i] < pcrs[j] })
-	entryPos := lbrace + 5 // 5 = padding + newline
 	for _, pcr := range pcrs {
-		kvExpr, newEntryPos := measurementsEntryKeyValueExpr(pcr, measurements[pcr], entryPos)
+		kvExpr := measurementsEntryKeyValueExpr(pcr, measurements[pcr])
 		elts = append(elts, kvExpr)
-		entryPos = newEntryPos + 4 // 4 = padding + newline
 	}
 	return &ast.CompositeLit{
-		Lbrace: lbrace,
 		Type: &ast.Ident{
-			NamePos: pos,
-			Name:    "M",
+			Name: "M",
 		},
-		Elts:   elts,
-		Rbrace: entryPos - 1, // -1 = closing brace is not indented
+		Elts: elts,
 	}
 }
-
-const byteArrayCompositeLitWidth = 235
 
 type rekorVerifier interface {
 	SearchByHash(context.Context, string) ([]string, error)
