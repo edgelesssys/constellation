@@ -213,6 +213,29 @@ sh_template(
     template = "tf.sh.in",
 )
 
+alias(
+    name = "com_github_golangci_golangci_lint",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_golangci_golangci_lint_darwin_amd64//:golangci_lint_bin",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_golangci_golangci_lint_darwin_arm64//:golangci_lint_bin",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_golangci_golangci_lint_linux_amd64//:golangci_lint_bin",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_golangci_golangci_lint_linux_arm64//:golangci_lint_bin",
+    }),
+)
+
+sh_template(
+    name = "golangci_lint",
+    data = [
+        ":com_github_golangci_golangci_lint",
+        "@go_sdk//:bin/go",
+    ],
+    substitutions = {
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GOLANGCI-LINT@@": "$(rootpath :com_github_golangci_golangci_lint)",
+    },
+    template = "golangci.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -234,6 +257,7 @@ multirun(
     commands = [
         ":gazelle_check",
         ":buildifier_check",
+        ":golangci_lint",
         ":terraform_check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [

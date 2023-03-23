@@ -20,6 +20,17 @@ jobs:
           # No token available for forks, so we can't push changes
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
+      - name: Install Dependencies
+        run: |
+          echo "::group::Install Dependencies"
+          sudo apt-get update && sudo apt-get -y install libcryptsetup-dev libvirt-dev
+          echo "::endgroup::"
+
+      - name: Setup Go environment
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: "1.20.2"
+
       - name: Run Bazel tidy
         shell: bash
         run: bazelisk run //:tidy
@@ -31,11 +42,13 @@ jobs:
           diff=$(git diff)
           if [[ -z "$diff" ]]; then
             echo "Everything is tidy."
-            echo "untidy=false" >> "$GITHUB_OUTPUT"
+            echo "untidy=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "Detected changes after tidy"
-          echo "untidy=true" >> "$GITHUB_OUTPUT"
+          echo "untidy=true" | tee -a "$GITHUB_OUTPUT"
+          diffsum=$(echo "$diff" | sha256sum)
+          echo "diffsum=${diffsum}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Run Bazel generate
         shell: bash
@@ -46,7 +59,8 @@ jobs:
         shell: bash
         run: |
           diff=$(git diff)
-          if [[ -z "$diff" ]]; then
+          diffsum=$(echo "$diff" | sha256sum)
+          if [[ "${{ steps.untidy.outputs.diffsum }}" != "$diffsum" ]]; then
             echo "Everything is tidy."
             echo "ungenerated=false" >> "$GITHUB_OUTPUT"
             exit 0

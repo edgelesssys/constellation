@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+golangcilint=$(realpath @@GOLANGCI-LINT@@) || exit 1
+go=$(realpath @@GO@@) || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+
+readarray -t <<< "$(${go} list -f '{{.Dir}}' -m)"
+modules=("${MAPFILE[@]}")
+
+excludeMods=(
+  "hack/tools"
+)
+
+echo "The following Go modules are excluded and won't be linted with golangci-lint:"
+for exclude in "${excludeMods[@]}"; do
+  for i in "${!modules[@]}"; do
+    if [[ ${modules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
+      echo "  ${modules[i]}"
+      unset 'modules[i]'
+    fi
+  done
+done
+
+statuscode=0
+
+echo "Linting the following Go modules with golangci-lint:"
+for mod in "${modules[@]}"; do
+  echo "  ${mod}"
+  GOROOT=$(${go} env GOROOT) ${golangcilint} run --timeout=15m "${mod}/..." || statuscode=$?
+done
+
+exit "${statuscode}"
