@@ -404,6 +404,7 @@ constellation upgrade apply [flags]
   -h, --help   help for apply
   -y, --yes    run upgrades without further confirmation
                WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.
+               WARNING: might unintentionally overwrite measurements in the running cluster.
 ```
 
 ### Options inherited from parent commands
