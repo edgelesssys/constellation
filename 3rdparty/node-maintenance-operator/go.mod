@@ -1,6 +1,6 @@
 module github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator
 
-go 1.19
+go 1.20
 
 require (
 	k8s.io/apimachinery v0.26.2
