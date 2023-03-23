@@ -122,7 +122,7 @@ By default, Constellation tries to register these automatically if they haven't 
 To [automatically create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 * `Microsoft.Authorization/roleDefinitions/*`
 * `Microsoft.Authorization/roleAssignments/*`
-* `*/register/action` (can be omitted if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration)
+* `*/register/action` [1]
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
 * `Microsoft.Resources/subscriptions/resourcegroups/*`
 
@@ -139,6 +139,8 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 
 Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions) and [assigning roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments).
 
+1: `*/register/Action` can be omitted if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration
+
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
@@ -152,14 +154,67 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 * `iam.serviceAccounts.create`
 * `iam.serviceAccounts.delete`
 * `iam.serviceAccounts.get`
-* `iam.serviceAccounts.getAccessToken`
 * `resourcemanager.projects.getIamPolicy`
 * `resourcemanager.projects.setIamPolicy`
 
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+* `compute.addresses.createInternal`
+* `compute.addresses.deleteInternal`
+* `compute.addresses.get`
+* `compute.addresses.useInternal`
+* `compute.backendServices.create`
+* `compute.backendServices.delete`
+* `compute.backendServices.get`
+* `compute.backendServices.use`
 * `compute.disks.create`
-
-To [initialize the cluster](../workflows/create.md#the-init-step), you need the following permissions:
+* `compute.firewalls.create`
+* `compute.firewalls.delete`
+* `compute.firewalls.get`
+* `compute.globalAddresses.create`
+* `compute.globalAddresses.delete`
+* `compute.globalAddresses.get`
+* `compute.globalAddresses.use`
+* `compute.globalForwardingRules.create`
+* `compute.globalForwardingRules.delete`
+* `compute.globalForwardingRules.get`
+* `compute.globalForwardingRules.setLabels`
+* `compute.globalOperations.get`
+* `compute.healthChecks.create`
+* `compute.healthChecks.delete`
+* `compute.healthChecks.get`
+* `compute.healthChecks.useReadOnly`
+* `compute.instanceGroupManagers.create`
+* `compute.instanceGroupManagers.delete`
+* `compute.instanceGroupManagers.get`
+* `compute.instanceGroups.create`
+* `compute.instanceGroups.delete`
+* `compute.instanceGroups.get`
+* `compute.instanceGroups.use`
+* `compute.instanceTemplates.create`
+* `compute.instanceTemplates.delete`
+* `compute.instanceTemplates.get`
+* `compute.instanceTemplates.useReadOnly`
+* `compute.instances.create`
+* `compute.instances.setLabels`
+* `compute.instances.setMetadata`
+* `compute.instances.setTags`
+* `compute.networks.create`
+* `compute.networks.delete`
+* `compute.networks.get`
+* `compute.networks.updatePolicy`
+* `compute.routers.create`
+* `compute.routers.delete`
+* `compute.routers.get`
+* `compute.routers.update`
+* `compute.subnetworks.create`
+* `compute.subnetworks.delete`
+* `compute.subnetworks.get`
+* `compute.subnetworks.use`
+* `compute.targetTcpProxies.create`
+* `compute.targetTcpProxies.delete`
+* `compute.targetTcpProxies.get`
+* `compute.targetTcpProxies.use`
+* `iam.serviceAccounts.actAs`
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
@@ -291,8 +346,6 @@ such as `PowerUserAccess`, or use the following minimal set of permissions:
     ]
 }
 ```
-
-To [initialize the cluster](../workflows/create.md#the-init-step), you need the following permissions:
 
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
