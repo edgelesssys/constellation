@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "bazelfiles",
+    srcs = ["files.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/bazelfiles",
+    visibility = ["//hack/bazel-deps-mirror:__subpackages__"],
+    deps = [
+        "@com_github_bazelbuild_buildtools//build",
+        "@com_github_hexops_gotextdiff//:gotextdiff",
+        "@com_github_hexops_gotextdiff//myers",
+        "@com_github_hexops_gotextdiff//span",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
