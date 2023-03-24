@@ -331,6 +331,23 @@ sh_template(
     template = "go_generate.sh.in",
 )
 
+repo_command(
+    name = "deps-mirror-fix",
+    args = [
+        "fix",
+        "--anonymous",
+    ],
+    command = "//hack/bazel-deps-mirror",
+)
+
+repo_command(
+    name = "deps-mirror-check",
+    args = [
+        "check",
+    ],
+    command = "//hack/bazel-deps-mirror",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -342,6 +359,7 @@ multirun(
         ":buildifier_fix",
         ":terraform_fmt",
         ":buf_fmt",
+        ":deps-mirror-fix",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
@@ -358,6 +376,7 @@ multirun(
         ":golicenses_check",
         ":license_header_check",
         ":govulncheck",
+        ":deps-mirror-check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
