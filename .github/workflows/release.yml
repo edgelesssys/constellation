@@ -311,6 +311,7 @@ jobs:
       kubernetesVersion: "v1.25"
       keepMeasurements: true
       osImage: ${{ inputs.version }}
+      partOfReleasePipeline: true
       machineType: "default"
       git-ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 

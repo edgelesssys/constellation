@@ -65,6 +65,11 @@ on:
         type: string
         default: "head"
         required: false
+      partOfReleasePipeline:
+        description: "Is this invokation part of the release pipeline?"
+        type: boolean
+        default: false
+        required: true
   workflow_call:
     inputs:
       workerNodesCount:
@@ -106,6 +111,10 @@ on:
       git-ref:
         description: "Git ref to checkout."
         type: string
+        required: true
+      partOfReleasePipeline:
+        description: "Is this part of the release pipeline?"
+        type: boolean
         required: true
 
 env:
@@ -209,11 +218,6 @@ jobs:
         with:
           ref: ${{ inputs.git-ref }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
-        with:
-          go-version: "1.20.2"
-
       - name: Set up gcloud CLI (macOS)
         if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587 # v1.1.0
@@ -258,7 +262,7 @@ jobs:
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
-          cliVersion: ${{ startsWith(needs.find-latest-image.outputs.image, 'v') && needs.find-latest-image.outputs.image || '' }}
+          cliVersion: ${{ !partOfReleasePipeline && startsWith(needs.find-latest-image.outputs.image, 'v') && needs.find-latest-image.outputs.image || '' }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
