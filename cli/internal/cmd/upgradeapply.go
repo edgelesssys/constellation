@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -77,23 +78,27 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
-	err = u.handleServiceUpgrade(cmd, conf, flags)
-	upgradeErr := &compatibility.InvalidUpgradeError{}
-	switch {
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err != nil:
-		return fmt.Errorf("upgrading services: %w", err)
-	}
+	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP {
+		err = u.handleServiceUpgrade(cmd, conf, flags)
+		upgradeErr := &compatibility.InvalidUpgradeError{}
+		switch {
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err != nil:
+			return fmt.Errorf("upgrading services: %w", err)
+		}
 
-	err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
-	switch {
-	case errors.Is(err, cloudcmd.ErrInProgress):
-		cmd.PrintErrln("Skipping image & Kubernetes upgrades. Another upgrade is in progress")
-	case errors.As(err, &upgradeErr):
-		cmd.PrintErrln(err)
-	case err != nil:
-		return fmt.Errorf("upgrading NodeVersion: %w", err)
+		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
+		switch {
+		case errors.Is(err, cloudcmd.ErrInProgress):
+			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
+		case errors.As(err, &upgradeErr):
+			cmd.PrintErrln(err)
+		case err != nil:
+			return fmt.Errorf("upgrading NodeVersion: %w", err)
+		}
+	} else {
+		cmd.PrintErrln("WARNING: Skipping service and image upgrades, which are currently only supported for Azure and GCP.")
 	}
 
 	return nil
