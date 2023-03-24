@@ -341,6 +341,14 @@ repo_command(
 )
 
 repo_command(
+    name = "deps-mirror-upload",
+    args = [
+        "fix",
+    ],
+    command = "//hack/bazel-deps-mirror",
+)
+
+repo_command(
     name = "deps-mirror-check",
     args = [
         "check",
