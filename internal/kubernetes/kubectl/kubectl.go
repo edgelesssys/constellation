@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/scale/scheme"
@@ -35,7 +34,6 @@ type Kubectl struct {
 	kubernetes.Interface
 	dynamicClient      dynamic.Interface
 	apiextensionClient apiextensionsclientv1.ApiextensionsV1Interface
-	builder            *resource.Builder
 }
 
 // New returns an empty Kubectl client. Need to call Initialize before usable.
@@ -67,12 +65,6 @@ func (k *Kubectl) Initialize(kubeconfig []byte) error {
 	}
 	k.apiextensionClient = apiextensionClient
 
-	restClientGetter, err := newRESTClientGetter(kubeconfig)
-	if err != nil {
-		return fmt.Errorf("creating k8s RESTClientGetter from kubeconfig: %w", err)
-	}
-	k.builder = resource.NewBuilder(restClientGetter).Unstructured()
-
 	return nil
 }
 
@@ -90,22 +82,6 @@ func (k *Kubectl) ApplyCRD(ctx context.Context, rawCRD []byte) error {
 	crd.ResourceVersion = clusterCRD.ResourceVersion
 	_, err = k.apiextensionClient.CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
 	return err
-}
-
-// parseCRD takes a byte slice of data and tries to create a CustomResourceDefinition object from it.
-func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
-	sch := runtime.NewScheme()
-	_ = scheme.AddToScheme(sch)
-	_ = v1.AddToScheme(sch)
-	obj, groupVersionKind, err := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode(crdString, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("decoding crd: %w", err)
-	}
-	if groupVersionKind.Kind == "CustomResourceDefinition" {
-		return obj.(*v1.CustomResourceDefinition), nil
-	}
-
-	return nil, errors.New("parsed []byte, but did not find a CRD")
 }
 
 // GetCRDs retrieves all custom resource definitions currently installed in the cluster.
@@ -157,6 +133,15 @@ func (k *Kubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, ann
 // ListAllNamespaces returns all namespaces in the cluster.
 func (k *Kubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
 	return k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+}
+
+// GetNodes returns all nodes in the cluster.
+func (k *Kubectl) GetNodes(ctx context.Context) ([]corev1.Node, error) {
+	nodes, err := k.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("listing nodes: %w", err)
+	}
+	return nodes.Items, nil
 }
 
 // AddTolerationsToDeployment adds [K8s tolerations] to the deployment, identified
@@ -212,4 +197,20 @@ func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors ma
 		return err
 	}
 	return nil
+}
+
+// parseCRD takes a byte slice of data and tries to create a CustomResourceDefinition object from it.
+func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
+	sch := runtime.NewScheme()
+	_ = scheme.AddToScheme(sch)
+	_ = v1.AddToScheme(sch)
+	obj, groupVersionKind, err := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode(crdString, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("decoding crd: %w", err)
+	}
+	if groupVersionKind.Kind == "CustomResourceDefinition" {
+		return obj.(*v1.CustomResourceDefinition), nil
+	}
+
+	return nil, errors.New("parsed []byte, but did not find a CRD")
 }

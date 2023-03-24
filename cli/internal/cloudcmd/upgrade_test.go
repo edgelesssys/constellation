@@ -426,11 +426,11 @@ type stubDynamicClient struct {
 	updateErr     error
 }
 
-func (u *stubDynamicClient) getCurrent(_ context.Context, _ string) (*unstructured.Unstructured, error) {
+func (u *stubDynamicClient) GetCurrent(_ context.Context, _ string) (*unstructured.Unstructured, error) {
 	return u.object, u.getErr
 }
 
-func (u *stubDynamicClient) update(_ context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *stubDynamicClient) Update(_ context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	u.updatedObject = updatedObject
 	return u.updatedObject, u.updateErr
 }

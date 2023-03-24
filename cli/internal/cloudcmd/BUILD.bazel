@@ -9,6 +9,7 @@ go_library(
         "create.go",
         "iam.go",
         "rollback.go",
+        "status.go",
         "terminate.go",
         "upgrade.go",
         "validators.go",

@@ -39,6 +39,9 @@ const (
 	DenyDestructive = false
 )
 
+// ErrConfirmationMissing signals that an action requires user confirmation.
+var ErrConfirmationMissing = errors.New("action requires user confirmation")
+
 // Client handles interaction with helm and the cluster.
 type Client struct {
 	config  *action.Configuration
@@ -144,13 +147,30 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
-func (c *Client) Versions() (string, error) {
-	serviceVersion, err := c.currentVersion(constellationServicesInfo.releaseName)
+func (c *Client) Versions() (ServiceVersions, error) {
+	ciliumVersion, err := c.currentVersion(ciliumInfo.releaseName)
 	if err != nil {
-		return "", fmt.Errorf("getting constellation-services version: %w", err)
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", ciliumInfo.releaseName, err)
+	}
+	certManagerVersion, err := c.currentVersion(certManagerInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", certManagerInfo.releaseName, err)
+	}
+	operatorsVersion, err := c.currentVersion(constellationOperatorsInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationOperatorsInfo.releaseName, err)
+	}
+	servicesVersion, err := c.currentVersion(constellationServicesInfo.releaseName)
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
 
-	return compatibility.EnsurePrefixV(serviceVersion), nil
+	return ServiceVersions{
+		cilium:                 compatibility.EnsurePrefixV(ciliumVersion),
+		certManager:            compatibility.EnsurePrefixV(certManagerVersion),
+		constellationOperators: compatibility.EnsurePrefixV(operatorsVersion),
+		constellationServices:  compatibility.EnsurePrefixV(servicesVersion),
+	}, nil
 }
 
 // currentVersion returns the version of the currently installed helm release.
@@ -174,8 +194,43 @@ func (c *Client) currentVersion(release string) (string, error) {
 	return rel[0].Chart.Metadata.Version, nil
 }
 
-// ErrConfirmationMissing signals that an action requires user confirmation.
-var ErrConfirmationMissing = errors.New("action requires user confirmation")
+// ServiceVersions bundles the versions of all services that are part of Constellation.
+type ServiceVersions struct {
+	cilium                 string
+	certManager            string
+	constellationOperators string
+	constellationServices  string
+}
+
+// NewServiceVersions returns a new ServiceVersions struct.
+func NewServiceVersions(cilium, certManager, constellationOperators, constellationServices string) ServiceVersions {
+	return ServiceVersions{
+		cilium:                 cilium,
+		certManager:            certManager,
+		constellationOperators: constellationOperators,
+		constellationServices:  constellationServices,
+	}
+}
+
+// Cilium returns the version of the Cilium release.
+func (s ServiceVersions) Cilium() string {
+	return s.cilium
+}
+
+// CertManager returns the version of the cert-manager release.
+func (s ServiceVersions) CertManager() string {
+	return s.certManager
+}
+
+// ConstellationOperators returns the version of the constellation-operators release.
+func (s ServiceVersions) ConstellationOperators() string {
+	return s.constellationOperators
+}
+
+// ConstellationServices returns the version of the constellation-services release.
+func (s ServiceVersions) ConstellationServices() string {
+	return s.constellationServices
+}
 
 // TODO: v2.8: remove fileHandler argument.
 func (c *Client) upgradeRelease(

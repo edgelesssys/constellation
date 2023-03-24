@@ -34,6 +34,7 @@ Commands:
     * [azure](#constellation-iam-create-azure): Create IAM configuration on Microsoft Azure for your Constellation cluster
     * [gcp](#constellation-iam-create-gcp): Create IAM configuration on GCP for your Constellation cluster
   * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local Terraform files
+* [status](#constellation-status): show status of a Constellation cluster
 
 ## constellation config
 
@@ -663,6 +664,34 @@ constellation iam destroy [flags]
 ```
   -h, --help   help for destroy
   -y, --yes    destroy the IAM configuration without asking for confirmation
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+```
+
+## constellation status
+
+show status of a Constellation cluster
+
+### Synopsis
+
+Show status of a constellation cluster.
+
+Shows microservice, image and Kubernetes versions installed in the cluster. Also show status of current version upgrades.
+
+```
+constellation status [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for status
 ```
 
 ### Options inherited from parent commands
