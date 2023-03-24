@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	grpcstatus "google.golang.org/grpc/status"
 )
 
 func TestRecoverCmdArgumentValidation(t *testing.T) {
@@ -63,8 +63,8 @@ func TestRecoverCmdArgumentValidation(t *testing.T) {
 
 func TestRecover(t *testing.T) {
 	someErr := errors.New("error")
-	unavailableErr := status.Error(codes.Unavailable, "unavailable")
-	lbErr := status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp`)
+	unavailableErr := grpcstatus.Error(codes.Unavailable, "unavailable")
+	lbErr := grpcstatus.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp`)
 
 	testCases := map[string]struct {
 		doer            *stubDoer
@@ -336,7 +336,7 @@ func (d *stubDoer) Do(context.Context) error {
 	if len(d.returns) > 1 {
 		d.returns = d.returns[1:]
 	} else {
-		d.returns = []error{status.Error(codes.Unavailable, "unavailable")}
+		d.returns = []error{grpcstatus.Error(codes.Unavailable, "unavailable")}
 	}
 	return err
 }

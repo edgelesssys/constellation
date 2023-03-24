@@ -264,7 +264,7 @@ func (v *versionCollector) currentVersions(ctx context.Context) (serviceVersion 
 		return "", "", "", fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	serviceVersion, err = helmClient.Versions()
+	serviceVersions, err := helmClient.Versions()
 	if err != nil {
 		return "", "", "", fmt.Errorf("getting service versions: %w", err)
 	}
@@ -279,7 +279,7 @@ func (v *versionCollector) currentVersions(ctx context.Context) (serviceVersion 
 		return "", "", "", fmt.Errorf("getting image version: %w", err)
 	}
 
-	return serviceVersion, imageVersion, k8sVersion, nil
+	return serviceVersions.ConstellationServices(), imageVersion, k8sVersion, nil
 }
 
 // supportedVersions returns slices of supported versions.

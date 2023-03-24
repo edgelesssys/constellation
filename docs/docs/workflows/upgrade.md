@@ -57,3 +57,38 @@ If you are interested, you can monitor pods restarting in the `kube-system` name
 Image and Kubernetes upgrades take longer.
 For each node in your cluster, a new node has to be created and joined.
 The process usually takes up to ten minutes per node.
+
+## Check the status
+
+Upgrades are asynchronous operations.
+After you run `upgrade apply`, it will take a while until the upgrade has completed.
+To understand if an upgrade is finished, you can run:
+
+```bash
+constellation status
+```
+
+This command displays the following information:
+
+* The installed services and their versions
+* The image and Kubernetes version the cluster is expecting on each node
+* How many nodes are up to date
+
+Here's an example output:
+
+```shell-session
+Target versions:
+	Image: v2.6.0
+	Kubernetes: v1.25.8
+Installed service versions:
+	Cilium: v1.12.1
+	cert-manager: v1.10.0
+	constellation-operators: v2.6.0
+	constellation-services: v2.6.0
+Cluster status: Some node versions are out of date
+	Image: 23/25
+	Kubernetes: 25/25
+```
+
+This output indicates that the cluster is running Kubernetes version `1.25.8`, and all nodes have the appropriate binaries installed.
+23 out of 25 nodes have already upgraded to the targeted image version of `2.6.0`, while two are still in progress.

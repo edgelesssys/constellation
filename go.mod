@@ -113,7 +113,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/apiserver v0.26.3
-	k8s.io/cli-runtime v0.26.3
 	k8s.io/client-go v0.26.3
 	k8s.io/cluster-bootstrap v0.26.3
 	k8s.io/kubelet v0.26.3
@@ -122,6 +121,8 @@ require (
 	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749
 	sigs.k8s.io/yaml v1.3.0
 )
+
+require k8s.io/cli-runtime v0.26.3 // indirect
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
