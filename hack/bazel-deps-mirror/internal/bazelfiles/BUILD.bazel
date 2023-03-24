@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "bazelfiles",
@@ -11,5 +12,19 @@ go_library(
         "@com_github_hexops_gotextdiff//myers",
         "@com_github_hexops_gotextdiff//span",
         "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "bazelfiles_test",
+    srcs = ["files_test.go"],
+    embed = [":bazelfiles"],
+    deps = [
+        "@com_github_bazelbuild_buildtools//build",
+        "@com_github_bazelbuild_buildtools//edit",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
     ],
 )

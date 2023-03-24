@@ -47,7 +47,10 @@ require (
 	libvirt.org/go/libvirt v1.8010.0
 )
 
-require github.com/hexops/gotextdiff v1.0.3
+require (
+	github.com/hexops/gotextdiff v1.0.3
+	go.uber.org/goleak v1.2.1
+)
 
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect

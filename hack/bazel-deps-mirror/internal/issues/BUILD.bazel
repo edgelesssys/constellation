@@ -1,8 +1,19 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "issues",
     srcs = ["issues.go"],
     importpath = "github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/issues",
     visibility = ["//hack/bazel-deps-mirror:__subpackages__"],
+)
+
+go_test(
+    name = "issues_test",
+    srcs = ["issues_test.go"],
+    embed = [":issues"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
 )
