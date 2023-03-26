@@ -223,7 +223,7 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 
 To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
 
-To create the IAM configuration for Constellation, you need the following permissions:
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 
 ```json
 {
