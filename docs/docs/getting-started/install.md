@@ -161,6 +161,8 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 * `resourcemanager.projects.getIamPolicy`
 * `resourcemanager.projects.setIamPolicy`
 
+Together, the built-in roles `roles/editor` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
+
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
 * `compute.addresses.createInternal`
 * `compute.addresses.deleteInternal`
@@ -220,6 +222,8 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `compute.targetTcpProxies.use`
 * `iam.serviceAccounts.actAs`
 
+Together, the built-in roles `roles/editor`, `roles/compute.instanceAdmin` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
+
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
 </tabItem>
@@ -264,8 +268,9 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
 }
 ```
 
-To [create a Constellation cluster](../workflows/create.md#the-create-step), you can either use a predefined role from Amazon,
-such as `PowerUserAccess`, or use the following minimal set of permissions:
+The built-in `AdministratorAccess` policy is a superset of these permissions.
+
+To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
 
 ```json
 {
@@ -350,6 +355,8 @@ such as `PowerUserAccess`, or use the following minimal set of permissions:
     ]
 }
 ```
+
+The built-in `PowerUserAccess` policy is a superset of these permissions.
 
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
