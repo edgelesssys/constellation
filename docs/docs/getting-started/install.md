@@ -122,7 +122,7 @@ By default, Constellation tries to register these automatically if they haven't 
 To [automatically create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 * `Microsoft.Authorization/roleDefinitions/*`
 * `Microsoft.Authorization/roleAssignments/*`
-* `*/register/action` [1]
+* `*/register/action` \[1]
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
 * `Microsoft.Resources/subscriptions/resourcegroups/*`
 
