@@ -126,6 +126,8 @@ To [automatically create the IAM configuration](../workflows/config.md#creating-
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
 * `Microsoft.Resources/subscriptions/resourcegroups/*`
 
+The built-in `Owner` role is a superset of these permissions.
+
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
 * `Microsoft.Insights/components/*`
 * `Microsoft.Network/publicIPAddresses/*`
@@ -136,6 +138,8 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `Microsoft.Network/virtualNetworks/subnets/*`
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+
+The built-in `Contributor` role is a superset of these permissions.
 
 Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions) and [assigning roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments).
 
