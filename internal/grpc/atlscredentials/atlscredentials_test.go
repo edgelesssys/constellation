@@ -86,7 +86,7 @@ type fakeIssuer struct {
 	fakeOID
 }
 
-func (fakeIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (fakeIssuer) Issue(_ context.Context, userData []byte, nonce []byte) ([]byte, error) {
 	return json.Marshal(fakeDoc{UserData: userData, Nonce: nonce})
 }
 
@@ -95,7 +95,7 @@ type fakeValidator struct {
 	err error
 }
 
-func (v fakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+func (v fakeValidator) Validate(_ context.Context, attDoc []byte, nonce []byte) ([]byte, error) {
 	var doc fakeDoc
 	if err := json.Unmarshal(attDoc, &doc); err != nil {
 		return nil, err

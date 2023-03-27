@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package watcher
 
 import (
+	"context"
 	"encoding/asn1"
 	"encoding/json"
 	"errors"
@@ -49,10 +50,10 @@ func NewValidator(log *logger.Logger, variant oid.Getter, fileHandler file.Handl
 }
 
 // Validate calls the validators Validate method, and prevents any updates during the call.
-func (u *Updatable) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+func (u *Updatable) Validate(ctx context.Context, attDoc []byte, nonce []byte) ([]byte, error) {
 	u.mux.Lock()
 	defer u.mux.Unlock()
-	return u.Validator.Validate(attDoc, nonce)
+	return u.Validator.Validate(ctx, attDoc, nonce)
 }
 
 // OID returns the validators Object Identifier.

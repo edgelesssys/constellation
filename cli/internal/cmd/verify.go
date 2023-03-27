@@ -232,7 +232,7 @@ func (v *constellationVerifier) Verify(
 	}
 
 	v.log.Debugf("Verifying attestation")
-	signedData, err := validator.Validate(resp.Attestation, req.Nonce)
+	signedData, err := validator.Validate(ctx, resp.Attestation, req.Nonce)
 	if err != nil {
 		return fmt.Errorf("validating attestation: %w", err)
 	}

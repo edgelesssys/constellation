@@ -111,7 +111,7 @@ func (s *Server) GetAttestation(ctx context.Context, req *verifyproto.GetAttesta
 	}
 
 	log.Infof("Creating attestation")
-	statement, err := s.issuer.Issue([]byte(constants.ConstellationVerifyServiceUserData), req.Nonce)
+	statement, err := s.issuer.Issue(ctx, []byte(constants.ConstellationVerifyServiceUserData), req.Nonce)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "issuing attestation statement: %v", err)
 	}
@@ -139,7 +139,7 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Infof("Creating attestation")
-	quote, err := s.issuer.Issue([]byte(constants.ConstellationVerifyServiceUserData), nonce)
+	quote, err := s.issuer.Issue(r.Context(), []byte(constants.ConstellationVerifyServiceUserData), nonce)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("issuing attestation statement: %v", err), http.StatusInternalServerError)
 		return
@@ -154,5 +154,5 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 
 // AttestationIssuer issues an attestation document for the provided userData and nonce.
 type AttestationIssuer interface {
-	Issue(userData []byte, nonce []byte) (quote []byte, err error)
+	Issue(ctx context.Context, userData []byte, nonce []byte) (quote []byte, err error)
 }

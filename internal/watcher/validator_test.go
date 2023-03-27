@@ -270,7 +270,7 @@ type fakeIssuer struct {
 	oid.Getter
 }
 
-func (fakeIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (fakeIssuer) Issue(_ context.Context, userData []byte, nonce []byte) ([]byte, error) {
 	return json.Marshal(fakeDoc{UserData: userData, Nonce: nonce})
 }
 

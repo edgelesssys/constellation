@@ -9,6 +9,7 @@ package atls
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -27,6 +28,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
+
+const attestationTimeout = 30 * time.Second
 
 // CreateAttestationServerTLSConfig creates a tls.Config object with a self-signed certificate and an embedded attestation document.
 // Pass a list of validators to enable mutual aTLS.
@@ -73,13 +76,13 @@ func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*t
 // Issuer issues an attestation document.
 type Issuer interface {
 	oid.Getter
-	Issue(userData []byte, nonce []byte) (quote []byte, err error)
+	Issue(ctx context.Context, userData []byte, nonce []byte) (quote []byte, err error)
 }
 
 // Validator is able to validate an attestation document.
 type Validator interface {
 	oid.Getter
-	Validate(attDoc []byte, nonce []byte) ([]byte, error)
+	Validate(ctx context.Context, attDoc []byte, nonce []byte) ([]byte, error)
 }
 
 // getATLSConfigForClientFunc returns a config setup function that is called once for every client connecting to the server.
@@ -129,7 +132,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 
 // getCertificate creates a client or server certificate for aTLS connections.
 // The certificate uses certificate extensions to embed an attestation document generated using nonce.
-func getCertificate(issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificate, error) {
+func getCertificate(ctx context.Context, issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificate, error) {
 	serialNumber, err := crypto.GenerateCertificateSerialNumber()
 	if err != nil {
 		return nil, err
@@ -145,7 +148,7 @@ func getCertificate(issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificat
 		}
 
 		// create attestation document using the nonce send by the remote party
-		attDoc, err := issuer.Issue(hash, nonce)
+		attDoc, err := issuer.Issue(ctx, hash, nonce)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +203,10 @@ func verifyEmbeddedReport(validators []Validator, cert *x509.Certificate, hash, 
 	for _, ex := range cert.Extensions {
 		for _, validator := range validators {
 			if ex.Id.Equal(validator.OID()) {
-				userData, err := validator.Validate(ex.Value, nonce)
+				ctx, cancel := context.WithTimeout(context.Background(), attestationTimeout)
+				defer cancel()
+
+				userData, err := validator.Validate(ctx, ex.Value, nonce)
 				if err != nil {
 					return err
 				}
@@ -308,7 +314,7 @@ func (c *clientConnection) getCertificate(cri *tls.CertificateRequestInfo) (*tls
 		return nil, fmt.Errorf("decode nonce: %w", err)
 	}
 
-	return getCertificate(c.issuer, priv, &priv.PublicKey, serverNonce)
+	return getCertificate(cri.Context(), c.issuer, priv, &priv.PublicKey, serverNonce)
 }
 
 // serverConnection holds state for server to client connections.
@@ -340,7 +346,7 @@ func (c *serverConnection) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certif
 	}
 
 	// create aTLS certificate using the nonce as extracted from the client-hello message
-	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce)
+	return getCertificate(chi.Context(), c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce)
 }
 
 // FakeIssuer fakes an issuer and can be used for tests.
@@ -354,7 +360,7 @@ func NewFakeIssuer(oid oid.Getter) *FakeIssuer {
 }
 
 // Issue marshals the user data and returns it.
-func (FakeIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+func (FakeIssuer) Issue(_ context.Context, userData []byte, nonce []byte) ([]byte, error) {
 	return json.Marshal(FakeAttestationDoc{UserData: userData, Nonce: nonce})
 }
 
@@ -375,7 +381,7 @@ func NewFakeValidators(oid oid.Getter) []Validator {
 }
 
 // Validate unmarshals the attestation document and verifies the nonce.
-func (v FakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+func (v FakeValidator) Validate(_ context.Context, attDoc []byte, nonce []byte) ([]byte, error) {
 	var doc FakeAttestationDoc
 	if err := json.Unmarshal(attDoc, &doc); err != nil {
 		return nil, err
