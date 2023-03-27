@@ -259,8 +259,13 @@ func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) 
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
-			continue
+			if ctx.Err() == nil {
+				log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
+				continue
+			} else {
+				return err
+			}
+		}
 		}
 		resp.Body.Close()
 		if resp.StatusCode == 200 {
