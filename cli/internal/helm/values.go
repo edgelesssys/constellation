@@ -15,6 +15,9 @@ var awsVals = map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
 	},
+	"hubble": map[string]any{
+		"enabled": false,
+	},
 	"l7Proxy": false,
 	"ipam": map[string]any{
 		"operator": map[string]any{
@@ -53,6 +56,9 @@ var azureVals = map[string]any{
 	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
+	},
+	"hubble": map[string]any{
+		"enabled": false,
 	},
 	"l7Proxy": false,
 	"ipam": map[string]any{
@@ -95,6 +101,9 @@ var gcpVals = map[string]any{
 	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
+	},
+	"hubble": map[string]any{
+		"enabled": false,
 	},
 	"image": map[string]any{
 		"repository": "ghcr.io/3u13r/cilium",
@@ -167,6 +176,9 @@ var qemuVals = map[string]any{
 	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
+	},
+	"hubble": map[string]any{
+		"enabled": false,
 	},
 	"image": map[string]any{
 		"repository": "ghcr.io/3u13r/cilium",
