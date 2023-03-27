@@ -8,7 +8,7 @@ Which versions are available depends on the CLI version you are using.
 
 :::caution
 
-Upgrades arent't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Upgrades aren't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
 :::
 

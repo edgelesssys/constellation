@@ -2,12 +2,14 @@
 
 This section aids you in finding problems when working with Constellation.
 
-## Issues with creating new clusters
+## Common issues
+
+### Issues with creating new clusters
 
 When you create a new cluster, you should always use the [latest release](https://github.com/edgelesssys/constellation/releases/latest).
 If something doesn't work, check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
 
-## Azure: Resource Providers can't be registered
+### Azure: Resource Providers can't be registered
 
 On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
 ```shell-session
@@ -35,11 +37,39 @@ Or alternatively, for `terminate`:
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
 ```
 
-## Cloud logging
+### Nodes fail to join with error `untrusted PCR value`
 
-To provide information during early stages of the node's boot process, Constellation logs messages into the cloud providers' log systems. Since these offerings **aren't** confidential, only generic information without any sensitive values are stored. This provides administrators with a high level understanding of the current state of a node.
+This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
+This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/attestation.md#runtime-measurements) in an unforeseen way.
+You can change the expected measurements to resolve the failure.
 
-You can view these information in the follow places:
+:::caution
+
+Attestation and trusted measurements are crucial for the security of your cluster.
+Be extra careful when manually changing these settings.
+When in doubt, check if the encountered [issue is known](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22) or [contact support](https://github.com/edgelesssys/constellation#support).
+
+:::
+
+You can use the `upgrade apply` command to change measurements of a running cluster:
+
+1. Modify the `measurements` key in your local `constellation-conf.yaml` to the expected values.
+2. Run `constellation upgrade apply`.
+
+Keep in mind that running `upgrade apply` also applies any version changes from your config to the cluster.
+
+You can run these commands to learn about the versions currently configured in the cluster:
+- Kubernetes API server version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.kubernetesClusterVersion`
+- image version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.imageVersion`
+- microservices versions: `helm list --filter 'constellation-services' -n kube-system`
+
+## Diagnosing issues
+
+### Cloud logging
+
+To provide information during early stages of a node's boot process, Constellation logs messages to the log systems of the cloud providers. Since these offerings **aren't** confidential, only generic information without any sensitive values is stored. This provides administrators with a high-level understanding of the current state of a node.
+
+You can view this information in the following places:
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
@@ -79,7 +109,7 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 </tabItem>
 </tabs>
 
-## Connect to nodes
+### Node shell access
 
 Debugging via a shell on a node is [directly supported by Kubernetes](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#node-shell-session).
 
@@ -106,29 +136,3 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
     ```sh
     kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
     ```
-
-## Nodes fail to join with error `untrusted PCR value`
-
-This error indicates that a node's [attestation statement](../architecture/attestation.md) contains measurements that don't match the trusted values expected by the [JoinService](../architecture/microservices.md#joinservice).
-This may for example happen if the cloud provider updates the VM's firmware such that it influences the [runtime measurements](../architecture/attestation.md#runtime-measurements) in an unforeseen way.
-You can change the expected measurements to resolve the failure.
-
-:::caution
-
-Attestation and trusted measurements are crucial for the security of your cluster.
-Be extra careful when manually changing these settings.
-When in doubt, check if the encountered [issue is known](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22) or [contact support](https://github.com/edgelesssys/constellation#support).
-
-:::
-
-You can use the `upgrade apply` command to change measurements of a running cluster:
-
-1. Modify the `measurements` key in your local `constellation-conf.yaml` to the expected values.
-2. Run `constellation upgrade apply`.
-
-Keep in mind that running `upgrade apply` will also apply any version changes you made in your config to the cluster.
-
-You can run these commands to learn about the versions currently configured in the cluster:
-- Kubernetes API server version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.kubernetesClusterVersion`
-- image version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.imageVersion`
-- microservices versions: `helm list --filter 'constellation-services' -n kube-system`
