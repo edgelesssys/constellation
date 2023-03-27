@@ -277,6 +277,19 @@ sh_template(
     template = "licenseheader.sh.in",
 )
 
+sh_template(
+    name = "govulncheck",
+    data = [
+        "@go_sdk//:bin/go",
+        "@org_golang_x_vuln//cmd/govulncheck",
+    ],
+    substitutions = {
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@GOVULNCHECK@@": "$(rootpath @org_golang_x_vuln//cmd/govulncheck:govulncheck)",
+    },
+    template = "govulncheck.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -303,6 +316,7 @@ multirun(
         ":terraform_check",
         ":golicenses_check",
         ":license_header_check",
+        ":govulncheck",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",

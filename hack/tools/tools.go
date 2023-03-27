@@ -11,4 +11,5 @@ package main
 import (
 	_ "github.com/google/go-licenses"
 	_ "github.com/katexochen/sh/v3/cmd/shfmt"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 )

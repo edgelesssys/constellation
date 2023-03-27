@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+go=$(realpath @@GO@@) || exit 1
+govulncheck=$(realpath @@GOVULNCHECK@@) || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+
+submodules=$(${go} list -f '{{.Dir}}' -m)
+
+PATH=$(dirname "${go}"):${PATH}
+
+err=0
+
+echo "Scanning Go vulnerability DB for knwon vulnerabilities in modules:"
+for mod in ${submodules}; do
+  echo "  ${mod}"
+  echo -n "  "
+  ${govulncheck} "${mod}/..." |
+    tail -n 2 | # Providing some nice output...
+    tr '\n' ' ' |
+    sed s/" your code and"// &&
+    printf "\n" ||
+    err=$?
+done
+
+exit "${err}"
