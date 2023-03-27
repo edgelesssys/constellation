@@ -83,6 +83,7 @@ since these are currently used by all attestation variants.
 
 If an attestation config specifies the minimum version of a parameter as `latest`,
 that value is substituted with the most recent version of that parameter for the given CSP from our API.
+Substituting values should use a similar signature verification logic for the config's signature as is used by the measurements `*M.FetchAndVerify(...)` flow.
 The value substitution is part of the unmarshalling logic.
 
 ## Attestation config API
@@ -96,6 +97,7 @@ The following HTTP endpoint is available:
 - `GET /constellation/v1/attestation/<ATTESTATION_VARIANT>/`
   - `list` returns a sorted list of available configurations for a given attestation variant
   - `<YEAR>-<MONTH>-<DAY>-<HOUR>-<MINUTE>.json`, e.g. `2023-01-23-14-32.json` returns an attestation config for the given date, if it exists. A list of available configs can be queried using the `list` endpoint.
+  - `<YEAR>-<MONTH>-<DAY>-<HOUR>-<MINUTE>.json.sig` returns the signature of the attestation config file.
 
 While this API should stay compatible with old release, extensive changes to our code may require breaking changes to the format of the attestation config files.
 In this case a new API version will be used to retrieve the config in the updated format, e.g. `/constellation/v2/attestation/<ATTESTATION_VARIANT>/`.
