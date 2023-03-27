@@ -301,7 +301,7 @@ func (s *stubVersionCollector) currentVersions(ctx context.Context) (currentVers
 	}, s.someErr
 }
 
-func (s *stubVersionCollector) supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error) {
+func (s *stubVersionCollector) supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error) {
 	return supportedVersionInfo{
 		service: s.supportedServicesVersions,
 		image:   s.supportedImages,

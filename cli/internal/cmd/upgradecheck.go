@@ -145,7 +145,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
-	supported, err := u.collect.supportedVersions(cmd.Context(), csp, current.image, current.k8s)
+	supported, err := u.collect.supportedVersions(cmd.Context(), current.image, current.k8s)
 	if err != nil {
 		return err
 	}
@@ -236,10 +236,10 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 
 type collector interface {
 	currentVersions(ctx context.Context) (currentVersionInfo, error)
-	supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error)
-	newImages(ctx context.Context, version string, csp cloudprovider.Provider) ([]versionsapi.Version, error)
+	supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error)
+	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
-	newerVersions(ctx context.Context, currentVersion string, allowedVersions []string) ([]versionsapi.Version, error)
+	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
 	newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error)
 }
 
@@ -311,13 +311,13 @@ type supportedVersionInfo struct {
 }
 
 // supportedVersions returns slices of supported versions.
-func (v *versionCollector) supportedVersions(ctx context.Context, csp cloudprovider.Provider, version, currentK8sVersion string) (supportedVersionInfo, error) {
+func (v *versionCollector) supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error) {
 	k8sVersions := versions.SupportedK8sVersions()
 	serviceVersion, err := helm.AvailableServiceVersions()
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading service versions: %w", err)
 	}
-	imageVersions, err := v.newImages(ctx, version, csp)
+	imageVersions, err := v.newImages(ctx, version)
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)
 	}
