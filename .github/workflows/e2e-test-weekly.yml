@@ -232,7 +232,7 @@ jobs:
         max-parallel: 1
         matrix:
           fromVersion:
-            ["2.6"]
+            ["v2.6.0"]
           cloudProvider: ["gcp", "azure"]
     name: Run upgrade tests
     secrets: inherit
