@@ -81,7 +81,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
 			log:            log,
-			verFetcher:     fetcher.NewFetcher(),
+			versionsapi:    fetcher.NewFetcher(),
 		},
 		log: log,
 	}
@@ -251,7 +251,7 @@ type versionCollector struct {
 	client         *http.Client
 	rekor          rekorVerifier
 	flags          upgradeCheckFlags
-	verFetcher     versionFetcher
+	versionsapi    versionFetcher
 	cliVersion     string
 	log            debugLog
 }
@@ -453,7 +453,7 @@ func (v *versionUpgrade) buildString() (string, error) {
 		return result.String(), nil
 	}
 
-	result.WriteString("No upgrades available with this CLI.\nNewer versions may be available at: https://github.com/edgelesssys/constellation/releases\n")
+	result.WriteString("No upgrades available with this CLI.\n")
 
 	return result.String(), nil
 }
@@ -567,7 +567,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 		Base:        "v2",
 		Kind:        versionsapi.VersionKindCLI,
 	}
-	minorList, err := v.verFetcher.FetchVersionList(ctx, list)
+	minorList, err := v.versionsapi.FetchVersionList(ctx, list)
 	if err != nil {
 		return nil, fmt.Errorf("listing minor versions: %w", err)
 	}
@@ -585,7 +585,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 			Base:        version,
 			Kind:        versionsapi.VersionKindCLI,
 		}
-		patchList, err := v.verFetcher.FetchVersionList(ctx, list)
+		patchList, err := v.versionsapi.FetchVersionList(ctx, list)
 		if err != nil {
 			return nil, fmt.Errorf("listing minor versions: %w", err)
 		}
@@ -604,7 +604,7 @@ func (v *versionCollector) newCompatibleCLIVersions(ctx context.Context, current
 			Stream:  v.flags.stream,
 			Version: version,
 		}
-		info, err := v.verFetcher.FetchCLIInfo(ctx, req)
+		info, err := v.versionsapi.FetchCLIInfo(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("fetching CLI info: %w", err)
 		}
