@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.11)
 execute_process(COMMAND bash -c "go run ${CMAKE_SOURCE_DIR}/hack/pseudo-version/. | tr -d '\n'"
     OUTPUT_VARIABLE PSEUDO_VERSION)
 
-project(constellation LANGUAGES C VERSION 2.6.0)
+project(constellation LANGUAGES C VERSION 2.6.1)
 
 if (${PROJECT_VERSION} STREQUAL "0.0.0")
   set(PROJECT_VERSION ${PSEUDO_VERSION})
