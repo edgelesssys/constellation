@@ -266,7 +266,6 @@ func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) 
 				return err
 			}
 		}
-		}
 		resp.Body.Close()
 		if resp.StatusCode == 200 {
 			break
