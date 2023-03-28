@@ -332,10 +332,10 @@ sh_template(
 )
 
 repo_command(
-    name = "deps-mirror-fix",
+    name = "deps_mirror_fix",
     args = [
         "fix",
-        "--anonymous",
+        "--unauthenticated",
     ],
     command = "//hack/bazel-deps-mirror",
 )
@@ -349,7 +349,7 @@ repo_command(
 )
 
 repo_command(
-    name = "deps-mirror-check",
+    name = "deps_mirror_check",
     args = [
         "check",
     ],
@@ -367,7 +367,7 @@ multirun(
         ":buildifier_fix",
         ":terraform_fmt",
         ":buf_fmt",
-        ":deps-mirror-fix",
+        ":deps_mirror_fix",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
@@ -384,7 +384,7 @@ multirun(
         ":golicenses_check",
         ":license_header_check",
         ":govulncheck",
-        ":deps-mirror-check",
+        ":deps_mirror_check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
