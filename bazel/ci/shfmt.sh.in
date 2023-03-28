@@ -18,6 +18,7 @@ scripts=("${MAPFILE[@]}")
 excludeDirs=(
   "cli/internal/helm/charts/cilium"
   "build"
+  "docs/node_modules"
 )
 
 echo "The following scripts are excluded and won't be formatted with shfmt:"
