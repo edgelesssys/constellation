@@ -68,7 +68,7 @@ These are the necessary steps.
 Depending on how far the pipeline ran we need to delete:
 - the release tag create by the pipeline: `v1.3.0`/`v1.3.1`
 - (only minor releases) the branch to merge changes back to main: `feat/release/v1.3.0`
-
+- invalidate the CDN caches. This may become necessary if e.g. during measurement updating the measurements of a previous run are still in the cache
 
 ### GCP
 1. Navigate to [Images](https://console.cloud.google.com/compute/images?tab=images&project=constellation-images) tab of the "constellation-images" project
@@ -99,3 +99,11 @@ Currently, this includes: 
 4. Either follow the link on the deletion confirmation leading you to the [Snapshots](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Snapshots) panel or navigate there yourself
 5. Search for a snapshot by the same name "constellation-v1.3.0" and select it
 6. On the "Actions" button (top right) select "Delete snapshot"
+
+### CDN cache invalidation
+
+1. Navigate to the [Cloudfront management console](https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/distributions)
+2. Select the distribution for public resources. Current domain name: "cdn.confidential.cloud"
+3. Click the "Invalidations" ribbon
+4. Click "Create Invalidation" and enter a wildcard path "/*". You can also enter a more specific path if you know exactly which object to invalidate.
+5. Wait for completion.
