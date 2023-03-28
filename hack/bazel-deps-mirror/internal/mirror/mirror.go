@@ -36,20 +36,20 @@ type Maintainer struct {
 	// mirrorBaseURL is the base URL of the public CAS http endpoint.
 	mirrorBaseURL string
 
-	anonymous bool
-	dryRun    bool
+	unauthenticated bool
+	dryRun          bool
 
 	log *logger.Logger
 }
 
-// NewAnonymous creates a new Maintainer that dose not require authentication can only download files from a CAS mirror.
-func NewAnonymous(mirrorBaseURL string, dryRun bool, log *logger.Logger) *Maintainer {
+// NewUnauthenticated creates a new Maintainer that dose not require authentication can only download files from a CAS mirror.
+func NewUnauthenticated(mirrorBaseURL string, dryRun bool, log *logger.Logger) *Maintainer {
 	return &Maintainer{
-		httpClient:    http.DefaultClient,
-		mirrorBaseURL: mirrorBaseURL,
-		anonymous:     true,
-		dryRun:        dryRun,
-		log:           log,
+		httpClient:      http.DefaultClient,
+		mirrorBaseURL:   mirrorBaseURL,
+		unauthenticated: true,
+		dryRun:          dryRun,
+		log:             log,
 	}
 }
 
@@ -78,7 +78,7 @@ func (m *Maintainer) MirrorURL(hash string) (string, error) {
 	if _, err := hex.DecodeString(hash); err != nil {
 		return "", fmt.Errorf("invalid hash %q: %w", hash, err)
 	}
-	key := keyBase + hash
+	key := path.Join(keyBase, hash)
 	pubURL, err := url.Parse(m.mirrorBaseURL)
 	if err != nil {
 		return "", err
@@ -90,8 +90,8 @@ func (m *Maintainer) MirrorURL(hash string) (string, error) {
 // Mirror downloads a file from one of the existing (non-mirror) urls and uploads it to the CAS mirror.
 // It also calculates the hash of the file during streaming and checks if it matches the expected hash.
 func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) error {
-	if m.anonymous {
-		return errors.New("cannot upload in anonymous mode")
+	if m.unauthenticated {
+		return errors.New("cannot upload in unauthenticated mode")
 	}
 
 	for _, url := range urls {
@@ -126,7 +126,7 @@ func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) err
 // Check checks if a file is present and has the correct hash in the CAS mirror.
 func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
 	m.log.Debugf("Checking consistency of object with hash %v", expectedHash)
-	if m.anonymous {
+	if m.unauthenticated {
 		return m.checkUnauthenticated(ctx, expectedHash)
 	}
 	return m.checkAuthenticated(ctx, expectedHash)
@@ -135,7 +135,7 @@ func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
 // checkReadonly checks if a file is present and has the correct hash in the CAS mirror.
 // It uses the authenticated CAS s3 endpoint to download the file metadata.
 func (m *Maintainer) checkAuthenticated(ctx context.Context, expectedHash string) error {
-	key := keyBase + expectedHash
+	key := path.Join(keyBase, expectedHash)
 	m.log.Debugf("Check: s3 getObjectAttributes {Bucket: %v, Key: %v}", m.bucket, key)
 	attributes, err := m.objectStorageClient.GetObjectAttributes(ctx, &s3.GetObjectAttributesInput{
 		Bucket:           &m.bucket,
@@ -172,7 +172,7 @@ func (m *Maintainer) checkUnauthenticated(ctx context.Context, expectedHash stri
 		return err
 	}
 	m.log.Debugf("Check: http get {Url: %v}", pubURL)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pubURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pubURL, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -194,11 +194,11 @@ func (m *Maintainer) checkUnauthenticated(ctx context.Context, expectedHash stri
 
 // put uploads a file to the CAS mirror.
 func (m *Maintainer) put(ctx context.Context, hash string, data io.Reader) error {
-	if m.anonymous {
-		return errors.New("cannot upload in anonymous mode")
+	if m.unauthenticated {
+		return errors.New("cannot upload in unauthenticated mode")
 	}
 
-	key := keyBase + hash
+	key := path.Join(keyBase, hash)
 	if m.dryRun {
 		m.log.Debugf("DryRun: s3 put object {Bucket: %v, Key: %v}", m.bucket, key)
 		return nil
@@ -215,7 +215,7 @@ func (m *Maintainer) put(ctx context.Context, hash string, data io.Reader) error
 
 // downloadFromUpstream downloads a file from one of the existing (non-mirror) urls.
 func (m *Maintainer) downloadFromUpstream(ctx context.Context, url string) (body io.ReadCloser, retErr error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -261,4 +261,10 @@ type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-const keyBase = "constellation/cas/sha256/"
+const (
+	// DryRun is a flag to enable dry run mode.
+	DryRun = true
+	// Run is a flag to perform actual operations.
+	Run     = false
+	keyBase = "constellation/cas/sha256"
+)

@@ -32,7 +32,7 @@ func execute() error {
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:              "bazel-deps-mirror",
-		Short:            "Add external Bazel dependencies to edgeless systems' mirror.",
+		Short:            "Add external Bazel dependencies to edgeless systems' mirror",
 		Long:             "Add external Bazel dependencies to edgeless systems' mirror.",
 		PersistentPreRun: preRunRoot,
 	}

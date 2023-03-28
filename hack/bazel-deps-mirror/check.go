@@ -26,8 +26,9 @@ func newCheckCmd() *cobra.Command {
 		RunE:  runCheck,
 	}
 
-	cmd.Flags().Bool("anonymous", false, "Doesn't require authentication to the mirror but may be inefficient.")
-	cmd.Flags().Bool("check-consistency", false, "Performs slow checks to validate if all referenced CAS objects are still consistent.")
+	cmd.Flags().Bool("mirror", false, "Performs authenticated checks to validate if all referenced CAS objects are still consistent within the mirror.")
+	cmd.Flags().Bool("mirror-unauthenticated", false, "Performs unauthenticated, slow checks to validate if all referenced CAS objects are still consistent within the mirror. Doesn't require authentication to the mirror but may be inefficient.")
+	cmd.MarkFlagsMutuallyExclusive("mirror", "mirror-unauthenticated")
 
 	return cmd
 }
@@ -53,59 +54,30 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 
 	var mirrorCheck mirrorChecker
 	switch {
-	case !flags.checkConsistency:
-		mirrorCheck = &noOpMirrorChecker{}
-	case flags.anonymous:
-		log.Debugf("Checking consistency of all referenced CAS objects anonymously.")
-		mirrorCheck = mirror.NewAnonymous(flags.mirrorBaseURL, false /*dryRun*/, log)
-	default:
+	case flags.mirrorUnauthenticated:
+		log.Debugf("Checking consistency of all referenced CAS objects without authentication.")
+		mirrorCheck = mirror.NewUnauthenticated(flags.mirrorBaseURL, mirror.Run, log)
+	case flags.mirror:
 		log.Debugf("Checking consistency of all referenced CAS objects using AWS S3.")
-		mirrorCheck, err = mirror.New(cmd.Context(), flags.region, flags.bucket, flags.mirrorBaseURL, false /*dryRun*/, log)
+		mirrorCheck, err = mirror.New(cmd.Context(), flags.region, flags.bucket, flags.mirrorBaseURL, mirror.Run, log)
 		if err != nil {
 			return err
 		}
+	default:
+		mirrorCheck = &noOpMirrorChecker{}
 	}
 
-	issues := issues.New()
+	iss := issues.New()
 	for _, bazelFile := range bazelFiles {
-		log.Debugf("Checking file: %s", bazelFile.RelPath)
-		buildfile, err := filesHelper.LoadFile(bazelFile)
+		issByFile, err := checkBazelFile(cmd.Context(), filesHelper, mirrorCheck, bazelFile, log)
 		if err != nil {
 			return err
 		}
-		found := rules.Rules(buildfile, rules.SupportedRules)
-		if len(found) == 0 {
-			log.Debugf("No rules found in file: %s", bazelFile.RelPath)
-			continue
-		}
-		log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
-		for _, rule := range found {
-			log.Debugf("Checking rule: %s", rule.Name())
-			// check if the rule is a valid pinned dependency rule (has all required attributes)
-			issue := rules.ValidatePinned(rule)
-			if issue != nil {
-				issues.Add(bazelFile.AbsPath, rule.Name(), issue)
-				continue
-			}
-			// check if the rule is a valid mirror rule
-			issue = rules.Check(rule)
-			if issue != nil {
-				issues.Add(bazelFile.AbsPath, rule.Name(), issue)
-			}
-
-			// check if the referenced CAS object is still consistent
-			// may be a no-op if --check-consistency is not set
-			expectedHash, expectedHashErr := rules.GetHash(rule)
-			if expectedHashErr == nil && rules.HasMirrorURL(rule) {
-				if issue := mirrorCheck.Check(cmd.Context(), expectedHash); issue != nil {
-					issues.Add(bazelFile.AbsPath, rule.Name(), issue)
-				}
-			}
-		}
+		iss.Set(bazelFile.AbsPath, issByFile)
 	}
-	if len(issues) > 0 {
+	if len(iss) > 0 {
 		log.Infof("Found issues in rules")
-		issues.Report(cmd.OutOrStdout())
+		iss.Report(cmd.OutOrStdout())
 		return errors.New("found issues in rules")
 	}
 
@@ -113,21 +85,58 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
+func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCheck mirrorChecker, bazelFile bazelfiles.BazelFile, log *logger.Logger) (issByFile issues.ByFile, err error) {
+	log.Debugf("Checking file: %s", bazelFile.RelPath)
+	issByFile = issues.NewByFile()
+	buildfile, err := fileHelper.LoadFile(bazelFile)
+	if err != nil {
+		return nil, err
+	}
+	found := rules.Rules(buildfile, rules.SupportedRules)
+	if len(found) == 0 {
+		log.Debugf("No rules found in file: %s", bazelFile.RelPath)
+		return
+	}
+	log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
+	for _, rule := range found {
+		log.Debugf("Checking rule: %s", rule.Name())
+		// check if the rule is a valid pinned dependency rule (has all required attributes)
+		if issue := rules.ValidatePinned(rule); issue != nil {
+			issByFile.Add(rule.Name(), issue...)
+			continue
+		}
+		// check if the rule is a valid mirror rule
+		if issue := rules.Check(rule); issue != nil {
+			issByFile.Add(rule.Name(), issue...)
+		}
+
+		// check if the referenced CAS object is still consistent
+		// may be a no-op if --check-consistency is not set
+		expectedHash, expectedHashErr := rules.GetHash(rule)
+		if expectedHashErr == nil && rules.HasMirrorURL(rule) {
+			if issue := mirrorCheck.Check(ctx, expectedHash); issue != nil {
+				issByFile.Add(rule.Name(), issue)
+			}
+		}
+	}
+	return
+}
+
 type checkFlags struct {
-	anonymous        bool
-	checkConsistency bool
-	region           string
-	bucket           string
-	mirrorBaseURL    string
-	logLevel         zapcore.Level
+	mirrorUnauthenticated bool
+	mirror                bool
+	region                string
+	bucket                string
+	mirrorBaseURL         string
+	logLevel              zapcore.Level
 }
 
 func parseCheckFlags(cmd *cobra.Command) (checkFlags, error) {
-	anonymous, err := cmd.Flags().GetBool("anonymous")
+	mirrorUnauthenticated, err := cmd.Flags().GetBool("mirror-unauthenticated")
 	if err != nil {
 		return checkFlags{}, err
 	}
-	checkConsistency, err := cmd.Flags().GetBool("check-consistency")
+	mirror, err := cmd.Flags().GetBool("mirror")
 	if err != nil {
 		return checkFlags{}, err
 	}
@@ -153,12 +162,12 @@ func parseCheckFlags(cmd *cobra.Command) (checkFlags, error) {
 	}
 
 	return checkFlags{
-		anonymous:        anonymous,
-		checkConsistency: checkConsistency,
-		region:           region,
-		bucket:           bucket,
-		mirrorBaseURL:    mirrorBaseURL,
-		logLevel:         logLevel,
+		mirrorUnauthenticated: mirrorUnauthenticated,
+		mirror:                mirror,
+		region:                region,
+		bucket:                bucket,
+		mirrorBaseURL:         mirrorBaseURL,
+		logLevel:              logLevel,
 	}, nil
 }
 

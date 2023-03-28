@@ -8,26 +8,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 package issues
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"sort"
 )
 
-// Map is a map of issues ordered by file path and rule name.
-type Map map[string]map[string]error
+// Map is a map of issues arranged by path => rulename => issues.
+type Map map[string]map[string][]error
 
 // New creates a new Map.
 func New() Map {
-	return make(map[string]map[string]error)
+	return make(map[string]map[string][]error)
 }
 
-// Add adds an issue to the Map.
-func (m Map) Add(file string, rule string, issue error) {
-	if m[file] == nil {
-		m[file] = make(map[string]error)
-	}
-	m[file][rule] = errors.Join(m[file][rule], issue)
+// Set sets all issues for a file.
+func (m Map) Set(file string, issues ByFile) {
+	m[file] = issues
 }
 
 // Report prints all issues to a writer in a human-readable format.
@@ -48,7 +44,7 @@ func (m Map) Report(w io.Writer) {
 		fmt.Fprintf(w, "File %s (%d issues total):\n", file, m.IssuesPerFile(file))
 		for _, rule := range rules {
 			fmt.Fprintf(w, "  Rule %s (%d issues total):\n", rule, m.IssuesPerRule(file, rule))
-			for _, issue := range getErrorsFromMultiErr(m[file][rule]) {
+			for _, issue := range m[file][rule] {
 				fmt.Fprintf(w, "    %s\n", issue)
 			}
 		}
@@ -64,37 +60,25 @@ func (m Map) FileHasIssues(file string) bool {
 func (m Map) IssuesPerFile(file string) int {
 	sum := 0
 	for _, ruleIssues := range m[file] {
-		sum += countMultiErr(ruleIssues)
+		sum += len(ruleIssues)
 	}
 	return sum
 }
 
 // IssuesPerRule returns the number of issues for a rule.
 func (m Map) IssuesPerRule(file string, rule string) int {
-	return countMultiErr(m[file][rule])
+	return len(m[file][rule])
 }
 
-func getErrorsFromMultiErr(issues error) []error {
-	if issues == nil {
-		return nil
-	}
+// ByFile is a map of issues belonging to one file arranged by rulename => issues.
+type ByFile map[string][]error
 
-	if me, ok := issues.(multiErr); ok {
-		errs := me.Unwrap()
-		var subErrs []error
-		for _, err := range errs {
-			subErrs = append(subErrs, getErrorsFromMultiErr(err)...)
-		}
-		return subErrs
-	}
-
-	return []error{issues}
+// NewByFile creates a new ByFile.
+func NewByFile() ByFile {
+	return make(map[string][]error)
 }
 
-func countMultiErr(issues error) int {
-	return len(getErrorsFromMultiErr(issues))
-}
-
-type multiErr interface {
-	Unwrap() []error
+// Add adds one or more issues belonging to a rule.
+func (m ByFile) Add(rule string, issues ...error) {
+	m[rule] = append(m[rule], issues...)
 }
