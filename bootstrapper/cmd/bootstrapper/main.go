@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
@@ -82,11 +81,6 @@ func main() {
 
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
-		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.AWSPCRSelection)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
@@ -100,17 +94,12 @@ func main() {
 
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.GCP:
-		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-
 		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
@@ -125,18 +114,13 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 		log.Infof("Added load balancer IP to routing table")
 
 	case cloudprovider.Azure:
-		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-
 		metadata, err := azurecloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
@@ -148,34 +132,24 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
-		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	case cloudprovider.OpenStack:
-		// TODO(malt3): add OpenStack TPM support
-		measurements := measurements.M{
-			15: measurements.WithAllBytes(0x0, measurements.WarnOnly),
-		}
-
 		cloudLogger = &logging.NopLogger{}
 		metadata, err := openstackcloud.New(ctx)
 		if err != nil {
@@ -183,7 +157,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 
