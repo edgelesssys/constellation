@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,29 +56,55 @@ func TestCreator(t *testing.T) {
 			wantTerraformRollback: true,
 		},
 		"azure": {
-			tfClient:      &stubTerraformClient{ip: ip},
-			provider:      cloudprovider.Azure,
-			config:        config.Default(),
+			tfClient: &stubTerraformClient{ip: ip},
+			provider: cloudprovider.Azure,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				return cfg
+			}(),
+			policyPatcher: &stubPolicyPatcher{},
+		},
+		"azure trusted launch": {
+			tfClient: &stubTerraformClient{ip: ip},
+			provider: cloudprovider.Azure,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.AttestationVariant = variant.AzureTrustedLaunch{}.String()
+				return cfg
+			}(),
 			policyPatcher: &stubPolicyPatcher{},
 		},
 		"azure new policy patch error": {
-			tfClient:      &stubTerraformClient{ip: ip},
-			provider:      cloudprovider.Azure,
-			config:        config.Default(),
+			tfClient: &stubTerraformClient{ip: ip},
+			provider: cloudprovider.Azure,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				return cfg
+			}(),
 			policyPatcher: &stubPolicyPatcher{someErr},
 			wantErr:       true,
 		},
 		"azure newTerraformClient error": {
 			newTfClientErr: someErr,
 			provider:       cloudprovider.Azure,
-			config:         config.Default(),
-			policyPatcher:  &stubPolicyPatcher{},
-			wantErr:        true,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				return cfg
+			}(),
+			policyPatcher: &stubPolicyPatcher{},
+			wantErr:       true,
 		},
 		"azure create cluster error": {
-			tfClient:              &stubTerraformClient{createClusterErr: someErr},
-			provider:              cloudprovider.Azure,
-			config:                config.Default(),
+			tfClient: &stubTerraformClient{createClusterErr: someErr},
+			provider: cloudprovider.Azure,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				return cfg
+			}(),
 			policyPatcher:         &stubPolicyPatcher{},
 			wantErr:               true,
 			wantRollback:          true,
