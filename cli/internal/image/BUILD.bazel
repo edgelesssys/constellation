@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//internal/cloud/cloudprovider",
         "//internal/config",
+        "//internal/variant",
         "//internal/versionsapi",
         "//internal/versionsapi/fetcher",
         "@com_github_schollz_progressbar_v3//:progressbar",
@@ -30,6 +31,7 @@ go_test(
         "//internal/cloud/cloudprovider",
         "//internal/config",
         "//internal/file",
+        "//internal/variant",
         "//internal/versionsapi",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -183,7 +184,7 @@ type AzureConfig struct {
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
 	//   Use Confidential VMs. Always needs to be true.
-	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
+	ConfidentialVM *bool `yaml:"confidentialVM,omitempty" validate:"omitempty,deprecated"` // TODO: v2.8 remove
 	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
@@ -330,7 +331,6 @@ func Default() *Config {
 				DeployCSIDriver:      toPtr(true),
 				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
 				EnforceIDKeyDigest:   idkeydigest.MAAFallback,
-				ConfidentialVM:       toPtr(true),
 				SecureBoot:           toPtr(false),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
 			},
@@ -459,11 +459,6 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
-// IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
-func (c *Config) IsAzureNonCVM() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
-}
-
 // IsDebugCluster checks whether the cluster is configured as a debug cluster.
 func (c *Config) IsDebugCluster() bool {
 	if c.DebugCluster != nil && *c.DebugCluster {
@@ -544,6 +539,17 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
+	// Register name function to return yaml name tag
+	// This makes sure methods like fl.FieldName() return the yaml name tag instead of the struct field name
+	// e.g. struct{DataType string `yaml:"foo,omitempty"`} will return `foo` instead of `DataType` when calling fl.FieldName()
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name, _, _ := strings.Cut(fld.Tag.Get("yaml"), ",")
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
 	// Register AWS, Azure & GCP InstanceType validation error types
 	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
 		return err
@@ -613,7 +619,7 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	// register custom validator with label azure_instance_type to validate the Azure instance type from config input.
-	if err := validate.RegisterValidation("azure_instance_type", validateAzureInstanceType); err != nil {
+	if err := validate.RegisterValidation("azure_instance_type", c.validateAzureInstanceType); err != nil {
 		return err
 	}
 
@@ -623,6 +629,10 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	if err := validate.RegisterValidation("valid_attestation_variant", c.validAttestVariant); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("deprecated", warnDeprecated); err != nil {
 		return err
 	}
 

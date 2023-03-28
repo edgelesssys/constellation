@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // Creator creates cloud resources.
@@ -205,11 +206,16 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		InstanceType:         insType,
 		StateDiskType:        config.Provider.Azure.StateDiskType,
 		ImageID:              image,
-		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
 		CreateMAA:            config.Provider.Azure.EnforceIDKeyDigest == idkeydigest.MAAFallback,
 		Debug:                config.IsDebugCluster(),
 	}
+
+	attestVariant, err := variant.FromString(config.AttestationVariant)
+	if err != nil {
+		return clusterid.File{}, fmt.Errorf("parsing attestation variant: %w", err)
+	}
+	vars.ConfidentialVM = attestVariant.Equal(variant.AzureSEVSNP{})
 
 	vars = normalizeAzureURIs(vars)
 

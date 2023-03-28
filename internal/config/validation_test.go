@@ -38,7 +38,7 @@ func TestValidateVersionCompatibilityHelper(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateVersionCompatibilityHelper(tc.cli, "Image", tc.target)
+			err := validateVersionCompatibilityHelper(tc.cli, "image", tc.target)
 			if tc.wantError {
 				assert.Error(err)
 				return

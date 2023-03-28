@@ -251,7 +251,7 @@ func init() {
 	AzureConfigDoc.Fields[9].Comments[encoder.LineComment] = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	AzureConfigDoc.Fields[10].Name = "confidentialVM"
 	AzureConfigDoc.Fields[10].Type = "bool"
-	AzureConfigDoc.Fields[10].Note = ""
+	AzureConfigDoc.Fields[10].Note = "TODO: v2.8 remove\n"
 	AzureConfigDoc.Fields[10].Description = "Use Confidential VMs. Always needs to be true."
 	AzureConfigDoc.Fields[10].Comments[encoder.LineComment] = "Use Confidential VMs. Always needs to be true."
 	AzureConfigDoc.Fields[11].Name = "secureBoot"

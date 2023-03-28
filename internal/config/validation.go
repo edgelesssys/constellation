@@ -102,14 +102,12 @@ func validateAWSInstanceType(fl validator.FieldLevel) bool {
 	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.AWS)
 }
 
-func validateAzureInstanceType(fl validator.FieldLevel) bool {
-	azureConfig := fl.Parent().Interface().(AzureConfig)
-	var acceptNonCVM bool
-	if azureConfig.ConfidentialVM != nil {
-		// This is the inverse of the config value (acceptNonCVMs is true if confidentialVM is false).
-		// We could make the validator the other way around, but this should be an explicit bypass rather than checking if CVMs are "allowed".
-		acceptNonCVM = !*azureConfig.ConfidentialVM
+func (c *Config) validateAzureInstanceType(fl validator.FieldLevel) bool {
+	attestVariant, err := variant.FromString(c.AttestationVariant)
+	if err != nil {
+		return false
 	}
+	acceptNonCVM := attestVariant.Equal(variant.AzureTrustedLaunch{})
 	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
 }
 
@@ -282,7 +280,12 @@ func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
 func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
 	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
 	var t string
-	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
+
+	attestVariant, err := variant.FromString(c.AttestationVariant)
+	if err != nil {
+		return ""
+	}
+	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
 		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
 	} else {
 		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
@@ -400,7 +403,7 @@ func validateVersionCompatibility(fl validator.FieldLevel) bool {
 }
 
 func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVersion string) error {
-	if fieldName == "Image" {
+	if fieldName == "image" {
 		imageVersion, err := versionsapi.NewVersionFromShortPath(configuredVersion, versionsapi.VersionKindImage)
 		if err != nil {
 			return err
@@ -408,7 +411,7 @@ func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVers
 		configuredVersion = imageVersion.Version
 	}
 
-	if fieldName == "MicroserviceVersion" {
+	if fieldName == "microserviceVersion" {
 		cliVersion := compatibility.EnsurePrefixV(binaryVersion)
 		serviceVersion := compatibility.EnsurePrefixV(configuredVersion)
 		if semver.Compare(cliVersion, serviceVersion) == -1 {
@@ -521,4 +524,13 @@ func (c *Config) addMissingVariant() {
 	case cloudprovider.QEMU:
 		c.AttestationVariant = variant.QEMUVTPM{}.String()
 	}
+}
+
+func warnDeprecated(fl validator.FieldLevel) bool {
+	fmt.Fprintf(
+		os.Stderr,
+		"WARNING: The config key %q is deprecated and will be removed in an upcoming version.\n",
+		fl.FieldName(),
+	)
+	return true
 }
