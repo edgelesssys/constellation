@@ -11,10 +11,11 @@ def ci_deps():
     _tfsec_deps()
     _golangci_lint_deps()
     _buf_deps()
+    _talos_docgen_deps()
 
 def _shellcheck_deps():
     http_archive(
-        name = "com_github_koalaman_shellcheck_linux_x86_64",
+        name = "com_github_koalaman_shellcheck_linux_amd64",
         urls = [
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz",
         ],
@@ -23,7 +24,7 @@ def _shellcheck_deps():
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
     )
     http_archive(
-        name = "com_github_koalaman_shellcheck_linux_aaarch64",
+        name = "com_github_koalaman_shellcheck_linux_aamd64",
         urls = [
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.aarch64.tar.xz",
         ],
@@ -32,7 +33,7 @@ def _shellcheck_deps():
         build_file_content = """exports_files(["shellcheck"], visibility = ["//visibility:public"])""",
     )
     http_archive(
-        name = "com_github_koalaman_shellcheck_darwin_x86_64",
+        name = "com_github_koalaman_shellcheck_darwin_amd64",
         urls = [
             "https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.darwin.x86_64.tar.xz",
         ],
@@ -116,6 +117,7 @@ def _gofumpt_deps():
             "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_linux_amd64",
         ],
         executable = True,
+        downloaded_file_path = "gofumpt",
         sha256 = "d3ca535e6b0b230a9c4f05a3ec54e358336b5e7474d239c15514e63a0b2a8041",
     )
     http_file(
@@ -124,6 +126,7 @@ def _gofumpt_deps():
             "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_linux_arm64",
         ],
         executable = True,
+        downloaded_file_path = "gofumpt",
         sha256 = "186faa7b7562cc4c1a34f2cb89f9b09d9fad949bc2f3ce293ea2726b23c28695",
     )
     http_file(
@@ -132,6 +135,7 @@ def _gofumpt_deps():
             "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_darwin_amd64",
         ],
         executable = True,
+        downloaded_file_path = "gofumpt",
         sha256 = "3f550baa6d4c071b01e9c68b9308bd2ca3bae6b3b09d203f19ed8626ee0fe487",
     )
     http_file(
@@ -140,6 +144,7 @@ def _gofumpt_deps():
             "https://github.com/mvdan/gofumpt/releases/download/v0.4.0/gofumpt_v0.4.0_darwin_arm64",
         ],
         executable = True,
+        downloaded_file_path = "gofumpt",
         sha256 = "768263452749a3a3cabf412f29f8a14e8bbdc7f6c6471427e977eebc6592ddb8",
     )
 
@@ -220,27 +225,65 @@ def _buf_deps():
         name = "com_github_bufbuild_buf_linux_amd64",
         sha256 = "39b58126938e265a7dd60fc4716a4a43931896e62db3d69c704d7dd63d5889dd",
         url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Linux-x86_64.tar.gz",
-        strip_prefix = "buf",
-        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+        strip_prefix = "buf/bin",
+        build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
     )
     http_archive(
-        name = "com_github_bufbuild_buf_linux_aarch64",
-        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        name = "com_github_bufbuild_buf_linux_arm64",
+        sha256 = "90d8caa85b4cff1cdb6e96ee01e3f4f1a12135be3834ffd41c486f1cc03213ef",
         url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Linux-aarch64.tar.gz",
-        strip_prefix = "buf",
-        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+        strip_prefix = "buf/bin",
+        build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_amd64",
-        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        sha256 = "196e75933f7c3abebf8835fdfd74c15bc953525c9250e7bbff943e3db6fb0eb1",
         url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Darwin-x86_64.tar.gz",
-        strip_prefix = "buf",
-        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+        strip_prefix = "buf/bin",
+        build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
     )
     http_archive(
         name = "com_github_bufbuild_buf_darwin_arm64",
-        sha256 = "6c1e7258b79273c60085df8825a52a5ee306530e7327942c91ec84545cd2d40a",
+        sha256 = "f6187bbcf0718da1de38ca638038d4a707dd5b0e113e1a9e110ac8a15012505a",
         url = "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Darwin-arm64.tar.gz",
-        strip_prefix = "buf",
-        build_file_content = """exports_files(["bin/buf"], visibility = ["//visibility:public"])""",
+        strip_prefix = "buf/bin",
+        build_file_content = """exports_files(["buf"], visibility = ["//visibility:public"])""",
+    )
+
+def _talos_docgen_deps():
+    http_file(
+        name = "com_github_siderolabs_talos_hack_docgen_linux_amd64",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/bd1059b49a6db7473b4f991a244e338da887d8017ab556739000abd2cc367c13",
+        ],
+        executable = True,
+        downloaded_file_path = "docgen",
+        sha256 = "bd1059b49a6db7473b4f991a244e338da887d8017ab556739000abd2cc367c13",
+    )
+    http_file(
+        name = "com_github_siderolabs_talos_hack_docgen_darwin_amd64",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/d06adae41a975a94abaa39cd809464d7a8f7648903d321332c12c73002cc622a",
+        ],
+        executable = True,
+        downloaded_file_path = "docgen",
+        sha256 = "d06adae41a975a94abaa39cd809464d7a8f7648903d321332c12c73002cc622a",
+    )
+    http_file(
+        name = "com_github_siderolabs_talos_hack_docgen_linux_arm64",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a87c52a3e947fe90396427a5cd92e6864f46b5db103f84c1cad449e97ca54cec",
+        ],
+        executable = True,
+        downloaded_file_path = "docgen",
+        sha256 = "a87c52a3e947fe90396427a5cd92e6864f46b5db103f84c1cad449e97ca54cec",
+    )
+    http_file(
+        name = "com_github_siderolabs_talos_hack_docgen_darwin_arm64",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/4aa7ed0de31932d541aa11c9b75ed214ffc28dbd618f489fb5a598407aca072e",
+        ],
+        executable = True,
+        downloaded_file_path = "docgen",
+        sha256 = "4aa7ed0de31932d541aa11c9b75ed214ffc28dbd618f489fb5a598407aca072e",
     )

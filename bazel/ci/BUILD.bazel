@@ -78,10 +78,10 @@ noop_warn(
 alias(
     name = "com_github_koalaman_shellcheck",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_koalaman_shellcheck_darwin_x86_64//:shellcheck",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_koalaman_shellcheck_darwin_amd64//:shellcheck",
         "@io_bazel_rules_go//go/platform:darwin_arm64": ":shellcheck_noop_warning",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_koalaman_shellcheck_linux_x86_64//:shellcheck",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_koalaman_shellcheck_linux_aaarch64//:shellcheck",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_koalaman_shellcheck_linux_amd64//:shellcheck",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_koalaman_shellcheck_linux_arm64//:shellcheck",
     }),
 )
 
@@ -239,10 +239,10 @@ sh_template(
 alias(
     name = "com_github_bufbuild_buf",
     actual = select({
-        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_bufbuild_buf_darwin_amd64//:bin/buf",
-        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_bufbuild_buf_darwin_arm64//:bin/buf",
-        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_bufbuild_buf_linux_amd64//:bin/buf",
-        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_bufbuild_buf_linux_arm64//:bin/buf",
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_bufbuild_buf_darwin_amd64//:buf",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_bufbuild_buf_darwin_arm64//:buf",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_bufbuild_buf_linux_amd64//:buf",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_bufbuild_buf_linux_arm64//:buf",
     }),
 )
 
@@ -288,6 +288,16 @@ sh_template(
         "@@GOVULNCHECK@@": "$(rootpath @org_golang_x_vuln//cmd/govulncheck:govulncheck)",
     },
     template = "govulncheck.sh.in",
+)
+
+alias(
+    name = "com_github_siderolabs_talos_hack_docgen",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_siderolabs_talos_hack_docgen_darwin_amd64//file",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_siderolabs_talos_hack_docgen_darwin_arm64//file",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_siderolabs_talos_hack_docgen_linux_amd64//file",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_siderolabs_talos_hack_docgen_linux_arm64//file",
+    }),
 )
 
 multirun(
