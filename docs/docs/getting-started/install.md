@@ -138,6 +138,7 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `Microsoft.Network/virtualNetworks/subnets/*`
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+* `Microsoft.Attestation/attestationProviders/*`
 
 The built-in `Contributor` role is a superset of these permissions.
 
