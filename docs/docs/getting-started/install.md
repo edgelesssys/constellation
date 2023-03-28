@@ -138,13 +138,15 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `Microsoft.Network/virtualNetworks/subnets/*`
 * `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
-* `Microsoft.Attestation/attestationProviders/*`
+* `Microsoft.Attestation/attestationProviders/*` \[2]
 
 The built-in `Contributor` role is a superset of these permissions.
 
 Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions) and [assigning roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments).
 
 1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
+
+2: You can omit `Microsoft.Attestation/attestationProviders/*` if `EnforceIDKeyDigest` is set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
