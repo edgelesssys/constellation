@@ -32,7 +32,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -71,7 +71,7 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Helm client could not be initialized")
 	}
 
-	attestVariant, err := oid.FromString(os.Getenv(constants.AttestationVariant))
+	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}

@@ -16,7 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -123,7 +123,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
-				c.AttestationVariant = oid.AzureSEVSNP{}.String()
+				c.AttestationVariant = variant.AzureSEVSNP{}.String()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -143,7 +143,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
-				c.AttestationVariant = oid.AzureSEVSNP{}.String()
+				c.AttestationVariant = variant.AzureSEVSNP{}.String()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -235,7 +235,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = "v" + constants.VersionInfo()
-				cnf.AttestationVariant = oid.AzureSEVSNP{}.String()
+				cnf.AttestationVariant = variant.AzureSEVSNP{}.String()
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
@@ -265,7 +265,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = "v" + constants.VersionInfo()
-				cnf.AttestationVariant = oid.GCPSEVES{}.String()
+				cnf.AttestationVariant = variant.GCPSEVES{}.String()
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"

@@ -13,7 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -75,8 +75,8 @@ func TestDial(t *testing.T) {
 			require := require.New(t)
 
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
-			server := newServer(oid.Dummy{}, tc.tls)
+			dialer := New(nil, atls.NewFakeValidator(variant.Dummy{}), netDialer)
+			server := newServer(variant.Dummy{}, tc.tls)
 			api := &testAPI{}
 			grpc_testing.RegisterTestServiceServer(server, api)
 			go server.Serve(netDialer.GetListener("192.0.2.1:1234"))
@@ -97,7 +97,7 @@ func TestDial(t *testing.T) {
 	}
 }
 
-func newServer(oid oid.Getter, tls bool) *grpc.Server {
+func newServer(oid variant.Getter, tls bool) *grpc.Server {
 	if tls {
 		creds := atlscredentials.New(atls.NewFakeIssuer(oid), nil)
 		return grpc.NewServer(grpc.Creds(creds))

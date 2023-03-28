@@ -30,8 +30,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -54,7 +54,7 @@ func main() {
 		Infof("Starting disk-mapper")
 
 	// set up quote issuer for aTLS connections
-	attestVariant, err := oid.FromString(os.Getenv(constants.AttestationVariant))
+	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}

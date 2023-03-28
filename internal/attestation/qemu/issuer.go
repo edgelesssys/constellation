@@ -11,13 +11,13 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
 // Issuer for qemu TPM attestation.
 type Issuer struct {
-	oid.QEMUVTPM
+	variant.QEMUVTPM
 	*vtpm.Issuer
 }
 

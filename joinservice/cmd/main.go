@@ -27,7 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/watcher"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kms"
 	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubeadm"
@@ -56,7 +56,7 @@ func main() {
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	variant, err := oid.FromString(*attestationVariant)
+	variant, err := variant.FromString(*attestationVariant)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}

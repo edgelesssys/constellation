@@ -25,7 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -247,7 +247,7 @@ func TestVerifyClient(t *testing.T) {
 				Nonce: tc.nonce,
 			}
 
-			err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(oid.Dummy{}))
+			err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
 
 			if tc.wantErr {
 				assert.Error(err)

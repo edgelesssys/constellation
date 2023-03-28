@@ -16,7 +16,7 @@ go_library(
         "//internal/attestation/measurements",
         "//internal/attestation/qemu",
         "//internal/attestation/vtpm",
-        "//internal/oid",
+        "//internal/variant",
     ],
 )
 
@@ -26,7 +26,7 @@ go_test(
     embed = [":choose"],
     deps = [
         "//internal/attestation/idkeydigest",
-        "//internal/oid",
+        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

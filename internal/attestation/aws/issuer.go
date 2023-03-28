@@ -15,7 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -23,7 +23,7 @@ import (
 
 // Issuer for AWS TPM attestation.
 type Issuer struct {
-	oid.AWSNitroTPM
+	variant.AWSNitroTPM
 	*vtpm.Issuer
 }
 

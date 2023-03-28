@@ -18,7 +18,7 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
@@ -28,7 +28,7 @@ const minimumGceVersion = 1
 
 // Validator for GCP confidential VM attestation.
 type Validator struct {
-	oid.GCPSEVES
+	variant.GCPSEVES
 	*vtpm.Validator
 
 	restClient func(context.Context, ...option.ClientOption) (gcpRestClient, error)

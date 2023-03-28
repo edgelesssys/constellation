@@ -18,7 +18,7 @@ go_library(
         "//internal/file",
         "//internal/grpc/atlscredentials",
         "//internal/logger",
-        "//internal/oid",
+        "//internal/variant",
         "//internal/watcher",
         "//joinservice/internal/kms",
         "//joinservice/internal/kubeadm",

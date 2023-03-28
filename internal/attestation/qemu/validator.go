@@ -12,14 +12,14 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
 // Validator for QEMU VM attestation.
 type Validator struct {
-	oid.QEMUVTPM
+	variant.QEMUVTPM
 	*vtpm.Validator
 }
 

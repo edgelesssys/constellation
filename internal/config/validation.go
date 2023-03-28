@@ -20,7 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	ut "github.com/go-playground/universal-translator"
@@ -482,23 +482,23 @@ func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
 	// TODO: v2.8: remove variant fallback and make variant a required field
 	c.addMissingVariant()
 
-	variant, err := oid.FromString(c.AttestationVariant)
+	attestationVariant, err := variant.FromString(c.AttestationVariant)
 	if err != nil {
 		return false
 	}
 
 	// make sure the variant is valid for the chosen CSP
-	switch variant {
-	case oid.AWSNitroTPM{}:
+	switch attestationVariant {
+	case variant.AWSNitroTPM{}:
 		return c.Provider.AWS != nil
-	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
+	case variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}:
 		return c.Provider.Azure != nil
 	// TODO(malt3): remove this case once we have a vTPM for OpenStack
-	case oid.Dummy{}:
+	case variant.Dummy{}:
 		return c.Provider.OpenStack != nil
-	case oid.GCPSEVES{}:
+	case variant.GCPSEVES{}:
 		return c.Provider.GCP != nil
-	case oid.QEMUVTPM{}:
+	case variant.QEMUVTPM{}:
 		return c.Provider.QEMU != nil
 	default:
 		return false
@@ -513,12 +513,12 @@ func (c *Config) addMissingVariant() {
 
 	switch c.GetProvider() {
 	case cloudprovider.AWS:
-		c.AttestationVariant = oid.AWSNitroTPM{}.String()
+		c.AttestationVariant = variant.AWSNitroTPM{}.String()
 	case cloudprovider.Azure:
-		c.AttestationVariant = oid.AzureSEVSNP{}.String()
+		c.AttestationVariant = variant.AzureSEVSNP{}.String()
 	case cloudprovider.GCP:
-		c.AttestationVariant = oid.GCPSEVES{}.String()
+		c.AttestationVariant = variant.GCPSEVES{}.String()
 	case cloudprovider.QEMU:
-		c.AttestationVariant = oid.QEMUVTPM{}.String()
+		c.AttestationVariant = variant.QEMUVTPM{}.String()
 	}
 }

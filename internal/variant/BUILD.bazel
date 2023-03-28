@@ -6,3 +6,10 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/oid",
     visibility = ["//:__subpackages__"],
 )
+
+go_library(
+    name = "variant",
+    srcs = ["variant.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/variant",
+    visibility = ["//:__subpackages__"],
+)

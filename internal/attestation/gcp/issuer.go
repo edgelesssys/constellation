@@ -14,14 +14,14 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 )
 
 // Issuer for GCP confidential VM attestation.
 type Issuer struct {
-	oid.GCPSEVES
+	variant.GCPSEVES
 	*vtpm.Issuer
 }
 

@@ -13,7 +13,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/go-azguestattestation/maa"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
@@ -22,7 +22,7 @@ const tpmAkIdx = 0x81000003
 
 // Issuer for Azure TPM attestation.
 type Issuer struct {
-	oid.AzureSEVSNP
+	variant.AzureSEVSNP
 	*vtpm.Issuer
 
 	imds imdsAPI

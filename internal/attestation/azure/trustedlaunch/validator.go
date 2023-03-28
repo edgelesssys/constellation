@@ -18,7 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
@@ -29,7 +29,7 @@ var ameRoot = mustParseX509("-----BEGIN CERTIFICATE-----\nMIIFVjCCAz6gAwIBAgIQJd
 
 // Validator for Azure trusted launch VM attestation.
 type Validator struct {
-	oid.AzureTrustedLaunch
+	variant.AzureTrustedLaunch
 	*vtpm.Validator
 	roots *x509.CertPool
 }

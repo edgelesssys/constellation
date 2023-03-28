@@ -18,13 +18,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/cobra"
 )
 
 // Validator validates Platform Configuration Registers (PCRs).
 type Validator struct {
-	attestationVariant oid.Getter
+	attestationVariant variant.Variant
 	pcrs               measurements.M
 	idKeyConfig        idkeydigest.Config
 	validator          atls.Validator
@@ -34,17 +34,17 @@ type Validator struct {
 // NewValidator creates a new Validator.
 func NewValidator(conf *config.Config, maaURL string, log debugLog) (*Validator, error) {
 	v := Validator{log: log}
-	variant, err := oid.FromString(conf.AttestationVariant)
+	attestVariant, err := variant.FromString(conf.AttestationVariant)
 	if err != nil {
 		return nil, fmt.Errorf("parsing attestation variant: %w", err)
 	}
-	v.attestationVariant = variant // valid variant
+	v.attestationVariant = attestVariant // valid variant
 
 	if err := v.setPCRs(conf); err != nil {
 		return nil, err
 	}
 
-	if v.attestationVariant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
+	if v.attestationVariant.Equal(variant.AzureSEVSNP{}) {
 		v.idKeyConfig = idkeydigest.Config{
 			IDKeyDigests:      conf.Provider.Azure.IDKeyDigest,
 			EnforcementPolicy: conf.IDKeyDigestPolicy(),
@@ -96,32 +96,11 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 }
 
 func (v *Validator) setPCRs(config *config.Config) error {
-	switch v.attestationVariant {
-	case oid.AWSNitroTPM{}:
-		awsPCRs := config.Provider.AWS.Measurements
-		if len(awsPCRs) == 0 {
-			return errors.New("no expected measurement provided")
-		}
-		v.pcrs = awsPCRs
-	case oid.AzureSEVSNP{}, oid.AzureTrustedLaunch{}:
-		azurePCRs := config.Provider.Azure.Measurements
-		if len(azurePCRs) == 0 {
-			return errors.New("no expected measurement provided")
-		}
-		v.pcrs = azurePCRs
-	case oid.GCPSEVES{}:
-		gcpPCRs := config.Provider.GCP.Measurements
-		if len(gcpPCRs) == 0 {
-			return errors.New("no expected measurement provided")
-		}
-		v.pcrs = gcpPCRs
-	case oid.QEMUVTPM{}:
-		qemuPCRs := config.Provider.QEMU.Measurements
-		if len(qemuPCRs) == 0 {
-			return errors.New("no expected measurement provided")
-		}
-		v.pcrs = qemuPCRs
+	measurements := config.GetMeasurements()
+	if len(measurements) == 0 {
+		return errors.New("no measurements found in config")
 	}
+	v.pcrs = measurements
 	return nil
 }
 
