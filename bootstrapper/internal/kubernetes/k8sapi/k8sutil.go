@@ -252,23 +252,24 @@ func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) 
 	// wait for cilium pod to be healthy
 	client := http.Client{}
 	for {
-		time.Sleep(5 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
-		if err != nil {
-			return fmt.Errorf("unable to create request: %w", err)
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			if ctx.Err() == nil {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			time.Sleep(5 * time.Second)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
+			if err != nil {
+				return fmt.Errorf("unable to create request: %w", err)
+			}
+			resp, err := client.Do(req)
+			if err != nil {
 				log.With(zap.Error(err)).Infof("Waiting for local Cilium DaemonSet - Pod not healthy yet")
 				continue
-			} else {
-				return err
 			}
-		}
-		resp.Body.Close()
-		if resp.StatusCode == 200 {
-			break
+			resp.Body.Close()
+			if resp.StatusCode == 200 {
+				return nil
+			}
 		}
 	}
 
