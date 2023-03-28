@@ -8,7 +8,7 @@ package issues
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,11 +25,10 @@ func TestMap(t *testing.T) {
 	m := New()
 	assert.Equal(0, len(m))
 	assert.False(m.FileHasIssues("file1"))
-	m.Add("file1", "rule1", fmt.Errorf("r1_issue1"))
-	m.Add("file1", "rule1", fmt.Errorf("r1_issue2"))
-	assert.Equal(1, len(m))
-	m.Add("file1", "rule2", fmt.Errorf("r2_issue1"))
-	assert.Equal(1, len(m))
+	m.Set("file1", map[string][]error{
+		"rule1": {errors.New("r1_issue1"), errors.New("r1_issue2")},
+		"rule2": {errors.New("r2_issue1")},
+	})
 	assert.Equal(3, m.IssuesPerFile("file1"))
 	assert.True(m.FileHasIssues("file1"))
 

@@ -64,21 +64,21 @@ func TestMirrorURL(t *testing.T) {
 
 func TestMirror(t *testing.T) {
 	testCases := map[string]struct {
-		anonymous   bool
-		hash        string
-		data        []byte
-		upstreamURL string
-		statusCode  int
-		failUpload  bool
-		wantErr     bool
+		unauthenticated bool
+		hash            string
+		data            []byte
+		upstreamURL     string
+		statusCode      int
+		failUpload      bool
+		wantErr         bool
 	}{
-		"cannot upload in anonymous mode": {
-			anonymous:   true,
-			hash:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			data:        []byte(""),
-			upstreamURL: "https://example.com/empty",
-			statusCode:  http.StatusOK,
-			wantErr:     true,
+		"cannot upload in unauthenticated mode": {
+			unauthenticated: true,
+			hash:            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			data:            []byte(""),
+			upstreamURL:     "https://example.com/empty",
+			statusCode:      http.StatusOK,
+			wantErr:         true,
 		},
 		"http error": {
 			hash:        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -133,8 +133,8 @@ func TestMirror(t *testing.T) {
 						return nil
 					}(),
 				},
-				anonymous: tc.anonymous,
-				log:       logger.NewTest(t),
+				unauthenticated: tc.unauthenticated,
+				log:             logger.NewTest(t),
 			}
 			err := m.Mirror(context.Background(), tc.hash, []string{tc.upstreamURL})
 			if tc.wantErr {
@@ -148,29 +148,29 @@ func TestMirror(t *testing.T) {
 
 func TestCheck(t *testing.T) {
 	testCases := map[string]struct {
-		hash                  string
-		anonymousResponse     []byte
-		anonymousStatusCode   int
-		authenticatedResponse *s3.GetObjectAttributesOutput
-		authenticatedErr      error
-		wantErr               bool
+		hash                      string
+		unauthenticatedResponse   []byte
+		unauthenticatedStatusCode int
+		authenticatedResponse     *s3.GetObjectAttributesOutput
+		authenticatedErr          error
+		wantErr                   bool
 	}{
-		"anonymous mode, http error": {
-			hash:                "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
-			anonymousResponse:   []byte("foo"), // ignored
-			anonymousStatusCode: http.StatusNotFound,
-			wantErr:             true,
+		"unauthenticated mode, http error": {
+			hash:                      "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+			unauthenticatedResponse:   []byte("foo"), // ignored
+			unauthenticatedStatusCode: http.StatusNotFound,
+			wantErr:                   true,
 		},
-		"anonymous mode, hash mismatch": {
-			hash:                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-			anonymousResponse:   []byte("foo"),
-			anonymousStatusCode: http.StatusOK,
-			wantErr:             true,
+		"unauthenticated mode, hash mismatch": {
+			hash:                      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			unauthenticatedResponse:   []byte("foo"),
+			unauthenticatedStatusCode: http.StatusOK,
+			wantErr:                   true,
 		},
-		"anonymous mode, success": {
-			hash:                "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
-			anonymousResponse:   []byte("foo"),
-			anonymousStatusCode: http.StatusOK,
+		"unauthenticated mode, success": {
+			hash:                      "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+			unauthenticatedResponse:   []byte("foo"),
+			unauthenticatedStatusCode: http.StatusOK,
 		},
 		"authenticated mode, get attributes fails": {
 			hash:             "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
@@ -207,19 +207,19 @@ func TestCheck(t *testing.T) {
 					TotalPartsCount: 2,
 				},
 			},
-			anonymousResponse:   []byte("foo"),
-			anonymousStatusCode: http.StatusOK,
+			unauthenticatedResponse:   []byte("foo"),
+			unauthenticatedStatusCode: http.StatusOK,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			m := Maintainer{
-				anonymous: (tc.authenticatedResponse == nil),
+				unauthenticated: (tc.authenticatedResponse == nil),
 				httpClient: &http.Client{
 					Transport: &stubUpstream{
-						statusCode: tc.anonymousStatusCode,
-						body:       tc.anonymousResponse,
+						statusCode: tc.unauthenticatedStatusCode,
+						body:       tc.unauthenticatedResponse,
 					},
 				},
 				objectStorageClient: &stubObjectStorageClient{

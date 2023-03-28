@@ -45,11 +45,14 @@ require (
 	golang.org/x/mod v0.8.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	libvirt.org/go/libvirt v1.8010.0
-)
-
-require (
 	github.com/hexops/gotextdiff v1.0.3
 	go.uber.org/goleak v1.2.1
+	github.com/aws/aws-sdk-go-v2/config v1.18.19
+	golang.org/x/exp v0.0.0-20220823124025-807a23277127
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
+	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
+	github.com/spf13/afero v1.9.5
 )
 
 require (

@@ -41,7 +41,6 @@ func TestFindFiles(t *testing.T) {
 					Type:    BazelFileTypeWorkspace,
 				},
 			},
-			wantErr: false,
 		},
 		"only WORKSPACE.bazel file": {
 			files: []string{"WORKSPACE.bazel"},
@@ -52,7 +51,6 @@ func TestFindFiles(t *testing.T) {
 					Type:    BazelFileTypeWorkspace,
 				},
 			},
-			wantErr: false,
 		},
 		"both WORKSPACE and WORKSPACE.bazel files": {
 			files: []string{"WORKSPACE", "WORKSPACE.bazel"},
@@ -63,7 +61,6 @@ func TestFindFiles(t *testing.T) {
 					Type:    BazelFileTypeWorkspace,
 				},
 			},
-			wantErr: false,
 		},
 		"only .bzl file": {
 			files:   []string{"foo.bzl"},

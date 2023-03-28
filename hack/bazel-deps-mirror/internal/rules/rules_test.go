@@ -235,7 +235,7 @@ http_archive(
 				assert.Nil(issues)
 				return
 			}
-			assert.Equal(countMultiErr(issues), tc.expectedIssueCount)
+			assert.Len(issues, tc.expectedIssueCount)
 		})
 	}
 }
@@ -375,10 +375,10 @@ http_file(
 
 			issues := Check(rules[0])
 			if tc.expectedIssueCount == 0 {
-				assert.NoError(issues)
+				assert.Nil(issues)
 				return
 			}
-			assert.Equal(countMultiErr(issues), tc.expectedIssueCount)
+			assert.Equal(len(issues), tc.expectedIssueCount)
 
 			changed := Normalize(rules[0])
 			if tc.expectedIssueCount > 0 && !tc.cannotFix {
@@ -387,9 +387,9 @@ http_file(
 				assert.False(changed)
 			}
 			if tc.cannotFix {
-				assert.Error(Check(rules[0]))
+				assert.NotNil(Check(rules[0]))
 			} else {
-				assert.NoError(Check(rules[0]))
+				assert.Nil(Check(rules[0]))
 			}
 		})
 	}
@@ -447,20 +447,4 @@ http_archive(
 
 	_, err = GetHash(rules[1])
 	assert.Error(err)
-}
-
-func countMultiErr(issues error) int {
-	if issues == nil {
-		return 0
-	}
-
-	if me, ok := issues.(multiErr); ok {
-		return len(me.Unwrap())
-	}
-
-	return 1
-}
-
-type multiErr interface {
-	Unwrap() []error
 }
