@@ -5,12 +5,6 @@ on:
   schedule:
     - cron: "0 3 * * 6" # At 03:00 on Saturday.
 
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
-
 jobs:
   find-latest-image:
     strategy:
