@@ -272,8 +272,6 @@ func (k *KubernetesUtil) WaitForCilium(ctx context.Context, log *logger.Logger) 
 			}
 		}
 	}
-
-	return nil
 }
 
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958
