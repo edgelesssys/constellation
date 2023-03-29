@@ -464,7 +464,7 @@ type testValidator struct {
 	pcrs measurements.M
 }
 
-func (v *testValidator) Validate(attDoc []byte, _ []byte) ([]byte, error) {
+func (v *testValidator) Validate(_ context.Context, attDoc []byte, _ []byte) ([]byte, error) {
 	var attestation struct {
 		UserData []byte
 		PCRs     map[uint32][]byte
@@ -486,7 +486,7 @@ type testIssuer struct {
 	pcrs map[uint32][]byte
 }
 
-func (i *testIssuer) Issue(userData []byte, _ []byte) ([]byte, error) {
+func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte, error) {
 	return json.Marshal(
 		struct {
 			UserData []byte

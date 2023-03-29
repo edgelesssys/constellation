@@ -84,7 +84,9 @@ func TestValidate(t *testing.T) {
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
 
-	attDocRaw, err := issuer.Issue(challenge, nonce)
+	ctx := context.Background()
+
+	attDocRaw, err := issuer.Issue(ctx, challenge, nonce)
 	require.NoError(err)
 
 	var attDoc AttestationDocument
@@ -93,26 +95,26 @@ func TestValidate(t *testing.T) {
 	require.Equal(challenge, attDoc.UserData)
 
 	// valid test
-	out, err := validator.Validate(attDocRaw, nonce)
+	out, err := validator.Validate(ctx, attDocRaw, nonce)
 	require.NoError(err)
 	require.Equal(challenge, out)
 
 	// validation must fail after bootstrapping (change of enforced PCR)
 	require.NoError(MarkNodeAsBootstrapped(tpmOpen, []byte{2}))
-	attDocBootstrappedRaw, err := issuer.Issue(challenge, nonce)
+	attDocBootstrappedRaw, err := issuer.Issue(ctx, challenge, nonce)
 	require.NoError(err)
-	_, err = validator.Validate(attDocBootstrappedRaw, nonce)
+	_, err = validator.Validate(ctx, attDocBootstrappedRaw, nonce)
 	require.Error(err)
 
 	// userData must be bound to PCR state
-	attDocBootstrappedRaw, err = issuer.Issue([]byte{2, 3}, nonce)
+	attDocBootstrappedRaw, err = issuer.Issue(ctx, []byte{2, 3}, nonce)
 	require.NoError(err)
 	var attDocBootstrapped AttestationDocument
 	require.NoError(json.Unmarshal(attDocBootstrappedRaw, &attDocBootstrapped))
 	attDocBootstrapped.Attestation = attDoc.Attestation
 	attDocBootstrappedRaw, err = json.Marshal(attDocBootstrapped)
 	require.NoError(err)
-	_, err = validator.Validate(attDocBootstrappedRaw, nonce)
+	_, err = validator.Validate(ctx, attDocBootstrappedRaw, nonce)
 	require.Error(err)
 
 	expectedPCRs := measurements.M{
@@ -141,7 +143,7 @@ func TestValidate(t *testing.T) {
 		fakeValidateCVM,
 		warnLog,
 	)
-	out, err = warningValidator.Validate(attDocRaw, nonce)
+	out, err = warningValidator.Validate(ctx, attDocRaw, nonce)
 	require.NoError(err)
 	assert.Equal(t, challenge, out)
 	assert.Len(t, warnLog.warnings, 4)
@@ -240,7 +242,7 @@ func TestValidate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			_, err = tc.validator.Validate(tc.attDoc, tc.nonce)
+			_, err = tc.validator.Validate(ctx, tc.attDoc, tc.nonce)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -316,7 +318,7 @@ func TestFailIssuer(t *testing.T) {
 
 			tc.issuer.log = logger.NewTest(t)
 
-			_, err := tc.issuer.Issue(tc.userData, tc.nonce)
+			_, err := tc.issuer.Issue(context.Background(), tc.userData, tc.nonce)
 			assert.Error(err)
 		})
 	}

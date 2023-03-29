@@ -107,7 +107,7 @@ func NewIssuer(
 }
 
 // Issue generates an attestation document using a TPM.
-func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
+func (i *Issuer) Issue(ctx context.Context, userData []byte, nonce []byte) (res []byte, err error) {
 	i.log.Infof("Issuing attestation statement")
 	defer func() {
 		if err != nil {
@@ -136,7 +136,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) (res []byte, err error) {
 	}
 
 	// Fetch instance info of the VM
-	instanceInfo, err := i.getInstanceInfo(context.TODO(), tpm, extraData) // TODO(daniel-weisse): update Issue/Validate to use context
+	instanceInfo, err := i.getInstanceInfo(ctx, tpm, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("fetching instance info: %w", err)
 	}
@@ -181,7 +181,7 @@ func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestatio
 }
 
 // Validate a TPM based attestation.
-func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, err error) {
+func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte) (userData []byte, err error) {
 	v.log.Infof("Validating attestation document")
 	defer func() {
 		if err != nil {
@@ -197,7 +197,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) (userData []byte, e
 	extraData := makeExtraData(attDoc.UserData, nonce)
 
 	// Verify and retrieve the trusted attestation public key using the provided instance info
-	aKP, err := v.getTrustedKey(context.TODO(), attDoc, extraData)
+	aKP, err := v.getTrustedKey(ctx, attDoc, extraData)
 	if err != nil {
 		return nil, fmt.Errorf("validating attestation public key: %w", err)
 	}
