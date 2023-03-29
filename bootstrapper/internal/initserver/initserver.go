@@ -212,12 +212,12 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
-	jctl_collector, err := journald.NewCollector(stream.Context())
+	jctlCollector, err := journald.NewCollector(stream.Context())
 	if err != nil {
 		return err
 	}
 
-	systemd_logs, err := jctl_collector.Collect()
+	systemdLogs, err := jctlCollector.Collect()
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return err
 	}
 	log.Infof("Encrypting logs...")
-	enc_logs := aesgcm.Seal(nil, nonce, systemd_logs, nil)
+	enc_logs := aesgcm.Seal(nil, nonce, systemdLogs, nil)
 
 	log.Infof("Sending back nonce...")
 	err = stream.Send(&initproto.LogResponse{Nonce: nonce})
