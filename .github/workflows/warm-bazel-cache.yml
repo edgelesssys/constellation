@@ -23,6 +23,7 @@ jobs:
       - name: Build common targets
         run: |
           bazel build \
+            //bazel/ci/... \
             //bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64 \
             //cli:cli_oss_linux_amd64 \
             //cli:cli_oss_darwin_amd64 \

@@ -26,6 +26,12 @@ jobs:
           sudo apt-get update && sudo apt-get -y install libcryptsetup-dev libvirt-dev
           echo "::endgroup::"
 
+      - name: Setup Bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "true"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
