@@ -36,8 +36,7 @@ message InitResponse {
 }
 
 message LogRequest {
-  string name = 1;
-  bytes init_secret = 2;
+  bytes init_secret = 1;
 }
 
 message LogResponse {
