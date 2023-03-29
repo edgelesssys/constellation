@@ -1,6 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//bazel/proto:rules.bzl", "write_go_proto_srcs")
 
 proto_library(
     name = "upgradeproto_proto",
@@ -20,5 +21,12 @@ go_library(
     name = "upgradeproto",
     embed = [":upgradeproto_go_proto"],
     importpath = "github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto",
+    visibility = ["//visibility:public"],
+)
+
+write_go_proto_srcs(
+    name = "write_generated_protos",
+    src = "upgrade.pb.go",
+    go_proto_library = ":upgradeproto_go_proto",
     visibility = ["//visibility:public"],
 )

@@ -1,6 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
+load("//bazel/ci:proto_targets.bzl", "proto_targets")
 load("//bazel/sh:def.bzl", "noop_warn", "repo_command", "sh_template")
 
 required_tags = ["e2e"]
@@ -365,6 +366,21 @@ repo_command(
     command = "//hack/bazel-deps-mirror",
 )
 
+sh_template(
+    name = "proto_targets_check",
+    data = [],
+    substitutions = {
+        "@@PROTO_TARGETS@@": " ".join(proto_targets()),
+    },
+    template = "proto_targets_check.sh.in",
+)
+
+multirun(
+    name = "proto_generate",
+    commands = proto_targets(),
+    jobs = 0,  # execute concurrently
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -394,6 +410,7 @@ multirun(
         ":license_header_check",
         ":govulncheck",
         ":deps_mirror_check",
+        ":proto_targets_check",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
@@ -414,6 +431,7 @@ multirun(
         ":terraform_gen",
         "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
         ":go_generate",
+        ":proto_generate",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],

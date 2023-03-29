@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+protoTargets=(@@PROTO_TARGETS@@)
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
+
+exitCode=0
+
+writeGoProtoFindingsStr=$(
+  grep \
+    -rw . \
+    -e "write_go_proto_srcs(" \
+    --include=*.bazel
+)
+readarray -t <<< "${writeGoProtoFindingsStr}"
+writeGoProtoFindings=("${MAPFILE[@]}")
+
+echo "Checking that all proto files have a 'write_go_proto_srcs' in the BUILD.bazel file of that package..."
+
+protoFilesStr=$(find . -type f -name "*.proto")
+readarray -t <<< "${protoFilesStr}"
+protoFiles=("${MAPFILE[@]}")
+
+protoFilePaths=()
+for protoFile in "${protoFiles[@]}"; do
+  protoFilePaths+=("$(dirname "${protoFile}")")
+done
+
+writeGoProtoPaths=()
+for writeGoProtoFinding in "${writeGoProtoFindings[@]}"; do
+  writeGoProtoPaths+=("${writeGoProtoFinding%/*}") # remove everything after the last slash
+done
+
+protoFilePathsSorted=$(printf '%s\n' "${protoFilePaths[@]}" | sort)
+writeGoProtoPathsSorted=$(printf '%s\n' "${writeGoProtoPaths[@]}" | sort)
+
+diff=$(diff <(echo "${protoFilePathsSorted}") <(echo "${writeGoProtoPathsSorted}") || true) # don't let diff fail
+
+if [[ -n ${diff} ]]; then
+  echo "Mismatch between proto files and 'write_go_proto_srcs' calls:"
+  # shellcheck disable=SC2001
+  echo "${diff}" | sed -e 's/^/  /'
+  exitCode=1
+fi
+
+echo "Checking that all 'write_go_proto_srcs' calls and targets in bazel/ci/proto_targets.bzl match..."
+
+writeGoProtoFindingsCleaned=()
+for protoFinding in "${writeGoProtoFindings[@]}"; do
+  findingCleaned=$(
+    echo "${protoFinding}" |
+      sed \
+        -e 's$/BUILD.bazel$$' \
+        -e 's/write_go_proto_srcs(/write_generated_protos/g' \
+        -e 's$./$//$'
+  )
+  writeGoProtoFindingsCleaned+=("${findingCleaned}")
+done
+
+writeGoProtoFindingsSorted=$(printf '%s\n' "${writeGoProtoFindingsCleaned[@]}" | sort)
+protoTargetsSorted=$(printf '%s\n' "${protoTargets[@]}" | sort)
+
+diff=$(diff <(echo "${writeGoProtoFindingsSorted}") <(echo "${protoTargetsSorted}") || true) # don't let diff fail
+
+if [[ -n ${diff} ]]; then
+  echo "Mismatch between 'write_go_proto_srcs' calls and targets listed in bazel/ci/proto_targets.bzl:"
+  # shellcheck disable=SC2001
+  echo "${diff}" | sed -e 's/^/  /'
+  exitCode=1
+fi
+
+exit "${exitCode}"
