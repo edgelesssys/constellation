@@ -10,7 +10,7 @@ If the missing are irrecoverably lost (e.g. scaled up and down the control plane
 ## General concept
 1. Create snapshot of a state disk from a remaining control plane node.
 2. Download the snapshot and decrypt it locally
-3. Follow the [restoring a cluster](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster) guide from etcd.
+3. Follow the [Restoring a cluster](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster) guide from etcd.
 4. Save the modified virtual disk and upload it back to the CSP.
 5. Modify the scale set (or remaining VM singularly, if you can) to use the new uploaded data disk.
 6. Reboot, wait a few minutes.
@@ -47,7 +47,7 @@ sudo cryptsetup luksOpen /dev/nbd0 constellation-state --key-file passphrase
 
 8. Find the db file from etcd in `/var/lib/etcd/member/snap/db`
 
-9. Perform the etcd [Restoring a Cluster](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster) step:
+9. Perform the etcd [Restoring a cluster](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-a-cluster) step:
 
 ```bash
 ./etcdutl snapshot restore db --initial-cluster constell-f2332c74-control-plane000001=https://10.9.126.0:2380 --initial-advertise-peer-urls https://10.9.126.0:2380  --data-dir recovery --name constell-f2332c74-control-plane000001 --skip-hash-check=true
