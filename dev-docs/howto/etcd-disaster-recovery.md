@@ -52,7 +52,7 @@ sudo cryptsetup luksOpen /dev/nbd0 constellation-state --key-file passphrase
 ```bash
 ./etcdutl snapshot restore db --initial-cluster constell-f2332c74-control-plane000001=https://10.9.126.0:2380 --initial-advertise-peer-urls https://10.9.126.0:2380  --data-dir recovery --name constell-f2332c74-control-plane000001 --skip-hash-check=true
 ```
-*(replace name & IP with the name & the private IP of the remaining control plane VM - this can be seen in the Azure portal)*
+*(replace name & IP with the name and the private IP of the remaining control plane VM you are to perform the restore process on - this information can be found in the Azure portal)*
 
 10. Copy the contents of the newly created recovery directory to the mounted state disk and remove any remaining old files. 
 **Make sure the permissions are the same as before!**
