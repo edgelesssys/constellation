@@ -3,11 +3,10 @@
 # This script is run from the user's Constellation workspace (BUILD_WORKING_DIRECTORY).
 # It prepares the workspace by symlinking all required binaries into folder.
 
+###### script header ######
+
 lib=$(realpath @@BASE_LIB@@) || exit 1
-bootstrapper=$(realpath @@BOOTSTRAPPER@@) || exit 1
-upgrade_agent=$(realpath @@UPGRADE_AGENT@@) || exit 1
-cli=$(realpath @@CLI@@) || exit 1
-cdbg=$(realpath @@CDBG@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
 
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
@@ -15,7 +14,18 @@ if ! source "${lib}"; then
   exit 1
 fi
 
-cd "${BUILD_WORKING_DIRECTORY}" || exit 1
+bootstrapper=$(realpath @@BOOTSTRAPPER@@)
+stat "${bootstrapper}" >> /dev/null
+upgrade_agent=$(realpath @@UPGRADE_AGENT@@)
+stat "${upgrade_agent}" >> /dev/null
+cli=$(realpath @@CLI@@)
+stat "${cli}" >> /dev/null
+cdbg=$(realpath @@CDBG@@)
+stat "${cdbg}" >> /dev/null
+
+cd "${BUILD_WORKING_DIRECTORY}"
+
+###### script body ######
 
 if [[ $# -eq 0 ]]; then
   workdir="."

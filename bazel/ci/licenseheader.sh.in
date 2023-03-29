@@ -2,7 +2,10 @@
 
 # Compare licenses of Go dependencies against a whitelist.
 
+###### script header ######
+
 lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
 
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
@@ -10,7 +13,9 @@ if ! source "${lib}"; then
   exit 1
 fi
 
-cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
 
 echo "Checking files for missing company license header..."
 

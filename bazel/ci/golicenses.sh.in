@@ -2,9 +2,10 @@
 
 # Compare licenses of Go dependencies against a whitelist.
 
+###### script header ######
+
 lib=$(realpath @@BASE_LIB@@) || exit 1
-go=$(realpath @@GO@@) || exit 1
-golicenses=$(realpath @@GO_LICENSES@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
 
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
@@ -12,7 +13,14 @@ if ! source "${lib}"; then
   exit 1
 fi
 
-cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
+go=$(realpath @@GO@@)
+stat "${go}" >> /dev/null
+golicenses=$(realpath @@GO_LICENSES@@)
+stat "${golicenses}" >> /dev/null
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
 
 not_allowed() {
   echo "license not allowed for package: ${line}"
