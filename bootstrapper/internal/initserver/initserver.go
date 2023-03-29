@@ -30,13 +30,13 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
-	"github.com/edgelesssys/constellation/v2/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
@@ -212,14 +212,13 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
-	jctl_command, err := journald.NewCommand(stream.Context(), req.Name)
+	jctl_collector, err := journald.NewCollector(stream.Context())
 	if err != nil {
 		return err
 	}
 
-	systemd_logs, err := journald.GetServiceLog(jctl_command)
+	systemd_logs, err := jctl_collector.Collect()
 	if err != nil {
-		log.Errorf("Failed to retrieve journal logs: %s", err)
 		return err
 	}
 
@@ -251,13 +250,13 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	log.Infof("Encrypting logs...")
 	enc_logs := aesgcm.Seal(nil, nonce, systemd_logs, nil)
 
-	// send back the nonce
+	log.Infof("Sending back nonce...")
 	err = stream.Send(&initproto.LogResponse{Nonce: nonce})
 	if err != nil {
 		return err
 	}
 
-	// stream the systemd logs
+	log.Infof("Starting to stream encrypted logs...")
 	for _, el := range enc_logs {
 		if err = stream.Send(&initproto.LogResponse{Log: []byte{el}}); err != nil {
 			return err
