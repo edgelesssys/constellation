@@ -356,6 +356,15 @@ repo_command(
     command = "//hack/bazel-deps-mirror",
 )
 
+repo_command(
+    name = "deps_mirror_check_mirror",
+    args = [
+        "check",
+        "--mirror",
+    ],
+    command = "//hack/bazel-deps-mirror",
+)
+
 multirun(
     name = "tidy",
     commands = [
