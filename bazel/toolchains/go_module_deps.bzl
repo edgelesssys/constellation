@@ -2976,8 +2976,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gophercloud/utils",
-        sum = "h1:g9xk/61NXFpeG7zEReUsv2VeQRux1dXhT/xGHtJD/mA=",
-        version = "v0.0.0-20230316075016-e15d7ee3ba3b",
+        sum = "h1:AfRlf5NnsYsHIW5nNxhYp+99Bmj/fLeOYwD5Z4CMlzw=",
+        version = "v0.0.0-20230324070755-05e9e7f5ea4d",
     )
 
     go_repository(
