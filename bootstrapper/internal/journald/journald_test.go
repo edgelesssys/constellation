@@ -8,19 +8,17 @@ package journald
 
 import (
 	"errors"
-	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type stubJournaldCommand struct {
-	outputReturn []byte
-	outputError  error
+	startError error
 }
 
-func (j *stubJournaldCommand) Output() ([]byte, error) {
-	return j.outputReturn, j.outputError
+func (j *stubJournaldCommand) Start() error {
+	return j.startError
 }
 
 func TestCollect(t *testing.T) {
@@ -35,16 +33,8 @@ func TestCollect(t *testing.T) {
 			command: &stubJournaldCommand{},
 		},
 		"execution failed": {
-			command: &stubJournaldCommand{outputError: someError},
+			command: &stubJournaldCommand{startError: someError},
 			wantErr: true,
-		},
-		"exit error": {
-			command: &stubJournaldCommand{outputError: &exec.ExitError{}},
-			wantErr: true,
-		},
-		"output check": {
-			command:      &stubJournaldCommand{outputReturn: []byte("asdf")},
-			wantedOutput: []byte("asdf"),
 		},
 	}
 
@@ -54,11 +44,10 @@ func TestCollect(t *testing.T) {
 
 			collector := Collector{cmd: tc.command}
 
-			out, err := collector.Collect()
+			_, err := collector.Pipe()
 			if tc.wantErr {
 				assert.Error(err)
 			}
-			assert.Equal(out, tc.wantedOutput)
 		})
 	}
 }
