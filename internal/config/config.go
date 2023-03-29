@@ -522,23 +522,6 @@ func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
 	return idkeydigest.Unknown
 }
 
-// EnforcedPCRs returns the list of enforced PCRs for the configured cloud provider.
-func (c *Config) EnforcedPCRs() []uint32 {
-	provider := c.GetProvider()
-	switch provider {
-	case cloudprovider.AWS:
-		return c.Provider.AWS.Measurements.GetEnforced()
-	case cloudprovider.Azure:
-		return c.Provider.Azure.Measurements.GetEnforced()
-	case cloudprovider.GCP:
-		return c.Provider.GCP.Measurements.GetEnforced()
-	case cloudprovider.QEMU:
-		return c.Provider.QEMU.Measurements.GetEnforced()
-	default:
-		return nil
-	}
-}
-
 // IDKeyDigests returns the ID Key Digests for the configured cloud provider.
 func (c *Config) IDKeyDigests() idkeydigest.IDKeyDigests {
 	if c.Provider.Azure != nil {

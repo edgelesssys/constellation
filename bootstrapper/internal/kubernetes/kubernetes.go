@@ -20,7 +20,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -51,37 +50,35 @@ type kubeAPIWaiter interface {
 
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
-	cloudProvider       string
-	clusterUtil         clusterUtil
-	helmClient          helmClient
-	kubeAPIWaiter       kubeAPIWaiter
-	configProvider      configurationProvider
-	client              k8sapi.Client
-	providerMetadata    ProviderMetadata
-	initialMeasurements measurements.M
-	getIPAddr           func() (string, error)
+	cloudProvider    string
+	clusterUtil      clusterUtil
+	helmClient       helmClient
+	kubeAPIWaiter    kubeAPIWaiter
+	configProvider   configurationProvider
+	client           k8sapi.Client
+	providerMetadata ProviderMetadata
+	getIPAddr        func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, measurements measurements.M, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
+	providerMetadata ProviderMetadata, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
-		cloudProvider:       cloudProvider,
-		clusterUtil:         clusterUtil,
-		helmClient:          helmClient,
-		kubeAPIWaiter:       kubeAPIWaiter,
-		configProvider:      configProvider,
-		client:              client,
-		providerMetadata:    providerMetadata,
-		initialMeasurements: measurements,
-		getIPAddr:           getIPAddr,
+		cloudProvider:    cloudProvider,
+		clusterUtil:      clusterUtil,
+		helmClient:       helmClient,
+		kubeAPIWaiter:    kubeAPIWaiter,
+		configProvider:   configProvider,
+		client:           client,
+		providerMetadata: providerMetadata,
+		getIPAddr:        getIPAddr,
 	}
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string, measurementSalt []byte, enforcedPCRs []uint32,
+	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string, measurementSalt []byte,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -217,19 +214,11 @@ func (k *KubeWrapper) InitCluster(
 	} else {
 		controlPlaneIP = controlPlaneEndpoint
 	}
-	if err := k.initialMeasurements.SetEnforced(enforcedPCRs); err != nil {
-		return nil, err
-	}
-	measurementsJSON, err := json.Marshal(k.initialMeasurements)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling initial measurements: %w", err)
-	}
 	serviceConfig := constellationServicesConfig{
-		initialMeasurementsJSON: measurementsJSON,
-		measurementSalt:         measurementSalt,
-		subnetworkPodCIDR:       subnetworkPodCIDR,
-		cloudServiceAccountURI:  cloudServiceAccountURI,
-		loadBalancerIP:          controlPlaneIP,
+		measurementSalt:        measurementSalt,
+		subnetworkPodCIDR:      subnetworkPodCIDR,
+		cloudServiceAccountURI: cloudServiceAccountURI,
+		loadBalancerIP:         controlPlaneIP,
 	}
 	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
@@ -420,7 +409,6 @@ func getIPAddr() (string, error) {
 func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constellationServicesConfig) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
-			"measurements":    string(serviceConfig.initialMeasurementsJSON),
 			"measurementSalt": base64.StdEncoding.EncodeToString(serviceConfig.measurementSalt),
 		},
 		"ccm": map[string]any{},
@@ -541,9 +529,8 @@ type ccmConfigGetter interface {
 }
 
 type constellationServicesConfig struct {
-	initialMeasurementsJSON []byte
-	measurementSalt         []byte
-	subnetworkPodCIDR       string
-	cloudServiceAccountURI  string
-	loadBalancerIP          string
+	measurementSalt        []byte
+	subnetworkPodCIDR      string
+	cloudServiceAccountURI string
+	loadBalancerIP         string
 }
