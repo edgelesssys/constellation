@@ -64,7 +64,7 @@ type Config struct {
 	Image string `yaml:"image" validate:"required,version_compatibility"`
 	// description: |
 	//   Name of the cluster.
-	Name string `yaml:"name" validate:"valid_name"` // TODO: v2.7: Use "required" validation for name
+	Name string `yaml:"name" validate:"valid_name,required"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -72,8 +72,8 @@ type Config struct {
 	//   Kubernetes version to be installed into the cluster.
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
-	//   Microservice version to be installed into the cluster. Setting this value is optional until v2.7. Defaults to the version of the CLI.
-	MicroserviceVersion string `yaml:"microserviceVersion" validate:"omitempty,version_compatibility"`
+	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
+	MicroserviceVersion string `yaml:"microserviceVersion" validate:"required,version_compatibility"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
@@ -83,25 +83,6 @@ type Config struct {
 	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
-	// description: |
-	//   Configuration to apply during constellation upgrade.
-	// examples:
-	//   - value: 'UpgradeConfig{ Image: "", Measurements: Measurements{} }'
-	Upgrade UpgradeConfig `yaml:"upgrade,omitempty" validate:"required"`
-}
-
-// UpgradeConfig defines configuration used during constellation upgrade.
-type UpgradeConfig struct {
-	// description: |
-	//   Updated Constellation machine image to install on all nodes.
-	Image string `yaml:"image"`
-	// description: |
-	//   Measurements of the updated image.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   temporary field for upgrade migration
-	//   TODO(AB#2654): Remove with refactoring upgrade plan command
-	CSP cloudprovider.Provider `yaml:"csp"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
@@ -638,9 +619,6 @@ func (c *Config) Validate(force bool) error {
 
 	// Register provider validation
 	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
-
-	// register custom validator that prints a deprecation warning.
-	validate.RegisterStructValidation(validateUpgradeConfig, UpgradeConfig{})
 
 	err := validate.Struct(c)
 	if err == nil {

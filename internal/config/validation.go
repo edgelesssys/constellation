@@ -426,20 +426,6 @@ func returnsTrue(_ validator.FieldLevel) bool {
 	return true
 }
 
-// validateUpgradeConfig prints a warning to STDERR and validates the field successfully.
-func validateUpgradeConfig(sl validator.StructLevel) {
-	config, ok := sl.Current().Interface().(UpgradeConfig)
-	if !ok {
-		sl.ReportError(config, "upgrade", "UpgradeConfig", "malformed_upgrade_config", "")
-	}
-	// A valid `upgrade` section will always have a non-nil Measurements map.
-	// Only print a warning if the user actually specified an upgrade section.
-	if config.Image == "" && config.CSP == cloudprovider.Unknown && config.Measurements == nil {
-		return
-	}
-	fmt.Fprintln(os.Stderr, "WARNING: the config key `upgrade` will be deprecated in an upcoming version. Please check the documentation for more information.")
-}
-
 func registerValidateNameError(ut ut.Translator) error {
 	return ut.Add("validate_name", "{0} must be no more than {1} characters long", true)
 }
@@ -459,12 +445,6 @@ func (c *Config) translateValidateNameError(ut ut.Translator, fe validator.Field
 // Since this value may differ between providers, we can't simply use built-in validation.
 // This also allows us to eventually add more validation rules for constellation names if necessary.
 func (c *Config) validateName(fl validator.FieldLevel) bool {
-	// TODO: v2.7: remove fallback to defaultName and make name a required field
-	if c.Name == "" {
-		fmt.Fprintln(os.Stderr, "WARNING: the config key `name` is not set. This key will be required in the next version. Falling back to default name.")
-		c.Name = defaultName
-	}
-
 	if c.Provider.AWS != nil {
 		return len(fl.Field().String()) <= constants.AWSConstellationNameLength
 	}
