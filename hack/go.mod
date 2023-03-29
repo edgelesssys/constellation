@@ -168,7 +168,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
 	github.com/gophercloud/gophercloud v1.2.0 // indirect
-	github.com/gophercloud/utils v0.0.0-20230316075016-e15d7ee3ba3b // indirect
+	github.com/gophercloud/utils v0.0.0-20230324070755-05e9e7f5ea4d // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
