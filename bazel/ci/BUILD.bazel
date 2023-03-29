@@ -300,6 +300,37 @@ alias(
     }),
 )
 
+alias(
+    name = "com_github_helm_helm",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_helm_helm_darwin_amd64//:helm",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_helm_helm_darwin_arm64//:helm",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_helm_helm_linux_amd64//:helm",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_helm_helm_linux_arm64//:helm",
+    }),
+)
+
+sh_template(
+    name = "go_generate",
+    data = [
+        ":com_github_helm_helm",
+        ":com_github_siderolabs_talos_hack_docgen",
+        "//internal/attestation/measurements/measurement-generator",
+        "//internal/versions/hash-generator",
+        "@go_sdk//:bin/go",
+        "@org_golang_x_tools//cmd/stringer",
+    ],
+    substitutions = {
+        "@@DOCGEN@@": "$(rootpath :com_github_siderolabs_talos_hack_docgen)",
+        "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
+        "@@HASH_GENERATOR@@": "$(rootpath //internal/versions/hash-generator:hash-generator)",
+        "@@HELM@@": "$(rootpath :com_github_helm_helm)",
+        "@@MEASUREMENT_GENERATOR@@": "$(rootpath //internal/attestation/measurements/measurement-generator:measurement-generator)",
+        "@@STRINGER@@": "$(rootpath @org_golang_x_tools//cmd/stringer:stringer)",
+    },
+    template = "go_generate.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -346,6 +377,7 @@ multirun(
     commands = [
         ":terraform_gen",
         "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
+        ":go_generate",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],

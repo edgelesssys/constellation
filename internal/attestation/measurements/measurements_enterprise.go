@@ -13,7 +13,7 @@ import "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 // Regenerate the measurements by running go generate.
 // The enterprise build tag is required to validate the measurements using production
 // sigstore certificates.
-//go:generate go run -tags enterprise measurement-generator/generate.go
+//go:generate measurement-generator
 
 // DefaultsFor provides the default measurements for given cloud provider.
 func DefaultsFor(provider cloudprovider.Provider) M {
