@@ -243,22 +243,28 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	if err != nil {
 		return err
 	}
-	nonce := make([]byte, aesgcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return err
-	}
-	log.Infof("Encrypting logs...")
-	enc_logs := aesgcm.Seal(nil, nonce, systemdLogs, nil)
 
-	log.Infof("Sending back nonce...")
-	err = stream.Send(&initproto.LogResponse{Nonce: nonce})
-	if err != nil {
-		return err
-	}
+	for i := 0; i < len(systemdLogs); i += 1024 {
+		end := i + 1024
+		if end > len(systemdLogs) {
+			end = len(systemdLogs)
+		}
 
-	log.Infof("Starting to stream encrypted logs...")
-	for _, el := range enc_logs {
-		if err = stream.Send(&initproto.LogResponse{Log: []byte{el}}); err != nil {
+		nonce := make([]byte, aesgcm.NonceSize())
+		if _, err := rand.Read(nonce); err != nil {
+			return err
+		}
+		log.Infof("Encrypting log chunk...")
+		encLogChunk := aesgcm.Seal(nil, nonce, systemdLogs[i:end], nil)
+
+		log.Infof("Sending back nonce...")
+		err = stream.Send(&initproto.LogResponse{Nonce: nonce})
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Streaming chunk...")
+		if err = stream.Send(&initproto.LogResponse{Log: encLogChunk}); err != nil {
 			return err
 		}
 	}
