@@ -14,8 +14,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/attestation/idkeydigest",
-        "//internal/attestation/measurements",
+        "//internal/attestation/config",
+        "//internal/attestation/config/idkeydigest",
         "//internal/attestation/vtpm",
         "//internal/cloud/azure",
         "//internal/crypto",
@@ -41,7 +41,8 @@ go_test(
         "//conditions:default": ["disable_tpm_simulator"],
     }),
     deps = [
-        "//internal/attestation/idkeydigest",
+        "//internal/attestation/config",
+        "//internal/attestation/config/idkeydigest",
         "//internal/attestation/simulator",
         "//internal/attestation/vtpm",
         "//internal/logger",

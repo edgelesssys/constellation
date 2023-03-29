@@ -15,7 +15,8 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	attestconfig "github.com/edgelesssys/constellation/v2/internal/attestation/config"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -386,10 +387,10 @@ func setIdkeyConfig(values map[string]any, config *config.Config, maaURL string)
 		return errors.New("invalid join-service values")
 	}
 
-	idKeyCfg := idkeydigest.Config{
-		IDKeyDigests:      config.IDKeyDigests(),
-		EnforcementPolicy: config.IDKeyDigestPolicy(),
-		MAAURL:            maaURL,
+	idKeyCfg := attestconfig.SNPFirmwareSignerConfig{
+		AcceptedKeyDigests: config.IDKeyDigests(),
+		EnforcementPolicy:  config.IDKeyDigestPolicy(),
+		MAAURL:             maaURL,
 	}
 	marshalledCfg, err := json.Marshal(idKeyCfg)
 	if err != nil {

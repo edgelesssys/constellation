@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -82,9 +82,9 @@ func TestNewUpdateableValidator(t *testing.T) {
 
 				require.NoError(handler.WriteJSON(
 					filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-					idkeydigest.Config{
-						IDKeyDigests:      idkeydigest.DefaultsFor(cloudprovider.Azure),
-						EnforcementPolicy: idkeydigest.WarnOnly,
+					config.SNPFirmwareSignerConfig{
+						AcceptedKeyDigests: idkeydigest.DefaultList(),
+						EnforcementPolicy:  idkeydigest.WarnOnly,
 					},
 				))
 			}
@@ -126,9 +126,9 @@ func TestUpdate(t *testing.T) {
 	))
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		idkeydigest.Config{
-			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
-			EnforcementPolicy: idkeydigest.WarnOnly,
+		config.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
+			EnforcementPolicy:  idkeydigest.WarnOnly,
 		},
 	))
 
@@ -189,9 +189,9 @@ func TestOIDConcurrency(t *testing.T) {
 	))
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		idkeydigest.Config{
-			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
-			EnforcementPolicy: idkeydigest.WarnOnly,
+		config.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
+			EnforcementPolicy:  idkeydigest.WarnOnly,
 		},
 	))
 
@@ -237,9 +237,9 @@ func TestUpdateConcurrency(t *testing.T) {
 	))
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		idkeydigest.Config{
-			IDKeyDigests:      idkeydigest.IDKeyDigests{[]byte{0x00}},
-			EnforcementPolicy: idkeydigest.WarnOnly,
+		config.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
+			EnforcementPolicy:  idkeydigest.WarnOnly,
 		},
 	))
 

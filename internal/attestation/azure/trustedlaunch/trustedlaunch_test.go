@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -200,7 +201,7 @@ func TestGetAttestationCert(t *testing.T) {
 				},
 			}
 
-			validator := NewValidator(measurements.M{}, nil)
+			validator := NewValidator(config.AzureTrustedLaunch{Measurements: measurements.M{}}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
 			require.NoError(err)
 			roots := x509.NewCertPool()

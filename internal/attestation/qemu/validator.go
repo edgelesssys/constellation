@@ -10,7 +10,7 @@ import (
 	"context"
 	"crypto"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -24,10 +24,10 @@ type Validator struct {
 }
 
 // NewValidator initializes a new QEMU validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg config.QEMUVTPM, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
-			pcrs,
+			cfg.Measurements,
 			unconditionalTrust,
 			func(vtpm.AttestationDocument, *attest.MachineState) error { return nil },
 			log,

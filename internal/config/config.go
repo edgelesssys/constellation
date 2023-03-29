@@ -31,7 +31,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -46,7 +46,7 @@ type Measurements = measurements.M
 
 // Digests is a required alias since docgen is not able to work with
 // types in other packages.
-type Digests = idkeydigest.IDKeyDigests
+type Digests = idkeydigest.List
 
 const (
 	// Version2 is the second version number for Constellation config file.
@@ -175,7 +175,7 @@ type AzureConfig struct {
 	IDKeyDigest Digests `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
-	EnforceIDKeyDigest idkeydigest.EnforceIDKeyDigest `yaml:"enforceIdKeyDigest" validate:"required"`
+	EnforceIDKeyDigest idkeydigest.Enforcement `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
@@ -314,7 +314,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      toPtr(true),
-				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
+				IDKeyDigest:          idkeydigest.DefaultList(),
 				EnforceIDKeyDigest:   idkeydigest.MAAFallback,
 				SecureBoot:           toPtr(false),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
@@ -504,7 +504,7 @@ func (c *Config) GetMeasurements() measurements.M {
 }
 
 // IDKeyDigestPolicy returns the IDKeyDigest checking policy for a cloud provider.
-func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
+func (c *Config) IDKeyDigestPolicy() idkeydigest.Enforcement {
 	if c.Provider.Azure != nil {
 		return c.Provider.Azure.EnforceIDKeyDigest
 	}
@@ -512,7 +512,7 @@ func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
 }
 
 // IDKeyDigests returns the ID Key Digests for the configured cloud provider.
-func (c *Config) IDKeyDigests() idkeydigest.IDKeyDigests {
+func (c *Config) IDKeyDigests() idkeydigest.List {
 	if c.Provider.Azure != nil {
 		return c.Provider.Azure.IDKeyDigest
 	}

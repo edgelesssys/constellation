@@ -1,0 +1,54 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "idkeydigest",
+    srcs = [
+        "enforceidkeydigest_string.go",
+        "idkeydigest.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/cloud/cloudprovider"],
+)
+
+go_test(
+    name = "idkeydigest_test",
+    srcs = ["idkeydigest_test.go"],
+    embed = [":idkeydigest"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)
+
+go_library(
+    name = "config",
+    srcs = [
+        "aws.go",
+        "azure.go",
+        "config.go",
+        "gcp.go",
+        "qemu.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/config",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/config/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/cloud/cloudprovider",
+        "//internal/variant",
+    ],
+)
+
+go_test(
+    name = "config_test",
+    srcs = ["config_test.go"],
+    embed = [":config"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)

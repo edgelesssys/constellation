@@ -19,8 +19,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
+	attestconfig "github.com/edgelesssys/constellation/v2/internal/attestation/config"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -120,8 +121,8 @@ func TestNewValidator(t *testing.T) {
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements:       testPCRs,
-						IDKeyDigest:        idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
-						EnforceIDKeyDigest: idkeydigest.StrictChecking,
+						IDKeyDigest:        idkeydigest.List{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
+						EnforceIDKeyDigest: idkeydigest.Equal,
 					},
 				},
 			},
@@ -174,26 +175,31 @@ func TestValidatorV(t *testing.T) {
 		"gcp": {
 			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
-			wantVs:  gcp.NewValidator(newTestPCRs(), nil),
+			wantVs:  gcp.NewValidator(attestconfig.GCPSEVES{Measurements: newTestPCRs()}, nil),
 		},
 		"azure cvm": {
 			variant: variant.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
 			wantVs: snp.NewValidator(
-				newTestPCRs(),
-				idkeydigest.Config{IDKeyDigests: idkeydigest.IDKeyDigests{}, EnforcementPolicy: idkeydigest.WarnOnly},
+				attestconfig.AzureSEVSNP{
+					Measurements: newTestPCRs(),
+					FirmwareSignerConfig: attestconfig.SNPFirmwareSignerConfig{
+						AcceptedKeyDigests: idkeydigest.List{},
+						EnforcementPolicy:  idkeydigest.WarnOnly,
+					},
+				},
 				nil,
 			),
 		},
 		"azure trusted launch": {
 			variant: variant.AzureTrustedLaunch{},
 			pcrs:    newTestPCRs(),
-			wantVs:  trustedlaunch.NewValidator(newTestPCRs(), nil),
+			wantVs:  trustedlaunch.NewValidator(attestconfig.AzureTrustedLaunch{Measurements: newTestPCRs()}, nil),
 		},
 		"qemu": {
 			variant: variant.QEMUVTPM{},
 			pcrs:    newTestPCRs(),
-			wantVs:  qemu.NewValidator(newTestPCRs(), nil),
+			wantVs:  qemu.NewValidator(attestconfig.QEMUVTPM{Measurements: newTestPCRs()}, nil),
 		},
 	}
 

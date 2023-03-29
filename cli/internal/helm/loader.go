@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	attestconfig "github.com/edgelesssys/constellation/v2/internal/attestation/config"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -503,10 +503,10 @@ func extendConstellationServicesValues(
 			return errors.New("invalid join-service values")
 		}
 
-		idKeyCfg := idkeydigest.Config{
-			IDKeyDigests:      config.IDKeyDigests(),
-			EnforcementPolicy: config.IDKeyDigestPolicy(),
-			MAAURL:            maaURL,
+		idKeyCfg := attestconfig.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: config.IDKeyDigests(),
+			EnforcementPolicy:  config.IDKeyDigestPolicy(),
+			MAAURL:             maaURL,
 		}
 		marshalledCfg, err := json.Marshal(idKeyCfg)
 		if err != nil {
