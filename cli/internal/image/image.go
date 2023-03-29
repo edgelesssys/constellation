@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 	"github.com/spf13/afero"
@@ -43,7 +44,7 @@ func New() *Fetcher {
 // FetchReference fetches the image reference for a given image version uid, CSP and image variant.
 func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (string, error) {
 	provider := config.GetProvider()
-	variant, err := variant(provider, config)
+	variant, err := imageVariant(provider, config)
 	if err != nil {
 		return "", fmt.Errorf("determining variant: %w", err)
 	}
@@ -85,16 +86,20 @@ func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (st
 	return getReferenceFromImageInfo(provider, variant, imgInfo)
 }
 
-// variant returns the image variant for a given CSP and configuration.
-func variant(provider cloudprovider.Provider, config *config.Config) (string, error) {
+// imageVariant returns the image variant for a given CSP and configuration.
+func imageVariant(provider cloudprovider.Provider, config *config.Config) (string, error) {
 	switch provider {
 	case cloudprovider.AWS:
 		return config.Provider.AWS.Region, nil
 	case cloudprovider.Azure:
-		if *config.Provider.Azure.ConfidentialVM {
-			return "cvm", nil
+		attestVariant, err := variant.FromString(config.AttestationVariant)
+		if err != nil {
+			return "", fmt.Errorf("parsing attestation variant: %w", err)
 		}
-		return "trustedlaunch", nil
+		if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
+			return "trustedlaunch", nil
+		}
+		return "cvm", nil
 
 	case cloudprovider.GCP:
 		return "sev-es", nil

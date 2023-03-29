@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -108,7 +109,7 @@ func TestGetReference(t *testing.T) {
 	}
 }
 
-func TestVariant(t *testing.T) {
+func TestImageVariant(t *testing.T) {
 	testCases := map[string]struct {
 		csp         cloudprovider.Provider
 		config      *config.Config
@@ -125,18 +126,16 @@ func TestVariant(t *testing.T) {
 		"Azure cvm": {
 			csp: cloudprovider.Azure,
 			config: &config.Config{
-				Image: "someImage", Provider: config.ProviderConfig{
-					Azure: &config.AzureConfig{ConfidentialVM: func() *bool { b := true; return &b }()},
-				},
+				AttestationVariant: variant.AzureSEVSNP{}.String(),
+				Image:              "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
 			},
 			wantVariant: "cvm",
 		},
 		"Azure trustedlaunch": {
 			csp: cloudprovider.Azure,
 			config: &config.Config{
-				Image: "someImage", Provider: config.ProviderConfig{
-					Azure: &config.AzureConfig{ConfidentialVM: func() *bool { b := false; return &b }()},
-				},
+				AttestationVariant: variant.AzureTrustedLaunch{}.String(),
+				Image:              "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
 			},
 			wantVariant: "trustedlaunch",
 		},
@@ -172,7 +171,7 @@ func TestVariant(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			vari, err := variant(tc.csp, tc.config)
+			vari, err := imageVariant(tc.csp, tc.config)
 			if tc.wantErr {
 				assert.Error(err)
 				return

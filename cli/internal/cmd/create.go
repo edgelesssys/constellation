@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -95,7 +96,12 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		printedAWarning = true
 	}
 
-	if conf.IsAzureNonCVM() {
+	attestVariant, err := variant.FromString(conf.AttestationVariant)
+	if err != nil {
+		return fmt.Errorf("parsing attestation variant: %w", err)
+	}
+
+	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
 		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
 		if conf.IDKeyDigestPolicy() == idkeydigest.StrictChecking || conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
