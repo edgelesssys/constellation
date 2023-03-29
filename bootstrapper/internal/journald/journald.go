@@ -58,10 +58,10 @@ func (c *Collector) Pipe() (io.ReadCloser, error) {
 // well as the exit/io error, the third one checks if the function
 // ran succesfully.
 func (c *Collector) Error() ([]byte, error, error) {
-	exitCode := c.cmd.Wait()
 	stderr, err := io.ReadAll(c.stderrPipe)
 	if err != nil {
-		return nil, exitCode, err
+		return nil, nil, err
 	}
+	exitCode := c.cmd.Wait()
 	return stderr, exitCode, nil
 }
