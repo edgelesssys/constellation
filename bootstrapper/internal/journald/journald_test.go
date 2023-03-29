@@ -8,6 +8,7 @@ package journald
 
 import (
 	"errors"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,10 @@ func TestCollect(t *testing.T) {
 		},
 		"execution failed": {
 			command: &stubJournaldCommand{startError: someError},
+			wantErr: true,
+		},
+		"exit error": {
+			command: &stubJournaldCommand{startError: &exec.ExitError{}},
 			wantErr: true,
 		},
 	}
