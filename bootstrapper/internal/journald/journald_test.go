@@ -17,10 +17,15 @@ import (
 
 type stubJournaldCommand struct {
 	startError error
+	exitCode   error
 }
 
 func (j *stubJournaldCommand) Start() error {
 	return j.startError
+}
+
+func (j *stubJournaldCommand) Wait() error {
+	return j.exitCode
 }
 
 type stubStderrPipe struct {
@@ -80,8 +85,10 @@ func TestStderr(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
-		stderrPipe io.ReadCloser
-		wantErr    bool
+		stderrPipe  io.ReadCloser
+		exitCode    error
+		wantErr     bool
+		wantExitErr bool
 	}{
 		"success": {
 			stderrPipe: stubStderrPipe{readErr: io.EOF},
@@ -93,6 +100,11 @@ func TestStderr(t *testing.T) {
 		"close error": {
 			stderrPipe: stubStderrPipe{closeErr: someError, readErr: io.EOF},
 		},
+		"command exit": {
+			stderrPipe:  stubStderrPipe{readErr: io.EOF},
+			exitCode:    someError,
+			wantExitErr: true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -101,13 +113,17 @@ func TestStderr(t *testing.T) {
 
 			collector := Collector{
 				stderrPipe: tc.stderrPipe,
+				cmd:        &stubJournaldCommand{exitCode: tc.exitCode},
 			}
 
-			stderrOut, err := collector.Stderr()
+			stderrOut, exitCode, err := collector.Error()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.Equal(stderrOut, []byte{})
+			}
+			if tc.wantExitErr {
+				assert.Error(exitCode)
 			}
 		})
 	}

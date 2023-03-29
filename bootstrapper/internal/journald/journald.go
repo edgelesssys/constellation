@@ -17,6 +17,7 @@ import (
 
 type command interface {
 	Start() error
+	Wait() error
 }
 
 // Collector collects logs from journald.
@@ -52,11 +53,15 @@ func (c *Collector) Pipe() (io.ReadCloser, error) {
 	return c.stdoutPipe, nil
 }
 
-// Stderr returns the error message of the journalctl command.
-func (c *Collector) Stderr() ([]byte, error) {
+// Error returns the error message of the journalctl command.
+// The first two parameters are what's written to stderr as
+// well as the exit/io error, the third one checks if the function
+// ran succesfully.
+func (c *Collector) Error() ([]byte, error, error) {
+	exitCode := c.cmd.Wait()
 	stderr, err := io.ReadAll(c.stderrPipe)
 	if err != nil {
-		return nil, err
+		return nil, exitCode, err
 	}
-	return stderr, nil
+	return stderr, exitCode, nil
 }
