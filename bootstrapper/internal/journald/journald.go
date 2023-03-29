@@ -38,7 +38,7 @@ func NewCollector(ctx context.Context) (*Collector, error) {
 	return &Collector{cmd, pipe}, nil
 }
 
-// Collect gets all journald logs from a service and returns a byte slice with the plain text logs.
+// Pipe returns a pipe to read the systemd logs. This should be read with a bufio Reader.
 func (c *Collector) Pipe() (io.ReadCloser, error) {
 	if err := c.cmd.Start(); err != nil {
 		return nil, err
