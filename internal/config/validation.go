@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -462,7 +461,8 @@ func (c *Config) translateValidAttestVariantError(ut ut.Translator, _ validator.
 }
 
 func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
-	// TODO: v2.8: remove variant fallback and make variant a required field
+	// TODO(AB#3040): function will be obsolete in v2.8
+	// attestationVariant will be refactored into a required struct
 	c.addMissingVariant()
 
 	attestationVariant, err := variant.FromString(c.AttestationVariant)
@@ -492,8 +492,6 @@ func (c *Config) addMissingVariant() {
 	if c.AttestationVariant != "" {
 		return
 	}
-	fmt.Fprintln(os.Stderr, "WARNING: the config key `attestationVariant` is not set. This key will be required in the next version.")
-
 	switch c.GetProvider() {
 	case cloudprovider.AWS:
 		c.AttestationVariant = variant.AWSNitroTPM{}.String()
