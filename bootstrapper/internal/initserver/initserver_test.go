@@ -232,13 +232,17 @@ func TestGetLogs(t *testing.T) {
 
 	masterSecret := uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
 
-	key, err := crypto.DeriveKey(masterSecret.Key, masterSecret.Salt, nil, 16) // 16 byte = 128 bit
-	require.NoError(t, err)
+	decryptor := func() cipher.AEAD {
+		key, err := crypto.DeriveKey(masterSecret.Key, masterSecret.Salt, nil, 16) // 16 byte = 128 bit
+		require.NoError(t, err)
 
-	block, err := aes.NewCipher(key)
-	require.NoError(t, err)
-	decryptor, err := cipher.NewGCM(block)
-	require.NoError(t, err)
+		block, err := aes.NewCipher(key)
+		require.NoError(t, err)
+		decryptor, err := cipher.NewGCM(block)
+		require.NoError(t, err)
+
+		return decryptor
+	}
 	testCases := map[string]struct {
 		initSecretHash  []byte
 		masterSecret    uri.MasterSecret
@@ -247,14 +251,15 @@ func TestGetLogs(t *testing.T) {
 		decryptor       cipher.AEAD
 		wantErr         bool
 		wantNoRes       bool
+		tryDecrypt      bool // useful if sending fails
 		wantDecryptable bool
 	}{
 		"success": {
 			initSecretHash:  initSecretHash,
 			masterSecret:    masterSecret,
-			req:             &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			req:             &initproto.LogRequest{InitSecret: initSecret},
 			stream:          stubLogStream{},
-			decryptor:       decryptor,
+			decryptor:       decryptor(),
 			wantDecryptable: true,
 		},
 		"wrong init secret": {
@@ -271,16 +276,17 @@ func TestGetLogs(t *testing.T) {
 		},
 		"decode master secret fail": {
 			initSecretHash: initSecretHash,
-			req:            &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			req:            &initproto.LogRequest{InitSecret: initSecret},
 			masterSecret:   uri.MasterSecret{Key: nil, Salt: nil},
 			wantErr:        true,
 			wantNoRes:      true,
 		},
 		"send error": {
 			initSecretHash: initSecretHash,
-			req:            &initproto.LogRequest{InitSecret: initSecret, Name: "asdf"},
+			req:            &initproto.LogRequest{InitSecret: initSecret},
 			stream:         stubLogStream{sendError: errors.New("failed")},
 			masterSecret:   masterSecret,
+			decryptor:      decryptor(),
 			wantErr:        true,
 			wantNoRes:      true,
 		},
@@ -309,7 +315,7 @@ func TestGetLogs(t *testing.T) {
 			}
 
 			var decrypted []byte
-			if len(nonce) != 0 {
+			if len(nonce) != 0 && (tc.wantDecryptable || tc.tryDecrypt) {
 				decrypted, err = tc.decryptor.Open(nil, nonce, ciphertext, nil)
 				require.NoError(err)
 			}
@@ -494,7 +500,11 @@ type stubLogStream struct {
 }
 
 func (s *stubLogStream) Send(m *initproto.LogResponse) error {
-	s.res = append(s.res, m)
+	if s.sendError == nil {
+		// we don't append since we don't receive anything
+		// if that if doesn't trigger
+		s.res = append(s.res, m)
+	}
 	return s.sendError
 }
 
