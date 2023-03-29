@@ -1,0 +1,13 @@
+load("//bazel/sh:def.bzl", "sh_template")
+
+sh_template(
+    name = "pull_files",
+    data = [
+        "@com_github_medik8s_node_maintainance_operator//:api_v1beta1",
+    ],
+    substitutions = {
+        "@@API_SRC@@": "$(rootpaths @com_github_medik8s_node_maintainance_operator//:api_v1beta1)",
+    },
+    template = "pull_files.sh",
+    visibility = ["//visibility:public"],
+)

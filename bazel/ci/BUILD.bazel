@@ -345,6 +345,7 @@ multirun(
     name = "generate",
     commands = [
         ":terraform_gen",
+        "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],

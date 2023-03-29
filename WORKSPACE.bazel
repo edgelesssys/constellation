@@ -141,6 +141,10 @@ load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")
 
 multirun_deps()
 
+load("//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:source.bzl", "node_maintainance_operator_deps")
+
+node_maintainance_operator_deps()
+
 # CI deps
 load("//bazel/toolchains:ci_deps.bzl", "ci_deps")
 
