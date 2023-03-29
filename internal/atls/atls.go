@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 const attestationTimeout = 30 * time.Second
@@ -75,13 +75,13 @@ func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*t
 
 // Issuer issues an attestation document.
 type Issuer interface {
-	oid.Getter
+	variant.Getter
 	Issue(ctx context.Context, userData []byte, nonce []byte) (quote []byte, err error)
 }
 
 // Validator is able to validate an attestation document.
 type Validator interface {
-	oid.Getter
+	variant.Getter
 	Validate(ctx context.Context, attDoc []byte, nonce []byte) ([]byte, error)
 }
 
@@ -351,11 +351,11 @@ func (c *serverConnection) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certif
 
 // FakeIssuer fakes an issuer and can be used for tests.
 type FakeIssuer struct {
-	oid.Getter
+	variant.Getter
 }
 
 // NewFakeIssuer creates a new FakeIssuer with the given OID.
-func NewFakeIssuer(oid oid.Getter) *FakeIssuer {
+func NewFakeIssuer(oid variant.Getter) *FakeIssuer {
 	return &FakeIssuer{oid}
 }
 
@@ -366,17 +366,17 @@ func (FakeIssuer) Issue(_ context.Context, userData []byte, nonce []byte) ([]byt
 
 // FakeValidator fakes a validator and can be used for tests.
 type FakeValidator struct {
-	oid.Getter
+	variant.Getter
 	err error // used for package internal testing only
 }
 
 // NewFakeValidator creates a new FakeValidator with the given OID.
-func NewFakeValidator(oid oid.Getter) *FakeValidator {
+func NewFakeValidator(oid variant.Getter) *FakeValidator {
 	return &FakeValidator{oid, nil}
 }
 
 // NewFakeValidators returns a slice with a single FakeValidator.
-func NewFakeValidators(oid oid.Getter) []Validator {
+func NewFakeValidators(oid variant.Getter) []Validator {
 	return []Validator{NewFakeValidator(oid)}
 }
 

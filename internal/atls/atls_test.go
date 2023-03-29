@@ -15,7 +15,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -193,7 +193,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 	var urls []string
 
 	for i := 0; i < serverCount; i++ {
-		serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(oid.Dummy{}), NewFakeValidators(oid.Dummy{}))
+		serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
 		require.NoError(err)
 
 		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +211,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 	// Create client.
 	//
 
-	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(oid.Dummy{}), NewFakeValidators(oid.Dummy{}))
+	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 
@@ -266,7 +266,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 
 	var urls []string
 
-	serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(oid.Dummy{}), NewFakeValidators(oid.Dummy{}))
+	serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
 	require.NoError(err)
 
 	for i := 0; i < serverCount; i++ {
@@ -285,7 +285,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 	// Create client.
 	//
 
-	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(oid.Dummy{}), NewFakeValidators(oid.Dummy{}))
+	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 

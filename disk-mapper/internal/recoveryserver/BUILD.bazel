@@ -32,7 +32,7 @@ go_test(
         "//internal/grpc/testdialer",
         "//internal/kms/kms",
         "//internal/logger",
-        "//internal/oid",
+        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_uber_go_goleak//:goleak",

@@ -24,7 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,24 +40,24 @@ func TestMain(m *testing.M) {
 
 func TestNewUpdateableValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant   oid.Getter
+		variant   variant.Variant
 		writeFile bool
 		wantErr   bool
 	}{
 		"azure": {
-			variant:   oid.AzureSEVSNP{},
+			variant:   variant.AzureSEVSNP{},
 			writeFile: true,
 		},
 		"gcp": {
-			variant:   oid.GCPSEVES{},
+			variant:   variant.GCPSEVES{},
 			writeFile: true,
 		},
 		"qemu": {
-			variant:   oid.QEMUVTPM{},
+			variant:   variant.QEMUVTPM{},
 			writeFile: true,
 		},
 		"no file": {
-			variant:   oid.AzureSEVSNP{},
+			variant:   variant.AzureSEVSNP{},
 			writeFile: false,
 			wantErr:   true,
 		},
@@ -112,7 +112,7 @@ func TestUpdate(t *testing.T) {
 	// create server
 	validator := &Updatable{
 		log:         logger.NewTest(t),
-		variant:     oid.Dummy{},
+		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
 
@@ -146,7 +146,7 @@ func TestUpdate(t *testing.T) {
 	defer server.Close()
 
 	// test connection to server
-	clientOID := oid.Dummy{}
+	clientOID := variant.Dummy{}
 	resp, err := testConnection(require, server.URL, clientOID)
 	require.NoError(err)
 	defer resp.Body.Close()
@@ -155,7 +155,7 @@ func TestUpdate(t *testing.T) {
 	assert.EqualValues("hello", body)
 
 	// update the server's validator
-	validator.variant = oid.QEMUVTPM{}
+	validator.variant = variant.QEMUVTPM{}
 	require.NoError(validator.Update())
 
 	// client connection should fail now, since the server's validator expects a different OID from the client
@@ -198,7 +198,7 @@ func TestOIDConcurrency(t *testing.T) {
 	// create server
 	validator := &Updatable{
 		log:         logger.NewTest(t),
-		variant:     oid.Dummy{},
+		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
 
@@ -228,7 +228,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		variant:     oid.Dummy{},
+		variant:     variant.Dummy{},
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
@@ -256,7 +256,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	wg.Wait()
 }
 
-func testConnection(require *require.Assertions, url string, oid oid.Getter) (*http.Response, error) {
+func testConnection(require *require.Assertions, url string, oid variant.Getter) (*http.Response, error) {
 	clientConfig, err := atls.CreateAttestationClientTLSConfig(fakeIssuer{oid}, nil)
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
@@ -267,7 +267,7 @@ func testConnection(require *require.Assertions, url string, oid oid.Getter) (*h
 }
 
 type fakeIssuer struct {
-	oid.Getter
+	variant.Getter
 }
 
 func (fakeIssuer) Issue(_ context.Context, userData []byte, nonce []byte) ([]byte, error) {
@@ -278,6 +278,14 @@ type fakeOID asn1.ObjectIdentifier
 
 func (o fakeOID) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier(o)
+}
+
+func (o fakeOID) String() string {
+	return o.OID().String()
+}
+
+func (o fakeOID) Equal(other variant.Getter) bool {
+	return o.OID().Equal(other.OID())
 }
 
 type fakeDoc struct {

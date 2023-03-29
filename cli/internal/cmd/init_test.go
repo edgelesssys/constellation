@@ -33,7 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -399,14 +399,14 @@ func TestAttestation(t *testing.T) {
 	netDialer := testdialer.NewBufconnDialer()
 	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
 		validator := &testValidator{
-			Getter: oid.QEMUVTPM{},
+			Getter: variant.QEMUVTPM{},
 			pcrs:   v.PCRS(),
 		}
 		return dialer.New(nil, validator, netDialer)
 	}
 
 	issuer := &testIssuer{
-		Getter: oid.QEMUVTPM{},
+		Getter: variant.QEMUVTPM{},
 		pcrs: map[uint32][]byte{
 			0: bytes.Repeat([]byte{0xFF}, 32),
 			1: bytes.Repeat([]byte{0xFF}, 32),
@@ -436,7 +436,7 @@ func TestAttestation(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.Image = "image"
-	cfg.AttestationVariant = oid.QEMUVTPM{}.String()
+	cfg.AttestationVariant = variant.QEMUVTPM{}.String()
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
 	cfg.Provider.QEMU.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce)
 	cfg.Provider.QEMU.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce)
@@ -460,7 +460,7 @@ func TestAttestation(t *testing.T) {
 }
 
 type testValidator struct {
-	oid.Getter
+	variant.Getter
 	pcrs measurements.M
 }
 
@@ -482,7 +482,7 @@ func (v *testValidator) Validate(_ context.Context, attDoc []byte, _ []byte) ([]
 }
 
 type testIssuer struct {
-	oid.Getter
+	variant.Getter
 	pcrs map[uint32][]byte
 }
 
@@ -530,7 +530,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 	switch csp {
 	case cloudprovider.Azure:
-		conf.AttestationVariant = oid.AzureSEVSNP{}.String()
+		conf.AttestationVariant = variant.AzureSEVSNP{}.String()
 		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.Location = "test-location"
@@ -542,7 +542,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
 		conf.Provider.Azure.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	case cloudprovider.GCP:
-		conf.AttestationVariant = oid.GCPSEVES{}.String()
+		conf.AttestationVariant = variant.GCPSEVES{}.String()
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
 		conf.Provider.GCP.Zone = "test-zone"
@@ -551,7 +551,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.GCP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
 		conf.Provider.GCP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	case cloudprovider.QEMU:
-		conf.AttestationVariant = oid.QEMUVTPM{}.String()
+		conf.AttestationVariant = variant.QEMUVTPM{}.String()
 		conf.Provider.QEMU.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
 		conf.Provider.QEMU.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
 		conf.Provider.QEMU.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)

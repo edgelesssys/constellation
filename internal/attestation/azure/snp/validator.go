@@ -24,7 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
@@ -40,7 +40,7 @@ const (
 
 // Validator for Azure confidential VM attestation.
 type Validator struct {
-	oid.AzureSEVSNP
+	variant.AzureSEVSNP
 	*vtpm.Validator
 	hclValidator hclAkValidator
 	maa          maaValidator

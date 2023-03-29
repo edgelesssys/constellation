@@ -14,7 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/verify/server"
 	"go.uber.org/zap"
 )
@@ -29,7 +29,7 @@ func main() {
 	log.With(zap.String("version", constants.VersionInfo()), zap.String("attestationVariant", *attestationVariant)).
 		Infof("Constellation Verification Service")
 
-	variant, err := oid.FromString(*attestationVariant)
+	variant, err := variant.FromString(*attestationVariant)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
 	}

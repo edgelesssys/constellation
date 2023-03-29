@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//internal/constants",
         "//internal/logger",
-        "//internal/oid",
+        "//internal/variant",
         "//measurement-reader/internal/sorted",
         "//measurement-reader/internal/tpm",
         "@org_uber_go_zap//:zap",

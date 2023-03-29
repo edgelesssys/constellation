@@ -16,7 +16,7 @@ import (
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 )
@@ -28,7 +28,7 @@ const (
 
 // Issuer for Azure trusted launch TPM attestation.
 type Issuer struct {
-	oid.AzureTrustedLaunch
+	variant.AzureTrustedLaunch
 	*vtpm.Issuer
 	hClient httpClient
 }

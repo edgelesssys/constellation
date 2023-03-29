@@ -21,7 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +43,7 @@ func TestNewValidator(t *testing.T) {
 	}{
 		"gcp": {
 			config: &config.Config{
-				AttestationVariant: oid.GCPSEVES{}.String(),
+				AttestationVariant: variant.GCPSEVES{}.String(),
 				Provider: config.ProviderConfig{
 					GCP: &config.GCPConfig{
 						Measurements: testPCRs,
@@ -53,7 +53,7 @@ func TestNewValidator(t *testing.T) {
 		},
 		"azure cvm": {
 			config: &config.Config{
-				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				AttestationVariant: variant.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements: testPCRs,
@@ -63,7 +63,7 @@ func TestNewValidator(t *testing.T) {
 		},
 		"azure trusted launch": {
 			config: &config.Config{
-				AttestationVariant: oid.AzureTrustedLaunch{}.String(),
+				AttestationVariant: variant.AzureTrustedLaunch{}.String(),
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements: testPCRs,
@@ -73,7 +73,7 @@ func TestNewValidator(t *testing.T) {
 		},
 		"qemu": {
 			config: &config.Config{
-				AttestationVariant: oid.QEMUVTPM{}.String(),
+				AttestationVariant: variant.QEMUVTPM{}.String(),
 				Provider: config.ProviderConfig{
 					QEMU: &config.QEMUConfig{
 						Measurements: testPCRs,
@@ -83,7 +83,7 @@ func TestNewValidator(t *testing.T) {
 		},
 		"no pcrs provided": {
 			config: &config.Config{
-				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				AttestationVariant: variant.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements: measurements.M{},
@@ -105,7 +105,7 @@ func TestNewValidator(t *testing.T) {
 		},
 		"set idkeydigest": {
 			config: &config.Config{
-				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				AttestationVariant: variant.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements:       testPCRs,
@@ -128,7 +128,7 @@ func TestNewValidator(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.config.GetMeasurements(), validators.pcrs)
-				variant, err := oid.FromString(tc.config.AttestationVariant)
+				variant, err := variant.FromString(tc.config.AttestationVariant)
 				require.NoError(t, err)
 				assert.Equal(variant, validators.attestationVariant)
 			}
@@ -156,17 +156,17 @@ func TestValidatorV(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		variant oid.Getter
+		variant variant.Variant
 		pcrs    measurements.M
 		wantVs  atls.Validator
 	}{
 		"gcp": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
 			wantVs:  gcp.NewValidator(newTestPCRs(), nil),
 		},
 		"azure cvm": {
-			variant: oid.AzureSEVSNP{},
+			variant: variant.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
 			wantVs: snp.NewValidator(
 				newTestPCRs(),
@@ -175,12 +175,12 @@ func TestValidatorV(t *testing.T) {
 			),
 		},
 		"azure trusted launch": {
-			variant: oid.AzureTrustedLaunch{},
+			variant: variant.AzureTrustedLaunch{},
 			pcrs:    newTestPCRs(),
 			wantVs:  trustedlaunch.NewValidator(newTestPCRs(), nil),
 		},
 		"qemu": {
-			variant: oid.QEMUVTPM{},
+			variant: variant.QEMUVTPM{},
 			pcrs:    newTestPCRs(),
 			wantVs:  qemu.NewValidator(newTestPCRs(), nil),
 		},
@@ -235,50 +235,50 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		variant   oid.Getter
+		variant   variant.Variant
 		pcrs      measurements.M
 		ownerID   string
 		clusterID string
 		wantErr   bool
 	}{
 		"gcp update owner ID": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
 			ownerID: one64,
 		},
 		"gcp update cluster ID": {
-			variant:   oid.GCPSEVES{},
+			variant:   variant.GCPSEVES{},
 			pcrs:      newTestPCRs(),
 			clusterID: one64,
 		},
 		"gcp update both": {
-			variant:   oid.GCPSEVES{},
+			variant:   variant.GCPSEVES{},
 			pcrs:      newTestPCRs(),
 			ownerID:   one64,
 			clusterID: one64,
 		},
 		"azure update owner ID": {
-			variant: oid.AzureSEVSNP{},
+			variant: variant.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
 			ownerID: one64,
 		},
 		"azure update cluster ID": {
-			variant:   oid.AzureSEVSNP{},
+			variant:   variant.AzureSEVSNP{},
 			pcrs:      newTestPCRs(),
 			clusterID: one64,
 		},
 		"azure update both": {
-			variant:   oid.AzureSEVSNP{},
+			variant:   variant.AzureSEVSNP{},
 			pcrs:      newTestPCRs(),
 			ownerID:   one64,
 			clusterID: one64,
 		},
 		"owner ID and cluster ID empty": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
 		},
 		"invalid encoding": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
 			ownerID: "invalid",
 			wantErr: true,
@@ -421,7 +421,7 @@ func TestUpdatePCR(t *testing.T) {
 			}
 
 			validators := &Validator{
-				attestationVariant: oid.GCPSEVES{},
+				attestationVariant: variant.GCPSEVES{},
 				pcrs:               pcrs,
 			}
 			err := validators.updatePCR(tc.pcrIndex, tc.encoded)

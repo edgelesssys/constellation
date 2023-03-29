@@ -23,7 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,7 +62,7 @@ func TestConstellationServices(t *testing.T) {
 	}{
 		"AWS": {
 			config: &config.Config{
-				AttestationVariant: oid.AWSNitroTPM{}.String(),
+				AttestationVariant: variant.AWSNitroTPM{}.String(),
 				Provider:           config.ProviderConfig{AWS: &config.AWSConfig{}},
 			},
 			valuesModifier: prepareAWSValues,
@@ -70,7 +70,7 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"Azure": {
 			config: &config.Config{
-				AttestationVariant: oid.AzureSEVSNP{}.String(),
+				AttestationVariant: variant.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
 					DeployCSIDriver:    toPtr(true),
 					EnforceIDKeyDigest: idkeydigest.StrictChecking,
@@ -87,7 +87,7 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"GCP": {
 			config: &config.Config{
-				AttestationVariant: oid.GCPSEVES{}.String(),
+				AttestationVariant: variant.GCPSEVES{}.String(),
 				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
 					DeployCSIDriver: toPtr(true),
 				}},
@@ -97,7 +97,7 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"OpenStack": {
 			config: &config.Config{
-				AttestationVariant: oid.Dummy{}.String(),
+				AttestationVariant: variant.Dummy{}.String(),
 				Provider:           config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
 			},
 			valuesModifier: prepareOpenStackValues,
@@ -105,7 +105,7 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"QEMU": {
 			config: &config.Config{
-				AttestationVariant: oid.QEMUVTPM{}.String(),
+				AttestationVariant: variant.QEMUVTPM{}.String(),
 				Provider:           config.ProviderConfig{QEMU: &config.QEMUConfig{}},
 			},
 			valuesModifier: prepareQEMUValues,

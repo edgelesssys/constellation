@@ -17,14 +17,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
 
 // Validator for AWS TPM attestation.
 type Validator struct {
-	oid.AWSNitroTPM
+	variant.AWSNitroTPM
 	*vtpm.Validator
 	getDescribeClient func(context.Context, string) (awsMetadataAPI, error)
 }

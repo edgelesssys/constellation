@@ -11,33 +11,33 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIssuer(t *testing.T) {
 	testCases := map[string]struct {
-		variant oid.Getter
+		variant variant.Variant
 		wantErr bool
 	}{
 		"aws-nitro-tpm": {
-			variant: oid.AWSNitroTPM{},
+			variant: variant.AWSNitroTPM{},
 		},
 		"azure-sev-snp": {
-			variant: oid.AzureSEVSNP{},
+			variant: variant.AzureSEVSNP{},
 		},
 		"azure-trusted-launch": {
-			variant: oid.AzureTrustedLaunch{},
+			variant: variant.AzureTrustedLaunch{},
 		},
 		"gcp-sev-es": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 		},
 		"qemu-vtpm": {
-			variant: oid.QEMUVTPM{},
+			variant: variant.QEMUVTPM{},
 		},
 		"dummy": {
-			variant: oid.Dummy{},
+			variant: variant.Dummy{},
 		},
 		"unknown": {
 			variant: unknownVariant{},
@@ -64,26 +64,26 @@ func TestIssuer(t *testing.T) {
 
 func TestValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant oid.Getter
+		variant variant.Variant
 		wantErr bool
 	}{
 		"aws-nitro-tpm": {
-			variant: oid.AWSNitroTPM{},
+			variant: variant.AWSNitroTPM{},
 		},
 		"azure-sev-snp": {
-			variant: oid.AzureSEVSNP{},
+			variant: variant.AzureSEVSNP{},
 		},
 		"azure-trusted-launch": {
-			variant: oid.AzureTrustedLaunch{},
+			variant: variant.AzureTrustedLaunch{},
 		},
 		"gcp-sev-es": {
-			variant: oid.GCPSEVES{},
+			variant: variant.GCPSEVES{},
 		},
 		"qemu-vtpm": {
-			variant: oid.QEMUVTPM{},
+			variant: variant.QEMUVTPM{},
 		},
 		"dummy": {
-			variant: oid.Dummy{},
+			variant: variant.Dummy{},
 		},
 		"unknown": {
 			variant: unknownVariant{},
@@ -112,4 +112,12 @@ type unknownVariant struct{}
 
 func (unknownVariant) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 9999, 9999}
+}
+
+func (unknownVariant) String() string {
+	return "unknown"
+}
+
+func (unknownVariant) Equal(other variant.Getter) bool {
+	return other.OID().Equal(unknownVariant{}.OID())
 }

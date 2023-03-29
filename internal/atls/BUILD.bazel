@@ -8,7 +8,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/crypto",
-        "//internal/oid",
+        "//internal/variant",
     ],
 )
 
@@ -17,7 +17,7 @@ go_test(
     srcs = ["atls_test.go"],
     embed = [":atls"],
     deps = [
-        "//internal/oid",
+        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_uber_go_goleak//:goleak",

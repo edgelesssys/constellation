@@ -5,7 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package oid defines OIDs for different CSPs. Currently this is used in attested TLS to distinguish the attestation documents.
+Package variant defines Attestation variants for different CSPs.
+
+Each variant defines an OID, a string representation, and a function to compare it to other OIDs.
+
+The OID is used in attested TLS to distinguish the attestation documents.
 OIDs beginning with 1.3.9900 are reserved and can be used without registration.
 
 * The 1.3.9900.1 branch is reserved for placeholder values and testing.
@@ -20,12 +24,25 @@ OIDs beginning with 1.3.9900 are reserved and can be used without registration.
 
 Deprecated OIDs should never be reused for different purposes.
 Instead, new OIDs should be added in the appropriate branch at the next available index.
+
+String representation should be lowercase and contain only letters, numbers, and hyphens.
+They should be prefixed with the branch name, e.g. all variants in the 1.3.9900.2 (AWS) branch should start with "aws-".
+Each variant should have a unique string representation.
 */
-package oid
+package variant
 
 import (
 	"encoding/asn1"
 	"fmt"
+)
+
+const (
+	dummy              = "dummy"
+	awsNitroTPM        = "aws-nitro-tpm"
+	gcpSEVES           = "gcp-sev-es"
+	azureSEVSNP        = "azure-sev-snp"
+	azureTrustedLaunch = "azure-trustedlaunch"
+	qemuVTPM           = "qemu-vtpm"
 )
 
 // Getter returns an ASN.1 Object Identifier.
@@ -33,8 +50,15 @@ type Getter interface {
 	OID() asn1.ObjectIdentifier
 }
 
+// Variant describes an attestation variant.
+type Variant interface {
+	Getter
+	String() string
+	Equal(other Getter) bool
+}
+
 // FromString returns the OID for the given string.
-func FromString(oid string) (Getter, error) {
+func FromString(oid string) (Variant, error) {
 	switch oid {
 	case dummy:
 		return Dummy{}, nil
@@ -65,6 +89,11 @@ func (Dummy) String() string {
 	return dummy
 }
 
+// Equal returns true if the other variant is also a Dummy.
+func (Dummy) Equal(other Getter) bool {
+	return other.OID().Equal(Dummy{}.OID())
+}
+
 // AWSNitroTPM holds the AWS nitro TPM OID.
 type AWSNitroTPM struct{}
 
@@ -76,6 +105,11 @@ func (AWSNitroTPM) OID() asn1.ObjectIdentifier {
 // String returns the string representation of the OID.
 func (AWSNitroTPM) String() string {
 	return awsNitroTPM
+}
+
+// Equal returns true if the other variant is also AWSNitroTPM.
+func (AWSNitroTPM) Equal(other Getter) bool {
+	return other.OID().Equal(AWSNitroTPM{}.OID())
 }
 
 // GCPSEVES holds the GCP SEV-ES OID.
@@ -91,6 +125,11 @@ func (GCPSEVES) String() string {
 	return gcpSEVES
 }
 
+// Equal returns true if the other variant is also GCPSEVES.
+func (GCPSEVES) Equal(other Getter) bool {
+	return other.OID().Equal(GCPSEVES{}.OID())
+}
+
 // AzureSEVSNP holds the OID for Azure SNP CVMs.
 type AzureSEVSNP struct{}
 
@@ -102,6 +141,11 @@ func (AzureSEVSNP) OID() asn1.ObjectIdentifier {
 // String returns the string representation of the OID.
 func (AzureSEVSNP) String() string {
 	return azureSEVSNP
+}
+
+// Equal returns true if the other variant is also AzureSEVSNP.
+func (AzureSEVSNP) Equal(other Getter) bool {
+	return other.OID().Equal(AzureSEVSNP{}.OID())
 }
 
 // AzureTrustedLaunch holds the OID for Azure TrustedLaunch VMs.
@@ -117,6 +161,11 @@ func (AzureTrustedLaunch) String() string {
 	return azureTrustedLaunch
 }
 
+// Equal returns true if the other variant is also AzureTrustedLaunch.
+func (AzureTrustedLaunch) Equal(other Getter) bool {
+	return other.OID().Equal(AzureTrustedLaunch{}.OID())
+}
+
 // QEMUVTPM holds the QEMUVTPM OID.
 type QEMUVTPM struct{}
 
@@ -130,11 +179,7 @@ func (QEMUVTPM) String() string {
 	return qemuVTPM
 }
 
-const (
-	dummy              = "dummy"
-	awsNitroTPM        = "aws-nitro-tpm"
-	gcpSEVES           = "gcp-sev-es"
-	azureSEVSNP        = "azure-sev-snp"
-	azureTrustedLaunch = "azure-trustedlaunch"
-	qemuVTPM           = "qemu-vtpm"
-)
+// Equal returns true if the other variant is also QEMUVTPM.
+func (QEMUVTPM) Equal(other Getter) bool {
+	return other.OID().Equal(QEMUVTPM{}.OID())
+}

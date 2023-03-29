@@ -22,7 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 )
 
@@ -31,12 +31,12 @@ type Updatable struct {
 	log         *logger.Logger
 	mux         sync.Mutex
 	fileHandler file.Handler
-	variant     oid.Getter
+	variant     variant.Variant
 	atls.Validator
 }
 
 // NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, variant oid.Getter, fileHandler file.Handler) (*Updatable, error) {
+func NewValidator(log *logger.Logger, variant variant.Variant, fileHandler file.Handler) (*Updatable, error) {
 	u := &Updatable{
 		log:         log,
 		fileHandler: fileHandler,
@@ -78,7 +78,7 @@ func (u *Updatable) Update() error {
 
 	// Read ID Key config
 	var idKeyCfg idkeydigest.Config
-	if u.variant.OID().Equal(oid.AzureSEVSNP{}.OID()) {
+	if u.variant.Equal(variant.AzureSEVSNP{}) {
 		u.log.Infof("Updating SEV-SNP ID Key config")
 
 		err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename), &idKeyCfg)

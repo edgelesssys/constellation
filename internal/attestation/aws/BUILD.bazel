@@ -13,7 +13,7 @@ go_library(
     deps = [
         "//internal/attestation/measurements",
         "//internal/attestation/vtpm",
-        "//internal/oid",
+        "//internal/variant",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
