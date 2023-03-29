@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "journald",
+    srcs = ["journald.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald",
+    visibility = ["//bootstrapper:__subpackages__"],
+)
+
+go_test(
+    name = "journald_test",
+    srcs = ["journald_test.go"],
+    embed = [":journald"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)
