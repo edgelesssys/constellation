@@ -14,7 +14,7 @@ If the missing are irrecoverably lost (e.g. scaled up and down the control plane
 4. Save the modified virtual disk and upload it back to the CSP.
 5. Modify the scale set (or remaining VM singularly, if you can) to use the new uploaded data disk.
 6. Reboot, wait a few minutes.
-7. Pray it workded ;)
+7. Pray it worked ;)
 
 ## How I did it once (Azure)
 
