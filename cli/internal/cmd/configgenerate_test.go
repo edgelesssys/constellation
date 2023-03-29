@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -92,9 +91,6 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
-
-	// TODO(AB#2976): Remove this once attestation variants are dynamically created
-	wantConf.AttestationVariant = variant.GCPSEVES{}.String()
 
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)

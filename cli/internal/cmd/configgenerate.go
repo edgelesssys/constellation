@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -104,18 +103,6 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 	// set a lower default for QEMU's state disk
 	if provider == cloudprovider.QEMU {
 		conf.StateDiskSizeGB = 10
-	}
-
-	// TODO(AB#2976): Replace hardcoded values with user input
-	switch provider {
-	case cloudprovider.AWS:
-		conf.AttestationVariant = variant.AWSNitroTPM{}.String()
-	case cloudprovider.Azure:
-		conf.AttestationVariant = variant.AzureSEVSNP{}.String()
-	case cloudprovider.GCP:
-		conf.AttestationVariant = variant.GCPSEVES{}.String()
-	case cloudprovider.QEMU:
-		conf.AttestationVariant = variant.QEMUVTPM{}.String()
 	}
 
 	return conf

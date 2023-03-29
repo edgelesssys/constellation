@@ -63,7 +63,6 @@ go_library(
         "//internal/logger",
         "//internal/retry",
         "//internal/sigstore",
-        "//internal/variant",
         "//internal/versions",
         "//internal/versionsapi",
         "//internal/versionsapi/fetcher",

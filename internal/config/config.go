@@ -79,7 +79,7 @@ type Config struct {
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
 	//   Attestation variant used to verify the integrity of a node.
-	AttestationVariant string `yaml:"attestationVariant" validate:"valid_attestation_variant"` // TODO: v2.8: Mark required
+	AttestationVariant string `yaml:"attestationVariant,omitempty" validate:"valid_attestation_variant"` // TODO: v2.8: Mark required
 	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
