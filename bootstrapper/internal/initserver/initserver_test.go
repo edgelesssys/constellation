@@ -501,7 +501,7 @@ type stubLogStream struct {
 
 func (s *stubLogStream) Send(m *initproto.LogResponse) error {
 	if s.sendError == nil {
-		// we don't append since we don't receive anything
+		// we append here since we don't receive anything
 		// if that if doesn't trigger
 		s.res = append(s.res, m)
 	}
