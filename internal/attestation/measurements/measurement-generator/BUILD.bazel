@@ -20,6 +20,8 @@ go_library(
 go_binary(
     name = "measurement-generator",
     embed = [":measurement-generator_lib"],
+    # keep
+    gotags = ["enterprise"],
     visibility = ["//:__subpackages__"],
 )
 

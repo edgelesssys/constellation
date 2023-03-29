@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+go=$(realpath @@GO@@)
+stat "${go}" >> /dev/null
+stringer=$(realpath @@STRINGER@@)
+stat "${stringer}" >> /dev/null
+docgen=$(realpath @@DOCGEN@@)
+stat "${docgen}" >> /dev/null
+helm=$(realpath @@HELM@@)
+stat "${helm}" >> /dev/null
+hash_generator=$(realpath @@HASH_GENERATOR@@)
+stat "${hash_generator}" >> /dev/null
+measurement_generator=$(realpath @@MEASUREMENT_GENERATOR@@)
+stat "${measurement_generator}" >> /dev/null
+
+cd "${BUILD_WORKSPACE_DIRECTORY}"
+
+###### script body ######
+
+PATH=$(dirname "${go}"):${PATH}
+PATH=$(dirname "${stringer}"):${PATH}
+PATH=$(dirname "${docgen}"):${PATH}
+PATH=$(dirname "${helm}"):${PATH}
+PATH=$(dirname "${hash_generator}"):${PATH}
+PATH=$(dirname "${measurement_generator}"):${PATH}
+export PATH
+
+submodules=$(${go} list -f '{{.Dir}}' -m)
+
+err=0
+
+echo "Running 'go generate' on the following Go modules:"
+for mod in ${submodules}; do
+  echo "${mod}"
+  ${go} generate -C "${mod}" ./... 2>&1 | sed 's/^/  /' || err=$?
+done
+
+exit "${err}"

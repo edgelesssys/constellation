@@ -12,6 +12,7 @@ def ci_deps():
     _golangci_lint_deps()
     _buf_deps()
     _talos_docgen_deps()
+    _helm_deps()
 
 def _shellcheck_deps():
     http_archive(
@@ -286,4 +287,34 @@ def _talos_docgen_deps():
         executable = True,
         downloaded_file_path = "docgen",
         sha256 = "4aa7ed0de31932d541aa11c9b75ed214ffc28dbd618f489fb5a598407aca072e",
+    )
+
+def _helm_deps():
+    http_archive(
+        name = "com_github_helm_helm_linux_amd64",
+        sha256 = "781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca",
+        url = "https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz",
+        strip_prefix = "linux-amd64",
+        build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_helm_helm_linux_arm64",
+        sha256 = "0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db",
+        url = "https://get.helm.sh/helm-v3.11.2-linux-arm64.tar.gz",
+        strip_prefix = "linux-arm64",
+        build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_helm_helm_darwin_amd64",
+        sha256 = "404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f",
+        url = "https://get.helm.sh/helm-v3.11.2-darwin-amd64.tar.gz",
+        strip_prefix = "darwin-amd64",
+        build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+    )
+    http_archive(
+        name = "com_github_helm_helm_darwin_arm64",
+        sha256 = "f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151",
+        url = "https://get.helm.sh/helm-v3.11.2-darwin-arm64.tar.gz",
+        strip_prefix = "darwin-arm64",
+        build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
     )
