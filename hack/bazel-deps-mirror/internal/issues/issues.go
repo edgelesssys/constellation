@@ -43,8 +43,12 @@ func (m Map) Report(w io.Writer) {
 
 		fmt.Fprintf(w, "File %s (%d issues total):\n", file, m.IssuesPerFile(file))
 		for _, rule := range rules {
+			ruleIssues := m[file][rule]
+			if len(ruleIssues) == 0 {
+				continue
+			}
 			fmt.Fprintf(w, "  Rule %s (%d issues total):\n", rule, m.IssuesPerRule(file, rule))
-			for _, issue := range m[file][rule] {
+			for _, issue := range ruleIssues {
 				fmt.Fprintf(w, "    %s\n", issue)
 			}
 		}

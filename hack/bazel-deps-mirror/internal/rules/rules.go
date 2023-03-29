@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package rules
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -40,41 +41,41 @@ ruleLoop:
 // That is, if it has a name, either a url or urls attribute, and a sha256 attribute.
 func ValidatePinned(rule *build.Rule) (validationErrs []error) {
 	if rule.Name() == "" {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s has no name", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule has no name"))
 	}
 
 	hasURL := rule.Attr("url") != nil
 	hasURLs := rule.Attr("urls") != nil
 	if !hasURL && !hasURLs {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s has no url or urls attribute", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule has no url or urls attribute"))
 	}
 	if hasURL && hasURLs {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s has both url and urls attribute", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule has both url and urls attribute"))
 	}
 	if hasURL {
 		url := rule.AttrString("url")
 		if url == "" {
-			validationErrs = append(validationErrs, fmt.Errorf("rule %s has empty url attribute", rule.Name()))
+			validationErrs = append(validationErrs, errors.New("rule has empty url attribute"))
 		}
 	}
 	if hasURLs {
 		urls := rule.AttrStrings("urls")
 		if len(urls) == 0 {
-			validationErrs = append(validationErrs, fmt.Errorf("rule %s has empty urls list attribute", rule.Name()))
+			validationErrs = append(validationErrs, errors.New("rule has empty urls list attribute"))
 		} else {
 			for _, url := range urls {
 				if url == "" {
-					validationErrs = append(validationErrs, fmt.Errorf("rule %s has empty url in urls attribute", rule.Name()))
+					validationErrs = append(validationErrs, errors.New("rule has empty url in urls attribute"))
 				}
 			}
 		}
 	}
 	if rule.Attr("sha256") == nil {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s has no sha256 attribute", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule has no sha256 attribute"))
 	} else {
 		sha256 := rule.AttrString("sha256")
 		if sha256 == "" {
-			validationErrs = append(validationErrs, fmt.Errorf("rule %s has empty sha256 attribute", rule.Name()))
+			validationErrs = append(validationErrs, errors.New("rule has empty sha256 attribute"))
 		}
 	}
 	return
@@ -85,7 +86,7 @@ func ValidatePinned(rule *build.Rule) (validationErrs []error) {
 func Check(rule *build.Rule) (validationErrs []error) {
 	hasURL := rule.Attr("url") != nil
 	if hasURL {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s has url (singular) attribute", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule has url (singular) attribute"))
 	}
 	urls := rule.AttrStrings("urls")
 	sorted := make([]string, len(urls))
@@ -93,18 +94,18 @@ func Check(rule *build.Rule) (validationErrs []error) {
 	sortURLs(sorted)
 	for i, url := range urls {
 		if url != sorted[i] {
-			validationErrs = append(validationErrs, fmt.Errorf("rule %s has unsorted urls attributes: unsorted[%d] = %q, sorted[%d] = %q", rule.Name(), i, url, i, sorted[i]))
+			validationErrs = append(validationErrs, errors.New("rule has unsorted urls attributes"))
 			break
 		}
 	}
 	if !HasMirrorURL(rule) {
-		validationErrs = append(validationErrs, fmt.Errorf("rule %s is not mirrored", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rule is not mirrored"))
 	}
 	if rule.Kind() == "http_archive" && rule.Attr("type") == nil {
-		validationErrs = append(validationErrs, fmt.Errorf("http_archive rule %s has no type attribute", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("http_archive rule has no type attribute"))
 	}
 	if rule.Kind() == "rpm" && len(urls) != 1 {
-		validationErrs = append(validationErrs, fmt.Errorf("rpm rule %s has unstable urls that are not the edgeless mirror", rule.Name()))
+		validationErrs = append(validationErrs, errors.New("rpm rule has unstable urls that are not the edgeless mirror"))
 	}
 	return
 }

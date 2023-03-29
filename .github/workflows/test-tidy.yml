@@ -41,14 +41,14 @@ jobs:
           go-version: "1.20.2"
 
       - name: Assume AWS role to upload Bazel dependencies to S3
-        # if: startsWith(github.head_ref, 'renovate/')
+        if: startsWith(github.head_ref, 'renovate/')
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationMirrorWrite
           aws-region: eu-central-1
 
       - name: Upload Bazel dependencies to the mirror
-        # if: startsWith(github.head_ref, 'renovate/')
+        if: startsWith(github.head_ref, 'renovate/')
         shell: bash
         run: bazelisk run //bazel/ci:deps_mirror_upload
 

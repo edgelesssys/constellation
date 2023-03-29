@@ -71,10 +71,12 @@ func runFix(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
-		issues.Set(bazelFile.AbsPath, fileIssues)
+		if len(fileIssues) > 0 {
+			issues.Set(bazelFile.AbsPath, fileIssues)
+		}
 	}
 	if len(issues) > 0 {
-		log.Infof("Found %d unfixable issues in rules", len(issues))
+		log.Warnf("Found %d unfixable issues in rules", len(issues))
 		issues.Report(cmd.OutOrStdout())
 		return errors.New("found issues in rules")
 	}
@@ -99,7 +101,9 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 	log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
 	for _, rule := range found {
 		changedRule, ruleIssues := fixRule(ctx, mirrorUpload, rule, log)
-		iss.Add(rule.Name(), ruleIssues...)
+		if len(ruleIssues) > 0 {
+			iss.Add(rule.Name(), ruleIssues...)
+		}
 		changed = changed || changedRule
 	}
 

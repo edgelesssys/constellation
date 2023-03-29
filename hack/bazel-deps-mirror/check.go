@@ -73,7 +73,9 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
-		iss.Set(bazelFile.AbsPath, issByFile)
+		if len(issByFile) > 0 {
+			iss.Set(bazelFile.AbsPath, issByFile)
+		}
 	}
 	if len(iss) > 0 {
 		log.Infof("Found issues in rules")
@@ -101,13 +103,13 @@ func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCh
 	for _, rule := range found {
 		log.Debugf("Checking rule: %s", rule.Name())
 		// check if the rule is a valid pinned dependency rule (has all required attributes)
-		if issue := rules.ValidatePinned(rule); issue != nil {
-			issByFile.Add(rule.Name(), issue...)
+		if issues := rules.ValidatePinned(rule); len(issues) > 0 {
+			issByFile.Add(rule.Name(), issues...)
 			continue
 		}
 		// check if the rule is a valid mirror rule
-		if issue := rules.Check(rule); issue != nil {
-			issByFile.Add(rule.Name(), issue...)
+		if issues := rules.Check(rule); len(issues) > 0 {
+			issByFile.Add(rule.Name(), issues...)
 		}
 
 		// check if the referenced CAS object is still consistent
