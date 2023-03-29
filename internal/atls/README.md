@@ -12,7 +12,7 @@ The protocol can be used by clients to verify a server certificate, by a server 
 1. The client sends a ClientHello message, setting ServerName to a random nonce.
 
 2. The server generates an attestation statement using the clients nonce and its CC capabilities.
-    * The attestation is embedded in the server certificate using x509 certificate extensions with an object identifier (OID) to identify the CC attestation type. See [OID](../oid/oid.go) for implementation details.
+    * The attestation is embedded in the server certificate using x509 certificate extensions with an object identifier (OID) to identify the CC attestation type. See [variant.go](../variant/variant.go) for implementation details.
 
 3. The client verifies the attestation statement.
 
