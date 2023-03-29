@@ -143,7 +143,7 @@ func (m *M) EqualTo(other M) bool {
 func (m *M) GetEnforced() []uint32 {
 	var enforced []uint32
 	for idx, measurement := range *m {
-		if !measurement.ValidationOpt {
+		if measurement.ValidationOpt == Enforce {
 			enforced = append(enforced, idx)
 		}
 	}
