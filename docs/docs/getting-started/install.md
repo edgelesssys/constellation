@@ -115,7 +115,8 @@ The following [resource providers need to be registered](https://learn.microsoft
 * `Microsoft.Compute`
 * `Microsoft.ManagedIdentity`
 * `Microsoft.Network`
-* `microsoft.insights`
+* `Microsoft.Insights`
+* `Microsoft.Attestation` \[2]
 
 By default, Constellation tries to register these automatically if they haven't been registered before.
 
@@ -146,7 +147,7 @@ Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/az
 
 1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
 
-2: You can omit `Microsoft.Attestation/attestationProviders/*` if `EnforceIDKeyDigest` is not set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
+2: You can omit `Microsoft.Attestation/attestationProviders/*` and the registration of `Microsoft.Attestation` if `EnforceIDKeyDigest` isn't set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
