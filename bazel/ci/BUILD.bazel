@@ -57,7 +57,7 @@ sh_template(
     substitutions = {
         "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
     },
-    template = "tidy.sh.in",
+    template = "go_tidy.sh.in",
 )
 
 sh_template(
@@ -187,7 +187,7 @@ sh_template(
         "@@MODE@@": "generate",
         "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
     },
-    template = "tf.sh.in",
+    template = "terraform.sh.in",
 )
 
 sh_template(
@@ -199,7 +199,7 @@ sh_template(
         "@@MODE@@": "check",
         "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
     },
-    template = "tf.sh.in",
+    template = "terraform.sh.in",
 )
 
 sh_template(
@@ -211,7 +211,7 @@ sh_template(
         "@@MODE@@": "format",
         "@@TERRAFORM@@": "$(rootpath :com_github_hashicorp_terraform)",
     },
-    template = "tf.sh.in",
+    template = "terraform.sh.in",
 )
 
 alias(
@@ -234,7 +234,7 @@ sh_template(
         "@@GO@@": "$(rootpath @go_sdk//:bin/go)",
         "@@GOLANGCI-LINT@@": "$(rootpath :com_github_golangci_golangci_lint)",
     },
-    template = "golangci.sh.in",
+    template = "golangci_lint.sh.in",
 )
 
 alias(
@@ -275,7 +275,7 @@ sh_template(
     name = "license_header_check",
     data = [],
     substitutions = {},
-    template = "licenseheader.sh.in",
+    template = "license_header.sh.in",
 )
 
 sh_template(
