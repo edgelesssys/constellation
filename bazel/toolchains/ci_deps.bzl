@@ -351,33 +351,44 @@ def _helm_deps():
     http_archive(
         name = "com_github_helm_helm_linux_amd64",
         sha256 = "781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca",
-        url = "https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz",
         strip_prefix = "linux-amd64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/781d826daec584f9d50a01f0f7dadfd25a3312217a14aa2fbb85107b014ac8ca",
+            "https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz",
+        ],
+        type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_linux_arm64",
         sha256 = "0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db",
-        url = "https://get.helm.sh/helm-v3.11.2-linux-arm64.tar.gz",
         strip_prefix = "linux-arm64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/0a60baac83c3106017666864e664f52a4e16fbd578ac009f9a85456a9241c5db",
+            "https://get.helm.sh/helm-v3.11.2-linux-arm64.tar.gz",
+        ],
+        type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_darwin_amd64",
         sha256 = "404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f",
-        url = "https://get.helm.sh/helm-v3.11.2-darwin-amd64.tar.gz",
         strip_prefix = "darwin-amd64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/404938fd2c6eff9e0dab830b0db943fca9e1572cd3d7ee40904705760faa390f",
+            "https://get.helm.sh/helm-v3.11.2-darwin-amd64.tar.gz",
+        ],
+        type = "tar.gz",
     )
     http_archive(
         name = "com_github_helm_helm_darwin_arm64",
         sha256 = "f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151",
-        url = "https://get.helm.sh/helm-v3.11.2-darwin-arm64.tar.gz",
         strip_prefix = "darwin-arm64",
         build_file_content = """exports_files(["helm"], visibility = ["//visibility:public"])""",
-        urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/f6187bbcf0718da1de38ca638038d4a707dd5b0e113e1a9e110ac8a15012505a",
-            "https://github.com/bufbuild/buf/releases/download/v1.15.1/buf-Darwin-arm64.tar.gz",
-        ],
         type = "tar.gz",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/f61a3aa55827de2d8c64a2063fd744b618b443ed063871b79f52069e90813151",
+            "https://get.helm.sh/helm-v3.11.2-darwin-arm64.tar.gz",
+        ],
     )

@@ -6,6 +6,7 @@ def node_maintainance_operator_deps():
     http_archive(
         name = "com_github_medik8s_node_maintainance_operator",
         urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/048323ffdb55787df9b93d85be93e4730f4495fba81b440dc6fe195408ec2533",
             "https://github.com/medik8s/node-maintenance-operator/archive/refs/tags/v0.14.0.tar.gz",
         ],
         sha256 = "048323ffdb55787df9b93d85be93e4730f4495fba81b440dc6fe195408ec2533",
@@ -18,4 +19,5 @@ filegroup(
     visibility = ["//visibility:public"],
 )
         """,
+        type = "tar.gz",
     )
