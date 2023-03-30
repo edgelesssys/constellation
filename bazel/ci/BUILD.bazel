@@ -381,6 +381,17 @@ multirun(
     jobs = 0,  # execute concurrently
 )
 
+sh_template(
+    name = "cli_docgen",
+    data = [
+        "//hack/clidocgen",
+    ],
+    substitutions = {
+        "@@CLIDOCGEN@@": "$(rootpath //hack/clidocgen:clidocgen)",
+    },
+    template = "cli_docgen.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -432,6 +443,7 @@ multirun(
         "//3rdparty/bazel/com_github_medik8s_node_maintainance_operator:pull_files",
         ":go_generate",
         ":proto_generate",
+        ":cli_docgen",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
