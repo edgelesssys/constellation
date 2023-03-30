@@ -31,14 +31,14 @@ chmod u+x constellation
 # wait for docker to come up
 echo "Waiting for docker service to be active..."
 
-# Wait at most 5min
+# Wait at most 10min
 count=0
-until systemctl is-active docker || [[ ${count} -eq 30 ]]; do
+until systemctl is-active docker || [[ ${count} -eq 60 ]]; do
   sleep 10
   count=$((count + 1))
 done
 
-if [[ ${count} -eq 30 ]]; then
+if [[ ${count} -eq 60 ]]; then
   echo "Docker service did not come up in time."
   exit 1
 fi
