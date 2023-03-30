@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package journald
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"os/exec"
@@ -17,62 +18,39 @@ import (
 )
 
 type stubCommand struct {
-	stdout     *stubStdoutPipe
-	text       []byte
-	startError error
-	exitCode   error
+	startCalled bool
+	startErr    error
+	waitErr     error
 }
 
 func (j *stubCommand) Start() error {
-	j.stdout.buffer = j.text
-	return j.startError
+	j.startCalled = true
+	return j.startErr
 }
 
 func (j *stubCommand) Wait() error {
-	return j.exitCode
+	return j.waitErr
 }
 
-type stubStdoutPipe struct {
-	buffer []byte
-	read   bool
-}
-
-func (s *stubStdoutPipe) Read(p []byte) (int, error) {
-	if !s.read {
-		s.read = true
-		for i := range p {
-			p[i] = s.buffer[i]
-		}
-		return len(p), nil
-	}
-	return 0, io.EOF
-}
-
-func (s stubStdoutPipe) Close() error {
-	return nil
-}
-
-type stubStderrPipe struct {
-	buffer   []byte
+type stubReadCloser struct {
+	reader   io.Reader
 	readErr  error
 	closeErr error
 }
 
-func (s stubStderrPipe) Read(p []byte) (n int, err error) {
-	size := len(s.buffer)
+func (s *stubReadCloser) Read(p []byte) (n int, err error) {
 	if s.readErr != nil {
-		size = 0
+		return 0, s.readErr
 	}
-	return size, s.readErr
+	return s.reader.Read(p)
 }
 
-func (s stubStderrPipe) Close() error {
+func (s *stubReadCloser) Close() error {
 	return s.closeErr
 }
 
 func TestPipe(t *testing.T) {
 	someError := errors.New("failed")
-	stdoutPipe := stubStdoutPipe{}
 
 	testCases := map[string]struct {
 		command      *stubCommand
@@ -81,16 +59,16 @@ func TestPipe(t *testing.T) {
 		wantErr      bool
 	}{
 		"success": {
-			command:      &stubCommand{stdout: &stdoutPipe, text: []byte("asdf")},
+			command:      &stubCommand{},
 			wantedOutput: []byte("asdf"),
-			stdoutPipe:   &stdoutPipe,
+			stdoutPipe:   &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))},
 		},
 		"execution failed": {
-			command: &stubCommand{startError: someError, stdout: &stdoutPipe},
+			command: &stubCommand{startErr: someError},
 			wantErr: true,
 		},
 		"exit error": {
-			command: &stubCommand{startError: &exec.ExitError{}, stdout: &stdoutPipe},
+			command: &stubCommand{startErr: &exec.ExitError{}},
 			wantErr: true,
 		},
 	}
@@ -99,14 +77,14 @@ func TestPipe(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			collector := Collector{cmd: tc.command, stdoutPipe: &tc.stdoutPipe}
+			collector := Collector{cmd: tc.command, stdoutPipe: tc.stdoutPipe}
 
 			pipe, err := collector.Pipe()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				stdout := make([]byte, 4)
-				_, err = io.ReadFull(*pipe, stdout)
+				_, err = io.ReadFull(pipe, stdout)
 				require.NoError(t, err)
 				assert.Equal(tc.wantedOutput, stdout)
 			}
@@ -123,17 +101,17 @@ func TestError(t *testing.T) {
 		wantErr    bool
 	}{
 		"success": {
-			stderrPipe: stubStderrPipe{readErr: io.EOF},
+			stderrPipe: &stubReadCloser{readErr: io.EOF},
 		},
 		"reading error": {
-			stderrPipe: stubStderrPipe{readErr: someError},
+			stderrPipe: &stubReadCloser{readErr: someError},
 			wantErr:    true,
 		},
 		"close error": {
-			stderrPipe: stubStderrPipe{closeErr: someError, readErr: io.EOF},
+			stderrPipe: &stubReadCloser{closeErr: someError, readErr: io.EOF},
 		},
 		"command exit": {
-			stderrPipe: stubStderrPipe{readErr: io.EOF},
+			stderrPipe: &stubReadCloser{readErr: io.EOF},
 			exitCode:   someError,
 			wantErr:    true,
 		},
@@ -144,8 +122,8 @@ func TestError(t *testing.T) {
 			assert := assert.New(t)
 
 			collector := Collector{
-				stderrPipe: &tc.stderrPipe,
-				cmd:        &stubCommand{exitCode: tc.exitCode},
+				stderrPipe: tc.stderrPipe,
+				cmd:        &stubCommand{waitErr: tc.exitCode},
 			}
 
 			stderrOut, err := collector.Error()
