@@ -22,9 +22,9 @@ type command interface {
 
 // Collector collects logs from journald.
 type Collector struct {
-	cmd        command
-	stdoutPipe *io.ReadCloser
-	stderrPipe *io.ReadCloser
+	cmd    command
+	stdout io.ReadCloser
+	stderr io.ReadCloser
 }
 
 // NewCollector creates a new Collector for journald logs.
@@ -41,16 +41,16 @@ func NewCollector(ctx context.Context) (*Collector, error) {
 	if err != nil {
 		return nil, err
 	}
-	collector := Collector{cmd, &stdoutPipe, &stderrPipe}
+	collector := Collector{cmd, stdoutPipe, stderrPipe}
 	return &collector, nil
 }
 
 // Pipe returns a pipe to read the systemd logs. This should be read with a bufio Reader.
-func (c *Collector) Pipe() (*io.ReadCloser, error) {
+func (c *Collector) Pipe() (io.ReadCloser, error) {
 	if err := c.cmd.Start(); err != nil {
 		return nil, err
 	}
-	return c.stdoutPipe, nil
+	return c.stdout, nil
 }
 
 // Error returns the error message of the journalctl command.
@@ -58,7 +58,7 @@ func (c *Collector) Pipe() (*io.ReadCloser, error) {
 // well as the exit/io error, the third one checks if the function
 // ran successfully.
 func (c *Collector) Error() ([]byte, error) {
-	stderr, err := io.ReadAll(*c.stderrPipe)
+	stderr, err := io.ReadAll(c.stderr)
 	if err != nil {
 		return nil, err
 	}
