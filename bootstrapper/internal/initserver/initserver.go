@@ -257,14 +257,9 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		log.Infof("Encrypting log chunk...")
 		encLogChunk := aesgcm.Seal(nil, nonce, systemdLogs[i:end], nil)
 
-		log.Infof("Sending back nonce...")
-		err = stream.Send(&initproto.LogResponse{Nonce: nonce})
+		log.Infof("Streaming data...")
+		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
 		if err != nil {
-			return err
-		}
-
-		log.Infof("Streaming chunk...")
-		if err = stream.Send(&initproto.LogResponse{Log: encLogChunk}); err != nil {
 			return err
 		}
 	}
