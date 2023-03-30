@@ -43,7 +43,7 @@ func (s *stubStdoutPipe) Read(p []byte) (int, error) {
 		for i := range p {
 			p[i] = s.buffer[i]
 		}
-		return 4, nil
+		return len(p), nil
 	}
 	return 0, io.EOF
 }
