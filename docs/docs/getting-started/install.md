@@ -146,7 +146,7 @@ Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/az
 
 1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
 
-2: You can omit `Microsoft.Attestation/attestationProviders/*` if `EnforceIDKeyDigest` is set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
+2: You can omit `Microsoft.Attestation/attestationProviders/*` if `EnforceIDKeyDigest` is not set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
