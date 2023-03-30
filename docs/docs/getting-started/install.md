@@ -119,7 +119,7 @@ The following [resource providers need to be registered](https://learn.microsoft
 
 By default, Constellation tries to register these automatically if they haven't been registered before.
 
-To [automatically create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 * `Microsoft.Authorization/roleDefinitions/*`
 * `Microsoft.Authorization/roleAssignments/*`
 * `*/register/action` \[1]
