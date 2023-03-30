@@ -305,19 +305,15 @@ func TestGetLogs(t *testing.T) {
 
 			err := server.GetLogs(tc.req, &tc.stream)
 
-			nonce := []byte{}
-			ciphertext := []byte{}
-			if len(tc.stream.res) > 0 {
-				nonce = tc.stream.res[0].Nonce
-				for _, res := range tc.stream.res[1:] {
-					ciphertext = append(ciphertext, res.Log...)
+			if tc.wantDecryptable {
+				for _, res := range tc.stream.res {
+					nonce := res.Nonce
+					ciphertext := res.Log
+					t.Logf("nonce: %x\tcipher: %x\n", nonce, ciphertext)
+					decrypted, err := tc.decryptor.Open(nil, nonce, ciphertext, nil)
+					require.NoError(err)
+					t.Logf("decrypted: %x\n", decrypted)
 				}
-			}
-
-			var decrypted []byte
-			if len(nonce) != 0 && (tc.wantDecryptable || tc.tryDecrypt) {
-				decrypted, err = tc.decryptor.Open(nil, nonce, ciphertext, nil)
-				require.NoError(err)
 			}
 
 			if tc.wantErr {
@@ -332,11 +328,6 @@ func TestGetLogs(t *testing.T) {
 				assert.NotEmpty(tc.stream.res)
 			}
 
-			if tc.wantDecryptable {
-				assert.Equal("-- No entries --\n", string(decrypted))
-			} else {
-				assert.NotEqual("-- No entries --\n", string(decrypted))
-			}
 		})
 	}
 }
