@@ -15,8 +15,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -61,7 +61,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	checker, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
+	checker, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}

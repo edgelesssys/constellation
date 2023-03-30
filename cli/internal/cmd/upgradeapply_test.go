@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -39,7 +39,7 @@ func TestUpgradeApply(t *testing.T) {
 			wantErr:  true,
 		},
 		"nodeVersion in progress error": {
-			upgrader: stubUpgrader{nodeVersionErr: cloudcmd.ErrInProgress},
+			upgrader: stubUpgrader{nodeVersionErr: kubernetes.ErrInProgress},
 		},
 		"helm other error": {
 			upgrader: stubUpgrader{helmErr: someErr},

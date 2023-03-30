@@ -1,0 +1,58 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "kubernetes",
+    srcs = [
+        "kubernetes.go",
+        "status.go",
+        "upgrade.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/kubernetes",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//cli/internal/helm",
+        "//cli/internal/image",
+        "//internal/attestation/measurements",
+        "//internal/compatibility",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/kubernetes",
+        "//internal/kubernetes/kubectl",
+        "//internal/versions",
+        "//internal/versions/components",
+        "//internal/versionsapi",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_client_go//dynamic",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//tools/clientcmd",
+    ],
+)
+
+go_test(
+    name = "kubernetes_test",
+    srcs = ["upgrade_test.go"],
+    embed = [":kubernetes"],
+    deps = [
+        "//internal/attestation/measurements",
+        "//internal/compatibility",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/logger",
+        "//internal/versions",
+        "//internal/versions/components",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
+        "@io_k8s_apimachinery//pkg/runtime",
+    ],
+)

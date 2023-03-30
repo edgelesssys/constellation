@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -53,7 +53,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
+	upgrader, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
 		switch {
-		case errors.Is(err, cloudcmd.ErrInProgress):
+		case errors.Is(err, kubernetes.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
