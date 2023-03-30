@@ -48,14 +48,21 @@ func TestBuildString(t *testing.T) {
 				currentKubernetes: "v1.24.5",
 				currentCLI:        "v2.4.0",
 			},
-			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  CLI: v2.4.0 --> v2.5.0 v2.6.0\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
+			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
 		},
-		"cli only": {
+		"cli incompatible with K8s": {
 			upgrade: versionUpgrade{
 				newCLI:     []string{"v2.5.0", "v2.6.0"},
 				currentCLI: "v2.4.0",
 			},
-			expected: "The following updates are available with this CLI:\n  CLI: v2.4.0 --> v2.5.0 v2.6.0\n",
+			expected: "There are newer CLIs available (v2.5.0 v2.6.0), however, you need to upgrade your cluster's Kubernetes version first.\n",
+		},
+		"cli compatible with K8s": {
+			upgrade: versionUpgrade{
+				newCompatibleCLI: []string{"v2.5.0", "v2.6.0"},
+				currentCLI:       "v2.4.0",
+			},
+			expected: "Newer CLI versions that are compatible with your cluster are: v2.5.0 v2.6.0\n",
 		},
 		"k8s only": {
 			upgrade: versionUpgrade{
@@ -75,11 +82,11 @@ func TestBuildString(t *testing.T) {
 				currentKubernetes: "v1.25.6",
 				currentCLI:        "v2.5.0",
 			},
-			expected: "No upgrades available with this CLI.\n",
+			expected: "You are up to date.\n",
 		},
 		"no upgrades #2": {
 			upgrade:  versionUpgrade{},
-			expected: "No upgrades available with this CLI.\n",
+			expected: "You are up to date.\n",
 		},
 	}
 
@@ -237,7 +244,7 @@ func TestUpgradeCheck(t *testing.T) {
 				currentK8sVersion:       "v1.24.5",
 				currentCLIVersion:       "v2.4.0",
 				images:                  []versionsapi.Version{v2_5},
-				newCLIVersions:          []string{"v2.5.0", "v2.6.0"},
+				newCLIVersionsList:      []string{"v2.5.0", "v2.6.0"},
 			},
 			flags: upgradeCheckFlags{
 				configPath: constants.ConfigFilename,
@@ -274,18 +281,19 @@ func TestUpgradeCheck(t *testing.T) {
 }
 
 type stubVersionCollector struct {
-	supportedServicesVersions string
-	supportedImages           []versionsapi.Version
-	supportedImageVersions    map[string]measurements.M
-	supportedK8sVersions      []string
-	supportedCLIVersions      []string
-	currentServicesVersions   string
-	currentImageVersion       string
-	currentK8sVersion         string
-	currentCLIVersion         string
-	images                    []versionsapi.Version
-	newCLIVersions            []string
-	someErr                   error
+	supportedServicesVersions    string
+	supportedImages              []versionsapi.Version
+	supportedImageVersions       map[string]measurements.M
+	supportedK8sVersions         []string
+	supportedCLIVersions         []string
+	currentServicesVersions      string
+	currentImageVersion          string
+	currentK8sVersion            string
+	currentCLIVersion            string
+	images                       []versionsapi.Version
+	newCLIVersionsList           []string
+	newCompatibleCLIVersionsList []string
+	someErr                      error
 }
 
 func (s *stubVersionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
@@ -318,8 +326,12 @@ func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]v
 	return s.images, nil
 }
 
-func (s *stubVersionCollector) newCompatibleCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
-	return s.newCLIVersions, nil
+func (s *stubVersionCollector) newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+	return s.newCLIVersionsList, nil
+}
+
+func (s *stubVersionCollector) filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []string, currentK8sVersion string) ([]string, error) {
+	return s.newCompatibleCLIVersionsList, nil
 }
 
 type stubUpgradeChecker struct {
@@ -336,7 +348,7 @@ func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string,
 	return u.k8sVersion, u.err
 }
 
-func TestNewCompatibleCLIVersions(t *testing.T) {
+func TestNewCLIVersions(t *testing.T) {
 	someErr := errors.New("some error")
 	minorList := func() versionsapi.List {
 		return versionsapi.List{
@@ -351,14 +363,13 @@ func TestNewCompatibleCLIVersions(t *testing.T) {
 	emptyVerList := func() versionsapi.List {
 		return versionsapi.List{}
 	}
-	verCollector := func(minorList, patchList versionsapi.List, verListErr, cliInfoErr error) versionCollector {
+	verCollector := func(minorList, patchList versionsapi.List, verListErr error) versionCollector {
 		return versionCollector{
 			cliVersion: "v0.1.0",
 			versionsapi: stubVersionFetcher{
 				minorList:      minorList,
 				patchList:      patchList,
 				versionListErr: verListErr,
-				cliInfoErr:     cliInfoErr,
 			},
 		}
 	}
@@ -368,17 +379,13 @@ func TestNewCompatibleCLIVersions(t *testing.T) {
 		wantErr      bool
 	}{
 		"works": {
-			verCollector: verCollector(minorList(), patchList(), nil, nil),
+			verCollector: verCollector(minorList(), patchList(), nil),
 		},
 		"empty versions list": {
-			verCollector: verCollector(emptyVerList(), emptyVerList(), nil, nil),
+			verCollector: verCollector(emptyVerList(), emptyVerList(), nil),
 		},
 		"version list error": {
-			verCollector: verCollector(minorList(), patchList(), someErr, nil),
-			wantErr:      true,
-		},
-		"cli info error": {
-			verCollector: verCollector(minorList(), patchList(), nil, someErr),
+			verCollector: verCollector(minorList(), patchList(), someErr),
 			wantErr:      true,
 		},
 	}
@@ -387,7 +394,48 @@ func TestNewCompatibleCLIVersions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			_, err := tc.verCollector.newCompatibleCLIVersions(context.Background(), "v1.24.5")
+			_, err := tc.verCollector.newCLIVersions(context.Background(), "v1.24.5")
+			if tc.wantErr {
+				require.Error(err)
+				return
+			}
+			require.NoError(err)
+		})
+	}
+}
+
+func TestFilterCompatibleCLIVersions(t *testing.T) {
+	someErr := errors.New("some error")
+	verCollector := func(cliInfoErr error) versionCollector {
+		return versionCollector{
+			cliVersion: "v0.1.0",
+			versionsapi: stubVersionFetcher{
+				cliInfoErr: cliInfoErr,
+			},
+		}
+	}
+
+	testCases := map[string]struct {
+		verCollector     versionCollector
+		cliPatchVersions []string
+		wantErr          bool
+	}{
+		"works": {
+			verCollector:     verCollector(nil),
+			cliPatchVersions: []string{"v0.1.1"},
+		},
+		"cli info error": {
+			verCollector:     verCollector(someErr),
+			cliPatchVersions: []string{"v0.1.1"},
+			wantErr:          true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			_, err := tc.verCollector.filterCompatibleCLIVersions(context.Background(), tc.cliPatchVersions, "v1.24.5")
 			if tc.wantErr {
 				require.Error(err)
 				return
