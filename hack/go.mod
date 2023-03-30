@@ -37,11 +37,19 @@ replace (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/config v1.18.19
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
+	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.5.2
+	github.com/hexops/gotextdiff v1.0.3
+	github.com/spf13/afero v1.9.5
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.2
+	go.uber.org/goleak v1.2.1
 	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20220823124025-807a23277127
 	golang.org/x/mod v0.8.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	libvirt.org/go/libvirt v1.8010.0
@@ -80,10 +88,8 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.18.19 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.1 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.31 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.25 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.32 // indirect
@@ -94,7 +100,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.26 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.25 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.7 // indirect
@@ -239,14 +244,13 @@ require (
 	github.com/sassoftware/relic v0.0.0-20210427151427-dfb082b79b74 // indirect
 	github.com/schollz/progressbar/v3 v3.13.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
-	github.com/sergi/go-diff v1.2.0 // indirect
+	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/siderolabs/talos/pkg/machinery v1.3.2 // indirect
 	github.com/sigstore/rekor v1.0.1 // indirect
 	github.com/sigstore/sigstore v1.6.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
-	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tent/canonical-json-go v0.0.0-20130607151641-96e4ba3a7613 // indirect
@@ -265,7 +269,6 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect

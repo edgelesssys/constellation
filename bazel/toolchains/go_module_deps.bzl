@@ -816,6 +816,15 @@ def go_dependencies():
         version = "v0.9.0",
     )
     go_repository(
+        name = "com_github_bazelbuild_buildtools",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/bazelbuild/buildtools",
+        sum = "h1:XmPu4mXICgdGnC5dXGjUGbwUD/kUmS0l5Aop3LaevBM=",
+        version = "v0.0.0-20230317132445-9c3c1fc0106e",
+    )
+
+    go_repository(
         name = "com_github_beeker1121_goque",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3559,6 +3568,14 @@ def go_dependencies():
         sum = "h1:ab7dI6W8DuCY7yCU8blo0UCYl2oHre/dloCmzMWg9w8=",
         version = "v1.9.0",
     )
+    go_repository(
+        name = "com_github_hexops_gotextdiff",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hexops/gotextdiff",
+        sum = "h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=",
+        version = "v1.0.3",
+    )
 
     go_repository(
         name = "com_github_honeycombio_beeline_go",
@@ -5919,8 +5936,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/sergi/go-diff",
-        sum = "h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=",
-        version = "v1.2.0",
+        sum = "h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=",
+        version = "v1.3.1",
     )
     go_repository(
         name = "com_github_shibumi_go_pathspec",

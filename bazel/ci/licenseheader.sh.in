@@ -24,6 +24,7 @@ noHeader=$(
     -rL \
     --include='*.go' \
     --exclude-dir 3rdparty \
+    --exclude-dir build \
     -e'SPDX-License-Identifier: AGPL-3.0-only' \
     -e'DO NOT EDIT'
 )

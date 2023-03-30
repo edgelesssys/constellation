@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "rules",
+    srcs = ["rules.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror/internal/rules",
+    visibility = ["//hack/bazel-deps-mirror:__subpackages__"],
+    deps = [
+        "@com_github_bazelbuild_buildtools//build",
+        "@org_golang_x_exp//slices",
+    ],
+)
+
+go_test(
+    name = "rules_test",
+    srcs = ["rules_test.go"],
+    embed = [":rules"],
+    deps = [
+        "@com_github_bazelbuild_buildtools//build",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

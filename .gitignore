@@ -57,7 +57,7 @@ __pycache__/
 .gitpod.yml
 
 # Bazel
-bazel-*
+/bazel-*
 tools/pseudo-version
 .bazeloverwriterc
 
