@@ -56,7 +56,7 @@ func (c *Collector) Pipe() (io.ReadCloser, error) {
 // Error returns the error message of the journalctl command.
 // The first two parameters are what's written to stderr as
 // well as the exit/io error, the third one checks if the function
-// ran succesfully.
+// ran successfully.
 func (c *Collector) Error() ([]byte, error, error) {
 	stderr, err := io.ReadAll(c.stderrPipe)
 	if err != nil {
