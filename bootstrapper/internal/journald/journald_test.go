@@ -16,19 +16,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubJournaldCommand struct {
+type stubCommand struct {
 	stdout     *stubStdoutPipe
 	text       []byte
 	startError error
 	exitCode   error
 }
 
-func (j *stubJournaldCommand) Start() error {
+func (j *stubCommand) Start() error {
 	j.stdout.buffer = j.text
 	return j.startError
 }
 
-func (j *stubJournaldCommand) Wait() error {
+func (j *stubCommand) Wait() error {
 	return j.exitCode
 }
 
@@ -76,22 +76,22 @@ func TestPipe(t *testing.T) {
 	stdoutPipe := stubStdoutPipe{}
 
 	testCases := map[string]struct {
-		command      *stubJournaldCommand
+		command      *stubCommand
 		stdoutPipe   io.ReadCloser
 		wantedOutput []byte
 		wantErr      bool
 	}{
 		"success": {
-			command:      &stubJournaldCommand{stdout: &stdoutPipe, text: []byte("asdf")},
+			command:      &stubCommand{stdout: &stdoutPipe, text: []byte("asdf")},
 			wantedOutput: []byte("asdf"),
 			stdoutPipe:   &stdoutPipe,
 		},
 		"execution failed": {
-			command: &stubJournaldCommand{startError: someError, stdout: &stdoutPipe},
+			command: &stubCommand{startError: someError, stdout: &stdoutPipe},
 			wantErr: true,
 		},
 		"exit error": {
-			command: &stubJournaldCommand{startError: &exec.ExitError{}, stdout: &stdoutPipe},
+			command: &stubCommand{startError: &exec.ExitError{}, stdout: &stdoutPipe},
 			wantErr: true,
 		},
 	}
@@ -146,7 +146,7 @@ func TestError(t *testing.T) {
 
 			collector := Collector{
 				stderrPipe: &tc.stderrPipe,
-				cmd:        &stubJournaldCommand{exitCode: tc.exitCode},
+				cmd:        &stubCommand{exitCode: tc.exitCode},
 			}
 
 			stderrOut, err := collector.Error()
