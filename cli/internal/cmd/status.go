@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -74,7 +74,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	output, err := status(cmd.Context(), kubeClient, helmClient, cloudcmd.NewNodeVersionClient(unstructuredClient))
+	output, err := status(cmd.Context(), kubeClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient))
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -84,8 +84,8 @@ func runStatus(cmd *cobra.Command, args []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, dynamicInterface cloudcmd.DynamicInterface) (string, error) {
-	nodeVersion, err := cloudcmd.GetConstellationVersion(ctx, dynamicInterface)
+func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
+	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
 	}
@@ -93,7 +93,7 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
 	}
 
-	targetVersions, err := cloudcmd.NewTargetVersions(nodeVersion)
+	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
 	if err != nil {
 		return "", fmt.Errorf("getting configured versions: %w", err)
 	}
@@ -103,7 +103,7 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 		return "", fmt.Errorf("getting service versions: %w", err)
 	}
 
-	status, err := cloudcmd.ClusterStatus(ctx, kubeClient)
+	status, err := kubernetes.ClusterStatus(ctx, kubeClient)
 	if err != nil {
 		return "", fmt.Errorf("getting cluster status: %w", err)
 	}
@@ -112,7 +112,7 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
-func statusOutput(targetVersions cloudcmd.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]cloudcmd.NodeStatus, nodeVersion v1alpha1.NodeVersion) string {
+func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion) string {
 	builder := strings.Builder{}
 
 	builder.WriteString(targetVersionsString(targetVersions))
@@ -124,7 +124,7 @@ func statusOutput(targetVersions cloudcmd.TargetVersions, serviceVersions helm.S
 }
 
 // nodeStatusString creates the node status part of the output string.
-func nodeStatusString(status map[string]cloudcmd.NodeStatus, targetVersions cloudcmd.TargetVersions) string {
+func nodeStatusString(status map[string]kubernetes.NodeStatus, targetVersions kubernetes.TargetVersions) string {
 	var upToDateImages int
 	var upToDateK8s int
 	for _, node := range status {
@@ -157,7 +157,7 @@ func serviceVersionsString(versions helm.ServiceVersions) string {
 }
 
 // targetVersionsString creates the target versions part of the output string.
-func targetVersionsString(target cloudcmd.TargetVersions) string {
+func targetVersionsString(target kubernetes.TargetVersions) string {
 	builder := strings.Builder{}
 	builder.WriteString("Target versions:\n")
 	builder.WriteString(fmt.Sprintf("\tImage: %s\n", target.Image()))

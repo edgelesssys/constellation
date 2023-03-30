@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cloudcmd
+package kubernetes
 
 import (
 	"context"
@@ -467,4 +467,13 @@ func (s *stubStableClient) createConfigMap(_ context.Context, configMap *corev1.
 
 func (s *stubStableClient) kubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
+}
+
+type stubImageFetcher struct {
+	reference         string
+	fetchReferenceErr error
+}
+
+func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+	return f.reference, f.fetchReferenceErr
 }

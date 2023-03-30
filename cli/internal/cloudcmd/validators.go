@@ -138,3 +138,8 @@ func (wl warnLogger) Infof(fmtStr string, args ...any) {
 func (wl warnLogger) Warnf(fmtStr string, args ...any) {
 	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
 }
+
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
+}

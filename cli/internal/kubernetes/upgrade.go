@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cloudcmd
+package kubernetes
 
 import (
 	"context"
@@ -412,4 +412,9 @@ type helmInterface interface {
 type debugLog interface {
 	Debugf(format string, args ...any)
 	Sync()
+}
+
+// imageFetcher gets an image reference from the versionsapi.
+type imageFetcher interface {
+	FetchReference(ctx context.Context, config *config.Config) (string, error)
 }
