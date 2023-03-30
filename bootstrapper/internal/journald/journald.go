@@ -57,11 +57,11 @@ func (c *Collector) Pipe() (io.ReadCloser, error) {
 // The first two parameters are what's written to stderr as
 // well as the exit/io error, the third one checks if the function
 // ran successfully.
-func (c *Collector) Error() ([]byte, error, error) {
+func (c *Collector) Error() ([]byte, error) {
 	stderr, err := io.ReadAll(c.stderrPipe)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	exitCode := c.cmd.Wait()
-	return stderr, exitCode, nil
+	return stderr, exitCode
 }

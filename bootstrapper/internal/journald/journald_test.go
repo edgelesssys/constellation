@@ -85,10 +85,9 @@ func TestStderr(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
-		stderrPipe  io.ReadCloser
-		exitCode    error
-		wantErr     bool
-		wantExitErr bool
+		stderrPipe io.ReadCloser
+		exitCode   error
+		wantErr    bool
 	}{
 		"success": {
 			stderrPipe: stubStderrPipe{readErr: io.EOF},
@@ -101,9 +100,9 @@ func TestStderr(t *testing.T) {
 			stderrPipe: stubStderrPipe{closeErr: someError, readErr: io.EOF},
 		},
 		"command exit": {
-			stderrPipe:  stubStderrPipe{readErr: io.EOF},
-			exitCode:    someError,
-			wantExitErr: true,
+			stderrPipe: stubStderrPipe{readErr: io.EOF},
+			exitCode:   someError,
+			wantErr:    true,
 		},
 	}
 
@@ -116,14 +115,11 @@ func TestStderr(t *testing.T) {
 				cmd:        &stubJournaldCommand{exitCode: tc.exitCode},
 			}
 
-			stderrOut, exitCode, err := collector.Error()
+			stderrOut, err := collector.Error()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.Equal(stderrOut, []byte{})
-			}
-			if tc.wantExitErr {
-				assert.Error(exitCode)
 			}
 		})
 	}
