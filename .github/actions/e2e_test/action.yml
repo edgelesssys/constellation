@@ -167,19 +167,26 @@ runs:
       with:
         azure_credentials: ${{ inputs.azureIAMCredentials }}
 
+    - name: Create UUID
+      id: create-uuid
+      shell: bash
+      run: |
+        uuid=$(uuidgen)
+        echo "uuid=${uuid%%-*}" >> $GITHUB_OUTPUT
+
     - name: Create IAM configuration
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         awsZone: eu-central-1c
-        awsPrefix: e2e_${{ github.run_id }}_${{ github.run_attempt }}
+        awsPrefix: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}
         azureRegion: northeurope
-        azureResourceGroup: e2e_${{ github.run_id }}_${{ github.run_attempt }}_rg
-        azureServicePrincipal: e2e_${{ github.run_id }}_${{ github.run_attempt }}_sp
+        azureResourceGroup: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}_rg
+        azureServicePrincipal: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}_sp
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: europe-west3-b
-        gcpServiceAccountID: e2e-${{ github.run_id }}-${{ github.run_attempt }}-sa
+        gcpServiceAccountID: e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.create-uuid.outputs.uuid }}-sa
 
     - name: Login to GCP (Cluster service account)
       if: inputs.cloudProvider == 'gcp'
