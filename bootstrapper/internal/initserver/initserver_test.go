@@ -244,23 +244,31 @@ func TestGetLogs(t *testing.T) {
 		return decryptor
 	}
 	testCases := map[string]struct {
-		initSecretHash  []byte
-		masterSecret    uri.MasterSecret
-		req             *initproto.LogRequest
-		stream          stubLogStream
-		decryptor       cipher.AEAD
-		wantErr         bool
-		wantNoRes       bool
-		tryDecrypt      bool // useful if sending fails
-		wantDecryptable bool
+		initSecretHash    []byte
+		masterSecret      uri.MasterSecret
+		req               *initproto.LogRequest
+		stream            stubLogStream
+		decryptor         cipher.AEAD
+		journaldCollector stubJournaldCollector
+		wantErr           bool
+		wantNoRes         bool
+		tryDecrypt        bool // useful if sending fails
+		wantDecryptable   bool
 	}{
 		"success": {
-			initSecretHash:  initSecretHash,
-			masterSecret:    masterSecret,
-			req:             &initproto.LogRequest{InitSecret: initSecret},
-			stream:          stubLogStream{},
-			decryptor:       decryptor(),
-			wantDecryptable: true,
+			initSecretHash:    initSecretHash,
+			masterSecret:      masterSecret,
+			req:               &initproto.LogRequest{InitSecret: initSecret},
+			journaldCollector: stubJournaldCollector{logs: []byte("asdf")},
+			stream:            stubLogStream{},
+			decryptor:         decryptor(),
+			wantDecryptable:   true,
+		},
+		"collection error": {
+			initSecretHash:    initSecretHash,
+			journaldCollector: stubJournaldCollector{collectErr: errors.New("failed")},
+			wantErr:           true,
+			wantNoRes:         true,
 		},
 		"wrong init secret": {
 			initSecretHash: initSecretHash,
@@ -298,9 +306,10 @@ func TestGetLogs(t *testing.T) {
 			require := require.New(t)
 
 			server := &Server{
-				initSecretHash: tc.initSecretHash,
-				kmsURI:         tc.masterSecret.EncodeToURI(),
-				log:            logger.NewTest(t),
+				initSecretHash:    tc.initSecretHash,
+				kmsURI:            tc.masterSecret.EncodeToURI(),
+				journaldCollector: &tc.journaldCollector,
+				log:               logger.NewTest(t),
 			}
 
 			err := server.GetLogs(tc.req, &tc.stream)
@@ -309,10 +318,9 @@ func TestGetLogs(t *testing.T) {
 				for _, res := range tc.stream.res {
 					nonce := res.Nonce
 					ciphertext := res.Log
-					t.Logf("nonce: %x\tcipher: %x\n", nonce, ciphertext)
 					decrypted, err := tc.decryptor.Open(nil, nonce, ciphertext, nil)
 					require.NoError(err)
-					t.Logf("decrypted: %x\n", decrypted)
+					assert.Equal([]byte("asdf"), decrypted)
 				}
 			}
 
@@ -501,4 +509,13 @@ func (s *stubLogStream) Send(m *initproto.LogResponse) error {
 
 func (s *stubLogStream) Context() context.Context {
 	return context.Background()
+}
+
+type stubJournaldCollector struct {
+	logs       []byte
+	collectErr error
+}
+
+func (s *stubJournaldCollector) Collect() ([]byte, error) {
+	return s.logs, s.collectErr
 }

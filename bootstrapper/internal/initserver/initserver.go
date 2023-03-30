@@ -71,6 +71,8 @@ type Server struct {
 
 	log *logger.Logger
 
+	journaldCollector journald.Collection
+
 	initproto.UnimplementedAPIServer
 }
 
@@ -86,14 +88,20 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 		return nil, fmt.Errorf("init secret hash is empty")
 	}
 
+	jctlCollector, err := journald.NewCollector(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	server := &Server{
-		nodeLock:       lock,
-		disk:           diskencryption.New(),
-		initializer:    kube,
-		fileHandler:    fh,
-		issuer:         issuer,
-		log:            log,
-		initSecretHash: initSecretHash,
+		nodeLock:          lock,
+		disk:              diskencryption.New(),
+		initializer:       kube,
+		fileHandler:       fh,
+		issuer:            issuer,
+		log:               log,
+		initSecretHash:    initSecretHash,
+		journaldCollector: jctlCollector,
 	}
 
 	grpcServer := grpc.NewServer(
@@ -212,12 +220,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
-	jctlCollector, err := journald.NewCollector(stream.Context())
-	if err != nil {
-		return err
-	}
-
-	systemdLogs, err := jctlCollector.Collect()
+	systemdLogs, err := s.journaldCollector.Collect()
 	if err != nil {
 		return err
 	}

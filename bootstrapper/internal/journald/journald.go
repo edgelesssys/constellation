@@ -20,6 +20,12 @@ type command interface {
 	Wait() error
 }
 
+// Collection is a trait that must be implemented
+// by all log collectors.
+type Collection interface {
+	Collect() ([]byte, error)
+}
+
 // Collector collects logs from journald.
 type Collector struct {
 	cmd        command
