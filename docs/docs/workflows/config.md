@@ -82,7 +82,7 @@ If you haven't generated a configuration file yet, you can do so by adding the `
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session.
+You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
@@ -105,7 +105,7 @@ Since `clientSecretValue` is a sensitive value, you can leave it empty in the co
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session.
+You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
@@ -120,7 +120,7 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session.
+You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
 constellation iam create aws --zone=eu-central-1a --prefix=constellTest

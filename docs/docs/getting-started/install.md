@@ -115,17 +115,39 @@ The following [resource providers need to be registered](https://learn.microsoft
 * `Microsoft.Compute`
 * `Microsoft.ManagedIdentity`
 * `Microsoft.Network`
-* `microsoft.insights`
+* `Microsoft.Insights`
+* `Microsoft.Attestation` \[2]
 
 By default, Constellation tries to register these automatically if they haven't been registered before.
 
-You need the following permissions for your user account:
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+* `Microsoft.Authorization/roleDefinitions/*`
+* `Microsoft.Authorization/roleAssignments/*`
+* `*/register/action` \[1]
+* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+* `Microsoft.Resources/subscriptions/resourcegroups/*`
 
-- `Contributor` (to create cloud resources)
-- `User Access Administrator` (to create a service account)
+The built-in `Owner` role is a superset of these permissions.
 
-If you don't have these permissions with scope *subscription*, ask your administrator to [create the service account and a resource group for your Constellation cluster](first-steps.md).
-Your user account needs the `Contributor` permission scoped to this resource group.
+To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+* `Microsoft.Insights/components/*`
+* `Microsoft.Network/publicIPAddresses/*`
+* `Microsoft.Network/virtualNetworks/*`
+* `Microsoft.Network/loadBalancers/*`
+* `Microsoft.Network/networkSecurityGroups/*`
+* `Microsoft.Network/loadBalancers/backendAddressPools/*`
+* `Microsoft.Network/virtualNetworks/subnets/*`
+* `Microsoft.Compute/virtualMachineScaleSets/*`
+* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+* `Microsoft.Attestation/attestationProviders/*` \[2]
+
+The built-in `Contributor` role is a superset of these permissions.
+
+Follow Microsoft's guide on [understanding](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions) and [assigning roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments).
+
+1: You can omit `*/register/Action` if the resource providers mentioned above are already registered and the `ARM_SKIP_PROVIDER_REGISTRATION` environment variable is set to `true` when creating the IAM configuration.
+
+2: You can omit `Microsoft.Attestation/attestationProviders/*` and the registration of `Microsoft.Attestation` if `EnforceIDKeyDigest` isn't set to `MAAFallback` in the [config file](../workflows/config.md#configure-your-cluster).
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
@@ -133,10 +155,78 @@ Your user account needs the `Contributor` permission scoped to this resource gro
 Create a new project for Constellation or use an existing one.
 Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) on it.
 
-You need the following permissions on this project:
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
+* `iam.serviceAccountKeys.create`
+* `iam.serviceAccountKeys.delete`
+* `iam.serviceAccountKeys.get`
+* `iam.serviceAccounts.create`
+* `iam.serviceAccounts.delete`
+* `iam.serviceAccounts.get`
+* `resourcemanager.projects.getIamPolicy`
+* `resourcemanager.projects.setIamPolicy`
 
-- `compute.*` (or the subset defined by `roles/compute.instanceAdmin.v1`)
-- `iam.serviceAccountUser`
+Together, the built-in roles `roles/editor` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
+
+To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+* `compute.addresses.createInternal`
+* `compute.addresses.deleteInternal`
+* `compute.addresses.get`
+* `compute.addresses.useInternal`
+* `compute.backendServices.create`
+* `compute.backendServices.delete`
+* `compute.backendServices.get`
+* `compute.backendServices.use`
+* `compute.disks.create`
+* `compute.firewalls.create`
+* `compute.firewalls.delete`
+* `compute.firewalls.get`
+* `compute.globalAddresses.create`
+* `compute.globalAddresses.delete`
+* `compute.globalAddresses.get`
+* `compute.globalAddresses.use`
+* `compute.globalForwardingRules.create`
+* `compute.globalForwardingRules.delete`
+* `compute.globalForwardingRules.get`
+* `compute.globalForwardingRules.setLabels`
+* `compute.globalOperations.get`
+* `compute.healthChecks.create`
+* `compute.healthChecks.delete`
+* `compute.healthChecks.get`
+* `compute.healthChecks.useReadOnly`
+* `compute.instanceGroupManagers.create`
+* `compute.instanceGroupManagers.delete`
+* `compute.instanceGroupManagers.get`
+* `compute.instanceGroups.create`
+* `compute.instanceGroups.delete`
+* `compute.instanceGroups.get`
+* `compute.instanceGroups.use`
+* `compute.instanceTemplates.create`
+* `compute.instanceTemplates.delete`
+* `compute.instanceTemplates.get`
+* `compute.instanceTemplates.useReadOnly`
+* `compute.instances.create`
+* `compute.instances.setLabels`
+* `compute.instances.setMetadata`
+* `compute.instances.setTags`
+* `compute.networks.create`
+* `compute.networks.delete`
+* `compute.networks.get`
+* `compute.networks.updatePolicy`
+* `compute.routers.create`
+* `compute.routers.delete`
+* `compute.routers.get`
+* `compute.routers.update`
+* `compute.subnetworks.create`
+* `compute.subnetworks.delete`
+* `compute.subnetworks.get`
+* `compute.subnetworks.use`
+* `compute.targetTcpProxies.create`
+* `compute.targetTcpProxies.delete`
+* `compute.targetTcpProxies.get`
+* `compute.targetTcpProxies.use`
+* `iam.serviceAccounts.actAs`
+
+Together, the built-in roles `roles/editor`, `roles/compute.instanceAdmin` and `roles/resourcemanager.projectIamAdmin` form a superset of these permissions.
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
@@ -145,7 +235,7 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 
 To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
 
-To create the AWS IAM policies, your user requires the following minimal set of permissions:
+To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
 
 ```json
 {
@@ -182,8 +272,9 @@ To create the AWS IAM policies, your user requires the following minimal set of 
 }
 ```
 
-To create the infrastructure, you can either use a predefined role from Amazon,
-such as `PowerUserAccess`, or use the following minimal set of permissions:
+The built-in `AdministratorAccess` policy is a superset of these permissions.
+
+To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
 
 ```json
 {
@@ -268,6 +359,8 @@ such as `PowerUserAccess`, or use the following minimal set of permissions:
     ]
 }
 ```
+
+The built-in `PowerUserAccess` policy is a superset of these permissions.
 
 Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
