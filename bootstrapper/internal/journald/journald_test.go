@@ -44,9 +44,8 @@ func (s *stubStdoutPipe) Read(p []byte) (int, error) {
 			p[i] = s.buffer[i]
 		}
 		return 4, nil
-	} else {
-		return 0, io.EOF
 	}
+	return 0, io.EOF
 }
 
 func (s stubStdoutPipe) Close() error {
