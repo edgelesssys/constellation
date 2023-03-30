@@ -127,6 +127,7 @@ Whenever Go code is changed, you will have to run `bazel run //:tidy` to regener
 * `bazel test //...` - run all tests
 * `bazel run //:tidy` - tidy, format and generate
 * `bazel run //:check` - execute checks and linters
+* `bazel run //:generate` - execute code generation
 
 ## Editor integration
 

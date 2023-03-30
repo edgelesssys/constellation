@@ -47,12 +47,6 @@ This projects uses [golangci-lint](https://golangci-lint.run/) for linting.
 You can [install golangci-lint](https://golangci-lint.run/usage/install/#linux-and-windows) locally,
 but there is also a CI action to ensure compliance.
 
-To locally run all configured linters, execute
-
-```sh
-golangci-lint run ./...
-```
-
 It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mvdan/gofumpt) as formatter) in your IDE, by adding the recommended VS Code Settings or by [configuring it yourself](https://golangci-lint.run/usage/integrations/#editor-integration)
 
 ## Logging

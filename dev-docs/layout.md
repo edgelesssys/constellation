@@ -14,7 +14,6 @@ Development components:
 * [3rdparty](/3rdparty): Contains the third party dependencies used by Constellation
 * [debugd](/debugd): Debug daemon and client
 * [hack](/hack): Development tools
-* [proto](/proto): Proto files generator
 
 Additional repositories:
 
