@@ -262,12 +262,6 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          azureIAMClientID: ${{ secrets.AZURE_E2E_IAM_CLIENT_ID }}
-          azureIAMClientSecret: ${{ secrets.AZURE_E2E_IAM_CLIENT_SECRET }}
-          azureClusterClientID: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_ID }}
-          azureClusterClientSecret: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_SECRET }}
-          azureSubscription: ${{ secrets.AZURE_E2E_IAM_SUBSCRIPTION_ID }}
-          azureTenant: ${{ secrets.AZURE_E2E_IAM_TENANT_ID }}
 
       - name: Always terminate cluster
         if: always()

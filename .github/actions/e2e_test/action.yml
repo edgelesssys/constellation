@@ -53,24 +53,6 @@ inputs:
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the benchmark results."
     required: false
-  azureSubscription:
-    description: "The Azure subscription ID to deploy Constellation in."
-    required: false
-  azureTenant:
-    description: "The Azure tenant ID to deploy Constellation in."
-    required: false
-  azureIAMClientID:
-    description: "The client ID of the application registration created for Constellation in Azure. (IAM creation)"
-    required: false
-  azureIAMClientSecret:
-    description: "The client secret value of the used secret. (IAM creation)"
-    required: false
-  azureClusterClientID:
-    description: "The client ID of the application registration created for Constellation in Azure. (cluster creation)"
-    required: false
-  azureClusterClientSecret:
-    description: "The client secret value of the used secret. (cluster creation)"
-    required: false
   azureClusterCredentials:
     description: "Azure credentials authorized to create a Constellation cluster."
     required: true
@@ -188,11 +170,6 @@ runs:
     - name: Create IAM configuration
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
-      env:
-        ARM_CLIENT_ID: ${{ inputs.azureIAMClientID }}
-        ARM_CLIENT_SECRET: ${{ inputs.azureIAMClientSecret }}
-        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscription }}
-        ARM_TENANT_ID: ${{ inputs.azureTenant }}
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         awsZone: eu-central-1c
@@ -228,11 +205,6 @@ runs:
     - name: Create cluster
       id: constellation-create
       uses: ./.github/actions/constellation_create
-      env:
-        ARM_CLIENT_ID: ${{ inputs.azureClusterClientID }}
-        ARM_CLIENT_SECRET: ${{ inputs.azureClusterClientSecret }}
-        ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscription }}
-        ARM_TENANT_ID: ${{ inputs.azureTenant }}
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         gcpInClusterServiceAccountKey: ${{ inputs.gcpInClusterServiceAccountKey }}

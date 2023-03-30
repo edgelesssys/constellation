@@ -123,25 +123,6 @@ jobs:
         with:
           go-version: "1.20.3"
 
-      - name: Always delete IAM configuration
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/constellation_iam_destroy
-        with:
-          cloudProvider: ${{ matrix.provider }}
-          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
-
-      - name: Create Azure resource group
-        id: az_resource_group_gen
-        if: matrix.provider == 'azure'
-        shell: bash
-        run: |
-          uuid=$(cat /proc/sys/kernel/random/uuid)
-          name=e2e-test-${uuid%%-*}
-          az group create --location northeurope --name "$name" --tags e2e
-          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
-
       - name: Run E2E test
         id: e2e_test
         uses: ./.github/actions/e2e_test
@@ -164,12 +145,6 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-          azureIAMClientID: ${{ secrets.AZURE_E2E_IAM_CLIENT_ID }}
-          azureIAMClientSecret: ${{ secrets.AZURE_E2E_IAM_CLIENT_SECRET }}
-          azureClusterClientID: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_ID }}
-          azureClusterClientSecret: ${{ secrets.AZURE_E2E_CLUSTER_CLIENT_SECRET }}
-          azureSubscription: ${{ secrets.AZURE_E2E_IAM_SUBSCRIPTION_ID }}
-          azureTenant: ${{ secrets.AZURE_E2E_IAM_TENANT_ID }}
 
       - name: Always terminate cluster
         if: always()
@@ -201,17 +176,6 @@ jobs:
             -H "Content-Type: application/json"         \
             -d @to-be-send.json                         \
             "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
-
-      - name: Always destroy Azure resource group
-        if: always() && matrix.provider == 'azure'
-        shell: bash
-        run: |
-          az group delete \
-            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
-            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
-            --force-deletion-types Microsoft.Compute/virtualMachines \
-            --no-wait \
-            --yes
 
   e2e-upgrade:
     strategy:
