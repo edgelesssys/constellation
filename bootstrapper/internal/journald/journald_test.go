@@ -71,7 +71,7 @@ func (s stubStderrPipe) Close() error {
 	return s.closeErr
 }
 
-func TestCollect(t *testing.T) {
+func TestPipe(t *testing.T) {
 	someError := errors.New("failed")
 	stdoutPipe := stubStdoutPipe{}
 
@@ -115,7 +115,7 @@ func TestCollect(t *testing.T) {
 	}
 }
 
-func TestStderr(t *testing.T) {
+func TestError(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
