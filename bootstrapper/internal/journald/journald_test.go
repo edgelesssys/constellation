@@ -13,19 +13,44 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type stubJournaldCommand struct {
+	stdout     *stubStdoutPipe
+	text       []byte
 	startError error
 	exitCode   error
 }
 
 func (j *stubJournaldCommand) Start() error {
+	j.stdout.buffer = j.text
 	return j.startError
 }
 
 func (j *stubJournaldCommand) Wait() error {
 	return j.exitCode
+}
+
+type stubStdoutPipe struct {
+	buffer []byte
+	read   bool
+}
+
+func (s *stubStdoutPipe) Read(p []byte) (int, error) {
+	if !s.read {
+		s.read = true
+		for i := range p {
+			p[i] = s.buffer[i]
+		}
+		return 4, nil
+	} else {
+		return 0, io.EOF
+	}
+}
+
+func (s stubStdoutPipe) Close() error {
+	return nil
 }
 
 type stubStderrPipe struct {
@@ -48,21 +73,25 @@ func (s stubStderrPipe) Close() error {
 
 func TestCollect(t *testing.T) {
 	someError := errors.New("failed")
+	stdoutPipe := stubStdoutPipe{}
 
 	testCases := map[string]struct {
 		command      *stubJournaldCommand
+		stdoutPipe   io.ReadCloser
 		wantedOutput []byte
 		wantErr      bool
 	}{
 		"success": {
-			command: &stubJournaldCommand{},
+			command:      &stubJournaldCommand{stdout: &stdoutPipe, text: []byte("asdf")},
+			wantedOutput: []byte("asdf"),
+			stdoutPipe:   &stdoutPipe,
 		},
 		"execution failed": {
-			command: &stubJournaldCommand{startError: someError},
+			command: &stubJournaldCommand{startError: someError, stdout: &stdoutPipe},
 			wantErr: true,
 		},
 		"exit error": {
-			command: &stubJournaldCommand{startError: &exec.ExitError{}},
+			command: &stubJournaldCommand{startError: &exec.ExitError{}, stdout: &stdoutPipe},
 			wantErr: true,
 		},
 	}
@@ -71,11 +100,16 @@ func TestCollect(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			collector := Collector{cmd: tc.command}
+			collector := Collector{cmd: tc.command, stdoutPipe: &tc.stdoutPipe}
 
-			_, err := collector.Pipe()
+			pipe, err := collector.Pipe()
 			if tc.wantErr {
 				assert.Error(err)
+			} else {
+				stdout := make([]byte, 4)
+				_, err = io.ReadFull(*pipe, stdout)
+				require.NoError(t, err)
+				assert.Equal(tc.wantedOutput, stdout)
 			}
 		})
 	}
@@ -111,7 +145,7 @@ func TestStderr(t *testing.T) {
 			assert := assert.New(t)
 
 			collector := Collector{
-				stderrPipe: tc.stderrPipe,
+				stderrPipe: &tc.stderrPipe,
 				cmd:        &stubJournaldCommand{exitCode: tc.exitCode},
 			}
 
