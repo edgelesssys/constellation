@@ -19,11 +19,11 @@ def go_deps():
     )
     http_archive(
         name = "bazel_gazelle",
-        strip_prefix = "bazel-gazelle-97a754c6e45848828b27152fa64ca5dd3003d832",
+        strip_prefix = "bazel-gazelle-4dfcb75883c6ca2441e6ad17173488068adcfb1c",
         sha256 = "2591fe5c9ff639317c5144665f2b97f3e45dac7ebb0b9357f8ddb3533b60a16f",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/2591fe5c9ff639317c5144665f2b97f3e45dac7ebb0b9357f8ddb3533b60a16f",
-            "https://github.com/bazelbuild/bazel-gazelle/archive/97a754c6e45848828b27152fa64ca5dd3003d832.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/archive/4dfcb75883c6ca2441e6ad17173488068adcfb1c.tar.gz",
         ],
         type = "tar.gz",
     )
