@@ -12,7 +12,6 @@ import (
 
 var (
 	ConfigDoc          encoder.Doc
-	UpgradeConfigDoc   encoder.Doc
 	ProviderConfigDoc  encoder.Doc
 	AWSConfigDoc       encoder.Doc
 	AzureConfigDoc     encoder.Doc
@@ -25,7 +24,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 10)
+	ConfigDoc.Fields = make([]encoder.Doc, 9)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -38,7 +37,7 @@ func init() {
 	ConfigDoc.Fields[1].Comments[encoder.LineComment] = "Machine image version used to create Constellation nodes."
 	ConfigDoc.Fields[2].Name = "name"
 	ConfigDoc.Fields[2].Type = "string"
-	ConfigDoc.Fields[2].Note = "TODO: v2.7: Use \"required\" validation for name\n"
+	ConfigDoc.Fields[2].Note = ""
 	ConfigDoc.Fields[2].Description = "Name of the cluster."
 	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Name of the cluster."
 	ConfigDoc.Fields[3].Name = "stateDiskSizeGB"
@@ -54,8 +53,8 @@ func init() {
 	ConfigDoc.Fields[5].Name = "microserviceVersion"
 	ConfigDoc.Fields[5].Type = "string"
 	ConfigDoc.Fields[5].Note = ""
-	ConfigDoc.Fields[5].Description = "Microservice version to be installed into the cluster. Setting this value is optional until v2.7. Defaults to the version of the CLI."
-	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Microservice version to be installed into the cluster. Setting this value is optional until v2.7. Defaults to the version of the CLI."
+	ConfigDoc.Fields[5].Description = "Microservice version to be installed into the cluster. Defaults to the version of the CLI."
+	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Microservice version to be installed into the cluster. Defaults to the version of the CLI."
 	ConfigDoc.Fields[6].Name = "debugCluster"
 	ConfigDoc.Fields[6].Type = "bool"
 	ConfigDoc.Fields[6].Note = ""
@@ -71,41 +70,6 @@ func init() {
 	ConfigDoc.Fields[8].Note = ""
 	ConfigDoc.Fields[8].Description = "Supported cloud providers and their specific configurations."
 	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[9].Name = "upgrade"
-	ConfigDoc.Fields[9].Type = "UpgradeConfig"
-	ConfigDoc.Fields[9].Note = ""
-	ConfigDoc.Fields[9].Description = "Configuration to apply during constellation upgrade."
-	ConfigDoc.Fields[9].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
-
-	ConfigDoc.Fields[9].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
-
-	UpgradeConfigDoc.Type = "UpgradeConfig"
-	UpgradeConfigDoc.Comments[encoder.LineComment] = "UpgradeConfig defines configuration used during constellation upgrade."
-	UpgradeConfigDoc.Description = "UpgradeConfig defines configuration used during constellation upgrade."
-
-	UpgradeConfigDoc.AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
-	UpgradeConfigDoc.AppearsIn = []encoder.Appearance{
-		{
-			TypeName:  "Config",
-			FieldName: "upgrade",
-		},
-	}
-	UpgradeConfigDoc.Fields = make([]encoder.Doc, 3)
-	UpgradeConfigDoc.Fields[0].Name = "image"
-	UpgradeConfigDoc.Fields[0].Type = "string"
-	UpgradeConfigDoc.Fields[0].Note = ""
-	UpgradeConfigDoc.Fields[0].Description = "Updated Constellation machine image to install on all nodes."
-	UpgradeConfigDoc.Fields[0].Comments[encoder.LineComment] = "Updated Constellation machine image to install on all nodes."
-	UpgradeConfigDoc.Fields[1].Name = "measurements"
-	UpgradeConfigDoc.Fields[1].Type = "Measurements"
-	UpgradeConfigDoc.Fields[1].Note = ""
-	UpgradeConfigDoc.Fields[1].Description = "Measurements of the updated image."
-	UpgradeConfigDoc.Fields[1].Comments[encoder.LineComment] = "Measurements of the updated image."
-	UpgradeConfigDoc.Fields[2].Name = "csp"
-	UpgradeConfigDoc.Fields[2].Type = "Provider"
-	UpgradeConfigDoc.Fields[2].Note = ""
-	UpgradeConfigDoc.Fields[2].Description = "temporary field for upgrade migration\nTODO(AB#2654): Remove with refactoring upgrade plan command"
-	UpgradeConfigDoc.Fields[2].Comments[encoder.LineComment] = "temporary field for upgrade migration"
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
@@ -463,10 +427,6 @@ func (_ Config) Doc() *encoder.Doc {
 	return &ConfigDoc
 }
 
-func (_ UpgradeConfig) Doc() *encoder.Doc {
-	return &UpgradeConfigDoc
-}
-
 func (_ ProviderConfig) Doc() *encoder.Doc {
 	return &ProviderConfigDoc
 }
@@ -498,7 +458,6 @@ func GetConfigurationDoc() *encoder.FileDoc {
 		Description: "Definitions for  Constellation's user config file.\n\nThe config file is used by the CLI to create and manage a Constellation cluster.\n\nAll config relevant definitions, parsing and validation functions should go here.\n",
 		Structs: []*encoder.Doc{
 			&ConfigDoc,
-			&UpgradeConfigDoc,
 			&ProviderConfigDoc,
 			&AWSConfigDoc,
 			&AzureConfigDoc,
