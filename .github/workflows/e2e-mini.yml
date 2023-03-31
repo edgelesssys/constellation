@@ -1,20 +1,37 @@
 name: e2e test qemu (MiniConstellation)
+# The workflow is triggered by the completion of the release workflow.
+# It is not called by the release pipeline to allow quicker retrying of failed tests
+# The workflow only executes, after being triggered, if the triggering workflow completed successfully.
+# e2e-test-release uses the same branch as the triggering workflow and not the commit of the triggering workflow. This is because the release workflow produces further commits.
 
 on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       ref:
         type: string
+        default: ""
         description: "Git ref to checkout"
         required: false
   workflow_call:
     inputs:
       ref:
         type: string
+        default: ""
         description: "Git ref to checkout"
         required: true
 
 jobs:
+  on-failure-quit:
+    runs-on: ubuntu-22.04
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - run: |
+          echo 'Release workflow failed, exiting..'
+          exit 1
+
   e2e-mini:
     runs-on: ubuntu-22.04
     environment: e2e
@@ -26,7 +43,7 @@ jobs:
         id: checkout
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
-          ref: ${{ inputs.ref || github.head_ref }}
+          ref: ${{ inputs.ref || github.event.workflow_run.head_branch || github.head_ref }}
 
       - name: Azure login OIDC
         uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2 # v1.4.7

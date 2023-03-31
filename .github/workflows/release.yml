@@ -290,18 +290,6 @@ jobs:
           git commit -m "attestation: hardcode measurements for ${VERSION}"
           git push
 
-  # TODO: apply same triggering approach as with e2e-test-release
-  # e2e-mini:
-  #   name: Run E2E tests for mini Constellation
-  #   needs: [verify-inputs, update-hardcoded-measurements]
-  #   uses: ./.github/workflows/e2e-mini.yml
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   secrets: inherit
-  #   with:
-  #     ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-
   tag-release:
     name: Tag release
     needs: [verify-inputs]
