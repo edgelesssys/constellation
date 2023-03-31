@@ -19,6 +19,9 @@ RUN repro-get hash generate > SHA256SUMS
 # Export the apks
 RUN repro-get cache export repository-apk
 
+# Sort the hashes
+RUN sort -k2 -o SHA256SUMS SHA256SUMS
+
 FROM scratch as output
 
 COPY --from=builder /out/SHA256SUMS SHA256SUMS-apk-amd64
