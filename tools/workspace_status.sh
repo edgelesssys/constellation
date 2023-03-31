@@ -24,6 +24,6 @@ timestamp() {
 
 echo "REPO_URL https://github.com/edgelesssys/constellation.git"
 echo "STABLE_STAMP_COMMIT $(git rev-parse HEAD)"
-echo "STABLE_STAMP_STATE $(git diff-index --quiet HEAD -- && echo "clean" || echo "dirty")"
+echo "STABLE_STAMP_STATE $(git update-index -q --really-refresh && git diff-index --quiet HEAD -- && echo "clean" || echo "dirty")"
 echo "STABLE_STAMP_VERSION $(pseudo_version)"
 echo "STABLE_STAMP_TIME $(timestamp)"

@@ -113,14 +113,18 @@ resource "azurerm_linux_virtual_machine" "main" {
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
 
-  # Standard_D8as_v5 provides nested virtualization support
-  size = "Standard_D8as_v5"
+  # Standard_D8s_v5 provides nested virtualization support
+  size = "Standard_D8s_v5"
 
   admin_username = "adminuser"
 
   admin_ssh_key {
     username   = "adminuser"
     public_key = tls_private_key.ssh_key.public_key_openssh
+  }
+
+  boot_diagnostics {
+
   }
 
   network_interface_ids = [

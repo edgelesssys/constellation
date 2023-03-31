@@ -24,7 +24,6 @@ packages:
  - jq
  - pv
  - xsltproc
- - qemu-guest-agent
  - libvirt-clients
  - libvirt-daemon
  - libvirt-daemon-system
