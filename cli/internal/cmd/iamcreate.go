@@ -57,7 +57,7 @@ func newIAMCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 	}
 
-	cmd.PersistentFlags().Bool("yes", false, "create the IAM configuration without further confirmation")
+	cmd.PersistentFlags().BoolP("yes", "y", false, "create the IAM configuration without further confirmation")
 	cmd.PersistentFlags().Bool("generate-config", false, "automatically generate a configuration file and fill in the required fields")
 	cmd.PersistentFlags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config")
 
