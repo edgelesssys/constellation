@@ -91,7 +91,7 @@ runs:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
-        OUTPUT_PATH: ${{ inputs.outputPath || format('./build/constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}
+        OUTPUT_PATH: ${{ github.workspace }}/${{ inputs.outputPath || format('./build/constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}
       run: |
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
