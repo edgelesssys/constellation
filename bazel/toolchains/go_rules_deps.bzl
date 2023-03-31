@@ -9,21 +9,19 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def go_deps():
     http_archive(
         name = "io_bazel_rules_go",
-        strip_prefix = "rules_go-ea3cc4f0778ba4bb35a682affc8e278551187fad",
-        sha256 = "9f0c386d233e7160cb752527c34654620cef1920a53617a2f1cca8d8edee5e8a",
+        sha256 = "6b65cb7917b4d1709f9410ffe00ecf3e160edf674b78c54a894471320862184f",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/9f0c386d233e7160cb752527c34654620cef1920a53617a2f1cca8d8edee5e8a",
-            "https://github.com/bazelbuild/rules_go/archive/ea3cc4f0778ba4bb35a682affc8e278551187fad.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.39.0/rules_go-v0.39.0.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.39.0/rules_go-v0.39.0.zip",
         ],
-        type = "tar.gz",
+        type = "zip",
     )
     http_archive(
         name = "bazel_gazelle",
-        strip_prefix = "bazel-gazelle-4dfcb75883c6ca2441e6ad17173488068adcfb1c",
-        sha256 = "2591fe5c9ff639317c5144665f2b97f3e45dac7ebb0b9357f8ddb3533b60a16f",
+        sha256 = "727f3e4edd96ea20c29e8c2ca9e8d2af724d8c7778e7923a854b2c80952bc405",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/2591fe5c9ff639317c5144665f2b97f3e45dac7ebb0b9357f8ddb3533b60a16f",
-            "https://github.com/bazelbuild/bazel-gazelle/archive/4dfcb75883c6ca2441e6ad17173488068adcfb1c.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
         ],
         type = "tar.gz",
     )
