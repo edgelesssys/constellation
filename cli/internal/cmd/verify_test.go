@@ -247,7 +247,7 @@ func TestVerifyClient(t *testing.T) {
 				Nonce: tc.nonce,
 			}
 
-			err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
+			_, err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -263,9 +263,9 @@ type stubVerifyClient struct {
 	endpoint  string
 }
 
-func (c *stubVerifyClient) Verify(_ context.Context, endpoint string, _ *verifyproto.GetAttestationRequest, _ atls.Validator) error {
+func (c *stubVerifyClient) Verify(_ context.Context, endpoint string, _ *verifyproto.GetAttestationRequest, _ atls.Validator) (string, error) {
 	c.endpoint = endpoint
-	return c.verifyErr
+	return "", c.verifyErr
 }
 
 type stubVerifyAPI struct {

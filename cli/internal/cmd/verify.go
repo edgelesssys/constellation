@@ -34,9 +34,8 @@ func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify",
 		Short: "Verify the confidential properties of a Constellation cluster",
-		Long: `Verify the confidential properties of a Constellation cluster.
-
-If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
+		Long: `Verify the confidential properties of a Constellation cluster.\n` +
+			`If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
 		Args: cobra.ExactArgs(0),
 		RunE: runVerify,
 	}
@@ -69,7 +68,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient) error {
 	flags, err := v.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing flags: %w", err)
 	}
 	v.log.Debugf("Using flags: %+v", flags)
 
@@ -80,38 +79,50 @@ func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("loading config file: %w", err)
 	}
 
 	v.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
 	validators, err := cloudcmd.NewValidator(conf, flags.maaURL, v.log)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating aTLS validator: %w", err)
 	}
 
 	v.log.Debugf("Updating expected PCRs")
 	if err := validators.UpdateInitPCRs(flags.ownerID, flags.clusterID); err != nil {
-		return err
+		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
 	nonce, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
-		return err
+		return fmt.Errorf("generating random nonce: %w", err)
 	}
 	v.log.Debugf("Generated random nonce: %x", nonce)
 
-	if err := verifyClient.Verify(
+	rawAttestationDoc, err := verifyClient.Verify(
 		cmd.Context(),
 		flags.endpoint,
 		&verifyproto.GetAttestationRequest{
 			Nonce: nonce,
 		},
 		validators.V(cmd),
-	); err != nil {
-		return err
+	)
+	if err != nil {
+		return fmt.Errorf("verifying: %w", err)
 	}
 
-	cmd.Println("OK")
+	cmd.Printf("Cluster Endpoint:\n\t%s\n", flags.endpoint)
+	if flags.maaURL != "" {
+		cmd.Printf("Attestation URL:\n\t%s\n", flags.maaURL)
+	}
+	cmd.Println("Expected PCRs:")
+	for i, pcr := range validators.PCRS() {
+		cmd.Printf("\tPCR %d:\t%x - Strict: %t\n", i, pcr.Expected, !pcr.ValidationOpt)
+	}
+	cmd.Println("Attestation Document:")
+	cmd.Println(string(rawAttestationDoc))
+
+	cmd.Println("\nVerification OK")
 	return nil
 }
 
@@ -215,11 +226,11 @@ type constellationVerifier struct {
 // Verify retrieves an attestation statement from the Constellation and verifies it using the validator.
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
-) error {
+) (string, error) {
 	v.log.Debugf("Dialing endpoint: %q", endpoint)
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
-		return fmt.Errorf("dialing init server: %w", err)
+		return "", fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
 
@@ -228,23 +239,23 @@ func (v *constellationVerifier) Verify(
 	v.log.Debugf("Sending attestation request")
 	resp, err := client.GetAttestation(ctx, req)
 	if err != nil {
-		return fmt.Errorf("getting attestation: %w", err)
+		return "", fmt.Errorf("getting attestation: %w", err)
 	}
 
 	v.log.Debugf("Verifying attestation")
 	signedData, err := validator.Validate(ctx, resp.Attestation, req.Nonce)
 	if err != nil {
-		return fmt.Errorf("validating attestation: %w", err)
+		return "", fmt.Errorf("validating attestation: %w", err)
 	}
 
 	if !bytes.Equal(signedData, []byte(constants.ConstellationVerifyServiceUserData)) {
-		return errors.New("signed data in attestation does not match expected user data")
+		return "", errors.New("signed data in attestation does not match expected user data")
 	}
-	return nil
+	return string(resp.Attestation), nil
 }
 
 type verifyClient interface {
-	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error
+	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) (string, error)
 }
 
 type grpcInsecureDialer interface {
