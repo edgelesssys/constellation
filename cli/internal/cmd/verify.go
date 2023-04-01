@@ -245,6 +245,11 @@ func (c *verifyCmd) printAttestationDoc(cmd *cobra.Command, rawDoc string, rawOu
 		return fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
+	pcrs256 := doc.Attestation.Quotes[len(doc.Attestation.Quotes)-1].Pcrs.Pcrs
+	for i, pcr := range pcrs256 {
+		cmd.Printf("\tPCR %d:\t%x", i, pcr)
+	}
+
 	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
 	if err != nil {
 		return fmt.Errorf("decode instance info: %w", err)
@@ -307,33 +312,8 @@ type attestationDoc struct {
 			Quote  string `json:"quote"`
 			RawSig string `json:"raw_sig"`
 			Pcrs   struct {
-				Hash int `json:"hash"`
-				Pcrs struct {
-					Num0  string `json:"0"`
-					Num1  string `json:"1"`
-					Num2  string `json:"2"`
-					Num3  string `json:"3"`
-					Num4  string `json:"4"`
-					Num5  string `json:"5"`
-					Num6  string `json:"6"`
-					Num7  string `json:"7"`
-					Num8  string `json:"8"`
-					Num9  string `json:"9"`
-					Num10 string `json:"10"`
-					Num11 string `json:"11"`
-					Num12 string `json:"12"`
-					Num13 string `json:"13"`
-					Num14 string `json:"14"`
-					Num15 string `json:"15"`
-					Num16 string `json:"16"`
-					Num17 string `json:"17"`
-					Num18 string `json:"18"`
-					Num19 string `json:"19"`
-					Num20 string `json:"20"`
-					Num21 string `json:"21"`
-					Num22 string `json:"22"`
-					Num23 string `json:"23"`
-				} `json:"pcrs"`
+				Hash int               `json:"hash"`
+				Pcrs map[string]string `json:"pcrs"`
 			} `json:"pcrs"`
 		} `json:"quotes"`
 		EventLog       string      `json:"event_log"`
