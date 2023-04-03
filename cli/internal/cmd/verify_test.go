@@ -18,6 +18,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -210,7 +211,7 @@ type stubAttDocFormatter struct {
 	formatErr    error
 }
 
-func (f *stubAttDocFormatter) format(_ string, _ bool) (string, error) {
+func (f *stubAttDocFormatter) format(_ string, _ bool, _ measurements.M) (string, error) {
 	f.formatCalled = true
 	return "", f.formatErr
 }

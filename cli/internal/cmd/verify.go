@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -119,18 +120,9 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return fmt.Errorf("verifying: %w", err)
 	}
 
-	cmd.Printf("Cluster Endpoint:\n\t%s\n", flags.endpoint)
-	if flags.maaURL != "" {
-		cmd.Printf("MAA URL:\n\t%s\n", flags.maaURL)
-	}
-	cmd.Println("Expected PCRs:")
-	for i, pcr := range validators.PCRS() {
-		cmd.Printf("\tPCR %d:\t%x - Strict: %t\n", i, pcr.Expected, !pcr.ValidationOpt)
-	}
-
 	// print attestation document if Azure provider is used
 	if conf.Provider.Azure != nil {
-		attDocOutput, err := formatter.format(rawAttestationDoc, flags.rawOutput)
+		attDocOutput, err := formatter.format(rawAttestationDoc, flags.rawOutput, validators.PCRS())
 		if err != nil {
 			return fmt.Errorf("printing attestation document: %w", err)
 		}
@@ -244,7 +236,7 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 // a formatter formats the attestation document.
 type formatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(docString string, rawOutput bool) (string, error)
+	format(docString string, rawOutput bool, expectedPCRs measurements.M) (string, error)
 }
 
 type attestationDocFormatter struct {
@@ -252,7 +244,7 @@ type attestationDocFormatter struct {
 }
 
 // format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *attestationDocFormatter) format(docString string, rawOutput bool) (string, error) {
+func (f *attestationDocFormatter) format(docString string, rawOutput bool, expectedPCRs measurements.M) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 	if rawOutput {
@@ -265,7 +257,7 @@ func (f *attestationDocFormatter) format(docString string, rawOutput bool) (stri
 		return "", fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
-	if err := f.parseQuotes(b, doc.Attestation.Quotes); err != nil {
+	if err := f.parseQuotes(b, doc.Attestation.Quotes, expectedPCRs); err != nil {
 		return "", fmt.Errorf("parse quote: %w", err)
 	}
 
@@ -329,16 +321,17 @@ func (f *attestationDocFormatter) parseCerts(b *strings.Builder, certTypeName st
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *attestationDocFormatter) parseQuotes(b *strings.Builder, quotes []quote) error {
-	for i, q := range quotes {
-		b.WriteString(fmt.Sprintf("\tQuote (%d):\n", i+1))
-		for pcrNum, value := range q.Pcrs.Pcrs {
-			pcr, err := base64.StdEncoding.DecodeString(value)
-			if err != nil {
-				return fmt.Errorf("decode PCR %s: %w", pcrNum, err)
-			}
-			b.WriteString(fmt.Sprintf("\t\tPCR %s: %x\n", pcrNum, pcr))
+func (f *attestationDocFormatter) parseQuotes(b *strings.Builder, quotes []quote, expectedPCRs measurements.M) error {
+	b.WriteString("\tQuote:\n")
+	for pcrNum, expectedPCR := range expectedPCRs {
+		encPCR := quotes[1].Pcrs.Pcrs[fmt.Sprintf("%d", pcrNum)]
+		actualPCR, err := base64.StdEncoding.DecodeString(encPCR)
+		if err != nil {
+			return fmt.Errorf("decode PCR %d: %w", pcrNum, err)
 		}
+		b.WriteString(fmt.Sprintf("\t\tPCR %d (Strict: %t):\n", pcrNum, !expectedPCR.ValidationOpt))
+		b.WriteString(fmt.Sprintf("\t\t\tExpected:\t%x\n", expectedPCR.Expected))
+		b.WriteString(fmt.Sprintf("\t\t\tActual:\t\t%x\n", actualPCR))
 	}
 	return nil
 }
