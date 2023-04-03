@@ -40,11 +40,7 @@ func New(version string) (Semver, error) {
 	version = semver.Canonical(version)
 
 	var major, minor, patch int
-	var pre string
-	if strings.Contains(version, "-") {
-		parts := strings.Split(version, "-")
-		pre = parts[1]
-	}
+	_, pre, _ := strings.Cut(version, "-")
 	_, err := fmt.Sscanf(version, "v%d.%d.%d", &major, &minor, &patch)
 	if err != nil {
 		return Semver{}, fmt.Errorf("parsing semver parts: %w", err)
