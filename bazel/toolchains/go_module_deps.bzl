@@ -8968,8 +8968,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/exp",
-        sum = "h1:S4NrSKDfihhl3+4jSTgwoIevKxX9p7Iv9x++OEIptDo=",
-        version = "v0.0.0-20220823124025-807a23277127",
+        sum = "h1:ooxPy7fPvB4kwsA2h+iBNHkAbp/4JxTSwCmvdjEYmug=",
+        version = "v0.0.0-20230321023759-10a507213a29",
     )
     go_repository(
         name = "org_golang_x_exp_typeparams",
