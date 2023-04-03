@@ -1,0 +1,8 @@
+filegroup(
+    name = "passwd_db",
+    srcs = glob(
+        ["**/*"],
+        exclude = ["BUILD"],
+    ),
+    visibility = ["//visibility:public"],
+)
