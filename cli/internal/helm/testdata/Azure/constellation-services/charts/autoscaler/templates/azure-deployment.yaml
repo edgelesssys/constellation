@@ -23,43 +23,25 @@ spec:
         - name: cluster-autoscaler
           image: autoscalerImage
           imagePullPolicy: IfNotPresent
+          command:
+          - ./cluster-autoscaler
+          args:
+          - --cloud-provider=azure
+          - --cloud-config=/etc/azure/azure.json
+          - --logtostderr=true
+          - --namespace=kube-system
+          - --stderrthreshold=info
+          - --v=2
+          volumeMounts:
+          - name: azureconfig
+            mountPath: /etc/azure
+            readOnly: true
           livenessProbe:
             httpGet:
               path: /health-check
               port: 8085
           ports:
             - containerPort: 8085
-          env:
-            - name: ARM_SUBSCRIPTION_ID
-              valueFrom:
-                secretKeyRef:
-                  key: SubscriptionID
-                  name: cluster-autoscaler-azure
-            - name: ARM_RESOURCE_GROUP
-              valueFrom:
-                secretKeyRef:
-                  key: ResourceGroup
-                  name: cluster-autoscaler-azure
-            - name: ARM_TENANT_ID
-              valueFrom:
-                secretKeyRef:
-                  key: TenantID
-                  name: cluster-autoscaler-azure
-            - name: ARM_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  key: ClientID
-                  name: cluster-autoscaler-azure
-            - name: ARM_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  key: ClientSecret
-                  name: cluster-autoscaler-azure
-            - name: ARM_VM_TYPE
-              valueFrom:
-                secretKeyRef:
-                  key: VMType
-                  name: cluster-autoscaler-azure
           resources: {}
       dnsPolicy: ClusterFirst
       nodeSelector:
@@ -77,3 +59,7 @@ spec:
           key: node.cloudprovider.kubernetes.io/uninitialized
           operator: Equal
           value: "true"
+      volumes:
+        - name: azureconfig
+          secret:
+            secretName: azureconfig

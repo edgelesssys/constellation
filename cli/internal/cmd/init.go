@@ -451,6 +451,9 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 			AppClientID:       config.Provider.Azure.AppClientID,
 			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
 			Location:          config.Provider.Azure.Location,
+			// TODO(malt3): Switch preferred auth method to uami as planned by AB#2961
+			PreferredAuthMethod: azureshared.AuthMethodServicePrincipal,
+			UamiResourceID:      config.Provider.Azure.UserAssignedIdentity,
 		}
 		return creds.ToCloudServiceAccountURI(), nil
 
