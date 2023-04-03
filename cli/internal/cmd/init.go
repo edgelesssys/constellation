@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -188,6 +189,15 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
+			cmd.PrintErrln("Attempting to collect logs from cluster...")
+			req := &initproto.LogRequest{
+				InitSecret: idFile.InitSecret,
+			}
+			if err := i.getLogsCall(cmd.Context(), idFile.IP, req); err != nil {
+				cmd.PrintErrf("Failed to collect logs from cluser: %s\n", err)
+				return err
+			}
+
 		}
 		return err
 	}
@@ -220,6 +230,33 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		return nil, err
 	}
 	return doer.resp, nil
+}
+
+func (i *initCmd) getLogsCall(ctx context.Context, ip string, req *initproto.LogRequest) error {
+	conn, err := grpc.Dial(ip)
+	if err != nil {
+		return err
+	}
+
+	client := initproto.NewAPIClient(conn)
+	stream, err := client.GetLogs(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	// receive the data from the stream
+	for {
+		logs, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		log.Printf("%+v", logs)
+	}
+
+	return nil
 }
 
 type initDoer struct {
