@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "oci-pin_lib",
+    srcs = [
+        "codegen.go",
+        "merge.go",
+        "oci-pin.go",
+        "sum.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/oci-pin",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//hack/oci-pin/internal/extract",
+        "//hack/oci-pin/internal/inject",
+        "//hack/oci-pin/internal/sums",
+        "//internal/logger",
+        "@com_github_spf13_cobra//:cobra",
+        "@org_uber_go_zap//zapcore",
+    ],
+)
+
+go_binary(
+    name = "oci-pin",
+    embed = [":oci-pin_lib"],
+    visibility = ["//visibility:public"],
+)
