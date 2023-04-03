@@ -38,8 +38,8 @@ replace (
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.60
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.1
 	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.5.2
@@ -95,7 +95,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.32 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.26.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.91.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.92.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.26 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.25 // indirect

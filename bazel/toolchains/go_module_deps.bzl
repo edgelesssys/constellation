@@ -377,8 +377,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2/feature/s3/manager",
-        sum = "h1:E3Y+OfzOK1+rmRo/K2G0ml8Vs+Xqk0kOnf4nS0kUtBc=",
-        version = "v1.11.59",
+        sum = "h1:BRLcU36boYxw6BPOEvwJbDPuCtP7FqMhXMFk2NM6poM=",
+        version = "v1.11.60",
     )
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_internal_configsources",
@@ -436,8 +436,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2/service/ec2",
-        sum = "h1:b4Qme29Ml9nl3QBxWobytF5UxlfmYUJI7+u1FTqjehs=",
-        version = "v1.91.0",
+        sum = "h1:xn5CI639mnWvdiweqoRx/H221Ia9Asx9XxfIRhe0MPo=",
+        version = "v1.92.1",
     )
 
     go_repository(
@@ -505,8 +505,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2/service/s3",
-        sum = "h1:B1G2pSPvbAtQjilPq+Y7jLIzCOwKzuVEl+aBBaNG0AQ=",
-        version = "v1.31.0",
+        sum = "h1:PJH4I+qYjPXclKRbVCW47iYUvtXEh1u6YmDhn5J8VQE=",
+        version = "v1.31.1",
     )
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_service_secretsmanager",
