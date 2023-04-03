@@ -128,7 +128,7 @@ func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServic
 	var uamiClientID string
 	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
 	if useManagedIdentityExtension {
-		uamiClientID, err = c.getUAMIClientIDFromURI(ctx, providerID, cloudServiceAccountURI)
+		uamiClientID, err = c.getUAMIClientIDFromURI(ctx, providerID, creds.UamiResourceID)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving user-assigned managed identity client ID: %w", err)
 		}
