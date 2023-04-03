@@ -49,7 +49,7 @@ jobs:
           ]
         provider: ["gcp", "azure", "aws"]
         kubernetes-version: ["v1.24", "v1.25", "v1.26"]
-        runner: [ubuntu-22.04, macos-12]
+        runner: [ubuntu-22.04]
         exclude:
           # IAM create test runs only on latest kubernetes-version.
           - test: "iamcreate"
@@ -89,6 +89,16 @@ jobs:
           # Currently broken on AWS. Enable when AB#2780 is fixed.
           - test: "lb"
             provider: "aws"
+        include:
+          # Explicitly define two tests to run the CLI on macOS.
+          - test: "verify"
+            kubernetes-version: "v1.25"
+            runner: "macos-12"
+            provider: "azure"
+          - test: "iamcreate"
+            kubernetes-version: "v1.25"
+            runner: "macos-12"
+            provider: "gcp"
     runs-on: ${{ matrix.runner }}
     permissions:
       id-token: write
