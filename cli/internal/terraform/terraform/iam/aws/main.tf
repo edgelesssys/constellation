@@ -63,6 +63,7 @@ resource "aws_iam_policy" "control_plane_policy" {
         "ec2:DeleteRoute",
         "ec2:DeleteSecurityGroup",
         "ec2:DeleteVolume",
+        "ec2:DescribeAvailabilityZones",
         "ec2:DescribeImages",
         "ec2:DescribeInstances",
         "ec2:DescribeRegions",
