@@ -35,6 +35,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+	"github.com/edgelesssys/constellation/v2/internal/config/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -338,9 +339,9 @@ func Default() *Config {
 				ImageFormat:           "raw",
 				VCPUs:                 2,
 				Memory:                2048,
-				MetadataAPIImage:      versions.QEMUMetadataImage,
+				MetadataAPIImage:      imageversion.QEMUMetadata(),
 				LibvirtURI:            "",
-				LibvirtContainerImage: versions.LibvirtImage,
+				LibvirtContainerImage: imageversion.Libvirt(),
 				NVRAM:                 "production",
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 			},
