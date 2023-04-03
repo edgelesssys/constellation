@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -81,17 +82,19 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageOpenStack
 	}
 
+	// TODO(malt3): Allow overriding container image registry + prefix for all images
+	// (e.g. for air-gapped environments).
 	return &ChartLoader{
 		csp:                          csp,
-		joinServiceImage:             versions.JoinImage,
-		keyServiceImage:              versions.KeyServiceImage,
+		joinServiceImage:             imageversion.JoinService("", ""),
+		keyServiceImage:              imageversion.KeyService("", ""),
 		ccmImage:                     ccmImage,
 		cnmImage:                     cnmImage,
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
-		verificationServiceImage:     versions.VerificationImage,
+		verificationServiceImage:     imageversion.VerificationService("", ""),
 		gcpGuestAgentImage:           versions.GcpGuestImage,
 		konnectivityImage:            versions.KonnectivityAgentImage,
-		constellationOperatorImage:   versions.ConstellationOperatorImage,
+		constellationOperatorImage:   imageversion.ConstellationNodeOperator("", ""),
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
 	}
 }

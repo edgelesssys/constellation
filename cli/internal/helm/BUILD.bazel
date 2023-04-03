@@ -319,6 +319,7 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//cli/internal/clusterid",
+        "//cli/internal/helm/imageversion",
         "//internal/attestation/idkeydigest",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
