@@ -17,27 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type stubCommand struct {
-	startCalled bool
-	startErr    error
-	waitErr     error
-}
-
-func (j *stubCommand) Start() error {
-	j.startCalled = true
-	return j.startErr
-}
-
-func (j *stubCommand) Wait() error {
-	return j.waitErr
-}
-
-type stubReadCloser struct {
-	reader   io.Reader
-	readErr  error
-	closeErr error
-}
-
 func (s *stubReadCloser) Read(p []byte) (n int, err error) {
 	if s.readErr != nil {
 		return 0, s.readErr
@@ -134,4 +113,25 @@ func TestError(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stubCommand struct {
+	startCalled bool
+	startErr    error
+	waitErr     error
+}
+
+func (j *stubCommand) Start() error {
+	j.startCalled = true
+	return j.startErr
+}
+
+func (j *stubCommand) Wait() error {
+	return j.waitErr
+}
+
+type stubReadCloser struct {
+	reader   io.Reader
+	readErr  error
+	closeErr error
 }
