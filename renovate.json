@@ -223,25 +223,25 @@
       "matchPackagePatterns": [
         "_darwin_arm64$"
       ],
-      "groupName": "{{{replace '_darwin_arm64' '' packageName}}}"
+      "groupName": "{{{replace '_darwin_arm64' '' depName}}}"
     },
     {
       "matchPackagePatterns": [
         "_darwin_amd64$"
       ],
-      "groupName": "{{{replace '_darwin_amd64' '' packageName}}}"
+      "groupName": "{{{replace '_darwin_amd64' '' depName}}}"
     },
     {
       "matchPackagePatterns": [
         "_linux_arm64$"
       ],
-      "groupName": "{{{replace '_linux_arm64' '' packageName}}}"
+      "groupName": "{{{replace '_linux_arm64' '' depName}}}"
     },
     {
       "matchPackagePatterns": [
         "_linux_amd64$"
       ],
-      "groupName": "{{{replace '_linux_amd64' '' packageName}}}"
+      "groupName": "{{{replace '_linux_amd64' '' depName}}}"
     }
   ],
   "regexManagers": [
