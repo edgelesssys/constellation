@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "inject",
+    srcs = ["inject.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/inject",
+    visibility = ["//hack/oci-pin:__subpackages__"],
+)
+
+go_test(
+    name = "inject_test",
+    srcs = ["inject_test.go"],
+    embed = [":inject"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

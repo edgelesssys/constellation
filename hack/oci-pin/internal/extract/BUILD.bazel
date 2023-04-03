@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "extract",
+    srcs = ["extract.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/oci-pin/internal/extract",
+    visibility = ["//hack/oci-pin:__subpackages__"],
+)
+
+go_test(
+    name = "extract_test",
+    srcs = ["extract_test.go"],
+    embed = [":extract"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
