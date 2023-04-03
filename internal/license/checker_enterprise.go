@@ -45,19 +45,10 @@ func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provi
 	} else {
 		printer("Constellation license found!\n")
 	}
-	providerStr := provider.String()
-	if provider == cloudprovider.Azure {
-		if *providerCfg.Azure.ConfidentialVM {
-			providerStr = "azure-cvm"
-		} else {
-			providerStr = "azure-tl"
-		}
-	}
-
 	quotaResp, err := c.quotaChecker.QuotaCheck(ctx, QuotaCheckRequest{
 		License:  licenseID,
 		Action:   Init,
-		Provider: providerStr,
+		Provider: provider.String(),
 	})
 	if err != nil {
 		printer("Unable to contact license server.\n")
