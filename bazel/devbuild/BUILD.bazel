@@ -3,6 +3,7 @@ load("//bazel/sh:def.bzl", "sh_template")
 sh_template(
     name = "devbuild",
     data = [
+        "//bazel/release:container_sums",
         "//bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64",
         "//cli:cli_oss_host",
         "//debugd/cmd/cdbg:cdbg_host",
@@ -12,6 +13,7 @@ sh_template(
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
         "@@CLI@@": "$(rootpath //cli:cli_oss_host)",
+        "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",
     },
     template = "prepare_developer_workspace.sh.in",
