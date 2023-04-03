@@ -223,6 +223,7 @@
       "matchPackagePatterns": [
         "_(darwin|linux)_(arm64|amd64)$"
       ],
+      "additionalBranchPrefix": "{{packageName}}-",
       "groupName": "{{packageName}}"
     }
   ],
