@@ -12,7 +12,6 @@ go_library(
         "//internal/attestation/azure/snp",
         "//internal/attestation/azure/trustedlaunch",
         "//internal/attestation/gcp",
-        "//internal/attestation/measurements",
         "//internal/attestation/qemu",
         "//internal/attestation/vtpm",
         "//internal/config",
@@ -25,6 +24,7 @@ go_test(
     srcs = ["choose_test.go"],
     embed = [":choose"],
     deps = [
+        "//internal/attestation/measurements",
         "//internal/config",
         "//internal/variant",
         "@com_github_stretchr_testify//assert",

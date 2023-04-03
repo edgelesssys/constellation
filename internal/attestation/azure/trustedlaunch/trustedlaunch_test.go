@@ -201,7 +201,7 @@ func TestGetAttestationCert(t *testing.T) {
 				},
 			}
 
-			validator := NewValidator(config.AzureTrustedLaunch{Measurements: measurements.M{}}, nil)
+			validator := NewValidator(&config.AzureTrustedLaunch{Measurements: measurements.M{}}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
 			require.NoError(err)
 			roots := x509.NewCertPool()

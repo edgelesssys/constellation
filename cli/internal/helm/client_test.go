@@ -13,9 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"helm.sh/helm/v3/pkg/chart"
@@ -90,8 +88,7 @@ func TestUpgradeRelease(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart, tc.allowDestructive, fileHandler)
+			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart, tc.allowDestructive)
 			if tc.wantError {
 				tc.assertCorrectError(t, err)
 				return

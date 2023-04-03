@@ -30,7 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // TestLoad checks if the serialized format that Load returns correctly preserves the dependencies of the loaded chart.
@@ -40,7 +39,7 @@ func TestLoad(t *testing.T) {
 
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"), "https://192.0.2.1:8080/maa")
+	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 
 	var helmReleases helm.Releases
@@ -63,21 +62,25 @@ func TestConstellationServices(t *testing.T) {
 	}{
 		"AWS": {
 			config: &config.Config{
-				AttestationVariant: variant.AWSNitroTPM{}.String(),
-				Provider:           config.ProviderConfig{AWS: &config.AWSConfig{}},
+				Provider: config.ProviderConfig{AWS: &config.AWSConfig{}},
+				Attestation: config.AttestationConfig{AWSNitroTPM: &config.AWSNitroTPM{
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+				}},
 			},
 			valuesModifier: prepareAWSValues,
 			ccmImage:       "ccmImageForAWS",
 		},
 		"Azure": {
 			config: &config.Config{
-				AttestationVariant: variant.AzureSEVSNP{}.String(),
 				Provider: config.ProviderConfig{Azure: &config.AzureConfig{
-					DeployCSIDriver:    toPtr(true),
-					EnforceIDKeyDigest: idkeydigest.Equal,
-					IDKeyDigest: [][]byte{
-						{0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad, 0xba, 0xaa, 0xaa, 0xad},
-						{0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa},
+					DeployCSIDriver: toPtr(true),
+				}},
+				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+					FirmwareSignerConfig: config.SNPFirmwareSignerConfig{
+						AcceptedKeyDigests: idkeydigest.List{bytes.Repeat([]byte{0xAA}, 32)},
+						EnforcementPolicy:  idkeydigest.MAAFallback,
+						MAAURL:             "https://192.0.2.1:8080/maa",
 					},
 				}},
 			},
@@ -88,9 +91,11 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"GCP": {
 			config: &config.Config{
-				AttestationVariant: variant.GCPSEVES{}.String(),
 				Provider: config.ProviderConfig{GCP: &config.GCPConfig{
 					DeployCSIDriver: toPtr(true),
+				}},
+				Attestation: config.AttestationConfig{GCPSEVES: &config.GCPSEVES{
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
 				}},
 			},
 			valuesModifier: prepareGCPValues,
@@ -98,16 +103,18 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"OpenStack": {
 			config: &config.Config{
-				AttestationVariant: variant.QEMUVTPM{}.String(),
-				Provider:           config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
+				Provider:    config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
+				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{}},
 			},
 			valuesModifier: prepareOpenStackValues,
 			ccmImage:       "ccmImageForOpenStack",
 		},
 		"QEMU": {
 			config: &config.Config{
-				AttestationVariant: variant.QEMUVTPM{}.String(),
-				Provider:           config.ProviderConfig{QEMU: &config.QEMUConfig{}},
+				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
+				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+				}},
 			},
 			valuesModifier: prepareQEMUValues,
 		},
@@ -133,7 +140,7 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
-			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "https://192.0.2.1:8080/maa")
+			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
@@ -313,12 +320,7 @@ func prepareAWSValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
-	mJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	joinVals["measurements"] = string(mJSON)
+
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -347,13 +349,7 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["idkeydigests"] = "[\"baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
-	mJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	joinVals["measurements"] = string(mJSON)
+
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -459,14 +455,6 @@ func prepareGCPValues(values map[string]any) error {
 		return errors.New("missing 'join-service' key")
 	}
 
-	m := measurements.M{
-		1: measurements.WithAllBytes(0xAA, measurements.Enforce),
-	}
-	mJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	joinVals["measurements"] = string(mJSON)
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -535,12 +523,7 @@ func prepareOpenStackValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)}
-	mJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	joinVals["measurements"] = string(mJSON)
+
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -570,12 +553,7 @@ func prepareQEMUValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	m := measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)}
-	mJSON, err := json.Marshal(m)
-	if err != nil {
-		return err
-	}
-	joinVals["measurements"] = string(mJSON)
+
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	verificationVals, ok := values["verification-service"].(map[string]any)

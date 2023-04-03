@@ -13,12 +13,12 @@ go_library(
     deps = [
         "//cli/internal/helm",
         "//cli/internal/image",
-        "//internal/attestation/measurements",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
+        "//internal/variant",
         "//internal/versions",
         "//internal/versions/components",
         "//internal/versionsapi",

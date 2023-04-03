@@ -19,6 +19,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
@@ -79,8 +80,8 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
 	}
 
 	spinner, err := newSpinnerOrStderr(cmd)
@@ -97,7 +98,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 }
 
 // initialize initializes a Constellation.
-func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
+func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
 	fileHandler file.Handler, quotaChecker license.QuotaChecker,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
@@ -138,8 +139,9 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	i.log.Debugf("Checked license")
 
-	i.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
-	validator, err := cloudcmd.NewValidator(conf, idFile.AttestationURL, i.log)
+	conf.UpdateMAAURL(idFile.AttestationURL)
+	i.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), i.log)
 	if err != nil {
 		return err
 	}
@@ -155,7 +157,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloud
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt, idFile.AttestationURL)
+	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)

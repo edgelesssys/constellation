@@ -12,15 +12,12 @@ go_library(
     deps = [
         "//internal/atls",
         "//internal/attestation/choose",
-        "//internal/attestation/idkeydigest",
-        "//internal/attestation/measurements",
         "//internal/config",
         "//internal/constants",
         "//internal/file",
         "//internal/logger",
         "//internal/variant",
         "@com_github_fsnotify_fsnotify//:fsnotify",
-        "@com_github_spf13_afero//:afero",
         "@org_uber_go_zap//:zap",
     ],
 )
@@ -34,7 +31,6 @@ go_test(
     embed = [":watcher"],
     deps = [
         "//internal/atls",
-        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/config",
         "//internal/constants",

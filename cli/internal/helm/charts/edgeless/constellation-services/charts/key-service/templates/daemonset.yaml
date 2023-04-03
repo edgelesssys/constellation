@@ -47,11 +47,6 @@ spec:
         - name: config
           projected:
             sources:
-              - configMap:
-                  items:
-                    - key: {{ .Values.measurementsFilename | quote }}
-                      path: {{ .Values.measurementsFilename | quote }}
-                  name: {{ .Values.global.joinConfigCMName | quote }}
               - secret:
                   items:
                     - key: {{ .Values.masterSecretKeyName | quote }}

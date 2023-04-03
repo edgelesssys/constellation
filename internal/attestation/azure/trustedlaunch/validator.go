@@ -35,7 +35,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(cfg config.AzureTrustedLaunch, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AzureTrustedLaunch, log vtpm.AttestationLogger) *Validator {
 	rootPool := x509.NewCertPool()
 	rootPool.AddCert(ameRoot)
 	v := &Validator{roots: rootPool}

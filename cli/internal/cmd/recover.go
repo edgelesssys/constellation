@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -57,8 +58,8 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
 	}
 	r := &recoverCmd{log: log}
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
@@ -66,7 +67,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 
 func (r *recoverCmd) recover(
 	cmd *cobra.Command, fileHandler file.Handler, interval time.Duration,
-	doer recoverDoerInterface, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
+	doer recoverDoerInterface, newDialer func(validator atls.Validator) *dialer.Dialer,
 ) error {
 	flags, err := r.parseRecoverFlags(cmd, fileHandler)
 	if err != nil {
@@ -96,8 +97,9 @@ func (r *recoverCmd) recover(
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	r.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
-	validator, err := cloudcmd.NewValidator(conf, flags.maaURL, r.log)
+	conf.UpdateMAAURL(flags.maaURL)
+	r.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	validator, err := cloudcmd.NewValidator(cmd, conf.GetAttestationConfig(), r.log)
 	if err != nil {
 		return err
 	}

@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -162,7 +162,7 @@ func TestRecover(t *testing.T) {
 				file.OptNone,
 			))
 
-			newDialer := func(*cloudcmd.Validator) *dialer.Dialer { return nil }
+			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
 			r := &recoverCmd{log: logger.NewTest(t)}
 			err := r.recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
 			if tc.wantErr {

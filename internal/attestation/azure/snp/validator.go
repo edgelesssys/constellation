@@ -36,13 +36,13 @@ type Validator struct {
 	hclValidator hclAkValidator
 	maa          maaValidator
 
-	config config.AzureSEVSNP
+	config *config.AzureSEVSNP
 
 	log vtpm.AttestationLogger
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(cfg config.AzureSEVSNP, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AzureSEVSNP, log vtpm.AttestationLogger) *Validator {
 	if log == nil {
 		log = nopAttestationLogger{}
 	}

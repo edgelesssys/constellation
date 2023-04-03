@@ -252,64 +252,82 @@ func TestUpgradeNodeVersion(t *testing.T) {
 func TestUpdateMeasurements(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		updater         *stubStableClient
-		newMeasurements measurements.M
-		wantUpdate      bool
-		wantErr         bool
+		updater    *stubStableClient
+		newConfig  config.AttestationCfg
+		wantUpdate bool
+		wantErr    bool
 	}{
 		"success": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
 			},
-			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+				},
 			},
 			wantUpdate: true,
 		},
 		"measurements are the same": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
 			},
-			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+				},
 			},
 		},
 		"setting warnOnly to true is allowed": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
 			},
-			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, measurements.WarnOnly),
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xAA, measurements.WarnOnly),
+				},
 			},
 			wantUpdate: true,
 		},
 		"setting warnOnly to false is allowed": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}}`),
 				},
 			},
-			newMeasurements: measurements.M{
-				0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xAA, measurements.Enforce),
+				},
 			},
 			wantUpdate: true,
 		},
 		"getCurrent error": {
 			updater: &stubStableClient{getErr: someErr},
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+				},
+			},
 			wantErr: true,
 		},
 		"update error": {
 			updater: &stubStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
-					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
 				updateErr: someErr,
+			},
+			newConfig: &config.GCPSEVES{
+				Measurements: measurements.M{
+					0: measurements.WithAllBytes(0xBB, measurements.Enforce),
+				},
 			},
 			wantErr: true,
 		},
@@ -325,7 +343,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				log:             logger.NewTest(t),
 			}
 
-			err := upgrader.UpdateMeasurements(context.Background(), tc.newMeasurements)
+			err := upgrader.UpdateAttestationConfig(context.Background(), tc.newConfig)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -333,9 +351,9 @@ func TestUpdateMeasurements(t *testing.T) {
 
 			assert.NoError(err)
 			if tc.wantUpdate {
-				newMeasurementsJSON, err := json.Marshal(tc.newMeasurements)
+				newConfigJSON, err := json.Marshal(tc.newConfig)
 				require.NoError(t, err)
-				assert.JSONEq(string(newMeasurementsJSON), tc.updater.updatedConfigMaps[constants.JoinConfigMap].Data[constants.MeasurementsFilename])
+				assert.JSONEq(string(newConfigJSON), tc.updater.updatedConfigMaps[constants.JoinConfigMap].Data[constants.AttestationConfigFilename])
 			} else {
 				assert.Nil(tc.updater.updatedConfigMaps)
 			}
@@ -468,7 +486,7 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 			Name: constants.JoinConfigMap,
 		},
 		Data: map[string]string{
-			constants.MeasurementsFilename: data,
+			constants.AttestationConfigFilename: data,
 		},
 	}
 }

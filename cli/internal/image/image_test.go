@@ -16,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -126,16 +125,16 @@ func TestImageVariant(t *testing.T) {
 		"Azure cvm": {
 			csp: cloudprovider.Azure,
 			config: &config.Config{
-				AttestationVariant: variant.AzureSEVSNP{}.String(),
-				Image:              "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
+				Image: "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
+				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{}},
 			},
 			wantVariant: "cvm",
 		},
 		"Azure trustedlaunch": {
 			csp: cloudprovider.Azure,
 			config: &config.Config{
-				AttestationVariant: variant.AzureTrustedLaunch{}.String(),
-				Image:              "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
+				Image: "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
+				Attestation: config.AttestationConfig{AzureTrustedLaunch: &config.AzureTrustedLaunch{}},
 			},
 			wantVariant: "trustedlaunch",
 		},

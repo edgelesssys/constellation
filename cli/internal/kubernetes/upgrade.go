@@ -16,12 +16,12 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
@@ -164,7 +164,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return errors.Join(upgradeErrs...)
 	}
 
-	if err := u.UpdateMeasurements(ctx, conf.GetMeasurements()); err != nil {
+	if err := u.UpdateAttestationConfig(ctx, conf.GetAttestationConfig()); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
 
@@ -209,51 +209,58 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 	return nodeVersion.Spec.KubernetesClusterVersion, nil
 }
 
-// UpdateMeasurements fetches the cluster's measurements, compares them to a set of new measurements
-// and updates the cluster's measurements if they are different from the new ones.
-func (u *Upgrader) UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
-	currentMeasurements, existingConf, err := u.GetClusterMeasurements(ctx)
+// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
+// and updates the cluster's config if it is different from the new one.
+func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error {
+	currentConfig, existingConf, err := u.GetClusterAttestationConfig(ctx, newConfig.GetVariant())
 	if err != nil {
-		return fmt.Errorf("getting cluster measurements: %w", err)
+		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
-	if currentMeasurements.EqualTo(newMeasurements) {
-		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
+	newer, err := newConfig.NewerThan(currentConfig)
+	if err != nil {
+		return fmt.Errorf("comparing attestation configs: %w", err)
+	}
+	if !newer {
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen attestation config, skipping config upgrade")
 		return nil
 	}
 
-	// backup of previous measurements
-	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
+	// TODO(daniel-weisse): Add upgrade path from old format
 
-	measurementsJSON, err := json.Marshal(newMeasurements)
+	// backup of previous measurements
+	existingConf.Data["oldAttestationConfig"] = existingConf.Data[constants.AttestationConfigFilename]
+
+	measurementsJSON, err := json.Marshal(newConfig)
 	if err != nil {
-		return fmt.Errorf("marshaling measurements: %w", err)
+		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
-	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
+	existingConf.Data[constants.AttestationConfigFilename] = string(measurementsJSON)
 	u.log.Debugf("Triggering measurements config map update now")
 	if _, err = u.stableInterface.updateConfigMap(ctx, existingConf); err != nil {
-		return fmt.Errorf("setting new measurements: %w", err)
+		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's expected measurements")
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
 	return nil
 }
 
-// GetClusterMeasurements fetches the join-config configmap from the cluster, extracts the measurements
-// and returns both the full configmap and the measurements.
-func (u *Upgrader) GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error) {
+// GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
+// and returns both the full configmap and the attestation config.
+func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
 	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
-		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
-	if _, ok := existingConf.Data[constants.MeasurementsFilename]; !ok {
-		return measurements.M{}, &corev1.ConfigMap{}, errors.New("measurements missing from join-config")
-	}
-	var currentMeasurements measurements.M
-	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
-		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
+		return nil, nil, errors.New("attestation config missing from join-config")
 	}
 
-	return currentMeasurements, existingConf, nil
+	existingAttestationConfig, err := config.UnmarshalAttestationConfig([]byte(existingConf.Data[constants.AttestationConfigFilename]), variant)
+	if err != nil {
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+	}
+
+	return existingAttestationConfig, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
