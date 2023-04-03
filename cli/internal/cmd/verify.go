@@ -91,15 +91,17 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return fmt.Errorf("loading config file: %w", err)
 	}
 
-	c.log.Debugf("Creating aTLS Validator for %s", conf.AttestationVariant)
-	validators, err := cloudcmd.NewValidator(conf, flags.maaURL, c.log)
-	if err != nil {
-		return fmt.Errorf("creating aTLS validator: %w", err)
+	conf.UpdateMAAURL(flags.maaURL)
+	c.log.Debugf("Updating expected PCRs")
+	attConfig := conf.GetAttestationConfig()
+	if err := cloudcmd.UpdateInitPCRs(attConfig, flags.ownerID, flags.clusterID); err != nil {
+		return fmt.Errorf("updating expected PCRs: %w", err)
 	}
 
-	c.log.Debugf("Updating expected PCRs")
-	if err := validators.UpdateInitPCRs(flags.ownerID, flags.clusterID); err != nil {
-		return fmt.Errorf("updating expected PCRs: %w", err)
+	c.log.Debugf("Creating aTLS Validator for %s", conf.GetAttestationConfig().GetVariant())
+	validator, err := cloudcmd.NewValidator(cmd, attConfig, c.log)
+	if err != nil {
+		return fmt.Errorf("creating aTLS validator: %w", err)
 	}
 
 	nonce, err := crypto.GenerateRandomBytes(32)
@@ -114,14 +116,14 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		&verifyproto.GetAttestationRequest{
 			Nonce: nonce,
 		},
-		validators.V(cmd),
+		validator,
 	)
 	if err != nil {
 		return fmt.Errorf("verifying: %w", err)
 	}
 
 	// certificates are only available for Azure
-	attDocOutput, err := formatter.format(rawAttestationDoc, conf.Provider.Azure == nil, flags.rawOutput, validators.PCRS())
+	attDocOutput, err := formatter.format(rawAttestationDoc, conf.Provider.Azure == nil, flags.rawOutput, attConfig.GetMeasurements())
 	if err != nil {
 		return fmt.Errorf("printing attestation document: %w", err)
 	}

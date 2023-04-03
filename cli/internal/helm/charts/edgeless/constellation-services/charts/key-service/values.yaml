@@ -4,5 +4,3 @@ saltKeyName: salt
 masterSecretName: constellation-mastersecret
 # Name of the key within the respective secret that holds the master secret.
 masterSecretKeyName: mastersecret
-# Name of the ConfigMap that holds the measurements.
-measurementsFilename: measurements

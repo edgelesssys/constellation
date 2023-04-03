@@ -18,6 +18,7 @@ var (
 	GCPConfigDoc               encoder.Doc
 	OpenStackConfigDoc         encoder.Doc
 	QEMUConfigDoc              encoder.Doc
+	AttestationConfigDoc       encoder.Doc
 	AWSNitroTPMDoc             encoder.Doc
 	AzureSEVSNPDoc             encoder.Doc
 	SNPFirmwareSignerConfigDoc encoder.Doc
@@ -66,16 +67,16 @@ func init() {
 	ConfigDoc.Fields[6].Note = ""
 	ConfigDoc.Fields[6].Description = "DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
 	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
-	ConfigDoc.Fields[7].Name = "attestationVariant"
-	ConfigDoc.Fields[7].Type = "string"
-	ConfigDoc.Fields[7].Note = "TODO: v2.8: Mark required\n"
-	ConfigDoc.Fields[7].Description = "Attestation variant used to verify the integrity of a node."
-	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Attestation variant used to verify the integrity of a node."
-	ConfigDoc.Fields[8].Name = "provider"
-	ConfigDoc.Fields[8].Type = "ProviderConfig"
+	ConfigDoc.Fields[7].Name = "provider"
+	ConfigDoc.Fields[7].Type = "ProviderConfig"
+	ConfigDoc.Fields[7].Note = ""
+	ConfigDoc.Fields[7].Description = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[8].Name = "attestation"
+	ConfigDoc.Fields[8].Type = "AttestationConfig"
 	ConfigDoc.Fields[8].Note = ""
-	ConfigDoc.Fields[8].Description = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[8].Description = "Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee our docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation"
+	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee our docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation"
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
@@ -122,7 +123,7 @@ func init() {
 			FieldName: "aws",
 		},
 	}
-	AWSConfigDoc.Fields = make([]encoder.Doc, 7)
+	AWSConfigDoc.Fields = make([]encoder.Doc, 6)
 	AWSConfigDoc.Fields[0].Name = "region"
 	AWSConfigDoc.Fields[0].Type = "string"
 	AWSConfigDoc.Fields[0].Note = ""
@@ -153,11 +154,6 @@ func init() {
 	AWSConfigDoc.Fields[5].Note = ""
 	AWSConfigDoc.Fields[5].Description = "Name of the IAM profile to use for the worker nodes."
 	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Name of the IAM profile to use for the worker nodes."
-	AWSConfigDoc.Fields[6].Name = "measurements"
-	AWSConfigDoc.Fields[6].Type = "Measurements"
-	AWSConfigDoc.Fields[6].Note = ""
-	AWSConfigDoc.Fields[6].Description = "Expected VM measurements."
-	AWSConfigDoc.Fields[6].Comments[encoder.LineComment] = "Expected VM measurements."
 
 	AzureConfigDoc.Type = "AzureConfig"
 	AzureConfigDoc.Comments[encoder.LineComment] = "AzureConfig are Azure specific configuration values used by the CLI."
@@ -168,7 +164,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 15)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 12)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -229,21 +225,6 @@ func init() {
 	AzureConfigDoc.Fields[11].Note = ""
 	AzureConfigDoc.Fields[11].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 	AzureConfigDoc.Fields[11].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
-	AzureConfigDoc.Fields[12].Name = "idKeyDigest"
-	AzureConfigDoc.Fields[12].Type = "Digests"
-	AzureConfigDoc.Fields[12].Note = ""
-	AzureConfigDoc.Fields[12].Description = "List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
-	AzureConfigDoc.Fields[12].Comments[encoder.LineComment] = "List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
-	AzureConfigDoc.Fields[13].Name = "enforceIdKeyDigest"
-	AzureConfigDoc.Fields[13].Type = "Enforcement"
-	AzureConfigDoc.Fields[13].Note = ""
-	AzureConfigDoc.Fields[13].Description = "Enforce the specified idKeyDigest value during remote attestation."
-	AzureConfigDoc.Fields[13].Comments[encoder.LineComment] = "Enforce the specified idKeyDigest value during remote attestation."
-	AzureConfigDoc.Fields[14].Name = "measurements"
-	AzureConfigDoc.Fields[14].Type = "Measurements"
-	AzureConfigDoc.Fields[14].Note = ""
-	AzureConfigDoc.Fields[14].Description = "Expected confidential VM measurements."
-	AzureConfigDoc.Fields[14].Comments[encoder.LineComment] = "Expected confidential VM measurements."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -254,7 +235,7 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 8)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 7)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -290,11 +271,6 @@ func init() {
 	GCPConfigDoc.Fields[6].Note = ""
 	GCPConfigDoc.Fields[6].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	GCPConfigDoc.Fields[6].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	GCPConfigDoc.Fields[7].Name = "measurements"
-	GCPConfigDoc.Fields[7].Type = "Measurements"
-	GCPConfigDoc.Fields[7].Note = ""
-	GCPConfigDoc.Fields[7].Description = "Expected confidential VM measurements."
-	GCPConfigDoc.Fields[7].Comments[encoder.LineComment] = "Expected confidential VM measurements."
 
 	OpenStackConfigDoc.Type = "OpenStackConfig"
 	OpenStackConfigDoc.Comments[encoder.LineComment] = "OpenStackConfig holds config information for OpenStack based Constellation deployments."
@@ -391,7 +367,7 @@ func init() {
 			FieldName: "qemu",
 		},
 	}
-	QEMUConfigDoc.Fields = make([]encoder.Doc, 9)
+	QEMUConfigDoc.Fields = make([]encoder.Doc, 8)
 	QEMUConfigDoc.Fields[0].Name = "imageFormat"
 	QEMUConfigDoc.Fields[0].Type = "string"
 	QEMUConfigDoc.Fields[0].Note = ""
@@ -432,15 +408,52 @@ func init() {
 	QEMUConfigDoc.Fields[7].Note = ""
 	QEMUConfigDoc.Fields[7].Description = "Path to the OVMF firmware. Leave empty for auto selection."
 	QEMUConfigDoc.Fields[7].Comments[encoder.LineComment] = "Path to the OVMF firmware. Leave empty for auto selection."
-	QEMUConfigDoc.Fields[8].Name = "measurements"
-	QEMUConfigDoc.Fields[8].Type = "Measurements"
-	QEMUConfigDoc.Fields[8].Note = ""
-	QEMUConfigDoc.Fields[8].Description = "Measurement used to enable measured boot."
-	QEMUConfigDoc.Fields[8].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+
+	AttestationConfigDoc.Type = "AttestationConfig"
+	AttestationConfigDoc.Comments[encoder.LineComment] = "AttestationConfig configuration values used for attestation."
+	AttestationConfigDoc.Description = "AttestationConfig configuration values used for attestation.\nFields should remain pointer-types so custom specific configs can nil them\nif not required.\n"
+	AttestationConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "Config",
+			FieldName: "attestation",
+		},
+	}
+	AttestationConfigDoc.Fields = make([]encoder.Doc, 5)
+	AttestationConfigDoc.Fields[0].Name = "awsNitroTPM"
+	AttestationConfigDoc.Fields[0].Type = "AWSNitroTPM"
+	AttestationConfigDoc.Fields[0].Note = ""
+	AttestationConfigDoc.Fields[0].Description = "AWS Nitro TPM attestation."
+	AttestationConfigDoc.Fields[0].Comments[encoder.LineComment] = "AWS Nitro TPM attestation."
+	AttestationConfigDoc.Fields[1].Name = "azureSEVSNP"
+	AttestationConfigDoc.Fields[1].Type = "AzureSEVSNP"
+	AttestationConfigDoc.Fields[1].Note = ""
+	AttestationConfigDoc.Fields[1].Description = "Azure SEV-SNP attestation.\nSee our docs for more information on configurable values\nTODO(AB#3071): add link after docs are written"
+	AttestationConfigDoc.Fields[1].Comments[encoder.LineComment] = "Azure SEV-SNP attestation.\nSee our docs for more information on configurable values"
+	AttestationConfigDoc.Fields[2].Name = "azureTrustedLaunch"
+	AttestationConfigDoc.Fields[2].Type = "AzureTrustedLaunch"
+	AttestationConfigDoc.Fields[2].Note = ""
+	AttestationConfigDoc.Fields[2].Description = "Azure TPM attestation (Trusted Launch)."
+	AttestationConfigDoc.Fields[2].Comments[encoder.LineComment] = "Azure TPM attestation (Trusted Launch)."
+	AttestationConfigDoc.Fields[3].Name = "gcpSEVES"
+	AttestationConfigDoc.Fields[3].Type = "GCPSEVES"
+	AttestationConfigDoc.Fields[3].Note = ""
+	AttestationConfigDoc.Fields[3].Description = "GCP SEV-ES attestation."
+	AttestationConfigDoc.Fields[3].Comments[encoder.LineComment] = "GCP SEV-ES attestation."
+	AttestationConfigDoc.Fields[4].Name = "qemuVTPM"
+	AttestationConfigDoc.Fields[4].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[4].Note = ""
+	AttestationConfigDoc.Fields[4].Description = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[4].Comments[encoder.LineComment] = "QEMU vTPM attestation."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
 	AWSNitroTPMDoc.Description = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
+	AWSNitroTPMDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "awsNitroTPM",
+		},
+	}
 	AWSNitroTPMDoc.Fields = make([]encoder.Doc, 1)
 	AWSNitroTPMDoc.Fields[0].Name = "measurements"
 	AWSNitroTPMDoc.Fields[0].Type = "M"
@@ -451,12 +464,18 @@ func init() {
 	AzureSEVSNPDoc.Type = "AzureSEVSNP"
 	AzureSEVSNPDoc.Comments[encoder.LineComment] = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
 	AzureSEVSNPDoc.Description = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
+	AzureSEVSNPDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "azureSEVSNP",
+		},
+	}
 	AzureSEVSNPDoc.Fields = make([]encoder.Doc, 7)
 	AzureSEVSNPDoc.Fields[0].Name = "measurements"
 	AzureSEVSNPDoc.Fields[0].Type = "M"
 	AzureSEVSNPDoc.Fields[0].Note = ""
-	AzureSEVSNPDoc.Fields[0].Description = "Expected confidential VM measurements."
-	AzureSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	AzureSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
+	AzureSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
 	AzureSEVSNPDoc.Fields[1].Name = "bootloaderVersion"
 	AzureSEVSNPDoc.Fields[1].Type = "uint8"
 	AzureSEVSNPDoc.Fields[1].Note = ""
@@ -517,6 +536,12 @@ func init() {
 	AzureTrustedLaunchDoc.Type = "AzureTrustedLaunch"
 	AzureTrustedLaunchDoc.Comments[encoder.LineComment] = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
 	AzureTrustedLaunchDoc.Description = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
+	AzureTrustedLaunchDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "azureTrustedLaunch",
+		},
+	}
 	AzureTrustedLaunchDoc.Fields = make([]encoder.Doc, 1)
 	AzureTrustedLaunchDoc.Fields[0].Name = "measurements"
 	AzureTrustedLaunchDoc.Fields[0].Type = "M"
@@ -527,6 +552,12 @@ func init() {
 	GCPSEVESDoc.Type = "GCPSEVES"
 	GCPSEVESDoc.Comments[encoder.LineComment] = "GCPSEVES is the configuration for GCP SEV-ES attestation."
 	GCPSEVESDoc.Description = "GCPSEVES is the configuration for GCP SEV-ES attestation."
+	GCPSEVESDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "gcpSEVES",
+		},
+	}
 	GCPSEVESDoc.Fields = make([]encoder.Doc, 1)
 	GCPSEVESDoc.Fields[0].Name = "measurements"
 	GCPSEVESDoc.Fields[0].Type = "M"
@@ -537,6 +568,12 @@ func init() {
 	QEMUVTPMDoc.Type = "QEMUVTPM"
 	QEMUVTPMDoc.Comments[encoder.LineComment] = "QEMUVTPM is the configuration for QEMU vTPM attestation."
 	QEMUVTPMDoc.Description = "QEMUVTPM is the configuration for QEMU vTPM attestation."
+	QEMUVTPMDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "qemuVTPM",
+		},
+	}
 	QEMUVTPMDoc.Fields = make([]encoder.Doc, 1)
 	QEMUVTPMDoc.Fields[0].Name = "measurements"
 	QEMUVTPMDoc.Fields[0].Type = "M"
@@ -571,6 +608,10 @@ func (_ OpenStackConfig) Doc() *encoder.Doc {
 
 func (_ QEMUConfig) Doc() *encoder.Doc {
 	return &QEMUConfigDoc
+}
+
+func (_ AttestationConfig) Doc() *encoder.Doc {
+	return &AttestationConfigDoc
 }
 
 func (_ AWSNitroTPM) Doc() *encoder.Doc {
@@ -610,6 +651,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&GCPConfigDoc,
 			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
+			&AttestationConfigDoc,
 			&AWSNitroTPMDoc,
 			&AzureSEVSNPDoc,
 			&SNPFirmwareSignerConfigDoc,

@@ -28,7 +28,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -218,15 +217,11 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		StateDiskType:        opts.Config.Provider.Azure.StateDiskType,
 		ImageID:              opts.image,
 		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
-		CreateMAA:            opts.Config.Provider.Azure.EnforceIDKeyDigest == idkeydigest.MAAFallback,
+		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}), // TODO(daniel-weisse): check if we want to create MAA for all Azure SNP clusters
 		Debug:                opts.Config.IsDebugCluster(),
 	}
 
-	attestVariant, err := variant.FromString(opts.Config.AttestationVariant)
-	if err != nil {
-		return clusterid.File{}, fmt.Errorf("parsing attestation variant: %w", err)
-	}
-	vars.ConfidentialVM = attestVariant.Equal(variant.AzureSEVSNP{})
+	vars.ConfidentialVM = opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})
 
 	vars = normalizeAzureURIs(vars)
 

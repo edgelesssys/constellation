@@ -318,9 +318,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],
     deps = [
-        "//cli/internal/clusterid",
         "//cli/internal/helm/imageversion",
-        "//internal/attestation/idkeydigest",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
         "//internal/config",
@@ -363,7 +361,6 @@ go_test(
         "//internal/deploy/helm",
         "//internal/file",
         "//internal/logger",
-        "//internal/variant",
         "@com_github_pkg_errors//:errors",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

@@ -13,7 +13,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -97,17 +96,9 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		printedAWarning = true
 	}
 
-	attestVariant, err := variant.FromString(conf.AttestationVariant)
-	if err != nil {
-		return fmt.Errorf("parsing attestation variant: %w", err)
-	}
-
-	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
+	if conf.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
 		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
-		if conf.IDKeyDigestPolicy() == idkeydigest.Equal || conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
-			cmd.PrintErrln("Your config asks for validating the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
-		}
 	}
 
 	// Print an extra new line later to separate warnings from the prompt message of the create command

@@ -104,11 +104,7 @@ func validateAWSInstanceType(fl validator.FieldLevel) bool {
 }
 
 func (c *Config) validateAzureInstanceType(fl validator.FieldLevel) bool {
-	attestVariant, err := variant.FromString(c.AttestationVariant)
-	if err != nil {
-		return false
-	}
-	acceptNonCVM := attestVariant.Equal(variant.AzureTrustedLaunch{})
+	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{})
 	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
 }
 
@@ -142,6 +138,71 @@ func validateProvider(sl validator.StructLevel) {
 	} else if providerCount > 1 {
 		sl.ReportError(provider, "Provider", "Provider", "more_than_one_provider", "")
 	}
+}
+
+func validateAttestation(sl validator.StructLevel) {
+	attestation := sl.Current().Interface().(AttestationConfig)
+	attestationCount := 0
+
+	if attestation.AWSNitroTPM != nil {
+		attestationCount++
+	}
+	if attestation.AzureSEVSNP != nil {
+		attestationCount++
+	}
+	if attestation.AzureTrustedLaunch != nil {
+		attestationCount++
+	}
+	if attestation.GCPSEVES != nil {
+		attestationCount++
+	}
+	if attestation.QEMUVTPM != nil {
+		attestationCount++
+	}
+
+	if attestationCount < 1 {
+		sl.ReportError(attestation, "Attestation", "Attestation", "no_attestation", "")
+	} else if attestationCount > 1 {
+		sl.ReportError(attestation, "Attestation", "Attestation", "more_than_one_attestation", "")
+	}
+}
+
+func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("no_attestation", fe.Field())
+
+	return t
+}
+
+func registerNoAttestationError(ut ut.Translator) error {
+	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either AWSNitroTPM, AzureSEVSNP, AzureTrustedLaunch, GCPSEVES, or QEMUVTPM)", true)
+}
+
+func registerMoreThanOneAttestationError(ut ut.Translator) error {
+	return ut.Add("more_than_one_attestation", "{0}: Only one attestation can be defined ({1} are defined)", true)
+}
+
+func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe validator.FieldError) string {
+	definedAttestations := make([]string, 0)
+
+	if c.Attestation.AWSNitroTPM != nil {
+		definedAttestations = append(definedAttestations, "AWSNitroTPM")
+	}
+	if c.Attestation.AzureSEVSNP != nil {
+		definedAttestations = append(definedAttestations, "AzureSEVSNP")
+	}
+	if c.Attestation.AzureTrustedLaunch != nil {
+		definedAttestations = append(definedAttestations, "AzureTrustedLaunch")
+	}
+	if c.Attestation.GCPSEVES != nil {
+		definedAttestations = append(definedAttestations, "GCPSEVES")
+	}
+	if c.Attestation.QEMUVTPM != nil {
+		definedAttestations = append(definedAttestations, "QEMUVTPM")
+	}
+
+	t, _ := ut.T("more_than_one_attestation", fe.Field(), strings.Join(definedAttestations, ", "))
+
+	return t
 }
 
 func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
@@ -285,10 +346,7 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
 	var t string
 
-	attestVariant, err := variant.FromString(c.AttestationVariant)
-	if err != nil {
-		return ""
-	}
+	attestVariant := c.GetAttestationConfig().GetVariant()
 	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
 		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
 	} else {
@@ -299,7 +357,7 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 }
 
 func validateNoPlaceholder(fl validator.FieldLevel) bool {
-	return len(getPlaceholderEntries(fl.Field().Interface().(Measurements))) == 0
+	return len(getPlaceholderEntries(fl.Field().Interface().(measurements.M))) == 0
 }
 
 func registerContainsPlaceholderError(ut ut.Translator) error {
@@ -307,7 +365,7 @@ func registerContainsPlaceholderError(ut ut.Translator) error {
 }
 
 func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError) string {
-	placeholders := getPlaceholderEntries(fe.Value().(Measurements))
+	placeholders := getPlaceholderEntries(fe.Value().(measurements.M))
 	msg := fmt.Sprintf("Measurements %v contain", placeholders)
 	if len(placeholders) == 1 {
 		msg = fmt.Sprintf("Measurement %v contains", placeholders)
@@ -317,7 +375,7 @@ func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError
 	return t
 }
 
-func getPlaceholderEntries(m Measurements) []uint32 {
+func getPlaceholderEntries(m measurements.M) []uint32 {
 	var placeholders []uint32
 	placeholder := measurements.PlaceHolderMeasurement()
 
@@ -453,59 +511,6 @@ func (c *Config) validateName(fl validator.FieldLevel) bool {
 		return len(fl.Field().String()) <= constants.AWSConstellationNameLength
 	}
 	return len(fl.Field().String()) <= constants.ConstellationNameLength
-}
-
-func registerValidAttestVariantError(ut ut.Translator) error {
-	return ut.Add("valid_attestation_variant", `"{0}" is not a valid attestation variant for CSP {1}`, true)
-}
-
-func (c *Config) translateValidAttestVariantError(ut ut.Translator, _ validator.FieldError) string {
-	csp := c.GetProvider()
-	t, _ := ut.T("valid_attestation_variant", c.AttestationVariant, csp.String())
-	return t
-}
-
-func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
-	// TODO(AB#3040): function will be obsolete in v2.8
-	// attestationVariant will be refactored into a required struct
-	c.addMissingVariant()
-
-	attestationVariant, err := variant.FromString(c.AttestationVariant)
-	if err != nil {
-		return false
-	}
-
-	// make sure the variant is valid for the chosen CSP
-	switch attestationVariant {
-	case variant.AWSNitroTPM{}:
-		return c.Provider.AWS != nil
-	case variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}:
-		return c.Provider.Azure != nil
-	case variant.GCPSEVES{}:
-		return c.Provider.GCP != nil
-	case variant.QEMUVTPM{}:
-		return c.Provider.QEMU != nil || c.Provider.OpenStack != nil
-	default:
-		return false
-	}
-}
-
-func (c *Config) addMissingVariant() {
-	if c.AttestationVariant != "" {
-		return
-	}
-	switch c.GetProvider() {
-	case cloudprovider.AWS:
-		c.AttestationVariant = variant.AWSNitroTPM{}.String()
-	case cloudprovider.Azure:
-		c.AttestationVariant = variant.AzureSEVSNP{}.String()
-	case cloudprovider.GCP:
-		c.AttestationVariant = variant.GCPSEVES{}.String()
-	case cloudprovider.QEMU:
-		c.AttestationVariant = variant.QEMUVTPM{}.String()
-	case cloudprovider.OpenStack:
-		c.AttestationVariant = variant.QEMUVTPM{}.String()
-	}
 }
 
 func warnDeprecated(fl validator.FieldLevel) bool {

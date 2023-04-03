@@ -106,18 +106,12 @@ const (
 
 	// ServiceBasePath is the base path for the mounted micro service's files.
 	ServiceBasePath = "/var/config"
-	// MeasurementsFilename is the filename of CC measurements.
-	MeasurementsFilename = "measurements"
+	// AttestationConfigFilename is the filename of the config used for CC validation.
+	AttestationConfigFilename = "attestationConfig"
 	// MeasurementSaltFilename is the filename of the salt used in creation of the clusterID.
 	MeasurementSaltFilename = "measurementSalt"
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
 	MeasurementSecretFilename = "measurementSecret"
-	// IDKeyDigestFilename is the name of the file holding the currently enforced idkeydigest.
-	IDKeyDigestFilename = "idkeydigests"
-	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
-	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
-	// IDKeyConfigFilename is the name of the file holding the configuration for validating the SEV-SNP ID key digest.
-	IDKeyConfigFilename = "idKeyConfig"
 
 	// K8sVersionFieldName is the name of the of the key holding the wanted Kubernetes version.
 	K8sVersionFieldName = "cluster-version"

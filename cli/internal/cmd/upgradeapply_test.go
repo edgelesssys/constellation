@@ -13,12 +13,12 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,18 +32,27 @@ func TestUpgradeApply(t *testing.T) {
 		wantErr  bool
 	}{
 		"success": {
-			upgrader: stubUpgrader{},
+			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
 		},
 		"nodeVersion some error": {
-			upgrader: stubUpgrader{nodeVersionErr: someErr},
-			wantErr:  true,
+			upgrader: stubUpgrader{
+				currentConfig:  config.DefaultForAzureSEVSNP(),
+				nodeVersionErr: someErr,
+			},
+			wantErr: true,
 		},
 		"nodeVersion in progress error": {
-			upgrader: stubUpgrader{nodeVersionErr: kubernetes.ErrInProgress},
+			upgrader: stubUpgrader{
+				currentConfig:  config.DefaultForAzureSEVSNP(),
+				nodeVersionErr: kubernetes.ErrInProgress,
+			},
 		},
 		"helm other error": {
-			upgrader: stubUpgrader{helmErr: someErr},
-			wantErr:  true,
+			upgrader: stubUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+				helmErr:       someErr,
+			},
+			wantErr: true,
 		},
 	}
 
@@ -74,6 +83,7 @@ func TestUpgradeApply(t *testing.T) {
 }
 
 type stubUpgrader struct {
+	currentConfig  config.AttestationCfg
 	nodeVersionErr error
 	helmErr        error
 }
@@ -86,10 +96,10 @@ func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _
 	return u.helmErr
 }
 
-func (u stubUpgrader) UpdateMeasurements(_ context.Context, _ measurements.M) error {
+func (u stubUpgrader) UpdateAttestationConfig(_ context.Context, _ config.AttestationCfg) error {
 	return nil
 }
 
-func (u stubUpgrader) GetClusterMeasurements(_ context.Context) (measurements.M, *corev1.ConfigMap, error) {
-	return measurements.M{}, &corev1.ConfigMap{}, nil
+func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
+	return u.currentConfig, &corev1.ConfigMap{}, nil
 }

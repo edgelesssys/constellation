@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 func TestCreator(t *testing.T) {
@@ -63,7 +62,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				cfg.RemoveProviderExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{},
@@ -73,7 +72,9 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.AttestationVariant = variant.AzureTrustedLaunch{}.String()
+				cfg.Attestation = config.AttestationConfig{
+					AzureTrustedLaunch: &config.AzureTrustedLaunch{},
+				}
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{},
@@ -83,7 +84,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				cfg.RemoveProviderExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{someErr},
@@ -94,7 +95,7 @@ func TestCreator(t *testing.T) {
 			provider:       cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				cfg.RemoveProviderExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{},
@@ -105,7 +106,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.AttestationVariant = variant.AzureSEVSNP{}.String()
+				cfg.RemoveProviderExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher:         &stubPolicyPatcher{},

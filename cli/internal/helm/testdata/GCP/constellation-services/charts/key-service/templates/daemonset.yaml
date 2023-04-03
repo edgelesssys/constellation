@@ -47,11 +47,6 @@ spec:
         - name: config
           projected:
             sources:
-              - configMap:
-                  items:
-                    - key: measurements
-                      path: measurements
-                  name: join-config
               - secret:
                   items:
                     - key: mastersecret

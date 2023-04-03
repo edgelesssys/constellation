@@ -8,14 +8,11 @@ package helm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -147,9 +144,8 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		return fmt.Errorf("creating CR backup: %w", err)
 	}
 
-	fileHandler := file.NewHandler(afero.NewOsFs())
 	for _, chart := range upgradeReleases {
-		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive, fileHandler)
+		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive)
 		if err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
@@ -245,7 +241,7 @@ func (s ServiceVersions) ConstellationServices() string {
 }
 
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool, fileHandler file.Handler,
+	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
 ) error {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -289,7 +285,7 @@ func (c *Client) upgradeRelease(
 			return fmt.Errorf("loading values: %w", err)
 		}
 
-		if err := c.applyMigrations(releaseName, values, conf, fileHandler); err != nil {
+		if err := c.applyMigrations(releaseName, values, conf); err != nil {
 			return fmt.Errorf("applying migrations: %w", err)
 		}
 	default:
@@ -312,7 +308,7 @@ func (c *Client) upgradeRelease(
 // applyMigrations checks the from version and applies the necessary migrations.
 // The function assumes the caller has verified that our version drift restriction is not violated,
 // Currently, this is done during config validation.
-func (c *Client) applyMigrations(releaseName string, values map[string]any, conf *config.Config, fileHandler file.Handler) error {
+func (c *Client) applyMigrations(releaseName string, values map[string]any, conf *config.Config) error {
 	current, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting %s version: %w", releaseName, err)
@@ -322,8 +318,8 @@ func (c *Client) applyMigrations(releaseName string, values map[string]any, conf
 		return fmt.Errorf("parsing current version: %w", err)
 	}
 
-	if currentV.Major == 2 && currentV.Minor == 6 {
-		return migrateFrom2_6(values, conf, fileHandler)
+	if currentV.Major == 2 && currentV.Minor == 7 {
+		return migrateFrom2_7(values, conf)
 	}
 
 	return nil
@@ -332,27 +328,8 @@ func (c *Client) applyMigrations(releaseName string, values map[string]any, conf
 // migrateFrom2_6 applies the necessary migrations for upgrading from v2.6.x to v2.7.x.
 // migrateFrom2_6 should be applied for v2.6.x --> v2.7.x.
 // migrateFrom2_6 should NOT be applied for v2.7.0 --> v2.7.x.
-// This function can be removed once we are sure that we will no longer provide backports for v2.6.
-func migrateFrom2_6(values map[string]any, conf *config.Config, fileHandler file.Handler) error {
-	// Manually setting attestationVariant is required here since upgrade normally isn't allowed to change this value.
-	// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
-	if err := setAttestationVariant(values, conf.AttestationVariant); err != nil {
-		return fmt.Errorf("setting attestationVariant: %w", err)
-	}
-
-	// Manually setting idKeyConfig is required here since upgrade normally isn't allowed to change this value.
-	// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
-		return fmt.Errorf("reading cluster ID file: %w", err)
-	}
-	// Disallow users to set MAAFallback as ID key digest policy for upgrades, since it requires extra cloud resources.
-	if conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
-		return fmt.Errorf("ID key digest policy %s is not supported for upgrades", conf.IDKeyDigestPolicy())
-	}
-	if err := setIdkeyConfig(values, conf, idFile.AttestationURL); err != nil {
-		return fmt.Errorf("setting id key config: %w", err)
-	}
+// Remove after release of v2.8.0.
+func migrateFrom2_7(values map[string]any, conf *config.Config) error {
 	return nil
 }
 
@@ -401,44 +378,6 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 			}
 		}
 	}
-	return nil
-}
-
-// setAttestationVariant sets the attesationVariant value on verification-service and join-service value maps.
-func setAttestationVariant(values map[string]any, variant string) error {
-	joinServiceVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid join-service values")
-	}
-	joinServiceVals["attestationVariant"] = variant
-
-	verifyServiceVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid verification-service values")
-	}
-	verifyServiceVals["attestationVariant"] = variant
-
-	return nil
-}
-
-// setIdkeyConfig sets the idkeyconfig value on the join-service value maps.
-func setIdkeyConfig(values map[string]any, cfg *config.Config, maaURL string) error {
-	joinServiceVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid join-service values")
-	}
-
-	idKeyCfg := config.SNPFirmwareSignerConfig{
-		AcceptedKeyDigests: cfg.IDKeyDigests(),
-		EnforcementPolicy:  cfg.IDKeyDigestPolicy(),
-		MAAURL:             maaURL,
-	}
-	marshalledCfg, err := json.Marshal(idKeyCfg)
-	if err != nil {
-		return fmt.Errorf("marshalling id key digest config: %w", err)
-	}
-	joinServiceVals["idKeyConfig"] = string(marshalledCfg)
-
 	return nil
 }
 

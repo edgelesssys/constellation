@@ -10,6 +10,7 @@ import (
 	"encoding/asn1"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
@@ -64,29 +65,29 @@ func TestIssuer(t *testing.T) {
 
 func TestValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant variant.Variant
+		cfg     config.AttestationCfg
 		wantErr bool
 	}{
 		"aws-nitro-tpm": {
-			variant: variant.AWSNitroTPM{},
+			cfg: &config.AWSNitroTPM{},
 		},
 		"azure-sev-snp": {
-			variant: variant.AzureSEVSNP{},
+			cfg: &config.AzureSEVSNP{},
 		},
 		"azure-trusted-launch": {
-			variant: variant.AzureTrustedLaunch{},
+			cfg: &config.AzureTrustedLaunch{},
 		},
 		"gcp-sev-es": {
-			variant: variant.GCPSEVES{},
+			cfg: &config.GCPSEVES{},
 		},
 		"qemu-vtpm": {
-			variant: variant.QEMUVTPM{},
+			cfg: &config.QEMUVTPM{},
 		},
 		"dummy": {
-			variant: variant.Dummy{},
+			cfg: &config.DummyCfg{},
 		},
 		"unknown": {
-			variant: unknownVariant{},
+			cfg:     unknownConfig{},
 			wantErr: true,
 		},
 	}
@@ -96,14 +97,14 @@ func TestValidator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			validator, err := Validator(tc.variant, nil, config.SNPFirmwareSignerConfig{}, nil)
+			validator, err := Validator(tc.cfg, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.True(validator.OID().Equal(tc.variant.OID()))
+			assert.True(validator.OID().Equal(tc.cfg.GetVariant().OID()))
 		})
 	}
 }
@@ -121,3 +122,17 @@ func (unknownVariant) String() string {
 func (unknownVariant) Equal(other variant.Getter) bool {
 	return other.OID().Equal(unknownVariant{}.OID())
 }
+
+type unknownConfig struct{}
+
+func (unknownConfig) GetVariant() variant.Variant {
+	return unknownVariant{}
+}
+
+func (unknownConfig) GetMeasurements() measurements.M {
+	return nil
+}
+
+func (unknownConfig) SetMeasurements(measurements.M) {}
+
+func (unknownConfig) NewerThan(config.AttestationCfg) (bool, error) { return false, nil }

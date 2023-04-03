@@ -30,7 +30,7 @@ type Validator struct {
 }
 
 // NewValidator create a new Validator structure and returns it.
-func NewValidator(cfg config.AWSNitroTPM, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AWSNitroTPM, log vtpm.AttestationLogger) *Validator {
 	v := &Validator{}
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,

@@ -110,7 +110,7 @@ func AvailableServiceVersions() (string, error) {
 }
 
 // Load the embedded helm charts.
-func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte, maaURL string) ([]byte, error) {
+func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
@@ -131,7 +131,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
-	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt, maaURL); err != nil {
+	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt); err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 
@@ -374,11 +374,10 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 			"internalCMName":      constants.InternalConfigMap,
 		},
 		"key-service": map[string]any{
-			"image":                i.keyServiceImage,
-			"saltKeyName":          constants.ConstellationSaltKey,
-			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
-			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
-			"measurementsFilename": constants.MeasurementsFilename,
+			"image":               i.keyServiceImage,
+			"saltKeyName":         constants.ConstellationSaltKey,
+			"masterSecretKeyName": constants.ConstellationMasterSecretKey,
+			"masterSecretName":    constants.ConstellationMasterSecretStoreName,
 		},
 		"join-service": map[string]any{
 			"csp":   i.csp.String(),
@@ -468,7 +467,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 // extendConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extendConstellationServicesValues(
-	in map[string]any, cfg *config.Config, masterSecret, salt []byte, maaURL string,
+	in map[string]any, cfg *config.Config, masterSecret, salt []byte,
 ) error {
 	keyServiceValues, ok := in["key-service"].(map[string]any)
 	if !ok {
@@ -481,41 +480,25 @@ func extendConstellationServicesValues(
 	if !ok {
 		return errors.New("invalid join-service values")
 	}
-	joinServiceVals["attestationVariant"] = cfg.AttestationVariant
+	joinServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
 
-	// measurements are updated separately during upgrade,
+	// config is updated separately during upgrade,
 	// so we only set them in Helm during init.
-	measurementsJSON, err := json.Marshal(cfg.GetMeasurements())
+	configJSON, err := json.Marshal(cfg.GetAttestationConfig())
 	if err != nil {
 		return fmt.Errorf("marshalling measurements: %w", err)
 	}
-	joinServiceVals["measurements"] = string(measurementsJSON)
+	joinServiceVals["attestationConfig"] = string(configJSON)
 
 	verifyServiceVals, ok := in["verification-service"].(map[string]any)
 	if !ok {
 		return errors.New("invalid verification-service values")
 	}
-	verifyServiceVals["attestationVariant"] = cfg.AttestationVariant
+	verifyServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
 
 	csp := cfg.GetProvider()
 	switch csp {
 	case cloudprovider.Azure:
-		joinServiceVals, ok := in["join-service"].(map[string]any)
-		if !ok {
-			return errors.New("invalid join-service values")
-		}
-
-		idKeyCfg := config.SNPFirmwareSignerConfig{
-			AcceptedKeyDigests: cfg.IDKeyDigests(),
-			EnforcementPolicy:  cfg.IDKeyDigestPolicy(),
-			MAAURL:             maaURL,
-		}
-		marshalledCfg, err := json.Marshal(idKeyCfg)
-		if err != nil {
-			return fmt.Errorf("marshalling id key digest config: %w", err)
-		}
-		joinServiceVals["idKeyConfig"] = string(marshalledCfg)
-
 		in["azure"] = map[string]any{
 			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
