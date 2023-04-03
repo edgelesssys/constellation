@@ -1,4 +1,5 @@
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+load("//bazel/oci:pin.bzl", "stamp_tags")
 
 bool_flag(
     # tpm_simulator is used to decide if the TPM simulator should be enabled
@@ -42,5 +43,12 @@ bool_flag(
 config_setting(
     name = "select_never_enabled",
     flag_values = {":select_never": "True"},
+    visibility = ["//visibility:public"],
+)
+
+stamp_tags(
+    # generates a container image version tag based on the version stamp
+    name = "tag",
+    repotags = [""""v"+($stamp.STABLE_STAMP_VERSION // "0.0.0")"""],
     visibility = ["//visibility:public"],
 )
