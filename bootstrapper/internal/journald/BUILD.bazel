@@ -12,5 +12,8 @@ go_test(
     name = "journald_test",
     srcs = ["journald_test.go"],
     embed = [":journald"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
