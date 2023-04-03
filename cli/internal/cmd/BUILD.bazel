@@ -64,6 +64,7 @@ go_library(
         "//internal/license",
         "//internal/logger",
         "//internal/retry",
+        "//internal/semver",
         "//internal/sigstore",
         "//internal/variant",
         "//internal/versions",
