@@ -15,5 +15,7 @@ go_library(
 go_binary(
     name = "clidocgen",
     embed = [":clidocgen_lib"],
+    # keep
+    pure = "on",
     visibility = ["//visibility:public"],
 )
