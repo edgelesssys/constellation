@@ -1,4 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 go_library(
     name = "cmd_lib",
@@ -23,5 +25,33 @@ go_binary(
     embed = [":cmd_lib"],
     # keep
     pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_cross_binary(
+    name = "keyservice_linux_amd64",
+    platform = "@io_bazel_rules_go//go/toolchain:linux_amd64",
+    target = ":cmd",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":keyservice_linux_amd64",
+    ],
+    mode = "0755",
+    remap_paths = {"/keyservice_linux_amd64": "/keyservice"},
+)
+
+oci_image(
+    name = "keyservice",
+    architecture = "amd64",
+    base = "@distroless_static",
+    entrypoint = ["/keyservice"],
+    os = "linux",
+    tars = [
+        ":layer",
+    ],
     visibility = ["//visibility:public"],
 )

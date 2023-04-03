@@ -1,4 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 # gazelle:prefix github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2
 
@@ -34,5 +36,33 @@ go_binary(
     embed = [":constellation-node-operator_lib"],
     # keep
     pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+go_cross_binary(
+    name = "node_operator_amd64",
+    platform = "@io_bazel_rules_go//go/toolchain:linux_amd64",
+    target = ":constellation-node-operator",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":node_operator_amd64",
+    ],
+    mode = "0755",
+    remap_paths = {"/node_operator_amd64": "/node-operator"},
+)
+
+oci_image(
+    name = "node_operator",
+    architecture = "amd64",
+    base = "@distroless_static",
+    entrypoint = ["/node-operator"],
+    os = "linux",
+    tars = [
+        ":layer",
+    ],
     visibility = ["//visibility:public"],
 )
