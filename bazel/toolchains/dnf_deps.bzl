@@ -5,11 +5,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def dnf_deps():
     http_archive(
         name = "bazeldnf",
-        sha256 = "6104de1d657ae524bef5af86b153b82f114f532fe2e7eb02beb2e950550a88fe",
-        strip_prefix = "bazeldnf-45f5d74ba73710b538c57c9d43d88c583aab9d3a",
+        sha256 = "904ecf035e73fe0988a73ffe2af83d213b18d885ad1f5cd0dc79aeb58340345e",
+        strip_prefix = "bazeldnf-2498c863339d5cdf30d6637771784d934b8cb3da",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/6104de1d657ae524bef5af86b153b82f114f532fe2e7eb02beb2e950550a88fe",
-            "https://github.com/rmohr/bazeldnf/archive/45f5d74ba73710b538c57c9d43d88c583aab9d3a.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/904ecf035e73fe0988a73ffe2af83d213b18d885ad1f5cd0dc79aeb58340345e",
+            "https://github.com/rmohr/bazeldnf/archive/2498c863339d5cdf30d6637771784d934b8cb3da.tar.gz",
         ],
         type = "tar.gz",
     )
