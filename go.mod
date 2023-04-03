@@ -67,7 +67,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.19.1
 	github.com/aws/smithy-go v1.13.5
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v20.10.22+incompatible
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f
 	github.com/fsnotify/fsnotify v1.6.0
