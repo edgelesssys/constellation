@@ -87,5 +87,4 @@ jobs:
     secrets: inherit
     with:
       command: remove
-      dryrun: true
       version_path: ${{ needs.find-version.outputs.version }}
