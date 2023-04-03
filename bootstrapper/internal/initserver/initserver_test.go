@@ -266,6 +266,7 @@ func TestGetLogs(t *testing.T) {
 		},
 		"collection error": {
 			initSecretHash:    initSecretHash,
+			req:               &initproto.LogRequest{InitSecret: initSecret},
 			journaldCollector: stubJournaldCollector{collectErr: errors.New("failed")},
 			wantErr:           true,
 			wantNoRes:         true,
@@ -290,13 +291,14 @@ func TestGetLogs(t *testing.T) {
 			wantNoRes:      true,
 		},
 		"send error": {
-			initSecretHash: initSecretHash,
-			req:            &initproto.LogRequest{InitSecret: initSecret},
-			stream:         stubLogStream{sendError: errors.New("failed")},
-			masterSecret:   masterSecret,
-			decryptor:      decryptor(),
-			wantErr:        true,
-			wantNoRes:      true,
+			initSecretHash:    initSecretHash,
+			req:               &initproto.LogRequest{InitSecret: initSecret},
+			stream:            stubLogStream{sendError: errors.New("failed")},
+			journaldCollector: stubJournaldCollector{logs: []byte("assdf")},
+			masterSecret:      masterSecret,
+			decryptor:         decryptor(),
+			wantErr:           true,
+			wantNoRes:         true,
 		},
 	}
 
