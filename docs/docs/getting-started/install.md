@@ -112,34 +112,34 @@ If you don't have a cloud subscription, you can try [MiniConstellation](first-st
 <tabItem value="azure" label="Azure">
 
 The following [resource providers need to be registered](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider) in your subscription:
+* `Microsoft.Attestation` \[2]
 * `Microsoft.Compute`
+* `Microsoft.Insights`
 * `Microsoft.ManagedIdentity`
 * `Microsoft.Network`
-* `Microsoft.Insights`
-* `Microsoft.Attestation` \[2]
 
 By default, Constellation tries to register these automatically if they haven't been registered before.
 
 To [create the IAM configuration](../workflows/config.md#creating-an-iam-configuration) for Constellation, you need the following permissions:
-* `Microsoft.Authorization/roleDefinitions/*`
-* `Microsoft.Authorization/roleAssignments/*`
 * `*/register/action` \[1]
+* `Microsoft.Authorization/roleAssignments/*`
+* `Microsoft.Authorization/roleDefinitions/*`
 * `Microsoft.ManagedIdentity/userAssignedIdentities/*`
 * `Microsoft.Resources/subscriptions/resourcegroups/*`
 
 The built-in `Owner` role is a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
+* `Microsoft.Attestation/attestationProviders/*` \[2]
+* `Microsoft.Compute/virtualMachineScaleSets/*`
 * `Microsoft.Insights/components/*`
+* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
+* `Microsoft.Network/loadBalancers/*`
+* `Microsoft.Network/loadBalancers/backendAddressPools/*`
+* `Microsoft.Network/networkSecurityGroups/*`
 * `Microsoft.Network/publicIPAddresses/*`
 * `Microsoft.Network/virtualNetworks/*`
-* `Microsoft.Network/loadBalancers/*`
-* `Microsoft.Network/networkSecurityGroups/*`
-* `Microsoft.Network/loadBalancers/backendAddressPools/*`
 * `Microsoft.Network/virtualNetworks/subnets/*`
-* `Microsoft.Compute/virtualMachineScaleSets/*`
-* `Microsoft.ManagedIdentity/userAssignedIdentities/*`
-* `Microsoft.Attestation/attestationProviders/*` \[2]
 
 The built-in `Contributor` role is a superset of these permissions.
 
@@ -200,14 +200,14 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
 * `compute.instanceGroups.delete`
 * `compute.instanceGroups.get`
 * `compute.instanceGroups.use`
-* `compute.instanceTemplates.create`
-* `compute.instanceTemplates.delete`
-* `compute.instanceTemplates.get`
-* `compute.instanceTemplates.useReadOnly`
 * `compute.instances.create`
 * `compute.instances.setLabels`
 * `compute.instances.setMetadata`
 * `compute.instances.setTags`
+* `compute.instanceTemplates.create`
+* `compute.instanceTemplates.delete`
+* `compute.instanceTemplates.get`
+* `compute.instanceTemplates.useReadOnly`
 * `compute.networks.create`
 * `compute.networks.delete`
 * `compute.networks.get`
@@ -244,27 +244,27 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
         {
             "Effect": "Allow",
             "Action": [
-                "sts:GetCallerIdentity",
                 "ec2:DescribeAccountAttributes",
-                "iam:CreateRole",
-                "iam:CreatePolicy",
-                "iam:GetPolicy",
-                "iam:GetRole",
-                "iam:GetPolicyVersion",
-                "iam:ListRolePolicies",
-                "iam:ListAttachedRolePolicies",
-                "iam:CreateInstanceProfile",
-                "iam:AttachRolePolicy",
-                "iam:GetInstanceProfile",
                 "iam:AddRoleToInstanceProfile",
+                "iam:AttachRolePolicy",
+                "iam:CreateInstanceProfile",
+                "iam:CreatePolicy",
+                "iam:CreateRole",
+                "iam:DeleteInstanceProfile",
+                "iam:DeletePolicy",
+                "iam:DeleteRole",
+                "iam:DetachRolePolicy",
+                "iam:GetInstanceProfile",
+                "iam:GetPolicy",
+                "iam:GetPolicyVersion",
+                "iam:GetRole",
+                "iam:ListAttachedRolePolicies",
+                "iam:ListInstanceProfilesForRole",
+                "iam:ListPolicyVersions",
+                "iam:ListRolePolicies",
                 "iam:PassRole",
                 "iam:RemoveRoleFromInstanceProfile",
-                "iam:DetachRolePolicy",
-                "iam:DeleteInstanceProfile",
-                "iam:ListPolicyVersions",
-                "iam:ListInstanceProfilesForRole",
-                "iam:DeletePolicy",
-                "iam:DeleteRole"
+                "sts:GetCallerIdentity"
             ],
             "Resource": "*"
         }
@@ -283,76 +283,76 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
         {
             "Effect": "Allow",
             "Action": [
-                "sts:GetCallerIdentity",
-                "ec2:DescribeAccountAttributes",
+                "autoscaling:CreateAutoScalingGroup",
+                "autoscaling:DeleteAutoScalingGroup",
+                "autoscaling:DescribeAutoScalingGroups",
+                "autoscaling:DescribeScalingActivities",
+                "autoscaling:SetInstanceProtection",
+                "autoscaling:UpdateAutoScalingGroup",
                 "ec2:AllocateAddress",
-                "ec2:CreateVpc",
-                "ec2:CreateTags",
-                "logs:CreateLogGroup",
+                "ec2:AssociateRouteTable",
+                "ec2:AttachInternetGateway",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:CreateInternetGateway",
                 "ec2:CreateLaunchTemplate",
+                "ec2:CreateNatGateway",
+                "ec2:CreateRoute",
+                "ec2:CreateRouteTable",
+                "ec2:CreateSecurityGroup",
+                "ec2:CreateSubnet",
+                "ec2:CreateTags",
+                "ec2:CreateVpc",
+                "ec2:DeleteInternetGateway",
+                "ec2:DeleteLaunchTemplate",
+                "ec2:DeleteNatGateway",
+                "ec2:DeleteRouteTable",
+                "ec2:DeleteSecurityGroup",
+                "ec2:DeleteSubnet",
+                "ec2:DeleteVpc",
+                "ec2:DescribeAccountAttributes",
                 "ec2:DescribeAddresses",
+                "ec2:DescribeInternetGateways",
                 "ec2:DescribeLaunchTemplates",
-                "logs:PutRetentionPolicy",
-                "logs:DescribeLogGroups",
-                "ec2:DescribeVpcs",
                 "ec2:DescribeLaunchTemplateVersions",
-                "logs:ListTagsLogGroup",
-                "ec2:DescribeVpcClassicLink",
-                "ec2:DescribeVpcClassicLinkDnsSupport",
-                "ec2:DescribeVpcAttribute",
+                "ec2:DescribeNatGateways",
                 "ec2:DescribeNetworkAcls",
+                "ec2:DescribeNetworkInterfaces",
                 "ec2:DescribeRouteTables",
                 "ec2:DescribeSecurityGroups",
-                "ec2:CreateSubnet",
-                "ec2:CreateSecurityGroup",
-                "elasticloadbalancing:CreateTargetGroup",
-                "ec2:CreateInternetGateway",
                 "ec2:DescribeSubnets",
-                "elasticloadbalancing:DescribeTargetGroups",
-                "ec2:AttachInternetGateway",
-                "elasticloadbalancing:ModifyTargetGroupAttributes",
-                "ec2:DescribeInternetGateways",
-                "autoscaling:CreateAutoScalingGroup",
-                "iam:PassRole",
-                "ec2:CreateNatGateway",
-                "ec2:RevokeSecurityGroupEgress",
-                "elasticloadbalancing:DescribeTargetGroupAttributes",
-                "elasticloadbalancing:CreateLoadBalancer",
-                "ec2:DescribeNatGateways",
-                "elasticloadbalancing:DescribeTags",
-                "autoscaling:DescribeScalingActivities",
-                "ec2:CreateRouteTable",
-                "autoscaling:DescribeAutoScalingGroups",
-                "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:AuthorizeSecurityGroupEgress",
-                "ec2:CreateRoute",
-                "ec2:AssociateRouteTable",
-                "elasticloadbalancing:DescribeTargetHealth",
-                "elasticloadbalancing:DescribeLoadBalancers",
-                "elasticloadbalancing:ModifyLoadBalancerAttributes",
-                "elasticloadbalancing:AddTags",
-                "elasticloadbalancing:DescribeLoadBalancerAttributes",
-                "elasticloadbalancing:CreateListener",
-                "elasticloadbalancing:DescribeListeners",
-                "logs:DeleteLogGroup",
-                "elasticloadbalancing:DeleteListener",
-                "ec2:DisassociateRouteTable",
-                "autoscaling:UpdateAutoScalingGroup",
-                "elasticloadbalancing:DeleteLoadBalancer",
-                "autoscaling:SetInstanceProtection",
-                "ec2:DescribeNetworkInterfaces",
-                "ec2:DeleteRouteTable",
-                "ec2:DeleteNatGateway",
+                "ec2:DescribeVpcAttribute",
+                "ec2:DescribeVpcClassicLink",
+                "ec2:DescribeVpcClassicLinkDnsSupport",
+                "ec2:DescribeVpcs",
                 "ec2:DetachInternetGateway",
                 "ec2:DisassociateAddress",
+                "ec2:DisassociateRouteTable",
                 "ec2:ReleaseAddress",
-                "ec2:DeleteInternetGateway",
-                "ec2:DeleteSubnet",
-                "autoscaling:DeleteAutoScalingGroup",
-                "ec2:DeleteLaunchTemplate",
+                "ec2:RevokeSecurityGroupEgress",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:CreateListener",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:CreateTargetGroup",
+                "elasticloadbalancing:DeleteListener",
+                "elasticloadbalancing:DeleteLoadBalancer",
                 "elasticloadbalancing:DeleteTargetGroup",
-                "ec2:DeleteSecurityGroup",
-                "ec2:DeleteVpc"
+                "elasticloadbalancing:DescribeListeners",
+                "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:DescribeTags",
+                "elasticloadbalancing:DescribeTargetGroupAttributes",
+                "elasticloadbalancing:DescribeTargetGroups",
+                "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:ModifyTargetGroupAttributes",
+                "iam:PassRole",
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:DescribeLogGroups",
+                "logs:ListTagsLogGroup",
+                "logs:PutRetentionPolicy",
+                "sts:GetCallerIdentity"
             ],
             "Resource": "*"
         }
