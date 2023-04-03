@@ -1,4 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel/go:platform.bzl", "platform_binary")
 
 go_library(
     name = "qemu-metadata-api_lib",
@@ -18,5 +21,33 @@ go_library(
 go_binary(
     name = "qemu-metadata-api",
     embed = [":qemu-metadata-api_lib"],
+    visibility = ["//visibility:public"],
+)
+
+platform_binary(
+    name = "qemu_metadata_api_linux_amd64",
+    platform = "@zig_sdk//libc_aware/platform:linux_amd64_gnu.2.34",
+    target_file = ":qemu-metadata-api",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "layer",
+    srcs = [
+        ":qemu_metadata_api_linux_amd64",
+    ],
+    mode = "0755",
+    remap_paths = {"/platform:linux_amd64_gnu.2.34": "/server"},
+)
+
+oci_image(
+    name = "qemumetadata",
+    architecture = "amd64",
+    entrypoint = ["/server"],
+    os = "linux",
+    tars = [
+        "//rpm:libvirt-devel",
+        ":layer",
+    ],
     visibility = ["//visibility:public"],
 )
