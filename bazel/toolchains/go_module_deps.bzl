@@ -3165,16 +3165,16 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gophercloud/gophercloud",
-        sum = "h1:1oXyj4g54KBg/kFtCdMM6jtxSzeIyg8wv4z1HoGPp1E=",
-        version = "v1.2.0",
+        sum = "h1:RUKyCMiZoQR3VlVR5E3K7PK1AC3/qppsWYo6dtBiqs8=",
+        version = "v1.3.0",
     )
     go_repository(
         name = "com_github_gophercloud_utils",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gophercloud/utils",
-        sum = "h1:AfRlf5NnsYsHIW5nNxhYp+99Bmj/fLeOYwD5Z4CMlzw=",
-        version = "v0.0.0-20230324070755-05e9e7f5ea4d",
+        sum = "h1:K9r5WEeAiaEgFZsuOP0OYjE4TtyFcCLG1nI08t9AP6A=",
+        version = "v0.0.0-20230330070308-5bd5e1d608f8",
     )
 
     go_repository(
