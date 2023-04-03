@@ -45,8 +45,8 @@ func NewCollector(ctx context.Context) (*Collector, error) {
 	return &collector, nil
 }
 
-// Pipe returns a pipe to read the systemd logs. This should be read with a bufio Reader.
-func (c *Collector) Pipe() (io.ReadCloser, error) {
+// Start returns a pipe to read the systemd logs. This should be read with a bufio Reader.
+func (c *Collector) Start() (io.ReadCloser, error) {
 	if err := c.cmd.Start(); err != nil {
 		return nil, err
 	}

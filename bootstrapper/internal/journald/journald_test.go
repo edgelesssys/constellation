@@ -58,7 +58,7 @@ func TestPipe(t *testing.T) {
 
 			collector := Collector{cmd: tc.command, stdoutPipe: tc.stdoutPipe}
 
-			pipe, err := collector.Pipe()
+			pipe, err := collector.Start()
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
