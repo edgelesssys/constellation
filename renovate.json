@@ -218,6 +218,30 @@
         "slsa-framework/slsa-github-generator"
       ],
       "pinDigests": false
+    },
+    {
+      "matchPackagePatterns": [
+        "_darwin_arm64$"
+      ],
+      "groupName": "{{{replace '_darwin_arm64' '' packageName}}}"
+    },
+    {
+      "matchPackagePatterns": [
+        "_darwin_amd64$"
+      ],
+      "groupName": "{{{replace '_darwin_amd64' '' packageName}}}"
+    },
+    {
+      "matchPackagePatterns": [
+        "_linux_arm64$"
+      ],
+      "groupName": "{{{replace '_linux_arm64' '' packageName}}}"
+    },
+    {
+      "matchPackagePatterns": [
+        "_linux_amd64$"
+      ],
+      "groupName": "{{{replace '_linux_amd64' '' packageName}}}"
     }
   ],
   "regexManagers": [
