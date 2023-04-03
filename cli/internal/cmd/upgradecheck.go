@@ -576,12 +576,16 @@ type versionFetcher interface {
 }
 
 // newCLIVersions returns a list of versions of the CLI which are a valid upgrade.
-func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+func (v *versionCollector) newCLIVersions(ctx context.Context) ([]string, error) {
+	cliVersion, err := conSemver.New(constants.VersionInfo())
+	if err != nil {
+		return nil, fmt.Errorf("parsing current CLI version: %w", err)
+	}
 	list := versionsapi.List{
 		Ref:         v.flags.ref,
 		Stream:      v.flags.stream,
 		Granularity: versionsapi.GranularityMajor,
-		Base:        "v2",
+		Base:        fmt.Sprintf("v%d", cliVersion.Major),
 		Kind:        versionsapi.VersionKindCLI,
 	}
 	minorList, err := v.versionsapi.FetchVersionList(ctx, list)
