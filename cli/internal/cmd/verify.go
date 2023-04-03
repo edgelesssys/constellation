@@ -293,8 +293,7 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 
 	f.log.Debugf("Decoding PEM certificate: %s", certTypeName)
 	i := 1
-	block, rest := pem.Decode(certBytes)
-	for block != nil {
+	for block, rest := pem.Decode(certBytes); block != nil; block, rest = pem.Decode(rest) {
 		f.log.Debugf("Parsing PEM block: %d", i)
 		if block.Type != "CERTIFICATE" {
 			return fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
@@ -314,7 +313,6 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 		b.WriteString(fmt.Sprintf("\t\tSignature Algorithm: %s\n", cert.SignatureAlgorithm))
 		b.WriteString(fmt.Sprintf("\t\tPublic Key Algorithm: %s\n", cert.PublicKeyAlgorithm))
 
-		block, rest = pem.Decode(rest)
 		i++
 	}
 
