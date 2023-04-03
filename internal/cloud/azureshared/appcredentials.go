@@ -20,6 +20,7 @@ type ApplicationCredentials struct {
 	AppClientID         string
 	ClientSecretValue   string
 	Location            string
+	UamiResourceID      string
 	PreferredAuthMethod AuthMethod
 }
 
@@ -42,6 +43,7 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 		AppClientID:         query.Get("client_id"),
 		ClientSecretValue:   query.Get("client_secret"),
 		Location:            query.Get("location"),
+		UamiResourceID:      query.Get("uami_resource_id"),
 		PreferredAuthMethod: preferredAuthMethod,
 	}, nil
 }
@@ -56,6 +58,9 @@ func (c ApplicationCredentials) ToCloudServiceAccountURI() string {
 	}
 	if c.ClientSecretValue != "" {
 		query.Add("client_secret", c.ClientSecretValue)
+	}
+	if c.UamiResourceID != "" {
+		query.Add("uami_resource_id", c.UamiResourceID)
 	}
 	if c.PreferredAuthMethod != AuthMethodUnknown {
 		query.Add("preferred_auth_method", c.PreferredAuthMethod.String())

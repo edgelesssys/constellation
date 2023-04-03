@@ -25,11 +25,13 @@ func TestApplicationCredentialsFromURI(t *testing.T) {
 		AppClientID:         "client-id",
 		ClientSecretValue:   "client-secret",
 		Location:            "location",
+		UamiResourceID:      "subscriptions/9b352db0-82af-408c-a02c-36fbffbf7015/resourceGroups/resourceGroupName/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMIName",
 		PreferredAuthMethod: AuthMethodServicePrincipal,
 	}
 	credsWithoutSecret := ApplicationCredentials{
 		TenantID:            "tenant-id",
 		Location:            "location",
+		UamiResourceID:      "subscriptions/9b352db0-82af-408c-a02c-36fbffbf7015/resourceGroups/resourceGroupName/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMIName",
 		PreferredAuthMethod: AuthMethodUserAssignedIdentity,
 	}
 	credsWithoutPreferrredAuthMethod := ApplicationCredentials{
@@ -44,11 +46,11 @@ func TestApplicationCredentialsFromURI(t *testing.T) {
 		wantErr                bool
 	}{
 		"getApplicationCredentials works": {
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location&preferred_auth_method=serviceprincipal",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location&preferred_auth_method=serviceprincipal&uami_resource_id=subscriptions%2F9b352db0-82af-408c-a02c-36fbffbf7015%2FresourceGroups%2FresourceGroupName%2Fproviders%2FMicrosoft.ManagedIdentity%2FuserAssignedIdentities%2FUAMIName",
 			wantCreds:              creds,
 		},
 		"can parse URI without app registration / secret": {
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&location=location&preferred_auth_method=userassignedidentity",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&location=location&preferred_auth_method=userassignedidentity&uami_resource_id=subscriptions%2F9b352db0-82af-408c-a02c-36fbffbf7015%2FresourceGroups%2FresourceGroupName%2Fproviders%2FMicrosoft.ManagedIdentity%2FuserAssignedIdentities%2FUAMIName",
 			wantCreds:              credsWithoutSecret,
 		},
 		"can parse URI without preferred auth method": {
