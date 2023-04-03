@@ -212,14 +212,14 @@ func (f *stubAttDocFormatter) format(_ string, _ bool, _ bool, _ measurements.M)
 }
 
 func TestFormat(t *testing.T) {
-	formatter := func() *attestationDocFormatter {
-		return &attestationDocFormatter{
+	formatter := func() *attestationDocFormatterImpl {
+		return &attestationDocFormatterImpl{
 			log: logger.NewTest(t),
 		}
 	}
 
 	testCases := map[string]struct {
-		formatter *attestationDocFormatter
+		formatter *attestationDocFormatterImpl
 		doc       string
 		wantErr   bool
 	}{
@@ -243,8 +243,8 @@ func TestFormat(t *testing.T) {
 }
 
 func TestParseCerts(t *testing.T) {
-	formatter := func() *attestationDocFormatter {
-		return &attestationDocFormatter{
+	formatter := func() *attestationDocFormatterImpl {
+		return &attestationDocFormatterImpl{
 			log: logger.NewTest(t),
 		}
 	}
@@ -283,7 +283,7 @@ F/SjRih31+SAtWb42jueAA==
 	validCertExpected := "\tRaw Some Cert:\n\t\t-----BEGIN CERTIFICATE-----\n\t\tMIIFTDCCAvugAwIBAgIBADBGBgkqhkiG9w0BAQowOaAPMA0GCWCGSAFlAwQCAgUA\n\t\toRwwGgYJKoZIhvcNAQEIMA0GCWCGSAFlAwQCAgUAogMCATCjAwIBATB7MRQwEgYD\n\t\tVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDASBgNVBAcMC1NhbnRhIENs\n\t\tYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5jZWQgTWljcm8gRGV2aWNl\n\t\tczESMBAGA1UEAwwJU0VWLU1pbGFuMB4XDTIyMTEyMzIyMzM0N1oXDTI5MTEyMzIy\n\t\tMzM0N1owejEUMBIGA1UECwwLRW5naW5lZXJpbmcxCzAJBgNVBAYTAlVTMRQwEgYD\n\t\tVQQHDAtTYW50YSBDbGFyYTELMAkGA1UECAwCQ0ExHzAdBgNVBAoMFkFkdmFuY2Vk\n\t\tIE1pY3JvIERldmljZXMxETAPBgNVBAMMCFNFVi1WQ0VLMHYwEAYHKoZIzj0CAQYF\n\t\tK4EEACIDYgAEVGm4GomfpkiziqEYP61nfKaz5OjDLr8Y0POrv4iAnFVHAmBT81Ms\n\t\tgfSLKL5r3V3mNzl1Zh7jwSBft14uhGdwpARoK0YNQc4OvptqVIiv2RprV53DMzge\n\t\trtwiumIargiCo4IBFjCCARIwEAYJKwYBBAGceAEBBAMCAQAwFwYJKwYBBAGceAEC\n\t\tBAoWCE1pbGFuLUIwMBEGCisGAQQBnHgBAwEEAwIBAzARBgorBgEEAZx4AQMCBAMC\n\t\tAQAwEQYKKwYBBAGceAEDBAQDAgEAMBEGCisGAQQBnHgBAwUEAwIBADARBgorBgEE\n\t\tAZx4AQMGBAMCAQAwEQYKKwYBBAGceAEDBwQDAgEAMBEGCisGAQQBnHgBAwMEAwIB\n\t\tCDARBgorBgEEAZx4AQMIBAMCAXMwTQYJKwYBBAGceAEEBEB80kCZ1oAyCjWC6w3m\n\t\txOz+i4t6dFjk/Bqhm7+Jscf8D62CXtlwcKc4aM9CdO4LuKlwpdTU80VNQc6ZEuMF\n\t\tVzbRMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0B\n\t\tAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBA4ICAQCN1qBYOywoZWGnQvk6u0Oh\n\t\t5zkEKykXU6sK8hA6L65rQcqWUjEHDa9AZUpx3UuCmpPc24dx6DTHc58M7TxcyKry\n\t\t8s4CvruBKFbQ6B8MHnH6k07MzsmiBnsiIhAscZ0ipGm6h8e/VM/6ULrAcVSxZ+Mh\n\t\tD/IogZAuCQARsGQ4QYXBT8Qc5mLnTkx30m1rZVlp1VcN4ngOo/1tz1jj1mfpG2zv\n\t\twNcQa9LwAzRLnnmLpxXA2OMbl7AaTWQenpL9rzBON2sg4OBl6lVhaSU0uBbFyCmR\n\t\tRvBqKC0iDD6TvyIikkMq05v5YwIKFYw++ICndz+fKcLEULZbziAsZ52qjM8iPVHC\n\t\tpN0yhVOr2g22F9zxlGH3WxTl9ymUytuv3vJL/aJiQM+n/Ri90Sc05EK4oIJ3+BS8\n\t\tyu5cVy9o2cQcOcQ8rhQh+Kv1sR9xrs25EXZF8KEETfhoJnN6KY1RwG7HsOfAQ3dV\n\t\tLWInQRaC/8JPyVS2zbd0+NRBJOnq4/quv/P3C4SBP98/ZuGrqN59uifyqC3Kodkl\n\t\tWkG/2UdhiLlCmOtsU+BYDZrSiYK1R9FNnlQCOGrkuVxpDwa2TbbvEEzQP7RXxotA\n\t\tKlxejvrY4VuK8agNqvffVofbdIIperK65K4+0mYIb+A6fU8QQHlCbti4ERSZ6UYD\n\t\tF/SjRih31+SAtWb42jueAA==\n\t\t-----END CERTIFICATE-----\n\tSome Cert (1):\n\t\tSerial Number: 0\n\t\tSubject: CN=SEV-VCEK,OU=Engineering,O=Advanced Micro Devices,L=Santa Clara,ST=CA,C=US\n\t\tIssuer: CN=SEV-Milan,OU=Engineering,O=Advanced Micro Devices,L=Santa Clara,ST=CA,C=US\n\t\tNot Before: 2022-11-23 22:33:47 +0000 UTC\n\t\tNot After: 2029-11-23 22:33:47 +0000 UTC\n\t\tSignature Algorithm: SHA384-RSAPSS\n\t\tPublic Key Algorithm: ECDSA\n"
 
 	testCases := map[string]struct {
-		formatter   *attestationDocFormatter
+		formatter   *attestationDocFormatterImpl
 		encodedCert string
 		expected    string
 		wantErr     bool

@@ -66,7 +66,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
-	formatter := &attestationDocFormatter{
+	formatter := &attestationDocFormatterImpl{
 		log: log,
 	}
 
@@ -74,7 +74,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	return v.verify(cmd, fileHandler, verifyClient, formatter)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter formatter) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -231,18 +231,18 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 	return "", err
 }
 
-// a formatter formats the attestation document.
-type formatter interface {
+// an attestationDocFormatter formats the attestation document.
+type attestationDocFormatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
 	format(docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M) (string, error)
 }
 
-type attestationDocFormatter struct {
+type attestationDocFormatterImpl struct {
 	log debugLog
 }
 
 // format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *attestationDocFormatter) format(docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M) (string, error) {
+func (f *attestationDocFormatterImpl) format(docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 	if rawOutput {
@@ -283,7 +283,7 @@ func (f *attestationDocFormatter) format(docString string, PCRsOnly bool, rawOut
 }
 
 // parseCerts parses the base64-encoded PEM certificates and writes their details to the output builder.
-func (f *attestationDocFormatter) parseCerts(b *strings.Builder, certTypeName string, encCertString string) error {
+func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, encCertString string) error {
 	certBytes, err := base64.StdEncoding.DecodeString(encCertString)
 	if err != nil {
 		return fmt.Errorf("decode %s: %w", certTypeName, err)
@@ -322,7 +322,7 @@ func (f *attestationDocFormatter) parseCerts(b *strings.Builder, certTypeName st
 }
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
-func (f *attestationDocFormatter) parseQuotes(b *strings.Builder, quotes []quote, expectedPCRs measurements.M) error {
+func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []quote, expectedPCRs measurements.M) error {
 	b.WriteString("\tQuote:\n")
 	for pcrNum, expectedPCR := range expectedPCRs {
 		encPCR := quotes[1].Pcrs.Pcrs[fmt.Sprintf("%d", pcrNum)]
