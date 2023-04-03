@@ -58,7 +58,7 @@ jobs:
       measurement-reader-sha256: ${{ steps.collect-hashes.outputs.measurement-reader-sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -138,7 +138,7 @@ jobs:
       cliApiBasePath: ${{ steps.image-version.outputs.cliApiBasePath }}
     steps:
       - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -263,7 +263,7 @@ jobs:
         csp: [aws, azure, gcp, openstack, qemu]
     steps:
       - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -381,7 +381,7 @@ jobs:
         #     upload-variant: TrustedLaunch
     steps:
       - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -587,7 +587,7 @@ jobs:
         csp: [aws, azure, gcp, openstack, qemu]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -823,7 +823,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Create SBOM in SPDX fromat
-        uses: anchore/sbom-action@448520c4f19577ffce70a8317e619089054687e3 # v0.13.4
+        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
@@ -831,7 +831,7 @@ jobs:
           format: spdx-json
 
       - name: Create SBOM in CycloneDX fromat
-        uses: anchore/sbom-action@448520c4f19577ffce70a8317e619089054687e3 # v0.13.4
+        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
@@ -839,7 +839,7 @@ jobs:
           format: cyclonedx-json
 
       - name: Create SBOM in  Syft fromat
-        uses: anchore/sbom-action@448520c4f19577ffce70a8317e619089054687e3 # v0.13.4
+        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
@@ -958,7 +958,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout
-        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
