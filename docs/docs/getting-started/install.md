@@ -312,6 +312,7 @@ To [create a Constellation cluster](../workflows/create.md#the-create-step), you
                 "ec2:DeleteVpc",
                 "ec2:DescribeAccountAttributes",
                 "ec2:DescribeAddresses",
+                "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeInternetGateways",
                 "ec2:DescribeLaunchTemplates",
                 "ec2:DescribeLaunchTemplateVersions",
