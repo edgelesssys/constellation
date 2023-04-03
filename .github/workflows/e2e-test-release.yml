@@ -32,8 +32,7 @@ jobs:
           echo 'Release workflow failed, exiting..'
           exit 1
 
-  e2e-weekly:
-    needs: [on-failure-quit]
+  e2e-tests:
     strategy:
       fail-fast: false
       max-parallel: 4
