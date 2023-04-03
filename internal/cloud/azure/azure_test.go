@@ -52,10 +52,13 @@ func TestGetCCMConfig(t *testing.T) {
 		Name: to.Ptr("security-group"),
 	}
 
+	uamiClientID := "uami-client-id"
+
 	testCases := map[string]struct {
 		imdsAPI                imdsAPI
 		loadBalancerAPI        loadBalancerAPI
 		secGroupAPI            securityGroupsAPI
+		scaleSetsVMAPI         virtualMachineScaleSetVMsAPI
 		providerID             string
 		cloudServiceAccountURI string
 		wantErr                bool
@@ -75,21 +78,32 @@ func TestGetCCMConfig(t *testing.T) {
 					list: []armnetwork.SecurityGroup{goodSecurityGroup},
 				},
 			},
+			scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
+				getVM: armcompute.VirtualMachineScaleSetVM{
+					Identity: &armcompute.VirtualMachineIdentity{
+						UserAssignedIdentities: map[string]*armcompute.UserAssignedIdentitiesValue{
+							"subscriptions/9b352db0-82af-408c-a02c-36fbffbf7015/resourceGroups/resourceGroupName/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMIName": {ClientID: &uamiClientID},
+						},
+					},
+				},
+			},
 			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set/virtualMachines/0",
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=westeurope",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=westeurope&preferred_auth_method=userassignedidentity&uami_resource_id=subscriptions%2F9b352db0-82af-408c-a02c-36fbffbf7015%2FresourceGroups%2FresourceGroupName%2Fproviders%2FMicrosoft.ManagedIdentity%2FuserAssignedIdentities%2FUAMIName",
 			wantConfig: cloudConfig{
-				Cloud:               "AzurePublicCloud",
-				TenantID:            "tenant-id",
-				SubscriptionID:      "subscription-id",
-				ResourceGroup:       "resource-group",
-				LoadBalancerSku:     "standard",
-				SecurityGroupName:   "security-group",
-				LoadBalancerName:    "load-balancer",
-				UseInstanceMetadata: true,
-				VMType:              "vmss",
-				Location:            "westeurope",
-				AADClientID:         "client-id",
-				AADClientSecret:     "client-secret",
+				Cloud:                       "AzurePublicCloud",
+				TenantID:                    "tenant-id",
+				SubscriptionID:              "subscription-id",
+				ResourceGroup:               "resource-group",
+				LoadBalancerSku:             "standard",
+				SecurityGroupName:           "security-group",
+				LoadBalancerName:            "load-balancer",
+				UseInstanceMetadata:         true,
+				UseManagedIdentityExtension: true,
+				UserAssignedIdentityID:      uamiClientID,
+				VMType:                      "vmss",
+				Location:                    "westeurope",
+				AADClientID:                 "client-id",
+				AADClientSecret:             "client-secret",
 			},
 		},
 		"no app registration": {
@@ -332,6 +346,7 @@ func TestGetCCMConfig(t *testing.T) {
 				imds:            tc.imdsAPI,
 				loadBalancerAPI: tc.loadBalancerAPI,
 				secGroupAPI:     tc.secGroupAPI,
+				scaleSetsVMAPI:  tc.scaleSetsVMAPI,
 			}
 			config, err := cloud.GetCCMConfig(context.Background(), tc.providerID, tc.cloudServiceAccountURI)
 			if tc.wantErr {
