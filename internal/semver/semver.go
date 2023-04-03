@@ -60,10 +60,11 @@ func New(version string) (Semver, error) {
 
 // String returns the string representation of the version.
 func (v Semver) String() string {
+	version := fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
-		return fmt.Sprintf("v%d.%d.%d-%s", v.Major, v.Minor, v.Patch, v.Prerelease)
+		return fmt.Sprintf("%s-%s", version, v.Prerelease)
 	}
-	return fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
+	return version
 }
 
 // Compare compares two versions. It relies on the semver.Compare function internally.
