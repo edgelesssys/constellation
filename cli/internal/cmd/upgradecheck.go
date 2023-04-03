@@ -604,7 +604,7 @@ func (v *versionCollector) newCLIVersions(ctx context.Context, currentKubernetes
 		}
 		patchList, err := v.versionsapi.FetchVersionList(ctx, list)
 		if err != nil {
-			return nil, fmt.Errorf("listing minor versions: %w", err)
+			return nil, fmt.Errorf("listing minor versions for major version %s: %w", version, err)
 		}
 		patchVersions = append(patchVersions, patchList.Versions...)
 	}
