@@ -14,6 +14,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -50,7 +51,6 @@ func TestVerify(t *testing.T) {
 		clusterIDFlag    string
 		idFile           *clusterid.File
 		wantEndpoint     string
-		wantFormatCalled bool
 		wantErr          bool
 	}{
 		"gcp": {
@@ -68,7 +68,6 @@ func TestVerify(t *testing.T) {
 			protoClient:      &stubVerifyClient{},
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{},
-			wantFormatCalled: true,
 		},
 		"default port": {
 			provider:         cloudprovider.GCP,
@@ -155,7 +154,6 @@ func TestVerify(t *testing.T) {
 			protoClient:      &stubVerifyClient{},
 			wantEndpoint:     "192.0.2.1:1234",
 			formatter:        &stubAttDocFormatter{formatErr: someErr},
-			wantFormatCalled: true,
 			wantErr:          true,
 		},
 	}
@@ -193,7 +191,6 @@ func TestVerify(t *testing.T) {
 
 			v := &verifyCmd{log: logger.NewTest(t)}
 			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter)
-			assert.Equal(tc.wantFormatCalled, tc.formatter.formatCalled)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -207,13 +204,116 @@ func TestVerify(t *testing.T) {
 }
 
 type stubAttDocFormatter struct {
-	formatCalled bool
-	formatErr    error
+	formatErr error
 }
 
-func (f *stubAttDocFormatter) format(_ string, _ bool, _ measurements.M) (string, error) {
-	f.formatCalled = true
+func (f *stubAttDocFormatter) format(_ string, _ bool, _ bool, _ measurements.M) (string, error) {
 	return "", f.formatErr
+}
+
+func TestFormat(t *testing.T) {
+	formatter := func() *attestationDocFormatter {
+		return &attestationDocFormatter{
+			log: logger.NewTest(t),
+		}
+	}
+
+	testCases := map[string]struct {
+		formatter *attestationDocFormatter
+		doc       string
+		wantErr   bool
+	}{
+		"invalid doc": {
+			formatter: formatter(),
+			doc:       "invalid",
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			_, err := tc.formatter.format(tc.doc, false, false, nil)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestParseCerts(t *testing.T) {
+	formatter := func() *attestationDocFormatter {
+		return &attestationDocFormatter{
+			log: logger.NewTest(t),
+		}
+	}
+	validCert := `-----BEGIN CERTIFICATE-----
+MIIFTDCCAvugAwIBAgIBADBGBgkqhkiG9w0BAQowOaAPMA0GCWCGSAFlAwQCAgUA
+oRwwGgYJKoZIhvcNAQEIMA0GCWCGSAFlAwQCAgUAogMCATCjAwIBATB7MRQwEgYD
+VQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDASBgNVBAcMC1NhbnRhIENs
+YXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5jZWQgTWljcm8gRGV2aWNl
+czESMBAGA1UEAwwJU0VWLU1pbGFuMB4XDTIyMTEyMzIyMzM0N1oXDTI5MTEyMzIy
+MzM0N1owejEUMBIGA1UECwwLRW5naW5lZXJpbmcxCzAJBgNVBAYTAlVTMRQwEgYD
+VQQHDAtTYW50YSBDbGFyYTELMAkGA1UECAwCQ0ExHzAdBgNVBAoMFkFkdmFuY2Vk
+IE1pY3JvIERldmljZXMxETAPBgNVBAMMCFNFVi1WQ0VLMHYwEAYHKoZIzj0CAQYF
+K4EEACIDYgAEVGm4GomfpkiziqEYP61nfKaz5OjDLr8Y0POrv4iAnFVHAmBT81Ms
+gfSLKL5r3V3mNzl1Zh7jwSBft14uhGdwpARoK0YNQc4OvptqVIiv2RprV53DMzge
+rtwiumIargiCo4IBFjCCARIwEAYJKwYBBAGceAEBBAMCAQAwFwYJKwYBBAGceAEC
+BAoWCE1pbGFuLUIwMBEGCisGAQQBnHgBAwEEAwIBAzARBgorBgEEAZx4AQMCBAMC
+AQAwEQYKKwYBBAGceAEDBAQDAgEAMBEGCisGAQQBnHgBAwUEAwIBADARBgorBgEE
+AZx4AQMGBAMCAQAwEQYKKwYBBAGceAEDBwQDAgEAMBEGCisGAQQBnHgBAwMEAwIB
+CDARBgorBgEEAZx4AQMIBAMCAXMwTQYJKwYBBAGceAEEBEB80kCZ1oAyCjWC6w3m
+xOz+i4t6dFjk/Bqhm7+Jscf8D62CXtlwcKc4aM9CdO4LuKlwpdTU80VNQc6ZEuMF
+VzbRMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0B
+AQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBA4ICAQCN1qBYOywoZWGnQvk6u0Oh
+5zkEKykXU6sK8hA6L65rQcqWUjEHDa9AZUpx3UuCmpPc24dx6DTHc58M7TxcyKry
+8s4CvruBKFbQ6B8MHnH6k07MzsmiBnsiIhAscZ0ipGm6h8e/VM/6ULrAcVSxZ+Mh
+D/IogZAuCQARsGQ4QYXBT8Qc5mLnTkx30m1rZVlp1VcN4ngOo/1tz1jj1mfpG2zv
+wNcQa9LwAzRLnnmLpxXA2OMbl7AaTWQenpL9rzBON2sg4OBl6lVhaSU0uBbFyCmR
+RvBqKC0iDD6TvyIikkMq05v5YwIKFYw++ICndz+fKcLEULZbziAsZ52qjM8iPVHC
+pN0yhVOr2g22F9zxlGH3WxTl9ymUytuv3vJL/aJiQM+n/Ri90Sc05EK4oIJ3+BS8
+yu5cVy9o2cQcOcQ8rhQh+Kv1sR9xrs25EXZF8KEETfhoJnN6KY1RwG7HsOfAQ3dV
+LWInQRaC/8JPyVS2zbd0+NRBJOnq4/quv/P3C4SBP98/ZuGrqN59uifyqC3Kodkl
+WkG/2UdhiLlCmOtsU+BYDZrSiYK1R9FNnlQCOGrkuVxpDwa2TbbvEEzQP7RXxotA
+KlxejvrY4VuK8agNqvffVofbdIIperK65K4+0mYIb+A6fU8QQHlCbti4ERSZ6UYD
+F/SjRih31+SAtWb42jueAA==
+-----END CERTIFICATE-----
+`
+	validCertExpected := "\tRaw Some Cert:\n\t\t-----BEGIN CERTIFICATE-----\n\t\tMIIFTDCCAvugAwIBAgIBADBGBgkqhkiG9w0BAQowOaAPMA0GCWCGSAFlAwQCAgUA\n\t\toRwwGgYJKoZIhvcNAQEIMA0GCWCGSAFlAwQCAgUAogMCATCjAwIBATB7MRQwEgYD\n\t\tVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDASBgNVBAcMC1NhbnRhIENs\n\t\tYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5jZWQgTWljcm8gRGV2aWNl\n\t\tczESMBAGA1UEAwwJU0VWLU1pbGFuMB4XDTIyMTEyMzIyMzM0N1oXDTI5MTEyMzIy\n\t\tMzM0N1owejEUMBIGA1UECwwLRW5naW5lZXJpbmcxCzAJBgNVBAYTAlVTMRQwEgYD\n\t\tVQQHDAtTYW50YSBDbGFyYTELMAkGA1UECAwCQ0ExHzAdBgNVBAoMFkFkdmFuY2Vk\n\t\tIE1pY3JvIERldmljZXMxETAPBgNVBAMMCFNFVi1WQ0VLMHYwEAYHKoZIzj0CAQYF\n\t\tK4EEACIDYgAEVGm4GomfpkiziqEYP61nfKaz5OjDLr8Y0POrv4iAnFVHAmBT81Ms\n\t\tgfSLKL5r3V3mNzl1Zh7jwSBft14uhGdwpARoK0YNQc4OvptqVIiv2RprV53DMzge\n\t\trtwiumIargiCo4IBFjCCARIwEAYJKwYBBAGceAEBBAMCAQAwFwYJKwYBBAGceAEC\n\t\tBAoWCE1pbGFuLUIwMBEGCisGAQQBnHgBAwEEAwIBAzARBgorBgEEAZx4AQMCBAMC\n\t\tAQAwEQYKKwYBBAGceAEDBAQDAgEAMBEGCisGAQQBnHgBAwUEAwIBADARBgorBgEE\n\t\tAZx4AQMGBAMCAQAwEQYKKwYBBAGceAEDBwQDAgEAMBEGCisGAQQBnHgBAwMEAwIB\n\t\tCDARBgorBgEEAZx4AQMIBAMCAXMwTQYJKwYBBAGceAEEBEB80kCZ1oAyCjWC6w3m\n\t\txOz+i4t6dFjk/Bqhm7+Jscf8D62CXtlwcKc4aM9CdO4LuKlwpdTU80VNQc6ZEuMF\n\t\tVzbRMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0B\n\t\tAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBA4ICAQCN1qBYOywoZWGnQvk6u0Oh\n\t\t5zkEKykXU6sK8hA6L65rQcqWUjEHDa9AZUpx3UuCmpPc24dx6DTHc58M7TxcyKry\n\t\t8s4CvruBKFbQ6B8MHnH6k07MzsmiBnsiIhAscZ0ipGm6h8e/VM/6ULrAcVSxZ+Mh\n\t\tD/IogZAuCQARsGQ4QYXBT8Qc5mLnTkx30m1rZVlp1VcN4ngOo/1tz1jj1mfpG2zv\n\t\twNcQa9LwAzRLnnmLpxXA2OMbl7AaTWQenpL9rzBON2sg4OBl6lVhaSU0uBbFyCmR\n\t\tRvBqKC0iDD6TvyIikkMq05v5YwIKFYw++ICndz+fKcLEULZbziAsZ52qjM8iPVHC\n\t\tpN0yhVOr2g22F9zxlGH3WxTl9ymUytuv3vJL/aJiQM+n/Ri90Sc05EK4oIJ3+BS8\n\t\tyu5cVy9o2cQcOcQ8rhQh+Kv1sR9xrs25EXZF8KEETfhoJnN6KY1RwG7HsOfAQ3dV\n\t\tLWInQRaC/8JPyVS2zbd0+NRBJOnq4/quv/P3C4SBP98/ZuGrqN59uifyqC3Kodkl\n\t\tWkG/2UdhiLlCmOtsU+BYDZrSiYK1R9FNnlQCOGrkuVxpDwa2TbbvEEzQP7RXxotA\n\t\tKlxejvrY4VuK8agNqvffVofbdIIperK65K4+0mYIb+A6fU8QQHlCbti4ERSZ6UYD\n\t\tF/SjRih31+SAtWb42jueAA==\n\t\t-----END CERTIFICATE-----\n\tSome Cert (1):\n\t\tSerial Number: 0\n\t\tSubject: CN=SEV-VCEK,OU=Engineering,O=Advanced Micro Devices,L=Santa Clara,ST=CA,C=US\n\t\tIssuer: CN=SEV-Milan,OU=Engineering,O=Advanced Micro Devices,L=Santa Clara,ST=CA,C=US\n\t\tNot Before: 2022-11-23 22:33:47 +0000 UTC\n\t\tNot After: 2029-11-23 22:33:47 +0000 UTC\n\t\tSignature Algorithm: SHA384-RSAPSS\n\t\tPublic Key Algorithm: ECDSA\n"
+
+	testCases := map[string]struct {
+		formatter   *attestationDocFormatter
+		encodedCert string
+		expected    string
+		wantErr     bool
+	}{
+		"one cert": {
+			formatter:   formatter(),
+			encodedCert: base64.StdEncoding.EncodeToString([]byte(validCert)),
+			expected:    validCertExpected,
+		},
+		"invalid cert": {
+			formatter:   formatter(),
+			encodedCert: "invalid",
+			wantErr:     true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			b := &strings.Builder{}
+			err := tc.formatter.parseCerts(b, "Some Cert", tc.encodedCert)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.expected, b.String())
+			}
+		})
+	}
 }
 
 func TestVerifyClient(t *testing.T) {

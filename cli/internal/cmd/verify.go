@@ -120,14 +120,12 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 		return fmt.Errorf("verifying: %w", err)
 	}
 
-	// print attestation document if Azure provider is used
-	if conf.Provider.Azure != nil {
-		attDocOutput, err := formatter.format(rawAttestationDoc, flags.rawOutput, validators.PCRS())
-		if err != nil {
-			return fmt.Errorf("printing attestation document: %w", err)
-		}
-		cmd.Println(attDocOutput)
+	// certificates are only available for Azure
+	attDocOutput, err := formatter.format(rawAttestationDoc, conf.Provider.Azure == nil, flags.rawOutput, validators.PCRS())
+	if err != nil {
+		return fmt.Errorf("printing attestation document: %w", err)
 	}
+	cmd.Println(attDocOutput)
 	cmd.Println("Verification OK")
 
 	return nil
@@ -236,7 +234,7 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 // a formatter formats the attestation document.
 type formatter interface {
 	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
-	format(docString string, rawOutput bool, expectedPCRs measurements.M) (string, error)
+	format(docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M) (string, error)
 }
 
 type attestationDocFormatter struct {
@@ -244,7 +242,7 @@ type attestationDocFormatter struct {
 }
 
 // format returns the raw or formatted attestation doc depending on the rawOutput argument.
-func (f *attestationDocFormatter) format(docString string, rawOutput bool, expectedPCRs measurements.M) (string, error) {
+func (f *attestationDocFormatter) format(docString string, PCRsOnly bool, rawOutput bool, expectedPCRs measurements.M) (string, error) {
 	b := &strings.Builder{}
 	b.WriteString("Attestation Document:\n")
 	if rawOutput {
@@ -259,6 +257,9 @@ func (f *attestationDocFormatter) format(docString string, rawOutput bool, expec
 
 	if err := f.parseQuotes(b, doc.Attestation.Quotes, expectedPCRs); err != nil {
 		return "", fmt.Errorf("parse quote: %w", err)
+	}
+	if PCRsOnly {
+		return b.String(), nil
 	}
 
 	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
