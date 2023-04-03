@@ -132,13 +132,16 @@ load("@rules_oci//oci:dependencies.bzl", "rules_oci_dependencies")
 
 rules_oci_dependencies()
 
-load("@rules_oci//oci:repositories.bzl", "LATEST_CRANE_VERSION", "LATEST_ZOT_VERSION", "oci_register_toolchains")
+load("@rules_oci//oci:repositories.bzl", "LATEST_CRANE_VERSION", "oci_register_toolchains")
 
 oci_register_toolchains(
     name = "oci",
     crane_version = LATEST_CRANE_VERSION,
-    zot_version = LATEST_ZOT_VERSION,
 )
+
+load("//bazel/toolchains:container_images.bzl", "containter_image_deps")
+
+containter_image_deps()
 
 # Multirun
 load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")
