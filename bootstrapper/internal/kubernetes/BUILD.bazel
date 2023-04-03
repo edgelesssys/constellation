@@ -13,8 +13,6 @@ go_library(
     deps = [
         "//bootstrapper/internal/kubernetes/k8sapi",
         "//bootstrapper/internal/kubernetes/kubewaiter",
-        "//internal/cloud/azureshared",
-        "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
         "//internal/cloud/metadata",
