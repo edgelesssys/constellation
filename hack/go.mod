@@ -38,8 +38,8 @@ replace (
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.60
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.1
 	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.5.2

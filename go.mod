@@ -57,13 +57,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.1
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.60
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.26.2
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.20.7
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.91.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.92.1
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.19.7
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.7
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.19.1
 	github.com/aws/smithy-go v1.13.5
 	github.com/coreos/go-systemd/v22 v22.5.0
