@@ -35,10 +35,10 @@ inputs:
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
-  gcpIAMServiceAccount:
+  gcpIAMCreateServiceAccount:
     description: "Service account with permissions to create IAM configuration on GCP."
     required: false
-  gcpClusterServiceAccount:
+  gcpClusterCreateServiceAccount:
     description: "Service account with permissions to create a Constellation cluster on GCP."
     required: false
   gcpInClusterServiceAccountKey:
@@ -53,10 +53,10 @@ inputs:
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the benchmark results."
     required: false
-  azureClusterCredentials:
+  azureClusterCreateCredentials:
     description: "Azure credentials authorized to create a Constellation cluster."
     required: true
-  azureIAMCredentials:
+  azureIAMCreateCredentials:
     description: "Azure credentials authorized to create an IAM configuration."
     required: true
   test:
@@ -150,7 +150,7 @@ runs:
       if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/login_gcp
       with:
-        service_account: ${{ inputs.gcpIAMServiceAccount }}
+        service_account: ${{ inputs.gcpIAMCreateServiceAccount }}
 
     - name: Login to AWS (IAM role)
       if: inputs.cloudProvider == 'aws'
@@ -165,7 +165,7 @@ runs:
       if: inputs.cloudProvider == 'azure'
       uses: ./.github/actions/login_azure
       with:
-        azure_credentials: ${{ inputs.azureIAMCredentials }}
+        azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
 
     - name: Create UUID
       id: create-uuid
@@ -192,7 +192,7 @@ runs:
       if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/login_gcp
       with:
-        service_account: ${{ inputs.gcpClusterServiceAccount }}
+        service_account: ${{ inputs.gcpClusterCreateServiceAccount }}
 
     - name: Login to AWS (Cluster role)
       if: inputs.cloudProvider == 'aws'
@@ -207,7 +207,7 @@ runs:
       if: inputs.cloudProvider == 'azure'
       uses: ./.github/actions/login_azure
       with:
-        azure_credentials: ${{ inputs.azureClusterCredentials }}
+        azure_credentials: ${{ inputs.azureClusterCreateCredentials }}
 
     - name: Create cluster
       id: constellation-create

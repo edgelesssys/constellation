@@ -148,13 +148,13 @@ jobs:
           cliVersion: ${{ inputs.fromVersion }}
           isDebugImage: "false"
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcpClusterServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
-          gcpIAMServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: "nop"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-          azureClusterCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
-          azureIAMCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
       - name: Run upgrade test
         run: |
