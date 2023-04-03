@@ -65,12 +65,15 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 		dialer: dialer.New(nil, nil, &net.Dialer{}),
 		log:    log,
 	}
+	formatter := &attestationDocFormatter{
+		log: log,
+	}
 
 	v := &verifyCmd{log: log}
-	return v.verify(cmd, fileHandler, verifyClient)
+	return v.verify(cmd, fileHandler, verifyClient, formatter)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter formatter) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -124,12 +127,17 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	for i, pcr := range validators.PCRS() {
 		cmd.Printf("\tPCR %d:\t%x - Strict: %t\n", i, pcr.Expected, !pcr.ValidationOpt)
 	}
-	cmd.Println("Attestation Document:")
-	if err := c.printAttestationDoc(cmd, rawAttestationDoc, flags.rawOutput); err != nil {
-		return fmt.Errorf("printing attestation document: %w", err)
-	}
 
-	cmd.Println("\nVerification OK")
+	// print attestation document if Azure provider is used
+	if conf.Provider.Azure != nil {
+		attDocOutput, err := formatter.format(rawAttestationDoc, flags.rawOutput)
+		if err != nil {
+			return fmt.Errorf("printing attestation document: %w", err)
+		}
+		cmd.Println(attDocOutput)
+	}
+	cmd.Println("Verification OK")
+
 	return nil
 }
 
@@ -233,53 +241,68 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 	return "", err
 }
 
-// printAttestationDoc prints the attestation document to the command output.
-func (c *verifyCmd) printAttestationDoc(cmd *cobra.Command, rawDoc string, rawOutput bool) error {
+// a formatter formats the attestation document.
+type formatter interface {
+	// format returns the raw or formatted attestation doc depending on the rawOutput argument.
+	format(docString string, rawOutput bool) (string, error)
+}
+
+type attestationDocFormatter struct {
+	log debugLog
+}
+
+// format returns the raw or formatted attestation doc depending on the rawOutput argument.
+func (f *attestationDocFormatter) format(docString string, rawOutput bool) (string, error) {
+	b := &strings.Builder{}
+	b.WriteString("Attestation Document:\n")
 	if rawOutput {
-		cmd.Println(rawDoc)
-		return nil
+		b.WriteString(fmt.Sprintf("%s\n", docString))
+		return b.String(), nil
 	}
 
 	var doc attestationDoc
-	if err := json.Unmarshal([]byte(rawDoc), &doc); err != nil {
-		return fmt.Errorf("unmarshal attestation document: %w", err)
+	if err := json.Unmarshal([]byte(docString), &doc); err != nil {
+		return "", fmt.Errorf("unmarshal attestation document: %w", err)
 	}
 
-	pcrs256 := doc.Attestation.Quotes[len(doc.Attestation.Quotes)-1].Pcrs.Pcrs
-	for i, pcr := range pcrs256 {
-		cmd.Printf("\tPCR %d:\t%x", i, pcr)
+	if err := f.parseQuotes(b, doc.Attestation.Quotes); err != nil {
+		return "", fmt.Errorf("parse quote: %w", err)
 	}
 
 	instanceInfoString, err := base64.StdEncoding.DecodeString(doc.InstanceInfo)
 	if err != nil {
-		return fmt.Errorf("decode instance info: %w", err)
+		return "", fmt.Errorf("decode instance info: %w", err)
 	}
 
 	var instanceInfo azureInstanceInfo
 	if err := json.Unmarshal(instanceInfoString, &instanceInfo); err != nil {
-		return fmt.Errorf("unmarshal instance info: %w", err)
+		return "", fmt.Errorf("unmarshal instance info: %w", err)
 	}
 
-	if err := c.parseAndPrintCert(cmd, "VCEK certificate", instanceInfo.Vcek); err != nil {
-		return fmt.Errorf("print VCEK certificate: %w", err)
+	if err := f.parseCerts(b, "VCEK certificate", instanceInfo.Vcek); err != nil {
+		return "", fmt.Errorf("print VCEK certificate: %w", err)
 	}
-	if err := c.parseAndPrintCert(cmd, "Certificate chain", instanceInfo.CertChain); err != nil {
-		return fmt.Errorf("print certificate chain: %w", err)
+	if err := f.parseCerts(b, "Certificate chain", instanceInfo.CertChain); err != nil {
+		return "", fmt.Errorf("print certificate chain: %w", err)
 	}
 
-	return nil
+	return b.String(), nil
 }
 
-// parseAndPrintCerts parses the base64 encoded PEM certificates and prints their details to the command output.
-func (c *verifyCmd) parseAndPrintCert(cmd *cobra.Command, certTypeName string, encCertString string) error {
+// parseCerts parses the base64-encoded PEM certificates and writes their details to the output builder.
+func (f *attestationDocFormatter) parseCerts(b *strings.Builder, certTypeName string, encCertString string) error {
 	certBytes, err := base64.StdEncoding.DecodeString(encCertString)
 	if err != nil {
 		return fmt.Errorf("decode %s: %w", certTypeName, err)
 	}
+	formattedCert := strings.ReplaceAll(string(certBytes[:len(certBytes)-1]), "\n", "\n\t\t") + "\n"
+	b.WriteString(fmt.Sprintf("\tRaw %s:\n\t\t%s", certTypeName, formattedCert))
 
+	f.log.Debugf("Decoding PEM certificate: %s", certTypeName)
 	i := 1
 	block, rest := pem.Decode(certBytes)
 	for block != nil {
+		f.log.Debugf("Parsing PEM block: %d", i)
 		if block.Type != "CERTIFICATE" {
 			return fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
 		}
@@ -289,14 +312,14 @@ func (c *verifyCmd) parseAndPrintCert(cmd *cobra.Command, certTypeName string, e
 			return fmt.Errorf("parse %s: %w", certTypeName, err)
 		}
 
-		cmd.Printf("\t%s (%d):\n", certTypeName, i)
-		cmd.Printf("\t\tSerial Number: %s\n", cert.SerialNumber)
-		cmd.Printf("\t\tSubject: %s\n", cert.Subject)
-		cmd.Printf("\t\tIssuer: %s\n", cert.Issuer)
-		cmd.Printf("\t\tNot Before: %s\n", cert.NotBefore)
-		cmd.Printf("\t\tNot After: %s\n", cert.NotAfter)
-		cmd.Printf("\t\tSignature Algorithm: %s\n", cert.SignatureAlgorithm)
-		cmd.Printf("\t\tPublic Key Algorithm: %s\n", cert.PublicKeyAlgorithm)
+		b.WriteString(fmt.Sprintf("\t%s (%d):\n", certTypeName, i))
+		b.WriteString(fmt.Sprintf("\t\tSerial Number: %s\n", cert.SerialNumber))
+		b.WriteString(fmt.Sprintf("\t\tSubject: %s\n", cert.Subject))
+		b.WriteString(fmt.Sprintf("\t\tIssuer: %s\n", cert.Issuer))
+		b.WriteString(fmt.Sprintf("\t\tNot Before: %s\n", cert.NotBefore))
+		b.WriteString(fmt.Sprintf("\t\tNot After: %s\n", cert.NotAfter))
+		b.WriteString(fmt.Sprintf("\t\tSignature Algorithm: %s\n", cert.SignatureAlgorithm))
+		b.WriteString(fmt.Sprintf("\t\tPublic Key Algorithm: %s\n", cert.PublicKeyAlgorithm))
 
 		block, rest = pem.Decode(rest)
 		i++
@@ -305,17 +328,26 @@ func (c *verifyCmd) parseAndPrintCert(cmd *cobra.Command, certTypeName string, e
 	return nil
 }
 
+// parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
+func (f *attestationDocFormatter) parseQuotes(b *strings.Builder, quotes []quote) error {
+	for i, q := range quotes {
+		b.WriteString(fmt.Sprintf("\tQuote (%d):\n", i+1))
+		for pcrNum, value := range q.Pcrs.Pcrs {
+			pcr, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				return fmt.Errorf("decode PCR %s: %w", pcrNum, err)
+			}
+			b.WriteString(fmt.Sprintf("\t\tPCR %s: %x\n", pcrNum, pcr))
+		}
+	}
+	return nil
+}
+
+// attestationDoc is the attestation document returned by the verifier.
 type attestationDoc struct {
 	Attestation struct {
-		AkPub  string `json:"ak_pub"`
-		Quotes []struct {
-			Quote  string `json:"quote"`
-			RawSig string `json:"raw_sig"`
-			Pcrs   struct {
-				Hash int               `json:"hash"`
-				Pcrs map[string]string `json:"pcrs"`
-			} `json:"pcrs"`
-		} `json:"quotes"`
+		AkPub          string      `json:"ak_pub"`
+		Quotes         []quote     `json:"quotes"`
 		EventLog       string      `json:"event_log"`
 		TeeAttestation interface{} `json:"TeeAttestation"`
 	} `json:"Attestation"`
@@ -323,6 +355,17 @@ type attestationDoc struct {
 	UserData     string `json:"UserData"`
 }
 
+type quote struct {
+	Quote  string `json:"quote"`
+	RawSig string `json:"raw_sig"`
+	Pcrs   struct {
+		Hash int               `json:"hash"`
+		Pcrs map[string]string `json:"pcrs"`
+	} `json:"pcrs"`
+}
+
+// azureInstanceInfo is the b64-decoded InstanceInfo field of the attestation document.
+// as of now (2023-04-03), it only contains interesting data on Azure.
 type azureInstanceInfo struct {
 	Vcek              string `json:"Vcek"`
 	CertChain         string `json:"CertChain"`
