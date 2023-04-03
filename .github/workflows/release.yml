@@ -343,13 +343,6 @@ jobs:
         with:
           ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
 
-      - name: Create branch with changes
-        run: |
-          git config --global user.name "release[bot]"
-          git config --global user.email "release[bot]@users.noreply.github.com"
-          git fetch
-          git checkout -b "${NEW_BRANCH}"
-
       - name: Create PR
         uses: peter-evans/create-pull-request@38e0b6e68b4c852a5500a94740f0e535e0d7ba54 # v4.2.4
         with:
