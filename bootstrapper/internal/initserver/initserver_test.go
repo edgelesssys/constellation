@@ -7,10 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package initserver
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"errors"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -259,7 +261,7 @@ func TestGetLogs(t *testing.T) {
 			initSecretHash:    initSecretHash,
 			masterSecret:      masterSecret,
 			req:               &initproto.LogRequest{InitSecret: initSecret},
-			journaldCollector: stubJournaldCollector{logs: []byte("asdf")},
+			journaldCollector: stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewBuffer([]byte("asdf"))}},
 			stream:            stubLogStream{},
 			decryptor:         decryptor(),
 			wantDecryptable:   true,
@@ -294,7 +296,7 @@ func TestGetLogs(t *testing.T) {
 			initSecretHash:    initSecretHash,
 			req:               &initproto.LogRequest{InitSecret: initSecret},
 			stream:            stubLogStream{sendError: errors.New("failed")},
-			journaldCollector: stubJournaldCollector{logs: []byte("assdf")},
+			journaldCollector: stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewBuffer([]byte("asdf"))}},
 			masterSecret:      masterSecret,
 			decryptor:         decryptor(),
 			wantErr:           true,
@@ -513,11 +515,32 @@ func (s *stubLogStream) Context() context.Context {
 	return context.Background()
 }
 
+type journaldCollection interface {
+	Start() (io.ReadCloser, error)
+}
+
 type stubJournaldCollector struct {
-	logs       []byte
+	logPipe    io.ReadCloser
 	collectErr error
 }
 
-func (s *stubJournaldCollector) Collect() ([]byte, error) {
-	return s.logs, s.collectErr
+func (s *stubJournaldCollector) Start() (io.ReadCloser, error) {
+	return s.logPipe, s.collectErr
+}
+
+type stubReadCloser struct {
+	reader   io.Reader
+	readErr  error
+	closeErr error
+}
+
+func (s *stubReadCloser) Read(p []byte) (n int, err error) {
+	if s.readErr != nil {
+		return 0, s.readErr
+	}
+	return s.reader.Read(p)
+}
+
+func (s *stubReadCloser) Close() error {
+	return s.closeErr
 }

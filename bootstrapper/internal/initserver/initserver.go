@@ -18,11 +18,13 @@ If a call from the CLI is received, the InitServer bootstraps the Kubernetes clu
 package initserver
 
 import (
+	"bufio"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -71,7 +73,7 @@ type Server struct {
 
 	log *logger.Logger
 
-	journaldCollector journald.Collection
+	journaldCollector journaldCollection
 
 	initproto.UnimplementedAPIServer
 }
@@ -220,7 +222,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
-	systemdLogs, err := s.journaldCollector.Collect()
+	logPipe, err := s.journaldCollector.Start()
 	if err != nil {
 		return err
 	}
@@ -247,18 +249,29 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		return err
 	}
 
-	for i := 0; i < len(systemdLogs); i += 1024 {
-		end := i + 1024
-		if end > len(systemdLogs) {
-			end = len(systemdLogs)
+	reader := bufio.NewReader(logPipe)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := io.ReadFull(reader, buffer)
+		buffer = buffer[:n] // cap the buffer so that we don't have a bunch of nullbytes at the end
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if err != io.ErrUnexpectedEOF {
+				return err
+			}
 		}
+
+		fmt.Println(buffer)
 
 		nonce := make([]byte, aesgcm.NonceSize())
 		if _, err := rand.Read(nonce); err != nil {
 			return err
 		}
 		log.Infof("Encrypting log chunk...")
-		encLogChunk := aesgcm.Seal(nil, nonce, systemdLogs[i:end], nil)
+		encLogChunk := aesgcm.Seal(nil, nonce, buffer, nil)
 
 		log.Infof("Streaming data...")
 		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
