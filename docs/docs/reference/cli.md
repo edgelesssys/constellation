@@ -312,9 +312,7 @@ Verify the confidential properties of a Constellation cluster
 
 ### Synopsis
 
-Verify the confidential properties of a Constellation cluster.
-
-If arguments aren't specified, values are read from `constellation-id.json`.
+Verify the confidential properties of a Constellation cluster.\nIf arguments aren't specified, values are read from `constellation-id.json`.
 
 ```
 constellation verify [flags]
@@ -326,6 +324,7 @@ constellation verify [flags]
       --cluster-id string      expected cluster identifier
   -h, --help                   help for verify
   -e, --node-endpoint string   endpoint of the node to verify, passed as HOST[:PORT]
+      --raw                    print raw attestation document
 ```
 
 ### Options inherited from parent commands
