@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//bootstrapper/initproto",
         "//bootstrapper/internal/diskencryption",
+        "//bootstrapper/internal/journald",
         "//internal/atls",
         "//internal/attestation",
         "//internal/crypto",
@@ -17,6 +18,7 @@ go_library(
         "//internal/grpc/grpclog",
         "//internal/kms/kms",
         "//internal/kms/setup",
+        "//internal/kms/uri",
         "//internal/logger",
         "//internal/nodestate",
         "//internal/role",
@@ -39,6 +41,7 @@ go_test(
     deps = [
         "//bootstrapper/initproto",
         "//internal/atls",
+        "//internal/crypto",
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/kms/setup",
@@ -49,6 +52,7 @@ go_test(
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//:go_default_library",
         "@org_golang_x_crypto//bcrypt",
         "@org_uber_go_goleak//:goleak",
     ],

@@ -382,3 +382,8 @@ type MetadataAPI interface {
 	// InitSecretHash returns the initSecretHash of the instance.
 	InitSecretHash(ctx context.Context) ([]byte, error)
 }
+
+// journaldCollection is just an interface to make stubbing possible.
+type journaldCollection interface {
+	Start() (io.ReadCloser, error)
+}

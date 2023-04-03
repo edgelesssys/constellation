@@ -339,7 +339,6 @@ func TestGetLogs(t *testing.T) {
 			} else {
 				assert.NotEmpty(tc.stream.res)
 			}
-
 		})
 	}
 }
@@ -513,10 +512,6 @@ func (s *stubLogStream) Send(m *initproto.LogResponse) error {
 
 func (s *stubLogStream) Context() context.Context {
 	return context.Background()
-}
-
-type journaldCollection interface {
-	Start() (io.ReadCloser, error)
 }
 
 type stubJournaldCollector struct {
