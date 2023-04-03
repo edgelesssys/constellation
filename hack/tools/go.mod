@@ -6,7 +6,7 @@ require (
 	github.com/google/go-licenses v1.6.0
 	github.com/katexochen/sh/v3 v3.6.0
 	golang.org/x/tools v0.7.0
-	golang.org/x/vuln v0.0.0-20230325131008-9550759f8614
+	golang.org/x/vuln v0.0.0-20230331150530-a42f9910daf3
 )
 
 require (
