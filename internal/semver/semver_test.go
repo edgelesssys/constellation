@@ -14,34 +14,81 @@ import (
 )
 
 var (
-	v1_18_0 = Semver{Major: 1, Minor: 18, Patch: 0}
-	v1_19_0 = Semver{Major: 1, Minor: 19, Patch: 0}
-	v1_18_1 = Semver{Major: 1, Minor: 18, Patch: 1}
-	v1_20_0 = Semver{Major: 1, Minor: 20, Patch: 0}
-	v2_0_0  = Semver{Major: 2, Minor: 0, Patch: 0}
+	v1_18_0         = Semver{Major: 1, Minor: 18, Patch: 0}
+	v1_18_0Pre      = Semver{Major: 1, Minor: 18, Patch: 0, Prerelease: "pre"}
+	v1_18_0PreExtra = Semver{Major: 1, Minor: 18, Patch: 0, Prerelease: "pre.1"}
+	v1_19_0         = Semver{Major: 1, Minor: 19, Patch: 0}
+	v1_18_1         = Semver{Major: 1, Minor: 18, Patch: 1}
+	v1_20_0         = Semver{Major: 1, Minor: 20, Patch: 0}
+	v2_0_0          = Semver{Major: 2, Minor: 0, Patch: 0}
 )
 
 func TestNewVersion(t *testing.T) {
 	testCases := map[string]struct {
 		version string
+		want    Semver
 		wantErr bool
 	}{
-		"valid version":    {"v1.18.0", false},
-		"invalid version":  {"v1.18. 0", true},
-		"add prefix":       {"1.18.0", false},
-		"only major.minor": {"v1.18", false},
-		"only major":       {"v1", false},
+		"valid version": {
+			version: "v1.18.0",
+			want: Semver{
+				Major: 1,
+				Minor: 18,
+				Patch: 0,
+			},
+			wantErr: false,
+		},
+		"valid version prerelease": {
+			version: "v1.18.0-pre+yyyymmddhhmmss-abcdefabcdef",
+			want: Semver{
+				Major:      1,
+				Minor:      18,
+				Patch:      0,
+				Prerelease: "pre",
+			},
+			wantErr: false,
+		},
+		"only prerelease": {version: "v-pre.0.yyyymmddhhmmss-abcdefabcdef", wantErr: true},
+		"invalid version": {version: "v1.18. 0", wantErr: true},
+		"add prefix": {
+			version: "1.18.0",
+			want: Semver{
+				Major: 1,
+				Minor: 18,
+				Patch: 0,
+			},
+			wantErr: false,
+		},
+		"only major.minor": {
+			version: "v1.18",
+			want: Semver{
+				Major: 1,
+				Minor: 18,
+				Patch: 0,
+			},
+			wantErr: false,
+		},
+		"only major": {
+			version: "v1",
+			want: Semver{
+				Major: 1,
+				Minor: 0,
+				Patch: 0,
+			},
+			wantErr: false,
+		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			_, err := New(tc.version)
+			ver, err := New(tc.version)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
+				assert.Equal(tc.want, ver)
 			}
 		})
 	}
@@ -56,6 +103,10 @@ func TestJSONMarshal(t *testing.T) {
 		"valid version": {
 			version:    v1_18_0,
 			wantString: `"v1.18.0"`,
+		},
+		"prerelease": {
+			version:    v1_18_0Pre,
+			wantString: `"v1.18.0-pre"`,
 		},
 	}
 
@@ -88,6 +139,10 @@ func TestJSONUnmarshal(t *testing.T) {
 		"invalid version": {
 			version: `"v1. 18.0"`,
 			wantErr: true,
+		},
+		"prerelease": {
+			version:    `"v1.18.0-pre"`,
+			wantString: "v1.18.0-pre",
 		},
 	}
 
@@ -128,6 +183,26 @@ func TestComparison(t *testing.T) {
 			version1: v1_18_1,
 			version2: v1_18_0,
 			want:     1,
+		},
+		"prerelease less than": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0,
+			want:     -1,
+		},
+		"prerelease greater than": {
+			version1: v1_18_0,
+			version2: v1_18_0Pre,
+			want:     1,
+		},
+		"prerelease equal": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0Pre,
+			want:     0,
+		},
+		"prerelease extra less than": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0PreExtra,
+			want:     -1,
 		},
 	}
 
@@ -176,6 +251,26 @@ func TestCanUpgrade(t *testing.T) {
 			version2: v1_18_0,
 			want:     false,
 		},
+		"prerelease less than": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0,
+			want:     true,
+		},
+		"prerelease greater than": {
+			version1: v1_18_0,
+			version2: v1_18_0Pre,
+			want:     false,
+		},
+		"prerelease equal": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0Pre,
+			want:     false,
+		},
+		"prerelease extra": {
+			version1: v1_18_0Pre,
+			version2: v1_18_0PreExtra,
+			want:     true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -194,6 +289,10 @@ func TestNextMinor(t *testing.T) {
 	}{
 		"valid version": {
 			version: v1_18_0,
+			want:    "v1.19",
+		},
+		"prerelease": {
+			version: v1_18_0Pre,
 			want:    "v1.19",
 		},
 	}

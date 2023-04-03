@@ -20,9 +20,10 @@ import (
 
 // Semver represents a semantic version.
 type Semver struct {
-	Major int
-	Minor int
-	Patch int
+	Major      int
+	Minor      int
+	Patch      int
+	Prerelease string
 }
 
 // New returns a Version from a string.
@@ -39,21 +40,27 @@ func New(version string) (Semver, error) {
 	version = semver.Canonical(version)
 
 	var major, minor, patch int
+	_, pre, _ := strings.Cut(version, "-")
 	_, err := fmt.Sscanf(version, "v%d.%d.%d", &major, &minor, &patch)
 	if err != nil {
 		return Semver{}, fmt.Errorf("parsing semver parts: %w", err)
 	}
 
 	return Semver{
-		Major: major,
-		Minor: minor,
-		Patch: patch,
+		Major:      major,
+		Minor:      minor,
+		Patch:      patch,
+		Prerelease: pre,
 	}, nil
 }
 
 // String returns the string representation of the version.
 func (v Semver) String() string {
-	return fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
+	version := fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
+	if v.Prerelease != "" {
+		return fmt.Sprintf("%s-%s", version, v.Prerelease)
+	}
+	return version
 }
 
 // Compare compares two versions. It relies on the semver.Compare function internally.
