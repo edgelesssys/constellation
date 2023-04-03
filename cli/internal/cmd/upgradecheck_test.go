@@ -326,7 +326,7 @@ func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]v
 	return s.images, nil
 }
 
-func (s *stubVersionCollector) newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error) {
+func (s *stubVersionCollector) newCLIVersions(ctx context.Context) ([]string, error) {
 	return s.newCLIVersionsList, nil
 }
 
@@ -394,7 +394,7 @@ func TestNewCLIVersions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			_, err := tc.verCollector.newCLIVersions(context.Background(), "v1.24.5")
+			_, err := tc.verCollector.newCLIVersions(context.Background())
 			if tc.wantErr {
 				require.Error(err)
 				return

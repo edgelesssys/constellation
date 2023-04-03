@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	conSemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
@@ -241,7 +242,7 @@ type collector interface {
 	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
 	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
-	newCLIVersions(ctx context.Context, currentKubernetesVersion string) ([]string, error)
+	newCLIVersions(ctx context.Context) ([]string, error)
 	filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []string, currentK8sVersion string) ([]string, error)
 }
 
@@ -326,7 +327,7 @@ func (v *versionCollector) supportedVersions(ctx context.Context, version, curre
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)
 	}
-	cliVersions, err := v.newCLIVersions(ctx, currentK8sVersion)
+	cliVersions, err := v.newCLIVersions(ctx)
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading cli versions: %w", err)
 	}
