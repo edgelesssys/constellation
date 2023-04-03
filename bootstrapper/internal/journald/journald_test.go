@@ -17,17 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (s *stubReadCloser) Read(p []byte) (n int, err error) {
-	if s.readErr != nil {
-		return 0, s.readErr
-	}
-	return s.reader.Read(p)
-}
-
-func (s *stubReadCloser) Close() error {
-	return s.closeErr
-}
-
 func TestPipe(t *testing.T) {
 	someError := errors.New("failed")
 
@@ -134,4 +123,15 @@ type stubReadCloser struct {
 	reader   io.Reader
 	readErr  error
 	closeErr error
+}
+
+func (s *stubReadCloser) Read(p []byte) (n int, err error) {
+	if s.readErr != nil {
+		return 0, s.readErr
+	}
+	return s.reader.Read(p)
+}
+
+func (s *stubReadCloser) Close() error {
+	return s.closeErr
 }
