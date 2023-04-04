@@ -58,7 +58,8 @@ jobs:
         kubernetes-version: ["v1.24", "v1.25", "v1.26"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
         exclude:
-          # Verify test runs only on latest kubernetes-version.
+          # Verify test runs only on latest kubernetes-version by default.
+          # Exclude it for main-debug as it needs to run on 1.25 / release-stable.
           - test: "verify"
             kubernetes-version: "v1.24"
           - refStream: "ref/main/stream/debug/?"
