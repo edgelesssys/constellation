@@ -16,7 +16,10 @@ virsh -c "qemu+tcp://localhost:16599/system"
 Build the image:
 
 ```shell
-DOCKER_BUILDKIT=1 docker build -t ghcr.io/edgelesssys/constellation/libvirt:latest -f cli/internal/libvirt/Dockerfile .
+bazel build //cli/internal/libvirt:constellation_libvirt
+bazel build //bazel/release:libvirt_sum
+bazel build //bazel/release:libvirt_tar
+bazel run //bazel/release:libvirt_push
 ```
 
 A container of the image is automatically started by the CLI.

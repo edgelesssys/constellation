@@ -36,7 +36,10 @@ sudo firewall-cmd --zone libvirt --add-port 8080/tcp --permanent
 Build the image:
 
 ```shell
-DOCKER_BUILDKIT=1 docker build -t ghcr.io/edgelesssys/constellation/qemu-metadata-api:latest -f hack/qemu-metadata-api/Dockerfile .
+bazel build //hack/qemu-metadata-api:qemumetadata
+bazel build //bazel/release:qemumetadata_sum
+bazel build //bazel/release:qemumetadata_tar
+bazel run //bazel/release:qemumetadata_push
 ```
 
 A container of the image is automatically started by Terraform.
