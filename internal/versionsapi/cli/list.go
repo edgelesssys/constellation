@@ -12,12 +12,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	verclient "github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
+
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
+	verclient "github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
 )
 
 func newListCmd() *cobra.Command {
@@ -135,10 +136,6 @@ func listPatchVersions(ctx context.Context, client *verclient.Client, ref string
 		list, err := client.FetchVersionList(ctx, list)
 		if err != nil {
 			return nil, fmt.Errorf("listing patch versions: %w", err)
-		}
-
-		if len(list.Versions) == 0 {
-			return nil, fmt.Errorf("no versions found")
 		}
 
 		patchVers = append(patchVers, list.StructuredVersions()...)
