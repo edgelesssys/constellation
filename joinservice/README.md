@@ -40,9 +40,13 @@ This is needed for fetching data encryption keys for joining nodes.
 
 Implements interaction with the Kubernetes API to create join tokens for new nodes.
 
-## [Dockerfile](./Dockerfile)
+## Docker image
+
+Build the image:
 
 ```shell
-export VERSION=0.0.0
-DOCKER_BUILDKIT=1 docker build --build-arg PROJECT_VERSION=${VERSION} -t ghcr.io/edgelesssys/constellation/join-service:v${VERSION} -f joinservice/Dockerfile .
+bazel build //joinservice/cmd:joinservice
+bazel build //bazel/release:joinservice_sum
+bazel build //bazel/release:joinservice_tar
+bazel run //bazel/release:joinservice_push
 ```

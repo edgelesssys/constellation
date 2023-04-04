@@ -1,6 +1,5 @@
 /.github @katexochen
 /3rdparty/gcp-guest-agent @malt3
-/apko @katexochen
 /bazel @malt3
 /bazel/ci @katexochen
 /bazel/sh @katexochen
