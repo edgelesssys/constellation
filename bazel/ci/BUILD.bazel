@@ -432,7 +432,7 @@ multirun(
             ":actionlint",
         ],
     }),
-    jobs = 1,  # execute sequentially
+    jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],
 )
 
@@ -445,6 +445,6 @@ multirun(
         ":proto_generate",
         ":cli_docgen",
     ],
-    jobs = 1,  # execute sequentially
+    jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],
 )
