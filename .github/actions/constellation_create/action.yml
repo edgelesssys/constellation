@@ -67,6 +67,9 @@ outputs:
   masterSecret:
     description: "The master-secret for the cluster."
     value: ${{ steps.constellation-init.outputs.MASTERSECRET }}
+  osImageUsed:
+    description: "The OS image used in the cluster."
+    value: ${{ steps.setImage.outputs.image }}
 
 runs:
   using: "composite"
@@ -132,11 +135,20 @@ runs:
           constellation-conf.yaml
 
     - name: Set image
-      if: inputs.osImage != ''
+      id: setImage
       shell: bash
       env:
-        image: ${{ inputs.osImage }}
-      run: yq eval -i "(.image) = \"${image}\"" constellation-conf.yaml
+        imageInput: ${{ inputs.osImage }}
+      run: |
+        if [[ -z "${imageInput}" ]]; then
+          echo "No image specified. Using default image from config."
+          image=$(yq eval ".image" constellation-conf.yaml)
+          echo "image=${image}" | tee -a "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
+        echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Set instanceType
       if: inputs.machineType && inputs.machineType != 'default'
