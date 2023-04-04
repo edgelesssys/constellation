@@ -260,7 +260,7 @@ runs:
       uses: ./.github/actions/e2e_verify
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
-        osImage: ${{ inputs.osImage }}
+        osImage: ${{ steps.constellation-create.outputs.osImageUsed }}
 
     - name: Run recover test
       if: inputs.test == 'recover'
