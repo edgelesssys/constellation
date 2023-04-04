@@ -83,6 +83,12 @@ on:
         default: false
         required: false
 
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
+
 jobs:
   e2e-upgrade:
     runs-on: ubuntu-22.04
@@ -142,6 +148,8 @@ jobs:
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run upgrade test
         env:
