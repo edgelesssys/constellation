@@ -271,7 +271,6 @@ jobs:
 
       - name: Always delete IAM configuration
         if: always()
-        continue-on-error: true
         uses: ./.github/actions/constellation_iam_destroy
         with:
           cloudProvider: ${{ inputs.cloudProvider }}

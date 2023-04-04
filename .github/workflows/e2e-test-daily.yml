@@ -86,14 +86,12 @@ jobs:
 
       - name: Always terminate cluster
         if: always()
-        continue-on-error: true
         uses: ./.github/actions/constellation_destroy
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Always delete IAM configuration
         if: always()
-        continue-on-error: true
         uses: ./.github/actions/constellation_iam_destroy
         with:
           cloudProvider: ${{ matrix.provider }}
