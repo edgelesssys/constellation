@@ -61,7 +61,8 @@ jobs:
           # Verify test runs only on latest kubernetes-version.
           - test: "verify"
             kubernetes-version: "v1.24"
-          - test: "verify"
+          - refStream: "ref/main/stream/debug/?"
+            test: "verify"
             kubernetes-version: "v1.25"
           # Recover test runs only on latest kubernetes-version.
           - test: "recover"
@@ -88,7 +89,7 @@ jobs:
             provider: "aws"
           - test: "perf-bench"
             provider: "aws"
-          # Only iamcreate for K8s v1.25 on all providers.
+          # Only verify for K8s v1.25 on all providers.
           - refStream: "ref/release/stream/stable/?"
             kubernetes-version: "v1.24"
           - refStream: "ref/release/stream/stable/?"
@@ -101,8 +102,6 @@ jobs:
             test: "autoscaling"
           - refStream: "ref/release/stream/stable/?"
             test: "sonobuoy full"
-          - refStream: "ref/release/stream/stable/?"
-            test: "verify"
           - refStream: "ref/release/stream/stable/?"
             test: "recover"
     runs-on: ubuntu-22.04
