@@ -219,34 +219,34 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 
 	log.Infof("Validating the init secret...")
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		return status.Errorf(codes.Internal, "invalid init secret %s", err)
+		return status.Errorf(codes.Internal, "invalid init secret: %s", err)
 	}
 
 	logPipe, err := s.journaldCollector.Start()
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)
 	}
 
 	// decode the master secret
 	cfg, err := uri.DecodeMasterSecretFromURI(s.kmsURI)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, "failed decoding the master secret: %s", err)
 	}
 
 	log.Infof("Deriving a key from the master secret...")
 	key, err := crypto.DeriveKey(cfg.Key, cfg.Salt, nil, 16) // 16 byte = 128 bit
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, "failed deriving a key from the master secret: %s", err)
 	}
 
 	// set up AES-128 in GCM mode and encrypt the logs
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, "failed creating a cipher: %s", err)
 	}
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, "failed creating a GCM cipher: %s", err)
 	}
 
 	reader := bufio.NewReader(logPipe)
@@ -260,13 +260,13 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 				break
 			}
 			if err != io.ErrUnexpectedEOF {
-				return err
+				return status.Errorf(codes.Internal, "failed to read from pipe: %s", err)
 			}
 		}
 
 		nonce := make([]byte, aesgcm.NonceSize())
 		if _, err := rand.Read(nonce); err != nil {
-			return err
+			return status.Errorf(codes.Internal, "failed generating a nonce: %s", err)
 		}
 		log.Infof("Encrypting log chunk...")
 		encLogChunk := aesgcm.Seal(nil, nonce, buffer, nil)
@@ -274,7 +274,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		log.Infof("Streaming data...")
 		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
 		if err != nil {
-			return err
+			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
 		}
 	}
 
