@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "config",
     srcs = [
+        "attestation.go",
         "config.go",
         "config_doc.go",
         # keep
@@ -15,7 +16,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/attestation/config/idkeydigest",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
@@ -37,13 +38,14 @@ go_library(
 go_test(
     name = "config_test",
     srcs = [
+        "attestation_test.go",
         "config_test.go",
         "validation_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":config"],
     deps = [
-        "//internal/attestation/config/idkeydigest",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/config/instancetypes",
@@ -56,6 +58,7 @@ go_test(
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
         "@org_uber_go_goleak//:goleak",
     ],
 )

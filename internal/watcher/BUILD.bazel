@@ -12,9 +12,9 @@ go_library(
     deps = [
         "//internal/atls",
         "//internal/attestation/choose",
-        "//internal/attestation/config",
-        "//internal/attestation/config/idkeydigest",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
+        "//internal/config",
         "//internal/constants",
         "//internal/file",
         "//internal/logger",
@@ -34,9 +34,9 @@ go_test(
     embed = [":watcher"],
     deps = [
         "//internal/atls",
-        "//internal/attestation/config",
-        "//internal/attestation/config/idkeydigest",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
+        "//internal/config",
         "//internal/constants",
         "//internal/file",
         "//internal/logger",

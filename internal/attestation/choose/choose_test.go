@@ -10,7 +10,7 @@ import (
 	"encoding/asn1"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

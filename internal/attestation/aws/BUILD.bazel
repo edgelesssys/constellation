@@ -11,8 +11,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/aws",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/attestation/config",
         "//internal/attestation/vtpm",
+        "//internal/config",
         "//internal/variant",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",

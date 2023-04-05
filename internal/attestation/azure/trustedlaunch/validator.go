@@ -15,8 +15,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"

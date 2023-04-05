@@ -7,7 +7,7 @@ go_library(
         "enforcement_string.go",
         "idkeydigest.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest",
     visibility = ["//:__subpackages__"],
 )
 

@@ -19,9 +19,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
-	attestconfig "github.com/edgelesssys/constellation/v2/internal/attestation/config"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -175,15 +174,15 @@ func TestValidatorV(t *testing.T) {
 		"gcp": {
 			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
-			wantVs:  gcp.NewValidator(attestconfig.GCPSEVES{Measurements: newTestPCRs()}, nil),
+			wantVs:  gcp.NewValidator(config.GCPSEVES{Measurements: newTestPCRs()}, nil),
 		},
 		"azure cvm": {
 			variant: variant.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
 			wantVs: snp.NewValidator(
-				attestconfig.AzureSEVSNP{
+				config.AzureSEVSNP{
 					Measurements: newTestPCRs(),
-					FirmwareSignerConfig: attestconfig.SNPFirmwareSignerConfig{
+					FirmwareSignerConfig: config.SNPFirmwareSignerConfig{
 						AcceptedKeyDigests: idkeydigest.List{},
 						EnforcementPolicy:  idkeydigest.WarnOnly,
 					},
@@ -194,12 +193,12 @@ func TestValidatorV(t *testing.T) {
 		"azure trusted launch": {
 			variant: variant.AzureTrustedLaunch{},
 			pcrs:    newTestPCRs(),
-			wantVs:  trustedlaunch.NewValidator(attestconfig.AzureTrustedLaunch{Measurements: newTestPCRs()}, nil),
+			wantVs:  trustedlaunch.NewValidator(config.AzureTrustedLaunch{Measurements: newTestPCRs()}, nil),
 		},
 		"qemu": {
 			variant: variant.QEMUVTPM{},
 			pcrs:    newTestPCRs(),
-			wantVs:  qemu.NewValidator(attestconfig.QEMUVTPM{Measurements: newTestPCRs()}, nil),
+			wantVs:  qemu.NewValidator(config.QEMUVTPM{Measurements: newTestPCRs()}, nil),
 		},
 	}
 

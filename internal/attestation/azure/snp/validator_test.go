@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"

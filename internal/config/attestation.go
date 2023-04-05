@@ -22,7 +22,7 @@ import (
 type AttestationConfig interface {
 	// GetMeasurements returns the measurements that should be used for attestation.
 	GetMeasurements() measurements.M
-	// GetVariant returns the variant of the attestation config. TODO: decide if this is needed.
+	// GetVariant returns the variant of the attestation config.
 	GetVariant() variant.Variant
 }
 

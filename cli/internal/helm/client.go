@@ -15,8 +15,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	attestconfig "github.com/edgelesssys/constellation/v2/internal/attestation/config"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/config/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -381,15 +380,15 @@ func setAttestationVariant(values map[string]any, variant string) error {
 
 // TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
 // setIdkeyConfig sets the idkeyconfig value on the join-service value maps.
-func setIdkeyConfig(values map[string]any, config *config.Config, maaURL string) error {
+func setIdkeyConfig(values map[string]any, cfg *config.Config, maaURL string) error {
 	joinServiceVals, ok := values["join-service"].(map[string]any)
 	if !ok {
 		return errors.New("invalid join-service values")
 	}
 
-	idKeyCfg := attestconfig.SNPFirmwareSignerConfig{
-		AcceptedKeyDigests: config.IDKeyDigests(),
-		EnforcementPolicy:  config.IDKeyDigestPolicy(),
+	idKeyCfg := config.SNPFirmwareSignerConfig{
+		AcceptedKeyDigests: cfg.IDKeyDigests(),
+		EnforcementPolicy:  cfg.IDKeyDigestPolicy(),
 		MAAURL:             maaURL,
 	}
 	marshalledCfg, err := json.Marshal(idKeyCfg)
