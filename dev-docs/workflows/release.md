@@ -53,8 +53,8 @@ Releases should be performed using [the automated release pipeline](https://gith
     nextMinorVer=$(echo "${ver}" | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main
     git pull
-    git tag v${nextMinorVer}-pre
-    git push origin refs/tags/v${nextMinorVer}-pre
+    git tag ${nextMinorVer}-pre
+    git push origin refs/tags/${nextMinorVer}-pre
     ```
 
 
