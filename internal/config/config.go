@@ -19,6 +19,7 @@ All config relevant definitions, parsing and validation functions should go here
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -760,8 +761,9 @@ func (c AzureSEVSNP) NewerThan(old AttestationCfg) (bool, error) {
 	teeNewer := c.TEEVersion > otherCfg.TEEVersion
 	snpNewer := c.SNPVersion > otherCfg.SNPVersion
 	microcodeNewer := c.MicrocodeVersion > otherCfg.MicrocodeVersion
+	rootKeyNewer := !bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
 
-	return acceptedKeyDigestsNewer || measurementsNewer || bootloaderNewer || teeNewer || snpNewer || microcodeNewer, nil
+	return acceptedKeyDigestsNewer || measurementsNewer || bootloaderNewer || teeNewer || snpNewer || microcodeNewer || rootKeyNewer, nil
 }
 
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.

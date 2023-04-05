@@ -13,6 +13,7 @@ go_library(
     deps = [
         "//cli/internal/helm",
         "//cli/internal/image",
+        "//internal/attestation/measurements",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",

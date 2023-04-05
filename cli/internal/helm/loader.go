@@ -482,13 +482,13 @@ func extendConstellationServicesValues(
 	}
 	joinServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
 
-	// config is updated separately during upgrade,
+	// attestation config is updated separately during upgrade,
 	// so we only set them in Helm during init.
-	configJSON, err := json.Marshal(cfg.GetAttestationConfig())
+	attestationConfigJSON, err := json.Marshal(cfg.GetAttestationConfig())
 	if err != nil {
 		return fmt.Errorf("marshalling measurements: %w", err)
 	}
-	joinServiceVals["attestationConfig"] = string(configJSON)
+	joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
 
 	verifyServiceVals, ok := in["verification-service"].(map[string]any)
 	if !ok {

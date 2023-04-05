@@ -16,6 +16,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -39,6 +40,10 @@ import (
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
 var ErrInProgress = errors.New("upgrade in progress")
+
+// ErrLegacyJoinConfig signals that a legacy join-config was found.
+// TODO: v2.9 remove.
+var ErrLegacyJoinConfig = errors.New("legacy join-config with missing attestationConfig found")
 
 // GetConstellationVersion queries the constellation-version object for a given field.
 func GetConstellationVersion(ctx context.Context, client DynamicInterface) (updatev1alpha1.NodeVersion, error) {
@@ -164,10 +169,6 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return errors.Join(upgradeErrs...)
 	}
 
-	if err := u.UpdateAttestationConfig(ctx, conf.GetAttestationConfig()); err != nil {
-		return fmt.Errorf("updating measurements: %w", err)
-	}
-
 	updatedNodeVersion, err := u.applyNodeVersion(ctx, nodeVersion)
 	if err != nil {
 		return fmt.Errorf("applying upgrade: %w", err)
@@ -214,7 +215,13 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error {
 	currentConfig, existingConf, err := u.GetClusterAttestationConfig(ctx, newConfig.GetVariant())
 	if err != nil {
-		return fmt.Errorf("getting cluster attestation config: %w", err)
+		if !errors.Is(err, ErrLegacyJoinConfig) {
+			return fmt.Errorf("getting cluster attestation config: %w", err)
+		}
+		currentConfig, existingConf, err = joinConfigMigration(existingConf, newConfig.GetVariant())
+		if err != nil {
+			return fmt.Errorf("migrating join config: %w", err)
+		}
 	}
 	newer, err := newConfig.NewerThan(currentConfig)
 	if err != nil {
@@ -225,17 +232,15 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config
 		return nil
 	}
 
-	// TODO(daniel-weisse): Add upgrade path from old format
-
 	// backup of previous measurements
 	existingConf.Data["oldAttestationConfig"] = existingConf.Data[constants.AttestationConfigFilename]
 
-	measurementsJSON, err := json.Marshal(newConfig)
+	newConfigJSON, err := json.Marshal(newConfig)
 	if err != nil {
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
-	existingConf.Data[constants.AttestationConfigFilename] = string(measurementsJSON)
-	u.log.Debugf("Triggering measurements config map update now")
+	existingConf.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
+	u.log.Debugf("Triggering attestation config update now")
 	if _, err = u.stableInterface.updateConfigMap(ctx, existingConf); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
@@ -252,6 +257,11 @@ func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant vari
 		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
 	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
+		// TODO: v2.9 remove legacy config detection since it is only required for upgrades from v2.7
+		if _, ok := existingConf.Data["measurements"]; ok {
+			u.log.Debugf("Legacy join config detected, migrating to new config")
+			return nil, existingConf, ErrLegacyJoinConfig
+		}
 		return nil, nil, errors.New("attestation config missing from join-config")
 	}
 
@@ -421,6 +431,45 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 		return "", err
 	}
 	return serverVersion.GitVersion, nil
+}
+
+// joinConfigMigration prepares a join-config ConfigMap for migration from v2.7 to v2.8.
+// TODO: v2.9: remove this function.
+func joinConfigMigration(existingConf *corev1.ConfigMap, attestVariant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
+	m, ok := existingConf.Data["measurements"]
+	if !ok {
+		return nil, nil, errors.New("no measurements found in configmap")
+	}
+
+	var measurements measurements.M
+	if err := json.Unmarshal([]byte(m), &measurements); err != nil {
+		return nil, nil, fmt.Errorf("unmarshalling measurements: %w", err)
+	}
+
+	var oldConf config.AttestationCfg
+	switch attestVariant {
+	case variant.AWSNitroTPM{}:
+		oldConf = &config.AWSNitroTPM{}
+	case variant.AzureSEVSNP{}:
+		oldConf = &config.AzureSEVSNP{}
+	case variant.AzureTrustedLaunch{}:
+		oldConf = &config.AzureTrustedLaunch{}
+	case variant.GCPSEVES{}:
+		oldConf = &config.GCPSEVES{}
+	case variant.QEMUVTPM{}:
+		oldConf = &config.QEMUVTPM{}
+	default:
+		return nil, nil, fmt.Errorf("unknown variant: %s", attestVariant)
+	}
+
+	oldConf.SetMeasurements(measurements)
+	oldConfJSON, err := json.Marshal(oldConf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshalling previous config: %w", err)
+	}
+	existingConf.Data[constants.AttestationConfigFilename] = string(oldConfJSON)
+
+	return oldConf, existingConf, nil
 }
 
 type helmInterface interface {

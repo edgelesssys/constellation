@@ -81,6 +81,11 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
+	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
+	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+		return fmt.Errorf("upgrading measurements: %w", err)
+	}
+
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP {
 		err = u.handleServiceUpgrade(cmd, conf, flags)
 		upgradeErr := &compatibility.InvalidUpgradeError{}
@@ -104,24 +109,24 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		cmd.PrintErrln("WARNING: Skipping service and image upgrades, which are currently only supported for Azure and GCP.")
 	}
 
-	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
-		return fmt.Errorf("upgrading measurements: %w", err)
-	}
-
 	return nil
 }
 
 // upgradeMeasurementsIfDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
 func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
-	clusterMeasurements, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
+	clusterAttestationConfig, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
-		return fmt.Errorf("getting cluster measurements: %w", err)
-	}
-	// If the current config is not newer, or there is an error when comparing the configs, we skip the upgrade.
-	if newer, err := newConfig.NewerThan(clusterMeasurements); err != nil || !newer {
-		return err
+		// Config migration from v2.7 to v2.8 requires us to skip comparing configs if the cluster is still using the legacy config.
+		// TODO: v2.9 Remove error type check
+		if !errors.Is(err, kubernetes.ErrLegacyJoinConfig) {
+			return fmt.Errorf("getting cluster measurements: %w", err)
+		}
+	} else {
+		// If the current config is not newer, or there is an error when comparing the configs, we skip the upgrade.
+		if newer, err := newConfig.NewerThan(clusterAttestationConfig); err != nil || !newer {
+			return err
+		}
 	}
 
 	if !flags.yes {
@@ -130,7 +135,7 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
 		if !ok {
-			cmd.Println("Aborting upgrade.")
+			cmd.Println("Skipping upgrade.")
 			return nil
 		}
 	}
@@ -150,7 +155,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}
 			if !ok {
-				cmd.Println("Aborting upgrade.")
+				cmd.Println("Skipping upgrade.")
 				return nil
 			}
 		}
