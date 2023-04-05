@@ -17,9 +17,12 @@ package terraform
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/hashicorp/go-version"
 	install "github.com/hashicorp/hc-install"
@@ -33,9 +36,68 @@ import (
 )
 
 const (
+	// LogLevelNone represents a log level that does not produce any output.
+	LogLevelNone LogLevel = iota
+	// LogLevelError enables log output at ERROR level.
+	LogLevelError
+	// LogLevelWarn enables log output at WARN level.
+	LogLevelWarn
+	// LogLevelInfo enables log output at INFO level.
+	LogLevelInfo
+	// LogLevelDebug enables log output at DEBUG level.
+	LogLevelDebug
+	// LogLevelTrace enables log output at TRACE level.
+	LogLevelTrace
+	// LogLevelJSON enables log output at TRACE level in JSON format.
+	LogLevelJSON
 	tfVersion         = ">= 1.2.0"
 	terraformVarsFile = "terraform.tfvars"
 )
+
+// LogLevel is a Terraform log level.
+// As per https://developer.hashicorp.com/terraform/internals/debugging
+type LogLevel int
+
+// ParseLogLevel parses a log level string into a Terraform log level.
+func ParseLogLevel(level string) (LogLevel, error) {
+	switch strings.ToUpper(level) {
+	case "NONE":
+		return LogLevelNone, nil
+	case "ERROR":
+		return LogLevelError, nil
+	case "WARN":
+		return LogLevelWarn, nil
+	case "INFO":
+		return LogLevelInfo, nil
+	case "DEBUG":
+		return LogLevelDebug, nil
+	case "TRACE":
+		return LogLevelTrace, nil
+	case "JSON":
+		return LogLevelJSON, nil
+	default:
+		return LogLevelNone, fmt.Errorf("invalid log level %s", level)
+	}
+}
+
+func (l LogLevel) String() string {
+	switch l {
+	case LogLevelError:
+		return "ERROR"
+	case LogLevelWarn:
+		return "WARN"
+	case LogLevelInfo:
+		return "INFO"
+	case LogLevelDebug:
+		return "DEBUG"
+	case LogLevelTrace:
+		return "TRACE"
+	case LogLevelJSON:
+		return "JSON"
+	default:
+		return ""
+	}
+}
 
 // ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
 var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
@@ -83,18 +145,25 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
+	if err := c.tf.SetLog(logLevel.String()); err != nil {
+		return CreateOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+	}
+	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+		return CreateOutput{}, fmt.Errorf("set log path: %w", err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform show: %w", err)
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
@@ -177,7 +246,14 @@ type AWSIAMOutput struct {
 }
 
 // CreateIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (IAMOutput, error) {
+func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+	if err := c.tf.SetLog(logLevel.String()); err != nil {
+		return IAMOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+	}
+	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+		return IAMOutput{}, fmt.Errorf("set log path: %w", err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
 		return IAMOutput{}, err
 	}
@@ -285,7 +361,14 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 }
 
 // Destroy destroys Terraform-created cloud resources.
-func (c *Client) Destroy(ctx context.Context) error {
+func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
+	if err := c.tf.SetLog(logLevel.String()); err != nil {
+		return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+	}
+	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+		return fmt.Errorf("set log path: %w", err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
 		return err
 	}
@@ -359,4 +442,6 @@ type tfInterface interface {
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
+	SetLog(level string) error
+	SetLogPath(path string) error
 }

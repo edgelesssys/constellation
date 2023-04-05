@@ -152,6 +152,8 @@ const (
 	EnvVarNoSpinner = EnvVarPrefix + "NO_SPINNER"
 	// MiniConstellationUID is a sentinel value for the UID of a mini constellation.
 	MiniConstellationUID = "mini"
+	// TerraformLogFile is the file name of the Terraform log file.
+	TerraformLogFile = "terraform.log"
 
 	//
 	// Kubernetes.
