@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"os"
 	"runtime"
 	"testing"
 
@@ -24,7 +23,7 @@ import (
 
 func TestCreator(t *testing.T) {
 	// TODO(malt3): remove once OpenStack is fully supported.
-	_ = os.Setenv("CONSTELLATION_OPENSTACK_DEV", "1")
+	t.Setenv("CONSTELLATION_OPENSTACK_DEV", "1")
 	failOnNonAMD64 := (runtime.GOARCH != "amd64") || (runtime.GOOS != "linux")
 	ip := "192.0.2.1"
 	someErr := errors.New("failed")
