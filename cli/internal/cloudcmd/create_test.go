@@ -13,14 +13,17 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreator(t *testing.T) {
+	// TODO(malt3): remove once OpenStack is fully supported.
+	t.Setenv("CONSTELLATION_OPENSTACK_DEV", "1")
 	failOnNonAMD64 := (runtime.GOARCH != "amd64") || (runtime.GOOS != "linux")
 	ip := "192.0.2.1"
 	someErr := errors.New("failed")
@@ -110,6 +113,47 @@ func TestCreator(t *testing.T) {
 			wantRollback:          true,
 			wantTerraformRollback: true,
 		},
+		"openstack": {
+			tfClient: &stubTerraformClient{ip: ip},
+			libvirt:  &stubLibvirtRunner{},
+			provider: cloudprovider.OpenStack,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.Provider.OpenStack.Cloud = "testcloud"
+				return cfg
+			}(),
+		},
+		"openstack without clouds.yaml": {
+			tfClient: &stubTerraformClient{ip: ip},
+			libvirt:  &stubLibvirtRunner{},
+			provider: cloudprovider.OpenStack,
+			config:   config.Default(),
+			wantErr:  true,
+		},
+		"openstack newTerraformClient error": {
+			newTfClientErr: someErr,
+			libvirt:        &stubLibvirtRunner{},
+			provider:       cloudprovider.OpenStack,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.Provider.OpenStack.Cloud = "testcloud"
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		"openstack create cluster error": {
+			tfClient: &stubTerraformClient{createClusterErr: someErr},
+			libvirt:  &stubLibvirtRunner{},
+			provider: cloudprovider.OpenStack,
+			config: func() *config.Config {
+				cfg := config.Default()
+				cfg.Provider.OpenStack.Cloud = "testcloud"
+				return cfg
+			}(),
+			wantErr:               true,
+			wantRollback:          true,
+			wantTerraformRollback: true,
+		},
 		"qemu": {
 			tfClient: &stubTerraformClient{ip: ip},
 			libvirt:  &stubLibvirtRunner{},
@@ -152,7 +196,6 @@ func TestCreator(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-
 			creator := &Creator{
 				out: &bytes.Buffer{},
 				image: &stubImageFetcher{

@@ -13,6 +13,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/spf13/afero"
+	"go.uber.org/zap"
+
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
@@ -32,8 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
-	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -161,8 +162,7 @@ func main() {
 		)
 		metadataAPI = metadata
 
-		// TODO(malt3): add OpenStack TPM support
-		openTPM = vtpm.OpenNOPTPM
+		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
 		clusterInitJoiner = &clusterFake{}

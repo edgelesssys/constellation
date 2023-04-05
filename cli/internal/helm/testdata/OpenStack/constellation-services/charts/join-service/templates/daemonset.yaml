@@ -39,7 +39,7 @@ spec:
           args:
             - --cloud-provider=OpenStack
             - --key-service-endpoint=key-service.testNamespace:9000
-            - --attestation-variant=dummy
+            - --attestation-variant=qemu-vtpm
           volumeMounts:
             - mountPath: /var/config
               name: config

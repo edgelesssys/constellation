@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - args:
-        - --attestation-variant=dummy
+        - --attestation-variant=qemu-vtpm
         image: verificationImage
         name: verification-service
         ports:

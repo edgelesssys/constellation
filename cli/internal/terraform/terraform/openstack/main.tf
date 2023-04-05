@@ -113,9 +113,30 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 
   rule {
+    from_port   = 1
+    to_port     = 65535
+    ip_protocol = "udp"
+    cidr        = local.cidr_vpc_subnet_nodes
+  }
+
+  rule {
+    from_port   = 1
+    to_port     = 65535
+    ip_protocol = "tcp"
+    cidr        = local.cidr_vpc_subnet_nodes
+  }
+
+  rule {
     from_port   = local.ports_node_range_start
     to_port     = local.ports_node_range_end
     ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+
+  rule {
+    from_port   = local.ports_node_range_start
+    to_port     = local.ports_node_range_end
+    ip_protocol = "udp"
     cidr        = "0.0.0.0/0"
   }
 

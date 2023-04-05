@@ -14,6 +14,9 @@ import (
 	"os"
 	"sync"
 
+	"github.com/spf13/afero"
+	"go.uber.org/zap"
+
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
@@ -30,8 +33,6 @@ import (
 	openstackcloud "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const debugBanner = `

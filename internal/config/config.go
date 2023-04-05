@@ -26,6 +26,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
+
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -33,10 +38,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/go-playground/locales/en"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	en_translations "github.com/go-playground/validator/v10/translations/en"
 )
 
 // Measurements is a required alias since docgen is not able to work with
@@ -249,6 +250,9 @@ type OpenStackConfig struct {
 	// description: |
 	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
 	DirectDownload *bool `yaml:"directDownload" validate:"required"`
+	// description: |
+	//   Measurement used to enable measured boot.
+	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -327,6 +331,7 @@ func Default() *Config {
 			},
 			OpenStack: &OpenStackConfig{
 				DirectDownload: toPtr(true),
+				Measurements:   measurements.DefaultsFor(cloudprovider.OpenStack),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -396,6 +401,8 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 		return c.Provider.Azure != nil
 	case cloudprovider.GCP:
 		return c.Provider.GCP != nil
+	case cloudprovider.OpenStack:
+		return c.Provider.OpenStack != nil
 	case cloudprovider.QEMU:
 		return c.Provider.QEMU != nil
 	}
@@ -412,6 +419,9 @@ func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
 	}
 	if c.Provider.GCP != nil {
 		c.Provider.GCP.Measurements.CopyFrom(newMeasurements)
+	}
+	if c.Provider.OpenStack != nil {
+		c.Provider.OpenStack.Measurements.CopyFrom(newMeasurements)
 	}
 	if c.Provider.QEMU != nil {
 		c.Provider.QEMU.Measurements.CopyFrom(newMeasurements)
@@ -483,6 +493,9 @@ func (c *Config) GetMeasurements() measurements.M {
 	}
 	if c.Provider.GCP != nil {
 		return c.Provider.GCP.Measurements
+	}
+	if c.Provider.OpenStack != nil {
+		return c.Provider.OpenStack.Measurements
 	}
 	if c.Provider.QEMU != nil {
 		return c.Provider.QEMU.Measurements
