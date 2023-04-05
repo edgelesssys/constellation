@@ -296,11 +296,11 @@ type stubVersionCollector struct {
 	someErr                      error
 }
 
-func (s *stubVersionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
+func (s *stubVersionCollector) newMeasurements(_ context.Context, _ cloudprovider.Provider, _ []versionsapi.Version) (map[string]measurements.M, error) {
 	return s.supportedImageVersions, nil
 }
 
-func (s *stubVersionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
+func (s *stubVersionCollector) currentVersions(_ context.Context) (currentVersionInfo, error) {
 	return currentVersionInfo{
 		service: s.currentServicesVersions,
 		image:   s.currentImageVersion,
@@ -309,7 +309,7 @@ func (s *stubVersionCollector) currentVersions(ctx context.Context) (currentVers
 	}, s.someErr
 }
 
-func (s *stubVersionCollector) supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error) {
+func (s *stubVersionCollector) supportedVersions(_ context.Context, _, _ string) (supportedVersionInfo, error) {
 	return supportedVersionInfo{
 		service: s.supportedServicesVersions,
 		image:   s.supportedImages,
@@ -326,11 +326,11 @@ func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]v
 	return s.images, nil
 }
 
-func (s *stubVersionCollector) newCLIVersions(ctx context.Context) ([]string, error) {
+func (s *stubVersionCollector) newCLIVersions(_ context.Context) ([]string, error) {
 	return s.newCLIVersionsList, nil
 }
 
-func (s *stubVersionCollector) filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []string, currentK8sVersion string) ([]string, error) {
+func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ []string, _ string) ([]string, error) {
 	return s.newCompatibleCLIVersionsList, nil
 }
 
@@ -452,7 +452,7 @@ type stubVersionFetcher struct {
 	cliInfoErr     error
 }
 
-func (f stubVersionFetcher) FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error) {
+func (f stubVersionFetcher) FetchVersionList(_ context.Context, list versionsapi.List) (versionsapi.List, error) {
 	switch list.Granularity {
 	case versionsapi.GranularityMajor:
 		return f.minorList, f.versionListErr
@@ -462,6 +462,6 @@ func (f stubVersionFetcher) FetchVersionList(ctx context.Context, list versionsa
 	return versionsapi.List{}, f.versionListErr
 }
 
-func (f stubVersionFetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
+func (f stubVersionFetcher) FetchCLIInfo(_ context.Context, _ versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
 	return versionsapi.CLIInfo{}, f.cliInfoErr
 }

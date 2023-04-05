@@ -179,6 +179,6 @@ type mirrorChecker interface {
 
 type noOpMirrorChecker struct{}
 
-func (m *noOpMirrorChecker) Check(ctx context.Context, expectedHash string) error {
+func (m *noOpMirrorChecker) Check(_ context.Context, _ string) error {
 	return nil
 }
