@@ -264,8 +264,6 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 			}
 		}
 
-		fmt.Println(buffer)
-
 		nonce := make([]byte, aesgcm.NonceSize())
 		if _, err := rand.Read(nonce); err != nil {
 			return err
