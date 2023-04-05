@@ -270,10 +270,8 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 		if _, err := rand.Read(nonce); err != nil {
 			return status.Errorf(codes.Internal, "failed generating a nonce: %s", err)
 		}
-		log.Infof("Encrypting log chunk...")
 		encLogChunk := aesgcm.Seal(nil, nonce, buffer, nil)
 
-		log.Infof("Streaming data...")
 		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
