@@ -332,6 +332,10 @@ sh_template(
     template = "go_generate.sh.in",
 )
 
+# deps_mirror_fix fixes bazel workspace rules for external dependencies.
+# It normalizes the rules and rewrites WORKSPACE and bzl files.
+# If files are not in the mirror, it will fail.
+# Use deps_mirror_upload to upload missing files.
 repo_command(
     name = "deps_mirror_fix",
     args = [
@@ -341,6 +345,8 @@ repo_command(
     command = "//hack/bazel-deps-mirror",
 )
 
+# deps_mirror_upload fixes bazel workspace rules for external dependencies.
+# It uploads all dependencies to the mirror, normalizes the rules and rewrites WORKSPACE and bzl files.
 repo_command(
     name = "deps_mirror_upload",
     args = [
@@ -349,6 +355,21 @@ repo_command(
     command = "//hack/bazel-deps-mirror",
 )
 
+# deps_mirror_upgrade upgrades bazel workspace rules for external dependencies.
+# Users are supposed to replace any upstream URLs.
+# It replaces the expected hash and uploads the new dep to the mirror.
+repo_command(
+    name = "deps_mirror_upgrade",
+    args = [
+        "upgrade",
+    ],
+    command = "//hack/bazel-deps-mirror",
+)
+
+# deps_mirror_check checks bazel workspace rules for external dependencies.
+# It checks if all dependency rules have mirror urls and are properly formatted.
+# It doesn't check if the mirror has the files.
+# Use deps_mirror_check_mirror to check if the mirror has the files.
 repo_command(
     name = "deps_mirror_check",
     args = [
@@ -357,6 +378,8 @@ repo_command(
     command = "//hack/bazel-deps-mirror",
 )
 
+# deps_mirror_check_mirror checks bazel workspace rules for external dependencies.
+# It checks if all dependency rules are correctly mirrored and checks that the rules are properly formatted.
 repo_command(
     name = "deps_mirror_check_mirror",
     args = [

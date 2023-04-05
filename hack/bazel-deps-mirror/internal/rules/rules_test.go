@@ -448,3 +448,54 @@ http_archive(
 	_, err = GetHash(rules[1])
 	assert.Error(err)
 }
+
+func TestPrepareUpgrade(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	rule := `
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+	name = "foo_archive",
+	sha256 = "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+	urls = [
+		"https://cdn.confidential.cloud/constellation/cas/sha256/2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+		"https://mirror.bazel.build/example.com/foo.tar.gz",
+		"https://example.com/foo.tar.gz",
+	],
+	type = "tar.gz",
+)
+
+http_archive(
+	name = "bar_archive",
+	sha256 = "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+	urls = [
+		"https://cdn.confidential.cloud/constellation/cas/sha256/2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+		"https://mirror.bazel.build/example.com/foo.tar.gz",
+	],
+	type = "tar.gz",
+)
+`
+	bf, err := build.Parse("foo.bzl", []byte(rule))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules := Rules(bf, SupportedRules)
+	require.Len(rules, 2)
+
+	changed, err := PrepareUpgrade(rules[0])
+	assert.NoError(err)
+	assert.True(changed)
+
+	urls := GetURLs(rules[0])
+	assert.Equal(1, len(urls))
+	assert.Equal("https://example.com/foo.tar.gz", urls[0])
+	hash, err := GetHash(rules[0])
+	assert.Empty(hash)
+	assert.Error(err)
+
+	changed, err = PrepareUpgrade(rules[1])
+	assert.ErrorIs(err, ErrNoUpstreamURL)
+	assert.False(changed)
+}

@@ -97,7 +97,7 @@ func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCh
 	found := rules.Rules(buildfile, rules.SupportedRules)
 	if len(found) == 0 {
 		log.Debugf("No rules found in file: %s", bazelFile.RelPath)
-		return
+		return issByFile, nil
 	}
 	log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
 	for _, rule := range found {
@@ -121,7 +121,7 @@ func checkBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorCh
 			}
 		}
 	}
-	return
+	return issByFile, nil
 }
 
 type checkFlags struct {

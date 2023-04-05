@@ -34,7 +34,7 @@ ruleLoop:
 			}
 		}
 	}
-	return
+	return rules
 }
 
 // ValidatePinned checks if the given rule is a pinned dependency rule.
@@ -78,7 +78,7 @@ func ValidatePinned(rule *build.Rule) (validationErrs []error) {
 			validationErrs = append(validationErrs, errors.New("rule has empty sha256 attribute"))
 		}
 	}
-	return
+	return validationErrs
 }
 
 // Check checks if a dependency rule is normalized and contains a mirror url.
@@ -107,7 +107,7 @@ func Check(rule *build.Rule) (validationErrs []error) {
 	if rule.Kind() == "rpm" && len(urls) != 1 {
 		validationErrs = append(validationErrs, errors.New("rpm rule has unstable urls that are not the edgeless mirror"))
 	}
-	return
+	return validationErrs
 }
 
 // Normalize normalizes a rule and returns true if the rule was changed.
@@ -122,11 +122,10 @@ func Normalize(rule *build.Rule) (changed bool) {
 	sortURLs(normalizedURLS)
 	normalizedURLS = deduplicateURLs(normalizedURLS)
 	if slices.Equal(urls, normalizedURLS) && rule.Attr("url") == nil {
-		return
+		return changed
 	}
 	setURLs(rule, normalizedURLS)
-	changed = true
-	return
+	return true
 }
 
 // AddURLs adds a url to a rule.
@@ -147,6 +146,11 @@ func GetHash(rule *build.Rule) (string, error) {
 	return hash, nil
 }
 
+// SetHash sets the sha256 hash of a rule.
+func SetHash(rule *build.Rule, hash string) {
+	rule.SetAttr("sha256", &build.StringExpr{Value: hash})
+}
+
 // GetURLs returns the sorted urls of a rule.
 func GetURLs(rule *build.Rule) []string {
 	urls := rule.AttrStrings("urls")
@@ -157,10 +161,40 @@ func GetURLs(rule *build.Rule) []string {
 	return urls
 }
 
-// HasMirrorURL returns true if the rule has a url from the Edgeless mirror.
+// HasMirrorURL returns true if the rule has a url from the Edgeless mirror
+// with the correct hash.
 func HasMirrorURL(rule *build.Rule) bool {
 	_, err := mirrorURL(rule)
 	return err == nil
+}
+
+// PrepareUpgrade prepares a rule for an upgrade
+// by removing all urls that are not upstream urls.
+// and removing the hash attribute.
+// it returns true if the rule was changed.
+func PrepareUpgrade(rule *build.Rule) (changed bool, err error) {
+	upstreamURLs, err := UpstreamURLs(rule)
+	if err != nil {
+		return false, err
+	}
+	setURLs(rule, upstreamURLs)
+	rule.DelAttr("sha256")
+	return true, nil
+}
+
+// UpstreamURLs returns the upstream urls (non-mirror urls) of a rule.
+func UpstreamURLs(rule *build.Rule) (urls []string, err error) {
+	urls = GetURLs(rule)
+	var upstreamURLs []string
+	for _, url := range urls {
+		if isUpstreamURL(url) {
+			upstreamURLs = append(upstreamURLs, url)
+		}
+	}
+	if len(upstreamURLs) == 0 {
+		return nil, ErrNoUpstreamURL
+	}
+	return upstreamURLs, nil
 }
 
 func deduplicateURLs(urls []string) (deduplicated []string) {
@@ -171,7 +205,7 @@ func deduplicateURLs(urls []string) (deduplicated []string) {
 			seen[url] = true
 		}
 	}
-	return
+	return deduplicated
 }
 
 // addTypeAttribute adds the type attribute to http_archive rules if it is missing.
@@ -243,9 +277,13 @@ urlLoop:
 
 // mirrorURL returns the first mirror URL for a rule.
 func mirrorURL(rule *build.Rule) (string, error) {
+	hash, err := GetHash(rule)
+	if err != nil {
+		return "", err
+	}
 	urls := GetURLs(rule)
 	for _, url := range urls {
-		if strings.HasPrefix(url, edgelessMirrorPrefix) {
+		if strings.HasPrefix(url, edgelessMirrorPrefix) && strings.HasSuffix(url, hash) {
 			return url, nil
 		}
 	}
@@ -284,12 +322,21 @@ func sortURLs(urls []string) {
 	})
 }
 
-// SupportedRules is a list of all rules that can be mirrored.
-var SupportedRules = []string{
-	"http_archive",
-	"http_file",
-	"rpm",
+func isUpstreamURL(url string) bool {
+	return !strings.HasPrefix(url, bazelMirrorPrefix) && !strings.HasPrefix(url, edgelessMirrorPrefix)
 }
+
+var (
+	// SupportedRules is a list of all rules that can be mirrored.
+	SupportedRules = []string{
+		"http_archive",
+		"http_file",
+		"rpm",
+	}
+
+	// ErrNoUpstreamURL is returned when a rule has no upstream URL.
+	ErrNoUpstreamURL = errors.New("rule has no upstream URL")
+)
 
 const (
 	bazelMirrorPrefix    = "https://mirror.bazel.build/"
