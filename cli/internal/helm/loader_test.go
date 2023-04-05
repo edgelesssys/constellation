@@ -18,18 +18,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
+
+	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // TestLoad checks if the serialized format that Load returns correctly preserves the dependencies of the loaded chart.
@@ -97,7 +98,7 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"OpenStack": {
 			config: &config.Config{
-				AttestationVariant: variant.Dummy{}.String(),
+				AttestationVariant: variant.QEMUVTPM{}.String(),
 				Provider:           config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
 			},
 			valuesModifier: prepareOpenStackValues,

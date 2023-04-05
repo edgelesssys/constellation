@@ -12,6 +12,10 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
@@ -22,9 +26,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewValidator(t *testing.T) {
@@ -66,6 +67,16 @@ func TestNewValidator(t *testing.T) {
 				AttestationVariant: variant.AzureTrustedLaunch{}.String(),
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
+						Measurements: testPCRs,
+					},
+				},
+			},
+		},
+		"openstack": {
+			config: &config.Config{
+				AttestationVariant: variant.QEMUVTPM{}.String(),
+				Provider: config.ProviderConfig{
+					OpenStack: &config.OpenStackConfig{
 						Measurements: testPCRs,
 					},
 				},

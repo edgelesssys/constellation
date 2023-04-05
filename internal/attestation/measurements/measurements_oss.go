@@ -53,6 +53,16 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 			13:                        WithAllBytes(0x00, Enforce),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
 		}
+	case cloudprovider.OpenStack:
+		return M{
+			4:                         PlaceHolderMeasurement(),
+			8:                         WithAllBytes(0x00, Enforce),
+			9:                         PlaceHolderMeasurement(),
+			11:                        WithAllBytes(0x00, Enforce),
+			12:                        PlaceHolderMeasurement(),
+			13:                        WithAllBytes(0x00, Enforce),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
+		}
 	default:
 		return nil
 	}

@@ -299,7 +299,7 @@ func init() {
 			FieldName: "openstack",
 		},
 	}
-	OpenStackConfigDoc.Fields = make([]encoder.Doc, 13)
+	OpenStackConfigDoc.Fields = make([]encoder.Doc, 14)
 	OpenStackConfigDoc.Fields[0].Name = "cloud"
 	OpenStackConfigDoc.Fields[0].Type = "string"
 	OpenStackConfigDoc.Fields[0].Note = ""
@@ -365,6 +365,11 @@ func init() {
 	OpenStackConfigDoc.Fields[12].Note = ""
 	OpenStackConfigDoc.Fields[12].Description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
 	OpenStackConfigDoc.Fields[12].Comments[encoder.LineComment] = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+	OpenStackConfigDoc.Fields[13].Name = "measurements"
+	OpenStackConfigDoc.Fields[13].Type = "Measurements"
+	OpenStackConfigDoc.Fields[13].Note = ""
+	OpenStackConfigDoc.Fields[13].Description = "Measurement used to enable measured boot."
+	OpenStackConfigDoc.Fields[13].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."

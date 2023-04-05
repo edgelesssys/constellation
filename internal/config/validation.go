@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	"golang.org/x/mod/semver"
+
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -23,9 +27,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	"golang.org/x/mod/semver"
 )
 
 // ValidationError occurs when the validation of a config fails.
@@ -190,6 +191,9 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	}
 	if c.Provider.GCP != nil {
 		definedProviders = append(definedProviders, "GCP")
+	}
+	if c.Provider.OpenStack != nil {
+		definedProviders = append(definedProviders, "OpenStack")
 	}
 	if c.Provider.QEMU != nil {
 		definedProviders = append(definedProviders, "QEMU")
@@ -477,13 +481,10 @@ func (c *Config) validAttestVariant(_ validator.FieldLevel) bool {
 		return c.Provider.AWS != nil
 	case variant.AzureSEVSNP{}, variant.AzureTrustedLaunch{}:
 		return c.Provider.Azure != nil
-	// TODO(malt3): remove this case once we have a vTPM for OpenStack
-	case variant.Dummy{}:
-		return c.Provider.OpenStack != nil
 	case variant.GCPSEVES{}:
 		return c.Provider.GCP != nil
 	case variant.QEMUVTPM{}:
-		return c.Provider.QEMU != nil
+		return c.Provider.QEMU != nil || c.Provider.OpenStack != nil
 	default:
 		return false
 	}
@@ -501,6 +502,8 @@ func (c *Config) addMissingVariant() {
 	case cloudprovider.GCP:
 		c.AttestationVariant = variant.GCPSEVES{}.String()
 	case cloudprovider.QEMU:
+		c.AttestationVariant = variant.QEMUVTPM{}.String()
+	case cloudprovider.OpenStack:
 		c.AttestationVariant = variant.QEMUVTPM{}.String()
 	}
 }
