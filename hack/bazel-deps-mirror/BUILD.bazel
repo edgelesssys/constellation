@@ -6,6 +6,7 @@ go_library(
         "bazel-deps-mirror.go",
         "check.go",
         "fix.go",
+        "upgrade.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/bazel-deps-mirror",
     visibility = ["//visibility:private"],

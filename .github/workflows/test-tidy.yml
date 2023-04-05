@@ -50,7 +50,9 @@ jobs:
       - name: Upload Bazel dependencies to the mirror
         if: startsWith(github.head_ref, 'renovate/')
         shell: bash
-        run: bazelisk run //bazel/ci:deps_mirror_upload
+        run: |
+          bazelisk run //bazel/ci:deps_mirror_upgrade
+          bazelisk run //bazel/ci:deps_mirror_upload
 
       - name: Run Bazel tidy
         shell: bash

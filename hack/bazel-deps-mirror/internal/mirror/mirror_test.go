@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
@@ -142,6 +143,51 @@ func TestMirror(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestLearn(t *testing.T) {
+	testCases := map[string]struct {
+		wantHash           string
+		upstreamResponse   []byte
+		upstreamStatusCode int
+		wantErr            bool
+	}{
+		"http error": {
+			upstreamResponse:   []byte("foo"), // ignored
+			upstreamStatusCode: http.StatusNotFound,
+			wantErr:            true,
+		},
+		"success": {
+			wantHash:           "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+			upstreamResponse:   []byte("foo"),
+			upstreamStatusCode: http.StatusOK,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			m := Maintainer{
+				unauthenticated: true,
+				httpClient: &http.Client{
+					Transport: &stubUpstream{
+						statusCode: tc.upstreamStatusCode,
+						body:       tc.upstreamResponse,
+					},
+				},
+				log: logger.NewTest(t),
+			}
+			gotHash, err := m.Learn(context.Background(), []string{"https://example.com/foo"})
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+
+			require.NoError(err)
+			assert.Equal(tc.wantHash, gotHash)
 		})
 	}
 }

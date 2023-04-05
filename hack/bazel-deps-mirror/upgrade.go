@@ -20,11 +20,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func newFixCmd() *cobra.Command {
+func newUpgradeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fix",
-		Short: "fix all Bazel dependency rules by uploading artifacts to the mirror (if needed) and formatting the rules.",
-		RunE:  runFix,
+		Use:   "upgrade",
+		Short: "upgrade all Bazel dependency rules by recalculating expected hashes, uploading artifacts to the mirror (if needed) and formatting the rules.",
+		RunE:  runUpgrade,
 	}
 
 	cmd.Flags().Bool("unauthenticated", false, "Doesn't require authentication to the mirror but cannot upload files.")
@@ -33,8 +33,8 @@ func newFixCmd() *cobra.Command {
 	return cmd
 }
 
-func runFix(cmd *cobra.Command, _ []string) error {
-	flags, err := parseFixFlags(cmd)
+func runUpgrade(cmd *cobra.Command, _ []string) error {
+	flags, err := parseUpgradeFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -55,10 +55,10 @@ func runFix(cmd *cobra.Command, _ []string) error {
 	var mirrorUpload mirrorUploader
 	switch {
 	case flags.unauthenticated:
-		log.Warnf("Fixing rules without authentication for AWS S3. If artifacts are not yet mirrored, this will fail.")
+		log.Warnf("Upgrading rules without authentication for AWS S3. If artifacts are not yet mirrored, this will fail.")
 		mirrorUpload = mirror.NewUnauthenticated(flags.mirrorBaseURL, flags.dryRun, log)
 	default:
-		log.Debugf("Fixing rules with authentication for AWS S3.")
+		log.Debugf("Upgrading rules with authentication for AWS S3.")
 		mirrorUpload, err = mirror.New(cmd.Context(), flags.region, flags.bucket, flags.mirrorBaseURL, flags.dryRun, log)
 		if err != nil {
 			return err
@@ -67,7 +67,7 @@ func runFix(cmd *cobra.Command, _ []string) error {
 
 	issues := issues.New()
 	for _, bazelFile := range bazelFiles {
-		fileIssues, err := fixBazelFile(cmd.Context(), fileHelper, mirrorUpload, bazelFile, flags.dryRun, log)
+		fileIssues, err := upgradeBazelFile(cmd.Context(), fileHelper, mirrorUpload, bazelFile, flags.dryRun, log)
 		if err != nil {
 			return err
 		}
@@ -76,16 +76,16 @@ func runFix(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	if len(issues) > 0 {
-		log.Warnf("Found %d unfixable issues in rules", len(issues))
+		log.Warnf("Found %d issues in rules", len(issues))
 		issues.Report(cmd.OutOrStdout())
 		return errors.New("found issues in rules")
 	}
 
-	log.Infof("No unfixable issues found")
+	log.Infof("No issues found")
 	return nil
 }
 
-func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUpload mirrorUploader, bazelFile bazelfiles.BazelFile, dryRun bool, log *logger.Logger) (iss issues.ByFile, err error) {
+func upgradeBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUpload mirrorUploader, bazelFile bazelfiles.BazelFile, dryRun bool, log *logger.Logger) (iss issues.ByFile, err error) {
 	iss = issues.NewByFile()
 	var changed bool // true if any rule in this file was changed
 	log.Infof("Checking file: %s", bazelFile.RelPath)
@@ -100,7 +100,7 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 	}
 	log.Debugf("Found %d rules in file: %s", len(found), bazelFile.RelPath)
 	for _, rule := range found {
-		changedRule, ruleIssues := fixRule(ctx, mirrorUpload, rule, log)
+		changedRule, ruleIssues := upgradeRule(ctx, mirrorUpload, rule, log)
 		if len(ruleIssues) > 0 {
 			iss.Add(rule.Name(), ruleIssues...)
 		}
@@ -131,81 +131,48 @@ func fixBazelFile(ctx context.Context, fileHelper *bazelfiles.Helper, mirrorUplo
 	return iss, nil
 }
 
-func learnHashForRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *logger.Logger) error {
+func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *logger.Logger) (changed bool, iss []error) {
+	log.Debugf("Upgrading rule: %s", rule.Name())
+
 	upstreamURLs, err := rules.UpstreamURLs(rule)
 	if err != nil {
-		return err
+		if errors.Is(err, rules.ErrNoUpstreamURL) {
+			log.Debugf("Rule has no upstream URL. Skipping.")
+			return
+		}
+		iss = append(iss, err)
+		return
 	}
+
+	// learn the hash of the upstream artifact
 	learnedHash, learnErr := mirrorUpload.Learn(ctx, upstreamURLs)
 	if learnErr != nil {
-		return err
-	}
-	rules.SetHash(rule, learnedHash)
-	log.Debugf("Learned hash for rule %s: %s", rule.Name(), learnedHash)
-	return nil
-}
-
-func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule, log *logger.Logger) (changed bool, iss []error) {
-	log.Debugf("Fixing rule: %s", rule.Name())
-
-	// try to learn the hash
-	if hash, err := rules.GetHash(rule); err != nil || hash == "" {
-		if err := learnHashForRule(ctx, mirrorUpload, rule, log); err != nil {
-			// don't try to fix the rule if the hash is missing and we can't learn it
-			iss = append(iss,
-				errors.New("hash attribute is missing and can't learn it from upstream."+
-					"Unable to check if the artifact is already mirrored or upload it"))
-			return
-		}
-		changed = true
-	}
-
-	// check if the rule is a valid pinned dependency rule (has all required attributes)
-	issue := rules.ValidatePinned(rule)
-	if issue != nil {
-		// don't try to fix the rule if it's invalid
-		iss = append(iss, issue...)
+		iss = append(iss, learnErr)
 		return
 	}
 
-	// check if the referenced CAS object exists in the mirror and is consistent
-	expectedHash, expectedHashErr := rules.GetHash(rule)
-	if expectedHashErr != nil {
-		// don't try to fix the rule if the hash is missing
-		iss = append(iss, expectedHashErr)
+	existingHash, err := rules.GetHash(rule)
+	if err == nil && learnedHash == existingHash {
+		log.Debugf("Rule already upgraded. Skipping.")
 		return
 	}
 
-	if rules.HasMirrorURL(rule) {
-		changed = rules.Normalize(rule) || changed
-		return
-	}
-
-	if checkErr := mirrorUpload.Check(ctx, expectedHash); checkErr != nil {
-		log.Infof("Artifact %s with hash %s is not yet mirrored. Uploading...", rule.Name(), expectedHash)
-		if uploadErr := mirrorUpload.Mirror(ctx, expectedHash, rules.GetURLs(rule)); uploadErr != nil {
-			// don't try to fix the rule if the upload failed
-			iss = append(iss, uploadErr)
-			return
-		}
-	} else {
-		log.Infof("Artifact %s with hash %s was already uploaded before. Adding to rule...", rule.Name(), expectedHash)
-	}
-
-	// now the artifact is mirrored (if it wasn't already) and we can fix the rule
-	mirrorURL, err := mirrorUpload.MirrorURL(expectedHash)
+	changed, err = rules.PrepareUpgrade(rule)
 	if err != nil {
 		iss = append(iss, err)
 		return
 	}
-	rules.AddURLs(rule, []string{mirrorURL})
+	rules.SetHash(rule, learnedHash)
+	changed = true
 
-	// normalize the rule
-	rules.Normalize(rule)
-	return true, iss
+	if _, fixErr := fixRule(ctx, mirrorUpload, rule, log); fixErr != nil {
+		iss = append(iss, fixErr...)
+		return
+	}
+	return changed, iss
 }
 
-type fixFlags struct {
+type upgradeFlags struct {
 	unauthenticated bool
 	dryRun          bool
 	region          string
@@ -214,18 +181,18 @@ type fixFlags struct {
 	logLevel        zapcore.Level
 }
 
-func parseFixFlags(cmd *cobra.Command) (fixFlags, error) {
+func parseUpgradeFlags(cmd *cobra.Command) (upgradeFlags, error) {
 	unauthenticated, err := cmd.Flags().GetBool("unauthenticated")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 	verbose, err := cmd.Flags().GetBool("verbose")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 	logLevel := zapcore.InfoLevel
 	if verbose {
@@ -233,18 +200,18 @@ func parseFixFlags(cmd *cobra.Command) (fixFlags, error) {
 	}
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 	bucket, err := cmd.Flags().GetString("bucket")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 	mirrorBaseURL, err := cmd.Flags().GetString("mirror-base-url")
 	if err != nil {
-		return fixFlags{}, err
+		return upgradeFlags{}, err
 	}
 
-	return fixFlags{
+	return upgradeFlags{
 		unauthenticated: unauthenticated,
 		dryRun:          dryRun,
 		region:          region,
@@ -252,11 +219,4 @@ func parseFixFlags(cmd *cobra.Command) (fixFlags, error) {
 		mirrorBaseURL:   mirrorBaseURL,
 		logLevel:        logLevel,
 	}, nil
-}
-
-type mirrorUploader interface {
-	Learn(ctx context.Context, urls []string) (string, error)
-	Check(ctx context.Context, expectedHash string) error
-	Mirror(ctx context.Context, hash string, urls []string) error
-	MirrorURL(hash string) (string, error)
 }

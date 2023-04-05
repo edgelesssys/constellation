@@ -123,6 +123,27 @@ func (m *Maintainer) Mirror(ctx context.Context, hash string, urls []string) err
 	return fmt.Errorf("failed to download / reupload file with hash %v from any of the urls: %v", hash, urls)
 }
 
+// Learn downloads a file from one of the existing (non-mirror) urls, hashes it and returns the hash.
+func (m *Maintainer) Learn(ctx context.Context, urls []string) (string, error) {
+	for _, url := range urls {
+		m.log.Debugf("Learning new hash from %q", url)
+		body, err := m.downloadFromUpstream(ctx, url)
+		if err != nil {
+			m.log.Debugf("Failed to download file from %q: %v", url, err)
+			continue
+		}
+		defer body.Close()
+		streamedHash := sha256.New()
+		if _, err := io.Copy(streamedHash, body); err != nil {
+			m.log.Debugf("Failed to stream file from %q: %v", url, err)
+		}
+		learnedHash := hex.EncodeToString(streamedHash.Sum(nil))
+		m.log.Debugf("File successfully downloaded from %q with %q", url, learnedHash)
+		return learnedHash, nil
+	}
+	return "", fmt.Errorf("failed to download file / learn hash from any of the urls: %v", urls)
+}
+
 // Check checks if a file is present and has the correct hash in the CAS mirror.
 func (m *Maintainer) Check(ctx context.Context, expectedHash string) error {
 	m.log.Debugf("Checking consistency of object with hash %v", expectedHash)
