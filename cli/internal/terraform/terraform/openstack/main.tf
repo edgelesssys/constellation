@@ -106,7 +106,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   description = "Constellation VPC security group"
 
   rule {
-    description = "Allow ICMP traffic"
     from_port   = -1
     to_port     = -1
     ip_protocol = "icmp"
@@ -114,7 +113,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 
   rule {
-    description = "Allow udp traffic within VPC subnet"
     from_port   = 1
     to_port     = 65535
     ip_protocol = "udp"
@@ -122,7 +120,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 
   rule {
-    description = "Allow tcp traffic within VPC subnet"
     from_port   = 1
     to_port     = 65535
     ip_protocol = "tcp"
@@ -130,7 +127,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 
   rule {
-    description = "Allow nodeport traffic (tcp)"
     from_port   = local.ports_node_range_start
     to_port     = local.ports_node_range_end
     ip_protocol = "tcp"
@@ -138,7 +134,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 
   rule {
-    description = "Allow nodeport traffic (udp)"
     from_port   = local.ports_node_range_start
     to_port     = local.ports_node_range_end
     ip_protocol = "udp"
