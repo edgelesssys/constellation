@@ -133,7 +133,7 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
-	defer s.shutdownLock.RUnlock()
+	// defer s.shutdownLock.RUnlock()
 
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
@@ -206,6 +206,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	}
 
 	log.Infof("Init succeeded")
+
+	s.shutdownLock.RUnlock() // only unlock if init succeeds
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
 		ClusterId:  clusterID,
@@ -279,6 +281,7 @@ func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogs
 	}
 
 	log.Infof("GetLogs finished")
+	s.shutdownLock.RUnlock() // gracefully stop the bootstrapper
 	return nil
 }
 
