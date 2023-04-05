@@ -73,7 +73,6 @@ on:
         type: string
         required: false
 
-
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
@@ -204,21 +203,6 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
-      - name: Notify teams channel
-        if: failure() && github.ref == 'refs/heads/main'
-        continue-on-error: true
-        shell: bash
-        working-directory: .github/actions/e2e_test
-        run: |
-          sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME="upgrade-${{ inputs.cloudProvider }}"
-          export TEAMS_RUN_ID=${{ github.run_id }}
-          envsubst < teams-payload.json > to-be-send.json
-          curl                                          \
-            -H "Content-Type: application/json"         \
-            -d @to-be-send.json                         \
-            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
-
       - name: Always destroy Azure resource group
         if: always() && inputs.cloudProvider == 'azure'
         shell: bash
@@ -229,3 +213,13 @@ jobs:
             --force-deletion-types Microsoft.Compute/virtualMachines \
             --no-wait \
             --yes
+
+      - name: Notify about failure
+        if: failure() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: ./.github/actions/notify_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          test: "upgrade"
+          provider: ${{ inputs.cloudProvider }}

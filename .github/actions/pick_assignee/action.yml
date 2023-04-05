@@ -1,0 +1,24 @@
+name: Pick and assignee
+description: "Pick an assignee"
+
+outputs:
+  assignee:
+    description: "GitHub login of the assignee"
+    value: ${{ steps.pick-assignee.outputs.assignee }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pick an assignee
+      id: pick-assignee
+      shell: bash
+      run: |
+        possibleAssignees=(
+          "katexochen"
+          "malt3"
+          "3u13r"
+          "daniel-weisse"
+          "derpsteb"
+        )
+        assignee=${possibleAssignees[$RANDOM % ${#possibleAssignees[@]}]}
+        echo "assignee=$assignee" | tee -a "$GITHUB_OUTPUT"

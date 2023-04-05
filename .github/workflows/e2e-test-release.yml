@@ -182,21 +182,6 @@ jobs:
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
-      - name: Notify teams channel
-        if: failure() && github.ref == 'refs/heads/main'
-        continue-on-error: true
-        shell: bash
-        working-directory: .github/actions/e2e_test
-        run: |
-          sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME=${{ matrix.provider }}
-          export TEAMS_RUN_ID=${{ github.run_id }}
-          envsubst < teams-payload.json > to-be-send.json
-          curl                                          \
-            -H "Content-Type: application/json"         \
-            -d @to-be-send.json                         \
-            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
-
       - name: Always destroy Azure resource group
         if: always() && matrix.provider == 'azure'
         shell: bash

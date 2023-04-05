@@ -1,0 +1,14 @@
+{
+    "organization": "edgelesssys",
+    "projectNumber": 3,
+    "issueTitle": "",
+    "assignees": [],
+    "fields": {
+        "Status": "New failures",
+        "cloudProvider": "",
+        "test": "",
+        "workflow": "",
+        "kubernetesVersion": "",
+        "refStream": ""
+    }
+}

@@ -415,6 +415,22 @@ sh_template(
     template = "cli_docgen.sh.in",
 )
 
+alias(
+    name = "com_github_katexochen_ghh",
+    actual = select({
+        "@io_bazel_rules_go//go/platform:darwin_amd64": "@com_github_katexochen_ghh_darwin_amd64//:ghh",
+        "@io_bazel_rules_go//go/platform:darwin_arm64": "@com_github_katexochen_ghh_darwin_arm64//:ghh",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "@com_github_katexochen_ghh_linux_amd64//:ghh",
+        "@io_bazel_rules_go//go/platform:linux_arm64": "@com_github_katexochen_ghh_linux_arm64//:ghh",
+    }),
+)
+
+repo_command(
+    name = "ghh",
+    args = [],
+    command = ":com_github_katexochen_ghh",
+)
+
 multirun(
     name = "tidy",
     commands = [
