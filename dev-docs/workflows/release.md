@@ -47,15 +47,7 @@ Releases should be performed using [the automated release pipeline](https://gith
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-2.  If the release is a minor version release, tag the latest commit on main as the start of the next pre-release phase.
-
-    ```sh
-    nextMinorVer=$(echo "${ver}" | awk -F. -v OFS=. '{$2 += 1 ; print}')
-    git checkout main
-    git pull
-    git tag ${nextMinorVer}-pre
-    git push origin refs/tags/${nextMinorVer}-pre
-    ```
+2.  If the release is a minor version release, bump the pre-release version in the `version.txt` file.
 
 
 ## Pipeline cleanup
