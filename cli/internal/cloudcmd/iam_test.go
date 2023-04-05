@@ -89,7 +89,7 @@ func TestIAMCreator(t *testing.T) {
 	testCases := map[string]struct {
 		tfClient       terraformClient
 		newTfClientErr error
-		config         *IAMConfig
+		config         *IAMConfigOptions
 		provider       cloudprovider.Provider
 		wantIAMIDFile  iamid.File
 		wantErr        bool
@@ -107,19 +107,19 @@ func TestIAMCreator(t *testing.T) {
 			tfClient:      &stubTerraformClient{iamOutput: validGCPIAMOutput},
 			wantIAMIDFile: validGCPIAMIDFile,
 			provider:      cloudprovider.GCP,
-			config:        &IAMConfig{GCP: validGCPIAMConfig},
+			config:        &IAMConfigOptions{GCP: validGCPIAMConfig},
 		},
 		"azure": {
 			tfClient:      &stubTerraformClient{iamOutput: validAzureIAMOutput},
 			wantIAMIDFile: validAzureIAMIDFile,
 			provider:      cloudprovider.Azure,
-			config:        &IAMConfig{Azure: validAzureIAMConfig},
+			config:        &IAMConfigOptions{Azure: validAzureIAMConfig},
 		},
 		"aws": {
 			tfClient:      &stubTerraformClient{iamOutput: validAWSIAMOutput},
 			wantIAMIDFile: validAWSIAMIDFile,
 			provider:      cloudprovider.AWS,
-			config:        &IAMConfig{AWS: validAWSIAMConfig},
+			config:        &IAMConfigOptions{AWS: validAWSIAMConfig},
 		},
 	}
 
@@ -188,7 +188,7 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 			assert := assert.New(t)
 			destroyer := &IAMDestroyer{client: tc.tfClient}
 
-			err := destroyer.DestroyIAMConfiguration(context.Background())
+			err := destroyer.DestroyIAMConfiguration(context.Background(), terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)

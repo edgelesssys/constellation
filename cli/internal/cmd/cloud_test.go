@@ -13,9 +13,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"go.uber.org/goleak"
 )
 
@@ -34,13 +34,10 @@ type stubCloudCreator struct {
 
 func (c *stubCloudCreator) Create(
 	_ context.Context,
-	provider cloudprovider.Provider,
-	_ *config.Config,
-	_ string,
-	_, _ int,
+	opts cloudcmd.CreateOptions,
 ) (clusterid.File, error) {
 	c.createCalled = true
-	c.id.CloudProvider = provider
+	c.id.CloudProvider = opts.Provider
 	return c.id, c.createErr
 }
 
@@ -49,7 +46,7 @@ type stubCloudTerminator struct {
 	terminateErr error
 }
 
-func (c *stubCloudTerminator) Terminate(context.Context) error {
+func (c *stubCloudTerminator) Terminate(_ context.Context, _ terraform.LogLevel) error {
 	c.called = true
 	return c.terminateErr
 }
@@ -67,7 +64,7 @@ type stubIAMCreator struct {
 func (c *stubIAMCreator) Create(
 	_ context.Context,
 	provider cloudprovider.Provider,
-	_ *cloudcmd.IAMConfig,
+	_ *cloudcmd.IAMConfigOptions,
 ) (iamid.File, error) {
 	c.createCalled = true
 	c.id.CloudProvider = provider
@@ -82,7 +79,7 @@ type stubIAMDestroyer struct {
 	getTfstateKeyErr    error
 }
 
-func (d *stubIAMDestroyer) DestroyIAMConfiguration(_ context.Context) error {
+func (d *stubIAMDestroyer) DestroyIAMConfiguration(_ context.Context, _ terraform.LogLevel) error {
 	d.destroyCalled = true
 	return d.destroyErr
 }

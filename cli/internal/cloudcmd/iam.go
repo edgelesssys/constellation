@@ -70,8 +70,8 @@ func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshar
 }
 
 // DestroyIAMConfiguration destroys the previously created IAM configuration and deletes the local IAM terraform files.
-func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context) error {
-	if err := d.client.Destroy(ctx); err != nil {
+func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context, logLevel terraform.LogLevel) error {
+	if err := d.client.Destroy(ctx, logLevel); err != nil {
 		return err
 	}
 	return d.client.CleanUpWorkspace()
@@ -83,11 +83,12 @@ type IAMCreator struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 }
 
-// IAMConfig holds the necessary values for IAM configuration.
-type IAMConfig struct {
-	GCP   GCPIAMConfig
-	Azure AzureIAMConfig
-	AWS   AWSIAMConfig
+// IAMConfigOptions holds the necessary values for IAM configuration.
+type IAMConfigOptions struct {
+	GCP        GCPIAMConfig
+	Azure      AzureIAMConfig
+	AWS        AWSIAMConfig
+	TFLogLevel terraform.LogLevel
 }
 
 // GCPIAMConfig holds the necessary values for GCP IAM configuration.
@@ -122,7 +123,7 @@ func NewIAMCreator(out io.Writer) *IAMCreator {
 }
 
 // Create prepares and hands over the corresponding providers IAM creator.
-func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider, iamConfig *IAMConfig) (iamid.File, error) {
+func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider, opts *IAMConfigOptions) (iamid.File, error) {
 	switch provider {
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx)
@@ -130,42 +131,42 @@ func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider
 			return iamid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createGCP(ctx, cl, iamConfig)
+		return c.createGCP(ctx, cl, opts)
 	case cloudprovider.Azure:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return iamid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, iamConfig)
+		return c.createAzure(ctx, cl, opts)
 	case cloudprovider.AWS:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return iamid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAWS(ctx, cl, iamConfig)
+		return c.createAWS(ctx, cl, opts)
 	default:
 		return iamid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
 // createGCP creates the IAM configuration on GCP.
-func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
+func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.GCPIAMVariables{
-		ServiceAccountID: iamConfig.GCP.ServiceAccountID,
-		Project:          iamConfig.GCP.ProjectID,
-		Region:           iamConfig.GCP.Region,
-		Zone:             iamConfig.GCP.Zone,
+		ServiceAccountID: opts.GCP.ServiceAccountID,
+		Project:          opts.GCP.ProjectID,
+		Region:           opts.GCP.Region,
+		Zone:             opts.GCP.Zone,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.GCP)
+	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.GCP, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}
@@ -179,20 +180,20 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, iamConfi
 }
 
 // createAzure creates the IAM configuration on Azure.
-func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
+func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AzureIAMVariables{
-		Region:           iamConfig.Azure.Region,
-		ResourceGroup:    iamConfig.Azure.ResourceGroup,
-		ServicePrincipal: iamConfig.Azure.ServicePrincipal,
+		Region:           opts.Azure.Region,
+		ResourceGroup:    opts.Azure.ResourceGroup,
+		ServicePrincipal: opts.Azure.ServicePrincipal,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.Azure.String())), &vars); err != nil {
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.Azure)
+	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.Azure, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}
@@ -210,19 +211,19 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, iamCon
 }
 
 // createAWS creates the IAM configuration on AWS.
-func (c *IAMCreator) createAWS(ctx context.Context, cl terraformClient, iamConfig *IAMConfig) (retFile iamid.File, retErr error) {
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
+func (c *IAMCreator) createAWS(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AWSIAMVariables{
-		Region: iamConfig.AWS.Region,
-		Prefix: iamConfig.AWS.Prefix,
+		Region: opts.AWS.Region,
+		Prefix: opts.AWS.Prefix,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", "iam", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.AWS)
+	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.AWS, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}

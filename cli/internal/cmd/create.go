@@ -153,7 +153,15 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	spinner.Start("Creating", false)
-	idFile, err := creator.Create(cmd.Context(), provider, conf, instanceType, flags.controllerCount, flags.workerCount)
+	opts := cloudcmd.CreateOptions{
+		Provider:          provider,
+		Config:            conf,
+		InsType:           instanceType,
+		ControlPlaneCount: flags.controllerCount,
+		WorkerCount:       flags.workerCount,
+		TFLogLevel:        flags.tfLogLevel,
+	}
+	idFile, err := creator.Create(cmd.Context(), opts)
 	spinner.Stop()
 	if err != nil {
 		return translateCreateErrors(cmd, err)
@@ -206,10 +214,21 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	c.log.Debugf("force flag is %t", force)
 
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return createFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return createFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+	c.log.Debugf("Terraform log level is %s", logLevel.String())
+
 	return createFlags{
 		controllerCount: controllerCount,
 		workerCount:     workerCount,
 		configPath:      configPath,
+		tfLogLevel:      logLevel,
 		force:           force,
 		yes:             yes,
 	}, nil
@@ -220,6 +239,7 @@ type createFlags struct {
 	controllerCount int
 	workerCount     int
 	configPath      string
+	tfLogLevel      terraform.LogLevel
 	force           bool
 	yes             bool
 }

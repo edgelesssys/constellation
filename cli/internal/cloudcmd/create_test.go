@@ -215,7 +215,15 @@ func TestCreator(t *testing.T) {
 				policyPatcher: tc.policyPatcher,
 			}
 
-			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, "type", 2, 3)
+			opts := CreateOptions{
+				Provider:          tc.provider,
+				Config:            tc.config,
+				InsType:           "type",
+				ControlPlaneCount: 2,
+				WorkerCount:       3,
+				TFLogLevel:        terraform.LogLevelNone,
+			}
+			idFile, err := creator.Create(context.Background(), opts)
 
 			if tc.wantErr {
 				assert.Error(err)

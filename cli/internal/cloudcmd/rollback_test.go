@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +43,7 @@ func TestRollbackTerraform(t *testing.T) {
 				client: tc.tfClient,
 			}
 
-			err := rollbacker.rollback(context.Background())
+			err := rollbacker.rollback(context.Background(), terraform.LogLevelNone)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {
@@ -98,7 +99,7 @@ func TestRollbackQEMU(t *testing.T) {
 				createdWorkspace: tc.createdWorkspace,
 			}
 
-			err := rollbacker.rollback(context.Background())
+			err := rollbacker.rollback(context.Background(), terraform.LogLevelNone)
 			if tc.wantErr {
 				assert.Error(err)
 				if tc.tfClient.cleanUpWorkspaceErr == nil {

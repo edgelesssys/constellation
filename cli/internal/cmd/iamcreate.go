@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -147,8 +148,18 @@ func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, 
 			return fmt.Errorf("unknown provider %s", provider)
 		}
 	}
+
 	return func(cmd *cobra.Command, args []string) error {
-		iamCreator, err := newIAMCreator(cmd)
+		logLevelString, err := cmd.Flags().GetString("tf-log")
+		if err != nil {
+			return fmt.Errorf("parsing tf-log string: %w", err)
+		}
+		logLevel, err := terraform.ParseLogLevel(logLevelString)
+		if err != nil {
+			return fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+		}
+
+		iamCreator, err := newIAMCreator(cmd, logLevel)
 		if err != nil {
 			return fmt.Errorf("creating iamCreator: %w", err)
 		}
@@ -161,7 +172,7 @@ func createRunIAMFunc(provider cloudprovider.Provider) func(cmd *cobra.Command, 
 }
 
 // newIAMCreator creates a new iamiamCreator.
-func newIAMCreator(cmd *cobra.Command) (*iamCreator, error) {
+func newIAMCreator(cmd *cobra.Command, logLevel terraform.LogLevel) (*iamCreator, error) {
 	spinner, err := newSpinnerOrStderr(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("creating spinner: %w", err)
@@ -170,13 +181,17 @@ func newIAMCreator(cmd *cobra.Command) (*iamCreator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating logger: %w", err)
 	}
+	log.Debugf("Terraform log level is %s", logLevel.String())
+
 	return &iamCreator{
 		cmd:         cmd,
 		spinner:     spinner,
 		log:         log,
 		creator:     cloudcmd.NewIAMCreator(spinner),
 		fileHandler: file.NewHandler(afero.NewOsFs()),
-		iamConfig:   &cloudcmd.IAMConfig{},
+		iamConfig: &cloudcmd.IAMConfigOptions{
+			TFLogLevel: logLevel,
+		},
 	}, nil
 }
 
@@ -188,7 +203,7 @@ type iamCreator struct {
 	fileHandler     file.Handler
 	provider        cloudprovider.Provider
 	providerCreator providerIAMCreator
-	iamConfig       *cloudcmd.IAMConfig
+	iamConfig       *cloudcmd.IAMConfigOptions
 	log             debugLog
 }
 
@@ -361,7 +376,7 @@ type providerIAMCreator interface {
 	// writeOutputValuesToConfig writes the output values of the IAM creation to the constellation config file.
 	writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File)
 	// parseFlagsAndSetupConfig parses the provider-specific flags and fills the values into the IAM config (output values of the command).
-	parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfig) (iamFlags, error)
+	parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error)
 	// parseAndWriteIDFile parses the GCP service account key and writes it to a keyfile. It is only implemented for GCP.
 	parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error
 }
@@ -369,7 +384,7 @@ type providerIAMCreator interface {
 // awsIAMCreator implements the providerIAMCreator interface for AWS.
 type awsIAMCreator struct{}
 
-func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfig) (iamFlags, error) {
+func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error) {
 	prefix, err := cmd.Flags().GetString("prefix")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing prefix string: %w", err)
@@ -429,7 +444,7 @@ func (c *awsIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error 
 // azureIAMCreator implements the providerIAMCreator interface for Azure.
 type azureIAMCreator struct{}
 
-func (c *azureIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfig) (iamFlags, error) {
+func (c *azureIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error) {
 	region, err := cmd.Flags().GetString("region")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing region string: %w", err)
@@ -494,7 +509,7 @@ func (c *azureIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) erro
 // gcpIAMCreator implements the providerIAMCreator interface for GCP.
 type gcpIAMCreator struct{}
 
-func (c *gcpIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfig) (iamFlags, error) {
+func (c *gcpIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error) {
 	zone, err := cmd.Flags().GetString("zone")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing zone string: %w", err)

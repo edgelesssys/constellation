@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -48,12 +49,12 @@ func runTerminate(cmd *cobra.Command, _ []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
-	yesFlag, err := cmd.Flags().GetBool("yes")
+	flags, err := parseTerminateFlags(cmd)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing flags: %w", err)
 	}
 
-	if !yesFlag {
+	if !flags.yes {
 		cmd.Println("You are about to terminate a Constellation cluster.")
 		cmd.Println("All of its associated resources will be DESTROYED.")
 		cmd.Println("This action is irreversible and ALL DATA WILL BE LOST.")
@@ -68,7 +69,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	spinner.Start("Terminating", false)
-	err = terminator.Terminate(cmd.Context())
+	err = terminator.Terminate(cmd.Context(), flags.logLevel)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -86,4 +87,29 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	return removeErr
+}
+
+type terminateFlags struct {
+	yes      bool
+	logLevel terraform.LogLevel
+}
+
+func parseTerminateFlags(cmd *cobra.Command) (terminateFlags, error) {
+	yes, err := cmd.Flags().GetBool("yes")
+	if err != nil {
+		return terminateFlags{}, fmt.Errorf("parsing yes bool: %w", err)
+	}
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return terminateFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return terminateFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+
+	return terminateFlags{
+		yes:      yes,
+		logLevel: logLevel,
+	}, nil
 }

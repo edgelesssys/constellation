@@ -63,43 +63,54 @@ func NewCreator(out io.Writer) *Creator {
 	}
 }
 
+// CreateOptions are the options for creating a Constellation cluster.
+type CreateOptions struct {
+	Provider          cloudprovider.Provider
+	Config            *config.Config
+	InsType           string
+	ControlPlaneCount int
+	WorkerCount       int
+	image             string
+	TFLogLevel        terraform.LogLevel
+}
+
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, insType string, controlPlaneCount, workerCount int,
-) (clusterid.File, error) {
-	image, err := c.image.FetchReference(ctx, config)
+func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.File, error) {
+	image, err := c.image.FetchReference(ctx, opts.Config)
 	if err != nil {
 		return clusterid.File{}, fmt.Errorf("fetching image reference: %w", err)
 	}
+	opts.image = image
 
-	switch provider {
+	switch opts.Provider {
 	case cloudprovider.AWS:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAWS(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
+		return c.createAWS(ctx, cl, opts)
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
+		return c.createGCP(ctx, cl, opts)
 	case cloudprovider.Azure:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, image)
+		return c.createAzure(ctx, cl, opts)
 	case cloudprovider.OpenStack:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createOpenStack(ctx, cl, config, controlPlaneCount, workerCount, image)
+		return c.createOpenStack(ctx, cl, opts)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -110,38 +121,40 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		}
 		defer cl.RemoveInstaller()
 		lv := c.newLibvirtRunner()
-		return c.createQEMU(ctx, cl, lv, config, controlPlaneCount, workerCount, image)
+		qemuOpts := qemuCreateOptions{
+			source:        image,
+			CreateOptions: opts,
+		}
+		return c.createQEMU(ctx, cl, lv, qemuOpts)
 	default:
-		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
+		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", opts.Provider)
 	}
 }
 
-func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
-	insType string, controlPlaneCount, workerCount int, image string,
-) (idFile clusterid.File, retErr error) {
+func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AWSClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               config.Name,
-			CountControlPlanes: controlPlaneCount,
-			CountWorkers:       workerCount,
-			StateDiskSizeGB:    config.StateDiskSizeGB,
+			Name:               opts.Config.Name,
+			CountControlPlanes: opts.ControlPlaneCount,
+			CountWorkers:       opts.WorkerCount,
+			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
-		StateDiskType:          config.Provider.AWS.StateDiskType,
-		Region:                 config.Provider.AWS.Region,
-		Zone:                   config.Provider.AWS.Zone,
-		InstanceType:           insType,
-		AMIImageID:             image,
-		IAMProfileControlPlane: config.Provider.AWS.IAMProfileControlPlane,
-		IAMProfileWorkerNodes:  config.Provider.AWS.IAMProfileWorkerNodes,
-		Debug:                  config.IsDebugCluster(),
+		StateDiskType:          opts.Config.Provider.AWS.StateDiskType,
+		Region:                 opts.Config.Provider.AWS.Region,
+		Zone:                   opts.Config.Provider.AWS.Zone,
+		InstanceType:           opts.InsType,
+		AMIImageID:             opts.image,
+		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
+		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,
+		Debug:                  opts.Config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
-	tfOutput, err := cl.CreateCluster(ctx)
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
+	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -154,32 +167,30 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
-	insType string, controlPlaneCount, workerCount int, image string,
-) (idFile clusterid.File, retErr error) {
+func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.GCPClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               config.Name,
-			CountControlPlanes: controlPlaneCount,
-			CountWorkers:       workerCount,
-			StateDiskSizeGB:    config.StateDiskSizeGB,
+			Name:               opts.Config.Name,
+			CountControlPlanes: opts.ControlPlaneCount,
+			CountWorkers:       opts.WorkerCount,
+			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
-		Project:         config.Provider.GCP.Project,
-		Region:          config.Provider.GCP.Region,
-		Zone:            config.Provider.GCP.Zone,
-		CredentialsFile: config.Provider.GCP.ServiceAccountKeyPath,
-		InstanceType:    insType,
-		StateDiskType:   config.Provider.GCP.StateDiskType,
-		ImageID:         image,
-		Debug:           config.IsDebugCluster(),
+		Project:         opts.Config.Provider.GCP.Project,
+		Region:          opts.Config.Provider.GCP.Region,
+		Zone:            opts.Config.Provider.GCP.Zone,
+		CredentialsFile: opts.Config.Provider.GCP.ServiceAccountKeyPath,
+		InstanceType:    opts.InsType,
+		StateDiskType:   opts.Config.Provider.GCP.StateDiskType,
+		ImageID:         opts.image,
+		Debug:           opts.Config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
-	tfOutput, err := cl.CreateCluster(ctx)
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
+	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -192,27 +203,26 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config, insType string, controlPlaneCount, workerCount int, image string,
-) (idFile clusterid.File, retErr error) {
+func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               config.Name,
-			CountControlPlanes: controlPlaneCount,
-			CountWorkers:       workerCount,
-			StateDiskSizeGB:    config.StateDiskSizeGB,
+			Name:               opts.Config.Name,
+			CountControlPlanes: opts.ControlPlaneCount,
+			CountWorkers:       opts.WorkerCount,
+			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
-		Location:             config.Provider.Azure.Location,
-		ResourceGroup:        config.Provider.Azure.ResourceGroup,
-		UserAssignedIdentity: config.Provider.Azure.UserAssignedIdentity,
-		InstanceType:         insType,
-		StateDiskType:        config.Provider.Azure.StateDiskType,
-		ImageID:              image,
-		SecureBoot:           *config.Provider.Azure.SecureBoot,
-		CreateMAA:            config.Provider.Azure.EnforceIDKeyDigest == idkeydigest.MAAFallback,
-		Debug:                config.IsDebugCluster(),
+		Location:             opts.Config.Provider.Azure.Location,
+		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
+		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
+		InstanceType:         opts.InsType,
+		StateDiskType:        opts.Config.Provider.Azure.StateDiskType,
+		ImageID:              opts.image,
+		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
+		CreateMAA:            opts.Config.Provider.Azure.EnforceIDKeyDigest == idkeydigest.MAAFallback,
+		Debug:                opts.Config.IsDebugCluster(),
 	}
 
-	attestVariant, err := variant.FromString(config.AttestationVariant)
+	attestVariant, err := variant.FromString(opts.Config.AttestationVariant)
 	if err != nil {
 		return clusterid.File{}, fmt.Errorf("parsing attestation variant: %w", err)
 	}
@@ -224,8 +234,8 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
-	tfOutput, err := cl.CreateCluster(ctx)
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
+	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -348,14 +358,12 @@ func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClu
 	return vars
 }
 
-func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, config *config.Config,
-	controlPlaneCount, workerCount int, image string,
-) (idFile clusterid.File, retErr error) {
+func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	// TODO: Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
 		return clusterid.File{}, errors.New("OpenStack isn't supported yet")
 	}
-	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && config.Provider.OpenStack.Cloud == "" {
+	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && opts.Config.Provider.OpenStack.Cloud == "" {
 		return clusterid.File{}, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
 				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
@@ -366,29 +374,29 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 
 	vars := terraform.OpenStackClusterVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               config.Name,
-			CountControlPlanes: controlPlaneCount,
-			CountWorkers:       workerCount,
-			StateDiskSizeGB:    config.StateDiskSizeGB,
+			Name:               opts.Config.Name,
+			CountControlPlanes: opts.ControlPlaneCount,
+			CountWorkers:       opts.WorkerCount,
+			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
-		Cloud:                   config.Provider.OpenStack.Cloud,
-		AvailabilityZone:        config.Provider.OpenStack.AvailabilityZone,
-		FloatingIPPoolID:        config.Provider.OpenStack.FloatingIPPoolID,
-		FlavorID:                config.Provider.OpenStack.FlavorID,
-		ImageURL:                image,
-		DirectDownload:          *config.Provider.OpenStack.DirectDownload,
-		OpenstackUserDomainName: config.Provider.OpenStack.UserDomainName,
-		OpenstackUsername:       config.Provider.OpenStack.Username,
-		OpenstackPassword:       config.Provider.OpenStack.Password,
-		Debug:                   config.IsDebugCluster(),
+		Cloud:                   opts.Config.Provider.OpenStack.Cloud,
+		AvailabilityZone:        opts.Config.Provider.OpenStack.AvailabilityZone,
+		FloatingIPPoolID:        opts.Config.Provider.OpenStack.FloatingIPPoolID,
+		FlavorID:                opts.Config.Provider.OpenStack.FlavorID,
+		ImageURL:                opts.image,
+		DirectDownload:          *opts.Config.Provider.OpenStack.DirectDownload,
+		OpenstackUserDomainName: opts.Config.Provider.OpenStack.UserDomainName,
+		OpenstackUsername:       opts.Config.Provider.OpenStack.Username,
+		OpenstackPassword:       opts.Config.Provider.OpenStack.Password,
+		Debug:                   opts.Config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.OpenStack.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
-	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl})
-	tfOutput, err := cl.CreateCluster(ctx)
+	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
+	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -401,26 +409,29 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, confi
 	}, nil
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, config *config.Config,
-	controlPlaneCount, workerCount int, source string,
-) (idFile clusterid.File, retErr error) {
+type qemuCreateOptions struct {
+	source string
+	CreateOptions
+}
+
+func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, opts qemuCreateOptions) (idFile clusterid.File, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
-	defer rollbackOnError(c.out, &retErr, qemuRollbacker)
+	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 
 	// TODO: render progress bar
 	downloader := c.newRawDownloader()
-	imagePath, err := downloader.Download(ctx, c.out, false, source, config.Image)
+	imagePath, err := downloader.Download(ctx, c.out, false, opts.source, opts.Config.Image)
 	if err != nil {
 		return clusterid.File{}, fmt.Errorf("download raw image: %w", err)
 	}
 
-	libvirtURI := config.Provider.QEMU.LibvirtURI
+	libvirtURI := opts.Config.Provider.QEMU.LibvirtURI
 	libvirtSocketPath := "."
 
 	switch {
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
-		if err := lv.Start(ctx, config.Name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
+		if err := lv.Start(ctx, opts.Config.Name, opts.Config.Provider.QEMU.LibvirtContainerImage); err != nil {
 			return clusterid.File{}, err
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
@@ -452,21 +463,21 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 
 	vars := terraform.QEMUVariables{
 		CommonVariables: terraform.CommonVariables{
-			Name:               config.Name,
-			CountControlPlanes: controlPlaneCount,
-			CountWorkers:       workerCount,
-			StateDiskSizeGB:    config.StateDiskSizeGB,
+			Name:               opts.Config.Name,
+			CountControlPlanes: opts.ControlPlaneCount,
+			CountWorkers:       opts.WorkerCount,
+			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
 		LibvirtURI:         libvirtURI,
 		LibvirtSocketPath:  libvirtSocketPath,
 		ImagePath:          imagePath,
-		ImageFormat:        config.Provider.QEMU.ImageFormat,
-		CPUCount:           config.Provider.QEMU.VCPUs,
-		MemorySizeMiB:      config.Provider.QEMU.Memory,
-		MetadataAPIImage:   config.Provider.QEMU.MetadataAPIImage,
+		ImageFormat:        opts.Config.Provider.QEMU.ImageFormat,
+		CPUCount:           opts.Config.Provider.QEMU.VCPUs,
+		MemorySizeMiB:      opts.Config.Provider.QEMU.Memory,
+		MetadataAPIImage:   opts.Config.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
-		NVRAM:              config.Provider.QEMU.NVRAM,
-		Firmware:           config.Provider.QEMU.Firmware,
+		NVRAM:              opts.Config.Provider.QEMU.NVRAM,
+		Firmware:           opts.Config.Provider.QEMU.Firmware,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), &vars); err != nil {
@@ -476,7 +487,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// Allow rollback of QEMU Terraform workspace from this point on
 	qemuRollbacker.createdWorkspace = true
 
-	tfOutput, err := cl.CreateCluster(ctx)
+	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
 		return clusterid.File{}, err
 	}

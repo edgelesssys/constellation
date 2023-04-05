@@ -306,7 +306,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfig{},
+				iamConfig:       &cloudcmd.IAMConfigOptions{},
 				provider:        tc.provider,
 				providerCreator: &awsIAMCreator{},
 			}
@@ -587,7 +587,7 @@ func TestIAMCreateAzure(t *testing.T) {
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfig{},
+				iamConfig:       &cloudcmd.IAMConfigOptions{},
 				provider:        tc.provider,
 				providerCreator: &azureIAMCreator{},
 			}
@@ -893,7 +893,7 @@ func TestIAMCreateGCP(t *testing.T) {
 				spinner:         &nopSpinner{},
 				creator:         tc.creator,
 				fileHandler:     fileHandler,
-				iamConfig:       &cloudcmd.IAMConfig{},
+				iamConfig:       &cloudcmd.IAMConfigOptions{},
 				provider:        tc.provider,
 				providerCreator: &gcpIAMCreator{},
 			}

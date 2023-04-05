@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -56,9 +57,14 @@ type destroyCmd struct {
 }
 
 func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destroyer iamDestroyer, fsHandler file.Handler) error {
+	flags, err := c.parseDestroyFlags(cmd)
+	if err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+
 	// check if there is a possibility that the cluster is still running by looking out for specific files
 	c.log.Debugf("Checking if %q exists", constants.AdminConfFilename)
-	_, err := fsHandler.Stat(constants.AdminConfFilename)
+	_, err = fsHandler.Stat(constants.AdminConfFilename)
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.AdminConfFilename)
 	}
@@ -67,12 +73,6 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.ClusterIDsFileName)
 	}
-
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return err
-	}
-	c.log.Debugf("\"yes\" flag is set to %t", yes)
 
 	gcpFileExists := false
 
@@ -87,7 +87,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 		gcpFileExists = true
 	}
 
-	if !yes {
+	if !flags.yes {
 		// Confirmation
 		confirmString := "Do you really want to destroy your IAM configuration?"
 		if gcpFileExists {
@@ -119,7 +119,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	spinner.Start("Destroying IAM configuration", false)
 	defer spinner.Stop()
-	if err := destroyer.DestroyIAMConfiguration(cmd.Context()); err != nil {
+	if err := destroyer.DestroyIAMConfiguration(cmd.Context(), flags.tfLogLevel); err != nil {
 		return fmt.Errorf("destroying IAM configuration: %w", err)
 	}
 
@@ -154,4 +154,33 @@ func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroye
 
 	c.log.Debugf("Successfully deleted %q", constants.GCPServiceAccountKeyFile)
 	return true, nil
+}
+
+type destroyFlags struct {
+	yes        bool
+	tfLogLevel terraform.LogLevel
+}
+
+// parseDestroyFlags parses the flags of the create command.
+func (c *destroyCmd) parseDestroyFlags(cmd *cobra.Command) (destroyFlags, error) {
+	yes, err := cmd.Flags().GetBool("yes")
+	if err != nil {
+		return destroyFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
+	}
+	c.log.Debugf("Yes flag is %t", yes)
+
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return destroyFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return destroyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+	c.log.Debugf("Terraform log level is %s", logLevel.String())
+
+	return destroyFlags{
+		tfLogLevel: logLevel,
+		yes:        yes,
+	}, nil
 }

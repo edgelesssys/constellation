@@ -33,7 +33,7 @@ func NewTerminator() *Terminator {
 }
 
 // Terminate deletes the could provider resources.
-func (t *Terminator) Terminate(ctx context.Context) (retErr error) {
+func (t *Terminator) Terminate(ctx context.Context, logLevel terraform.LogLevel) (retErr error) {
 	defer func() {
 		if retErr == nil {
 			retErr = t.newLibvirtRunner().Stop(ctx)
@@ -46,11 +46,11 @@ func (t *Terminator) Terminate(ctx context.Context) (retErr error) {
 	}
 	defer cl.RemoveInstaller()
 
-	return t.terminateTerraform(ctx, cl)
+	return t.terminateTerraform(ctx, cl, logLevel)
 }
 
-func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient) error {
-	if err := cl.Destroy(ctx); err != nil {
+func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient, logLevel terraform.LogLevel) error {
+	if err := cl.Destroy(ctx, logLevel); err != nil {
 		return err
 	}
 	return cl.CleanUpWorkspace()
