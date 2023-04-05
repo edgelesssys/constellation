@@ -83,9 +83,9 @@ require (
 	github.com/hashicorp/go-kms-wrapping/wrappers/azurekeyvault/v2 v2.0.7
 	github.com/hashicorp/go-kms-wrapping/wrappers/gcpckms/v2 v2.0.8
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hc-install v0.4.0
-	github.com/hashicorp/terraform-exec v0.17.3
-	github.com/hashicorp/terraform-json v0.14.0
+	github.com/hashicorp/hc-install v0.5.0
+	github.com/hashicorp/terraform-exec v0.18.1
+	github.com/hashicorp/terraform-json v0.15.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/mattn/go-isatty v0.0.18
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
