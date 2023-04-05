@@ -135,11 +135,10 @@ func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.R
 	log.Debugf("Upgrading rule: %s", rule.Name())
 
 	upstreamURLs, err := rules.UpstreamURLs(rule)
-	if err != nil {
-		if errors.Is(err, rules.ErrNoUpstreamURL) {
-			log.Debugf("Rule has no upstream URL. Skipping.")
-			return
-		}
+	if errors.Is(err, rules.ErrNoUpstreamURL) {
+		log.Debugf("Rule has no upstream URL. Skipping.")
+		return
+	} else if err != nil {
 		iss = append(iss, err)
 		return
 	}
