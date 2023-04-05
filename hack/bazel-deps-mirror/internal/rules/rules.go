@@ -34,7 +34,7 @@ ruleLoop:
 			}
 		}
 	}
-	return
+	return rules
 }
 
 // ValidatePinned checks if the given rule is a pinned dependency rule.
@@ -78,7 +78,7 @@ func ValidatePinned(rule *build.Rule) (validationErrs []error) {
 			validationErrs = append(validationErrs, errors.New("rule has empty sha256 attribute"))
 		}
 	}
-	return
+	return validationErrs
 }
 
 // Check checks if a dependency rule is normalized and contains a mirror url.
@@ -107,7 +107,7 @@ func Check(rule *build.Rule) (validationErrs []error) {
 	if rule.Kind() == "rpm" && len(urls) != 1 {
 		validationErrs = append(validationErrs, errors.New("rpm rule has unstable urls that are not the edgeless mirror"))
 	}
-	return
+	return validationErrs
 }
 
 // Normalize normalizes a rule and returns true if the rule was changed.
@@ -122,11 +122,10 @@ func Normalize(rule *build.Rule) (changed bool) {
 	sortURLs(normalizedURLS)
 	normalizedURLS = deduplicateURLs(normalizedURLS)
 	if slices.Equal(urls, normalizedURLS) && rule.Attr("url") == nil {
-		return
+		return changed
 	}
 	setURLs(rule, normalizedURLS)
-	changed = true
-	return
+	return true
 }
 
 // AddURLs adds a url to a rule.
@@ -206,7 +205,7 @@ func deduplicateURLs(urls []string) (deduplicated []string) {
 			seen[url] = true
 		}
 	}
-	return
+	return deduplicated
 }
 
 // addTypeAttribute adds the type attribute to http_archive rules if it is missing.

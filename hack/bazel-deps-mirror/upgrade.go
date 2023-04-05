@@ -137,36 +137,36 @@ func upgradeRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.R
 	upstreamURLs, err := rules.UpstreamURLs(rule)
 	if errors.Is(err, rules.ErrNoUpstreamURL) {
 		log.Debugf("Rule has no upstream URL. Skipping.")
-		return
+		return false, nil
 	} else if err != nil {
 		iss = append(iss, err)
-		return
+		return false, iss
 	}
 
 	// learn the hash of the upstream artifact
 	learnedHash, learnErr := mirrorUpload.Learn(ctx, upstreamURLs)
 	if learnErr != nil {
 		iss = append(iss, learnErr)
-		return
+		return false, iss
 	}
 
 	existingHash, err := rules.GetHash(rule)
 	if err == nil && learnedHash == existingHash {
 		log.Debugf("Rule already upgraded. Skipping.")
-		return
+		return false, nil
 	}
 
 	changed, err = rules.PrepareUpgrade(rule)
 	if err != nil {
 		iss = append(iss, err)
-		return
+		return changed, iss
 	}
 	rules.SetHash(rule, learnedHash)
 	changed = true
 
 	if _, fixErr := fixRule(ctx, mirrorUpload, rule, log); fixErr != nil {
 		iss = append(iss, fixErr...)
-		return
+		return changed, iss
 	}
 	return changed, iss
 }

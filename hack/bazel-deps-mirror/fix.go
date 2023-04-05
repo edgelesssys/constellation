@@ -155,7 +155,7 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 			iss = append(iss,
 				errors.New("hash attribute is missing and can't learn it from upstream."+
 					"Unable to check if the artifact is already mirrored or upload it"))
-			return
+			return false, iss
 		}
 		changed = true
 	}
@@ -165,7 +165,7 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 	if issue != nil {
 		// don't try to fix the rule if it's invalid
 		iss = append(iss, issue...)
-		return
+		return false, iss
 	}
 
 	// check if the referenced CAS object exists in the mirror and is consistent
@@ -173,12 +173,12 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 	if expectedHashErr != nil {
 		// don't try to fix the rule if the hash is missing
 		iss = append(iss, expectedHashErr)
-		return
+		return false, iss
 	}
 
 	if rules.HasMirrorURL(rule) {
 		changed = rules.Normalize(rule) || changed
-		return
+		return changed, iss
 	}
 
 	if checkErr := mirrorUpload.Check(ctx, expectedHash); checkErr != nil {
@@ -186,7 +186,7 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 		if uploadErr := mirrorUpload.Mirror(ctx, expectedHash, rules.GetURLs(rule)); uploadErr != nil {
 			// don't try to fix the rule if the upload failed
 			iss = append(iss, uploadErr)
-			return
+			return changed, iss
 		}
 	} else {
 		log.Infof("Artifact %s with hash %s was already uploaded before. Adding to rule...", rule.Name(), expectedHash)
@@ -196,7 +196,7 @@ func fixRule(ctx context.Context, mirrorUpload mirrorUploader, rule *build.Rule,
 	mirrorURL, err := mirrorUpload.MirrorURL(expectedHash)
 	if err != nil {
 		iss = append(iss, err)
-		return
+		return changed, iss
 	}
 	rules.AddURLs(rule, []string{mirrorURL})
 
