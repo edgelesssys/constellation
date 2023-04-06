@@ -4,6 +4,6 @@ metadata:
   name: join-config
   namespace: testNamespace
 data:
-  attestationConfig: "{}"
+  attestationConfig: "{\"measurements\":{\"1\":{\"expected\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"warnOnly\":false}}}"
 binaryData:
   measurementSalt: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
