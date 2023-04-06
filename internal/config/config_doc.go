@@ -11,13 +11,19 @@ import (
 )
 
 var (
-	ConfigDoc          encoder.Doc
-	ProviderConfigDoc  encoder.Doc
-	AWSConfigDoc       encoder.Doc
-	AzureConfigDoc     encoder.Doc
-	GCPConfigDoc       encoder.Doc
-	OpenStackConfigDoc encoder.Doc
-	QEMUConfigDoc      encoder.Doc
+	ConfigDoc                  encoder.Doc
+	ProviderConfigDoc          encoder.Doc
+	AWSConfigDoc               encoder.Doc
+	AzureConfigDoc             encoder.Doc
+	GCPConfigDoc               encoder.Doc
+	OpenStackConfigDoc         encoder.Doc
+	QEMUConfigDoc              encoder.Doc
+	AWSNitroTPMDoc             encoder.Doc
+	AzureSEVSNPDoc             encoder.Doc
+	SNPFirmwareSignerConfigDoc encoder.Doc
+	AzureTrustedLaunchDoc      encoder.Doc
+	GCPSEVESDoc                encoder.Doc
+	QEMUVTPMDoc                encoder.Doc
 )
 
 func init() {
@@ -229,7 +235,7 @@ func init() {
 	AzureConfigDoc.Fields[12].Description = "List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
 	AzureConfigDoc.Fields[12].Comments[encoder.LineComment] = "List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
 	AzureConfigDoc.Fields[13].Name = "enforceIdKeyDigest"
-	AzureConfigDoc.Fields[13].Type = "EnforceIDKeyDigest"
+	AzureConfigDoc.Fields[13].Type = "Enforcement"
 	AzureConfigDoc.Fields[13].Note = ""
 	AzureConfigDoc.Fields[13].Description = "Enforce the specified idKeyDigest value during remote attestation."
 	AzureConfigDoc.Fields[13].Comments[encoder.LineComment] = "Enforce the specified idKeyDigest value during remote attestation."
@@ -426,6 +432,112 @@ func init() {
 	QEMUConfigDoc.Fields[8].Note = ""
 	QEMUConfigDoc.Fields[8].Description = "Measurement used to enable measured boot."
 	QEMUConfigDoc.Fields[8].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+
+	AWSNitroTPMDoc.Type = "AWSNitroTPM"
+	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
+	AWSNitroTPMDoc.Description = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
+	AWSNitroTPMDoc.Fields = make([]encoder.Doc, 1)
+	AWSNitroTPMDoc.Fields[0].Name = "measurements"
+	AWSNitroTPMDoc.Fields[0].Type = "M"
+	AWSNitroTPMDoc.Fields[0].Note = ""
+	AWSNitroTPMDoc.Fields[0].Description = "Expected TPM measurements."
+	AWSNitroTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	AzureSEVSNPDoc.Type = "AzureSEVSNP"
+	AzureSEVSNPDoc.Comments[encoder.LineComment] = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
+	AzureSEVSNPDoc.Description = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
+	AzureSEVSNPDoc.Fields = make([]encoder.Doc, 7)
+	AzureSEVSNPDoc.Fields[0].Name = "measurements"
+	AzureSEVSNPDoc.Fields[0].Type = "M"
+	AzureSEVSNPDoc.Fields[0].Note = ""
+	AzureSEVSNPDoc.Fields[0].Description = "Expected confidential VM measurements."
+	AzureSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	AzureSEVSNPDoc.Fields[1].Name = "bootloaderVersion"
+	AzureSEVSNPDoc.Fields[1].Type = "uint8"
+	AzureSEVSNPDoc.Fields[1].Note = ""
+	AzureSEVSNPDoc.Fields[1].Description = "Lowest acceptable bootloader version."
+	AzureSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Lowest acceptable bootloader version."
+	AzureSEVSNPDoc.Fields[2].Name = "teeVersion"
+	AzureSEVSNPDoc.Fields[2].Type = "uint8"
+	AzureSEVSNPDoc.Fields[2].Note = ""
+	AzureSEVSNPDoc.Fields[2].Description = "Lowest acceptable TEE version."
+	AzureSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "Lowest acceptable TEE version."
+	AzureSEVSNPDoc.Fields[3].Name = "snpVersion"
+	AzureSEVSNPDoc.Fields[3].Type = "uint8"
+	AzureSEVSNPDoc.Fields[3].Note = ""
+	AzureSEVSNPDoc.Fields[3].Description = "Lowest acceptable SEV-SNP version."
+	AzureSEVSNPDoc.Fields[3].Comments[encoder.LineComment] = "Lowest acceptable SEV-SNP version."
+	AzureSEVSNPDoc.Fields[4].Name = "microcodeVersion"
+	AzureSEVSNPDoc.Fields[4].Type = "uint8"
+	AzureSEVSNPDoc.Fields[4].Note = ""
+	AzureSEVSNPDoc.Fields[4].Description = "Lowest acceptable microcode version."
+	AzureSEVSNPDoc.Fields[4].Comments[encoder.LineComment] = "Lowest acceptable microcode version."
+	AzureSEVSNPDoc.Fields[5].Name = "firmwareSignerConfig"
+	AzureSEVSNPDoc.Fields[5].Type = "SNPFirmwareSignerConfig"
+	AzureSEVSNPDoc.Fields[5].Note = ""
+	AzureSEVSNPDoc.Fields[5].Description = "Configuration for validating the firmware signature."
+	AzureSEVSNPDoc.Fields[5].Comments[encoder.LineComment] = "Configuration for validating the firmware signature."
+	AzureSEVSNPDoc.Fields[6].Name = "amdRootKey"
+	AzureSEVSNPDoc.Fields[6].Type = "Certificate"
+	AzureSEVSNPDoc.Fields[6].Note = ""
+	AzureSEVSNPDoc.Fields[6].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AzureSEVSNPDoc.Fields[6].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+
+	SNPFirmwareSignerConfigDoc.Type = "SNPFirmwareSignerConfig"
+	SNPFirmwareSignerConfigDoc.Comments[encoder.LineComment] = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
+	SNPFirmwareSignerConfigDoc.Description = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
+	SNPFirmwareSignerConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AzureSEVSNP",
+			FieldName: "firmwareSignerConfig",
+		},
+	}
+	SNPFirmwareSignerConfigDoc.Fields = make([]encoder.Doc, 3)
+	SNPFirmwareSignerConfigDoc.Fields[0].Name = "acceptedKeyDigests"
+	SNPFirmwareSignerConfigDoc.Fields[0].Type = "List"
+	SNPFirmwareSignerConfigDoc.Fields[0].Note = ""
+	SNPFirmwareSignerConfigDoc.Fields[0].Description = "List of accepted values for the firmware signing key digest.\nValues are enforced according to the 'enforcementPolicy'\n     - 'equal'       : Error if the reported signing key digest does not match any of the values in 'acceptedKeyDigests'\n     - 'maaFallback' : Use 'equal' checking for validation, but fallback to using Microsoft Azure Attestation (MAA) for validation if the reported digest does not match any of the values in 'acceptedKeyDigests'. See the Azure docs for more details: https://learn.microsoft.com/en-us/azure/attestation/overview#amd-sev-snp-attestation\n     - 'warnOnly'    : Same as 'equal', but only prints a warning instead of returning an error if no match is found"
+	SNPFirmwareSignerConfigDoc.Fields[0].Comments[encoder.LineComment] = "List of accepted values for the firmware signing key digest.\nValues are enforced according to the 'enforcementPolicy'\n     - 'equal'       : Error if the reported signing key digest does not match any of the values in 'acceptedKeyDigests'\n     - 'maaFallback' : Use 'equal' checking for validation, but fallback to using Microsoft Azure Attestation (MAA) for validation if the reported digest does not match any of the values in 'acceptedKeyDigests'. See the Azure docs for more details: https://learn.microsoft.com/en-us/azure/attestation/overview#amd-sev-snp-attestation\n     - 'warnOnly'    : Same as 'equal', but only prints a warning instead of returning an error if no match is found"
+	SNPFirmwareSignerConfigDoc.Fields[1].Name = "enforcementPolicy"
+	SNPFirmwareSignerConfigDoc.Fields[1].Type = "Enforcement"
+	SNPFirmwareSignerConfigDoc.Fields[1].Note = ""
+	SNPFirmwareSignerConfigDoc.Fields[1].Description = "Key digest enforcement policy. One of {'equal', 'maaFallback', 'warnOnly'}"
+	SNPFirmwareSignerConfigDoc.Fields[1].Comments[encoder.LineComment] = "Key digest enforcement policy. One of {'equal', 'maaFallback', 'warnOnly'}"
+	SNPFirmwareSignerConfigDoc.Fields[2].Name = "maaURL"
+	SNPFirmwareSignerConfigDoc.Fields[2].Type = "string"
+	SNPFirmwareSignerConfigDoc.Fields[2].Note = ""
+	SNPFirmwareSignerConfigDoc.Fields[2].Description = "URL of the Microsoft Azure Attestation (MAA) instance to use for fallback validation. Only used if 'enforcementPolicy' is set to 'maaFallback'."
+	SNPFirmwareSignerConfigDoc.Fields[2].Comments[encoder.LineComment] = "URL of the Microsoft Azure Attestation (MAA) instance to use for fallback validation. Only used if 'enforcementPolicy' is set to 'maaFallback'."
+
+	AzureTrustedLaunchDoc.Type = "AzureTrustedLaunch"
+	AzureTrustedLaunchDoc.Comments[encoder.LineComment] = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
+	AzureTrustedLaunchDoc.Description = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
+	AzureTrustedLaunchDoc.Fields = make([]encoder.Doc, 1)
+	AzureTrustedLaunchDoc.Fields[0].Name = "measurements"
+	AzureTrustedLaunchDoc.Fields[0].Type = "M"
+	AzureTrustedLaunchDoc.Fields[0].Note = ""
+	AzureTrustedLaunchDoc.Fields[0].Description = "Expected TPM measurements."
+	AzureTrustedLaunchDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	GCPSEVESDoc.Type = "GCPSEVES"
+	GCPSEVESDoc.Comments[encoder.LineComment] = "GCPSEVES is the configuration for GCP SEV-ES attestation."
+	GCPSEVESDoc.Description = "GCPSEVES is the configuration for GCP SEV-ES attestation."
+	GCPSEVESDoc.Fields = make([]encoder.Doc, 1)
+	GCPSEVESDoc.Fields[0].Name = "measurements"
+	GCPSEVESDoc.Fields[0].Type = "M"
+	GCPSEVESDoc.Fields[0].Note = ""
+	GCPSEVESDoc.Fields[0].Description = "Expected TPM measurements."
+	GCPSEVESDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	QEMUVTPMDoc.Type = "QEMUVTPM"
+	QEMUVTPMDoc.Comments[encoder.LineComment] = "QEMUVTPM is the configuration for QEMU vTPM attestation."
+	QEMUVTPMDoc.Description = "QEMUVTPM is the configuration for QEMU vTPM attestation."
+	QEMUVTPMDoc.Fields = make([]encoder.Doc, 1)
+	QEMUVTPMDoc.Fields[0].Name = "measurements"
+	QEMUVTPMDoc.Fields[0].Type = "M"
+	QEMUVTPMDoc.Fields[0].Note = ""
+	QEMUVTPMDoc.Fields[0].Description = "Expected TPM measurements."
+	QEMUVTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
 }
 
 func (_ Config) Doc() *encoder.Doc {
@@ -456,6 +568,30 @@ func (_ QEMUConfig) Doc() *encoder.Doc {
 	return &QEMUConfigDoc
 }
 
+func (_ AWSNitroTPM) Doc() *encoder.Doc {
+	return &AWSNitroTPMDoc
+}
+
+func (_ AzureSEVSNP) Doc() *encoder.Doc {
+	return &AzureSEVSNPDoc
+}
+
+func (_ SNPFirmwareSignerConfig) Doc() *encoder.Doc {
+	return &SNPFirmwareSignerConfigDoc
+}
+
+func (_ AzureTrustedLaunch) Doc() *encoder.Doc {
+	return &AzureTrustedLaunchDoc
+}
+
+func (_ GCPSEVES) Doc() *encoder.Doc {
+	return &GCPSEVESDoc
+}
+
+func (_ QEMUVTPM) Doc() *encoder.Doc {
+	return &QEMUVTPMDoc
+}
+
 // GetConfigurationDoc returns documentation for the file ./config_doc.go.
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
@@ -469,6 +605,12 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&GCPConfigDoc,
 			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
+			&AWSNitroTPMDoc,
+			&AzureSEVSNPDoc,
+			&SNPFirmwareSignerConfigDoc,
+			&AzureTrustedLaunchDoc,
+			&GCPSEVESDoc,
+			&QEMUVTPMDoc,
 		},
 	}
 }

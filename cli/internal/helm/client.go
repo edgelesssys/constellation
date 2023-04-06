@@ -380,16 +380,16 @@ func setAttestationVariant(values map[string]any, variant string) error {
 
 // TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
 // setIdkeyConfig sets the idkeyconfig value on the join-service value maps.
-func setIdkeyConfig(values map[string]any, config *config.Config, maaURL string) error {
+func setIdkeyConfig(values map[string]any, cfg *config.Config, maaURL string) error {
 	joinServiceVals, ok := values["join-service"].(map[string]any)
 	if !ok {
 		return errors.New("invalid join-service values")
 	}
 
-	idKeyCfg := idkeydigest.Config{
-		IDKeyDigests:      config.IDKeyDigests(),
-		EnforcementPolicy: config.IDKeyDigestPolicy(),
-		MAAURL:            maaURL,
+	idKeyCfg := config.SNPFirmwareSignerConfig{
+		AcceptedKeyDigests: cfg.IDKeyDigests(),
+		EnforcementPolicy:  cfg.IDKeyDigestPolicy(),
+		MAAURL:             maaURL,
 	}
 	marshalledCfg, err := json.Marshal(idKeyCfg)
 	if err != nil {

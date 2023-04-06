@@ -37,6 +37,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -46,7 +47,7 @@ type Measurements = measurements.M
 
 // Digests is a required alias since docgen is not able to work with
 // types in other packages.
-type Digests = idkeydigest.IDKeyDigests
+type Digests = idkeydigest.List
 
 const (
 	// Version2 is the second version number for Constellation config file.
@@ -175,7 +176,7 @@ type AzureConfig struct {
 	IDKeyDigest Digests `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
-	EnforceIDKeyDigest idkeydigest.EnforceIDKeyDigest `yaml:"enforceIdKeyDigest" validate:"required"`
+	EnforceIDKeyDigest idkeydigest.Enforcement `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
@@ -314,7 +315,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      toPtr(true),
-				IDKeyDigest:          idkeydigest.DefaultsFor(cloudprovider.Azure),
+				IDKeyDigest:          idkeydigest.DefaultList(),
 				EnforceIDKeyDigest:   idkeydigest.MAAFallback,
 				SecureBoot:           toPtr(false),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
@@ -504,7 +505,7 @@ func (c *Config) GetMeasurements() measurements.M {
 }
 
 // IDKeyDigestPolicy returns the IDKeyDigest checking policy for a cloud provider.
-func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
+func (c *Config) IDKeyDigestPolicy() idkeydigest.Enforcement {
 	if c.Provider.Azure != nil {
 		return c.Provider.Azure.EnforceIDKeyDigest
 	}
@@ -512,7 +513,7 @@ func (c *Config) IDKeyDigestPolicy() idkeydigest.EnforceIDKeyDigest {
 }
 
 // IDKeyDigests returns the ID Key Digests for the configured cloud provider.
-func (c *Config) IDKeyDigests() idkeydigest.IDKeyDigests {
+func (c *Config) IDKeyDigests() idkeydigest.List {
 	if c.Provider.Azure != nil {
 		return c.Provider.Azure.IDKeyDigest
 	}
@@ -649,6 +650,141 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	return &ValidationError{validationErrMsgs: validationErrMsgs}
+}
+
+// AWSNitroTPM is the configuration for AWS Nitro TPM attestation.
+type AWSNitroTPM struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+}
+
+// GetVariant returns aws-nitro-tpm as the variant.
+func (AWSNitroTPM) GetVariant() variant.Variant {
+	return variant.AWSNitroTPM{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AWSNitroTPM) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// AzureSEVSNP is the configuration for Azure SEV-SNP attestation.
+type AzureSEVSNP struct {
+	// description: |
+	//   Expected confidential VM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	// description: |
+	//   Lowest acceptable bootloader version.
+	BootloaderVersion uint8 `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	// description: |
+	//   Lowest acceptable TEE version.
+	TEEVersion uint8 `json:"teeVersion" yaml:"teeVersion"`
+	// description: |
+	//   Lowest acceptable SEV-SNP version.
+	SNPVersion uint8 `json:"snpVersion" yaml:"snpVersion"`
+	// description: |
+	//   Lowest acceptable microcode version.
+	MicrocodeVersion uint8 `json:"microcodeVersion" yaml:"microcodeVersion"`
+	// description: |
+	//   Configuration for validating the firmware signature.
+	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
+	// description: |
+	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
+	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+}
+
+// DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
+// Version numbers are hard coded and should be updated with each new release.
+// TODO(AB#3042): replace with dynamic lookup for configurable values.
+func DefaultForAzureSEVSNP() AzureSEVSNP {
+	return AzureSEVSNP{
+		Measurements:      measurements.DefaultsFor(cloudprovider.Azure),
+		BootloaderVersion: 2,
+		TEEVersion:        0,
+		SNPVersion:        6,
+		MicrocodeVersion:  93,
+		FirmwareSignerConfig: SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: idkeydigest.DefaultList(),
+			EnforcementPolicy:  idkeydigest.MAAFallback,
+		},
+		// AMD root key. Received from the AMD Key Distribution System API (KDS).
+		AMDRootKey: mustParsePEM(`-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAIC\nBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBMHsxFDAS\nBgNVBAsMC0VuZ2luZWVyaW5nMQswCQYDVQQGEwJVUzEUMBIGA1UEBwwLU2FudGEg\nQ2xhcmExCzAJBgNVBAgMAkNBMR8wHQYDVQQKDBZBZHZhbmNlZCBNaWNybyBEZXZp\nY2VzMRIwEAYDVQQDDAlBUkstTWlsYW4wHhcNMjAxMDIyMTcyMzA1WhcNNDUxMDIy\nMTcyMzA1WjB7MRQwEgYDVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDAS\nBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5j\nZWQgTWljcm8gRGV2aWNlczESMBAGA1UEAwwJQVJLLU1pbGFuMIICIjANBgkqhkiG\n9w0BAQEFAAOCAg8AMIICCgKCAgEA0Ld52RJOdeiJlqK2JdsVmD7FktuotWwX1fNg\nW41XY9Xz1HEhSUmhLz9Cu9DHRlvgJSNxbeYYsnJfvyjx1MfU0V5tkKiU1EesNFta\n1kTA0szNisdYc9isqk7mXT5+KfGRbfc4V/9zRIcE8jlHN61S1ju8X93+6dxDUrG2\nSzxqJ4BhqyYmUDruPXJSX4vUc01P7j98MpqOS95rORdGHeI52Naz5m2B+O+vjsC0\n60d37jY9LFeuOP4Meri8qgfi2S5kKqg/aF6aPtuAZQVR7u3KFYXP59XmJgtcog05\ngmI0T/OitLhuzVvpZcLph0odh/1IPXqx3+MnjD97A7fXpqGd/y8KxX7jksTEzAOg\nbKAeam3lm+3yKIcTYMlsRMXPcjNbIvmsBykD//xSniusuHBkgnlENEWx1UcbQQrs\n+gVDkuVPhsnzIRNgYvM48Y+7LGiJYnrmE8xcrexekBxrva2V9TJQqnN3Q53kt5vi\nQi3+gCfmkwC0F0tirIZbLkXPrPwzZ0M9eNxhIySb2npJfgnqz55I0u33wh4r0ZNQ\neTGfw03MBUtyuzGesGkcw+loqMaq1qR4tjGbPYxCvpCq7+OgpCCoMNit2uLo9M18\nfHz10lOMT8nWAUvRZFzteXCm+7PHdYPlmQwUw3LvenJ/ILXoQPHfbkH0CyPfhl1j\nWhJFZasCAwEAAaN+MHwwDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSFrBrRQ/fI\nrFXUxR1BSKvVeErUUzAPBgNVHRMBAf8EBTADAQH/MDoGA1UdHwQzMDEwL6AtoCuG\nKWh0dHBzOi8va2RzaW50Zi5hbWQuY29tL3ZjZWsvdjEvTWlsYW4vY3JsMEYGCSqG\nSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZI\nAWUDBAICBQCiAwIBMKMDAgEBA4ICAQC6m0kDp6zv4Ojfgy+zleehsx6ol0ocgVel\nETobpx+EuCsqVFRPK1jZ1sp/lyd9+0fQ0r66n7kagRk4Ca39g66WGTJMeJdqYriw\nSTjjDCKVPSesWXYPVAyDhmP5n2v+BYipZWhpvqpaiO+EGK5IBP+578QeW/sSokrK\ndHaLAxG2LhZxj9aF73fqC7OAJZ5aPonw4RE299FVarh1Tx2eT3wSgkDgutCTB1Yq\nzT5DuwvAe+co2CIVIzMDamYuSFjPN0BCgojl7V+bTou7dMsqIu/TW/rPCX9/EUcp\nKGKqPQ3P+N9r1hjEFY1plBg93t53OOo49GNI+V1zvXPLI6xIFVsh+mto2RtgEX/e\npmMKTNN6psW88qg7c1hTWtN6MbRuQ0vm+O+/2tKBF2h8THb94OvvHHoFDpbCELlq\nHnIYhxy0YKXGyaW1NjfULxrrmxVW4wcn5E8GddmvNa6yYm8scJagEi13mhGu4Jqh\n3QU3sf8iUSUr09xQDwHtOQUVIqx4maBZPBtSMf+qUDtjXSSq8lfWcd8bLr9mdsUn\nJZJ0+tuPMKmBnSH860llKk+VpVQsgqbzDIvOLvD6W1Umq25boxCYJ+TuBoa4s+HH\nCViAvgT9kf/rBq1d+ivj6skkHxuzcxbk1xv6ZGxrteJxVH7KlX7YRdZ6eARKwLe4\nAFZEAwoKCQ==\n-----END CERTIFICATE-----\n`),
+	}
+}
+
+// GetVariant returns azure-sev-snp as the variant.
+func (AzureSEVSNP) GetVariant() variant.Variant {
+	return variant.AzureSEVSNP{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AzureSEVSNP) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
+type SNPFirmwareSignerConfig struct {
+	// description: |
+	//   List of accepted values for the firmware signing key digest.\nValues are enforced according to the 'enforcementPolicy'\n     - 'equal'       : Error if the reported signing key digest does not match any of the values in 'acceptedKeyDigests'\n     - 'maaFallback' : Use 'equal' checking for validation, but fallback to using Microsoft Azure Attestation (MAA) for validation if the reported digest does not match any of the values in 'acceptedKeyDigests'. See the Azure docs for more details: https://learn.microsoft.com/en-us/azure/attestation/overview#amd-sev-snp-attestation\n     - 'warnOnly'    : Same as 'equal', but only prints a warning instead of returning an error if no match is found
+	AcceptedKeyDigests idkeydigest.List `json:"acceptedKeyDigests" yaml:"acceptedKeyDigests"`
+	// description: |
+	//   Key digest enforcement policy. One of {'equal', 'maaFallback', 'warnOnly'}
+	EnforcementPolicy idkeydigest.Enforcement `json:"enforcementPolicy" yaml:"enforcementPolicy" validate:"required"`
+	// description: |
+	//   URL of the Microsoft Azure Attestation (MAA) instance to use for fallback validation. Only used if 'enforcementPolicy' is set to 'maaFallback'.
+	MAAURL string `json:"maaURL,omitempty" yaml:"maaURL,omitempty" validate:"len=0"`
+}
+
+// AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
+type AzureTrustedLaunch struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+}
+
+// GetVariant returns azure-trusted-launch as the variant.
+func (AzureTrustedLaunch) GetVariant() variant.Variant {
+	return variant.AzureTrustedLaunch{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AzureTrustedLaunch) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// GCPSEVES is the configuration for GCP SEV-ES attestation.
+type GCPSEVES struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+}
+
+// GetVariant returns gcp-sev-es as the variant.
+func (GCPSEVES) GetVariant() variant.Variant {
+	return variant.GCPSEVES{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c GCPSEVES) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// QEMUVTPM is the configuration for QEMU vTPM attestation.
+type QEMUVTPM struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+}
+
+// GetVariant returns qemu-vtpm as the variant.
+func (QEMUVTPM) GetVariant() variant.Variant {
+	return variant.QEMUVTPM{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c QEMUVTPM) GetMeasurements() measurements.M {
+	return c.Measurements
 }
 
 func toPtr[T any](v T) *T {

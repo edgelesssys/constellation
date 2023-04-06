@@ -14,10 +14,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -43,19 +43,22 @@ func Issuer(attestationVariant variant.Variant, log vtpm.AttestationLogger) (atl
 
 // Validator returns the validator for the given variant.
 func Validator(
-	attestationVariant variant.Variant, measurements measurements.M, idKeyCfg idkeydigest.Config, log vtpm.AttestationLogger,
+	attestationVariant variant.Variant, measurements measurements.M, idKeyCfg config.SNPFirmwareSignerConfig, log vtpm.AttestationLogger,
 ) (atls.Validator, error) {
 	switch attestationVariant {
 	case variant.AWSNitroTPM{}:
-		return aws.NewValidator(measurements, log), nil
+		return aws.NewValidator(config.AWSNitroTPM{Measurements: measurements}, log), nil
 	case variant.AzureTrustedLaunch{}:
-		return trustedlaunch.NewValidator(measurements, log), nil
+		return trustedlaunch.NewValidator(config.AzureTrustedLaunch{Measurements: measurements}, log), nil
 	case variant.AzureSEVSNP{}:
-		return snp.NewValidator(measurements, idKeyCfg, log), nil
+		cfg := config.DefaultForAzureSEVSNP()
+		cfg.Measurements = measurements
+		cfg.FirmwareSignerConfig = idKeyCfg
+		return snp.NewValidator(cfg, log), nil
 	case variant.GCPSEVES{}:
-		return gcp.NewValidator(measurements, log), nil
+		return gcp.NewValidator(config.GCPSEVES{Measurements: measurements}, log), nil
 	case variant.QEMUVTPM{}:
-		return qemu.NewValidator(measurements, log), nil
+		return qemu.NewValidator(config.QEMUVTPM{Measurements: measurements}, log), nil
 	case variant.Dummy{}:
 		return atls.NewFakeValidator(variant.Dummy{}), nil
 	default:

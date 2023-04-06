@@ -21,21 +21,12 @@ import (
 	"math/big"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
-)
-
-const (
-	// AMD root key. Received from the AMD Key Distribution System API (KDS).
-	arkPEM            = "-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAIC\nBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBMHsxFDAS\nBgNVBAsMC0VuZ2luZWVyaW5nMQswCQYDVQQGEwJVUzEUMBIGA1UEBwwLU2FudGEg\nQ2xhcmExCzAJBgNVBAgMAkNBMR8wHQYDVQQKDBZBZHZhbmNlZCBNaWNybyBEZXZp\nY2VzMRIwEAYDVQQDDAlBUkstTWlsYW4wHhcNMjAxMDIyMTcyMzA1WhcNNDUxMDIy\nMTcyMzA1WjB7MRQwEgYDVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDAS\nBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5j\nZWQgTWljcm8gRGV2aWNlczESMBAGA1UEAwwJQVJLLU1pbGFuMIICIjANBgkqhkiG\n9w0BAQEFAAOCAg8AMIICCgKCAgEA0Ld52RJOdeiJlqK2JdsVmD7FktuotWwX1fNg\nW41XY9Xz1HEhSUmhLz9Cu9DHRlvgJSNxbeYYsnJfvyjx1MfU0V5tkKiU1EesNFta\n1kTA0szNisdYc9isqk7mXT5+KfGRbfc4V/9zRIcE8jlHN61S1ju8X93+6dxDUrG2\nSzxqJ4BhqyYmUDruPXJSX4vUc01P7j98MpqOS95rORdGHeI52Naz5m2B+O+vjsC0\n60d37jY9LFeuOP4Meri8qgfi2S5kKqg/aF6aPtuAZQVR7u3KFYXP59XmJgtcog05\ngmI0T/OitLhuzVvpZcLph0odh/1IPXqx3+MnjD97A7fXpqGd/y8KxX7jksTEzAOg\nbKAeam3lm+3yKIcTYMlsRMXPcjNbIvmsBykD//xSniusuHBkgnlENEWx1UcbQQrs\n+gVDkuVPhsnzIRNgYvM48Y+7LGiJYnrmE8xcrexekBxrva2V9TJQqnN3Q53kt5vi\nQi3+gCfmkwC0F0tirIZbLkXPrPwzZ0M9eNxhIySb2npJfgnqz55I0u33wh4r0ZNQ\neTGfw03MBUtyuzGesGkcw+loqMaq1qR4tjGbPYxCvpCq7+OgpCCoMNit2uLo9M18\nfHz10lOMT8nWAUvRZFzteXCm+7PHdYPlmQwUw3LvenJ/ILXoQPHfbkH0CyPfhl1j\nWhJFZasCAwEAAaN+MHwwDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSFrBrRQ/fI\nrFXUxR1BSKvVeErUUzAPBgNVHRMBAf8EBTADAQH/MDoGA1UdHwQzMDEwL6AtoCuG\nKWh0dHBzOi8va2RzaW50Zi5hbWQuY29tL3ZjZWsvdjEvTWlsYW4vY3JsMEYGCSqG\nSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZI\nAWUDBAICBQCiAwIBMKMDAgEBA4ICAQC6m0kDp6zv4Ojfgy+zleehsx6ol0ocgVel\nETobpx+EuCsqVFRPK1jZ1sp/lyd9+0fQ0r66n7kagRk4Ca39g66WGTJMeJdqYriw\nSTjjDCKVPSesWXYPVAyDhmP5n2v+BYipZWhpvqpaiO+EGK5IBP+578QeW/sSokrK\ndHaLAxG2LhZxj9aF73fqC7OAJZ5aPonw4RE299FVarh1Tx2eT3wSgkDgutCTB1Yq\nzT5DuwvAe+co2CIVIzMDamYuSFjPN0BCgojl7V+bTou7dMsqIu/TW/rPCX9/EUcp\nKGKqPQ3P+N9r1hjEFY1plBg93t53OOo49GNI+V1zvXPLI6xIFVsh+mto2RtgEX/e\npmMKTNN6psW88qg7c1hTWtN6MbRuQ0vm+O+/2tKBF2h8THb94OvvHHoFDpbCELlq\nHnIYhxy0YKXGyaW1NjfULxrrmxVW4wcn5E8GddmvNa6yYm8scJagEi13mhGu4Jqh\n3QU3sf8iUSUr09xQDwHtOQUVIqx4maBZPBtSMf+qUDtjXSSq8lfWcd8bLr9mdsUn\nJZJ0+tuPMKmBnSH860llKk+VpVQsgqbzDIvOLvD6W1Umq25boxCYJ+TuBoa4s+HH\nCViAvgT9kf/rBq1d+ivj6skkHxuzcxbk1xv6ZGxrteJxVH7KlX7YRdZ6eARKwLe4\nAFZEAwoKCQ==\n-----END CERTIFICATE-----\n"
-	bootloaderVersion = 2
-	teeVersion        = 0
-	snpVersion        = 6
-	microcodeVersion  = 93
 )
 
 // Validator for Azure confidential VM attestation.
@@ -45,28 +36,24 @@ type Validator struct {
 	hclValidator hclAkValidator
 	maa          maaValidator
 
-	idKeyDigests       idkeydigest.IDKeyDigests
-	enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
-	maaURL             string
+	config config.AzureSEVSNP
 
 	log vtpm.AttestationLogger
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, idKeyConf idkeydigest.Config, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg config.AzureSEVSNP, log vtpm.AttestationLogger) *Validator {
 	if log == nil {
 		log = nopAttestationLogger{}
 	}
 	v := &Validator{
-		hclValidator:       &azureInstanceInfo{},
-		maa:                newMAAClient(),
-		idKeyDigests:       idKeyConf.IDKeyDigests,
-		enforceIDKeyDigest: idKeyConf.EnforcementPolicy,
-		maaURL:             idKeyConf.MAAURL,
-		log:                log,
+		hclValidator: &azureInstanceInfo{},
+		maa:          newMAAClient(),
+		config:       cfg,
+		log:          log,
 	}
 	v.Validator = vtpm.NewValidator(
-		pcrs,
+		cfg.Measurements,
 		v.getTrustedKey,
 		validateCVM,
 		log,
@@ -107,7 +94,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 		return nil, fmt.Errorf("parsing attestation report: %w", err)
 	}
 
-	vcek, err := validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
+	vcek, err := v.validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
 	if err != nil {
 		return nil, fmt.Errorf("validating VCEK: %w", err)
 	}
@@ -130,15 +117,10 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 
 // validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
 // ARK (hardcoded) validates ASK (cloud metadata API) validates VCEK (cloud metadata API).
-func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
+func (v *Validator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	vcek, err := internalCrypto.PemToX509Cert(vcekRaw)
 	if err != nil {
 		return nil, fmt.Errorf("loading vcek: %w", err)
-	}
-
-	ark, err := internalCrypto.PemToX509Cert([]byte(arkPEM))
-	if err != nil {
-		return nil, fmt.Errorf("loading arkPEM: %w", err)
 	}
 
 	// certChain includes two PEM encoded certs. The ASK and the ARK, in that order.
@@ -147,7 +129,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("loading askPEM: %w", err)
 	}
 
-	if err = ask.CheckSignatureFrom(ark); err != nil {
+	if err = ask.CheckSignatureFrom((*x509.Certificate)(&v.config.AMDRootKey)); err != nil {
 		return nil, &askError{err}
 	}
 
@@ -165,7 +147,7 @@ func (v *Validator) validateSNPReport(
 		return errDebugEnabled
 	}
 
-	if !report.CommittedTCB.isVersion(bootloaderVersion, teeVersion, snpVersion, microcodeVersion) {
+	if !report.CommittedTCB.isVersion(v.config.BootloaderVersion, v.config.TEEVersion, v.config.SNPVersion, v.config.MicrocodeVersion) {
 		return &versionError{"COMMITTED_TCB", report.CommittedTCB}
 	}
 	if report.LaunchTCB != report.CommittedTCB {
@@ -205,7 +187,7 @@ func (v *Validator) validateSNPReport(
 	}
 
 	hasExpectedIDKeyDigest := false
-	for _, digest := range v.idKeyDigests {
+	for _, digest := range v.config.FirmwareSignerConfig.AcceptedKeyDigests {
 		if bytes.Equal(digest, report.IDKeyDigest[:]) {
 			hasExpectedIDKeyDigest = true
 			break
@@ -213,14 +195,22 @@ func (v *Validator) validateSNPReport(
 	}
 
 	if !hasExpectedIDKeyDigest {
-		switch v.enforceIDKeyDigest {
+		switch v.config.FirmwareSignerConfig.EnforcementPolicy {
 		case idkeydigest.MAAFallback:
-			v.log.Infof("configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation", v.idKeyDigests, report.IDKeyDigest[:])
-			return v.maa.validateToken(ctx, v.maaURL, maaToken, extraData)
+			v.log.Infof(
+				"configured idkeydigests %x don't contain reported idkeydigest %x, falling back to MAA validation",
+				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+				report.IDKeyDigest[:],
+			)
+			return v.maa.validateToken(ctx, v.config.FirmwareSignerConfig.MAAURL, maaToken, extraData)
 		case idkeydigest.WarnOnly:
-			v.log.Warnf("configured idkeydigests %x don't contain reported idkeydigest %x", v.idKeyDigests, report.IDKeyDigest[:])
+			v.log.Warnf(
+				"configured idkeydigests %x don't contain reported idkeydigest %x",
+				v.config.FirmwareSignerConfig.AcceptedKeyDigests,
+				report.IDKeyDigest[:],
+			)
 		default:
-			return &idKeyError{report.IDKeyDigest[:], v.idKeyDigests}
+			return &idKeyError{report.IDKeyDigest[:], v.config.FirmwareSignerConfig.AcceptedKeyDigests}
 		}
 	}
 

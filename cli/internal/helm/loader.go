@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -466,7 +465,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 // extendConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
 func extendConstellationServicesValues(
-	in map[string]any, config *config.Config, masterSecret, salt []byte, maaURL string,
+	in map[string]any, cfg *config.Config, masterSecret, salt []byte, maaURL string,
 ) error {
 	keyServiceValues, ok := in["key-service"].(map[string]any)
 	if !ok {
@@ -479,11 +478,11 @@ func extendConstellationServicesValues(
 	if !ok {
 		return errors.New("invalid join-service values")
 	}
-	joinServiceVals["attestationVariant"] = config.AttestationVariant
+	joinServiceVals["attestationVariant"] = cfg.AttestationVariant
 
 	// measurements are updated separately during upgrade,
 	// so we only set them in Helm during init.
-	measurementsJSON, err := json.Marshal(config.GetMeasurements())
+	measurementsJSON, err := json.Marshal(cfg.GetMeasurements())
 	if err != nil {
 		return fmt.Errorf("marshalling measurements: %w", err)
 	}
@@ -493,9 +492,9 @@ func extendConstellationServicesValues(
 	if !ok {
 		return errors.New("invalid verification-service values")
 	}
-	verifyServiceVals["attestationVariant"] = config.AttestationVariant
+	verifyServiceVals["attestationVariant"] = cfg.AttestationVariant
 
-	csp := config.GetProvider()
+	csp := cfg.GetProvider()
 	switch csp {
 	case cloudprovider.Azure:
 		joinServiceVals, ok := in["join-service"].(map[string]any)
@@ -503,10 +502,10 @@ func extendConstellationServicesValues(
 			return errors.New("invalid join-service values")
 		}
 
-		idKeyCfg := idkeydigest.Config{
-			IDKeyDigests:      config.IDKeyDigests(),
-			EnforcementPolicy: config.IDKeyDigestPolicy(),
-			MAAURL:            maaURL,
+		idKeyCfg := config.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: cfg.IDKeyDigests(),
+			EnforcementPolicy:  cfg.IDKeyDigestPolicy(),
+			MAAURL:             maaURL,
 		}
 		marshalledCfg, err := json.Marshal(idKeyCfg)
 		if err != nil {
@@ -515,12 +514,12 @@ func extendConstellationServicesValues(
 		joinServiceVals["idKeyConfig"] = string(marshalledCfg)
 
 		in["azure"] = map[string]any{
-			"deployCSIDriver": config.DeployCSIDriver(),
+			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
 
 	case cloudprovider.GCP:
 		in["gcp"] = map[string]any{
-			"deployCSIDriver": config.DeployCSIDriver(),
+			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
 	}
 

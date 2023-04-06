@@ -15,9 +15,9 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation/idkeydigest",
-        "//internal/attestation/measurements",
         "//internal/attestation/vtpm",
         "//internal/cloud/azure",
+        "//internal/config",
         "//internal/crypto",
         "//internal/variant",
         "@com_github_edgelesssys_go_azguestattestation//maa",
@@ -44,6 +44,7 @@ go_test(
         "//internal/attestation/idkeydigest",
         "//internal/attestation/simulator",
         "//internal/attestation/vtpm",
+        "//internal/config",
         "//internal/logger",
         "@com_github_edgelesssys_go_azguestattestation//maa",
         "@com_github_google_go_tpm//tpm2",

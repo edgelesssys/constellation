@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -77,7 +78,7 @@ func (u *Updatable) Update() error {
 	u.log.Debugf("New measurements: %+v", measurements)
 
 	// Read ID Key config
-	var idKeyCfg idkeydigest.Config
+	var idKeyCfg config.SNPFirmwareSignerConfig
 	if u.variant.Equal(variant.AzureSEVSNP{}) {
 		u.log.Infof("Updating SEV-SNP ID Key config")
 
@@ -91,8 +92,8 @@ func (u *Updatable) Update() error {
 
 			// v2.6 fallback
 			// TODO: Remove after v2.7 release
-			var digest idkeydigest.IDKeyDigests
-			var enforceIDKeyDigest idkeydigest.EnforceIDKeyDigest
+			var digest idkeydigest.List
+			var enforceIDKeyDigest idkeydigest.Enforcement
 			enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename))
 			if err != nil {
 				return err
@@ -110,7 +111,7 @@ func (u *Updatable) Update() error {
 				return fmt.Errorf("unmarshaling content of IDKeyDigestFilename: %s: %w", idkeydigestRaw, err)
 			}
 
-			idKeyCfg.IDKeyDigests = digest
+			idKeyCfg.AcceptedKeyDigests = digest
 			idKeyCfg.EnforcementPolicy = enforceIDKeyDigest
 		}
 

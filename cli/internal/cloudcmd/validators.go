@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -26,7 +25,7 @@ import (
 type Validator struct {
 	attestationVariant variant.Variant
 	pcrs               measurements.M
-	idKeyConfig        idkeydigest.Config
+	idKeyConfig        config.SNPFirmwareSignerConfig
 	validator          atls.Validator
 	log                debugLog
 }
@@ -45,10 +44,10 @@ func NewValidator(conf *config.Config, maaURL string, log debugLog) (*Validator,
 	}
 
 	if v.attestationVariant.Equal(variant.AzureSEVSNP{}) {
-		v.idKeyConfig = idkeydigest.Config{
-			IDKeyDigests:      conf.Provider.Azure.IDKeyDigest,
-			EnforcementPolicy: conf.IDKeyDigestPolicy(),
-			MAAURL:            maaURL,
+		v.idKeyConfig = config.SNPFirmwareSignerConfig{
+			AcceptedKeyDigests: conf.Provider.Azure.IDKeyDigest,
+			EnforcementPolicy:  conf.IDKeyDigestPolicy(),
+			MAAURL:             maaURL,
 		}
 	}
 

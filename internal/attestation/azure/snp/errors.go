@@ -9,8 +9,6 @@ package snp
 import (
 	"errors"
 	"fmt"
-
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 )
 
 type signatureError struct {
@@ -51,7 +49,7 @@ func (e *vcekError) Error() string {
 
 type idKeyError struct {
 	encounteredValue []byte
-	expectedValues   idkeydigest.IDKeyDigests
+	expectedValues   [][]byte
 }
 
 func (e *idKeyError) Unwrap() error {

@@ -10,7 +10,7 @@ import (
 	"encoding/asn1"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,7 +96,7 @@ func TestValidator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			validator, err := Validator(tc.variant, nil, idkeydigest.Config{}, nil)
+			validator, err := Validator(tc.variant, nil, config.SNPFirmwareSignerConfig{}, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

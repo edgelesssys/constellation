@@ -10,8 +10,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/qemu",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/attestation/measurements",
         "//internal/attestation/vtpm",
+        "//internal/config",
         "//internal/variant",
         "@com_github_google_go_tpm//tpm2",
         "@com_github_google_go_tpm_tools//client",

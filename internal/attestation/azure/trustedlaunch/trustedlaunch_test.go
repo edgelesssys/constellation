@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -200,7 +201,7 @@ func TestGetAttestationCert(t *testing.T) {
 				},
 			}
 
-			validator := NewValidator(measurements.M{}, nil)
+			validator := NewValidator(config.AzureTrustedLaunch{Measurements: measurements.M{}}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
 			require.NoError(err)
 			roots := x509.NewCertPool()

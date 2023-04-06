@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "config",
     srcs = [
+        "attestation.go",
         "config.go",
         "config_doc.go",
         # keep
@@ -37,6 +38,7 @@ go_library(
 go_test(
     name = "config_test",
     srcs = [
+        "attestation_test.go",
         "config_test.go",
         "validation_test.go",
     ],
@@ -56,6 +58,7 @@ go_test(
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
         "@org_uber_go_goleak//:goleak",
     ],
 )

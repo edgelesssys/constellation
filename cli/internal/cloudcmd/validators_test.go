@@ -120,8 +120,8 @@ func TestNewValidator(t *testing.T) {
 				Provider: config.ProviderConfig{
 					Azure: &config.AzureConfig{
 						Measurements:       testPCRs,
-						IDKeyDigest:        idkeydigest.IDKeyDigests{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
-						EnforceIDKeyDigest: idkeydigest.StrictChecking,
+						IDKeyDigest:        idkeydigest.List{[]byte("414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141")},
+						EnforceIDKeyDigest: idkeydigest.Equal,
 					},
 				},
 			},
@@ -174,26 +174,31 @@ func TestValidatorV(t *testing.T) {
 		"gcp": {
 			variant: variant.GCPSEVES{},
 			pcrs:    newTestPCRs(),
-			wantVs:  gcp.NewValidator(newTestPCRs(), nil),
+			wantVs:  gcp.NewValidator(config.GCPSEVES{Measurements: newTestPCRs()}, nil),
 		},
 		"azure cvm": {
 			variant: variant.AzureSEVSNP{},
 			pcrs:    newTestPCRs(),
 			wantVs: snp.NewValidator(
-				newTestPCRs(),
-				idkeydigest.Config{IDKeyDigests: idkeydigest.IDKeyDigests{}, EnforcementPolicy: idkeydigest.WarnOnly},
+				config.AzureSEVSNP{
+					Measurements: newTestPCRs(),
+					FirmwareSignerConfig: config.SNPFirmwareSignerConfig{
+						AcceptedKeyDigests: idkeydigest.List{},
+						EnforcementPolicy:  idkeydigest.WarnOnly,
+					},
+				},
 				nil,
 			),
 		},
 		"azure trusted launch": {
 			variant: variant.AzureTrustedLaunch{},
 			pcrs:    newTestPCRs(),
-			wantVs:  trustedlaunch.NewValidator(newTestPCRs(), nil),
+			wantVs:  trustedlaunch.NewValidator(config.AzureTrustedLaunch{Measurements: newTestPCRs()}, nil),
 		},
 		"qemu": {
 			variant: variant.QEMUVTPM{},
 			pcrs:    newTestPCRs(),
-			wantVs:  qemu.NewValidator(newTestPCRs(), nil),
+			wantVs:  qemu.NewValidator(config.QEMUVTPM{Measurements: newTestPCRs()}, nil),
 		},
 	}
 
