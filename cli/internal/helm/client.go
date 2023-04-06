@@ -8,6 +8,7 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -227,7 +228,6 @@ func (s ServiceVersions) ConstellationServices() string {
 	return s.constellationServices
 }
 
-// TODO: v2.8: remove fileHandler argument.
 func (c *Client) upgradeRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
 ) error {
@@ -266,6 +266,17 @@ func (c *Client) upgradeRelease(
 
 		// TODO: v2.9 config migration
 		// TODO: v2.9: remove from here...
+
+		joinServiceVals, ok := values["join-service"].(map[string]interface{})
+		if !ok {
+			return errors.New("invalid join-service config")
+		}
+
+		attestationConfigJSON, err := json.Marshal(conf.GetAttestationConfig())
+		if err != nil {
+			return fmt.Errorf("marshalling attestation config: %w", err)
+		}
+		joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
 
 		// TODO: v2.9: to here.
 	default:

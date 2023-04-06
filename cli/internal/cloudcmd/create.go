@@ -217,7 +217,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		StateDiskType:        opts.Config.Provider.Azure.StateDiskType,
 		ImageID:              opts.image,
 		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
-		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}), // TODO(daniel-weisse): check if we want to create MAA for all Azure SNP clusters
+		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
 		Debug:                opts.Config.IsDebugCluster(),
 	}
 
