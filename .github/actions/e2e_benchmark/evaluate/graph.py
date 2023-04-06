@@ -10,20 +10,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import font_manager as fm
 
+SUBJECTS_AZURE = ['constellation-azure', 'AKS']
+SUBJECTS_GCP = ['constellation-gcp', 'GKE']
 
-SUBJECTS = [
-    'constellation-azure',
-    'AKS',
-    'constellation-gcp',
-    'GKE',
-]
+LEGEND_NAMES_AZURE = ['Constellation', 'AKS']
+LEGEND_NAMES_GCP = ['Constellation', 'GKE']
 
-LEGEND_NAMES = [
-    'Constellation on Azure',
-    'AKS',
-    'Constellation on GCP',
-    'GKE',
-]
 
 BAR_COLORS = ['#90FF99', '#929292', '#8B04DD', '#000000']
 
@@ -33,7 +25,7 @@ FONT_SIZE = 13
 
 # Some lookup dictionaries for x axis
 fio_iops_unit = 'IOPS'
-fio_bw_unit = 'KiB/s'
+fio_bw_unit = 'MiB/s'
 
 net_unit = 'Mbit/s'
 
@@ -123,7 +115,7 @@ def main():
     out_dir = configure()
     combined_results = defaultdict(dict)
 
-    for test in SUBJECTS:
+    for test in SUBJECTS_AZURE+SUBJECTS_GCP:
         # Read the previous results
         read_path = os.path.join(
             out_dir, '{subject}.json'.format(subject=test))
@@ -135,91 +127,122 @@ def main():
                 'Failed reading {subject} benchmark records: {e}'.format(subject=test, e=e))
 
     # Network charts
-    # P2P TCP
+    # P2P TCP + UDP Azure
     net_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        net_data[l] = int(combined_results[s]['knb']['pod2pod']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['udp_bw_mbit'])
     bar_chart(data=net_data,
-              title='K8S CNI Benchmark - Pod to Pod - TCP - Bandwidth',
+              title='K8S CNI Benchmark - Pod to Pod - Azure - Bandwidth',
               unit=net_unit,
-              x_label=f" TCP Bandwidth in {net_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_net_p2p_tcp.png')
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2p_azure.png')
     plt.savefig(save_name)
 
-    # P2P TCP
+    # P2P TCP + UDP GCP
     net_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        net_data[l] = int(combined_results[s]['knb']['pod2pod']['udp_bw_mbit'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2pod']['udp_bw_mbit'])
     bar_chart(data=net_data,
-              title='K8S CNI Benchmark - Pod to Pod - UDP - Bandwidth',
+              title='K8S CNI Benchmark - Pod to Pod - GCP - Bandwidth',
               unit=net_unit,
-              x_label=f" UDP Bandwidth in {net_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_net_p2p_udp.png')
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2p_gcp.png')
     plt.savefig(save_name)
 
-    # P2SVC TCP
+    # P2SVC TCP + UDP Azure
     net_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        net_data[l] = int(combined_results[s]['knb']['pod2svc']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['udp_bw_mbit'])
     bar_chart(data=net_data,
-              title='K8S CNI Benchmark - Pod to Service - TCP - Bandwidth',
+              title='K8S CNI Benchmark - Pod to Service - Azure - Bandwidth',
               unit=net_unit,
-              x_label=f" TCP Bandwidth in {net_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_net_p2svc_tcp.png')
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2svc_azure.png')
     plt.savefig(save_name)
 
-    # P2SVC UDP
+    # P2P TCP + UDP GCP
     net_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        net_data[l] = int(combined_results[s]['knb']['pod2svc']['udp_bw_mbit'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        net_data[l+" - TCP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['tcp_bw_mbit'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        net_data[l+" - UDP"] = int(combined_results[s]
+                                   ['knb']['pod2svc']['udp_bw_mbit'])
     bar_chart(data=net_data,
-              title='K8S CNI Benchmark - Pod to Service - UDP - Bandwidth',
+              title='K8S CNI Benchmark - Pod to Service - GCP - Bandwidth',
               unit=net_unit,
-              x_label=f" UDP Bandwidth in {net_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_net_p2svc_udp.png')
+              x_label=f"Bandwidth in {net_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_net_p2svc_gcp.png')
     plt.savefig(save_name)
 
-    # FIO chart
-    # Read IOPS
+    # FIO charts
+
+    # IOPS on Azure
     fio_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        fio_data[l] = int(combined_results[s]['fio']['read_iops']['iops'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_iops']['iops'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_iops']['iops'])
     bar_chart(data=fio_data,
-              title='FIO Benchmark - Read - IOPS',
-              x_label=f" Read {fio_iops_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_fio_read_iops.png')
+              title='FIO Benchmark - Azure - IOPS',
+              x_label=f"{fio_iops_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_azure_iops.png')
     plt.savefig(save_name)
 
-    # Write IOPS
+    # IOPS on GCP
     fio_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        fio_data[l] = int(combined_results[s]['fio']['write_iops']['iops'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_iops']['iops'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_iops']['iops'])
     bar_chart(data=fio_data,
-              title='FIO Benchmark - Write - IOPS',
-              x_label=f" Write {fio_iops_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_fio_write_iops.png')
+              title='FIO Benchmark - GCP - IOPS',
+              x_label=f"{fio_iops_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_gcp_iops.png')
     plt.savefig(save_name)
 
-    # Read Bandwidth
+    # Bandwidth on Azure
     fio_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        fio_data[l] = int(combined_results[s]['fio']['read_bw']['bw_kbytes'])
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_bw']['bw_kbytes'] / 1024)
+    for s, l in zip(SUBJECTS_AZURE, LEGEND_NAMES_AZURE):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_bw']['bw_kbytes'] / 1024)
     bar_chart(data=fio_data,
-              title='FIO Benchmark - Read - Bandwidth',
-              unit=fio_bw_unit,
-              x_label=f" Read Bandwidth in {fio_bw_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_fio_read_bw.png')
+              title='FIO Benchmark - Azure - Bandwidth',
+              x_label=f"Bandwidth in {fio_bw_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_azure_bw.png')
     plt.savefig(save_name)
 
-    # Write Bandwidth
+    # Bandwidth on GCP
     fio_data = {}
-    for s, l in zip(SUBJECTS, LEGEND_NAMES):
-        fio_data[l] = int(combined_results[s]['fio']['write_bw']['bw_kbytes'])
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        fio_data[l+" - Read"] = int(combined_results[s]
+                                    ['fio']['read_bw']['bw_kbytes'] / 1024)
+    for s, l in zip(SUBJECTS_GCP, LEGEND_NAMES_GCP):
+        fio_data[l+" - Write"] = int(combined_results[s]
+                                     ['fio']['write_bw']['bw_kbytes'] / 1024)
     bar_chart(data=fio_data,
-              title='FIO Benchmark - Write - Bandwidth',
-              unit=fio_bw_unit,
-              x_label=f" Write Bandwidth in {fio_bw_unit} - Higher is better")
-    save_name = os.path.join(out_dir, 'benchmark_fio_write_bw.png')
+              title='FIO Benchmark - GCP - Bandwidth',
+              x_label=f"Bandwidth in {fio_bw_unit} - Higher is better")
+    save_name = os.path.join(out_dir, 'benchmark_fio_gcp_bw.png')
     plt.savefig(save_name)
 
 
