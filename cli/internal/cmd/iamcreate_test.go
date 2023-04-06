@@ -278,6 +278,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
+			cmd.Flags().String("tf-log", "NONE", "")
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))
@@ -550,12 +551,13 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
-			// register persistent flag manually
+			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
 			cmd.Flags().Bool("generate-config", false, "")
 			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
+			cmd.Flags().String("tf-log", "NONE", "")
 
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
@@ -862,6 +864,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
+			cmd.Flags().String("tf-log", "NONE", "")
 
 			if tc.zoneFlag != "" {
 				require.NoError(cmd.Flags().Set("zone", tc.zoneFlag))

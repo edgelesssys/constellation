@@ -185,6 +185,7 @@ func TestCreate(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("tf-log", "NONE", "")                   // register persistent flag manually
 
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
