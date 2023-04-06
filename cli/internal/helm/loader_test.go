@@ -103,8 +103,10 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"OpenStack": {
 			config: &config.Config{
-				Provider:    config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
-				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{}},
+				Provider: config.ProviderConfig{OpenStack: &config.OpenStackConfig{}},
+				Attestation: config.AttestationConfig{QEMUVTPM: &config.QEMUVTPM{
+					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce)},
+				}},
 			},
 			valuesModifier: prepareOpenStackValues,
 			ccmImage:       "ccmImageForOpenStack",
