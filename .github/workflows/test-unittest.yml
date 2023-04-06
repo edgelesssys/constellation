@@ -35,7 +35,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.20.2"
+          go-version: "1.20.3"
           cache: true
 
       - name: Install Dependencies
@@ -63,7 +63,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
-          go-version: "1.20.2"
+          go-version: "1.20.3"
           cache: true
 
       - name: CLI Unit Tests
