@@ -8,6 +8,7 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -325,11 +326,26 @@ func (c *Client) applyMigrations(releaseName string, values map[string]any, conf
 	return nil
 }
 
-// migrateFrom2_6 applies the necessary migrations for upgrading from v2.6.x to v2.7.x.
-// migrateFrom2_6 should be applied for v2.6.x --> v2.7.x.
-// migrateFrom2_6 should NOT be applied for v2.7.0 --> v2.7.x.
+// migrateFrom2_7 applies the necessary migrations for upgrading from v2.7.x to v2.8.x.
+// migrateFrom2_7 should be applied for v2.7.x --> v2.8.x.
+// migrateFrom2_7 should NOT be applied for v2.8.0 --> v2.8.x.
 // Remove after release of v2.8.0.
 func migrateFrom2_7(values map[string]any, conf *config.Config) error {
+	return updateJoinConfig(values, conf)
+}
+
+func updateJoinConfig(values map[string]any, conf *config.Config) error {
+	joinServiceVals, ok := values["join-service"].(map[string]interface{})
+	if !ok {
+		return errors.New("invalid join-service config")
+	}
+
+	attestationConfigJSON, err := json.Marshal(conf.GetAttestationConfig())
+	if err != nil {
+		return fmt.Errorf("marshalling attestation config: %w", err)
+	}
+	joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
+
 	return nil
 }
 
