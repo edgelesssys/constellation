@@ -4,11 +4,9 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// Package config defines types and interfaces to use for configuring attestation Issuers and Validators.
 package config
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -37,11 +35,8 @@ func (c Certificate) MarshalJSON() ([]byte, error) {
 
 // MarshalYAML marshals the certificate to PEM.
 func (c Certificate) MarshalYAML() (any, error) {
-	pemData := &bytes.Buffer{}
-	if err := pem.Encode(pemData, &pem.Block{Type: "CERTIFICATE", Bytes: c.Raw}); err != nil {
-		return nil, err
-	}
-	return pemData.String(), nil
+	pem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c.Raw})
+	return string(pem), nil
 }
 
 // UnmarshalJSON unmarshals the certificate from PEM.
@@ -73,8 +68,7 @@ func (c *Certificate) unmarshal(unmarshalFunc func(any) error) error {
 func mustParsePEM(data string) Certificate {
 	jsonData := fmt.Sprintf("\"%s\"", data)
 	var cert Certificate
-	err := json.Unmarshal([]byte(jsonData), &cert)
-	if err != nil {
+	if err := json.Unmarshal([]byte(jsonData), &cert); err != nil {
 		panic(err)
 	}
 	return cert
