@@ -80,6 +80,7 @@ func ParseLogLevel(level string) (LogLevel, error) {
 	}
 }
 
+// String returns the string representation of a Terraform log level.
 func (l LogLevel) String() string {
 	switch l {
 	case LogLevelError:
@@ -149,7 +150,7 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOu
 	if err := c.tf.SetLog(logLevel.String()); err != nil {
 		return CreateOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
 	}
-	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
 		return CreateOutput{}, fmt.Errorf("set log path: %w", err)
 	}
 
@@ -250,7 +251,7 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 	if err := c.tf.SetLog(logLevel.String()); err != nil {
 		return IAMOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
 	}
-	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
 		return IAMOutput{}, fmt.Errorf("set log path: %w", err)
 	}
 
@@ -365,7 +366,7 @@ func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
 	if err := c.tf.SetLog(logLevel.String()); err != nil {
 		return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
 	}
-	if err := c.tf.SetLogPath(filepath.Join(c.workingDir, constants.TerraformLogFile)); err != nil {
+	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
 		return fmt.Errorf("set log path: %w", err)
 	}
 

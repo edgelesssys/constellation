@@ -181,7 +181,7 @@ func newIAMCreator(cmd *cobra.Command, logLevel terraform.LogLevel) (*iamCreator
 	if err != nil {
 		return nil, fmt.Errorf("creating logger: %w", err)
 	}
-	log.Debugf("Terraform log level is %s", logLevel.String())
+	log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
 
 	return &iamCreator{
 		cmd:         cmd,

@@ -177,7 +177,7 @@ func (c *destroyCmd) parseDestroyFlags(cmd *cobra.Command) (destroyFlags, error)
 	if err != nil {
 		return destroyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	c.log.Debugf("Terraform log level is %s", logLevel.String())
+	c.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
 
 	return destroyFlags{
 		tfLogLevel: logLevel,

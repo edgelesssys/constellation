@@ -10,12 +10,10 @@ import (
 	"bytes"
 	"embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 )
@@ -31,9 +29,6 @@ var terraformFS embed.FS
 // and writes them into the workspace.
 func prepareWorkspace(path string, fileHandler file.Handler, workingDir string) error {
 	rootDir := path
-	if err := fileHandler.Write(filepath.Join(constants.TerraformLogFile), nil, file.OptMkdirAll); err != nil {
-		return fmt.Errorf("creating Terraform log file: %w", err)
-	}
 	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
