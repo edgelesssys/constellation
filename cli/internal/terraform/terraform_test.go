@@ -422,7 +422,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.CreateCluster(context.Background(), LogLevelNone)
+			tfOutput, err := c.CreateCluster(context.Background(), LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -717,7 +717,7 @@ func TestCreateIAM(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider, LogLevelNone)
+			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -760,7 +760,7 @@ func TestDestroyInstances(t *testing.T) {
 				tf: tc.tf,
 			}
 
-			err := c.Destroy(context.Background(), LogLevelNone)
+			err := c.Destroy(context.Background(), LogLevelDebug)
 			if tc.wantErr {
 				assert.Error(err)
 				return

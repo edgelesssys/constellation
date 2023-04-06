@@ -147,11 +147,13 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 
 // CreateCluster creates a Constellation cluster using Terraform.
 func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
-	if err := c.tf.SetLog(logLevel.String()); err != nil {
-		return CreateOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
-	}
-	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
-		return CreateOutput{}, fmt.Errorf("set log path: %w", err)
+	if logLevel.String() != "" {
+		if err := c.tf.SetLog(logLevel.String()); err != nil {
+			return CreateOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+		}
+		if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
+			return CreateOutput{}, fmt.Errorf("set log path: %w", err)
+		}
 	}
 
 	if err := c.tf.Init(ctx); err != nil {
@@ -248,11 +250,13 @@ type AWSIAMOutput struct {
 
 // CreateIAMConfig creates an IAM configuration using Terraform.
 func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
-	if err := c.tf.SetLog(logLevel.String()); err != nil {
-		return IAMOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
-	}
-	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
-		return IAMOutput{}, fmt.Errorf("set log path: %w", err)
+	if logLevel.String() != "" {
+		if err := c.tf.SetLog(logLevel.String()); err != nil {
+			return IAMOutput{}, fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+		}
+		if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
+			return IAMOutput{}, fmt.Errorf("set log path: %w", err)
+		}
 	}
 
 	if err := c.tf.Init(ctx); err != nil {
@@ -363,11 +367,13 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 
 // Destroy destroys Terraform-created cloud resources.
 func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
-	if err := c.tf.SetLog(logLevel.String()); err != nil {
-		return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
-	}
-	if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
-		return fmt.Errorf("set log path: %w", err)
+	if logLevel.String() != "" {
+		if err := c.tf.SetLog(logLevel.String()); err != nil {
+			return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+		}
+		if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
+			return fmt.Errorf("set log path: %w", err)
+		}
 	}
 
 	if err := c.tf.Init(ctx); err != nil {
