@@ -3509,8 +3509,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/hc-install",
-        sum = "h1:cZkRFr1WVa0Ty6x5fTvL1TuO1flul231rWkGH92oYYk=",
-        version = "v0.4.0",
+        sum = "h1:D9bl4KayIYKEeJ4vUDe9L5huqxZXczKaykSRcmQ0xY0=",
+        version = "v0.5.0",
     )
     go_repository(
         name = "com_github_hashicorp_hcl",
@@ -3558,16 +3558,16 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/terraform-exec",
-        sum = "h1:MX14Kvnka/oWGmIkyuyvL6POx25ZmKrjlaclkx3eErU=",
-        version = "v0.17.3",
+        sum = "h1:LAbfDvNQU1l0NOQlTuudjczVhHj061fNX5H8XZxHlH4=",
+        version = "v0.18.1",
     )
     go_repository(
         name = "com_github_hashicorp_terraform_json",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/terraform-json",
-        sum = "h1:sh9iZ1Y8IFJLx+xQiKHGud6/TSUCM0N8e17dKDpqV7s=",
-        version = "v0.14.0",
+        sum = "h1:/gIyNtR6SFw6h5yzlbDbACyGvIhKtQi8mTsbkNd79lE=",
+        version = "v0.15.0",
     )
     go_repository(
         name = "com_github_hashicorp_vault_api",
