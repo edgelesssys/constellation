@@ -14,6 +14,58 @@ on:
         default: false
 
 jobs:
+  complete-release-branch-transaction:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      FULL_VERSION: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
+    outputs:
+      RELEASE_BRANCH: ${{ env.RELEASE_BRANCH }}
+      WORKING_BRANCH: ${{ env.WORKING_BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Determine branch names
+        run: |
+          WITHOUT_V=${FULL_VERSION#v}
+          PART_MAJOR=${WITHOUT_V%%.*}
+          PART_MINOR=${WITHOUT_V#*.}
+          MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}
+          RELEASE_BRANCH="release/v${MAJOR_MINOR}"
+          WORKING_BRANCH_PREFIX="tmp/${FULL_VERSION}"
+          echo "RELEASE_BRANCH=${RELEASE_BRANCH}" | tee -a "$GITHUB_ENV"
+          echo "WORKING_BRANCH_PREFIX=${WORKING_BRANCH_PREFIX}" | tee -a "$GITHUB_ENV"
+
+      - name: Find temporary branch
+        id: find-temporary-branch
+        run: |
+          working_branch_count=$(git branch --list "${WORKING_BRANCH_PREFIX}*" | wc -l)
+          if [[ "${working_branch_count}" -ne 1 ]]; then
+            echo "More than one (or zero) temporary branches found. Cannot finish transaction."
+            git branch --list "${WORKING_BRANCH_PREFIX}*"
+            exit 1
+          fi
+          WORKING_BRANCH=$(git branch --list "${WORKING_BRANCH_PREFIX}*" | head -n 1 | sed -e 's/^[[:space:]]*//')
+          echo "WORKING_BRANCH=${WORKING_BRANCH}" | tee -a "$GITHUB_ENV"
+
+      - name: Check if we are strictly ahead of the release branch (if it exists)
+        run: |
+          git fetch
+          git pull
+          git checkout "${RELEASE_BRANCH}" || exit 0
+          git checkout "${WORKING_BRANCH}"
+          ahead=$(git rev-list HEAD --not "${RELEASE_BRANCH}"  | wc -l)
+          if [[ "${ahead}" -gt 0 ]]; then
+            echo "The current branch is not strictly ahead of the release branch. Cannot finish transaction without touching release branch history."
+            exit 1
+          fi
+
+      - name: Create or update release branch
+        run: git push origin "${WORKING_BRANCH}":"${RELEASE_BRANCH}"
+
   update:
     runs-on: ubuntu-22.04
     outputs:
@@ -21,8 +73,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Override latest
         if: github.event.inputs.latest == 'true'
@@ -82,3 +132,21 @@ jobs:
       version: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
       kind: cli
       add_latest: ${{ needs.update.outputs.latest == 'true' }}
+
+  remove-temporary-branch:
+    needs:
+      [
+        complete-release-branch-transaction,
+        add-image-version-to-versionsapi,
+        add-cli-version-to-versionsapi,
+      ]
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Remove temporary branch
+        run: git push origin --delete "${WORKING_BRANCH}"

@@ -12,15 +12,32 @@ This checklist will prepare `v1.3.0` from `v1.2.0` (minor release) or `v1.3.1` f
 
 Releases should be performed using [the automated release pipeline](https://github.com/edgelesssys/constellation/actions/workflows/release.yml).
 
+### Prepare temporary working branch
+
+1. Create a temporary working branch to prepare the release. This branch should be based on main if preparing a minor release or be based on the existing release branch if it is a patch release.
+   ```sh
+   ver=v1.3.1 # replace me
+   minor=$(echo ${ver} | cut -d '.' -f 1,2)
+   # optional suffix to add to the temporary branch name. Can be empty: suffix=
+   suffix=/foo
+   # if preparing a patch release, checkout existing release branch as base
+   git checkout release/${minor}
+   # if preparing a minor release, branch out from main instead
+   git checkout main
+   git pull
+   working_branch=tmp/${ver}${suffix}
+   git checkout -b ${working_branch}
+   git push origin ${working_branch}
+   ```
+
+
 ### Patch release
 
 1. `cherry-pick` (only) the required commits from `main`
    * Check PRs with label [needs-backport](https://github.com/edgelesssys/constellation/pulls?q=is%3Apr+is%3Aclosed+label%3A%22needs+backport%22) to find candidates that should be included in a patch release.
-2. trigger the automated release pipeline from the existing minor version branch:
+2. trigger the automated release pipeline from the working branch created above:
    ```sh
-    ver=v1.3.1 # replace me
-    minor=$(echo $ver | cut -d '.' -f 1,2)
-    gh workflow run release.yml --ref release/v$minor -F version=$ver -F kind=patch
+   gh workflow run release.yml --ref ${working_branch} -F version=${ver} -F kind=patch
    ```
 3. wait for the pipeline to finish
 4. while in editing mode for the release, clear the textbox, select the last patch release for the current release branch and click "Generate release notes".
@@ -29,11 +46,9 @@ Releases should be performed using [the automated release pipeline](https://gith
 ### Minor release
 
 1. Merge ready PRs
-2. trigger the automated release pipeline from `main`:
+2. trigger the automated release pipeline from the working branch created above:
    ```sh
-    ver=v1.3.0 # replace me
-    minor=$(echo $ver | cut -d '.' -f 1,2)
-    gh workflow run release.yml --ref main -F version=$ver -F kind=minor
+   gh workflow run release.yml --ref ${working_branch} -F version=${ver} -F kind=minor
    ```
 3. wait for the pipeline to finish
 4. while in editing mode for the release, clear the textbox, select the last minor release and click "Generate release notes".
@@ -59,6 +74,7 @@ These are the necessary steps.
 ### General
 
 Depending on how far the pipeline ran we need to delete:
+- the working branch (remove automated commits made by the process, keep any cherry picks)
 - the release tag create by the pipeline: `v1.3.0`/`v1.3.1`
 - (only minor releases) the branch to merge changes back to main: `feat/release/v1.3.0`
 - invalidate the CDN caches. This may become necessary if e.g. during measurement updating the measurements of a previous run are still in the cache
