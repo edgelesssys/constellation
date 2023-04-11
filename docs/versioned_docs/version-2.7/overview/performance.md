@@ -6,103 +6,205 @@ This section analyzes the performance of Constellation.
 
 All nodes in a Constellation cluster run inside Confidential VMs (CVMs). Thus, Constellation's performance is directly affected by the performance of CVMs.
 
-AMD and Azure jointly released a [performance benchmark](https://community.amd.com/t5/business/microsoft-azure-confidential-computing-powered-by-3rd-gen-epyc/ba-p/497796) for CVMs based on 3rd Gen AMD EPYC processors (Milan) with SEV-SNP. With a range of mostly compute-intensive benchmarks like SPEC CPU 2017 and CoreMark, they found that CVMs only have a small (2%--8%) performance degradation compared to standard VMs. You can expect to see similar performance for compute-intensive workloads running on Constellation.
+AMD and Azure jointly released a [performance benchmark](https://community.amd.com/t5/business/microsoft-azure-confidential-computing-powered-by-3rd-gen-epyc/ba-p/497796) for CVMs based on 3rd Gen AMD EPYC processors (Milan) with SEV-SNP. With a range of mostly compute-intensive benchmarks like SPEC CPU 2017 and CoreMark, they found that CVMs only have a small (2%--8%) performance degradation compared to standard VMs. You can expect to see similar performance for compute-intensive workloads running with Constellation on Azure.
 
-## Performance analysis with K-Bench
+Similarly, AMD and Google jointly released a [performance benchmark](https://www.amd.com/system/files/documents/3rd-gen-epyc-gcp-c2d-conf-compute-perf-brief.pdf) for CVMs based on 3rd Gen AMD EPYC processors (Milan) with SEV-SNP. With high-performance computing workloads like WRF, NAMD, Ansys CFS, and Ansys LS_DYNA, they found similar results with only small (2%--4%) performance degradation compared to standard VMs. You can expect to see similar performance for compute-intensive workloads running with Constellation on GCP.
 
-To assess the overall performance of Constellation, we benchmarked Constellation v2.0.0 using [K-Bench](https://github.com/vmware-tanzu/k-bench). K-Bench is a configurable framework to benchmark Kubernetes clusters in terms of storage I/O, network performance, and creating/scaling resources.
+## Performance impact from storage and network
 
-As a baseline, we compare Constellation with the non-confidential managed Kubernetes offerings on Microsoft Azure and Google Cloud Platform (GCP). These are AKS on Azure and GKE on GCP.
+To assess the overall performance of Constellation, this benchmark evaluates Constellation v2.6.0 in terms of storage I/O using [`fio`](https://fio.readthedocs.io/en/latest/fio_doc.html) and network performance using the [Kubernetes Network Benchmark](https://github.com/InfraBuilder/k8s-bench-suite#knb--kubernetes-network-be).
+
+This benchmark tested Constellation on Azure and GCP and compared the results against the managed Kubernetes offerings AKS and GKE.
 
 ### Configurations
 
-We used the following configurations for the benchmarks.
+#### Constellation
 
-#### Constellation and GKE on GCP
+The benchmark was conducted with Constellation v2.6.0, Kubernetes v1.25.7, and Cilium v1.12.
+It ran on the following infrastructure configurations.
 
-- Nodes: 3
-- Machines: `n2d-standard-4`
+Constellation on Azure:
+
+- Nodes: 3 (1 Control-plane, 2 Worker)
+- Machines: `DC4as_v5`: 3rd Generation AMD EPYC 7763v (Milan) processor with 4 Cores, 16 GiB memory
+- CVM: `true`
+- Region: `West US`
+- Zone: `2`
+
+Constellation on GCP:
+
+- Nodes: 3 (1 Control-plane, 2 Worker)
+- Machines: `n2d-standard-4`: 2nd Generation AMD EPYC (Rome) processor with 4 Cores, 16 GiB of memory
 - CVM: `true`
 - Zone: `europe-west3-b`
 
-#### Constellation and AKS on Azure
+#### AKS
 
-- Nodes: 3
-- Machines: `DC4as_v5`
-- CVM: `true`
-- Region: `West Europe`
+On AKS, the benchmark used Kubernetes `v1.24.9` and nodes with version `AKSUbuntu-1804gen2containerd-2023.02.15`.
+AKS ran with the [`kubenet`](https://learn.microsoft.com/en-us/azure/aks/concepts-network#kubenet-basic-networking) CNI and the [default CSI driver](https://learn.microsoft.com/en-us/azure/aks/azure-disk-csi) for Azure Disk.
+
+The following infrastructure configurations was used:
+
+- Nodes: 2 (2 Worker)
+- Machines: `D4as_v5`: 3rd Generation AMD EPYC 7763v (Milan) processor with 4 Cores, 16 GiB memory
+- CVM: `false`
+- Region: `West US`
 - Zone: `2`
 
-#### K-Bench
+#### GKE
 
-Using the default [K-Bench test configurations](https://github.com/vmware-tanzu/k-bench/tree/master/config), we ran the following tests on the clusters:
+On GKE, the benchmark used Kubernetes `v1.24.9` and nodes with version `1.24.9-gke.3200`.
+GKE ran with the [`kubenet`](https://cloud.google.com/kubernetes-engine/docs/concepts/network-overview) CNI and the [default CSI driver](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/gce-pd-csi-driver) for Compute Engine persistent disk.
 
-- `default`
-- `dp_network_internode`
-- `dp_network_intranode`
-- `dp_fio`
+The following infrastructure configurations was used:
+
+- Nodes: 2 (2 Worker)
+- Machines: `n2d-standard-4` 2nd Generation AMD EPYC (Rome) processor with 4 Cores, 16 GiB of memory
+- CVM: `false`
+- Zone: `europe-west3-b`
+
 
 ### Results
 
-#### Kubernetes API Latency
-
-At its core, the Kubernetes API is the way to query and modify a cluster's state. Latency matters here. Hence, it's vital that even with the additional level of security from Constellation's network the API latency doesn't spike.
-K-Bench's `default` test performs calls to the API to create, update, and delete cluster resources.
-
-The three graphs below compare the API latencies (lower is better) in milliseconds for pods, services, and deployments.
-
-![API Latency - Pods](../_media/benchmark_api_pods.png)
-
-Pods: Except for the `Pod Update` call, Constellation is faster than AKS and GKE in terms of API calls.
-
-![API Latency - Services](../_media/benchmark_api_svc.png)
-
-Services: Constellation has lower latencies than AKS and GKE except for service creation on AKS.
-
-![API Latency - Deployments](../_media/benchmark_api_dpl.png)
-
-Deployments: Constellation has the lowest latency for all cases except for scaling deployments on GKE and creating deployments on AKS.
-
 #### Network
 
-There are two main indicators for network performance: intra-node and inter-node transmission speed.
-K-Bench provides benchmark tests for both, configured as `dp_network_internode` and `dp_network_intranode`. The tests use [`iperf`](https://iperf.fr/) to measure the bandwidth available.
+This section gives a thorough analysis of the network performance of Constellation, specifically focusing on measuring TCP and UDP bandwidth.
+The benchmark measured the bandwidth of pod-to-pod and pod-to-service connections between two different nodes using [`iperf`](https://iperf.fr/).
 
-##### Inter-node
+GKE and Constellation on GCP had a maximum network bandwidth of [10 Gbps](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machineshttps://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines).
+AKS with `Standard_D4as_v5` machines a maximum network bandwidth of [12.5 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series#dasv5-series).
+The Confidential VM equivalent `Standard_DC4as_v5` currently  has a network bandwidth of [1.25 Gbps](https://learn.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series#dcasv5-series-products).
+Therefore, to make the test comparable, both AKS and Constellation on Azure were running with `Standard_DC4as_v5` machines and 1.25 Gbps bandwidth.
 
-Inter-node communication is the network transmission between different Kubernetes nodes.
+Constellation on Azure and AKS used an MTU of 1500.
+Constellation on GCP used an MTU of 8896. GKE used an MTU of 1450.
 
-The first test (`dp_network_internode`) measures the throughput between nodes. Constellation has an inter-node throughput of around 816 Mbps on Azure to 872 Mbps on GCP. While that's faster than the average throughput of AKS at 577 Mbps, GKE provides faster networking at 9.55 Gbps.
-The difference can largely be attributed to Constellation's [network encryption](../architecture/networking.md) that protects data in-transit.
 
-##### Intra-node
+The difference in network bandwidth can largely be attributed to two factors.
 
-Intra-node communication happens between pods running on the same node.
-The connections directly pass through the node's OS layer and never hit the network.
-The benchmark evaluates how the [Constellation's node OS image](../architecture/images.md) and runtime encryption influence the throughput.
+* Constellation's [network encryption](../architecture/networking.md) via Cilium and WireGuard, which protects data in-transit.
+* [AMD SEV using SWIOTLB bounce buffers](https://lore.kernel.org/all/20200204193500.GA15564@ashkalra_ubuntu_server/T/) for all DMA including network I/O.
 
-Constellation's bandwidth for both sending and receiving is at 31 Gbps on Azure and 22 Gbps on GCP. AKS achieves 26 Gbps and GKE achieves about 27 Gbps in the tests.
+##### Pod-to-Pod
 
-![](../_media/benchmark_net.png)
+In this scenario, the client Pod connects directly to the server pod via its IP address.
 
+```mermaid
+flowchart LR
+    subgraph Node A
+    Client[Client]
+    end
+    subgraph Node B
+    Server[Server]
+    end
+    Client ==>|traffic| Server
+```
+
+The results for "Pod-to-Pod" on Azure are as follows:
+
+![Network Pod2Pod Azure benchmark graph](../_media/benchmark_net_p2p_azure.png)
+
+The results for "Pod-to-Pod" on GCP are as follows:
+
+![Network Pod2Pod GCP benchmark graph](../_media/benchmark_net_p2p_gcp.png)
+
+##### Pod-to-Service
+
+In this scenario, the client Pod connects to the server Pod via a ClusterIP service. This is more relevant to real-world use cases.
+
+```mermaid
+flowchart LR
+    subgraph Node A
+    Client[Client] ==>|traffic| Service[Service]
+    end
+    subgraph Node B
+    Server[Server]
+    end
+    Service ==>|traffic| Server
+```
+
+The results for "Pod-to-Pod" on Azure are as follows:
+
+![Network Pod2SVC Azure benchmark graph](../_media/benchmark_net_p2svc_azure.png)
+
+The results for "Pod-to-Pod" on GCP are as follows:
+
+![Network Pod2SVC GCP benchmark graph](../_media/benchmark_net_p2svc_gcp.png)
+
+In our recent comparison of Constellation on GCP with GKE, Constellation has 58% less TCP bandwidth. However, UDP bandwidth was slightly better with Constellation, thanks to its higher MTU.
+
+Similarly, when comparing Constellation on Azure with AKS using CVMs, Constellation achieved approximately 10% less TCP and 40% less UDP bandwidth.
 #### Storage I/O
 
 Azure and GCP offer persistent storage for their Kubernetes services AKS and GKE via the Container Storage Interface (CSI). CSI storage in Kubernetes is available via `PersistentVolumes` (PV) and consumed via `PersistentVolumeClaims` (PVC).
 Upon requesting persistent storage through a PVC, GKE and AKS will provision a PV as defined by a default [storage class](https://kubernetes.io/docs/concepts/storage/storage-classes/).
 Constellation provides persistent storage on Azure and GCP [that's encrypted on the CSI layer](../architecture/encrypted-storage.md).
-Similarly, Constellation will provision a PV via a default storage class upon a PVC request.
+Similarly, upon a PVC request, Constellation will provision a PV via a default storage class.
 
-The K-Bench [`fio`](https://fio.readthedocs.io/en/latest/fio_doc.html) benchmark consists of several tests.
-We selected four different tests that perform asynchronous access patterns because we believe they most accurately depict real-world I/O access for most applications.
+For Constellation on Azure and AKS, the benchmark ran with Azure Disk storage [Standard SSD](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) of 400 GiB size.
+The [DC4as machine type](https://learn.microsoft.com/en-us/azure/virtual-machines/dasv5-dadsv5-series#dasv5-series) with four cores provides the following maximum performance:
+- 6400 (20000 burst) IOPS
+- 144 MB/s (600 MB/s burst) throughput
 
-The following graph shows I/O throughput in MiB/s (higher is better).
+However, the performance is bound by the capabilities of the [512 GiB Standard SSD size](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) (the size class of 400 GiB volumes):
+- 500 (600 burst) IOPS
+- 60 MB/s (150 MB/s burst) throughput
 
-![I/O benchmark graph](../_media/benchmark_io.png)
+For Constellation on GCP and GKE, the benchmark ran with Compute Engine Persistent Disk Storage [pd-balanced](https://cloud.google.com/compute/docs/disks) of 400 GiB size.
+The N2D machine type with four cores and pd-balanced provides the following [maximum performance](https://cloud.google.com/compute/docs/disks/performance#n2d_vms):
+- 3,000 read IOPS
+- 15,000 write IOPS
+- 240 MB/s read throughput
+- 240 MB/s write throughput
 
-Comparing Constellation on GCP with GKE, you see that Constellation offers similar read/write speeds in all scenarios.
+However, the performance is bound by the capabilities of a [`Zonal balanced PD`](https://cloud.google.com/compute/docs/disks/performance#zonal-persistent-disks) with 400 GiB size:
+- 2400 read IOPS
+- 2400 write IOPS
+- 112 MB/s read throughput
+- 112 MB/s write throughput
 
-Constellation on Azure and AKS, however, partially differ. In read-write mixes, Constellation on Azure outperforms AKS in terms of I/O. On full-write access, Constellation and AKS have the same speed.
+The [`fio`](https://fio.readthedocs.io/en/latest/fio_doc.html) benchmark consists of several tests.
+The benchmark used [`Kubestr`](https://github.com/kastenhq/kubestr) to run `fio` in Kubernetes.
+The default test performs randomized access patterns that accurately depict worst-case I/O scenarios for most applications.
+
+The following `fio` settings were used:
+
+- No Cloud caching
+- No OS caching
+- Single CPU
+- 60 seconds runtime
+- 10 seconds ramp-up time
+- 10 GiB file
+- IOPS: 4 KB blocks and 128 iodepth
+- Bandwidth: 1024 KB blocks and 128 iodepth
+
+For more details, see the [`fio` test configuration](../../../../.github/actions/e2e_benchmark/fio.ini).
+
+
+The results for IOPS on Azure are as follows:
+
+![I/O IOPS Azure benchmark graph](../_media/benchmark_fio_azure_iops.png)
+
+The results for IOPS on GCP are as follows:
+
+![I/O IOPS GCP benchmark graph](../_media/benchmark_fio_gcp_iops.png)
+
+The results for bandwidth on Azure are as follows:
+
+![I/O bandwidth Azure benchmark graph](../_media/benchmark_fio_azure_bw.png)
+
+The results for bandwidth on GCP are as follows:
+
+![I/O bandwidth GCP benchmark graph](../_media/benchmark_fio_gcp_bw.png)
+
+On GCP, the results exceed the maximum performance guarantees of the chosen disk type. There are two possible explanations for this. The first is that there may be cloud caching in place that isn't configurable. Alternatively, the underlying provisioned disk size may be larger than what was requested, resulting in higher performance boundaries.
+
+When comparing Constellation on GCP with GKE, Constellation has similar bandwidth but about 10% less IOPS performance. On Azure, Constellation has similar IOPS performance compared to AKS, where both likely hit the maximum storage performance. However, Constellation has approximately 15% less read and write bandwidth.
 
 ## Conclusion
 
-Despite providing substantial [security benefits](./security-benefits.md), Constellation overall only has a slight performance overhead over the managed Kubernetes offerings AKS and GKE. Constellation is on par in most benchmarks, but is slightly slower in certain scenarios due to network and storage encryption. When it comes to API latencies, Constellation even outperforms the less security-focused competition.
+Despite the added [security benefits](./security-benefits.md) that Constellation provides, it only incurs a slight performance overhead when compared to managed Kubernetes offerings such as AKS and GKE. In most compute benchmarks, Constellation is on par, and while it may be slightly slower in certain I/O scenarios due to network and storage encryption, we're confident that we can reduce this overhead to single digits.
+
+For instance, storage encryption only adds between 10% to 15% overhead in terms of bandwidth and IOPS. Meanwhile, the biggest performance impact that Constellation currently faces is network encryption, which can incur up to 58% overhead on a 10 Gbps network. However, the Cilium team has conducted [benchmarks with Cilium using WireGuard encryption](https://docs.cilium.io/en/latest/operations/performance/benchmark/#encryption-wireguard-ipsec) on a 100 Gbps network that yielded over 15 Gbps, and we're confident that we can provide a similar level of performance with Constellation in our upcoming releases.
+
+Overall, Constellation strikes a great balance between security and performance, and we're continuously working to improve its performance capabilities while maintaining its high level of security.
