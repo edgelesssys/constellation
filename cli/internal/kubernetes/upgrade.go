@@ -54,6 +54,17 @@ func GetConstellationVersion(ctx context.Context, client DynamicInterface) (upda
 	return nodeVersion, nil
 }
 
+// InvalidUpgradeError present an invalid upgrade. It wraps the source and destination version for improved debuggability.
+type applyError struct {
+	expected string
+	actual   string
+}
+
+// Error returns the String representation of this error.
+func (e *applyError) Error() string {
+	return fmt.Sprintf("expected NodeVersion to contain %s, got %s", e.expected, e.actual)
+}
+
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
 	stableInterface  stableInterface
@@ -163,13 +174,13 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 	}
 	switch {
 	case updatedNodeVersion.Spec.ImageReference != nodeVersion.Spec.ImageReference:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.ImageReference, updatedNodeVersion.Spec.ImageReference)
+		return &applyError{expected: nodeVersion.Spec.ImageReference, actual: updatedNodeVersion.Spec.ImageReference}
 	case updatedNodeVersion.Spec.ImageVersion != nodeVersion.Spec.ImageVersion:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.ImageVersion, updatedNodeVersion.Spec.ImageVersion)
+		return &applyError{expected: nodeVersion.Spec.ImageVersion, actual: updatedNodeVersion.Spec.ImageVersion}
 	case updatedNodeVersion.Spec.KubernetesComponentsReference != nodeVersion.Spec.KubernetesComponentsReference:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.KubernetesComponentsReference, updatedNodeVersion.Spec.KubernetesComponentsReference)
+		return &applyError{expected: nodeVersion.Spec.KubernetesComponentsReference, actual: updatedNodeVersion.Spec.KubernetesComponentsReference}
 	case updatedNodeVersion.Spec.KubernetesClusterVersion != nodeVersion.Spec.KubernetesClusterVersion:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.KubernetesClusterVersion, updatedNodeVersion.Spec.KubernetesClusterVersion)
+		return &applyError{expected: nodeVersion.Spec.KubernetesClusterVersion, actual: updatedNodeVersion.Spec.KubernetesClusterVersion}
 	}
 
 	return errors.Join(upgradeErrs...)
