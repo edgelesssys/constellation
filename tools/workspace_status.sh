@@ -6,10 +6,51 @@ shopt -s inherit_errexit
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 REPOSITORY_ROOT="${REPOSITORY_ROOT:-$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)}"
 
+goos() {
+  case "$(uname -sr)" in
+  Darwin*) echo 'darwin' ;;
+  Linux*) echo 'linux' ;;
+  *)
+    echo 'Unknown OS' >&2
+    exit 1
+    ;;
+  esac
+}
+
+goarch() {
+  case $(uname -m) in
+  x86_64) echo 'amd64' ;;
+  arm) echo 'arm64' ;; # this is slightly simplified, but we only care about arm64
+  *)
+    echo 'Unknown arch' >&2
+    exit 1
+    ;;
+  esac
+}
+
 ensure_pseudo_version_tool() {
   if [[ ! -f "${REPOSITORY_ROOT}/tools/pseudo-version" ]]; then
-    go build -o "${REPOSITORY_ROOT}/tools/pseudo-version" "${REPOSITORY_ROOT}"/hack/pseudo-version >&2
+    get_pseudo_version_tool
   fi
+  expected=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
+  if ! sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version"); then
+    get_pseudo_version_tool
+  fi
+}
+
+get_pseudo_version_tool() {
+  out="${REPOSITORY_ROOT}/tools/pseudo-version"
+  hash=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
+  url=https://cdn.confidential.cloud/constellation/cas/sha256/${hash}
+  if command -v curl &> /dev/null; then
+    curl -fsSL "${url}" -o "${out}"
+  elif command -v wget &> /dev/null; then
+    wget -q -O "${out}" "${url}"
+  else
+    echo "curl or wget is required to download the pseudo-version tool" >&2
+    exit 1
+  fi
+  chmod +x "${out}"
 }
 
 pseudo_version() {

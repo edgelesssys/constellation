@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# This script checks if the pseudo-version tool hashes are up-to-date.
+
+###### script header ######
+
+lib=$(realpath @@BASE_LIB@@) || exit 1
+stat "${lib}" >> /dev/null || exit 1
+
+# shellcheck source=../../bazel/sh/lib.bash
+if ! source "${lib}"; then
+  echo "Error: could not find import"
+  exit 1
+fi
+
+declare -A pseudo_version_tools
+pseudo_version_tools["darwin_amd64"]="$(realpath @@PSEUDO_VERSION_darwin_amd64@@)"
+pseudo_version_tools["darwin_arm64"]="$(realpath @@PSEUDO_VERSION_darwin_arm64@@)"
+pseudo_version_tools["linux_amd64"]="$(realpath @@PSEUDO_VERSION_linux_amd64@@)"
+pseudo_version_tools["linux_arm64"]="$(realpath @@PSEUDO_VERSION_linux_arm64@@)"
+
+cd "${BUILD_WORKING_DIRECTORY}"
+
+###### script body ######
+
+platforms=(
+  darwin_amd64
+  darwin_arm64
+  linux_amd64
+  linux_arm64
+)
+
+for platform in "${platforms[@]}"; do
+  computed_hash=$(sha256sum "${pseudo_version_tools[$platform]}" | cut -d' ' -f1)
+  # compare hash to saved hash in ${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256
+  saved_hash=$(cat "${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256")
+  if [[ ${computed_hash} != "${saved_hash}" ]]; then
+    echo "Error: pseudo-version tool hash for ${platform} does not match saved hash"
+    echo "Computed hash: ${computed_hash}"
+    echo "Saved hash: ${saved_hash}"
+    exit 1
+  fi
+done
