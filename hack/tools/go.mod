@@ -6,7 +6,7 @@ require (
 	github.com/google/go-licenses v1.6.0
 	github.com/katexochen/sh/v3 v3.6.0
 	golang.org/x/tools v0.7.0
-	golang.org/x/vuln v0.0.0-20230331150530-a42f9910daf3
+	golang.org/x/vuln v0.0.0-20230411201117-aaaefcd264f6
 )
 
 require (
@@ -30,6 +30,7 @@ require (
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
