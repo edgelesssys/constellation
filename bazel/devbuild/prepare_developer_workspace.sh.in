@@ -27,13 +27,29 @@ cd "${BUILD_WORKING_DIRECTORY}"
 
 ###### script body ######
 
+replace_prefix() {
+  local host_cache=$1
+  local builder_cache=$2
+  local dir=$3
+  if [[ ${dir#"${builder_cache}"} == "${dir}" ]]; then
+    echo "${dir}"
+    return
+  fi
+  relpath=${dir#"${builder_cache}"}
+  realpath -m "${host_cache}/${relpath}"
+}
+
+# Set HOST_CACHE when running in a container with mounted cache.
+host_cache="${HOST_CACHE:-${HOME}/.cache}"
+builder_cache="${HOME}/.cache"
+
 if [[ $# -eq 0 ]]; then
   workdir="."
 else
   workdir="$1"
 fi
 
-ln -sf "${bootstrapper}" "${workdir}/bootstrapper"
-ln -sf "${upgrade_agent}" "${workdir}/upgrade-agent"
-ln -sf "${cli}" "${workdir}/constellation"
-ln -sf "${cdbg}" "${workdir}/cdbg"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${bootstrapper}")" "${workdir}/bootstrapper"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${upgrade_agent}")" "${workdir}/upgrade-agent"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cdbg}")" "${workdir}/cdbg"
