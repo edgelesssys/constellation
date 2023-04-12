@@ -198,7 +198,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
-		return createFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
+		return createFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 

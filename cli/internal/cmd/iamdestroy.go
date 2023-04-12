@@ -165,7 +165,7 @@ type destroyFlags struct {
 func (c *destroyCmd) parseDestroyFlags(cmd *cobra.Command) (destroyFlags, error) {
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
-		return destroyFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
+		return destroyFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 
