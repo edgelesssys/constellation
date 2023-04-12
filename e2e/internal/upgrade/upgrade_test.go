@@ -196,7 +196,7 @@ func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersio
 		}
 
 		if version != wantMicroserviceVersion {
-			log.Printf("Microservices still at version: %v\n", version)
+			log.Printf("Microservices still at version %v, want %v\n", version, wantMicroserviceVersion)
 			return false
 		}
 
@@ -227,12 +227,12 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 
 			kubeletVersion := node.Status.NodeInfo.KubeletVersion
 			if kubeletVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Kubelet) %s\n", node.Name, kubeletVersion)
+				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes.String())
 				allUpdated = false
 			}
 			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
 			if kubeProxyVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Proxy) %s\n", node.Name, kubeProxyVersion)
+				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes.String())
 				allUpdated = false
 			}
 		}
