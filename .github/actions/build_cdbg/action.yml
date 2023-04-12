@@ -21,13 +21,13 @@ runs:
     - name: Build cdbg
       shell: bash
       env:
-        GOOS: ${{ inputs.targetOS }}
-        GOARCH: ${{ inputs.targetArch }}
+        TARGET_GOOS: ${{ inputs.targetOS }}
+        TARGET_GOARCH: ${{ inputs.targetArch }}
         OUTPUT_PATH: ${{ inputs.outputPath }}
       run: |
         echo "::group::Build cdbg"
         mkdir -p "$(dirname "${OUTPUT_PATH}")"
-        label="//debugd/cmd/cdbg:cdbg_${GOOS}_${GOARCH}"
+        label="//debugd/cmd/cdbg:cdbg_${TARGET_GOOS}_${TARGET_GOARCH}"
         bazel build "${label}"
         repository_root=$(git rev-parse --show-toplevel)
         out_rel=$(bazel cquery --output=files "${label}")

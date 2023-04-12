@@ -43,8 +43,8 @@ runs:
     - name: Build CLI
       shell: bash
       env:
-        GOOS: ${{ inputs.targetOS }}
-        GOARCH: ${{ inputs.targetArch }}
+        TARGET_GOOS: ${{ inputs.targetOS }}
+        TARGET_GOARCH: ${{ inputs.targetArch }}
         OUTPUT_PATH: ${{ inputs.outputPath || format('./build/constellation-{0}-{1}', inputs.targetOS, inputs.targetArch) }}
       run: |
         echo "::group::Build CLI"
@@ -55,7 +55,7 @@ runs:
         else
           cli_variant=oss
         fi
-        label="//cli:cli_${cli_variant}_${GOOS}_${GOARCH}"
+        label="//cli:cli_${cli_variant}_${TARGET_GOOS}_${TARGET_GOARCH}"
         bazel build "${label}"
         repository_root=$(git rev-parse --show-toplevel)
         out_rel=$(bazel cquery --output=files "${label}")
