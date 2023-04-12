@@ -108,12 +108,6 @@ on:
         type: string
         required: true
 
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
-
 jobs:
   split-cliImageVersion:
     name: Split cliImageVersion
@@ -244,22 +238,6 @@ jobs:
         if: inputs.cloudProvider == 'gcp' && runner.os == 'macOS'
         uses: google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587 # v1.1.0
 
-      - name: Login to Azure
-        if: inputs.cloudProvider == 'azure'
-        uses: ./.github/actions/login_azure
-        with:
-          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
-
-      - name: Create Azure resource group
-        id: az_resource_group_gen
-        if: inputs.cloudProvider == 'azure'
-        shell: bash
-        run: |
-          uuid=$(uuidgen)
-          name=e2e-test-${uuid%%-*}
-          az group create --location westus --name "$name" --tags e2e
-          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
-
       - name: Run manual E2E test
         id: e2e_test
         uses: ./.github/actions/e2e_test
@@ -269,24 +247,21 @@ jobs:
           cloudProvider: ${{ inputs.cloudProvider }}
           machineType: ${{ inputs.machineType }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
-          gcp_service_account: "constellation-e2e@constellation-331613.iam.gserviceaccount.com"
-          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: " constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ inputs.test }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
           keepMeasurements: ${{ inputs.keepMeasurements }}
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
-          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
-          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
-          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
-          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
-          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
           cliVersion: ${{ needs.split-cliImageVersion.outputs.cliVersion }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+          azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
 
       - name: Always terminate cluster
         if: always()
@@ -295,16 +270,9 @@ jobs:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Always delete IAM configuration
-        if: always() && inputs.test == 'iamcreate' && inputs.cloudProvider != 'azure' # skip for Azure, as the SP / MI does not have the required permissions
+        if: always()
         uses: ./.github/actions/constellation_iam_destroy
-
-      - name: Always destroy Azure resource group
-        if: always() && inputs.cloudProvider == 'azure'
-        shell: bash
-        run: |
-          az group delete \
-            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
-            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
-            --force-deletion-types Microsoft.Compute/virtualMachines \
-            --no-wait \
-            --yes
+        with:
+          cloudProvider: ${{ inputs.cloudProvider }}
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"

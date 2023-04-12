@@ -1,9 +1,41 @@
 name: Delete IAM configuration
 description: Delete previously created IAM configuration.
 
+inputs:
+  cloudProvider:
+      description: "Either 'aws', 'azure' or 'gcp'."
+      required: true
+  gcpServiceAccount:
+      description: "GCP service account to use for authentication."
+      required: false
+  azureCredentials:
+      description: "Azure service principal to use for authentication."
+      required: false
+
 runs:
   using: "composite"
   steps:
+    - name: Login to GCP (IAM service account)
+      if: inputs.cloudProvider == 'gcp'
+      uses: ./.github/actions/login_gcp
+      with:
+        service_account: ${{ inputs.gcpServiceAccount }}
+
+    - name: Login to AWS (IAM role)
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
+        aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
+
+    - name: Login to Azure (IAM service principal)
+      if: inputs.cloudProvider == 'azure'
+      uses: ./.github/actions/login_azure
+      with:
+        azure_credentials: ${{ inputs.azureCredentials }}
+
     - name: Delete IAM configuration
       shell: bash
       run: |
