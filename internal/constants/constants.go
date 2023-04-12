@@ -83,6 +83,8 @@ const (
 	TerraformIAMWorkingDir = "constellation-iam-terraform"
 	// GCPServiceAccountKeyFile is the file name for the GCP service account key file.
 	GCPServiceAccountKeyFile = "gcpServiceAccountKey.json"
+	// ErrorLog file which contains server errors during init.
+	ErrorLog = "constellation-cluster.log"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.

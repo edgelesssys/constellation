@@ -8,11 +8,12 @@ package cmd
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -69,9 +70,11 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log     debugLog
-	merger  configMerger
-	spinner spinnerInterf
+	log          debugLog
+	merger       configMerger
+	spinner      spinnerInterf
+	masterSecret uri.MasterSecret
+	fh           *file.Handler
 }
 
 // runInitialize runs the initialize command.
@@ -95,7 +98,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler}
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient())
 }
 
@@ -154,6 +157,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	i.log.Debugf("Successfully marshaled service account URI")
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
+	i.masterSecret = masterSecret
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
@@ -197,6 +201,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 				cmd.PrintErrf("Failed to collect logs from cluser: %s\n", err)
 				return err
 			}
+			cmd.PrintErrf("Cluster logs were successfully written to %s\n", constants.ErrorLog)
 
 		}
 		return err
@@ -239,21 +244,51 @@ func (i *initCmd) getLogsCall(ctx context.Context, ip string, req *initproto.Log
 	}
 
 	client := initproto.NewAPIClient(conn)
+	i.log.Debugf("Created gRPC client")
+
+	i.log.Debugf("Attempting query the GetLogs endpoint")
 	stream, err := client.GetLogs(ctx, req)
 	if err != nil {
 		return err
 	}
+	i.log.Debugf("Received stream connection from server")
 
-	// receive the data from the stream
+	i.log.Debugf("Deriving the decryption key")
+	key, err := crypto.DeriveKey(i.masterSecret.Key, i.masterSecret.Salt, nil, 16) // 16 byte = 128 bit
+	if err != nil {
+		return err
+	}
+
+	i.log.Debugf("Creating the cipher")
+	// set up AES-128 in GCM mode
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return err
+	}
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return err
+	}
+
+	i.log.Debugf("Receiving and decrypting stream")
 	for {
-		logs, err := stream.Recv()
+		res, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return err
 		}
-		log.Printf("%+v", logs)
+
+		plaintext, err := aesgcm.Open(nil, res.Nonce, res.Log, nil)
+		if err != nil {
+			return err
+		}
+
+		err = i.fh.Write(constants.ErrorLog, plaintext)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
