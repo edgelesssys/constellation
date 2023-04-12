@@ -172,7 +172,7 @@ jobs:
             KUBERNETES_FLAG="--target-kubernetes $KUBERNETES"
           fi
 
-          bazelisk run //e2e/internal/upgrade:upgrade_test -- --want-worker "{$WORKERNODES}" --want-control "{$CONTROLNODES}" --target-image "{$IMAGE}" "{$KUBERNETES_FLAG}" "{$MICROSERVICES_FLAG}"
+          bazelisk run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "{$KUBERNETES_FLAG}" "{$MICROSERVICES_FLAG}"
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
           IMAGE: ${{ inputs.toImage && inputs.toImage || steps.find-image.outputs.output }}
