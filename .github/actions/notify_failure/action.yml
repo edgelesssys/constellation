@@ -1,0 +1,99 @@
+name: notify failure
+description: "Post a failure message to project board and teams"
+
+inputs:
+  projectWriteToken:
+    description: "Token to write to the project board"
+    required: true
+  teamsWebhookUri:
+    description: "URI to send a message to the teams channel"
+    required: true
+  test:
+    description: "Test name"
+    required: true
+  provider:
+    description: "CSP"
+    required: true
+  refStream:
+    description: "RefStream of the run"
+    required: false
+  kubernetesVersion:
+    description: "Kubernetes version"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pick assignee
+      id: pick-assignee
+      uses: ./.github/actions/pick_assignee
+
+    - name: Create project card in case of failure
+      id: create-project-card
+      continue-on-error: true
+      shell: bash
+      env:
+        GHH_TOKEN: ${{ inputs.projectWriteToken }}
+      run: |
+        # TODO(katexochen): add job number when possible
+        jobURL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        opensearchURL="https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com/_dashboards/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))&_a=(columns:!(metadata.name,systemd.unit,kubernetes.pod_name,message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.provider,negate:!f,params:(query:${{ inputs.provider }}),type:phrase),query:(match_phrase:(metadata.provider:${{ inputs.provider }}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',key:metadata.github.run-id,negate:!f,params:(query:${{ github.run_id }}),type:phrase),query:(match_phrase:(metadata.github.run-id:${{ github.run_id }})))),index:'74517cf0-6442-11ed-acf1-47dda8fdfbbb',interval:auto,query:(language:kuery,query:''),sort:!())"
+
+        cat << EOF > header.md
+
+        ## Metadata
+
+        * [Job URL](${jobURL})
+        * [OpenSearch URL](${opensearchURL})
+
+        EOF
+
+        cat header.md .github/failure_project_template.md > body.md
+        cp .github/failure_project_metadata.json metadata.json
+        DATE=$(date '+%F %a %T %Z') yq -iP '.issueTitle = env(DATE)' metadata.json
+        yq -iP '.assignees += [ "${{ steps.pick-assignee.outputs.assignee }}" ]' metadata.json
+        yq -iP '.fields.cloudProvider = "${{ inputs.provider }}"' metadata.json
+        yq -iP '.fields.test = "${{ inputs.test }}"' metadata.json
+        yq -iP '.fields.workflow = "${{ github.workflow }}"' metadata.json
+        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
+          yq -iP '.fields.kubernetesVersion = "${{ inputs.kubernetesVersion }}"' metadata.json
+        fi
+        if [[ -n "${{ inputs.refStream }}" ]]; then
+          yq -iP '.fields.refStream = "${{ inputs.refStream }}"' metadata.json
+        fi
+        cat metadata.json
+
+        issueURL=$(
+        bazelisk run //bazel/ci:ghh -- create-project-issue \
+          --body body.md \
+          --metadata metadata.json \
+          -v
+        )
+
+        echo "jobURL=${jobURL}" | tee -a "$GITHUB_OUTPUT"
+        echo "opensearchURL=${opensearchURL}" | tee -a "$GITHUB_OUTPUT"
+        echo "issueURL=${issueURL}" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Notify teams channel
+      continue-on-error: true
+      shell: bash
+      run: |
+        cp .github/teams_payload_template.json teams_payload.json
+        yq -iP '.attachments[0].content.body[0].columns[1].items[1].text = "${{ github.workflow }}"' teams_payload.json
+        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "CloudProvider", "value": "${{ inputs.provider }}" } ]' teams_payload.json
+        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Test", "value": "${{ inputs.test }}" } ]' teams_payload.json
+        if [[ -n "${{ inputs.kubernetesVersion }}" ]]; then
+          yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "KubernetesVersion", "value": "${{ inputs.kubernetesVersion }}" } ]' teams_payload.json
+        fi
+        if [[ -n "${{ inputs.refStream }}" ]]; then
+          yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' teams_payload.json
+        fi
+        yq -iP '.attachments[0].content.actions[0].url = "${{ steps.create-project-card.outputs.jobURL }}"' teams_payload.json
+        yq -iP '.attachments[0].content.actions[1].url = "${{ steps.create-project-card.outputs.issueURL }}"' teams_payload.json
+        yq -iP ".attachments[0].content.actions[2].url = \"${{ steps.create-project-card.outputs.opensearchURL }}\"" teams_payload.json
+        cat teams_payload.json
+
+        curl \
+          -H "Content-Type: application/json" \
+          -d @teams_payload.json \
+          "${{ inputs.teamsWebhookUri }}"

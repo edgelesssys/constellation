@@ -45,8 +45,10 @@ jobs:
       fail-fast: false
       max-parallel: 5
       matrix:
+        kubernetesVersion: ["1.25"] # should be default
         provider: ["gcp", "azure", "aws"]
         refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
+        test: ["sonobuoy full"]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -79,7 +81,8 @@ jobs:
           gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          test: "sonobuoy full"
+          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          test: ${{ matrix.test }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
@@ -98,17 +101,14 @@ jobs:
           azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
-      - name: Notify teams channel
+      - name: Notify about failure
         if: failure() && github.ref == 'refs/heads/main'
         continue-on-error: true
-        shell: bash
-        working-directory: .github/actions/e2e_test
-        run: |
-          sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME=${{ matrix.provider }}
-          export TEAMS_RUN_ID=${{ github.run_id }}
-          envsubst < teams-payload.json > to-be-send.json
-          curl                                          \
-            -H "Content-Type: application/json"         \
-            -d @to-be-send.json                         \
-            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
+        uses: ./.github/actions/notify_failure
+        with:
+          projectWriteToken: ${{ secrets.PROJECT_WRITE_TOKEN }}
+          teamsWebhookUri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          refStream: ${{ matrix.refStream }}
+          test: ${{ matrix.test }}
+          kubernetesVersion: ${{ matrix.kubernetesVersion }}
+          provider: ${{ matrix.provider }}

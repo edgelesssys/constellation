@@ -12,4 +12,4 @@ fi
 
 cd "${BUILD_WORKSPACE_DIRECTORY}" || exit 1
 
-"${cmd}" "${args[@]}"
+"${cmd}" "${args[@]}" "${@}"

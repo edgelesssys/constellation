@@ -1,0 +1,85 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "contentUrl": null,
+            "content": {
+                "type": "AdaptiveCard",
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "version": "1.2",
+                "msteams": {
+                    "width": "Full"
+                },
+                "body": [
+                    {
+                        "type": "ColumnSet",
+                        "columns": [
+                            {
+                                "type": "Column",
+                                "width": 1,
+                                "items": [
+                                    {
+                                        "type": "Image",
+                                        "url": "https://miro.medium.com/max/552/1*G7s61tFPaLI9JRxWYpRNLw.png",
+                                        "size": "large",
+                                        "horizontalAlignment": "center"
+                                    }
+                                ],
+                                "horizontalAlignment": "center",
+                                "verticalContentAlignment": "center"
+                            },
+                            {
+                                "type": "Column",
+                                "width": 2,
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "Constellation E2E test failed",
+                                        "wrap": true,
+                                        "fontType": "Default",
+                                        "size": "large",
+                                        "weight": "bolder"
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "Subtitle",
+                                        "wrap": true,
+                                        "size": "large",
+                                        "isSubtle": true,
+                                        "spacing": "Small"
+                                    },
+                                    {
+                                        "type": "FactSet",
+                                        "facts": [],
+                                        "spacing": "small"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "GitHub workflow run",
+                        "url": "",
+                        "style": "positive"
+                    },
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "Project board issue",
+                        "url": "",
+                        "style": "positive"
+                    },
+                    {
+                        "type": "Action.OpenUrl",
+                        "title": "OpenSearch logs",
+                        "url": "",
+                        "style": "positive"
+                    }
+                ]
+            }
+        }
+    ]
+}
