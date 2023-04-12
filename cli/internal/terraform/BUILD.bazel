@@ -5,6 +5,7 @@ go_library(
     name = "terraform",
     srcs = [
         "loader.go",
+        "logging.go",
         "terraform.go",
         "variables.go",
     ],
