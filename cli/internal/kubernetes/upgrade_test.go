@@ -35,6 +35,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		stable                *stubStableClient
 		conditions            []metav1.Condition
 		currentImageVersion   string
+		newImageReference     string
 		currentClusterVersion string
 		conf                  *config.Config
 		getErr                error
@@ -147,6 +148,28 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return assert.ErrorIs(t, err, someErr)
 			},
 		},
+		"image too new valid k8s": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.4.2"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			newImageReference:     "path/to/image:v1.4.2",
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: true,
+			wantErr:    true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				upgradeErr := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -171,7 +194,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			upgrader := Upgrader{
 				stableInterface:  tc.stable,
 				dynamicInterface: dynamicClient,
-				imageFetcher:     &stubImageFetcher{},
+				imageFetcher:     &stubImageFetcher{reference: tc.newImageReference},
 				log:              logger.NewTest(t),
 				outWriter:        io.Discard,
 			}

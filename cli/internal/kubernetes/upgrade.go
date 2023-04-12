@@ -162,14 +162,14 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return fmt.Errorf("applying upgrade: %w", err)
 	}
 	switch {
-	case updatedNodeVersion.Spec.ImageReference != imageReference:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", imageReference, updatedNodeVersion.Spec.ImageReference)
-	case updatedNodeVersion.Spec.ImageVersion != imageVersion.Version:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", imageVersion.Version, updatedNodeVersion.Spec.ImageVersion)
+	case updatedNodeVersion.Spec.ImageReference != nodeVersion.Spec.ImageReference:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.ImageReference, updatedNodeVersion.Spec.ImageReference)
+	case updatedNodeVersion.Spec.ImageVersion != nodeVersion.Spec.ImageVersion:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.ImageVersion, updatedNodeVersion.Spec.ImageVersion)
 	case updatedNodeVersion.Spec.KubernetesComponentsReference != nodeVersion.Spec.KubernetesComponentsReference:
 		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.KubernetesComponentsReference, updatedNodeVersion.Spec.KubernetesComponentsReference)
-	case updatedNodeVersion.Spec.KubernetesClusterVersion != versionConfig.ClusterVersion:
-		return fmt.Errorf("expected NodeVersion to contain %s, got %s", versionConfig.ClusterVersion, updatedNodeVersion.Spec.KubernetesClusterVersion)
+	case updatedNodeVersion.Spec.KubernetesClusterVersion != nodeVersion.Spec.KubernetesClusterVersion:
+		return fmt.Errorf("expected NodeVersion to contain %s, got %s", nodeVersion.Spec.KubernetesClusterVersion, updatedNodeVersion.Spec.KubernetesClusterVersion)
 	}
 
 	return errors.Join(upgradeErrs...)
