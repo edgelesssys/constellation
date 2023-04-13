@@ -107,6 +107,14 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(containsUnexepectedMsg(string(msg)))
 	log.Println(string(msg))
 
+	// Show versions set in cluster.
+	// The string after "Cluster status:" in the output might not be updated yet.
+	// This is only updated after the operator finishes one reconcile loop.
+	cmd = exec.CommandContext(context.Background(), cli, "status")
+	msg, err = cmd.CombinedOutput()
+	require.NoErrorf(err, "%s", string(msg))
+	log.Println(string(msg))
+
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
 	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
 }
