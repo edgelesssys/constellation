@@ -35,6 +35,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		stable                *stubStableClient
 		conditions            []metav1.Condition
 		currentImageVersion   string
+		newImageReference     string
+		badImageVersion       string
 		currentClusterVersion string
 		conf                  *config.Config
 		getErr                error
@@ -75,7 +77,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			wantUpdate: true,
 			wantErr:    true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				upgradeErr := &compatibility.InvalidUpgradeError{}
+				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
@@ -96,7 +98,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			wantUpdate: true,
 			wantErr:    true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				upgradeErr := &compatibility.InvalidUpgradeError{}
+				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
@@ -112,7 +114,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			stable:                &stubStableClient{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				upgradeErr := &compatibility.InvalidUpgradeError{}
+				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
@@ -147,6 +149,50 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return assert.ErrorIs(t, err, someErr)
 			},
 		},
+		"image too new valid k8s": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.4.2"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			newImageReference:     "path/to/image:v1.4.2",
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: true,
+			wantErr:    true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				upgradeErr := &compatibility.InvalidUpgradeError{}
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
+		"apply returns bad object": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			badImageVersion:       "v3.2.1",
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: true,
+			wantErr:    true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				var target *applyError
+				return assert.ErrorAs(t, err, &target)
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -167,11 +213,19 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
 			require.NoError(err)
 
-			dynamicClient := &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, getErr: tc.getErr}
+			var badUpdatedObject *unstructured.Unstructured
+			if tc.badImageVersion != "" {
+				nodeVersion.Spec.ImageVersion = tc.badImageVersion
+				unstrBadNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+				require.NoError(err)
+				badUpdatedObject = &unstructured.Unstructured{Object: unstrBadNodeVersion}
+			}
+
+			dynamicClient := &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, badUpdatedObject: badUpdatedObject, getErr: tc.getErr}
 			upgrader := Upgrader{
 				stableInterface:  tc.stable,
 				dynamicInterface: dynamicClient,
-				imageFetcher:     &stubImageFetcher{},
+				imageFetcher:     &stubImageFetcher{reference: tc.newImageReference},
 				log:              logger.NewTest(t),
 				outWriter:        io.Discard,
 			}
@@ -420,10 +474,11 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 }
 
 type stubDynamicClient struct {
-	object        *unstructured.Unstructured
-	updatedObject *unstructured.Unstructured
-	getErr        error
-	updateErr     error
+	object           *unstructured.Unstructured
+	updatedObject    *unstructured.Unstructured
+	badUpdatedObject *unstructured.Unstructured
+	getErr           error
+	updateErr        error
 }
 
 func (u *stubDynamicClient) GetCurrent(_ context.Context, _ string) (*unstructured.Unstructured, error) {
@@ -432,6 +487,9 @@ func (u *stubDynamicClient) GetCurrent(_ context.Context, _ string) (*unstructur
 
 func (u *stubDynamicClient) Update(_ context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	u.updatedObject = updatedObject
+	if u.badUpdatedObject != nil {
+		return u.badUpdatedObject, u.updateErr
+	}
 	return u.updatedObject, u.updateErr
 }
 
