@@ -1,133 +1,150 @@
-![Constellation](docs/static/img/banner.svg)
+# go-containerregistry
 
-# Always Encrypted Kubernetes
+[![GitHub Actions Build Status](https://github.com/google/go-containerregistry/workflows/Build/badge.svg)](https://github.com/google/go-containerregistry/actions?query=workflow%3ABuild)
+[![GoDoc](https://godoc.org/github.com/google/go-containerregistry?status.svg)](https://godoc.org/github.com/google/go-containerregistry)
+[![Code Coverage](https://codecov.io/gh/google/go-containerregistry/branch/main/graph/badge.svg)](https://codecov.io/gh/google/go-containerregistry)
 
-<p>
-    <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
-    <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-tidy.yml/badge.svg?branch=main" alt="Govulncheck"></a>
-    <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation/v2"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation/v2" alt="Go Report"></a>
-    <a href="https://discord.gg/rH8QTH56JN"><img src="https://img.shields.io/discord/823900998606651454?color=7389D8&label=discord&logo=discord&logoColor=ffffff" alt="Discord"></a>
-    <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
-</p>
+## Introduction
 
-Constellation is a Kubernetes engine that aims to provide the best possible data security. It wraps your K8s cluster into a single *confidential context* that is shielded from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages confidential computing (see the [whitepaper]) and more specifically Confidential VMs.
+This is a golang library for working with container registries.
+It's largely based on the [Python library of the same name](https://github.com/google/containerregistry).
 
-<img src="docs/static/img/concept.svg" alt="Concept" width="85%"/>
+The following diagram shows the main types that this library handles.
+![OCI image representation](images/ociimage.jpeg)
 
-## Goals
+## Philosophy
 
-From a security perspective, Constellation is designed to keep all data always encrypted and to prevent access from the infrastructure layer (i.e., remove the infrastructure from the TCB). This includes access from datacenter employees, privileged cloud admins, and attackers coming through the infrastructure (e.g., malicious co-tenants escalating their privileges).
+The overarching design philosophy of this library is to define interfaces that present an immutable
+view of resources (e.g. [`Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1#Image),
+[`Layer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1#Layer),
+[`ImageIndex`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1#ImageIndex)),
+which can be backed by a variety of medium (e.g. [registry](./pkg/v1/remote/README.md),
+[tarball](./pkg/v1/tarball/README.md), [daemon](./pkg/v1/daemon/README.md), ...).
 
-From a DevOps perspective, Constellation is designed to work just like what you would expect from a modern K8s engine.
+To complement these immutable views, we support functional mutations that produce new immutable views
+of the resulting resource (e.g. [mutate](./pkg/v1/mutate/README.md)).  The end goal is to provide a
+set of versatile primitives that can compose to do extraordinarily powerful things efficiently and easily.
 
-## Use cases
+Both the resource views and mutations may be lazy, eager, memoizing, etc, and most are optimized
+for common paths based on the tooling we have seen in the wild (e.g. writing new images from disk
+to the registry as a compressed tarball).
 
-Encrypting your K8s is good for:
 
-* Increasing the overall security of your clusters
-* Increasing the trustworthiness of your SaaS offerings
-* Moving sensitive workloads from on-prem to the cloud
-* Meeting regulatory requirements
+### Experiments
 
-## Features
+Over time, we will add new functionality under experimental environment variables listed here.
 
-### 🔒 Everything always encrypted
+| Env Var | Value(s) | What is does |
+|---------|----------|--------------|
+| `GGCR_EXPERIMENT_ESTARGZ` | `"1"` | When enabled this experiment will direct `tarball.LayerFromOpener` to emit [estargz](https://github.com/opencontainers/image-spec/issues/815) compatible layers, which enable them to be lazily loaded by an appropriately configured containerd. |
 
-* Runtime encryption: All nodes run inside AMD SEV-based Confidential VMs (CVMs). Support for Intel TDX will be added in the future.
-* Transparent encryption of network and storage: All pod-to-pod traffic and all writes to persistent storage are [automatically encrypted][network-encryption]
-* Transparent key management: All cryptographic [keys are managed within the confidential context][key-management]
 
-### 🔍 Everything verifiable
+### `v1.Image`
 
-<a href="https://slsa.dev/"><img src="docs/docs/_media/SLSA-Badge-full-level3.svg" align="right" width="225px"></a>
+#### Sources
 
-* "Whole cluster" [attestation][cluster-attestation] based on the remote-attestation feature of CVMs
-* Confidential computing-optimized [node images][images]; fully measured and integrity-protected
-* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/) and [SLSA Level 3](https://slsa.dev/spec/v0.1/#security-levels).
+* [`remote.Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Image)
+* [`tarball.Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/tarball#Image)
+* [`daemon.Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/daemon#Image)
+* [`layout.Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/layout#Path.Image)
+* [`random.Image`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/random#Image)
 
-### 🚀 Performance and scale
+#### Sinks
 
-* High availability with multi-master architecture and stacked etcd topology
-* Dynamic cluster autoscaling with verification and secure bootstrapping of new nodes
-* Competitive performance ([see K-Bench comparison with AKS and GKE][performance])
+* [`remote.Write`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Write)
+* [`tarball.Write`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/tarball#Write)
+* [`daemon.Write`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/daemon#Write)
+* [`legacy/tarball.Write`](https://godoc.org/github.com/google/go-containerregistry/pkg/legacy/tarball#Write)
+* [`layout.AppendImage`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/layout#Path.AppendImage)
 
-### 🧩 Easy to use and integrate
+### `v1.ImageIndex`
 
-<a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
+#### Sources
 
-* Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
-* Support for Azure, GCP, and AWS.
-* Support for local installations with [MiniConstellation][first-steps-local].
+* [`remote.Index`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Index)
+* [`random.Index`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/random#Index)
+* [`layout.ImageIndexFromPath`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/layout#ImageIndexFromPath)
 
-## Getting started
+#### Sinks
 
-If you're already familiar with Kubernetes, it's easy to get started with Constellation:
+* [`remote.WriteIndex`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#WriteIndex)
+* [`layout.Write`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/layout#Write)
 
-1. 📦 [Install the CLI][install]
-2. ⌨️ Create a Constellation cluster in the [cloud][first-steps] or [locally][first-steps-local]
-3. 🏎️ [Run your app][examples]
+### `v1.Layer`
 
-![Constellation Shell](docs/static/img/shell-windowframe.svg)
+#### Sources
 
-## Live demos
+* [`remote.Layer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Layer)
+* [`tarball.LayerFromFile`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/tarball#LayerFromFile)
+* [`random.Layer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/random#Layer)
+* [`stream.Layer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/stream#Layer)
 
-We're running public instances of popular software on Constellation:
-* Rocket.Chat: https://rocket.edgeless.systems/ ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
-* GitLab: https://gitlab.edgeless.systems/ ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
+#### Sinks
 
-These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
+* [`remote.WriteLayer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#WriteLayer)
 
-## Documentation
+## Overview
 
-To learn more, see the [documentation](https://docs.edgeless.systems/constellation).
-You may want to start with one of the following sections.
+### `mutate`
 
-* [Confidential Kubernetes][confidential-kubernetes] (Constellation vs. AKS/GKE + CVMs)
-* [Security benefits][security-benefits]
-* [Architecture][architecture]
+The simplest use for these libraries is to read from one source and write to another.
 
-## Support
+For example,
 
-* If something doesn't work, make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
-* Please file an [issue][github-issues] to get help or report a bug.
-* Join the [Discord] to have a chat on confidential computing and Constellation.
-* Visit our [blog](https://blog.edgeless.systems/) for technical deep-dives and tutorials and follow us on [Twitter] for news.
-* Edgeless Systems also offers [Enterprise Support][enterprise-support].
+ * `crane pull` is `remote.Image -> tarball.Write`,
+ * `crane push` is `tarball.Image -> remote.Write`,
+ * `crane cp` is `remote.Image -> remote.Write`.
 
-## Contributing
+However, often you actually want to _change something_ about an image.
+This is the purpose of the [`mutate`](pkg/v1/mutate) package, which exposes
+some commonly useful things to change about an image.
 
-Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points:
+### `partial`
 
-* Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
-* Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
+If you're trying to use this library with a different source or sink than it already supports,
+it can be somewhat cumbersome. The `Image` and `Layer` interfaces are pretty wide, with a lot
+of redundant information. This is somewhat by design, because we want to expose this information
+as efficiently as possible where we can, but again it is a pain to implement yourself.
 
-> **Warning**
-> Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to security@edgeless.systems.
+The purpose of the [`partial`](pkg/v1/partial) package is to make implementing a `v1.Image`
+much easier, by filling in all the derived accessors for you if you implement a minimal
+subset of `v1.Image`.
 
-## License
+### `transport`
 
-The Constellation source code is licensed under the [GNU Affero General Public License v3.0](LICENSE). Edgeless Systems provides pre-built and signed binaries and images for Constellation. You may use these free of charge to create and run services for internal consumption, evaluation purposes, or non-commercial use. You can find more information in the [license] section of the docs.
+You might think our abstractions are bad and you just want to authenticate
+and send requests to a registry.
 
-<!-- refs -->
-[architecture]: https://docs.edgeless.systems/constellation/architecture/overview
-[certified]: https://www.cncf.io/certification/software-conformance/
-[cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
-[cluster-attestation]: https://docs.edgeless.systems/constellation/architecture/attestation#cluster-attestation
-[confidential-kubernetes]: https://docs.edgeless.systems/constellation/overview/confidential-kubernetes
-[discord]: https://discord.gg/rH8QTH56JN
-[enterprise-support]: https://www.edgeless.systems/products/constellation/
-[first-steps]: https://docs.edgeless.systems/constellation/getting-started/first-steps
-[first-steps-local]: https://docs.edgeless.systems/constellation/getting-started/first-steps-local
-[examples]: https://docs.edgeless.systems/constellation/getting-started/examples
-[github-issues]: https://github.com/edgelesssys/constellation/issues
-[images]: https://docs.edgeless.systems/constellation/architecture/images
-[install]: https://docs.edgeless.systems/constellation/getting-started/install
-[k8s-version-support]: https://docs.edgeless.systems/constellation/architecture/versions#kubernetes-support-policy
-[key-management]: https://docs.edgeless.systems/constellation/architecture/keys
-[license]: https://docs.edgeless.systems/constellation/overview/license
-[network-encryption]: https://docs.edgeless.systems/constellation/architecture/keys#network-encryption
-[supply-chain]: https://docs.edgeless.systems/constellation/architecture/attestation#chain-of-trust
-[security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
-[twitter]: https://twitter.com/EdgelessSystems
-[whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/overview/performance
+This is the purpose of the [`transport`](pkg/v1/remote/transport) and [`authn`](pkg/authn) packages.
+
+## Tools
+
+This repo hosts some tools built on top of the library.
+
+### `crane`
+
+[`crane`](cmd/crane/README.md) is a tool for interacting with remote images
+and registries.
+
+### `gcrane`
+
+[`gcrane`](cmd/gcrane/README.md) is a GCR-specific variant of `crane` that has
+richer output for the `ls` subcommand and some basic garbage collection support.
+
+### `krane`
+
+[`krane`](cmd/krane/README.md) is a drop-in replacement for `crane` that supports
+common Kubernetes-based workload identity mechanisms using [`k8schain`](#k8schain)
+as a fallback to traditional authentication mechanisms.
+
+### `k8schain`
+
+[`k8schain`](pkg/authn/k8schain/README.md) implements the authentication
+semantics used by kubelets in a way that is easily consumable by this library.
+
+`k8schain` is not a standalone tool, but it is linked here for visibility.
+
+### Emeritus: [`ko`](https://github.com/google/ko)
+
+This tool was originally developed in this repo but has since been moved to its
+own repo.
