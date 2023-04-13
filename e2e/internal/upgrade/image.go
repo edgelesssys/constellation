@@ -10,8 +10,14 @@ package upgrade
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -42,8 +48,7 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 		return upgradeInfo{}, err
 	}
 
-	var fetchedMeasurements measurements.M
-	err = fetchedMeasurements.Fetch(
+	fetchedMeasurements, err := fetchMeasurements(
 		ctx, http.DefaultClient,
 		measurementsURL,
 		measurements.WithMetadata{
@@ -67,6 +72,56 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 	info.wantImage = wantImage
 
 	return info, nil
+}
+
+// fetchMeasurements is essentially a copy of measurements.FetchAndVerify, but with verification removed.
+// This is necessary since the e2e tests may target release images for which the measurements are signed with the release public key.
+// It is easier to skip verification than to implement a second bazel target with the enterprise build tag set.
+func fetchMeasurements(ctx context.Context, client *http.Client, measurementsURL *url.URL, metadata measurements.WithMetadata) (measurements.M, error) {
+	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch measurements: %w", err)
+	}
+
+	var mWithMetadata measurements.WithMetadata
+	if err := json.Unmarshal(measurementsRaw, &mWithMetadata); err != nil {
+		if yamlErr := yaml.Unmarshal(measurementsRaw, &mWithMetadata); yamlErr != nil {
+			return nil, errors.Join(
+				err,
+				fmt.Errorf("trying yaml format: %w", yamlErr),
+			)
+		}
+	}
+
+	if mWithMetadata.CSP != metadata.CSP {
+		return nil, fmt.Errorf("invalid measurement metadata: CSP mismatch: expected %s, got %s", metadata.CSP, mWithMetadata.CSP)
+	}
+	if mWithMetadata.Image != metadata.Image {
+		return nil, fmt.Errorf("invalid measurement metadata: image mismatch: expected %s, got %s", metadata.Image, mWithMetadata.Image)
+	}
+
+	return mWithMetadata.Measurements, nil
+}
+
+func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("http status code: %d", resp.StatusCode)
+	}
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+	return content, nil
 }
 
 func fetchWantImage(ctx context.Context, client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
