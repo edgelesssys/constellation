@@ -167,26 +167,24 @@ runs:
       with:
         azure_credentials: ${{ inputs.azureIAMCreateCredentials }}
 
-    - name: Create UUID
-      id: create-uuid
+    - name: Create prefix
+      id: create-prefix
       shell: bash
       run: |
         uuid=$(uuidgen)
-        echo "uuid=${uuid%%-*}" >> $GITHUB_OUTPUT
+        echo "uuid=${uuid%%-*}" | tee -a $GITHUB_OUTPUT
+        echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
 
     - name: Create IAM configuration
       id: constellation-iam-create
       uses: ./.github/actions/constellation_iam_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        namePrefix: ${{ steps.create-prefix.outputs.prefix }}
         awsZone: eu-central-1c
-        awsPrefix: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}
         azureRegion: northeurope
-        azureResourceGroup: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}_rg
-        azureServicePrincipal: e2e_${{ github.run_id }}_${{ github.run_attempt }}_${{ steps.create-uuid.outputs.uuid }}_sp
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: europe-west3-b
-        gcpServiceAccountID: e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.create-uuid.outputs.uuid }}-sa
 
     - name: Login to GCP (Cluster service account)
       if: inputs.cloudProvider == 'gcp'
@@ -223,6 +221,7 @@ runs:
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         keepMeasurements: ${{ inputs.keepMeasurements }}
         existingConfig: ${{ steps.constellation-iam-create.outputs.existingConfig }}
+        artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
     #
     # Test payloads
@@ -239,7 +238,7 @@ runs:
       with:
         sonobuoyTestSuiteCmd: "--mode quick"
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
-        cloudProvider: ${{ inputs.cloudProvider }}
+        artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
     - name: Run sonobuoy full test
       if: inputs.test == 'sonobuoy full'
@@ -249,6 +248,7 @@ runs:
         sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
         cloudProvider: ${{ inputs.cloudProvider }}
+        artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
     - name: Run autoscaling test
       if: inputs.test == 'autoscaling'

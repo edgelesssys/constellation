@@ -23,6 +23,9 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  artifactNameSuffix:
+    description: "Suffix for artifact naming."
+    required: true
   keepMeasurements:
     default: "false"
     description: "Keep measurements embedded in the CLI."
@@ -267,5 +270,5 @@ runs:
       if: always() && !env.ACT
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
-        name: serial-logs-${{ inputs.cloudProvider }}
+        name: serial-logs-${{ inputs.artifactNameSuffix }}
         path: "*.log"
