@@ -66,12 +66,11 @@ func (u *Updatable) Update() error {
 
 	u.log.Infof("Updating expected measurements")
 
-	var cfg config.AttestationCfg
 	data, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename))
 	if err != nil {
 		return err
 	}
-	cfg, err = config.UnmarshalAttestationConfig(data, u.variant)
+	cfg, err := config.UnmarshalAttestationConfig(data, u.variant)
 	if err != nil {
 		return fmt.Errorf("unmarshaling config: %w", err)
 	}

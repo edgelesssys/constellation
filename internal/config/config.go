@@ -434,7 +434,7 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}
 
-	// TODO(AB#3071): Replace attestation replacement
+	// TODO(AB#2976): Replace attestation replacement
 	// with custom function for attestation selection
 	currentAttetationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}
@@ -450,6 +450,7 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 		c.Attestation.GCPSEVES = currentAttetationConfigs.GCPSEVES
 	case cloudprovider.OpenStack:
 		c.Provider.OpenStack = currentProviderConfigs.OpenStack
+		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
 	case cloudprovider.QEMU:
 		c.Provider.QEMU = currentProviderConfigs.QEMU
 		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
@@ -748,11 +749,6 @@ func (c AzureSEVSNP) NewerThan(old AttestationCfg) (bool, error) {
 	otherCfg, ok := old.(*AzureSEVSNP)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, old)
-	}
-
-	if c.FirmwareSignerConfig.EnforcementPolicy == idkeydigest.MAAFallback &&
-		otherCfg.FirmwareSignerConfig.EnforcementPolicy != idkeydigest.MAAFallback {
-		return false, errors.New("cannot update enforcement policy to 'maaFallback'")
 	}
 
 	acceptedKeyDigestsNewer := !c.FirmwareSignerConfig.AcceptedKeyDigests.EqualTo(otherCfg.FirmwareSignerConfig.AcceptedKeyDigests)

@@ -39,36 +39,30 @@ func TestMain(m *testing.M) {
 
 func TestNewUpdateableValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant   variant.Variant
-		config    config.AttestationCfg
-		writeFile bool
-		wantErr   bool
+		variant variant.Variant
+		config  config.AttestationCfg
+		wantErr bool
 	}{
 		"azure": {
-			variant:   variant.AzureSEVSNP{},
-			config:    config.DefaultForAzureSEVSNP(),
-			writeFile: true,
+			variant: variant.AzureSEVSNP{},
+			config:  config.DefaultForAzureSEVSNP(),
 		},
 		"gcp": {
-			variant:   variant.GCPSEVES{},
-			config:    &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
-			writeFile: true,
+			variant: variant.GCPSEVES{},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		},
 		"qemu": {
-			variant:   variant.QEMUVTPM{},
-			config:    &config.QEMUVTPM{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
-			writeFile: true,
+			variant: variant.QEMUVTPM{},
+			config:  &config.QEMUVTPM{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		},
 		"no file": {
-			variant:   variant.AzureSEVSNP{},
-			writeFile: false,
-			wantErr:   true,
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
 		},
 		"invalid provider": {
-			variant:   fakeOID{1, 3, 9900, 9999, 9999},
-			config:    &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
-			writeFile: true,
-			wantErr:   true,
+			variant: fakeOID{1, 3, 9900, 9999, 9999},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+			wantErr: true,
 		},
 	}
 
@@ -78,7 +72,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 			require := require.New(t)
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			if tc.writeFile {
+			if tc.config != nil {
 				require.NoError(handler.WriteJSON(
 					filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
 					tc.config,
@@ -202,7 +196,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
-		&config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		file.OptNone,
 	))
 
