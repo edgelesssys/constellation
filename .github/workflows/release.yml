@@ -240,37 +240,3 @@ jobs:
     secrets: inherit
     with:
       ref: "refs/tags/${{ inputs.version }}"
-      pushContainers: true
-
-  pr-get-changes-back-into-main:
-    name: PR to Merge changes from release branch into main
-    if: inputs.kind == 'minor'
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    needs: [verify-inputs, tag-release]
-    env:
-      VERSION: ${{ inputs.version }}
-      NEW_BRANCH: feat/release/${{ inputs.version }}/changes-to-main
-    steps:
-      - name: Checkout
-        uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
-        with:
-          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-
-      - name: Create PR
-        uses: peter-evans/create-pull-request@38e0b6e68b4c852a5500a94740f0e535e0d7ba54 # v4.2.4
-        with:
-          branch: ${{ env.NEW_BRANCH }}
-          base: main
-          title: "release: bring back changes from ${{ env.VERSION }}"
-          body: |
-            :robot: *This is an automated PR.* :robot:
-
-            This PR is triggered as part of the release process of version ${{ env.VERSION }}.
-            It brings back changes from the release branch into the main branch.
-          commit-message: "release: bring back changes from ${{ env.VERSION }}"
-          committer: edgelessci <edgelessci@users.noreply.github.com>
-          labels: no changelog
-          # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
-          token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
