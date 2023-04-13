@@ -105,27 +105,11 @@ jobs:
         with:
           go-version: "1.20.3"
 
-      - name: Login to Azure
-        if: inputs.cloudProvider == 'azure'
-        uses: ./.github/actions/login_azure
-        with:
-          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
-
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
           aws-region: eu-central-1
-
-      - name: Create Azure resource group
-        if: inputs.cloudProvider == 'azure'
-        id: az_resource_group_gen
-        shell: bash
-        run: |
-          uuid=$(cat /proc/sys/kernel/random/uuid)
-          name=e2e-test-${uuid%%-*}
-          az group create --location northeurope --name "$name" --tags e2e
-          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Find latest nightly image
         id: find-image
@@ -144,8 +128,8 @@ jobs:
           controlNodesCount: ${{ inputs.controlNodesCount }}
           cloudProvider: ${{ inputs.cloudProvider }}
           osImage: ${{ inputs.fromVersion }}
-          cliVersion: ${{ inputs.fromVersion }}
           isDebugImage: "false"
+          cliVersion: ${{ inputs.fromVersion }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
@@ -203,16 +187,13 @@ jobs:
         with:
           kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
-      - name: Always destroy Azure resource group
-        if: always() && inputs.cloudProvider == 'azure'
-        shell: bash
-        run: |
-          az group delete \
-            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
-            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
-            --force-deletion-types Microsoft.Compute/virtualMachines \
-            --no-wait \
-            --yes
+      - name: Always delete IAM configuration
+        if: always()
+        uses: ./.github/actions/constellation_iam_destroy
+        with:
+          cloudProvider: ${{ inputs.cloudProvider }}
+          azureCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+          gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
       - name: Notify about failure
         if: failure() && github.ref == 'refs/heads/main'
