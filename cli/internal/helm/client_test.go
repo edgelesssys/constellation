@@ -50,7 +50,7 @@ func TestShouldUpgrade(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			err = client.shouldUpgrade(certManagerInfo.releaseName, chart)
+			err = client.shouldUpgrade(certManagerInfo.releaseName, chart.Metadata.Version)
 			if tc.wantError {
 				tc.assertCorrectError(t, err)
 				return
