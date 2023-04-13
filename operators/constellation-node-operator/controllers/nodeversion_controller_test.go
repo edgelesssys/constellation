@@ -816,6 +816,17 @@ func (r *stubNodeReplacer) setCreatedNode(nodeName, providerID string, err error
 	r.createErr = err
 }
 
+func (r *stubNodeReplacer) reset() {
+	r.Lock()
+	defer r.Unlock()
+	r.nodeImages = nil
+	r.scalingGroups = nil
+	r.createNodeName = ""
+	r.createProviderID = ""
+	r.createErr = nil
+	r.deleteErr = nil
+}
+
 type stubKubernetesServerVersionGetter struct {
 	version string
 	err     error

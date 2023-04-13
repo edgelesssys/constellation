@@ -27,36 +27,9 @@ import (
 
 var _ = Describe("NodeVersion controller", func() {
 	AfterEach(func() {
-		// cleanup all nodes
-		nodeList := &corev1.NodeList{}
-		Expect(k8sClient.List(context.Background(), nodeList)).To(Succeed())
-		for _, node := range nodeList.Items {
-			Expect(k8sClient.Delete(context.Background(), &node)).To(Succeed())
-		}
-		// cleanup all node versions
-		nodeVersionList := &updatev1alpha1.NodeVersionList{}
-		Expect(k8sClient.List(context.Background(), nodeVersionList)).To(Succeed())
-		for _, nodeVersion := range nodeVersionList.Items {
-			Expect(k8sClient.Delete(context.Background(), &nodeVersion)).To(Succeed())
-		}
-		// cleanup all scaling groups
-		scalingGroupList := &updatev1alpha1.ScalingGroupList{}
-		Expect(k8sClient.List(context.Background(), scalingGroupList)).To(Succeed())
-		for _, scalingGroup := range scalingGroupList.Items {
-			Expect(k8sClient.Delete(context.Background(), &scalingGroup)).To(Succeed())
-		}
-		// cleanup all pending nodes
-		pendingNodeList := &updatev1alpha1.PendingNodeList{}
-		Expect(k8sClient.List(context.Background(), pendingNodeList)).To(Succeed())
-		for _, pendingNode := range pendingNodeList.Items {
-			Expect(k8sClient.Delete(context.Background(), &pendingNode)).To(Succeed())
-		}
-		// cleanup all joining nodes
-		joiningNodeList := &updatev1alpha1.JoiningNodeList{}
-		Expect(k8sClient.List(context.Background(), joiningNodeList)).To(Succeed())
-		for _, joiningNode := range joiningNodeList.Items {
-			Expect(k8sClient.Delete(context.Background(), &joiningNode)).To(Succeed())
-		}
+		Eventually(func() error {
+			return resetEnv()
+		}, 30*time.Second, 1*time.Second).Should(Succeed())
 	})
 
 	// Define utility constants for object names and testing timeouts/durations and intervals.

@@ -34,3 +34,9 @@ func (u *fakeScalingGroupUpdater) SetScalingGroupImage(_ context.Context, scalin
 	u.scalingGroupImage[scalingGroupID] = imageURI
 	return nil
 }
+
+func (u *fakeScalingGroupUpdater) reset() {
+	u.Lock()
+	defer u.Unlock()
+	u.scalingGroupImage = make(map[string]string)
+}

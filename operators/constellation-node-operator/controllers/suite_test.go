@@ -19,6 +19,8 @@ import (
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	testclock "k8s.io/utils/clock/testing"
@@ -45,6 +47,7 @@ var (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
+	// config.GinkgoConfig.RandomSeed = 1679587116
 	RunSpecs(t, "Controller Suite")
 }
 
@@ -141,6 +144,12 @@ type fakeCollection struct {
 	clock               *testclock.FakeClock
 }
 
+func (c *fakeCollection) reset() {
+	c.scalingGroupUpdater.reset()
+	c.nodeStateGetter.setNodeState("")
+	c.nodeReplacer.reset()
+}
+
 func newFakes() fakeCollection {
 	return fakeCollection{
 		scalingGroupUpdater: newFakeScalingGroupUpdater(),
@@ -149,4 +158,79 @@ func newFakes() fakeCollection {
 		k8sVerGetter:        &stubKubernetesServerVersionGetter{},
 		clock:               testclock.NewFakeClock(time.Now()),
 	}
+}
+
+func resetEnv() error {
+	// cleanup all nodes
+	nodeList := &corev1.NodeList{}
+	if err := k8sClient.List(context.Background(), nodeList); err != nil {
+		return err
+	}
+	for _, node := range nodeList.Items {
+		if err := k8sClient.Delete(context.Background(), &node); err != nil {
+			return err
+		}
+	}
+	// cleanup all node versions
+	nodeVersionList := &updatev1alpha1.NodeVersionList{}
+	if err := k8sClient.List(context.Background(), nodeVersionList); err != nil {
+		return err
+	}
+	for _, nodeVersion := range nodeVersionList.Items {
+		if err := k8sClient.Delete(context.Background(), &nodeVersion); err != nil {
+			return err
+		}
+	}
+	// cleanup all scaling groups
+	scalingGroupList := &updatev1alpha1.ScalingGroupList{}
+	if err := k8sClient.List(context.Background(), scalingGroupList); err != nil {
+		return err
+	}
+	for _, scalingGroup := range scalingGroupList.Items {
+		if err := k8sClient.Delete(context.Background(), &scalingGroup); err != nil {
+			return err
+		}
+	}
+	// cleanup all pending nodes
+	pendingNodeList := &updatev1alpha1.PendingNodeList{}
+	if err := k8sClient.List(context.Background(), pendingNodeList); err != nil {
+		return err
+	}
+	for _, pendingNode := range pendingNodeList.Items {
+		if err := k8sClient.Delete(context.Background(), &pendingNode); err != nil {
+			return err
+		}
+	}
+	// cleanup all joining nodes
+	joiningNodeList := &updatev1alpha1.JoiningNodeList{}
+	if err := k8sClient.List(context.Background(), joiningNodeList); err != nil {
+		return err
+	}
+	for _, joiningNode := range joiningNodeList.Items {
+		if err := k8sClient.Delete(context.Background(), &joiningNode); err != nil {
+			return err
+		}
+	}
+	// cleanup all autoscaling strategies
+	autoscalingStrategyList := &updatev1alpha1.AutoscalingStrategyList{}
+	if err := k8sClient.List(context.Background(), autoscalingStrategyList); err != nil {
+		return err
+	}
+	for _, autoscalingStrategy := range autoscalingStrategyList.Items {
+		if err := k8sClient.Delete(context.Background(), &autoscalingStrategy); err != nil {
+			return err
+		}
+	}
+	// cleanup all deployments
+	deploymentList := &appsv1.DeploymentList{}
+	if err := k8sClient.List(context.Background(), deploymentList); err != nil {
+		return err
+	}
+	for _, deployment := range deploymentList.Items {
+		if err := k8sClient.Delete(context.Background(), &deployment); err != nil {
+			return err
+		}
+	}
+	fakes.reset()
+	return nil
 }
