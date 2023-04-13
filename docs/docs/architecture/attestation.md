@@ -220,6 +220,46 @@ The latter means that the value can be generated offline and compared to the one
 </tabItem>
 </tabs>
 
+### CVM verification
+
+To verify runtime measurements, a chain of trust from the CVM technology to the interface providing the measurements has to be established.
+For verification of the CVM technology, Constellation may expose additional options in its config file.
+
+<tabs groupId="csp">
+<tabItem value="azure" label="Azure SEV-SNP">
+
+On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
+An SEV-SNP attestation report is also used to establish trust in the vTPM running in the VM.
+Some parameters for verification of the SEV-SNP attestation statement can be customized by the user using the Constellation config file.
+
+* TCB versions:
+
+  The minimum version numbers of components in the SEV-SNP TCB may set to enforce only machines with the most recent microcode version are allowed to join the cluster.
+  Alternatively, this may also be used to set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
+
+* AMD Root Key Certificate:
+
+  The certificate used as a root of trust to verify the SEV-SNP certificate chain.
+
+* Firmware Signer
+
+  This config option allows users to specify how the firmware signer should be verified.
+  More explicitly, it's used to verify the `IDKeyDigest` value in the SEV-SNP attestation report.
+  Users can provide a list of accepted key digests and specify a policy on how this list is compared against the `IDKeyDigest` reported in the SEV-SNP attestation.
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+There is no additional configuration available for GCP.
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+There is no additional configuration available for AWS.
+
+</tabItem>
+</tabs>
+
 ## Cluster attestation
 
 Cluster-facing, Constellation's [*JoinService*](microservices.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
