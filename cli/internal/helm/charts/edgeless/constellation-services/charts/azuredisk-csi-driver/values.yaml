@@ -2,27 +2,27 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.1.0
+    tag: v1.2.0@sha256:a5346a6650ec702d0ba86acee808c0102340ea4cb3375d956c6b34020b292527
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
-    tag: v3.2.0
+    tag: v3.3.0@sha256:3ef7d954946bd1cf9e5e3564a8d1acf8e5852616f7ae96bcbc5ced8c275483ee
     pullPolicy: IfNotPresent
   csiAttacher:
     repository: /oss/kubernetes-csi/csi-attacher
-    tag: v3.5.0
+    tag: v4.0.0@sha256:bc317fea7e7bbaff65130d7ac6ea7c96bc15eb1f086374b8c3359f11988ac024
     pullPolicy: IfNotPresent
   csiResizer:
     repository: /oss/kubernetes-csi/csi-resizer
-    tag: v1.5.0
+    tag: v1.6.0@sha256:9ba6483d2f8aa6051cb3a50e42d638fc17a6e4699a6689f054969024b7c12944
     pullPolicy: IfNotPresent
   livenessProbe:
     repository: /oss/kubernetes-csi/livenessprobe
-    tag: v2.7.0
+    tag: v2.8.0@sha256:fcb73e1939d9abeb2d1e1680b476a10a422a04a73ea5a65e64eec3fde1f2a5a1
     pullPolicy: IfNotPresent
   nodeDriverRegistrar:
     repository: /oss/kubernetes-csi/csi-node-driver-registrar
-    tag: v2.5.1
+    tag: v2.6.2@sha256:515b883deb0ae8d58eef60312f4d460ff8a3f52a2a5e487c94a8ebb2ca362720
     pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -40,6 +40,8 @@ controller:
   cloudConfigSecretName: azureconfig
   cloudConfigSecretNamespace: kube-system
   allowEmptyCloudConfig: false
+  enableTrafficManager: false
+  trafficManagerPort: 7788
   replicas: 1
   metricsPort: 29604
   livenessProbe:
@@ -49,7 +51,7 @@ controller:
   disableAvailabilitySetNodes: false
   vmType: ""
   provisionerWorkerThreads: 100
-  attacherWorkerThreads: 500
+  attacherWorkerThreads: 1000
   vmssCacheTTLInSeconds: -1
   logLevel: 5
   tolerations:
@@ -153,6 +155,15 @@ snapshot:
       requests:
         cpu: 10m
         memory: 20Mi
+  VolumeSnapshotClass:
+    enabled: false
+    name: csi-azuredisk-vsc
+    deletionPolicy: Delete
+    parameters:
+      incremental: '"true"' # available values: "true", "false" ("true" by default for Azure Public Cloud, and "false" by default for Azure Stack Cloud)
+      resourceGroup: "" # available values: EXISTING RESOURCE GROUP (If not specified, snapshot will be stored in the same resource group as source Azure disk)
+      tags: "" # tag format: 'key1=val1,key2=val2'
+    additionalLabels: {}
 
 feature:
   enableFSGroupPolicy: true
