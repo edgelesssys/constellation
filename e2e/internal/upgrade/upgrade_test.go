@@ -112,7 +112,7 @@ func TestUpgrade(t *testing.T) {
 	// This is only updated after the operator finishes one reconcile loop.
 	cmd = exec.CommandContext(context.Background(), cli, "status")
 	msg, err = cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
+	require.NoError(err, string(msg))
 	log.Println(string(msg))
 
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
