@@ -166,10 +166,10 @@ jobs:
           echo "Microservice target: $MICROSERVICES"
 
           if [[ -n ${MICROSERVICES} ]]; then
-            MICROSERVICES_FLAG="--target-microservices $MICROSERVICES"
+            MICROSERVICES_FLAG="--target-microservices=$MICROSERVICES"
           fi
           if [[ -n ${KUBERNETES} ]]; then
-            KUBERNETES_FLAG="--target-kubernetes $KUBERNETES"
+            KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
 
           bazelisk run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"

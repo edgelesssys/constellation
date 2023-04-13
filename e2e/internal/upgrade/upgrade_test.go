@@ -107,6 +107,14 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(containsUnexepectedMsg(string(msg)))
 	log.Println(string(msg))
 
+	// Show versions set in cluster.
+	// The string after "Cluster status:" in the output might not be updated yet.
+	// This is only updated after the operator finishes one reconcile loop.
+	cmd = exec.CommandContext(context.Background(), cli, "status")
+	msg, err = cmd.CombinedOutput()
+	require.NoError(err, string(msg))
+	log.Println(string(msg))
+
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
 	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
 }
@@ -196,7 +204,7 @@ func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersio
 		}
 
 		if version != wantMicroserviceVersion {
-			log.Printf("Microservices still at version: %v\n", version)
+			log.Printf("Microservices still at version %v, want %v\n", version, wantMicroserviceVersion)
 			return false
 		}
 
@@ -227,12 +235,12 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 
 			kubeletVersion := node.Status.NodeInfo.KubeletVersion
 			if kubeletVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Kubelet) %s\n", node.Name, kubeletVersion)
+				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes.String())
 				allUpdated = false
 			}
 			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
 			if kubeProxyVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Proxy) %s\n", node.Name, kubeProxyVersion)
+				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes.String())
 				allUpdated = false
 			}
 		}
