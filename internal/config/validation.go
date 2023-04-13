@@ -416,12 +416,12 @@ func (c *Config) validateK8sVersion(fl validator.FieldLevel) bool {
 // supported patch version as PATCH.
 func K8sVersionFromMajorMinor(version string) string {
 	switch version {
-	case semver.MajorMinor(string(versions.V1_24)):
-		return string(versions.V1_24)
 	case semver.MajorMinor(string(versions.V1_25)):
 		return string(versions.V1_25)
 	case semver.MajorMinor(string(versions.V1_26)):
 		return string(versions.V1_26)
+	case semver.MajorMinor(string(versions.V1_27)):
+		return string(versions.V1_27)
 	default:
 		return ""
 	}

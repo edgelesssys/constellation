@@ -77,7 +77,7 @@ constellation config generate {aws|azure|gcp|openstack|qemu} [flags]
 ```
   -f, --file string         path to output file, or '-' for stdout (default "constellation-conf.yaml")
   -h, --help                help for generate
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR (default "v1.25")
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
 ```
 
 ### Options inherited from parent commands
@@ -581,7 +581,7 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ```
       --generate-config     automatically generate a configuration file and fill in the required fields
   -h, --help                help for create
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
   -y, --yes                 create the IAM configuration without further confirmation
 ```
 
@@ -622,7 +622,7 @@ constellation iam create aws [flags]
       --debug               enable debug logging
       --force               disable version compatibility checks - might result in corrupted clusters
       --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
       --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
   -y, --yes                 create the IAM configuration without further confirmation
 ```
@@ -655,7 +655,7 @@ constellation iam create azure [flags]
       --debug               enable debug logging
       --force               disable version compatibility checks - might result in corrupted clusters
       --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
       --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
   -y, --yes                 create the IAM configuration without further confirmation
 ```
@@ -691,7 +691,7 @@ constellation iam create gcp [flags]
       --debug               enable debug logging
       --force               disable version compatibility checks - might result in corrupted clusters
       --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.25")
+  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
       --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
   -y, --yes                 create the IAM configuration without further confirmation
 ```
