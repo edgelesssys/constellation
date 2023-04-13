@@ -112,6 +112,35 @@ func (m *M) FetchAndVerify(
 	return hex.EncodeToString(shaHash[:]), nil
 }
 
+// Fetch fetches measurements via provided URLs, using client for download.
+func (m *M) Fetch(ctx context.Context, client *http.Client, measurementsURL *url.URL, metadata WithMetadata) error {
+	measurements, err := getFromURL(ctx, client, measurementsURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch measurements: %w", err)
+	}
+
+	var mWithMetadata WithMetadata
+	if err := json.Unmarshal(measurements, &mWithMetadata); err != nil {
+		if yamlErr := yaml.Unmarshal(measurements, &mWithMetadata); yamlErr != nil {
+			return errors.Join(
+				err,
+				fmt.Errorf("trying yaml format: %w", yamlErr),
+			)
+		}
+	}
+
+	if mWithMetadata.CSP != metadata.CSP {
+		return fmt.Errorf("invalid measurement metadata: CSP mismatch: expected %s, got %s", metadata.CSP, mWithMetadata.CSP)
+	}
+	if mWithMetadata.Image != metadata.Image {
+		return fmt.Errorf("invalid measurement metadata: image mismatch: expected %s, got %s", metadata.Image, mWithMetadata.Image)
+	}
+
+	*m = mWithMetadata.Measurements
+
+	return nil
+}
+
 // CopyFrom copies over all values from other. Overwriting existing values,
 // but keeping not specified values untouched.
 func (m *M) CopyFrom(other M) {

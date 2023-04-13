@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 )
@@ -38,17 +37,15 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 		return upgradeInfo{}, err
 	}
 
-	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(ver, csp)
+	measurementsURL, _, err := versionsapi.MeasurementURL(ver, csp)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
 
 	var fetchedMeasurements measurements.M
-	_, err = fetchedMeasurements.FetchAndVerify(
+	err = fetchedMeasurements.Fetch(
 		ctx, http.DefaultClient,
 		measurementsURL,
-		signatureURL,
-		[]byte(constants.CosignPublicKey),
 		measurements.WithMetadata{
 			CSP:   csp,
 			Image: toImage,
