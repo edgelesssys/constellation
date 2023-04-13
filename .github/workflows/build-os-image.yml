@@ -987,7 +987,7 @@ jobs:
       add_latest: true
 
   add-cli-version-to-versionsapi:
-    needs: [upload-artifacts, build-settings]
+    needs: [upload-artifacts, build-settings, add-image-version-to-versionsapi]
     name: "Add CLI version to versionsapi"
     if: needs.build-settings.outputs.ref != '-'
     permissions:
