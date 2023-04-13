@@ -113,7 +113,7 @@ type DummyCfg struct {
 	Measurements measurements.M `json:"measurements,omitempty"`
 }
 
-// GetMeasurements returns nil.
+// GetMeasurements returns the configs measurements.
 func (c DummyCfg) GetMeasurements() measurements.M {
 	return c.Measurements
 }
@@ -123,12 +123,12 @@ func (DummyCfg) GetVariant() variant.Variant {
 	return variant.Dummy{}
 }
 
-// SetMeasurements does nothing.
+// SetMeasurements sets the configs measurements.
 func (c *DummyCfg) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true.
+// NewerThan returns true if measurements of the configs are not equal.
 func (c DummyCfg) NewerThan(other AttestationCfg) (bool, error) {
-	return c.Measurements.EqualTo(other.GetMeasurements()), nil
+	return !c.Measurements.EqualTo(other.GetMeasurements()), nil
 }

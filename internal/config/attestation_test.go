@@ -49,7 +49,6 @@ func TestUnmarshalAttestationConfig(t *testing.T) {
 
 			out, err := json.Marshal(tc.cfg)
 			require.NoError(err)
-			fmt.Println(string(out))
 
 			cfg, err := UnmarshalAttestationConfig(out, tc.cfg.GetVariant())
 			require.NoError(err)
