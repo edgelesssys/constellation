@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"helm.sh/helm/v3/pkg/action"
@@ -75,20 +76,26 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
-func (c *Client) shouldUpgrade(releaseName string, localChart *chart.Chart) error {
+func (c *Client) shouldUpgrade(releaseName, newVersion string) error {
 	currentVersion, err := c.currentVersion(releaseName)
 	if err != nil {
-		return fmt.Errorf("getting current version: %w", err)
+		return fmt.Errorf("getting version for %s: %w", releaseName, err)
 	}
 	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
-	c.log.Debugf("New %s version: %s", releaseName, localChart.Metadata.Version)
+	c.log.Debugf("New %s version: %s", releaseName, newVersion)
 
 	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
 	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
-	if err := compatibility.IsValidUpgrade(currentVersion, localChart.Metadata.Version); err != nil {
+	if err := compatibility.IsValidUpgrade(currentVersion, newVersion); err != nil {
 		return err
 	}
-	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, localChart.Metadata.Version)
+	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
+	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
+		if compatibility.EnsurePrefixV(constants.VersionInfo()) != compatibility.EnsurePrefixV(newVersion) {
+			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", constants.VersionInfo())
+		}
+	}
+	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
 
 	return nil
 }
@@ -106,12 +113,18 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		if err != nil {
 			return fmt.Errorf("loading chart: %w", err)
 		}
+
+		// define target version the chart is upgraded to
+		var upgradeVersion string
 		if info == constellationOperatorsInfo || info == constellationServicesInfo {
 			// ensure that the services chart has the same version as the CLI
 			updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+			upgradeVersion = config.MicroserviceVersion
+		} else {
+			upgradeVersion = chart.Metadata.Version
 		}
 
-		err = c.shouldUpgrade(info.releaseName, chart)
+		err = c.shouldUpgrade(info.releaseName, upgradeVersion)
 		switch {
 		case errors.As(err, &invalidUpgrade):
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
@@ -134,7 +147,6 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		return fmt.Errorf("creating CR backup: %w", err)
 	}
 
-	// TODO: v2.8: remove fileHanlder.
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	for _, chart := range upgradeReleases {
 		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive, fileHandler)
@@ -232,7 +244,6 @@ func (s ServiceVersions) ConstellationServices() string {
 	return s.constellationServices
 }
 
-// TODO: v2.8: remove fileHandler argument.
 func (c *Client) upgradeRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool, fileHandler file.Handler,
 ) error {
@@ -251,6 +262,9 @@ func (c *Client) upgradeRelease(
 	case ciliumInfo.chartName:
 		releaseName = ciliumInfo.releaseName
 		values, err = loader.loadCiliumValues()
+		if err != nil {
+			return fmt.Errorf("loading values: %w", err)
+		}
 	case certManagerInfo.chartName:
 		releaseName = certManagerInfo.releaseName
 		values = loader.loadCertManagerValues()
@@ -261,6 +275,9 @@ func (c *Client) upgradeRelease(
 	case constellationOperatorsInfo.chartName:
 		releaseName = constellationOperatorsInfo.releaseName
 		values, err = loader.loadOperatorsValues()
+		if err != nil {
+			return fmt.Errorf("loading values: %w", err)
+		}
 
 		if err := c.updateCRDs(ctx, chart); err != nil {
 			return fmt.Errorf("updating CRDs: %w", err)
@@ -268,35 +285,15 @@ func (c *Client) upgradeRelease(
 	case constellationServicesInfo.chartName:
 		releaseName = constellationServicesInfo.releaseName
 		values, err = loader.loadConstellationServicesValues()
-
-		// TODO: v2.8: remove this call.
-		// Manually setting attestationVariant is required here since upgrade normally isn't allowed to change this value.
-		// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
-		if err := setAttestationVariant(values, conf.AttestationVariant); err != nil {
-			return fmt.Errorf("setting attestationVariant: %w", err)
+		if err != nil {
+			return fmt.Errorf("loading values: %w", err)
 		}
 
-		// TODO: v2.8: remove from here...
-		// Manually setting idKeyConfig is required here since upgrade normally isn't allowed to change this value.
-		// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
-		var idFile clusterid.File
-		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
-			return fmt.Errorf("reading cluster ID file: %w", err)
+		if err := c.applyMigrations(releaseName, values, conf, fileHandler); err != nil {
+			return fmt.Errorf("applying migrations: %w", err)
 		}
-		// Disallow users to set MAAFallback as ID key digest policy for upgrades, since it requires extra cloud resources.
-		if conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
-			return fmt.Errorf("ID key digest policy %s is not supported for upgrades", conf.IDKeyDigestPolicy())
-		}
-		if err := setIdkeyConfig(values, conf, idFile.AttestationURL); err != nil {
-			return fmt.Errorf("setting id key config: %w", err)
-		}
-		// TODO: v2.8: to here.
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
-	}
-
-	if err != nil {
-		return fmt.Errorf("loading values: %w", err)
 	}
 
 	values, err = c.prepareValues(values, releaseName)
@@ -309,6 +306,53 @@ func (c *Client) upgradeRelease(
 		return err
 	}
 
+	return nil
+}
+
+// applyMigrations checks the from version and applies the necessary migrations.
+// The function assumes the caller has verified that our version drift restriction is not violated,
+// Currently, this is done during config validation.
+func (c *Client) applyMigrations(releaseName string, values map[string]any, conf *config.Config, fileHandler file.Handler) error {
+	current, err := c.currentVersion(releaseName)
+	if err != nil {
+		return fmt.Errorf("getting %s version: %w", releaseName, err)
+	}
+	currentV, err := semver.New(current)
+	if err != nil {
+		return fmt.Errorf("parsing current version: %w", err)
+	}
+
+	if currentV.Major == 2 && currentV.Minor == 6 {
+		return migrateFrom2_6(values, conf, fileHandler)
+	}
+
+	return nil
+}
+
+// migrateFrom2_6 applies the necessary migrations for upgrading from v2.6.x to v2.7.x.
+// migrateFrom2_6 should be applied for v2.6.x --> v2.7.x.
+// migrateFrom2_6 should NOT be applied for v2.7.0 --> v2.7.x.
+// This function can be removed once we are sure that we will no longer provide backports for v2.6.
+func migrateFrom2_6(values map[string]any, conf *config.Config, fileHandler file.Handler) error {
+	// Manually setting attestationVariant is required here since upgrade normally isn't allowed to change this value.
+	// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
+	if err := setAttestationVariant(values, conf.AttestationVariant); err != nil {
+		return fmt.Errorf("setting attestationVariant: %w", err)
+	}
+
+	// Manually setting idKeyConfig is required here since upgrade normally isn't allowed to change this value.
+	// However, to introduce the value into a 2.6 cluster for the first time we have to set it nevertheless.
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return fmt.Errorf("reading cluster ID file: %w", err)
+	}
+	// Disallow users to set MAAFallback as ID key digest policy for upgrades, since it requires extra cloud resources.
+	if conf.IDKeyDigestPolicy() == idkeydigest.MAAFallback {
+		return fmt.Errorf("ID key digest policy %s is not supported for upgrades", conf.IDKeyDigestPolicy())
+	}
+	if err := setIdkeyConfig(values, conf, idFile.AttestationURL); err != nil {
+		return fmt.Errorf("setting id key config: %w", err)
+	}
 	return nil
 }
 
@@ -360,7 +404,6 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 	return nil
 }
 
-// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
 // setAttestationVariant sets the attesationVariant value on verification-service and join-service value maps.
 func setAttestationVariant(values map[string]any, variant string) error {
 	joinServiceVals, ok := values["join-service"].(map[string]any)
@@ -378,7 +421,6 @@ func setAttestationVariant(values map[string]any, variant string) error {
 	return nil
 }
 
-// TODO: v2.8: remove. This function is only temporarily needed as a migration from 2.6 to 2.7.
 // setIdkeyConfig sets the idkeyconfig value on the join-service value maps.
 func setIdkeyConfig(values map[string]any, cfg *config.Config, maaURL string) error {
 	joinServiceVals, ok := values["join-service"].(map[string]any)
