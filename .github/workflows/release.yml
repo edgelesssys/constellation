@@ -120,8 +120,8 @@ jobs:
       - name: Write version to version.txt
         run: |
           echo "${{ inputs.version }}" > version.txt
-          git config --global user.name "release[bot]"
-          git config --global user.email "release[bot]@users.noreply.github.com"
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
           git add version.txt
           git diff --staged --quiet || git commit -m "chore: update version.txt to ${{ inputs.version }}"
           git push origin "${BRANCH}"
@@ -236,8 +236,8 @@ jobs:
 
       - name: Commit
         run: |
-          git config --global user.name "release[bot]"
-          git config --global user.email "release[bot]@users.noreply.github.com"
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
           git commit -m "deps: update images to ${VERSION}"
           git push
 
@@ -289,8 +289,8 @@ jobs:
 
       - name: Commit
         run: |
-          git config --global user.name "release[bot]"
-          git config --global user.email "release[bot]@users.noreply.github.com"
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
           git commit -m "attestation: hardcode measurements for ${VERSION}"
           git push
 
@@ -310,8 +310,8 @@ jobs:
 
       - name: Tag release
         run: |
-          git config --global user.name "release[bot]"
-          git config --global user.email "release[bot]@users.noreply.github.com"
+          git config --global user.name "edgelessci"
+          git config --global user.email "edgelessci@users.noreply.github.com"
           git tag -a "${VERSION}" -m "Release ${VERSION}"
           git push origin "refs/tags/${VERSION}"
 
