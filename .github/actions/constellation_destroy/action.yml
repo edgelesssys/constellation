@@ -11,7 +11,6 @@ runs:
   steps:
     - name: Delete persistent volumes
       if: inputs.kubeconfig != ''
-      continue-on-error: true
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
