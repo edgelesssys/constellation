@@ -317,7 +317,6 @@ jobs:
 
       - name: Collect hashes
         id: collect-hashes
-        continue-on-error: true
         working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
         run: |
           {
@@ -332,16 +331,12 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Upload raw OS image as artifact
-        if: always()
-        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw
 
       - name: Upload individual OS parts as artifacts
-        if: always()
-        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: parts-${{ matrix.csp }}
@@ -355,8 +350,6 @@ jobs:
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.vmlinuz
 
       - name: Upload manifest as artifact
-        if: always()
-        continue-on-error: true
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: manifest-${{ matrix.csp }}
