@@ -751,7 +751,7 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, old)
 	}
 
-	acceptedKeyDigestsEqual := c.FirmwareSignerConfig.AcceptedKeyDigests.EqualTo(otherCfg.FirmwareSignerConfig.AcceptedKeyDigests)
+	firmwareSignerCfgEqual := c.FirmwareSignerConfig.EqualTo(otherCfg.FirmwareSignerConfig)
 	measurementsEqual := c.Measurements.EqualTo(otherCfg.Measurements)
 	bootloaderEqual := c.BootloaderVersion == otherCfg.BootloaderVersion
 	teeEqual := c.TEEVersion == otherCfg.TEEVersion
@@ -759,7 +759,7 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 	microcodeEqual := c.MicrocodeVersion == otherCfg.MicrocodeVersion
 	rootKeyEqual := bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
 
-	return acceptedKeyDigestsEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
+	return firmwareSignerCfgEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
 }
 
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
@@ -773,6 +773,11 @@ type SNPFirmwareSignerConfig struct {
 	// description: |
 	//   URL of the Microsoft Azure Attestation (MAA) instance to use for fallback validation. Only used if 'enforcementPolicy' is set to 'maaFallback'.
 	MAAURL string `json:"maaURL,omitempty" yaml:"maaURL,omitempty" validate:"len=0"`
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c SNPFirmwareSignerConfig) EqualTo(other SNPFirmwareSignerConfig) bool {
+	return c.AcceptedKeyDigests.EqualTo(other.AcceptedKeyDigests) && c.EnforcementPolicy == other.EnforcementPolicy && c.MAAURL == other.MAAURL
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
