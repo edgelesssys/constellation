@@ -88,6 +88,7 @@ runs:
         if [[ -n "${{ inputs.refStream }}" ]]; then
           yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' teams_payload.json
         fi
+        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "${{ steps.pick-assignee.outputs.assignee }}" } ]' teams_payload.json
         yq -iP '.attachments[0].content.actions[0].url = "${{ steps.create-project-card.outputs.jobURL }}"' teams_payload.json
         yq -iP '.attachments[0].content.actions[1].url = "${{ steps.create-project-card.outputs.issueURL }}"' teams_payload.json
         yq -iP ".attachments[0].content.actions[2].url = \"${{ steps.create-project-card.outputs.opensearchURL }}\"" teams_payload.json
