@@ -174,20 +174,20 @@ runs:
         timestamp: ${{ steps.version.outputs.timestamp }}
         semver: ${{ steps.version.outputs.semanticVersion }}
       run: |
-        echo "region=eu-central-1" >> $GITHUB_OUTPUT
-        echo "replicationRegions=us-east-2 ap-south-1" >> $GITHUB_OUTPUT
-        echo "bucket=constellation-images" >> $GITHUB_OUTPUT
-        echo "efivarsPath=${basePath}/mkosi.output.aws/fedora~37/efivars.bin" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.aws/fedora~37/image.raw" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.aws/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
-        echo "imageFilename=image-$(date +%s).raw" >> $GITHUB_OUTPUT
+        echo "region=eu-central-1" | tee -a "$GITHUB_OUTPUT"
+        echo "replicationRegions=us-east-2 ap-south-1" | tee -a "$GITHUB_OUTPUT"
+        echo "bucket=constellation-images" | tee -a "$GITHUB_OUTPUT"
+        echo "efivarsPath=${basePath}/mkosi.output.aws/fedora~37/efivars.bin" | tee -a "$GITHUB_OUTPUT"
+        echo "imagePath=${basePath}/mkosi.output.aws/fedora~37/image.raw" | tee -a "$GITHUB_OUTPUT"
+        echo "jsonOutput=${basePath}/mkosi.output.aws/fedora~37/image-upload.json" | tee -a "$GITHUB_OUTPUT"
+        echo "imageFilename=image-$(date +%s).raw" | tee -a "$GITHUB_OUTPUT"
         if [[ "${stream}" = "stable" ]]
         then
-          echo "imageName=constellation-${imageVersion}" >> $GITHUB_OUTPUT
-          echo "publish=true" >> $GITHUB_OUTPUT
+          echo "imageName=constellation-${imageVersion}" | tee -a "$GITHUB_OUTPUT"
+          echo "publish=true" | tee -a "$GITHUB_OUTPUT"
         else
-          echo "imageName=constellation-${ref}-${stream}-${semver}-${timestamp}" >> $GITHUB_OUTPUT
-          echo "publish=false" >> $GITHUB_OUTPUT
+          echo "imageName=constellation-${ref}-${stream}-${semver}-${timestamp}" | tee -a "$GITHUB_OUTPUT"
+          echo "publish=false" | tee -a "$GITHUB_OUTPUT"
         fi
 
     #    gallery name may include alphanumeric characters, dots and underscores. Must end and begin with an alphanumeric character
@@ -207,47 +207,47 @@ runs:
         semver: ${{ steps.version.outputs.semanticVersion }}
         uploadVariant: ${{ inputs.uploadVariant }}
       run: |
-        echo "resourceGroupName=constellation-images" >> $GITHUB_OUTPUT
-        echo "region=northeurope" >> $GITHUB_OUTPUT
-        echo "vmgsRegion=eu-central-1" >> $GITHUB_OUTPUT
-        echo "replicationRegions=northeurope eastus westeurope westus" >> $GITHUB_OUTPUT
-        echo "sku=constellation" >> $GITHUB_OUTPUT
-        echo "publisher=edgelesssys" >> $GITHUB_OUTPUT
-        echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~37/image.raw" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.azure/fedora~37/image.vhd" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~37/image-upload${uploadVariant}.json" >> $GITHUB_OUTPUT
+        echo "resourceGroupName=constellation-images" | tee -a "$GITHUB_OUTPUT"
+        echo "region=northeurope" | tee -a "$GITHUB_OUTPUT"
+        echo "vmgsRegion=eu-central-1" | tee -a "$GITHUB_OUTPUT"
+        echo "replicationRegions=northeurope eastus westeurope westus" | tee -a "$GITHUB_OUTPUT"
+        echo "sku=constellation" | tee -a "$GITHUB_OUTPUT"
+        echo "publisher=edgelesssys" | tee -a "$GITHUB_OUTPUT"
+        echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~37/image.raw" | tee -a "$GITHUB_OUTPUT"
+        echo "imagePath=${basePath}/mkosi.output.azure/fedora~37/image.vhd" | tee -a "$GITHUB_OUTPUT"
+        echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~37/image-upload${uploadVariant}.json" | tee -a "$GITHUB_OUTPUT"
         # TODO: set default security type to "ConfidentialVM" once replication is possible
         securityType=${{ inputs.uploadVariant }}
         if [[ -z "${securityType}" ]]; then
           securityType=ConfidentialVMSupported
         fi
-        echo "securityType=${securityType}" >> $GITHUB_OUTPUT
-        echo "diskName=constellation-${stream}-${timestamp}-${securityType,,}" >> $GITHUB_OUTPUT
+        echo "securityType=${securityType}" | tee -a "$GITHUB_OUTPUT"
+        echo "diskName=constellation-${stream}-${timestamp}-${securityType,,}" | tee -a "$GITHUB_OUTPUT"
         if [[ "${stream}" = "stable" ]]
         then
-          echo "imageDefinition=constellation" >> $GITHUB_OUTPUT
-          echo "imageOffer=constellation" >> $GITHUB_OUTPUT
-          echo "imageVersion=${imageVersion:1}" >> $GITHUB_OUTPUT
+          echo "imageDefinition=constellation" | tee -a "$GITHUB_OUTPUT"
+          echo "imageOffer=constellation" | tee -a "$GITHUB_OUTPUT"
+          echo "imageVersion=${imageVersion:1}" | tee -a "$GITHUB_OUTPUT"
           galleryName=Constellation
         elif [[ "${imageType}" = "debug" && ( "${ref}" = "-" || "${ref}" = "main" ) ]]
         then
-          echo "imageDefinition=${semver}" >> $GITHUB_OUTPUT
-          echo "imageOffer=${semver}" >> $GITHUB_OUTPUT
-          echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_OUTPUT
+          echo "imageDefinition=${semver}" | tee -a "$GITHUB_OUTPUT"
+          echo "imageOffer=${semver}" | tee -a "$GITHUB_OUTPUT"
+          echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" | tee -a "$GITHUB_OUTPUT"
           galleryName=Constellation_Debug
         else
-          echo "imageDefinition=${ref}-${stream}" >> $GITHUB_OUTPUT
-          echo "imageOffer=${ref}-${stream}" >> $GITHUB_OUTPUT
-          echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_OUTPUT
+          echo "imageDefinition=${ref}-${stream}" | tee -a "$GITHUB_OUTPUT"
+          echo "imageOffer=${ref}-${stream}" | tee -a "$GITHUB_OUTPUT"
+          echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" | tee -a "$GITHUB_OUTPUT"
           galleryName=Constellation_Testing
         fi
         # TODO: enable VMGS upload for ConfidentialVM images once replication is possible
         if [[ "${securityType}" == "ConfidentialVMSupported" ]]; then
-          echo "galleryName=${galleryName}_CVM" >> $GITHUB_OUTPUT
-          echo "vmgsPath=" >> $GITHUB_OUTPUT
+          echo "galleryName=${galleryName}_CVM" | tee -a "$GITHUB_OUTPUT"
+          echo "vmgsPath=" | tee -a "$GITHUB_OUTPUT"
         else
-          echo "galleryName=${galleryName}" >> $GITHUB_OUTPUT
-          echo "vmgsPath=${basePath}/pki/${securityType}.vmgs" >> $GITHUB_OUTPUT
+          echo "galleryName=${galleryName}" | tee -a "$GITHUB_OUTPUT"
+          echo "vmgsPath=${basePath}/pki/${securityType}.vmgs" | tee -a "$GITHUB_OUTPUT"
         fi
 
     #    image family and image name may include lowercase alphanumeric characters and dashes.
@@ -264,19 +264,19 @@ runs:
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
       run: |
-        echo "project=constellation-images" >> $GITHUB_OUTPUT
-        echo "bucket=constellation-images" >> $GITHUB_OUTPUT
-        echo "region=europe-west3" >> $GITHUB_OUTPUT
-        echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~37/image.raw" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.gcp/fedora~37/image.tar.gz" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.gcp/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
-        echo "imageName=${imageVersion//./-}-${stream}" >> $GITHUB_OUTPUT
-        echo "imageFilename=${imageVersion//./-}-${stream}.tar.gz" >> $GITHUB_OUTPUT
+        echo "project=constellation-images" | tee -a "$GITHUB_OUTPUT"
+        echo "bucket=constellation-images" | tee -a "$GITHUB_OUTPUT"
+        echo "region=europe-west3" | tee -a "$GITHUB_OUTPUT"
+        echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~37/image.raw" | tee -a "$GITHUB_OUTPUT"
+        echo "imagePath=${basePath}/mkosi.output.gcp/fedora~37/image.tar.gz" | tee -a "$GITHUB_OUTPUT"
+        echo "jsonOutput=${basePath}/mkosi.output.gcp/fedora~37/image-upload.json" | tee -a "$GITHUB_OUTPUT"
+        echo "imageName=${imageVersion//./-}-${stream}" | tee -a "$GITHUB_OUTPUT"
+        echo "imageFilename=${imageVersion//./-}-${stream}.tar.gz" | tee -a "$GITHUB_OUTPUT"
         if [[ "${stream}" = "stable" ]]
         then
-          echo "imageFamily=constellation" >> $GITHUB_OUTPUT
+          echo "imageFamily=constellation" | tee -a "$GITHUB_OUTPUT"
         else
-          echo "imageFamily=constellation-${ref::45}" >> $GITHUB_OUTPUT
+          echo "imageFamily=constellation-${ref::45}" | tee -a "$GITHUB_OUTPUT"
         fi
 
     - name: Configure OpenStack input variables
@@ -286,10 +286,10 @@ runs:
       env:
         basePath: ${{ inputs.basePath }}
       run: |
-        echo "bucket=cdn-constellation-backend" >> $GITHUB_OUTPUT
-        echo "baseUrl=https://cdn.confidential.cloud" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.openstack/fedora~37/image.raw" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.openstack/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
+        echo "bucket=cdn-constellation-backend" | tee -a "$GITHUB_OUTPUT"
+        echo "baseUrl=https://cdn.confidential.cloud" | tee -a "$GITHUB_OUTPUT"
+        echo "imagePath=${basePath}/mkosi.output.openstack/fedora~37/image.raw" | tee -a "$GITHUB_OUTPUT"
+        echo "jsonOutput=${basePath}/mkosi.output.openstack/fedora~37/image-upload.json" | tee -a "$GITHUB_OUTPUT"
 
     - name: Configure QEMU input variables
       id: qemu
@@ -298,7 +298,7 @@ runs:
       env:
         basePath: ${{ inputs.basePath }}
       run: |
-        echo "bucket=cdn-constellation-backend" >> $GITHUB_OUTPUT
-        echo "baseUrl=https://cdn.confidential.cloud" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.qemu/fedora~37/image.raw" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.qemu/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
+        echo "bucket=cdn-constellation-backend" | tee -a "$GITHUB_OUTPUT"
+        echo "baseUrl=https://cdn.confidential.cloud" | tee -a "$GITHUB_OUTPUT"
+        echo "imagePath=${basePath}/mkosi.output.qemu/fedora~37/image.raw" | tee -a "$GITHUB_OUTPUT"
+        echo "jsonOutput=${basePath}/mkosi.output.qemu/fedora~37/image-upload.json" | tee -a "$GITHUB_OUTPUT"

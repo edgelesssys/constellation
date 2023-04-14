@@ -17,13 +17,13 @@ jobs:
         run: |
           case "${{ github.event.schedule }}" in
             "0 21 * * 5")
-              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              echo "stream=debug" | tee -a "$GITHUB_OUTPUT"
               ;;
             "10 21 * * 5")
-              echo "stream=console" >> "$GITHUB_OUTPUT"
+              echo "stream=console" | tee -a "$GITHUB_OUTPUT"
               ;;
             "20 21 * * 5")
-              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              echo "stream=nightly" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
               echo "::error::Unknown stream for schedule '${{ github.event.schedule }}'"

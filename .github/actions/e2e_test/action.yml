@@ -98,8 +98,8 @@ runs:
       id: determine-build-target
       shell: bash
       run: |
-        echo "hostOS=$(go env GOOS)" >> $GITHUB_OUTPUT
-        echo "hostArch=$(go env GOARCH)" >> $GITHUB_OUTPUT
+        echo "hostOS=$(go env GOOS)" | tee -a "$GITHUB_OUTPUT"
+        echo "hostArch=$(go env GOARCH)" | tee -a "$GITHUB_OUTPUT"
 
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel

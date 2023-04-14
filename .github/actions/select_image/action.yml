@@ -28,9 +28,9 @@ runs:
       shell: bash
       run: |
         if [[ "${{ inputs.osImage }}" == "ref/main/stream/debug/?" || "${{ inputs.osImage }}" == "ref/release/stream/stable/?" ]]; then
-          echo "result=true" >> "$GITHUB_OUTPUT"
+          echo "result=true" | tee -a "$GITHUB_OUTPUT"
         else
-          echo "result=false" >> "$GITHUB_OUTPUT"
+          echo "result=false" | tee -a "$GITHUB_OUTPUT"
         fi
 
     - name: Separate ref and stream from matrix
@@ -42,7 +42,6 @@ runs:
       run: |
         echo "ref=$(echo $REFSTREAM | cut -d/ -f2)" | tee -a "$GITHUB_OUTPUT"
         echo "stream=$(echo $REFSTREAM | cut -d/ -f4)" | tee -a "$GITHUB_OUTPUT"
-
 
     - name: Find latest image
       if: steps.input-is-preset.outputs.result == 'true'
@@ -64,16 +63,16 @@ runs:
           export IMAGE=${{ inputs.osImage }}
         fi
 
-        echo "osImage=$IMAGE" >> $GITHUB_OUTPUT
+        echo "osImage=$IMAGE" | tee -a "$GITHUB_OUTPUT"
         echo "Using image: $IMAGE"
 
         case "$IMAGE" in
           *"/stream/debug/"*)
-            echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
+            echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
             echo "Image is debug image."
             ;;
           *)
-            echo "isDebugImage=false" >> "$GITHUB_OUTPUT"
+            echo "isDebugImage=false" | tee -a "$GITHUB_OUTPUT"
             echo "Image is not debug image."
             ;;
         esac
