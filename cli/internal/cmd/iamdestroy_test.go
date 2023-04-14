@@ -105,6 +105,10 @@ func TestIAMDestroy(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
+
+			// register persistent flags manually
+			cmd.Flags().String("tf-log", "NONE", "")
+
 			assert.NoError(cmd.Flags().Set("yes", tc.yesFlag))
 
 			c := &destroyCmd{log: logger.NewTest(t)}

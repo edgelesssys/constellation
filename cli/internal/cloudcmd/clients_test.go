@@ -45,7 +45,7 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(_ context.Context) (terraform.CreateOutput, error) {
+func (c *stubTerraformClient) CreateCluster(_ context.Context, _ terraform.LogLevel) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{
 		IP:             c.ip,
 		Secret:         c.initSecret,
@@ -54,7 +54,7 @@ func (c *stubTerraformClient) CreateCluster(_ context.Context) (terraform.Create
 	}, c.createClusterErr
 }
 
-func (c *stubTerraformClient) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider) (terraform.IAMOutput, error) {
+func (c *stubTerraformClient) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	return c.iamOutput, c.iamOutputErr
 }
 
@@ -62,7 +62,7 @@ func (c *stubTerraformClient) PrepareWorkspace(_ string, _ terraform.Variables) 
 	return c.prepareWorkspaceErr
 }
 
-func (c *stubTerraformClient) Destroy(_ context.Context) error {
+func (c *stubTerraformClient) Destroy(_ context.Context, _ terraform.LogLevel) error {
 	c.destroyCalled = true
 	return c.destroyErr
 }

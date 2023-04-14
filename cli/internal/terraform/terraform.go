@@ -17,9 +17,11 @@ package terraform
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/hashicorp/go-version"
 	install "github.com/hashicorp/hc-install"
@@ -83,18 +85,22 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return CreateOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return CreateOutput{}, err
+		return CreateOutput{}, fmt.Errorf("terraform show: %w", err)
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
@@ -177,7 +183,11 @@ type AWSIAMOutput struct {
 }
 
 // CreateIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (IAMOutput, error) {
+func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
 		return IAMOutput{}, err
 	}
@@ -285,9 +295,13 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 }
 
 // Destroy destroys Terraform-created cloud resources.
-func (c *Client) Destroy(ctx context.Context) error {
+func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
 	if err := c.tf.Init(ctx); err != nil {
-		return err
+		return fmt.Errorf("terraform init: %w", err)
 	}
 	return c.tf.Destroy(ctx)
 }
@@ -354,9 +368,24 @@ func (c *Client) writeVars(vars Variables) error {
 	return nil
 }
 
+// setLogLevel sets the log level for Terraform.
+func (c *Client) setLogLevel(logLevel LogLevel) error {
+	if logLevel.String() != "" {
+		if err := c.tf.SetLog(logLevel.String()); err != nil {
+			return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
+		}
+		if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
+			return fmt.Errorf("set log path: %w", err)
+		}
+	}
+	return nil
+}
+
 type tfInterface interface {
 	Apply(context.Context, ...tfexec.ApplyOption) error
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
+	SetLog(level string) error
+	SetLogPath(path string) error
 }

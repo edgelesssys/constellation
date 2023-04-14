@@ -299,6 +299,22 @@ func TestCreateCluster(t *testing.T) {
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
+		"set log fails": {
+			pathBase: "terraform",
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf:       &stubTerraform{setLogErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"set log path fails": {
+			pathBase: "terraform",
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf:       &stubTerraform{setLogPathErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
 		"no ip": {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
@@ -406,7 +422,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.CreateCluster(context.Background())
+			tfOutput, err := c.CreateCluster(context.Background(), LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -481,6 +497,22 @@ func TestCreateIAM(t *testing.T) {
 		wantErr  bool
 		want     IAMOutput
 	}{
+		"set log fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{setLogErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"set log path fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{setLogPathErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
 		"gcp works": {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
@@ -685,7 +717,7 @@ func TestCreateIAM(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider)
+			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -698,6 +730,7 @@ func TestCreateIAM(t *testing.T) {
 }
 
 func TestDestroyInstances(t *testing.T) {
+	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		tf      *stubTerraform
 		wantErr bool
@@ -706,9 +739,15 @@ func TestDestroyInstances(t *testing.T) {
 			tf: &stubTerraform{},
 		},
 		"destroy fails": {
-			tf: &stubTerraform{
-				destroyErr: errors.New("error"),
-			},
+			tf:      &stubTerraform{destroyErr: someErr},
+			wantErr: true,
+		},
+		"setLog fails": {
+			tf:      &stubTerraform{setLogErr: someErr},
+			wantErr: true,
+		},
+		"setLogPath fails": {
+			tf:      &stubTerraform{setLogPathErr: someErr},
 			wantErr: true,
 		},
 	}
@@ -721,7 +760,7 @@ func TestDestroyInstances(t *testing.T) {
 				tf: tc.tf,
 			}
 
-			err := c.Destroy(context.Background())
+			err := c.Destroy(context.Background(), LogLevelDebug)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -788,12 +827,121 @@ func TestCleanupWorkspace(t *testing.T) {
 	}
 }
 
+func TestParseLogLevel(t *testing.T) {
+	testCases := map[string]struct {
+		level   string
+		want    LogLevel
+		wantErr bool
+	}{
+		"json": {
+			level: "json",
+			want:  LogLevelJSON,
+		},
+		"trace": {
+			level: "trace",
+			want:  LogLevelTrace,
+		},
+		"debug": {
+			level: "debug",
+			want:  LogLevelDebug,
+		},
+		"info": {
+			level: "info",
+			want:  LogLevelInfo,
+		},
+		"warn": {
+			level: "warn",
+			want:  LogLevelWarn,
+		},
+		"error": {
+			level: "error",
+			want:  LogLevelError,
+		},
+		"none": {
+			level: "none",
+			want:  LogLevelNone,
+		},
+		"unknown": {
+			level:   "unknown",
+			wantErr: true,
+		},
+		"empty": {
+			level:   "",
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			level, err := ParseLogLevel(tc.level)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.want, level)
+		})
+	}
+}
+
+func TestLogLevelString(t *testing.T) {
+	testCases := map[string]struct {
+		level LogLevel
+		want  string
+	}{
+		"json": {
+			level: LogLevelJSON,
+			want:  "JSON",
+		},
+		"trace": {
+			level: LogLevelTrace,
+			want:  "TRACE",
+		},
+		"debug": {
+			level: LogLevelDebug,
+			want:  "DEBUG",
+		},
+		"info": {
+			level: LogLevelInfo,
+			want:  "INFO",
+		},
+		"warn": {
+			level: LogLevelWarn,
+			want:  "WARN",
+		},
+		"error": {
+			level: LogLevelError,
+			want:  "ERROR",
+		},
+		"none": {
+			level: LogLevelNone,
+			want:  "",
+		},
+		"invalid int": {
+			level: LogLevel(-1),
+			want:  "",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			assert.Equal(tc.want, tc.level.String())
+		})
+	}
+}
+
 type stubTerraform struct {
-	applyErr   error
-	destroyErr error
-	initErr    error
-	showErr    error
-	showState  *tfjson.State
+	applyErr      error
+	destroyErr    error
+	initErr       error
+	showErr       error
+	setLogErr     error
+	setLogPathErr error
+	showState     *tfjson.State
 }
 
 func (s *stubTerraform) Apply(context.Context, ...tfexec.ApplyOption) error {
@@ -810,4 +958,12 @@ func (s *stubTerraform) Init(context.Context, ...tfexec.InitOption) error {
 
 func (s *stubTerraform) Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error) {
 	return s.showState, s.showErr
+}
+
+func (s *stubTerraform) SetLog(_ string) error {
+	return s.setLogErr
+}
+
+func (s *stubTerraform) SetLogPath(_ string) error {
+	return s.setLogPathErr
 }

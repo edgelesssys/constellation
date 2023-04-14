@@ -135,6 +135,9 @@ func TestTerminate(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
+			// register persistent flags manually
+			cmd.Flags().String("tf-log", "NONE", "")
+
 			require.NotNil(tc.setupFs)
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.idFile))
 

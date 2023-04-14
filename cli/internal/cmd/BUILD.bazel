@@ -120,6 +120,7 @@ go_test(
         "//cli/internal/helm",
         "//cli/internal/iamid",
         "//cli/internal/kubernetes",
+        "//cli/internal/terraform",
         "//disk-mapper/recoverproto",
         "//internal/atls",
         "//internal/attestation/measurements",

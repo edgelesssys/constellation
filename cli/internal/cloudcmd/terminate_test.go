@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,7 +63,7 @@ func TestTerminator(t *testing.T) {
 				},
 			}
 
-			err := terminator.Terminate(context.Background())
+			err := terminator.Terminate(context.Background(), terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)

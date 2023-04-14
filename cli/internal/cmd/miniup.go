@@ -19,6 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -73,17 +74,22 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
 
+	flags, err := m.parseUpFlags(cmd)
+	if err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
 	// create config if not passed as flag and set default values
-	config, err := m.prepareConfig(cmd, fileHandler)
+	config, err := m.prepareConfig(cmd, fileHandler, flags)
 	if err != nil {
 		return fmt.Errorf("preparing config: %w", err)
 	}
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
-	err = m.createMiniCluster(cmd.Context(), fileHandler, creator, config)
+	err = m.createMiniCluster(cmd.Context(), fileHandler, creator, config, flags.tfLogLevel)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("creating cluster: %w", err)
@@ -173,20 +179,10 @@ func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 }
 
 // prepareConfig reads a given config, or creates a new minimal QEMU config.
-func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config, error) {
-	m.log.Debugf("Preparing configuration")
-	configPath, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return nil, err
-	}
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return nil, fmt.Errorf("parsing force argument: %w", err)
-	}
-
+func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
 	// check for existing config
-	if configPath != "" {
-		conf, err := config.New(fileHandler, configPath, force)
+	if flags.configPath != "" {
+		conf, err := config.New(fileHandler, flags.configPath, flags.force)
 		var configValidationErr *config.ValidationError
 		if errors.As(err, &configValidationErr) {
 			cmd.PrintErrln(configValidationErr.LongMessage())
@@ -199,11 +195,11 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 		}
 		return conf, nil
 	}
-	m.log.Debugf("Configuration path is %q", configPath)
+	m.log.Debugf("Configuration path is %q", flags.configPath)
 	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
 		return nil, err
 	}
-	_, err = fileHandler.Stat(constants.ConfigFilename)
+	_, err := fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user to overwrite
 		cmd.PrintErrln("A config file already exists in the current workspace. Use --config to use an existing config file.")
@@ -227,9 +223,17 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) 
 }
 
 // createMiniCluster creates a new cluster using the given config.
-func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config) error {
+func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config, tfLogLevel terraform.LogLevel) error {
 	m.log.Debugf("Creating mini cluster")
-	idFile, err := creator.Create(ctx, cloudprovider.QEMU, config, "", 1, 1)
+	opts := cloudcmd.CreateOptions{
+		Provider:          cloudprovider.QEMU,
+		Config:            config,
+		InsType:           "",
+		ControlPlaneCount: 1,
+		WorkerCount:       1,
+		TFLogLevel:        tfLogLevel,
+	}
+	idFile, err := creator.Create(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -270,4 +274,40 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	}
 	m.log.Debugf("Initialized mini cluster")
 	return nil
+}
+
+type upFlags struct {
+	configPath string
+	force      bool
+	tfLogLevel terraform.LogLevel
+}
+
+func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
+	m.log.Debugf("Preparing configuration")
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return upFlags{}, fmt.Errorf("parsing config string: %w", err)
+	}
+	m.log.Debugf("Configuration path is %q", configPath)
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return upFlags{}, fmt.Errorf("parsing force bool: %w", err)
+	}
+	m.log.Debugf("force flag is %q", configPath)
+
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return upFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+	m.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
+
+	return upFlags{
+		configPath: configPath,
+		force:      force,
+		tfLogLevel: logLevel,
+	}, nil
 }

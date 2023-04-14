@@ -5,6 +5,7 @@ go_library(
     name = "terraform",
     srcs = [
         "loader.go",
+        "logging.go",
         "terraform.go",
         "variables.go",
     ],
@@ -73,6 +74,7 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
+        "//internal/constants",
         "//internal/file",
         "@com_github_hashicorp_go_version//:go-version",
         "@com_github_hashicorp_hc_install//:hc-install",
