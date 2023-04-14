@@ -71,4 +71,4 @@ runs:
       id: setExistingConfig
       shell: bash
       run: |
-        echo "existingConfig=true" >> $GITHUB_OUTPUT
+        echo "existingConfig=true" | tee -a $GITHUB_OUTPUT

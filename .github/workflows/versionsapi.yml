@@ -126,20 +126,20 @@ jobs:
           case "${{ inputs.command }}" in
             add)
               echo "Write access to S3 bucket required."
-              echo "write=true" >> "$GITHUB_OUTPUT"
+              echo "write=true" | tee -a "$GITHUB_OUTPUT"
               echo "No authentication at cloud provider required."
-              echo "auth=false" >> "$GITHUB_OUTPUT"
+              echo "auth=false" | tee -a "$GITHUB_OUTPUT"
             ;;
             remove)
               echo "Write access to S3 bucket required."
-              echo "write=true" >> "$GITHUB_OUTPUT"
+              echo "write=true" | tee -a "$GITHUB_OUTPUT"
               echo "Authentication at cloud provider required."
-              echo "auth=true" >> "$GITHUB_OUTPUT"
+              echo "auth=true" | tee -a "$GITHUB_OUTPUT"
               ;;
             latest | list)
               echo "Only read access required."
-              echo "write=false" >> "$GITHUB_OUTPUT"
-              echo "auth=false" >> "$GITHUB_OUTPUT"
+              echo "write=false" | tee -a "$GITHUB_OUTPUT"
+              echo "auth=false" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Unknown command '${{ inputs.command }}'."

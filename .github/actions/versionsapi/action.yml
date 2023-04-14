@@ -85,5 +85,4 @@ runs:
           exit 0
         fi
 
-        echo "output=${out}" >> "$GITHUB_OUTPUT"
-        echo "${out}"
+        echo "output=${out}" | tee -a "$GITHUB_OUTPUT"

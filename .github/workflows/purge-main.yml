@@ -33,13 +33,13 @@ jobs:
         run: |
           case "${{ github.event.schedule }}" in
             "0 0/3 * * *")
-              echo "stream=debug" >> "$GITHUB_OUTPUT"
+              echo "stream=debug" | tee -a "$GITHUB_OUTPUT"
               ;;
             "0 1/3 * * *")
-              echo "stream=console" >> "$GITHUB_OUTPUT"
+              echo "stream=console" | tee -a "$GITHUB_OUTPUT"
               ;;
             "0 2/3 * * *")
-              echo "stream=nightly" >> "$GITHUB_OUTPUT"
+              echo "stream=nightly" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Unknown schedule: ${{ github.event.schedule }}"
@@ -74,7 +74,7 @@ jobs:
 
           ver=$(echo "${deletable}" | head -n 1)
           echo "Deleting oldest version: ${ver}"
-          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+          echo "version=${ver}" | tee -a "$GITHUB_OUTPUT"
 
   delete:
     name: Delete version

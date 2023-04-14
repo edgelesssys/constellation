@@ -18,7 +18,7 @@ runs:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         worker_count=$(kubectl get nodes -o json --selector='!node-role.kubernetes.io/control-plane' | jq '.items | length')
-        echo "worker_count=${worker_count}" >> $GITHUB_OUTPUT
+        echo "worker_count=${worker_count}" | tee -a "$GITHUB_OUTPUT"
         echo "The cluster currently has ${worker_count} nodes."
 
     # The following step identifies the name of the worker scaling group. As the scaling group is
@@ -43,7 +43,7 @@ runs:
             exit 1
         fi
         worker_group=$(kubectl get scalinggroups -o json | jq -r '.items[].metadata.name | select(contains("worker"))')
-        echo "worker_name=${worker_group}" >> $GITHUB_OUTPUT
+        echo "worker_name=${worker_group}" | tee -a "$GITHUB_OUTPUT"
         echo "The name of your worker scaling group is '${worker_group}'."
 
     - name: Patch autoscaling to true
@@ -64,7 +64,7 @@ runs:
         worker_group=${{ steps.worker_name.outputs.worker_name }}
         worker_count=${{ steps.worker_count.outputs.worker_count }}
         worker_target=$((worker_count + 2))
-        echo "worker_target=${worker_target}" >> $GITHUB_OUTPUT
+        echo "worker_target=${worker_target}" | tee -a "$GITHUB_OUTPUT"
         kubectl patch scalinggroups ${worker_group} --patch '{"spec":{"max": '${worker_target}'}}' --type='merge'
         kubectl get scalinggroup ${worker_group} -o jsonpath='{.spec}' | jq
 

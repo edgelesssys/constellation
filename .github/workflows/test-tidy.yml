@@ -85,11 +85,11 @@ jobs:
           diffsum=$(echo "$diff" | sha256sum| cut -d' ' -f1)
           if [[ "${{ steps.untidy.outputs.diffsum }}" == "${diffsum}" ]]; then
             echo "Everything is tidy."
-            echo "ungenerated=false" >> "$GITHUB_OUTPUT"
+            echo "ungenerated=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "Detected changes after tidy"
-          echo "ungenerated=true" >> "$GITHUB_OUTPUT"
+          echo "ungenerated=true" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check if tidy or generate made modifications
         id: modified

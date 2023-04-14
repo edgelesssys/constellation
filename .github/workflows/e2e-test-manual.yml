@@ -190,16 +190,13 @@ jobs:
         run: |
           case "${{ needs.split-cliImageVersion.outputs.image }}" in
             "")
-              echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
-              echo "Image is debug image."
+              echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
               ;;
             *"/stream/debug/"*)
-              echo "isDebugImage=true" >> "$GITHUB_OUTPUT"
-              echo "Image is debug image."
+              echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
-              echo "isDebugImage=false" >> "$GITHUB_OUTPUT"
-              echo "Image is not debug image."
+              echo "isDebugImage=false" | tee -a "$GITHUB_OUTPUT"
               ;;
           esac
 

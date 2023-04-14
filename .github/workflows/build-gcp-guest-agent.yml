@@ -21,7 +21,7 @@ jobs:
         run: |
           latest=$(curl -fsSL https://api.github.com/repos/GoogleCloudPlatform/guest-agent/releases/latest | jq -r .tag_name)
           echo "Latest version of guest-agent is $latest"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" | tee -a "$GITHUB_OUTPUT"
 
       - name: Make tag a valid semver
         id: latest-release-semver
@@ -32,7 +32,7 @@ jobs:
           afterDotEvaluated=$((afterDot))
           semver="$beforeDot.$afterDotEvaluated"
           echo "Semver tag of guest-agent is $semver"
-          echo "latest=$semver" >> "$GITHUB_OUTPUT"
+          echo "latest=$semver" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check if the tag is newer than our last build
         id: needs-build
@@ -61,11 +61,11 @@ jobs:
 
           if [[ $rebuild == false ]]; then
             echo "Latest tag $latestTag is already built, exiting"
-            echo "out=false" >> "$GITHUB_OUTPUT"
+            echo "out=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "Latest tag $latestTag is older than ${semverUpstream}, building"
-          echo "out=true" >> "$GITHUB_OUTPUT"
+          echo "out=true" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout GoogleCloudPlatform/guest-agent
         if: steps.needs-build.outputs.out == 'true'

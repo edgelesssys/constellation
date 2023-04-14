@@ -150,9 +150,9 @@ jobs:
         id: ref
         run: |
           if [[ "${{ inputs.isRelease }}" = "true" ]]; then
-            echo "ref=-" >> "$GITHUB_OUTPUT"
+            echo "ref=-" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "ref=${{ steps.version.outputs.branchName }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ steps.version.outputs.branchName }}" | tee -a "$GITHUB_OUTPUT"
           fi
 
       - name: Determine and validate stream
@@ -167,7 +167,7 @@ jobs:
             exit 1
           fi
 
-          echo "stream=${{ inputs.stream }}" >> "$GITHUB_OUTPUT"
+          echo "stream=${{ inputs.stream }}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Determine type of image build
         shell: bash
@@ -175,13 +175,13 @@ jobs:
         run: |
           case "${{ steps.stream.outputs.stream }}" in
             "debug")
-              echo "imageType=debug" >> "$GITHUB_OUTPUT"
+              echo "imageType=debug" | tee -a "$GITHUB_OUTPUT"
               ;;
             "console")
-              echo "imageType=console" >> "$GITHUB_OUTPUT"
+              echo "imageType=console" | tee -a "$GITHUB_OUTPUT"
               ;;
             *)
-              echo "imageType=default" >> "$GITHUB_OUTPUT"
+              echo "imageType=default" | tee -a "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -190,9 +190,9 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ steps.stream.outputs.stream }}" == "stable" ]]; then
-             echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
+             echo "pkiSet=pki_prod" | tee -a "$GITHUB_OUTPUT"
            else
-             echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
+             echo "pkiSet=pki_testing" | tee -a "$GITHUB_OUTPUT"
            fi
 
       - name: Determine image version
@@ -211,11 +211,11 @@ jobs:
           } | tee -a "$GITHUB_OUTPUT"
 
           if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then
-            echo "imageNameShort=${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "imageNameShort=${IMAGE_VERSION}" | tee -a "$GITHUB_OUTPUT"
           elif [[ "${REF}" = "-" ]]; then
-            echo "imageNameShort=stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "imageNameShort=stream/${STREAM}/${IMAGE_VERSION}" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "imageNameShort=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "imageNameShort=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}" | tee -a "$GITHUB_OUTPUT"
           fi
 
   make-os-image:
