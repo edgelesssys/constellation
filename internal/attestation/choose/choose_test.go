@@ -135,4 +135,4 @@ func (unknownConfig) GetMeasurements() measurements.M {
 
 func (unknownConfig) SetMeasurements(measurements.M) {}
 
-func (unknownConfig) NewerThan(config.AttestationCfg) (bool, error) { return false, nil }
+func (unknownConfig) EqualTo(config.AttestationCfg) (bool, error) { return false, nil }

@@ -676,13 +676,13 @@ func (c *AWSNitroTPM) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if the config is newer than the given config.
-func (c AWSNitroTPM) NewerThan(other AttestationCfg) (bool, error) {
+// EqualTo returns true if the config is equal to the given config.
+func (c AWSNitroTPM) EqualTo(other AttestationCfg) (bool, error) {
 	otherCfg, ok := other.(*AWSNitroTPM)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	return !c.Measurements.EqualTo(otherCfg.Measurements), nil
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 // AzureSEVSNP is the configuration for Azure SEV-SNP attestation.
@@ -744,22 +744,22 @@ func (c *AzureSEVSNP) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if the config is newer than the given config.
-func (c AzureSEVSNP) NewerThan(old AttestationCfg) (bool, error) {
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 	otherCfg, ok := old.(*AzureSEVSNP)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, old)
 	}
 
-	acceptedKeyDigestsNewer := !c.FirmwareSignerConfig.AcceptedKeyDigests.EqualTo(otherCfg.FirmwareSignerConfig.AcceptedKeyDigests)
-	measurementsNewer := !c.Measurements.EqualTo(otherCfg.Measurements)
-	bootloaderNewer := c.BootloaderVersion > otherCfg.BootloaderVersion
-	teeNewer := c.TEEVersion > otherCfg.TEEVersion
-	snpNewer := c.SNPVersion > otherCfg.SNPVersion
-	microcodeNewer := c.MicrocodeVersion > otherCfg.MicrocodeVersion
-	rootKeyNewer := !bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
+	acceptedKeyDigestsEqual := c.FirmwareSignerConfig.AcceptedKeyDigests.EqualTo(otherCfg.FirmwareSignerConfig.AcceptedKeyDigests)
+	measurementsEqual := c.Measurements.EqualTo(otherCfg.Measurements)
+	bootloaderEqual := c.BootloaderVersion == otherCfg.BootloaderVersion
+	teeEqual := c.TEEVersion == otherCfg.TEEVersion
+	snpEqual := c.SNPVersion == otherCfg.SNPVersion
+	microcodeEqual := c.MicrocodeVersion == otherCfg.MicrocodeVersion
+	rootKeyEqual := bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
 
-	return acceptedKeyDigestsNewer || measurementsNewer || bootloaderNewer || teeNewer || snpNewer || microcodeNewer || rootKeyNewer, nil
+	return acceptedKeyDigestsEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
 }
 
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
@@ -797,13 +797,13 @@ func (c *AzureTrustedLaunch) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if the config is newer than the given config.
-func (c AzureTrustedLaunch) NewerThan(other AttestationCfg) (bool, error) {
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureTrustedLaunch) EqualTo(other AttestationCfg) (bool, error) {
 	otherCfg, ok := other.(*AzureTrustedLaunch)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	return !c.Measurements.EqualTo(otherCfg.Measurements), nil
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 // GCPSEVES is the configuration for GCP SEV-ES attestation.
@@ -828,13 +828,13 @@ func (c *GCPSEVES) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if the config is newer than the given config.
-func (c GCPSEVES) NewerThan(other AttestationCfg) (bool, error) {
+// EqualTo returns true if the config is equal to the given config.
+func (c GCPSEVES) EqualTo(other AttestationCfg) (bool, error) {
 	otherCfg, ok := other.(*GCPSEVES)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	return !c.Measurements.EqualTo(otherCfg.Measurements), nil
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 // QEMUVTPM is the configuration for QEMU vTPM attestation.
@@ -859,13 +859,13 @@ func (c *QEMUVTPM) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if the config is newer than the given config.
-func (c QEMUVTPM) NewerThan(other AttestationCfg) (bool, error) {
+// EqualTo returns true if the config is equal to the given config.
+func (c QEMUVTPM) EqualTo(other AttestationCfg) (bool, error) {
 	otherCfg, ok := other.(*QEMUVTPM)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	return !c.Measurements.EqualTo(otherCfg.Measurements), nil
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 func toPtr[T any](v T) *T {

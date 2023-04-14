@@ -123,8 +123,8 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 			return fmt.Errorf("getting cluster measurements: %w", err)
 		}
 	} else {
-		// If the current config is not newer, or there is an error when comparing the configs, we skip the upgrade.
-		if newer, err := newConfig.NewerThan(clusterAttestationConfig); err != nil || !newer {
+		// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
+		if equal, err := newConfig.EqualTo(clusterAttestationConfig); err != nil || equal {
 			return err
 		}
 	}
