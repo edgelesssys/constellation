@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -70,6 +71,7 @@ func TestUpgradeApply(t *testing.T) {
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
+			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t)}
 			err = upgrader.upgradeApply(cmd, handler)
