@@ -375,6 +375,8 @@ func prepareAzureValues(values map[string]any) error {
 		"tenantID":       "TenantID",
 	}
 
+	testTag := "v0.0.0"
+	pullPolicy := "IfNotPresent"
 	verificationVals, ok := values["verification-service"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'verification-service' key")
@@ -386,6 +388,67 @@ func prepareAzureValues(values map[string]any) error {
 		return errors.New("missing 'konnectivity' key")
 	}
 	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
+
+	csiVals, ok := values["azuredisk-csi-driver"].(map[string]any)
+	if !ok {
+		csiVals = map[string]any{}
+		values["azuredisk-csi-driver"] = csiVals
+	}
+	csiImages, ok := csiVals["image"].(map[string]any)
+	if !ok {
+		csiImages = map[string]any{}
+		csiVals["image"] = csiImages
+	}
+	csiImages["azuredisk"] = map[string]any{
+		"repository": "azure-csi-driver",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiImages["csiProvisioner"] = map[string]any{
+		"repository": "csi-provisioner",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiImages["csiAttacher"] = map[string]any{
+		"repository": "csi-attacher",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiImages["csiResizer"] = map[string]any{
+		"repository": "csi-resizer",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiImages["livenessProbe"] = map[string]any{
+		"repository": "livenessprobe",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiImages["nodeDriverRegistrar"] = map[string]any{
+		"repository": "csi-node-driver-registrar",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiSnapshot, ok := csiVals["snapshot"].(map[string]any)
+	if !ok {
+		csiSnapshot = map[string]any{}
+		csiVals["snapshot"] = csiSnapshot
+	}
+	csiSnapshotImage, ok := csiSnapshot["image"].(map[string]any)
+	if !ok {
+		csiSnapshotImage = map[string]any{}
+		csiSnapshot["image"] = csiSnapshotImage
+	}
+	csiSnapshotImage["csiSnapshotter"] = map[string]any{
+		"repository": "csi-snapshotter",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
+	csiSnapshotImage["snapshotController"] = map[string]any{
+		"repository": "snapshot-controller",
+		"tag":        testTag,
+		"pullPolicy": pullPolicy,
+	}
 
 	return nil
 }

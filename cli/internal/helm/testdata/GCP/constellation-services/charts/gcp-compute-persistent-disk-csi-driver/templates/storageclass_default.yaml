@@ -5,7 +5,7 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
   name: encrypted-rwo
 parameters:
-  type: pd-standard
+  type: pd-balanced
 provisioner: gcp.csi.confidential.cloud
 allowVolumeExpansion: true
 reclaimPolicy: Delete

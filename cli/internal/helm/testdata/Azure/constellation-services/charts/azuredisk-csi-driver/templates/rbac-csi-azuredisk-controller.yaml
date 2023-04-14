@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -47,8 +47,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -68,8 +68,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -99,8 +99,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -120,8 +120,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 rules:
   - apiGroups: [""]
     resources: ["events"]
@@ -151,8 +151,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -171,8 +171,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -201,8 +201,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa

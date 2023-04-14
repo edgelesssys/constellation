@@ -7,8 +7,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.1.0"
-    helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+    app.kubernetes.io/version: "v1.2.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
 spec:
   updateStrategy:
     rollingUpdate:
@@ -23,8 +23,8 @@ spec:
         app.kubernetes.io/instance: "testRelease"
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "azuredisk-csi-driver"
-        app.kubernetes.io/version: "v1.1.0"
-        helm.sh/chart: "azuredisk-csi-driver-v1.1.2"
+        app.kubernetes.io/version: "v1.2.0"
+        helm.sh/chart: "azuredisk-csi-driver-v1.2.0"
         app: csi-azuredisk-node
     spec:
       serviceAccountName: csi-azuredisk-node-sa
@@ -48,7 +48,7 @@ spec:
           volumeMounts:
             - mountPath: /csi
               name: socket-dir
-          image: "mcr.microsoft.com/oss/kubernetes-csi/livenessprobe:v2.7.0"
+          image: "livenessprobe:v0.0.0"
           args:
             - --csi-address=/csi/csi.sock
             - --probe-timeout=3s
@@ -61,7 +61,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: node-driver-registrar
-          image: "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:v2.5.1"
+          image: "csi-node-driver-registrar:v0.0.0"
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -91,7 +91,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: azuredisk
-          image: "ghcr.io/edgelesssys/constellation/azure-csi-driver:v1.1.0"
+          image: "azure-csi-driver:v0.0.0"
           args:
             - "--v=5"
             - "--endpoint=$(CSI_ENDPOINT)"
