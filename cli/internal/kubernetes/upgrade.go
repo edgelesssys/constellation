@@ -223,11 +223,11 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config
 			return fmt.Errorf("migrating join config: %w", err)
 		}
 	}
-	newer, err := newConfig.NewerThan(currentConfig)
+	equal, err := newConfig.EqualTo(currentConfig)
 	if err != nil {
 		return fmt.Errorf("comparing attestation configs: %w", err)
 	}
-	if !newer {
+	if equal {
 		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen attestation config, skipping config upgrade")
 		return nil
 	}

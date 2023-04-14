@@ -24,8 +24,8 @@ type AttestationCfg interface {
 	SetMeasurements(m measurements.M)
 	// GetVariant returns the variant of the attestation config.
 	GetVariant() variant.Variant
-	// NewerThan returns true if the config is newer than the given config.
-	NewerThan(AttestationCfg) (bool, error)
+	// NewerThan returns true if the config is equal to the given config.
+	EqualTo(AttestationCfg) (bool, error)
 }
 
 // UnmarshalAttestationConfig unmarshals the config file into the correct type.
@@ -128,7 +128,7 @@ func (c *DummyCfg) SetMeasurements(m measurements.M) {
 	c.Measurements = m
 }
 
-// NewerThan returns true if measurements of the configs are not equal.
-func (c DummyCfg) NewerThan(other AttestationCfg) (bool, error) {
-	return !c.Measurements.EqualTo(other.GetMeasurements()), nil
+// EqualTo returns true if measurements of the configs are equal.
+func (c DummyCfg) EqualTo(other AttestationCfg) (bool, error) {
+	return c.Measurements.EqualTo(other.GetMeasurements()), nil
 }
