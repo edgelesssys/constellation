@@ -13,16 +13,11 @@ on:
         type: boolean
         default: false
 
-env:
-  REPO: edgelesssys/constellation
-  TAG: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
-
 jobs:
   update:
     runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
+    outputs:
+      latest: ${{ steps.input-passthrough.outputs.latest }}${{ steps.check-last-release.outputs.latest }}
     steps:
       - name: Checkout
         uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
@@ -30,38 +25,33 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Override latest
-        id: override
         if: github.event.inputs.latest == 'true'
-        run: echo "LATEST=true" >> "$GITHUB_ENV"
+        id: input-passthrough
+        run: echo "latest=true" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check if should mark latest
         if: github.event.inputs.latest != 'true'
+        id: check-last-release
         env:
+          REPO: edgelesssys/constellation
           GH_TOKEN: ${{ github.token }}
         run: |
-          latest_release_tag=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/${REPO}/releases/latest" \
-            | jq -r '.tag_name')
+          latest_release_tag=$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${REPO}/releases/latest" \
+            | jq -r '.tag_name'
+          )
+
+          current_tag=${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
           echo "Latest release tag: ${latest_release_tag}"
-          echo "Current tag: ${TAG}"
-          if [[ "${latest_release_tag}" == "${TAG}" ]]; then
-            echo "LATEST=true" >> "$GITHUB_ENV"
+          echo "Current tag: ${current_tag}"
+
+          if [[ "${latest_release_tag}" == "${current_tag}" ]]; then
+            echo "latest=true" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "LATEST=false" >> "$GITHUB_ENV"
+            echo "latest=false" | tee -a "$GITHUB_OUTPUT"
           fi
-
-      - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
-        with:
-          go-version: "1.20.3"
-          cache: true
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GithubAddReleaseVersion
-          aws-region: eu-central-1
 
   add-image-version-to-versionsapi:
     needs: [update]
@@ -74,12 +64,12 @@ jobs:
       command: add
       add_release: true
       stream: stable
-      version: ${{ inputs.tag }}
+      version: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
       kind: image
-      add_latest: true
+      add_latest: ${{ needs.update.outputs.latest == 'true' }}
 
   add-cli-version-to-versionsapi:
-    needs: [update]
+    needs: [update, add-image-version-to-versionsapi] # run workflow calls after each other
     name: "Add CLI version to versionsapi"
     permissions:
       contents: read
@@ -89,6 +79,6 @@ jobs:
       command: add
       add_release: true
       stream: stable
-      version: ${{ inputs.tag }}
+      version: ${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}
       kind: cli
-      add_latest: true
+      add_latest: ${{ needs.update.outputs.latest == 'true' }}
