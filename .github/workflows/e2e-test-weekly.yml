@@ -45,66 +45,130 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        test:
-          [
-            "sonobuoy full",
-            "autoscaling",
-            "perf-bench",
-            "lb",
-            "verify",
-            "recover",
-          ]
-        provider: ["gcp", "azure", "aws"]
-        kubernetes-version: ["v1.24", "v1.25", "v1.26"]
-        refStream: ["ref/main/stream/debug/?", "ref/release/stream/stable/?"]
-        exclude:
-          # Verify test runs only on latest kubernetes-version by default.
-          # Exclude it for main-debug as it needs to run on 1.25 / release-stable.
-          - test: "verify"
-            kubernetes-version: "v1.24"
-          - refStream: "ref/main/stream/debug/?"
-            test: "verify"
-            kubernetes-version: "v1.25"
-          # Recover test runs only on latest kubernetes-version.
-          - test: "recover"
-            kubernetes-version: "v1.24"
-          - test: "recover"
-            kubernetes-version: "v1.25"
-          # Autoscaling test runs only on latest kubernetes-version.
-          - test: "autoscaling"
-            kubernetes-version: "v1.24"
-          - test: "autoscaling"
-            kubernetes-version: "v1.25"
-          # Perf-Bench test runs only on latest kubernetes-version.
-          - test: "perf-bench"
-            kubernetes-version: "v1.24"
-          - test: "perf-bench"
-            kubernetes-version: "v1.25"
-          # lb test runs only on latest kubernetes-version.
-          - test: "lb"
-            kubernetes-version: "v1.24"
-          - test: "lb"
-            kubernetes-version: "v1.25"
-          # Currently not supported on AWS.
-          - test: "autoscaling"
-            provider: "aws"
-          - test: "perf-bench"
-            provider: "aws"
-          # Only verify for K8s v1.25 on all providers.
-          - refStream: "ref/release/stream/stable/?"
-            kubernetes-version: "v1.24"
-          - refStream: "ref/release/stream/stable/?"
+        include:
+          #
+          # Tests on main-debug refStream
+          #
+
+          # sonobuoy full test on all k8s versions
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
             kubernetes-version: "v1.26"
-          - refStream: "ref/release/stream/stable/?"
-            test: "lb"
-          - refStream: "ref/release/stream/stable/?"
-            test: "perf-bench"
-          - refStream: "ref/release/stream/stable/?"
-            test: "autoscaling"
-          - refStream: "ref/release/stream/stable/?"
-            test: "sonobuoy full"
-          - refStream: "ref/release/stream/stable/?"
-            test: "recover"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.25"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.25"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.25"
+
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.24"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.24"
+          - test: "sonobuoy full"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.24"
+
+          # verify test on latest k8s version
+          - test: "verify"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+          - test: "verify"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+          - test: "verify"
+            provider: "aws"
+            refStream: "ref/main/stream/debug/?"
+            kubernetes-version: "v1.26"
+
+          # recover test on latest k8s version
+          - test: "recover"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+          - test: "recover"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+          - test: "recover"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+
+          # lb test on latest k8s version
+          - test: "lb"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+          - test: "lb"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+          - test: "lb"
+            refStream: "ref/main/stream/debug/?"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+
+          # autoscaling test on latest k8s version, not supported on AWS
+          - test: "autoscaling"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+          - test: "autoscaling"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+
+          # perf-bench test on latest k8s version, not supported on AWS
+          - test: "perf-bench"
+            refStream: "ref/main/stream/debug/?"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+          - test: "perf-bench"
+            refStream: "ref/main/stream/debug/?"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+
+          #
+          # Tests on release-stable refStream
+          #
+
+          # verify test on default k8s version
+          - test: "verify"
+            refStream: "ref/release/stream/stable/?"
+            provider: "gcp"
+            kubernetes-version: "v1.25"
+          - test: "verify"
+            refStream: "ref/release/stream/stable/?"
+            provider: "azure"
+            kubernetes-version: "v1.25"
+          - test: "verify"
+            refStream: "ref/release/stream/stable/?"
+            provider: "aws"
+            kubernetes-version: "v1.25"
     runs-on: ubuntu-22.04
     permissions:
       id-token: write

@@ -37,68 +37,124 @@ jobs:
       fail-fast: false
       max-parallel: 9
       matrix:
-        test:
-          [
-            "sonobuoy full",
-            "autoscaling",
-            "perf-bench",
-            "lb",
-            "verify",
-            "recover",
-            "iamcreate",
-          ]
-        provider: ["gcp", "azure", "aws"]
-        kubernetes-version: ["v1.24", "v1.25", "v1.26"]
-        runner: [ubuntu-22.04]
-        exclude:
-          # IAM create test runs only on latest kubernetes-version.
-          - test: "iamcreate"
-            kubernetes-version: "v1.24"
-          - test: "iamcreate"
-            kubernetes-version: "v1.25"
-          # Verify test runs only on latest kubernetes-version.
-          - test: "verify"
-            kubernetes-version: "v1.24"
-          - test: "verify"
-            kubernetes-version: "v1.25"
-          # Recover test runs only on latest kubernetes-version.
-          - test: "recover"
-            kubernetes-version: "v1.24"
-          - test: "recover"
-            kubernetes-version: "v1.25"
-          # Autoscaling test runs only on latest kubernetes-version.
-          - test: "autoscaling"
-            kubernetes-version: "v1.24"
-          - test: "autoscaling"
-            kubernetes-version: "v1.25"
-          # Perf-Bench test runs only on latest kubernetes-version.
-          - test: "perf-bench"
-            kubernetes-version: "v1.24"
-          - test: "perf-bench"
-            kubernetes-version: "v1.25"
-          # lb test runs only on latest kubernetes-version.
-          - test: "lb"
-            kubernetes-version: "v1.24"
-          - test: "lb"
-            kubernetes-version: "v1.25"
-          # Currently not supported on AWS.
-          - test: "autoscaling"
-            provider: "aws"
-          - test: "perf-bench"
-            provider: "aws"
-          # Currently broken on AWS. Enable when AB#2780 is fixed.
-          - test: "lb"
-            provider: "aws"
         include:
-          # Explicitly define two tests to run the CLI on macOS.
-          - test: "verify"
-            kubernetes-version: "v1.25"
-            runner: "macos-12"
-            provider: "azure"
-          - test: "iamcreate"
-            kubernetes-version: "v1.25"
-            runner: "macos-12"
+          #
+          # Tests on ubuntu runner
+          #
+
+          # sonobuoy full test on all k8s versions
+          - test: "sonobuoy full"
             provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          - test: "sonobuoy full"
+            provider: "gcp"
+            kubernetes-version: "v1.25"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "azure"
+            kubernetes-version: "v1.25"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "aws"
+            kubernetes-version: "v1.25"
+            runner: "ubuntu-22.04"
+
+          - test: "sonobuoy full"
+            provider: "gcp"
+            kubernetes-version: "v1.24"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "azure"
+            kubernetes-version: "v1.24"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "aws"
+            kubernetes-version: "v1.24"
+            runner: "ubuntu-22.04"
+
+          # verify test on latest k8s version
+          - test: "verify"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "verify"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "verify"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          # recover test on latest k8s version
+          - test: "recover"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "recover"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "recover"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          # lb test on latest k8s version
+          - test: "lb"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "lb"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "lb"
+            provider: "aws"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          # autoscaling test on latest k8s version, not supported on AWS
+          - test: "autoscaling"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "autoscaling"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          # perf-bench test on latest k8s version, not supported on AWS
+          - test: "perf-bench"
+            provider: "gcp"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+          - test: "perf-bench"
+            provider: "azure"
+            kubernetes-version: "v1.26"
+            runner: "ubuntu-22.04"
+
+          #
+          # Tests on macOS runner
+          #
+          - test: "verify"
+            provider: "azure"
+            kubernetes-version: "v1.25"
+            runner: "macos-12"
+          - test: "recover"
+            provider: "gcp"
+            kubernetes-version: "v1.25"
+            runner: "macos-12"
     runs-on: ${{ matrix.runner }}
     permissions:
       id-token: write
