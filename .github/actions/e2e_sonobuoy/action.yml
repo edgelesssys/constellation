@@ -47,13 +47,13 @@ runs:
       uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
       with:
         name: "sonobuoy-logs-${{ inputs.artifactNameSuffix }}.tar.gz"
-        path: "*-sonobuoy-*.tar.gz"
+        path: "*_sonobuoy_*.tar.gz"
 
     # Only works on "sonobuoy full" tests (e2e plugin)
     - name: Extract test results
       if: (!env.ACT) && contains(inputs.sonobuoyTestSuiteCmd, '--plugin e2e')
       shell: bash
-      run: tar -xf *-sonobuoy-*.tar.gz
+      run: tar -xf *_sonobuoy_*.tar.gz
 
     - name: Publish test results
       if: (!env.ACT) && contains(inputs.sonobuoyTestSuiteCmd, '--plugin e2e')

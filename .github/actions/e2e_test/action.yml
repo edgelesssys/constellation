@@ -172,7 +172,8 @@ runs:
       shell: bash
       run: |
         uuid=$(uuidgen)
-        echo "uuid=${uuid%%-*}" | tee -a $GITHUB_OUTPUT
+        uuid=${uuid%%-*}
+        echo "uuid=${uuid}" | tee -a $GITHUB_OUTPUT
         echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
 
     - name: Create IAM configuration
@@ -247,7 +248,6 @@ runs:
         # TODO: Remove E2E_SKIP once AB#2174 is resolved
         sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
-        cloudProvider: ${{ inputs.cloudProvider }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
     - name: Run autoscaling test
