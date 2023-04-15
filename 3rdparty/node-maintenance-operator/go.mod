@@ -3,9 +3,9 @@ module github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operato
 go 1.20
 
 require (
-	k8s.io/api v0.26.1
-	k8s.io/apimachinery v0.26.3
-	sigs.k8s.io/controller-runtime v0.14.5
+	k8s.io/api v0.27.1
+	k8s.io/apimachinery v0.27.1
+	sigs.k8s.io/controller-runtime v0.14.6
 )
 
 require (
