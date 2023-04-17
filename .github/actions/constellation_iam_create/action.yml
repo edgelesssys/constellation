@@ -55,7 +55,7 @@ runs:
           --region=${{ inputs.azureRegion }} \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
-          --generate-config --yes --tf-log=JSON
+          --generate-config --yes --tf-log=DEBUG
 
     - name: Constellation iam create gcp
       shell: bash

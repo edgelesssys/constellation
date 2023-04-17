@@ -40,4 +40,4 @@ runs:
 
     - name: Constellation terminate
       shell: bash
-      run: constellation terminate --yes --tf-log=JSON
+      run: constellation terminate --yes --tf-log=DEBUG

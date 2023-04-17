@@ -3,14 +3,14 @@ description: Delete previously created IAM configuration.
 
 inputs:
   cloudProvider:
-      description: "Either 'aws', 'azure' or 'gcp'."
-      required: true
+    description: "Either 'aws', 'azure' or 'gcp'."
+    required: true
   gcpServiceAccount:
-      description: "GCP service account to use for authentication."
-      required: false
+    description: "GCP service account to use for authentication."
+    required: false
   azureCredentials:
-      description: "Azure service principal to use for authentication."
-      required: false
+    description: "Azure service principal to use for authentication."
+    required: false
 
 runs:
   using: "composite"
@@ -39,4 +39,4 @@ runs:
     - name: Delete IAM configuration
       shell: bash
       run: |
-        constellation iam destroy --yes --tf-log=JSON
+        constellation iam destroy --yes --tf-log=DEBUG
