@@ -94,7 +94,7 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 	if err != nil {
 		return nil, fmt.Errorf("loading kubeconfig file: %w", err)
 	}
-	clusterConfig := kubeconfig.GetClusterFromKubeConfig(config)
+	_, clusterConfig := kubeconfig.GetClusterFromKubeConfig(config)
 	if clusterConfig == nil {
 		return nil, errors.New("couldn't get cluster config from kubeconfig file")
 	}
