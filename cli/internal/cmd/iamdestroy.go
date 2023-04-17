@@ -89,9 +89,9 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	if !flags.yes {
 		// Confirmation
-		confirmString := "Do you really want to destroy your IAM configuration?"
+		confirmString := "Do you really want to destroy your IAM configuration? Note that this will remove all resources in the resource group."
 		if gcpFileExists {
-			confirmString += fmt.Sprintf(" (This will also delete %q)", constants.GCPServiceAccountKeyFile)
+			confirmString += fmt.Sprintf("\nThis will also delete %q", constants.GCPServiceAccountKeyFile)
 		}
 		ok, err := askToConfirm(cmd, confirmString)
 		if err != nil {

@@ -13,7 +13,11 @@ terraform {
 
 # Configure Azure resource management provider
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 # Configure Azure active directory provider
