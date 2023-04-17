@@ -130,9 +130,14 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 }
 
 // Init initializes the cluster.
-func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *initproto.InitResponse, err error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
+	defer func() {
+		if err == nil {
+			s.shutdownLock.RUnlock()
+		}
+	}()
 
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
