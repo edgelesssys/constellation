@@ -383,5 +383,6 @@ type MetadataAPI interface {
 
 // journaldCollection is an interface for collecting journald logs.
 type journaldCollection interface {
+	// Start starts the journald collector and returns a pipe from which the system logs can be read.
 	Start() (io.ReadCloser, error)
 }
