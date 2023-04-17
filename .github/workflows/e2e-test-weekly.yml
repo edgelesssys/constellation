@@ -241,6 +241,10 @@ jobs:
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           provider: ${{ matrix.provider }}
 
+      - name: Always upload Terraform logs
+        if: always()
+        uses: ./.github/actions/upload_terraform_logs
+
   e2e-upgrade:
     strategy:
       fail-fast: false

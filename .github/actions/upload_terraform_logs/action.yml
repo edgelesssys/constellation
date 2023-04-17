@@ -1,0 +1,11 @@
+name: Upload Terraform logs
+description: "Upload the Terraform log file as an artifact."
+
+runs:
+  using: "composite"
+  steps:
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-logs
+        path: terraform.log

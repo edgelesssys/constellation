@@ -39,4 +39,4 @@ runs:
     - name: Delete IAM configuration
       shell: bash
       run: |
-        constellation iam destroy --yes
+        constellation iam destroy --yes --tf-log=JSON
