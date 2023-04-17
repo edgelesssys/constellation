@@ -222,30 +222,31 @@ The latter means that the value can be generated offline and compared to the one
 
 ### CVM verification
 
-To verify runtime measurements, a chain of trust from the CVM technology to the interface providing the measurements has to be established.
+To verify the integrity of the received attestation statement, a chain of trust from the CVM technology to the interface providing the statement has to be established.
 For verification of the CVM technology, Constellation may expose additional options in its config file.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure SEV-SNP">
 
 On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
-An SEV-SNP attestation report is also used to establish trust in the vTPM running in the VM.
-Some parameters for verification of the SEV-SNP attestation statement can be customized by the user using the Constellation config file.
+An SEV-SNP attestation report is used to establish trust in the vTPM running inside the VM.
+You may customize certain parameters for verification of the attestation statement using the Constellation config file.
 
-* TCB versions:
+* TCB versions
 
-  The minimum version numbers of components in the SEV-SNP TCB may set to enforce only machines with the most recent microcode version are allowed to join the cluster.
-  Alternatively, this may also be used to set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
+  You can set the minimum version numbers of components in the SEV-SNP TCB.
+  Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
+  Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
 
-* AMD Root Key Certificate:
+* AMD Root Key Certificate
 
-  The certificate used as a root of trust to verify the SEV-SNP certificate chain.
+  This certificate is the root of trust for verifying the SEV-SNP certificate chain.
 
 * Firmware Signer
 
-  This config option allows users to specify how the firmware signer should be verified.
-  More explicitly, it's used to verify the `IDKeyDigest` value in the SEV-SNP attestation report.
-  Users can provide a list of accepted key digests and specify a policy on how this list is compared against the `IDKeyDigest` reported in the SEV-SNP attestation.
+  This config option allows you to specify how the firmware signer should be verified.
+  More explicitly, it controls the verification of the `IDKeyDigest` value in the SEV-SNP attestation report.
+  You can provide a list of accepted key digests and specify a policy on how this list is compared against the reported `IDKeyDigest`.
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
