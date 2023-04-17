@@ -267,5 +267,5 @@ constellation iam destroy
 
 :::caution
 For Azure, deleting the IAM configuration by executing `constellation iam destroy` will delete the whole resource group created by `constellation iam create`.
-This also includes any additional resources in the resource group that were not created by Constellation.
+This also includes any additional resources in the resource group that weren't created by Constellation.
 :::
