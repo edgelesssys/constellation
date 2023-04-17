@@ -37,6 +37,11 @@ on:
         description: Microservice version to target for the upgrade, empty for target's default version.
         type: string
         required: false
+      scheduled:
+        description: Don't set this when triggering manually.
+        type: boolean
+        default: false
+        required: false
   workflow_call:
     inputs:
       cloudProvider:
@@ -71,6 +76,11 @@ on:
       toMicroservices:
         description: Kubernetes version to target for the upgrade, empty for target's default version.
         type: string
+        required: false
+      scheduled:
+        description: Whether this is a scheduled run.
+        type: boolean
+        default: false
         required: false
 
 jobs:
@@ -187,7 +197,11 @@ jobs:
           gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
       - name: Notify about failure
-        if: failure() && github.ref == 'refs/heads/main'
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event == 'workflow_call' &&
+          inputs.scheduled == 'true'
         continue-on-error: true
         uses: ./.github/actions/notify_failure
         with:
