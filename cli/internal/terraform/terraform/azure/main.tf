@@ -58,12 +58,39 @@ resource "azurerm_application_insights" "insights" {
 }
 
 resource "azurerm_public_ip" "loadbalancer_ip" {
-  name                = local.name
+  name                = "${local.name}-lb"
   resource_group_name = var.resource_group
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
   tags                = local.tags
+}
+
+resource "azurerm_public_ip" "nat_gateway_ip" {
+  name                = "${local.name}-nat"
+  resource_group_name = var.resource_group
+  location            = var.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.tags
+}
+
+resource "azurerm_nat_gateway" "gateway" {
+  name                    = local.name
+  location                = var.location
+  resource_group_name     = var.resource_group
+  sku_name                = "Standard"
+  idle_timeout_in_minutes = 10
+}
+
+resource "azurerm_subnet_nat_gateway_association" "example" {
+  nat_gateway_id = azurerm_nat_gateway.gateway.id
+  subnet_id      = azurerm_subnet.node_subnet.id
+}
+
+resource "azurerm_nat_gateway_public_ip_association" "example" {
+  nat_gateway_id       = azurerm_nat_gateway.gateway.id
+  public_ip_address_id = azurerm_public_ip.nat_gateway_ip.id
 }
 
 resource "azurerm_lb" "loadbalancer" {
@@ -137,15 +164,6 @@ resource "azurerm_lb_backend_address_pool" "all" {
   name            = "${var.name}-all"
 }
 
-resource "azurerm_lb_outbound_rule" "outbound" {
-  name                    = "${var.name}-outbound"
-  loadbalancer_id         = azurerm_lb.loadbalancer.id
-  protocol                = "All"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.all.id
-
-  frontend_ip_configuration { name = "PublicIPAddress" }
-}
-
 resource "azurerm_virtual_network" "network" {
   name                = local.name
   resource_group_name = var.resource_group
@@ -159,13 +177,6 @@ resource "azurerm_subnet" "node_subnet" {
   resource_group_name  = var.resource_group
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = ["10.9.0.0/16"]
-}
-
-resource "azurerm_subnet" "pod_subnet" {
-  name                 = "${local.name}-pod"
-  resource_group_name  = var.resource_group
-  virtual_network_name = azurerm_virtual_network.network.name
-  address_prefixes     = ["10.10.0.0/16"]
 }
 
 resource "azurerm_network_security_group" "security_group" {
