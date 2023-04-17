@@ -225,7 +225,10 @@ jobs:
           gcpServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
 
       - name: Notify about failure
-        if: failure() && github.ref == 'refs/heads/main'
+        if: |
+          failure() &&
+          github.ref == 'refs/heads/main' &&
+          github.event == 'schedule'
         continue-on-error: true
         uses: ./.github/actions/notify_failure
         with:
@@ -254,3 +257,4 @@ jobs:
       cloudProvider: ${{ matrix.cloudProvider }}
       workerNodesCount: 2
       controlNodesCount: 3
+      scheduled: ${{ github.event == 'schedule' }}
