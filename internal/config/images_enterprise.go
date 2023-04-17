@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image for the enterprise build.
-	defaultImage = "v2.6.0"
+	defaultImage = "v2.8.0-pre.0.20230417063557-86edc44747a8"
 )
