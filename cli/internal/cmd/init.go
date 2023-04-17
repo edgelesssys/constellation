@@ -197,7 +197,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 			req := &initproto.LogRequest{
 				InitSecret: idFile.InitSecret,
 			}
-			if err := i.getLogsCall(cmd.Context(), idFile.IP, req); err != nil {
+			if err := i.getLogsCall(cmd.Context(), idFile.IP, newDialer(validator), req); err != nil {
 				cmd.PrintErrf("Failed to collect logs from cluser: %s\n", err)
 				return err
 			}
@@ -237,8 +237,9 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 	return doer.resp, nil
 }
 
-func (i *initCmd) getLogsCall(ctx context.Context, ip string, req *initproto.LogRequest) error {
-	conn, err := grpc.Dial(ip)
+func (i *initCmd) getLogsCall(ctx context.Context, ip string, dialer grpcDialer, req *initproto.LogRequest) error {
+	connStr := net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort))
+	conn, err := dialer.Dial(ctx, connStr)
 	if err != nil {
 		return err
 	}
