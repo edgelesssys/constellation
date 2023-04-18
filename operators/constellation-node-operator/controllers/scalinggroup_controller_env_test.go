@@ -21,6 +21,12 @@ import (
 )
 
 var _ = Describe("ScalingGroup controller", func() {
+	AfterEach(func() {
+		Eventually(func() error {
+			return resetEnv()
+		}, 30*time.Second, 1*time.Second).Should(Succeed())
+	})
+
 	// Define utility constants for object names and testing timeouts/durations and intervals.
 	const (
 		nodeVersionName  = "node-version"

@@ -23,6 +23,12 @@ import (
 )
 
 var _ = Describe("AutoscalingStrategy controller", func() {
+	AfterEach(func() {
+		Eventually(func() error {
+			return resetEnv()
+		}, 30*time.Second, 1*time.Second).Should(Succeed())
+	})
+
 	// Define utility constants for object names and testing timeouts/durations and intervals.
 	const (
 		ClusterAutoscalerDeploymentName      = "cluster-autoscaler"
@@ -331,7 +337,7 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 					return nil
 				}
 				return createdDeployment.Spec.Template.Spec.Containers[0].Command
-			}, timeout, interval).Should(Equal([]string{
+			}, 2*time.Second, interval).Should(Equal([]string{
 				"./cluster-autoscaler",
 				"--baz=qux",
 				"--foo=bar",
