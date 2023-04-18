@@ -105,7 +105,7 @@ jobs:
         if: |
           failure() &&
           github.ref == 'refs/heads/main' &&
-          github.event == 'schedule'
+          github.event_name == 'schedule'
         continue-on-error: true
         uses: ./.github/actions/notify_failure
         with:

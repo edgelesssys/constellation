@@ -228,7 +228,7 @@ jobs:
         if: |
           failure() &&
           github.ref == 'refs/heads/main' &&
-          github.event == 'schedule'
+          github.event_name == 'schedule'
         continue-on-error: true
         uses: ./.github/actions/notify_failure
         with:
@@ -257,4 +257,4 @@ jobs:
       cloudProvider: ${{ matrix.cloudProvider }}
       workerNodesCount: 2
       controlNodesCount: 3
-      scheduled: ${{ github.event == 'schedule' }}
+      scheduled: ${{ github.event_name == 'schedule' }}
