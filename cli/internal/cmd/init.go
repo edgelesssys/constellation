@@ -188,6 +188,15 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
 	i.spinner.Stop()
+	cmd.PrintErrln("Attempting to collect logs from cluster...")
+	req2 := &initproto.LogRequest{
+		InitSecret: idFile.InitSecret,
+	}
+	if err := i.getLogsCall(cmd.Context(), idFile.IP, newDialer(validator), req2); err != nil {
+		cmd.PrintErrf("Failed to collect logs from cluser: %s\n", err)
+		return err
+	}
+	cmd.PrintErrf("Cluster logs were successfully written to %s\n", constants.ErrorLog)
 	if err != nil {
 		var nonRetriable *nonRetriableError
 		if errors.As(err, &nonRetriable) {
@@ -286,7 +295,7 @@ func (i *initCmd) getLogsCall(ctx context.Context, ip string, dialer grpcDialer,
 			return err
 		}
 
-		err = i.fh.Write(constants.ErrorLog, plaintext)
+		err = i.fh.Write(constants.ErrorLog, plaintext, file.OptAppend)
 		if err != nil {
 			return err
 		}
