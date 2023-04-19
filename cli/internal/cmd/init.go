@@ -244,6 +244,7 @@ func (i *initCmd) getLogsCall(ctx context.Context, ip string, dialer grpcDialer,
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	client := initproto.NewAPIClient(conn)
 	i.log.Debugf("Created gRPC client")
