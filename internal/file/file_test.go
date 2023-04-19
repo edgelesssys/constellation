@@ -24,6 +24,74 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
+func TestWrite(t *testing.T) {
+	testCases := map[string]struct {
+		fs              afero.Fs
+		setupFs         func(af afero.Afero) error
+		name            string
+		content         string
+		expectedContent string
+		options         Option
+		wantErr         bool
+		wantAppend      bool
+	}{
+		"successful write": {
+			fs:              afero.NewMemMapFs(),
+			content:         "asdf",
+			expectedContent: "asdf",
+			name:            "somedir/somefile",
+		},
+		"successful overwrite": {
+			fs:              afero.NewMemMapFs(),
+			setupFs:         func(af afero.Afero) error { return af.WriteFile("somedir/somefile", []byte{}, 0o644) },
+			content:         "asdf",
+			expectedContent: "asdf",
+			name:            "somedir/somefile",
+			options:         OptOverwrite,
+		},
+		"successful append": {
+			fs:              afero.NewMemMapFs(),
+			setupFs:         func(af afero.Afero) error { return af.WriteFile("somedir/somefile", []byte("fdsa"), 0o644) },
+			content:         "asdf",
+			expectedContent: "fdsaasdf",
+			name:            "somedir/somefile",
+			options:         OptAppend,
+		},
+		"read only fs": {
+			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
+			name:    "somedir/somefile",
+			wantErr: true,
+		},
+		"file already exists": {
+			fs:      afero.NewMemMapFs(),
+			setupFs: func(af afero.Afero) error { return af.WriteFile("somedir/somefile", []byte{}, 0o644) },
+			name:    "somedir/somefile",
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			handler := NewHandler(tc.fs)
+			if tc.setupFs != nil {
+				require.NoError(tc.setupFs(afero.Afero{Fs: tc.fs}))
+			}
+
+			if tc.wantErr {
+				assert.Error(handler.Write(tc.name, []byte(tc.content), tc.options))
+			} else {
+				assert.NoError(handler.Write(tc.name, []byte(tc.content), tc.options))
+				content, err := handler.Read(tc.name)
+				require.NoError(err)
+				assert.Equal(tc.expectedContent, string(content))
+			}
+		})
+	}
+}
+
 func TestReadJSON(t *testing.T) {
 	type testContent struct {
 		First  string
