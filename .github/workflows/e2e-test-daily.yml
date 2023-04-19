@@ -106,6 +106,8 @@ jobs:
       - name: Always upload Terraform logs
         if: always()
         uses: ./.github/actions/upload_terraform_logs
+        with:
+          artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}
 
       - name: Notify about failure
         if: |
