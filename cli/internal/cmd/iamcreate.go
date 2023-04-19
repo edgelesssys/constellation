@@ -389,6 +389,9 @@ func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing prefix string: %w", err)
 	}
+	if len(prefix) > 36 {
+		return iamFlags{}, fmt.Errorf("prefix must be 36 characters or less")
+	}
 	zone, err := cmd.Flags().GetString("zone")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing zone string: %w", err)
