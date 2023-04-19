@@ -189,7 +189,7 @@ runs:
       id: create-prefix
       shell: bash
       run: |
-        uuid=$(uuidgen | head -c 23)
+        uuid=$(uuidgen)
         uuid=${uuid%%-*}
         echo "uuid=${uuid}" | tee -a $GITHUB_OUTPUT
         echo "prefix=e2e-${{ github.run_id }}-${{ github.run_attempt }}-${uuid}" | tee -a $GITHUB_OUTPUT
