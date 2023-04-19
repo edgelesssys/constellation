@@ -49,6 +49,8 @@ const (
 	optOverwrite
 	// OptMkdirAll creates the path to the file.
 	optMkdirAll
+	// OptAppend appends to the file.
+	optAppend
 )
 
 var (
@@ -58,6 +60,8 @@ var (
 	OptOverwrite = Option{optOverwrite}
 	// OptMkdirAll creates the path to the file.
 	OptMkdirAll = Option{optMkdirAll}
+	// OptAppend appends to the file.
+	OptAppend = Option{optAppend}
 )
 
 // Handler handles file interaction.
@@ -91,6 +95,9 @@ func (h *Handler) Write(name string, data []byte, options ...Option) error {
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	if hasOption(options, OptOverwrite) {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	}
+	if hasOption(options, OptAppend) {
+		flags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
 	}
 	file, err := h.fs.OpenFile(name, flags, 0o600)
 	if err != nil {
