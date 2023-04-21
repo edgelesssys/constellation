@@ -66,7 +66,7 @@ spec:
             - "--feature-gates=Topology=true"
             - "--csi-address=$(ADDRESS)"
             - "--v=2"
-            - "--timeout=15s"
+            - "--timeout=30s"
             - "--leader-election"
             - "--leader-election-namespace={{ .Release.Namespace }}"
             - "--worker-threads={{ .Values.controller.provisionerWorkerThreads }}"
@@ -94,8 +94,8 @@ spec:
             - "-leader-election"
             - "--leader-election-namespace={{ .Release.Namespace }}"
             - "-worker-threads={{ .Values.controller.attacherWorkerThreads }}"
-            - "-kube-api-qps=50"
-            - "-kube-api-burst=100"
+            - "-kube-api-qps=200"
+            - "-kube-api-burst=400"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -157,6 +157,18 @@ spec:
             - name: socket-dir
               mountPath: /csi
           resources: {{- toYaml .Values.controller.resources.livenessProbe | nindent 12 }}
+{{- if eq .Values.controller.enableTrafficManager true }}
+        - image: mcr.microsoft.com/aks/ccp/ccp-auto-thrust:master.221118.2
+          imagePullPolicy: IfNotPresent
+          name: proxy
+          command:
+            - /ccp-auto-thrust
+          args:
+            - "--port={{ .Values.controller.trafficManagerPort }}"
+          ports:
+          - containerPort: {{ .Values.controller.trafficManagerPort }}
+            protocol: TCP
+{{- end }}
         - name: azuredisk
 {{- if hasPrefix "/" .Values.image.azuredisk.repository }}
           image: "{{ .Values.image.baseRepo }}{{ .Values.image.azuredisk.repository }}:{{ .Values.image.azuredisk.tag }}"
@@ -176,6 +188,8 @@ spec:
             - "--user-agent-suffix={{ .Values.driver.userAgentSuffix }}"
             - "--allow-empty-cloud-config={{ .Values.controller.allowEmptyCloudConfig }}"
             - "--vmss-cache-ttl-seconds={{ .Values.controller.vmssCacheTTLInSeconds }}"
+            - "--enable-traffic-manager={{ .Values.controller.enableTrafficManager }}"
+            - "--traffic-manager-port={{ .Values.controller.trafficManagerPort }}"
           ports:
             - containerPort: {{ .Values.controller.livenessProbe.healthPort }}
               name: healthz

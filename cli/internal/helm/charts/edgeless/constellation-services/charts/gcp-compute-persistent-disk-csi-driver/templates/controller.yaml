@@ -45,7 +45,7 @@ spec:
             - "--feature-gates=Topology=true"
             - "--http-endpoint=:22011"
             - "--leader-election-namespace=$(PDCSI_NAMESPACE)"
-            - "--timeout=450s"
+            - "--timeout=250s"
             - "--extra-create-metadata"
           # - "--run-controller-service=false"  # disable the controller service of the CSI driver
           # - "--run-node-service=false"        # disable the node service of the CSI driver
@@ -81,7 +81,7 @@ spec:
             - "--http-endpoint=:22012"
             - "--leader-election"
             - "--leader-election-namespace=$(PDCSI_NAMESPACE)"
-            - "--timeout=450s"
+            - "--timeout=250s"
           env:
             - name: PDCSI_NAMESPACE
               valueFrom:
@@ -141,7 +141,7 @@ spec:
             - "--metrics-address=:22014"
             - "--leader-election"
             - "--leader-election-namespace=$(PDCSI_NAMESPACE)"
-            - "--timeout=450s"
+            - "--timeout=300s"
           env:
             - name: PDCSI_NAMESPACE
               valueFrom:

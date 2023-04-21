@@ -55,4 +55,28 @@ spec:
             - "--leader-election-namespace={{ .Release.Namespace }}"
           resources: {{- toYaml .Values.snapshot.snapshotController.resources | nindent 12 }}
           imagePullPolicy: {{ .Values.snapshot.image.csiSnapshotController.pullPolicy }}
+
+---
+{{- if .Values.snapshot.VolumeSnapshotClass.enabled -}}
+kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+  name: {{ .Values.snapshot.VolumeSnapshotClass.name }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+driver: {{ .Values.driver.name }}
+deletionPolicy: {{ .Values.snapshot.VolumeSnapshotClass.deletionPolicy }}
+parameters:
+  incremental: {{ .Values.snapshot.VolumeSnapshotClass.parameters.incremental }}
+  {{- if ne .Values.snapshot.VolumeSnapshotClass.parameters.resourceGroup "" }}
+  resourceGroup: {{ .Values.snapshot.VolumeSnapshotClass.parameters.resourceGroup }}
+  {{- end }}
+  tags: {{ .Values.snapshot.VolumeSnapshotClass.parameters.tags }}
+{{- with .Values.snapshot.VolumeSnapshotClass.additionalLabels }}
+additionalLabels:
+{{ toYaml . | indent 2 }}
+{{- end }}
+{{- end -}}
 {{- end -}}
