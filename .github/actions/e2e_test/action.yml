@@ -113,6 +113,13 @@ runs:
         useCache: "true"
         buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
+    - name: Log in to the Container registry
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
     - name: Build CLI
       if: inputs.cliVersion == ''
       uses: ./.github/actions/build_cli
@@ -171,13 +178,6 @@ runs:
         aws-region: eu-central-1
         # extend token expiry to 6 hours to ensure constellation can terminate
         role-duration-seconds: 21600
-
-    - name: Log in to the Container registry
-      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
-      with:
-        registry: ${{ inputs.registry }}
-        username: ${{ github.actor }}
-        password: ${{ inputs.githubToken }}
 
     - name: Login to Azure (IAM service principal)
       if: inputs.cloudProvider == 'azure'
