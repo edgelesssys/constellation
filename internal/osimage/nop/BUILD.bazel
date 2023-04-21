@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "nop",
+    srcs = ["nop.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/nop",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/logger",
+        "//internal/osimage",
+    ],
+)

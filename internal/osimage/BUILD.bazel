@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "osimage",
+    srcs = ["osimage.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/osimage/secureboot",
+        "//internal/versionsapi",
+    ],
+)

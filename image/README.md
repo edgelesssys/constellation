@@ -57,7 +57,6 @@
         jq \
         mtools \
         ovmf \
-        python3-crc32c \
         python3-pefile \
         python3-pyelftools \
         python3-setuptools \
@@ -177,6 +176,8 @@ secure-boot/azure/delete.sh --name "${AZURE_DISK_NAME}-setup-secure-boot"
 
 ## Upload to CSP
 
+Warning! Never set `--version` to a value that is already used for a release image.
+
 <details>
 <summary>AWS</summary>
 
@@ -188,19 +189,9 @@ secure-boot/azure/delete.sh --name "${AZURE_DISK_NAME}-setup-secure-boot"
     - `pki_prod` is used for release images
 
 ```sh
-# set these variables
-export AWS_IMAGE_NAME= # e.g. "constellation-v1.0.0"
-export PKI=${PWD}/pki
-
-export AWS_REGION=eu-central-1
-export AWS_REPLICATION_REGIONS="us-east-2"
-export AWS_BUCKET=constellation-images
-export AWS_EFIVARS_PATH=${PWD}/mkosi.output.aws/fedora~37/efivars.bin
-export AWS_IMAGE_PATH=${PWD}/mkosi.output.aws/fedora~37/image.raw
-export AWS_IMAGE_FILENAME=image-$(date +%s).raw
-export AWS_JSON_OUTPUT=${PWD}/mkosi.output.aws/fedora~37/image-upload.json
-secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
-upload/upload_aws.sh
+# Warning! Never set `--version` to a value that is already used for a release image.
+# Instead, use a `ref` that corresponds to your branch name.
+bazel run //image/upload -- aws --verbose --raw-image mkosi.output.aws/fedora~37/image.raw --variant ""  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -216,20 +207,12 @@ upload/upload_aws.sh
     - `pki_prod` is used for release images
 
 ```sh
-# set these variables
-export GCP_IMAGE_FAMILY= # e.g. "constellation"
-export GCP_IMAGE_NAME= # e.g. "constellation-v1.0.0"
-export PKI=${PWD}/pki
-
-export GCP_PROJECT=constellation-images
-export GCP_REGION=europe-west3
-export GCP_BUCKET=constellation-images
 export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.raw
-export GCP_IMAGE_FILENAME=$(date +%s).tar.gz
 export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.tar.gz
-export GCP_JSON_OUTPUT=${PWD}/mkosi.output.gcp/fedora~37/image-upload.json
 upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
-upload/upload_gcp.sh
+# Warning! Never set `--version` to a value that is already used for a release image.
+# Instead, use a `ref` that corresponds to your branch name.
+bazel run //image/upload -- gcp --verbose --raw-image "${GCP_IMAGE_PATH}" --variant "sev-es"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -247,31 +230,12 @@ Note:
 - Optional (if Secure Boot should be enabled) [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
 
 ```sh
-# set these variables
-export AZURE_GALLERY_NAME= # e.g. "Constellation"
-export AZURE_IMAGE_DEFINITION= # e.g. "constellation"
-export AZURE_IMAGE_VERSION= # e.g. "1.0.0"
-# Set this variable to a path if you want to use Secure Boot.
-# Otherwise, set it to export AZURE_VMGS_PATH=
-export AZURE_VMGS_PATH= # e.g. nothing OR "path/to/ConfidentialVM.vmgs"
-# AZURE_SECURITY_TYPE can be one of
-# - "ConfidentialVMSupported" (ConfidentialVM with secure boot disabled),
-# - "ConfidentialVM" (ConfidentialVM with Secure Boot) or
-# - TrustedLaunch" (Trusted Launch with or without Secure Boot)
-export AZURE_SECURITY_TYPE=ConfidentialVMSupported
-
-export AZURE_RESOURCE_GROUP_NAME=constellation-images
-export AZURE_REGION=northeurope
-export AZURE_REPLICATION_REGIONS="northeurope eastus westeurope westus"
-export AZURE_IMAGE_OFFER=constellation
-export AZURE_SKU=${AZURE_IMAGE_DEFINITION}
-export AZURE_PUBLISHER=edgelesssys
-export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.raw
 export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.vhd
-export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~37/image-upload.json
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
+# Warning! Never set `--version` to a value that is already used for a release image.
+# Instead, use a `ref` that corresponds to your branch name.
+bazel run //image/upload -- azure --verbose --raw-image "${AZURE_IMAGE_PATH}" --variant "cvm"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -288,15 +252,9 @@ Note:
 - Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
 
 ```sh
-# set these variables
-export REF= # e.g. feat-xyz (branch name encoded with dashes)
-export STREAM= # e.g. "nightly", "debug", "stable" (depends on the type of image and if it is a release)
-export IMAGE_VERSION= # e.g. v2.1.0" or output of pseudo-version tool
-export OPENSTACK_BUCKET=cdn-constellation-backend
-export OPENSTACK_BASE_URL="https://cdn.confidential.cloud"
-export OPENSTACK_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~37/image.raw
-export OPENSTACK_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~37/image-upload.json
-upload/upload_openstack.sh
+# Warning! Never set `--version` to a value that is already used for a release image.
+# Instead, use a `ref` that corresponds to your branch name.
+bazel run //image/upload -- openstack --verbose --raw-image mkosi.output.openstack/fedora~37/image.raw --variant "sev"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -308,15 +266,9 @@ upload/upload_openstack.sh
 - Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
 
 ```sh
-# set these variables
-export REF= # e.g. feat-xyz (branch name encoded with dashes)
-export STREAM= # e.g. "nightly", "debug", "stable" (depends on the type of image and if it is a release)
-export IMAGE_VERSION= # e.g. v2.1.0" or output of pseudo-version tool
-export QEMU_BUCKET=cdn-constellation-backend
-export QEMU_BASE_URL="https://cdn.confidential.cloud"
-export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~37/image.raw
-export QEMU_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~37/image-upload.json
-upload/upload_qemu.sh
+# Warning! Never set `--version` to a value that is already used for a release image.
+# Instead, use a `ref` that corresponds to your branch name.
+bazel run //image/upload -- qemu --verbose --raw-image mkosi.output.qemu/fedora~37/image.raw --variant "default"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
