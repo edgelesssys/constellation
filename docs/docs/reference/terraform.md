@@ -23,3 +23,15 @@ As with all commands, commands that work with these files (e.g., `create`, `term
 ## Interacting with Terraform manually
 
 Manual interaction with Terraform state created by Constellation (i.e., via the Terraform CLI) should only be performed by experienced users. It may lead to unrecoverable loss of cloud resources. For the majority of users and use cases, the interaction done by the [Constellation CLI](cli.md) is sufficient.
+
+## Terraform debugging
+
+To debug Terraform issues, the Constellation CLI offers the `tf-log` flag. You can set it to any of [Terraform's log levels](https://developer.hashicorp.com/terraform/internals/debugging):
+- `JSON` (JSON-formatted logs at `TRACE` level)
+- `TRACE`
+- `DEBUG`
+- `INFO`
+- `WARN`
+- `ERROR`
+
+The log output is written to the `terraform.log` file in the workspace directory. The output is appended to the file on each run.
