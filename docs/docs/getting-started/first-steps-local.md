@@ -1,4 +1,8 @@
-# First steps with MiniConstellation
+# First steps with a local cluster
+
+To set up a local cluster on your computer, you can either use [MiniConstellation](#using-miniconstellation) or [qemu](#local-setup-with-qemu).
+
+## Using MiniConstellation
 
 <!-- vale off -->
 With the `constellation mini` command, you can deploy and test Constellation locally without a cloud subscription. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
@@ -19,7 +23,7 @@ attaching persistent storage, or autoscaling aren't available.
 
 :::
 
-## Prerequisites
+### Prerequisites
 
 * A Linux OS with the following components installed
   * [Constellation CLI](./install.md#install-the-constellation-cli)
@@ -39,7 +43,7 @@ attaching persistent storage, or autoscaling aren't available.
     sudo iptables -S | grep -q -- '-P FORWARD DROP'
     ```
 
-## Create your cluster
+### Create your cluster
 
 The following creates your MiniConstellation cluster (may take up to 10 minutes to complete):
 
@@ -50,7 +54,7 @@ constellation mini up
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
 
-## Connect `kubectl`
+### Connect `kubectl`
 
 Configure `kubectl` to connect to your local Constellation cluster:
 
@@ -88,7 +92,7 @@ control-plane-0   Ready    control-plane   2m59s   v1.24.6
 worker-0          Ready    <none>          32s     v1.24.6
 ```
 
-## Deploy a sample application
+### Deploy a sample application
 
 1. Deploy the [emojivoto app](https://github.com/BuoyantIO/emojivoto)
 
@@ -105,7 +109,7 @@ worker-0          Ready    <none>          32s     v1.24.6
   kill %1
   ```
 
-## Terminate your cluster
+### Terminate your cluster
 
 Once you are done, you can clean up the created resources using the following command:
 
@@ -115,6 +119,139 @@ constellation mini down
 
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
+
+## Local setup with qemu
+
+With [qemu](https://www.qemu.org/), you can create a local constellation cluster as if it were in the cloud. It utilizes different virtual machines over qemu to create multiple nodes which interact with each other.
+
+:::caution
+
+MiniConstellation has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
+
+:::
+
+:::note
+
+Since MiniConstellation runs on your local system, cloud features such as load balancing,
+attaching persistent storage, or autoscaling aren't available.
+
+:::
+
+### Prerequisites
+
+* A Linux OS with the following components installed
+  * [Constellation CLI](./install.md#install-the-constellation-cli)
+  * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
+  * [Docker](https://docs.docker.com/engine/install/)
+  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
+* Other system requirements
+  * An x86-64 CPU with at least 4 cores (6 cores are recommended)
+  * At least 4 GB RAM (6 GB are recommended)
+  * 20 GB of free disk space
+  * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
+  * `iptables` rules configured to not drop forwarded packages.
+    If running the following command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access):
+
+    ```bash
+    sudo iptables -S | grep -q -- '-P FORWARD DROP'
+    ```
+
+### Create the cluster
+
+1. To set up your local cluster, you need to create a configuration file for constellation first.
+
+  ```shell-session
+  constellation config generate qemu
+  ```
+
+  This creates a [configuration file](../workflows/config.md) for qemu called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
+2. Now you can create your cluster and it's nodes. `constellation create` uses the options set in `constellation-conf.yaml`. If you want to manually use [Terraform](../reference/terraform.md) instead, follow the corresponding instructions in [Create Workflow](../workflows/create.md).
+
+  ```shell-session
+  constellation create --control-plane-nodes 1 --worker-nodes 1
+  ```
+
+  The Output should look like the following:
+
+  ```shell-session
+  $ constellation create ...
+  Your Constellation cluster was created successfully.
+  ```
+
+  This will create 2 virtual machines, one worker and one control plane, but if you want, you can change the numbers of nodes, as long as your computer has enough resources.
+
+  :::tip
+
+  If you want to look at and interact with the created virtual machines, run
+
+  ```shell-session
+  virsh -c qemu+tcp://localhost:16599/system
+  ```
+
+  which gives you a new `virsh` shell. In this shell, you can run
+  ```shell-session
+  list
+  ```
+   to see the created virtual machines, as well as their status. This should look something like this.
+
+  ```txt
+  Id   Name                       State
+  ------------------------------------------
+  1    constell-control-plane-0   running
+  2    constell-worker-0          running
+  ```
+
+  If you want to connect to one of those machines, run
+
+  ```shell-session
+  console <VM-ID>
+  ```
+
+  where `<VM-ID>` would be the id of your vm as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the VM.
+
+  :::
+
+  :::caution
+
+  Please note that connecting via `qemu+tcp` is not encrypted and should not be used in a security relevant environment!
+
+  :::
+
+3. Finally, initialize the cluster by running
+
+  ```shell-session
+  sudo constellation init
+  ```
+
+  This should return something like the following output:
+
+  ```txt
+  $ constellation init
+  Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+  Initializing cluster ...
+  Your Constellation cluster was successfully initialized.
+
+  Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
+  Kubernetes configuration          constellation-admin.conf
+
+  You can now connect to your cluster by executing:
+          export KUBECONFIG="$PWD/constellation-admin.conf"
+  ```
+
+### Connect `kubectl` and deploy a sample application
+
+This process is the same as described in the [MiniConstellation](#connect-kubectl) section.
+
+### Terminate your cluster
+
+To terminate your cluster after you finished, run:
+
+```shell-session
+constellation terminate
+```
+
+This will destroy your cluster and clean your workspace. The VM image you used will be kept, as well as `constellation-conf.yaml` to allow reusage.
 
 ## Troubleshooting
 
