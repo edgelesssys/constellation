@@ -16,6 +16,7 @@ Commands:
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
   * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
   * [kubernetes-versions](#constellation-config-kubernetes-versions): Print the Kubernetes versions supported by this CLI
+  * [migrate](#constellation-config-migrate): Migrate a configuration file to a new version
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
 * [mini](#constellation-mini): Manage MiniConstellation clusters
@@ -171,6 +172,33 @@ constellation config kubernetes-versions [flags]
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
       --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+```
+
+## constellation config migrate
+
+Migrate a configuration file to a new version
+
+### Synopsis
+
+Migrate a configuration file to a new version.
+
+```
+constellation config migrate [flags]
+```
+
+### Options
+
+```
+  -f, --file string   path to output file, or '-' for stdout (default "constellation-conf.yaml")
+  -h, --help          help for migrate
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
 ```
 
 ## constellation create

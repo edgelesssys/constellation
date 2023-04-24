@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "migration",
+    srcs = ["migration.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/config/migration",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/config",
+        "//internal/file",
+    ],
+)

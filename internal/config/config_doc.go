@@ -164,7 +164,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 12)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 11)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -215,16 +215,11 @@ func init() {
 	AzureConfigDoc.Fields[9].Note = ""
 	AzureConfigDoc.Fields[9].Description = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	AzureConfigDoc.Fields[9].Comments[encoder.LineComment] = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	AzureConfigDoc.Fields[10].Name = "confidentialVM"
+	AzureConfigDoc.Fields[10].Name = "secureBoot"
 	AzureConfigDoc.Fields[10].Type = "bool"
-	AzureConfigDoc.Fields[10].Note = "TODO: v2.8 remove\n"
-	AzureConfigDoc.Fields[10].Description = "Use Confidential VMs. Always needs to be true."
-	AzureConfigDoc.Fields[10].Comments[encoder.LineComment] = "Use Confidential VMs. Always needs to be true."
-	AzureConfigDoc.Fields[11].Name = "secureBoot"
-	AzureConfigDoc.Fields[11].Type = "bool"
-	AzureConfigDoc.Fields[11].Note = ""
-	AzureConfigDoc.Fields[11].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
-	AzureConfigDoc.Fields[11].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[10].Note = ""
+	AzureConfigDoc.Fields[10].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[10].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
