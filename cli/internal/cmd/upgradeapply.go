@@ -114,11 +114,13 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 					return fmt.Errorf("asking for confirmation: %w", err)
 				}
 				if !ok {
+					cmd.Println("Aborting upgrade.")
 					return nil
 				}
 				u.log.Debugf("User confirmed Terraform migrations")
 			}
 			u.log.Debugf("Applying Terraform migrations")
+			// TODO: apply Terraform migrations
 		}
 		u.log.Debugf("No Terraform diff detected")
 	}
