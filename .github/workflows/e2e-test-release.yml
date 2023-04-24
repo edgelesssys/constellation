@@ -160,6 +160,7 @@ jobs:
       id-token: write
       checks: write
       contents: read
+      packages: write
     steps:
       - name: Install the basics tools (macOS)
         if: runner.os == 'macOS'
