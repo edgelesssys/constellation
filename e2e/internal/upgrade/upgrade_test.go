@@ -164,8 +164,7 @@ func containsUnexepectedMsg(input string) error {
 func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
-	require.NoError(err)
-	var cfgErr config.ValidationError
+	var cfgErr *config.ValidationError
 	var longMsg string
 	if errors.As(err, &cfgErr) {
 		longMsg = cfgErr.LongMessage()
@@ -173,6 +172,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	require.NoError(err, longMsg)
 
 	info, err := fetchUpgradeInfo(context.Background(), cfg.GetProvider(), image)
+	require.NoError(err)
 
 	log.Printf("Setting image version: %s\n", info.shortPath)
 	cfg.Image = info.shortPath

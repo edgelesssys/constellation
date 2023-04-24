@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 const (
@@ -164,12 +165,19 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 			DeployCSIDriver:      cfgV2.Provider.Azure.DeployCSIDriver,
 			SecureBoot:           cfgV2.Provider.Azure.SecureBoot,
 		}
-		if cfgV2.Provider.Azure.ConfidentialVM != nil && *cfgV2.Provider.Azure.ConfidentialVM {
-			cfgV3.Attestation.AzureSEVSNP = config.DefaultForAzureSEVSNP()
-			cfgV3.Attestation.AzureSEVSNP.Measurements = cfgV2.Provider.Azure.Measurements
-		} else {
+
+		// If an attestation war explicitly set to AzureTrustedLaunch,
+		// generate a config for AzureTrustedLaunch. Otherwise, generate one for AzureSEVSNP.
+		if attestVariant, err := variant.FromString(cfgV2.AttestationVariant); err == nil && attestVariant.Equal(variant.AzureTrustedLaunch{}) {
 			cfgV3.Attestation.AzureTrustedLaunch = &config.AzureTrustedLaunch{
 				Measurements: cfgV2.Provider.Azure.Measurements,
+			}
+		} else {
+			cfgV3.Attestation.AzureSEVSNP = config.DefaultForAzureSEVSNP()
+			cfgV3.Attestation.AzureSEVSNP.Measurements = cfgV2.Provider.Azure.Measurements
+			cfgV3.Attestation.AzureSEVSNP.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
+				AcceptedKeyDigests: cfgV2.Provider.Azure.IDKeyDigest,
+				EnforcementPolicy:  cfgV2.Provider.Azure.EnforceIDKeyDigest,
 			}
 		}
 	case cfgV2.Provider.GCP != nil:
