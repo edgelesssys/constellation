@@ -37,6 +37,10 @@ on:
         description: Microservice version to target for the upgrade, empty for target's default version.
         type: string
         required: false
+      simulatedTargetVersion:
+        description: Enter a version to build the CLI with. This can be used to simulate a patch-upgrade.
+        type: string
+        required: false
       scheduled:
         description: Don't set this when triggering manually.
         type: boolean
@@ -75,6 +79,10 @@ on:
         required: false
       toMicroservices:
         description: Kubernetes version to target for the upgrade, empty for target's default version.
+        type: string
+        required: false
+      simulatedTargetVersion:
+        description: Enter a version to build the CLI with. This can be used to simulate a patch-upgrade.
         type: string
         required: false
       scheduled:
@@ -125,6 +133,11 @@ jobs:
           command: latest
           ref: main
           stream: nightly
+
+      - name: Simulate patch upgrade
+        if: inputs.simulatedTargetVersion != ''
+        run: |
+          echo ${{ inputs.simulatedTargetVersion }} > version.txt
 
       - name: Create cluster with 'fromVersion' CLI.
         id: e2e_test
