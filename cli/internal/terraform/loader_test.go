@@ -27,9 +27,6 @@ func TestLoader(t *testing.T) {
 		provider            cloudprovider.Provider
 		fileList            []string
 		testAlreadyUnpacked bool
-		overwrite           bool
-		changeFiles         bool
-		wantOverwriteErr    bool
 	}{
 		"awsCluster": {
 			pathBase: "terraform",
@@ -99,32 +96,6 @@ func TestLoader(t *testing.T) {
 			},
 			testAlreadyUnpacked: true,
 		},
-		"file contents changed no overwrite": {
-			pathBase: "terraform",
-			provider: cloudprovider.AWS,
-			fileList: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-				"modules",
-			},
-			testAlreadyUnpacked: true,
-			changeFiles:         true,
-			wantOverwriteErr:    true,
-		},
-		"file contents changed overwrite": {
-			pathBase: "terraform",
-			provider: cloudprovider.AWS,
-			fileList: []string{
-				"main.tf",
-				"variables.tf",
-				"outputs.tf",
-				"modules",
-			},
-			testAlreadyUnpacked: true,
-			changeFiles:         true,
-			overwrite:           true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -135,7 +106,7 @@ func TestLoader(t *testing.T) {
 			file := file.NewHandler(afero.NewMemMapFs())
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
-			err := prepareWorkspace(path, file, constants.TerraformWorkingDir, tc.overwrite)
+			err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
 
 			require.NoError(err)
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
@@ -143,16 +114,8 @@ func TestLoader(t *testing.T) {
 			if tc.testAlreadyUnpacked {
 				// Let's try the same again and check if we don't get a "file already exists" error.
 				require.NoError(file.Remove(filepath.Join(constants.TerraformWorkingDir, "variables.tf")))
-				if tc.changeFiles {
-					// change the file contents. Overwriting the variables.tf file that has been removed doesn't matter here.
-					changeFiles(t, file, tc.fileList)
-				}
-				err := prepareWorkspace(path, file, constants.TerraformWorkingDir, tc.overwrite)
-				if tc.wantOverwriteErr {
-					require.Error(err)
-				} else {
-					require.NoError(err)
-				}
+				err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
+				assert.NoError(err)
 				checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 			}
 
@@ -161,17 +124,6 @@ func TestLoader(t *testing.T) {
 
 			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, tc.fileList)
 		})
-	}
-}
-
-// changeFiles changes the contents of the given files.
-func changeFiles(t *testing.T, fh file.Handler, files []string) {
-	t.Helper()
-	require := require.New(t)
-
-	for _, f := range files {
-		err := fh.Write(filepath.Join(constants.TerraformWorkingDir, f), []byte("changed"), file.OptOverwrite)
-		require.NoError(err)
 	}
 }
 
