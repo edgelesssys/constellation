@@ -199,6 +199,7 @@ constellation config migrate [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
 ```
 
 ## constellation create

@@ -95,7 +95,7 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(err)
 
 	// Migrate config if necessary.
-	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--force", "--debug")
+	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--force", "--debug")
 	msg, err := cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
 	log.Println(string(msg))
@@ -165,9 +165,14 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
 	require.NoError(err)
+	var cfgErr config.ValidationError
+	var longMsg string
+	if errors.As(err, &cfgErr) {
+		longMsg = cfgErr.LongMessage()
+	}
+	require.NoError(err, longMsg)
 
 	info, err := fetchUpgradeInfo(context.Background(), cfg.GetProvider(), image)
-	require.NoError(err)
 
 	log.Printf("Setting image version: %s\n", info.shortPath)
 	cfg.Image = info.shortPath
