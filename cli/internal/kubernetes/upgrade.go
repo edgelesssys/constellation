@@ -212,18 +212,18 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 
 // UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
 // and updates the cluster's config if it is different from the new one.
-func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error {
-	currentConfig, existingConf, err := u.GetClusterAttestationConfig(ctx, newConfig.GetVariant())
+func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
+	currentAttestConfig, joinConfig, err := u.GetClusterAttestationConfig(ctx, newAttestConfig.GetVariant())
 	if err != nil {
 		if !errors.Is(err, ErrLegacyJoinConfig) {
 			return fmt.Errorf("getting cluster attestation config: %w", err)
 		}
-		currentConfig, existingConf, err = joinConfigMigration(existingConf, newConfig.GetVariant())
+		currentAttestConfig, joinConfig, err = joinConfigMigration(joinConfig, newAttestConfig.GetVariant())
 		if err != nil {
 			return fmt.Errorf("migrating join config: %w", err)
 		}
 	}
-	equal, err := newConfig.EqualTo(currentConfig)
+	equal, err := newAttestConfig.EqualTo(currentAttestConfig)
 	if err != nil {
 		return fmt.Errorf("comparing attestation configs: %w", err)
 	}
@@ -233,15 +233,15 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newConfig config
 	}
 
 	// backup of previous measurements
-	existingConf.Data["oldAttestationConfig"] = existingConf.Data[constants.AttestationConfigFilename]
+	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 
-	newConfigJSON, err := json.Marshal(newConfig)
+	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
 		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
-	existingConf.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
+	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
 	u.log.Debugf("Triggering attestation config update now")
-	if _, err = u.stableInterface.updateConfigMap(ctx, existingConf); err != nil {
+	if _, err = u.stableInterface.updateConfigMap(ctx, joinConfig); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
