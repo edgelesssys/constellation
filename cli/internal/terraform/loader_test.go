@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoader(t *testing.T) {
+func TestPrepareWorkspace(t *testing.T) {
 	testCases := map[string]struct {
 		pathBase            string
 		provider            cloudprovider.Provider
@@ -109,29 +109,110 @@ func TestLoader(t *testing.T) {
 			err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
 
 			require.NoError(err)
-			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
+			checkFiles(t, file, func(err error) { assert.NoError(err) }, constants.TerraformWorkingDir, tc.fileList)
 
 			if tc.testAlreadyUnpacked {
 				// Let's try the same again and check if we don't get a "file already exists" error.
 				require.NoError(file.Remove(filepath.Join(constants.TerraformWorkingDir, "variables.tf")))
 				err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
 				assert.NoError(err)
-				checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
+				checkFiles(t, file, func(err error) { assert.NoError(err) }, constants.TerraformWorkingDir, tc.fileList)
 			}
 
 			err = cleanUpWorkspace(file, constants.TerraformWorkingDir)
 			require.NoError(err)
 
-			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, tc.fileList)
+			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, constants.TerraformWorkingDir, tc.fileList)
 		})
 	}
 }
 
-func checkFiles(t *testing.T, file file.Handler, assertion func(error), files []string) {
+func TestPrepareUpgradeWorkspace(t *testing.T) {
+	testCases := map[string]struct {
+		pathBase            string
+		provider            cloudprovider.Provider
+		oldWorkingDir       string
+		newWorkingDir       string
+		oldWorkspaceFiles   []string
+		newWorkspaceFiles   []string
+		expectedFiles       []string
+		testAlreadyUnpacked bool
+		wantErr             bool
+	}{
+		"works": {
+			pathBase:          "terraform",
+			provider:          cloudprovider.AWS,
+			oldWorkingDir:     "old",
+			newWorkingDir:     "new",
+			oldWorkspaceFiles: []string{"terraform.tfstate"},
+			expectedFiles: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+				"terraform.tfstate",
+			},
+		},
+		"state file does not exist": {
+			pathBase:          "terraform",
+			provider:          cloudprovider.AWS,
+			oldWorkingDir:     "old",
+			newWorkingDir:     "new",
+			oldWorkspaceFiles: []string{},
+			expectedFiles:     []string{},
+			wantErr:           true,
+		},
+		"terraform files already exist in new dir": {
+			pathBase:          "terraform",
+			provider:          cloudprovider.AWS,
+			oldWorkingDir:     "old",
+			newWorkingDir:     "new",
+			oldWorkspaceFiles: []string{"terraform.tfstate"},
+			newWorkspaceFiles: []string{"main.tf"},
+			wantErr:           true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+			assert := assert.New(t)
+
+			file := file.NewHandler(afero.NewMemMapFs())
+
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+
+			createFiles(t, file, tc.oldWorkspaceFiles, tc.oldWorkingDir)
+			createFiles(t, file, tc.newWorkspaceFiles, tc.newWorkingDir)
+
+			err := prepareUpgradeWorkspace(path, file, tc.oldWorkingDir, tc.newWorkingDir)
+
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+			}
+			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.newWorkingDir, tc.expectedFiles)
+		})
+	}
+}
+
+func checkFiles(t *testing.T, fileHandler file.Handler, assertion func(error), dir string, files []string) {
 	t.Helper()
 	for _, f := range files {
-		path := filepath.Join(constants.TerraformWorkingDir, f)
-		_, err := file.Stat(path)
+		path := filepath.Join(dir, f)
+		_, err := fileHandler.Stat(path)
 		assertion(err)
+	}
+}
+
+func createFiles(t *testing.T, fileHandler file.Handler, fileList []string, targetDir string) {
+	t.Helper()
+	require := require.New(t)
+
+	for _, f := range fileList {
+		path := filepath.Join(targetDir, f)
+		err := fileHandler.Write(path, []byte("1234"), file.OptOverwrite, file.OptMkdirAll)
+		require.NoError(err)
 	}
 }

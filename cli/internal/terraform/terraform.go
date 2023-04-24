@@ -85,6 +85,16 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	return c.writeVars(vars)
 }
 
+// PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
+// It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
+func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir); err != nil {
+		return err
+	}
+
+	return c.writeVars(vars)
+}
+
 // CreateCluster creates a Constellation cluster using Terraform.
 func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {

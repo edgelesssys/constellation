@@ -113,6 +113,10 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	}, nil
 }
 
+func (u *Upgrader) CheckTerraformMigrations(ctx context.Context) error {
+	return nil
+}
+
 // UpgradeHelmServices upgrade helm services.
 func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
 	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
