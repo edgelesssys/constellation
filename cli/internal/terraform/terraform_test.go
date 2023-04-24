@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -934,14 +936,142 @@ func TestLogLevelString(t *testing.T) {
 	}
 }
 
+func TestPlan(t *testing.T) {
+	someError := errors.New("some error")
+	testCases := map[string]struct {
+		pathBase string
+		tf       *stubTerraform
+		fs       afero.Fs
+		wantErr  bool
+	}{
+		"plan succeeds": {
+			pathBase: "terraform",
+			tf:       &stubTerraform{},
+			fs:       afero.NewMemMapFs(),
+		},
+		"set log path fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				setLogPathErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"set log fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				setLogErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"plan fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				planJSONErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"init fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				initErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			c := &Client{
+				file:       file.NewHandler(tc.fs),
+				tf:         tc.tf,
+				workingDir: tc.pathBase,
+			}
+
+			_, err := c.Plan(context.Background(), LogLevelDebug, nil)
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+			}
+		})
+	}
+}
+
+func TestShowPlan(t *testing.T) {
+	someError := errors.New("some error")
+	testCases := map[string]struct {
+		pathBase string
+		tf       *stubTerraform
+		fs       afero.Fs
+		wantErr  bool
+	}{
+		"show plan succeeds": {
+			pathBase: "terraform",
+			tf:       &stubTerraform{},
+			fs:       afero.NewMemMapFs(),
+		},
+		"set log path fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				setLogPathErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"set log fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				setLogErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"show plan file fails": {
+			pathBase: "terraform",
+			tf: &stubTerraform{
+				showPlanFileErr: someError,
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			c := &Client{
+				file:       file.NewHandler(tc.fs),
+				tf:         tc.tf,
+				workingDir: tc.pathBase,
+			}
+
+			err := c.ShowPlan(context.Background(), LogLevelDebug, "", bytes.NewBuffer(nil))
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+			}
+		})
+	}
+}
+
 type stubTerraform struct {
-	applyErr      error
-	destroyErr    error
-	initErr       error
-	showErr       error
-	setLogErr     error
-	setLogPathErr error
-	showState     *tfjson.State
+	applyErr        error
+	destroyErr      error
+	initErr         error
+	showErr         error
+	setLogErr       error
+	setLogPathErr   error
+	planJSONErr     error
+	showPlanFileErr error
+	showState       *tfjson.State
 }
 
 func (s *stubTerraform) Apply(context.Context, ...tfexec.ApplyOption) error {
@@ -958,6 +1088,14 @@ func (s *stubTerraform) Init(context.Context, ...tfexec.InitOption) error {
 
 func (s *stubTerraform) Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error) {
 	return s.showState, s.showErr
+}
+
+func (s *stubTerraform) PlanJSON(context.Context, io.Writer, ...tfexec.PlanOption) (bool, error) {
+	return false, s.planJSONErr
+}
+
+func (s *stubTerraform) ShowPlanFileRaw(context.Context, string, ...tfexec.ShowOption) (string, error) {
+	return "", s.showPlanFileErr
 }
 
 func (s *stubTerraform) SetLog(_ string) error {

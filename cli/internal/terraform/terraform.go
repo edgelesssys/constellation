@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -294,6 +295,39 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 	}
 }
 
+// Plan determines the diff that will be applied by Terraform. The diff is written to the diffWriter.
+// If there is a diff, the returned bool is true. Otherwise, it is false.
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel, diffWriter io.Writer) (bool, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	if err := c.tf.Init(ctx); err != nil {
+		return false, fmt.Errorf("terraform init: %w", err)
+	}
+
+	return c.tf.PlanJSON(ctx, diffWriter, nil)
+}
+
+// ShowPlan formats the diff in planFilePath and writes it to the specified output.
+func (c *Client) ShowPlan(ctx context.Context, logLevel LogLevel, planFilePath string, output io.Writer) error {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	planResult, err := c.tf.ShowPlanFileRaw(ctx, planFilePath, nil)
+	if err != nil {
+		return fmt.Errorf("terraform show plan: %w", err)
+	}
+
+	_, err = output.Write([]byte(planResult))
+	if err != nil {
+		return fmt.Errorf("write plan output: %w", err)
+	}
+
+	return nil
+}
+
 // Destroy destroys Terraform-created cloud resources.
 func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
 	if err := c.setLogLevel(logLevel); err != nil {
@@ -386,6 +420,8 @@ type tfInterface interface {
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
+	PlanJSON(ctx context.Context, w io.Writer, opts ...tfexec.PlanOption) (bool, error)
+	ShowPlanFileRaw(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (string, error)
 	SetLog(level string) error
 	SetLogPath(path string) error
 }
