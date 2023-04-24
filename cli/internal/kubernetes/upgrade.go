@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubernetes
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,10 +17,12 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -78,10 +81,19 @@ type Upgrader struct {
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
 	log              debugLog
+	tf               terraformUpgrader
+}
+
+// a terraformUpgrader performs the Terraform interactions in an upgrade.
+type terraformUpgrader interface {
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
+	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
+	Plan(ctx context.Context, logLevel terraform.LogLevel, diffWriter io.Writer) (bool, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
+func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -103,6 +115,11 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 
+	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
+
 	return &Upgrader{
 		stableInterface:  &stableClient{client: kubeClient},
 		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
@@ -110,10 +127,37 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 		imageFetcher:     image.New(),
 		outWriter:        outWriter,
 		log:              log,
+		tf:               tfClient,
 	}, nil
 }
 
-func (u *Upgrader) CheckTerraformMigrations(ctx context.Context) error {
+// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade, writing the plan output to the given file if
+// a diff exists. It also returns a bool indicating whether a diff exists.
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) (bool, error) {
+	diff := bytes.Buffer{}
+	hasDiff, err := u.tf.Plan(ctx, logLevel, &diff)
+	if err != nil {
+		return false, fmt.Errorf("terraform plan: %w", err)
+	}
+
+	if err := fileHandler.Write(planFile, diff.Bytes()); err != nil {
+		return false, fmt.Errorf("writing plan file: %w", err)
+	}
+
+	return hasDiff, nil
+}
+
+// ShowTerraformMigrations formats the Terraform diff from the given plan file and writes it to the upgrader's output writer.
+func (u *Upgrader) ShowTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) error {
+	planContent, err := fileHandler.Read(planFile)
+	if err != nil {
+		return fmt.Errorf("reading plan file: %w", err)
+	}
+
+	if err := u.tf.ShowPlan(ctx, logLevel, string(planContent), u.outWriter); err != nil {
+		return fmt.Errorf("terraform show plan: %w", err)
+	}
+
 	return nil
 }
 

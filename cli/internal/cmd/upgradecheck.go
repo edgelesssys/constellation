@@ -62,7 +62,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	checker, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), log)
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
