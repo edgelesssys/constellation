@@ -157,9 +157,6 @@ type AzureConfig struct {
 	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
-	//   Use Confidential VMs. Always needs to be true.
-	ConfidentialVM *bool `yaml:"confidentialVM,omitempty" validate:"omitempty,deprecated"` // TODO: v2.8 remove
-	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 }
