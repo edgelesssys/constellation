@@ -91,18 +91,24 @@ func TestUpgrade(t *testing.T) {
 	testNodesEventuallyAvailable(t, k, *wantControl, *wantWorker)
 	testPodsEventuallyReady(t, k, "kube-system")
 
-	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
-
 	cli, err := getCLIPath(*cliPath)
 	require.NoError(err)
+
+	// Migrate config if necessary.
+	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--force", "--debug")
+	msg, err := cmd.CombinedOutput()
+	require.NoErrorf(err, "%s", string(msg))
+	log.Println(string(msg))
+
+	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
 
 	data, err := os.ReadFile("./constellation-conf.yaml")
 	require.NoError(err)
 	log.Println(string(data))
 
 	log.Println("Triggering upgrade.")
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug")
-	msg, err := cmd.CombinedOutput()
+	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug")
+	msg, err = cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
 	require.NoError(containsUnexepectedMsg(string(msg)))
 	log.Println(string(msg))
