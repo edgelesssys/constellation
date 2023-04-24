@@ -25,9 +25,9 @@ var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying t
 //go:embed terraform/*/.terraform.lock.hcl
 var terraformFS embed.FS
 
-// prepareWorkspace loads the embedded Terraform files,
-// and writes them into the workspace.
-func prepareWorkspace(path string, fileHandler file.Handler, workingDir string) error {
+// prepareWorkspace loads the embedded Terraform files and writes them into the workspace.
+// If overwrite is set to true, existing files will be overwritten (i.e. when upgrade migrations should be performed).
+func prepareWorkspace(path string, fileHandler file.Handler, workingDir string, overwrite bool) error {
 	rootDir := path
 	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -42,7 +42,12 @@ func prepareWorkspace(path string, fileHandler file.Handler, workingDir string) 
 			return err
 		}
 		fileName := strings.Replace(filepath.Join(workingDir, path), rootDir+"/", "", 1)
-		if err := fileHandler.Write(fileName, content, file.OptMkdirAll); errors.Is(err, afero.ErrFileExists) {
+		opts := []file.Option{file.OptMkdirAll}
+		if overwrite {
+			opts = append(opts, file.OptOverwrite)
+		}
+
+		if err := fileHandler.Write(fileName, content, opts...); errors.Is(err, afero.ErrFileExists) {
 			// If a file already exists, check if it is identical. If yes, continue and don't write anything to disk.
 			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
 			// provider, corrupted or manually modified in general.
@@ -51,6 +56,7 @@ func prepareWorkspace(path string, fileHandler file.Handler, workingDir string) 
 				return err
 			}
 
+			// only matters if overwrite is set to false
 			if !bytes.Equal(content, existingFileContent) {
 				return ErrTerraformWorkspaceDifferentFiles
 			}

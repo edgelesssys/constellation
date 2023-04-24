@@ -78,7 +78,17 @@ func (c *Client) Show(ctx context.Context) (*tfjson.State, error) {
 
 // PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
 func (c *Client) PrepareWorkspace(path string, vars Variables) error {
-	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
+	if err := prepareWorkspace(path, c.file, c.workingDir, false); err != nil {
+		return err
+	}
+
+	return c.writeVars(vars)
+}
+
+// PrepareUpgradeWorkspace prepares a Terraform workspace for Constellation upgrade migrations.
+// The difference to PrepareWorkspace is that old Terraform files are overwritten for the upgrade.
+func (c *Client) PrepareUpgradeWorkspace(path string, vars Variables) error {
+	if err := prepareWorkspace(path, c.file, c.workingDir, true); err != nil {
 		return err
 	}
 
