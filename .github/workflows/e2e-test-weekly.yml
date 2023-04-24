@@ -253,7 +253,9 @@ jobs:
     secrets: inherit
     permissions:
       id-token: write
+      checks: write
       contents: read
+      packages: write
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
