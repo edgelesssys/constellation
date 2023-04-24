@@ -126,13 +126,13 @@ With [qemu](https://www.qemu.org/), you can create a local constellation cluster
 
 :::caution
 
-MiniConstellation has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
+Using this has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites-1) when setting up.
 
 :::
 
 :::note
 
-Since MiniConstellation runs on your local system, cloud features such as load balancing,
+Since this setup runs on your local system, cloud features such as load balancing,
 attaching persistent storage, or autoscaling aren't available.
 
 :::
@@ -143,6 +143,7 @@ attaching persistent storage, or autoscaling aren't available.
   * [Constellation CLI](./install.md#install-the-constellation-cli)
   * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
   * [Docker](https://docs.docker.com/engine/install/)
+  * [qemu](https://www.qemu.org/)
   * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
   * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 * Other system requirements
@@ -183,7 +184,7 @@ attaching persistent storage, or autoscaling aren't available.
 
   :::tip
 
-  If you want to look at and interact with the created virtual machines, run
+  If you want to look at and interact with the created virtual machines manually, run
 
   ```shell-session
   virsh -c qemu+tcp://localhost:16599/system
@@ -193,7 +194,7 @@ attaching persistent storage, or autoscaling aren't available.
   ```shell-session
   list
   ```
-   to see the created virtual machines, as well as their status. This should look something like this.
+   to see the created virtual machines, as well as their status. This should look something like this:
 
   ```txt
   Id   Name                       State
@@ -214,14 +215,14 @@ attaching persistent storage, or autoscaling aren't available.
 
   :::caution
 
-  Please note that connecting via `qemu+tcp` is not encrypted and should not be used in a security relevant environment!
+  Please note that connections via `qemu+tcp` are not encrypted and should not be used in a security relevant environment!
 
   :::
 
 3. Finally, initialize the cluster by running
 
   ```shell-session
-  sudo constellation init
+  constellation init
   ```
 
   This should return something like the following output:
@@ -251,7 +252,7 @@ To terminate your cluster after you finished, run:
 constellation terminate
 ```
 
-This will destroy your cluster and clean your workspace. The VM image you used will be kept, as well as `constellation-conf.yaml` to allow reusage.
+This will destroy your cluster and clean your workspace. The VM image as well as `constellation-conf.yaml` will be kept to allow reusage.
 
 ## Troubleshooting
 
