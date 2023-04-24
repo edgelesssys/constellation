@@ -54,6 +54,7 @@ jobs:
       id-token: write
       checks: write
       contents: read
+      packages: write
     needs: [find-latest-image]
     steps:
       - name: Check out repository

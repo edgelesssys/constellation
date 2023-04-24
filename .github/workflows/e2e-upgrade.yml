@@ -94,7 +94,9 @@ jobs:
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
+      checks: write
       contents: read
+      packages: write
     steps:
       - name: Checkout
         if: inputs.gitRef == 'head'
