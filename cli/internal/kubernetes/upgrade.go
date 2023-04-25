@@ -12,12 +12,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -84,7 +87,7 @@ type Upgrader struct {
 
 // a terraformUpgrader performs the Terraform interactions in an upgrade.
 type terraformUpgrader interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
@@ -129,24 +132,27 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 	}, nil
 }
 
-// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade and writes the output to the planFile.
-// It also returns a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error) {
-	hasDiff, err := u.tf.Plan(ctx, logLevel, planFile)
+// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade.
+// If a diff exists, it's being written to the upgrader's output writer. It also returns
+// a bool indicating whether a diff exists.
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error) {
+	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(csp.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir)
+	if err != nil {
+		return false, fmt.Errorf("preparing terraform workspace: %w", err)
+	}
+
+	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
-	return hasDiff, nil
-}
-
-// ShowTerraformMigrations formats the Terraform diff from the given plan file and writes it to the upgrader's output writer.
-func (u *Upgrader) ShowTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, planFilePath string) error {
-	if err := u.tf.ShowPlan(ctx, logLevel, planFilePath, u.outWriter); err != nil {
-		return fmt.Errorf("terraform show plan: %w", err)
+	if hasDiff {
+		if err := u.tf.ShowPlan(ctx, logLevel, path.Join(constants.TerraformUpgradeWorkingDir, constants.TerraformUpgradePlanFile), u.outWriter); err != nil {
+			return false, fmt.Errorf("terraform show plan: %w", err)
+		}
 	}
 
-	return nil
+	return hasDiff, nil
 }
 
 // UpgradeHelmServices upgrade helm services.

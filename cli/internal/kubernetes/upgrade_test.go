@@ -7,25 +7,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubernetes
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
-	"path"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -480,73 +475,6 @@ func TestUpdateK8s(t *testing.T) {
 				assert.Equal(tc.newClusterVersion, nodeVersion.Spec.KubernetesClusterVersion)
 			} else {
 				assert.Equal(tc.oldClusterVersion, nodeVersion.Spec.KubernetesClusterVersion)
-			}
-		})
-	}
-}
-
-func TestShowTerraformMigrations(t *testing.T) {
-	testWorkDir := "tmp-test-work-dir"
-	upgrader := func() *Upgrader {
-		tf, err := terraform.New(context.Background(), testWorkDir)
-		require.NoError(t, err)
-		return &Upgrader{
-			log:       logger.NewTest(t),
-			outWriter: &bytes.Buffer{},
-			tf:        tf,
-		}
-	}
-	invalidFS := func(files []string) file.Handler {
-		fileHandler := file.NewHandler(afero.NewOsFs())
-		for _, f := range files {
-			err := fileHandler.Write(
-				path.Join(testWorkDir, f),
-				[]byte("test"), // a zip file is expected
-				file.OptMkdirAll,
-			)
-			require.NoError(t, err)
-		}
-		return fileHandler
-	}
-
-	cleanUp := func(fileHandler file.Handler) {
-		err := fileHandler.RemoveAll(testWorkDir)
-		require.NoError(t, err)
-	}
-
-	testCases := map[string]struct {
-		files    []string
-		planFile string
-		fs       func(files []string) file.Handler
-		wantErr  bool
-	}{
-		"no plan file": {
-			files:    []string{},
-			planFile: constants.UpgradePlanFile,
-			fs:       invalidFS,
-			wantErr:  true,
-		},
-		"invalid plan file": {
-			files:    []string{constants.UpgradePlanFile},
-			planFile: constants.UpgradePlanFile,
-			fs:       invalidFS,
-			wantErr:  true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			require := require.New(t)
-
-			u := upgrader()
-			fileHandler := tc.fs(tc.files)
-			defer cleanUp(fileHandler)
-
-			err := u.ShowTerraformMigrations(context.Background(), terraform.LogLevelDebug, tc.planFile)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				require.NoError(err)
 			}
 		})
 	}
