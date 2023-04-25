@@ -80,6 +80,14 @@ install() {
 
   # backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
   inst_simple "${moddir}/sysusers-dracut.conf" "${systemdsystemunitdir}/systemd-sysusers.service.d/sysusers-dracut.conf"
+  # force systemd-networkd in initrd
+  install_and_enable_unit "systemd-networkd.service" \
+    "basic.target"
+  inst_multiple -o \
+    "${tmpfilesdir}"/systemd-network.conf \
+    "${systemdnetwork}"/80-6rd-tunnel.network \
+    "${systemdnetwork}"/80-container-vb.network \
+    "${systemdsystemunitdir}"/systemd-networkd-wait-online@.service
   inst_simple /usr/lib/systemd/resolved.conf.d/fallback_dns.conf \
     /usr/lib/systemd/resolved.conf.d/fallback_dns.conf
 }
