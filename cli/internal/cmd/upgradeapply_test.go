@@ -109,10 +109,6 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) PlanTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) (bool, error) {
+func (u stubUpgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error) {
 	return false, u.planTerraformErr
-}
-
-func (u stubUpgrader) ShowTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) error {
-	return u.showTerraformErr
 }

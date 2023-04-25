@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
@@ -98,16 +97,12 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 
 	if conf.GetProvider() == cloudprovider.Azure {
-		diff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), fileHandler, flags.terraformLogLevel, constants.UpgradePlanFile)
+		u.log.Debugf("Planning Terraform migrations")
+		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure)
 		if err != nil {
 			return fmt.Errorf("planning Terraform migrations: %w", err)
 		}
-		if diff {
-			u.log.Debugf("Terraform diff detected")
-			err := u.upgrader.ShowTerraformMigrations(cmd.Context(), fileHandler, flags.terraformLogLevel, constants.UpgradePlanFile)
-			if err != nil {
-				return fmt.Errorf("showing Terraform migrations: %w", err)
-			}
+		if hasDiff {
 			if !flags.yes {
 				ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 				if err != nil {
@@ -117,12 +112,12 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 					cmd.Println("Aborting upgrade.")
 					return nil
 				}
-				u.log.Debugf("User confirmed Terraform migrations")
 			}
 			u.log.Debugf("Applying Terraform migrations")
-			// TODO: apply Terraform migrations
+			// TODO: Apply Terraform migrations
+		} else {
+			u.log.Debugf("No Terraform diff detected")
 		}
-		u.log.Debugf("No Terraform diff detected")
 	}
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
@@ -257,6 +252,5 @@ type cloudUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
 	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
-	PlanTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) (bool, error)
-	ShowTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) error
+	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error)
 }
