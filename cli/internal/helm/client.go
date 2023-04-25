@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -278,6 +279,16 @@ func (c *Client) upgradeRelease(
 		}
 		joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
 
+		// v2.8 updates the disk type of GCP default storage class
+		// This value is not updatable in Kubernetes, but we can use a workaround to update it:
+		// First, we delete the storage class, then we upgrade the chart,
+		// which will recreate the storage class with the new disk type.
+		if conf.GetProvider() == cloudprovider.GCP {
+			if err := c.kubectl.DeleteStorageClass(ctx, "encrypted-rwo"); err != nil {
+				return fmt.Errorf("deleting storage class for update: %w", err)
+			}
+		}
+
 		// TODO: v2.9: to here.
 	default:
 		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
@@ -358,6 +369,7 @@ type crdClient interface {
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
 	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
 	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+	DeleteStorageClass(ctx context.Context, name string) error // TODO: remove with v2.9
 }
 
 type actionWrapper interface {
