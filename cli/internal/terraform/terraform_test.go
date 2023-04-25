@@ -993,7 +993,7 @@ func TestPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			_, err := c.Plan(context.Background(), LogLevelDebug, constants.UpgradePlanFile)
+			_, err := c.Plan(context.Background(), LogLevelDebug, constants.TerraformUpgradePlanFile)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
