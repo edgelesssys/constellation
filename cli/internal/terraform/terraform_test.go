@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -938,6 +937,7 @@ func TestLogLevelString(t *testing.T) {
 
 func TestPlan(t *testing.T) {
 	someError := errors.New("some error")
+
 	testCases := map[string]struct {
 		pathBase string
 		tf       *stubTerraform
@@ -993,7 +993,7 @@ func TestPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			_, err := c.Plan(context.Background(), LogLevelDebug, nil)
+			_, err := c.Plan(context.Background(), LogLevelDebug, constants.UpgradePlanFile)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -1090,7 +1090,7 @@ func (s *stubTerraform) Show(context.Context, ...tfexec.ShowOption) (*tfjson.Sta
 	return s.showState, s.showErr
 }
 
-func (s *stubTerraform) PlanJSON(context.Context, io.Writer, ...tfexec.PlanOption) (bool, error) {
+func (s *stubTerraform) Plan(context.Context, ...tfexec.PlanOption) (bool, error) {
 	return false, s.planJSONErr
 }
 

@@ -305,9 +305,9 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 	}
 }
 
-// Plan determines the diff that will be applied by Terraform. The diff is written to the diffWriter.
+// Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.
 // If there is a diff, the returned bool is true. Otherwise, it is false.
-func (c *Client) Plan(ctx context.Context, logLevel LogLevel, diffWriter io.Writer) (bool, error) {
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (bool, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -316,7 +316,10 @@ func (c *Client) Plan(ctx context.Context, logLevel LogLevel, diffWriter io.Writ
 		return false, fmt.Errorf("terraform init: %w", err)
 	}
 
-	return c.tf.PlanJSON(ctx, diffWriter, nil)
+	opts := []tfexec.PlanOption{
+		tfexec.Out(planFile),
+	}
+	return c.tf.Plan(ctx, opts...)
 }
 
 // ShowPlan formats the diff in planFilePath and writes it to the specified output.
@@ -325,7 +328,7 @@ func (c *Client) ShowPlan(ctx context.Context, logLevel LogLevel, planFilePath s
 		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
 
-	planResult, err := c.tf.ShowPlanFileRaw(ctx, planFilePath, nil)
+	planResult, err := c.tf.ShowPlanFileRaw(ctx, planFilePath)
 	if err != nil {
 		return fmt.Errorf("terraform show plan: %w", err)
 	}
@@ -430,7 +433,7 @@ type tfInterface interface {
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
-	PlanJSON(ctx context.Context, w io.Writer, opts ...tfexec.PlanOption) (bool, error)
+	Plan(ctx context.Context, opts ...tfexec.PlanOption) (bool, error)
 	ShowPlanFileRaw(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (string, error)
 	SetLog(level string) error
 	SetLogPath(path string) error
