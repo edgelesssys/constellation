@@ -6,6 +6,7 @@
     cd /tmp/
     git clone https://github.com/systemd/mkosi
     cd mkosi
+    git checkout d8b32fbf3077b612db0024276e73cec3c2c87577
     tools/generate-zipapp.sh
     cp builddir/mkosi /usr/local/bin/
     ```

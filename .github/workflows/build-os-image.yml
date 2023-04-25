@@ -328,8 +328,8 @@ jobs:
             echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
             echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
             echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
-            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)"
-            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)"
+            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.changelog | head -c 64)"
+            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.manifest | head -c 64)"
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Upload raw OS image as artifact
@@ -355,8 +355,8 @@ jobs:
         with:
           name: manifest-${{ matrix.csp }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.changelog
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.manifest
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.changelog
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.manifest
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -848,32 +848,32 @@ jobs:
           ${{ needs.build-dependencies.outputs.upgrade-agent-sha256 }} upgrade-agent
           ${{ needs.build-dependencies.outputs.measurement-reader-sha256 }} measurement-reader
           ${{ needs.make-os-image.outputs.image-raw-aws-sha256 }} aws/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.raw.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.raw.manifest
+          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.manifest
           ${{ needs.make-os-image.outputs.image-efi-aws-sha256 }} aws/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-aws-sha256 }} aws/image.initrd
           ${{ needs.make-os-image.outputs.image-root-raw-aws-sha256 }} aws/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-aws-sha256 }} aws/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-aws-sha256 }} aws/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-azure-sha256 }} azure/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-azure-sha256 }} azure/image.raw.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-azure-sha256 }} azure/image.raw.manifest
+          ${{ needs.make-os-image.outputs.image-raw-changelog-azure-sha256 }} azure/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-azure-sha256 }} azure/image.manifest
           ${{ needs.make-os-image.outputs.image-efi-azure-sha256 }} azure/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-azure-sha256 }} azure/image.initrd
           ${{ needs.make-os-image.outputs.image-root-raw-azure-sha256 }} azure/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-azure-sha256 }} azure/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-azure-sha256 }} azure/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-gcp-sha256 }} gcp/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-gcp-sha256 }} gcp/image.raw.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-sha256 }} gcp/image.raw.manifest
+          ${{ needs.make-os-image.outputs.image-raw-changelog-gcp-sha256 }} gcp/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-sha256 }} gcp/image.manifest
           ${{ needs.make-os-image.outputs.image-efi-gcp-sha256 }} gcp/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-gcp-sha256 }} gcp/image.initrd
           ${{ needs.make-os-image.outputs.image-root-raw-gcp-sha256 }} gcp/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-gcp-sha256 }} gcp/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-gcp-sha256 }} gcp/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-qemu-sha256 }} qemu/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-qemu-sha256 }} qemu/image.raw.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-sha256 }} qemu/image.raw.manifest
+          ${{ needs.make-os-image.outputs.image-raw-changelog-qemu-sha256 }} qemu/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-sha256 }} qemu/image.manifest
           ${{ needs.make-os-image.outputs.image-efi-qemu-sha256 }} qemu/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-qemu-sha256 }} qemu/image.initrd
           ${{ needs.make-os-image.outputs.image-root-raw-qemu-sha256 }} qemu/image.root-x86-64.raw
@@ -887,7 +887,7 @@ jobs:
         shell: bash
         run: |
           sboms='sbom.spdx.json sbom.cyclonedx.json sbom.syft.json'
-          manifests='image.raw.manifest image.raw.changelog'
+          manifests='image.manifest image.changelog'
           hashes='SHA256SUMS'
           for file in ${sboms} ${manifests} ${hashes}; do
             aws s3 cp \
