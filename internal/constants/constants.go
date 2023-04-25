@@ -148,9 +148,11 @@ const (
 	MiniConstellationUID = "mini"
 	// TerraformLogFile is the file name of the Terraform log file.
 	TerraformLogFile = "terraform.log"
-	// UpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
-	UpgradePlanFile = "plan.zip"
-
+	// TerraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
+	TerraformUpgradePlanFile = "plan.zip"
+	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an update.
+	TerraformUpgradeWorkingDir = "constellation-upgrade-terraform"
+	
 	//
 	// Kubernetes.
 	//
