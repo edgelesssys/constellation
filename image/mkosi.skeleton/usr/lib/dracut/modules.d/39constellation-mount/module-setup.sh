@@ -83,6 +83,7 @@ install() {
   # force systemd-networkd in initrd
   install_and_enable_unit "systemd-networkd.service" \
     "basic.target"
+  # shellcheck disable=SC2154
   inst_multiple -o \
     "${tmpfilesdir}"/systemd-network.conf \
     "${systemdnetwork}"/80-6rd-tunnel.network \
