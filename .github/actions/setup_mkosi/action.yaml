@@ -4,6 +4,9 @@ inputs:
   version:
     description: "Version (commit hash) of mkosi to install."
     required: true
+  systemdVersion:
+    description: "Version (commit hash) of systemd to install."
+    required: true
 runs:
   using: composite
   steps:
@@ -14,27 +17,49 @@ runs:
         echo "deb-src http://archive.ubuntu.com/ubuntu/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
         sudo apt-get install --assume-yes --no-install-recommends \
+          bubblewrap \
           dnf \
-          systemd-container \
-          qemu-system-x86 \
-          ovmf \
           e2fsprogs \
-          squashfs-tools
+          libfdisk-dev \
+          mtools \
+          ovmf \
+          python3-pefile \
+          python3-pyelftools \
+          python3-setuptools \
+          qemu-system-x86 \
+          squashfs-tools \
+          systemd-container
         echo "::endgroup::"
 
-    # Try to eliminate "Failed to dissect image: Connection timed out" errors from nspawn by compiling
-    # systemd-nspawn from v251 from source.
-    - name: Update systemd-nspawn
+    - name: Checkout systemd
+      uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+      with:
+        repository: systemd/systemd
+        path: ${{ github.action_path }}/systemd
+        ref: ${{ inputs.systemdVersion }}
+
+    - name: Update systemd tools
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |
-        echo "::group::Update systemd-nspawn"
+        echo "::group::Update systemd tools"
         sudo apt-get build-dep systemd
-        git clone https://github.com/systemd/systemd-stable --branch v251.2 --depth=1
-        meson systemd-stable/build systemd-stable
-        ninja -C systemd-stable/build systemd-nspawn
-        sudo ln -svf $PWD/systemd-stable/build/systemd-nspawn $(which systemd-nspawn)
-        systemd-nspawn --version
+        meson systemd/build systemd -Drepart=true -Defi=true -Dbootloader=true
+
+        BINARIES=(
+          bootctl
+          systemctl
+          systemd-analyze
+          systemd-dissect
+          systemd-nspawn
+          systemd-repart
+          ukify
+        )
+
+        ninja -C systemd/build ${BINARIES[@]}
+        for BINARY in "${BINARIES[@]}"; do
+          sudo ln -svf $PWD/systemd/build/$BINARY /usr/bin/$BINARY
+        done
         echo "::endgroup::"
 
     - name: Install
