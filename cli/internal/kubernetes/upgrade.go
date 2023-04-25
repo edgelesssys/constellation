@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubernetes
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -88,7 +86,7 @@ type Upgrader struct {
 type terraformUpgrader interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, diffWriter io.Writer) (bool, error)
+	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
 }
 
@@ -131,30 +129,20 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 	}, nil
 }
 
-// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade, writing the plan output to the given file if
-// a diff exists. It also returns a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) (bool, error) {
-	diff := bytes.Buffer{}
-	hasDiff, err := u.tf.Plan(ctx, logLevel, &diff)
+// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade and writes the output to the planFile.
+// It also returns a bool indicating whether a diff exists.
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error) {
+	hasDiff, err := u.tf.Plan(ctx, logLevel, planFile)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
-	}
-
-	if err := fileHandler.Write(planFile, diff.Bytes()); err != nil {
-		return false, fmt.Errorf("writing plan file: %w", err)
 	}
 
 	return hasDiff, nil
 }
 
 // ShowTerraformMigrations formats the Terraform diff from the given plan file and writes it to the upgrader's output writer.
-func (u *Upgrader) ShowTerraformMigrations(ctx context.Context, fileHandler file.Handler, logLevel terraform.LogLevel, planFile string) error {
-	planContent, err := fileHandler.Read(planFile)
-	if err != nil {
-		return fmt.Errorf("reading plan file: %w", err)
-	}
-
-	if err := u.tf.ShowPlan(ctx, logLevel, string(planContent), u.outWriter); err != nil {
+func (u *Upgrader) ShowTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, planFilePath string) error {
+	if err := u.tf.ShowPlan(ctx, logLevel, planFilePath, u.outWriter); err != nil {
 		return fmt.Errorf("terraform show plan: %w", err)
 	}
 
