@@ -10,6 +10,35 @@
     cp builddir/mkosi /usr/local/bin/
     ```
 
+- Build systemd tooling (from git):
+
+    Ubuntu and Fedora ship outdated versions of systemd tools, so you need to build them from source:
+
+    ```sh
+    # Ubuntu
+    echo "deb-src http://archive.ubuntu.com/ubuntu/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+    sudo apt-get update
+    sudo apt-get build-dep systemd
+    sudo apt-get install libfdisk-dev
+    # Fedora
+    sudo dnf builddep systemd
+
+    git clone https://github.com/systemd/systemd --depth=1
+    meson systemd/build systemd -Drepart=true -Defi=true -Dbootloader=true
+    BINARIES=(
+        bootctl
+        systemctl
+        systemd-analyze
+        systemd-dissect
+        systemd-nspawn
+        systemd-repart
+        ukify
+    )
+    ninja -C systemd/build ${BINARIES[@]}
+    SYSTEMD_BIN=$(realpath systemd/build)
+    echo installed systemd tools to "${SYSTEMD_BIN}"
+    ```
+
 - Install tools:
 
     <details>
@@ -18,22 +47,27 @@
     ```sh
     sudo apt-get update
     sudo apt-get install --assume-yes --no-install-recommends \
-        dnf \
-        systemd-container \
-        qemu-system-x86 \
-        qemu-utils \
-        ovmf \
-        e2fsprogs \
-        squashfs-tools \
-        efitools \
-        sbsigntool \
+        bubblewrap \
         coreutils \
         curl \
+        dnf \
+        e2fsprogs \
+        efitools \
         jq \
-        util-linux \
-        virt-manager \
+        mtools \
+        ovmf \
         python3-crc32c \
-        rpm
+        python3-pefile \
+        python3-pyelftools \
+        python3-setuptools \
+        qemu-system-x86 \
+        qemu-utils \
+        rpm \
+        sbsigntool \
+        squashfs-tools \
+        systemd-container \
+        util-linux \
+        virt-manager
     ```
 
     </details>
@@ -43,6 +77,7 @@
 
     ```sh
     sudo dnf install -y \
+        bubblewrap \
         edk2-ovmf \
         systemd-container \
         qemu \
@@ -68,13 +103,14 @@ When building your first image, prepare the secure boot PKI (see `secure-boot/ge
 After that, you can build the image with:
 
 ```sh
+# export SYSTEMD_BIN=<path to systemd tools>
 # OPTIONAL: to create a debug image, export the following line
 # export DEBUG=true
 # OPTIONAL: to enable the serial console, export the following line
 # export AUTOLOGIN=true
 # OPTIONAL: symlink custom path to secure boot PKI to ./pki
 # ln -s /path/to/pki/folder ./pki
-sudo make -j $(nproc)
+sudo make EXTRA_SEARCH_PATHS="${SYSTEMD_BIN}" -j $(nproc)
 ```
 
 Raw images will be placed in `mkosi.output.<CSP>/fedora~37/image.raw`.

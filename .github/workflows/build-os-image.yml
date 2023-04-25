@@ -284,7 +284,8 @@ jobs:
       - name: Setup mkosi
         uses: ./.github/actions/setup_mkosi
         with:
-          version: 058046019e7ed2e8e93af87b8c14a808dcc6bbc3
+          version: d8b32fbf3077b612db0024276e73cec3c2c87577
+          systemdVersion: f6e94c5f7ddd796095cf6294857e535dcdbfc677
 
       - name: Prepare PKI for secure boot signing
         id: prepare-pki
@@ -295,6 +296,7 @@ jobs:
           DB_KEY: ${{ ((needs.build-settings.outputs.pkiSet == 'pki_prod') && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
         run: |
           echo "${DB_KEY}" > "${PKI_SET}/db.key"
+          chmod 600 "${PKI_SET}/db.key"
           ln -s "${PKI_SET}" pki
 
       - name: Build
@@ -322,9 +324,9 @@ jobs:
           {
             echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)"
             echo "image-efi-${{ matrix.csp }}-sha256=$(sha256sum image.efi | head -c 64)"
-            echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.initrd | head -c 64)"
-            echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root.raw | head -c 64)"
-            echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root.verity | head -c 64)"
+            echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.esp.raw | head -c 64)"
+            echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
+            echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
             echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
             echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)"
             echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)"
@@ -343,10 +345,9 @@ jobs:
           path: |
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.cmdline
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.efi
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.initrd
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.roothash
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.verity
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.esp.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root-x86-64.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root-x86-64-verity.raw
             ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.vmlinuz
 
       - name: Upload manifest as artifact
@@ -812,7 +813,7 @@ jobs:
       - name: Unpack squashfs
         run: |
           echo "::group::Unpack squashfs"
-          unsquashfs -user-xattrs -d image.root.tree image.root.raw
+          unsquashfs -user-xattrs -d image.root.tree image.root-x86-64.raw
           echo "::endgroup::"
 
       - name: Create SBOM in SPDX fromat
@@ -851,7 +852,7 @@ jobs:
           ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.raw.manifest
           ${{ needs.make-os-image.outputs.image-efi-aws-sha256 }} aws/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-aws-sha256 }} aws/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-aws-sha256 }} aws/image.root.raw
+          ${{ needs.make-os-image.outputs.image-root-raw-aws-sha256 }} aws/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-aws-sha256 }} aws/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-aws-sha256 }} aws/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-azure-sha256 }} azure/image.raw
@@ -859,7 +860,7 @@ jobs:
           ${{ needs.make-os-image.outputs.image-raw-manifest-azure-sha256 }} azure/image.raw.manifest
           ${{ needs.make-os-image.outputs.image-efi-azure-sha256 }} azure/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-azure-sha256 }} azure/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-azure-sha256 }} azure/image.root.raw
+          ${{ needs.make-os-image.outputs.image-root-raw-azure-sha256 }} azure/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-azure-sha256 }} azure/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-azure-sha256 }} azure/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-gcp-sha256 }} gcp/image.raw
@@ -867,7 +868,7 @@ jobs:
           ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-sha256 }} gcp/image.raw.manifest
           ${{ needs.make-os-image.outputs.image-efi-gcp-sha256 }} gcp/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-gcp-sha256 }} gcp/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-gcp-sha256 }} gcp/image.root.raw
+          ${{ needs.make-os-image.outputs.image-root-raw-gcp-sha256 }} gcp/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-gcp-sha256 }} gcp/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-gcp-sha256 }} gcp/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-qemu-sha256 }} qemu/image.raw
@@ -875,7 +876,7 @@ jobs:
           ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-sha256 }} qemu/image.raw.manifest
           ${{ needs.make-os-image.outputs.image-efi-qemu-sha256 }} qemu/image.efi
           ${{ needs.make-os-image.outputs.image-initrd-qemu-sha256 }} qemu/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-qemu-sha256 }} qemu/image.root.raw
+          ${{ needs.make-os-image.outputs.image-root-raw-qemu-sha256 }} qemu/image.root-x86-64.raw
           ${{ needs.make-os-image.outputs.image-root-verity-qemu-sha256 }} qemu/image.root.verity
           ${{ needs.make-os-image.outputs.image-vmlinuz-qemu-sha256 }} qemu/image.vmlinuz
           EOF

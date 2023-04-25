@@ -6,8 +6,9 @@
 # Note: This script is sourced.
 
 depends() {
-  # expands to: systemd systemd-hostnamed systemd-networkd systemd-resolved systemd-timedated systemd-timesyncd
-  echo systemd-network-management
+  # systemd-network-management expands to: systemd systemd-hostnamed systemd-networkd systemd-resolved systemd-timedated systemd-timesyncd
+  echo dracut-systemd systemd-network-management systemd-veritysetup systemd-udevd
+  return 0
 }
 
 install_and_enable_unit() {
@@ -79,4 +80,6 @@ install() {
 
   # backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
   inst_simple "${moddir}/sysusers-dracut.conf" "${systemdsystemunitdir}/systemd-sysusers.service.d/sysusers-dracut.conf"
+  inst_simple /usr/lib/systemd/resolved.conf.d/fallback_dns.conf \
+    /usr/lib/systemd/resolved.conf.d/fallback_dns.conf
 }

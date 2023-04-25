@@ -8,11 +8,13 @@ DEBUGD_BINARY                    ?= $(BASE_PATH)/../build/debugd
 MEASUREMENT_READER_BINARY        ?= $(BASE_PATH)/../build/measurement-reader
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
+EXTRA_SEARCH_PATHS               ?=
 IMAGE_VERSION                    ?= v0.0.0
 DEBUG                            ?= false
 AUTOLOGIN                        ?= false
 AUTOLOGIN_ARGS                   := $(if $(filter true,$(AUTOLOGIN)),--autologin) # set "--autologin" if AUTOLOGIN is true
 KERNEL_DEBUG_CMDLNE              := $(if $(filter true,$(DEBUG)),constellation.debug) # set "constellation.debug" if DEBUG is true
+SEARCH_PATHS_PARAM               := $(if $(EXTRA_SEARCH_PATHS),--extra-search-path=$(EXTRA_SEARCH_PATHS))
 export INSTALL_DEBUGD            ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
@@ -27,6 +29,8 @@ PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPM
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 
 .PHONY: all clean inject-bins $(csps)
+
+.NOTPARALLEL: mkosi.output.%/fedora~37/image.raw clean-%
 
 all: $(csps)
 
@@ -50,18 +54,23 @@ prebuilt/rpms/azure/%.rpm:
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
 
-mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
-	mkosi --config mkosi.files/mkosi.$*.conf \
+mkosi.output.%/fedora~37/image.raw: inject-bins inject-certs
+	rm -rf .csp/
+	mkdir -p .csp/
+	touch .csp/$*
+	mkosi \
 		--image-version=$(IMAGE_VERSION) \
 		$(AUTOLOGIN_ARGS) \
 		--environment=INSTALL_DEBUGD \
 		--environment=CONSOLE_MOTD \
 		--kernel-command-line="$(KERNEL_DEBUG_CMDLNE)" \
+		$(SEARCH_PATHS_PARAM) \
 		build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \
 		chown -R $(SUDO_UID):$(SUDO_GID) mkosi.output.$*; \
 	fi
+	rm -rf .csp/
 	@echo "Image is ready: $@"
 
 inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
@@ -84,19 +93,16 @@ inject-certs: $(certs)
 	mkdir -p "$(MKOSI_EXTRA)/boot/loader/keys/auto"
 	cp $(PKI)/{PK,KEK,db}.cer "$(MKOSI_EXTRA)/boot/loader/keys/auto"
 	cp $(PKI)/{MicWinProPCA2011_2011-10-19,MicCorUEFCA2011_2011-06-27,MicCorKEKCA2011_2011-06-24}.crt "$(MKOSI_EXTRA)/boot/loader/keys/auto"
-	cp $(PKI)/{PK,KEK,db}.esl "$(MKOSI_EXTRA)/boot/loader/keys/auto"
-	cp $(PKI)/{PK,KEK,db}.auth "$(MKOSI_EXTRA)/boot/loader/keys/auto"
-	# for manual enrollment using sbkeysync
-	mkdir -p $(MKOSI_EXTRA)/etc/secureboot/keys/{db,dbx,KEK,PK}
-	cp $(PKI)/db.auth "$(MKOSI_EXTRA)/etc/secureboot/keys/db/"
-	cp $(PKI)/KEK.auth "$(MKOSI_EXTRA)/etc/secureboot/keys/KEK/"
-	cp $(PKI)/PK.auth "$(MKOSI_EXTRA)/etc/secureboot/keys/PK/"
 
 clean-cache:
 	rm -rf mkosi.cache/*
 
 clean-%:
-	mkosi --config mkosi.files/mkosi.$*.conf clean
+	rm -rf .csp/
+	mkdir -p .csp/
+	touch .csp/$*
+	mkosi clean
+	rm -rf .csp/
 
 clean:
 	rm -rf mkosi.output.*
