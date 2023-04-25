@@ -21,6 +21,7 @@ goarch() {
   case $(uname -m) in
   x86_64) echo 'amd64' ;;
   arm) echo 'arm64' ;; # this is slightly simplified, but we only care about arm64
+  arm64) echo 'arm64' ;;
   *)
     echo 'Unknown arch' >&2
     exit 1
