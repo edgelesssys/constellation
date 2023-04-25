@@ -39,7 +39,7 @@ for arch in "amd64" "arm64"; do
   for os in "linux" "darwin"; do
     echo "Building and uploading talos-docgen-${os}-${arch}"
     CGO_ENABLED="0" GOWORK="" GOOS="${os}" GOARCH="${arch}" go build -trimpath -ldflags="-buildid=" -o "talos-docgen-${os}-${arch}" .
-    sum=$(sha256sum "talos-docgen-${os}-${arch}" | cut -d ' ' -f1) && echo "Binary sha256sum: ${sum}"
+    sum=$(shasum -a 256 "talos-docgen-${os}-${arch}" | cut -d ' ' -f1) && echo "Binary sha256: ${sum}"
     file "talos-docgen-${os}-${arch}"
     aws s3 "${awsFlags[@]}" cp "./talos-docgen-${os}-${arch}" "${s3CASPath}/${sum}"
     echo

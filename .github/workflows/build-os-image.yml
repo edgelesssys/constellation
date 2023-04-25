@@ -117,10 +117,10 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: |
           {
-            echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
-            echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
-            echo "upgrade-agent-sha256=$(sha256sum upgrade-agent | head -c 64)"
-            echo "measurement-reader-sha256=$(sha256sum measurement-reader | head -c 64)"
+            echo "bootstrapper-sha256=$(shasum -a 256 bootstrapper | head -c 64)"
+            echo "disk-mapper-sha256=$(shasum -a 256 disk-mapper | head -c 64)"
+            echo "upgrade-agent-sha256=$(shasum -a 256 upgrade-agent | head -c 64)"
+            echo "measurement-reader-sha256=$(shasum -a 256 measurement-reader | head -c 64)"
           } | tee -a "$GITHUB_OUTPUT"
 
   build-settings:
@@ -322,14 +322,14 @@ jobs:
         working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
         run: |
           {
-            echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)"
-            echo "image-efi-${{ matrix.csp }}-sha256=$(sha256sum image.efi | head -c 64)"
-            echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.esp.raw | head -c 64)"
-            echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
-            echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
-            echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
-            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.changelog | head -c 64)"
-            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.manifest | head -c 64)"
+            echo "image-raw-${{ matrix.csp }}-sha256=$(shasum -a 256 image.raw | head -c 64)"
+            echo "image-efi-${{ matrix.csp }}-sha256=$(shasum -a 256 image.efi | head -c 64)"
+            echo "image-initrd-${{ matrix.csp }}-sha256=$(shasum -a 256 image.esp.raw | head -c 64)"
+            echo "image-root-raw-${{ matrix.csp }}-sha256=$(shasum -a 256 image.root-x86-64.raw | head -c 64)"
+            echo "image-root-verity-${{ matrix.csp }}-sha256=$(shasum -a 256 image.root-x86-64-verity.raw | head -c 64)"
+            echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(shasum -a 256 image.vmlinuz | head -c 64)"
+            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(shasum -a 256 image.raw.changelog | head -c 64)"
+            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(shasum -a 256 image.raw.manifest | head -c 64)"
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Upload raw OS image as artifact
