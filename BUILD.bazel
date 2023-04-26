@@ -23,12 +23,7 @@ alias(
 
 alias(
     name = "devbuild",
-    actual = "//bazel/devbuild:devbuild",
-)
-
-alias(
-    name = "push",
-    actual = "//bazel/release:push",
+    actual = "//bazel/release:build_and_push",
 )
 
 # These magic Gazelle commands need to be in the top-level BUILD file.

@@ -24,17 +24,11 @@ def stamp_tags(name, repotags, **kwargs):
 def _oci_go_source_impl(ctx):
     oci = ctx.file.oci
     inputs = [oci]
-    if ctx.attr.tag_file:
-        inputs.append(ctx.file.tag_file)
+    if ctx.attr.repotag_file:
+        inputs.append(ctx.file.repotag_file)
     output = ctx.actions.declare_file(ctx.label.name + ".go")
     args = [
         "codegen",
-        "--image-registry",
-        ctx.attr.registry,
-        "--image-prefix",
-        ctx.attr.prefix,
-        "--image-name",
-        ctx.attr.image_name,
         "--oci-path",
         oci.path,
         "--package",
@@ -47,9 +41,9 @@ def _oci_go_source_impl(ctx):
     if ctx.attr.tag:
         args.append("--image-tag")
         args.append(ctx.attr.tag)
-    if ctx.attr.tag_file:
-        args.append("--image-tag-file")
-        args.append(ctx.file.tag_file.path)
+    if ctx.attr.repotag_file:
+        args.append("--repoimage-tag-file")
+        args.append(ctx.file.repotag_file.path)
 
     ctx.actions.run(
         inputs = inputs,
@@ -82,17 +76,10 @@ _go_source_attrs = {
         mandatory = True,
         doc = "Package to use for the generated Go source.",
     ),
-    "prefix": attr.string(
-        doc = "Prefix to use for the generated Go source.",
-    ),
-    "registry": attr.string(
-        mandatory = True,
-        doc = "Registry to use for the generated Go source.",
-    ),
     "tag": attr.string(
         doc = "OCI image tag to use for the generated Go source.",
     ),
-    "tag_file": attr.label(
+    "repotag_file": attr.label(
         allow_single_file = True,
         doc = "OCI image tag file to use for the generated Go source.",
     ),
@@ -112,29 +99,19 @@ oci_go_source = rule(
 def _oci_sum_impl(ctx):
     oci = ctx.file.oci
     inputs = [oci]
-    if ctx.attr.tag_file:
-        inputs.append(ctx.file.tag_file)
+    if ctx.attr.repotag_file:
+        inputs.append(ctx.file.repotag_file)
     output = ctx.actions.declare_file(ctx.label.name + ".sha256")
     args = [
         "sum",
-        "--image-name",
-        ctx.attr.image_name,
         "--oci-path",
         oci.path,
         "--output",
         output.path,
-        "--registry",
-        ctx.attr.registry,
     ]
-    if ctx.attr.prefix:
-        args.append("--prefix")
-        args.append(ctx.attr.prefix)
-    if ctx.attr.tag:
-        args.append("--image-tag")
-        args.append(ctx.attr.tag)
-    if ctx.attr.tag_file:
-        args.append("--image-tag-file")
-        args.append(ctx.file.tag_file.path)
+    if ctx.attr.repotag_file:
+        args.append("--repoimage-tag-file")
+        args.append(ctx.file.repotag_file.path)
 
     ctx.actions.run(
         inputs = inputs,
@@ -159,17 +136,7 @@ _sum_attrs = {
         allow_single_file = True,
         doc = "OCI image to extract the digest from.",
     ),
-    "prefix": attr.string(
-        doc = "Prefix to use for the sum entry.",
-    ),
-    "registry": attr.string(
-        mandatory = True,
-        doc = "Registry to use for the sum entry.",
-    ),
-    "tag": attr.string(
-        doc = "OCI image tag to use for the sum entry.",
-    ),
-    "tag_file": attr.label(
+    "repotag_file": attr.label(
         allow_single_file = True,
         doc = "OCI image tag file to use for the sum entry.",
     ),

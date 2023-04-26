@@ -24,9 +24,7 @@ go_library(
         image_name = container["image_name"],
         oci = container["oci"],
         package = "imageversion",
-        prefix = container["prefix"],
-        registry = container["registry"],
-        tag_file = container["tag_file"],
+        repotag_file = container["repotag_file"],
         visibility = ["//:__subpackages__"],
     )
     for container in config_containers()
