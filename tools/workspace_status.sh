@@ -21,6 +21,7 @@ goarch() {
   case $(uname -m) in
   x86_64) echo 'amd64' ;;
   arm) echo 'arm64' ;; # this is slightly simplified, but we only care about arm64
+  arm64) echo 'arm64' ;;
   *)
     echo 'Unknown arch' >&2
     exit 1
@@ -33,7 +34,7 @@ ensure_pseudo_version_tool() {
     get_pseudo_version_tool
   fi
   expected=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
-  if ! sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version"); then
+  if ! shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version"); then
     get_pseudo_version_tool
   fi
 }
