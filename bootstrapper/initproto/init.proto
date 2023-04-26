@@ -29,7 +29,8 @@ message InitRequest {
 message InitResponse {
   oneof kind {
     InitSuccessResponse init_success = 1;
-    LogResponseType log = 2;
+    InitFailureResponse init_failure = 2;
+    LogResponseType log = 3;
   }
 }
 
@@ -38,6 +39,8 @@ message InitSuccessResponse {
   bytes owner_id = 2;
   bytes cluster_id = 3;
 }
+
+message InitFailureResponse { string error = 1; }
 
 message LogResponseType { bytes log = 1; }
 
