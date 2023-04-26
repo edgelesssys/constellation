@@ -116,7 +116,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
+	tfClient, err := terraform.New(ctx, constants.TerraformUpgradeWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
