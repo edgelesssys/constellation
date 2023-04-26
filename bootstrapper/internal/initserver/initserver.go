@@ -18,6 +18,7 @@ If a call from the CLI is received, the InitServer bootstraps the Kubernetes clu
 package initserver
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -136,27 +137,59 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.kmsURI = req.KmsUri
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "invalid init secret %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "invalid init secret %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return fmt.Errorf("creating kms client: %w", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: fmt.Errorf("creating kms client: %w", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	// generate values for cluster attestation
 	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "deriving measurement values: %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "deriving measurement values: %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "locking node: %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "locking node: %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 	if !nodeLockAcquired {
 		// The join client seems to already have a connection to an
@@ -165,8 +198,17 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		//
 		// The server stops itself after the current call is done.
 		log.Warnf("Node is already in a join process")
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Error(codes.FailedPrecondition, "node is already being activated")
+
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Error(codes.FailedPrecondition, "node is already being activated").Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	// Stop the join client -> We no longer expect to join an existing cluster,
@@ -175,8 +217,16 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.cleaner.Clean()
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "setting up disk: %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "setting up disk: %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	state := nodestate.NodeState{
@@ -184,8 +234,16 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		MeasurementSalt: measurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "persisting node state: %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "persisting node state: %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	clusterName := req.ClusterName
@@ -204,8 +262,16 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		s.log,
 	)
 	if err != nil {
-		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
-		return status.Errorf(codes.Internal, "initializing cluster: %s", err)
+		// send back the error
+		stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_InitFailure{
+				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "initializing cluster: %s", err).Error()},
+			},
+		})
+		if e := s.sendLogs(stream); e != nil {
+			err = e
+		}
+		return err
 	}
 
 	log.Infof("Init succeeded")
@@ -218,6 +284,42 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 
 	stream.Send(&initproto.InitResponse{Kind: successMessage})
+
+	return nil
+}
+
+func (s *Server) sendLogs(stream initproto.API_InitServer) error {
+	logPipe, err := s.journaldCollector.Start()
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)
+	}
+
+	reader := bufio.NewReader(logPipe)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := io.ReadFull(reader, buffer)
+		buffer = buffer[:n] // cap the buffer so that we don't have a bunch of nullbytes at the end
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if err != io.ErrUnexpectedEOF {
+				return status.Errorf(codes.Internal, "failed to read from pipe: %s", err)
+			}
+		}
+
+		err = stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_Log{
+				Log: &initproto.LogResponseType{
+					Log: buffer,
+				},
+			},
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
+		}
+	}
 
 	return nil
 }
