@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -286,7 +287,7 @@ func (c *Client) upgradeRelease(
 			return fmt.Errorf("loading values: %w", err)
 		}
 
-		if err := c.applyMigrations(releaseName, values, conf); err != nil {
+		if err := c.applyMigrations(ctx, releaseName, values, conf); err != nil {
 			return fmt.Errorf("applying migrations: %w", err)
 		}
 	default:
@@ -309,7 +310,7 @@ func (c *Client) upgradeRelease(
 // applyMigrations checks the from version and applies the necessary migrations.
 // The function assumes the caller has verified that our version drift restriction is not violated,
 // Currently, this is done during config validation.
-func (c *Client) applyMigrations(releaseName string, values map[string]any, conf *config.Config) error {
+func (c *Client) applyMigrations(ctx context.Context, releaseName string, values map[string]any, conf *config.Config) error {
 	current, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting %s version: %w", releaseName, err)
@@ -320,7 +321,7 @@ func (c *Client) applyMigrations(releaseName string, values map[string]any, conf
 	}
 
 	if currentV.Major == 2 && currentV.Minor == 7 {
-		return migrateFrom2_7(values, conf)
+		return migrateFrom2_7(ctx, values, conf, c.kubectl)
 	}
 
 	return nil
@@ -330,8 +331,25 @@ func (c *Client) applyMigrations(releaseName string, values map[string]any, conf
 // migrateFrom2_7 should be applied for v2.7.x --> v2.8.x.
 // migrateFrom2_7 should NOT be applied for v2.8.0 --> v2.8.x.
 // Remove after release of v2.8.0.
-func migrateFrom2_7(values map[string]any, conf *config.Config) error {
+func migrateFrom2_7(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
+	if conf.GetProvider() == cloudprovider.GCP {
+		if err := updateGCPStorageClass(ctx, kubeclient); err != nil {
+			return fmt.Errorf("applying migration for GCP storage class: %w", err)
+		}
+	}
+
 	return updateJoinConfig(values, conf)
+}
+
+func updateGCPStorageClass(ctx context.Context, kubeclient crdClient) error {
+	// v2.8 updates the disk type of GCP default storage class
+	// This value is not updatable in Kubernetes, but we can use a workaround to update it:
+	// First, we delete the storage class, then we upgrade the chart,
+	// which will recreate the storage class with the new disk type.
+	if err := kubeclient.DeleteStorageClass(ctx, "encrypted-rwo"); err != nil {
+		return fmt.Errorf("deleting storage class for update: %w", err)
+	}
+	return nil
 }
 
 func updateJoinConfig(values map[string]any, conf *config.Config) error {
@@ -407,6 +425,7 @@ type crdClient interface {
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
 	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
 	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
+	DeleteStorageClass(ctx context.Context, name string) error // TODO: remove with v2.9
 }
 
 type actionWrapper interface {

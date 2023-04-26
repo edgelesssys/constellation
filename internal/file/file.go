@@ -120,7 +120,7 @@ func (h *Handler) WriteJSON(name string, content any, options ...Option) error {
 }
 
 // ReadYAML reads a YAML file from name and unmarshals it into the content interface.
-// The interface content must be a pointer to a YAML marchalable object.
+// The interface content must be a pointer to a YAML marshalable object.
 func (h *Handler) ReadYAML(name string, content any) error {
 	return h.readYAML(name, content, false)
 }
