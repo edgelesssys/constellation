@@ -121,6 +121,7 @@ type fakeAPI struct {
 	initproto.UnimplementedAPIServer
 }
 
-func (f *fakeAPI) Init(_ context.Context, _ *initproto.InitRequest) (*initproto.InitResponse, error) {
-	return &initproto.InitResponse{}, nil
+func (f *fakeAPI) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
+	stream.Send(&initproto.InitResponse{})
+	return nil
 }
