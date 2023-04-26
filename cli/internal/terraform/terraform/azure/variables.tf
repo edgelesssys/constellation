@@ -63,12 +63,6 @@ variable "secure_boot" {
   description = "Whether to deploy the cluster nodes with secure boot."
 }
 
-variable "create_maa" {
-  type        = bool
-  default     = false
-  description = "Whether to create a Microsoft Azure attestation provider."
-}
-
 variable "debug" {
   type        = bool
   default     = false

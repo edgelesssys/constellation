@@ -235,11 +235,9 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		return clusterid.File{}, err
 	}
 
-	if vars.CreateMAA {
-		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
-			return clusterid.File{}, err
-		}
+	// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
+	if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
+		return clusterid.File{}, err
 	}
 
 	return clusterid.File{

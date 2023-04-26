@@ -175,8 +175,6 @@ type AzureClusterVariables struct {
 	ConfidentialVM bool
 	// SecureBoot sets the VM to use secure boot.
 	SecureBoot bool
-	// CreateMAA sets whether a Microsoft Azure attestation provider should be created.
-	CreateMAA bool
 	// Debug is true if debug mode is enabled.
 	Debug bool
 }
@@ -193,7 +191,6 @@ func (v *AzureClusterVariables) String() string {
 	writeLinef(b, "image_id = %q", v.ImageID)
 	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
 	writeLinef(b, "secure_boot = %t", v.SecureBoot)
-	writeLinef(b, "create_maa = %t", v.CreateMAA)
 	writeLinef(b, "debug = %t", v.Debug)
 
 	return b.String()
