@@ -189,8 +189,7 @@ constellation config migrate [flags]
 ### Options
 
 ```
-  -f, --file string   path to output file, or '-' for stdout (default "constellation-conf.yaml")
-  -h, --help          help for migrate
+  -h, --help   help for migrate
 ```
 
 ### Options inherited from parent commands

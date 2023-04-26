@@ -11,7 +11,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/config/migration"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -25,8 +24,6 @@ func newConfigMigrateCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  runConfigMigrate,
 	}
-	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
-
 	return cmd
 }
 
