@@ -20,7 +20,7 @@ get_initrd_from_uki() {
 
 initrd_measure() {
   local path="$1"
-  sha256sum "${path}" | cut -d " " -f 1
+  shasum -a 256 "${path}" | cut -d " " -f 1
 }
 
 write_output() {

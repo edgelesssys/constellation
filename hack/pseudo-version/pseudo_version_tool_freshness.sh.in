@@ -31,7 +31,7 @@ platforms=(
 )
 
 for platform in "${platforms[@]}"; do
-  computed_hash=$(sha256sum "${pseudo_version_tools[$platform]}" | cut -d' ' -f1)
+  computed_hash=$(shasum -a 256 "${pseudo_version_tools[$platform]}" | cut -d' ' -f1)
   # compare hash to saved hash in ${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256
   saved_hash=$(cat "${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256")
   if [[ ${computed_hash} != "${saved_hash}" ]]; then

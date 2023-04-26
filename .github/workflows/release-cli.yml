@@ -135,7 +135,7 @@ jobs:
       - name: Generate provenance subjects
         id: provenance-subjects
         run: |
-          HASHES=$(sha256sum \
+          HASHES=$(shasum -a 256 \
             constellation-darwin-amd64 \
             constellation-darwin-arm64 \
             constellation-linux-amd64 \
