@@ -13,7 +13,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -480,6 +482,72 @@ func TestUpdateK8s(t *testing.T) {
 	}
 }
 
+func TestPlanTerraformMigrations(t *testing.T) {
+	someErr := errors.New("some error")
+	upgrader := func(tf terraformUpgrader) *Upgrader {
+		return &Upgrader{
+			tf:  tf,
+			log: logger.NewTest(t),
+		}
+	}
+
+	testCases := map[string]struct {
+		tf      terraformUpgrader
+		want    bool
+		wantErr bool
+	}{
+		"success no diff": {
+			tf: &stubTerraformUpgrader{},
+		},
+		"success diff": {
+			tf: &stubTerraformUpgrader{
+				hasDiff: true,
+			},
+			want: true,
+		},
+		"prepare workspace error": {
+			tf: &stubTerraformUpgrader{
+				prepareWorkspaceErr: someErr,
+			},
+			wantErr: true,
+		},
+		"plan error": {
+			tf: &stubTerraformUpgrader{
+				planErr: someErr,
+			},
+			wantErr: true,
+		},
+		"show plan error no diff": {
+			tf: &stubTerraformUpgrader{
+				showErr: someErr,
+			},
+		},
+		"show plan error diff": {
+			tf: &stubTerraformUpgrader{
+				showErr: someErr,
+				hasDiff: true,
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			u := upgrader(tc.tf)
+
+			diff, err := u.PlanTerraformMigrations(context.Background(), terraform.LogLevelDebug, cloudprovider.Unknown)
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+				require.Equal(tc.want, diff)
+			}
+		})
+	}
+}
+
 func newJoinConfigMap(data string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -552,4 +620,28 @@ type stubImageFetcher struct {
 
 func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
 	return f.reference, f.fetchReferenceErr
+}
+
+type stubTerraformUpgrader struct {
+	hasDiff             bool
+	prepareWorkspaceErr error
+	showErr             error
+	planErr             error
+	CreateClusterErr    error
+}
+
+func (u *stubTerraformUpgrader) PrepareUpgradeWorkspace(string, string, string) error {
+	return u.prepareWorkspaceErr
+}
+
+func (u *stubTerraformUpgrader) ShowPlan(context.Context, terraform.LogLevel, string, io.Writer) error {
+	return u.showErr
+}
+
+func (u *stubTerraformUpgrader) Plan(context.Context, terraform.LogLevel, string) (bool, error) {
+	return u.hasDiff, u.planErr
+}
+
+func (u *stubTerraformUpgrader) CreateCluster(context.Context, terraform.LogLevel) (terraform.CreateOutput, error) {
+	return terraform.CreateOutput{}, u.CreateClusterErr
 }
