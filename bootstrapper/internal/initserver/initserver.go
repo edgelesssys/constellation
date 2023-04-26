@@ -18,11 +18,7 @@ If a call from the CLI is received, the InitServer bootstraps the Kubernetes clu
 package initserver
 
 import (
-	"bufio"
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"net"
@@ -41,7 +37,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/kms/kms"
 	kmssetup "github.com/edgelesssys/constellation/v2/internal/kms/setup"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -130,7 +125,7 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 }
 
 // Init initializes the cluster.
-func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *initproto.InitResponse, err error) {
+func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (err error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
 	defer func() {
@@ -139,29 +134,33 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 		}
 	}()
 
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
 	log.Infof("Init called")
 
 	s.kmsURI = req.KmsUri
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "invalid init secret %s", err)
 	}
 
-	cloudKms, err := kmssetup.KMS(ctx, req.StorageUri, req.KmsUri)
+	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
-		return nil, fmt.Errorf("creating kms client: %w", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return fmt.Errorf("creating kms client: %w", err)
 	}
 
 	// generate values for cluster attestation
-	measurementSalt, clusterID, err := deriveMeasurementValues(ctx, cloudKms)
+	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "deriving measurement values: %s", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "deriving measurement values: %s", err)
 	}
 
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "locking node: %s", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "locking node: %s", err)
 	}
 	if !nodeLockAcquired {
 		// The join client seems to already have a connection to an
@@ -170,7 +169,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 		//
 		// The server stops itself after the current call is done.
 		log.Warnf("Node is already in a join process")
-		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
 
 	// Stop the join client -> We no longer expect to join an existing cluster,
@@ -178,8 +178,9 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 	// Any errors following this call will result in a failed node that may not join any cluster.
 	s.cleaner.Clean()
 
-	if err := s.setupDisk(ctx, cloudKms); err != nil {
-		return nil, status.Errorf(codes.Internal, "setting up disk: %s", err)
+	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "setting up disk: %s", err)
 	}
 
 	state := nodestate.NodeState{
@@ -187,7 +188,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 		MeasurementSalt: measurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
-		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "persisting node state: %s", err)
 	}
 
 	clusterName := req.ClusterName
@@ -195,7 +197,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 		clusterName = "constellation"
 	}
 
-	kubeconfig, err := s.initializer.InitCluster(ctx,
+	kubeconfig, err := s.initializer.InitCluster(stream.Context(),
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		clusterName,
@@ -206,86 +208,93 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (resp *in
 		s.log,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "initializing cluster: %s", err)
+		stream.Send(&initproto.InitResponse{Kind: &initproto.InitResponse_Log{}})
+		return status.Errorf(codes.Internal, "initializing cluster: %s", err)
 	}
 
 	log.Infof("Init succeeded")
 
-	return &initproto.InitResponse{
-		Kubeconfig: kubeconfig,
-		ClusterId:  clusterID,
-	}, nil
-}
-
-// GetLogs gets and streams the requested systemd logs.
-func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogsServer) error {
-	s.shutdownLock.TryRLock() // try to lock the process if a call comes in
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
-	log.Infof("GetLogs called")
-
-	log.Infof("Validating the init secret...")
-	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		return status.Errorf(codes.Internal, "invalid init secret: %s", err)
+	successMessage := &initproto.InitResponse_InitSuccess{
+		InitSuccess: &initproto.InitSuccessResponse{
+			Kubeconfig: kubeconfig,
+			ClusterId:  clusterID,
+		},
 	}
 
-	logPipe, err := s.journaldCollector.Start()
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)
-	}
+	stream.Send(&initproto.InitResponse{Kind: successMessage})
 
-	// decode the master secret
-	cfg, err := uri.DecodeMasterSecretFromURI(s.kmsURI)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed decoding the master secret: %s", err)
-	}
-
-	log.Infof("Deriving a key from the master secret...")
-	key, err := crypto.DeriveKey(cfg.Key, cfg.Salt, nil, 16) // 16 byte = 128 bit
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed deriving a key from the master secret: %s", err)
-	}
-
-	// set up AES-128 in GCM mode and encrypt the logs
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed creating a cipher: %s", err)
-	}
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed creating a GCM cipher: %s", err)
-	}
-
-	reader := bufio.NewReader(logPipe)
-	buffer := make([]byte, 1024)
-
-	for {
-		n, err := io.ReadFull(reader, buffer)
-		buffer = buffer[:n] // cap the buffer so that we don't have a bunch of nullbytes at the end
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			if err != io.ErrUnexpectedEOF {
-				return status.Errorf(codes.Internal, "failed to read from pipe: %s", err)
-			}
-		}
-
-		nonce := make([]byte, aesgcm.NonceSize())
-		if _, err := rand.Read(nonce); err != nil {
-			return status.Errorf(codes.Internal, "failed generating a nonce: %s", err)
-		}
-		encLogChunk := aesgcm.Seal(nil, nonce, buffer, nil)
-
-		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
-		}
-	}
-
-	log.Infof("GetLogs finished")
-	s.shutdownLock.RUnlock() // gracefully stop the bootstrapper
 	return nil
 }
+
+// // GetLogs gets and streams the requested systemd logs.
+// func (s *Server) GetLogs(req *initproto.LogRequest, stream initproto.API_GetLogsServer) error {
+// 	s.shutdownLock.TryRLock() // try to lock the process if a call comes in
+// 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
+// 	log.Infof("GetLogs called")
+
+// 	log.Infof("Validating the init secret...")
+// 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
+// 		return status.Errorf(codes.Internal, "invalid init secret: %s", err)
+// 	}
+
+// 	logPipe, err := s.journaldCollector.Start()
+// 	if err != nil {
+// 		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)
+// 	}
+
+// 	// decode the master secret
+// 	cfg, err := uri.DecodeMasterSecretFromURI(s.kmsURI)
+// 	if err != nil {
+// 		return status.Errorf(codes.Internal, "failed decoding the master secret: %s", err)
+// 	}
+
+// 	log.Infof("Deriving a key from the master secret...")
+// 	key, err := crypto.DeriveKey(cfg.Key, cfg.Salt, nil, 16) // 16 byte = 128 bit
+// 	if err != nil {
+// 		return status.Errorf(codes.Internal, "failed deriving a key from the master secret: %s", err)
+// 	}
+
+// 	// set up AES-128 in GCM mode and encrypt the logs
+// 	block, err := aes.NewCipher(key)
+// 	if err != nil {
+// 		return status.Errorf(codes.Internal, "failed creating a cipher: %s", err)
+// 	}
+// 	aesgcm, err := cipher.NewGCM(block)
+// 	if err != nil {
+// 		return status.Errorf(codes.Internal, "failed creating a GCM cipher: %s", err)
+// 	}
+
+// 	reader := bufio.NewReader(logPipe)
+// 	buffer := make([]byte, 1024)
+
+// 	for {
+// 		n, err := io.ReadFull(reader, buffer)
+// 		buffer = buffer[:n] // cap the buffer so that we don't have a bunch of nullbytes at the end
+// 		if err != nil {
+// 			if err == io.EOF {
+// 				break
+// 			}
+// 			if err != io.ErrUnexpectedEOF {
+// 				return status.Errorf(codes.Internal, "failed to read from pipe: %s", err)
+// 			}
+// 		}
+
+// 		nonce := make([]byte, aesgcm.NonceSize())
+// 		if _, err := rand.Read(nonce); err != nil {
+// 			return status.Errorf(codes.Internal, "failed generating a nonce: %s", err)
+// 		}
+// 		encLogChunk := aesgcm.Seal(nil, nonce, buffer, nil)
+
+// 		err = stream.Send(&initproto.LogResponse{Nonce: nonce, Log: encLogChunk})
+// 		if err != nil {
+// 			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
+// 		}
+// 	}
+
+// 	log.Infof("GetLogs finished")
+// 	s.shutdownLock.RUnlock() // gracefully stop the bootstrapper
+// 	return nil
+// }
 
 // Stop stops the initialization server gracefully.
 func (s *Server) Stop() {
