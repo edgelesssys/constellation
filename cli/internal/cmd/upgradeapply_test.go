@@ -65,6 +65,7 @@ func TestUpgradeApply(t *testing.T) {
 			cmd := newUpgradeApplyCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("tf-log", "DEBUG", "")                  // register persistent flag manually
 
 			err := cmd.Flags().Set("yes", "true")
 			require.NoError(err)
