@@ -128,11 +128,7 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (err error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
-	defer func() {
-		if err == nil {
-			s.shutdownLock.RUnlock()
-		}
-	}()
+	defer s.shutdownLock.RUnlock()
 
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
 	log.Infof("Init called")
