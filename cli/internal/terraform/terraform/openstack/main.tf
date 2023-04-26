@@ -169,6 +169,7 @@ module "instance_group_control_plane" {
   tags                       = local.tags
   uid                        = local.uid
   disk_size                  = var.state_disk_size
+  state_disk_type            = var.state_disk_type
   availability_zone          = var.availability_zone
   network_id                 = openstack_networking_network_v2.vpc_network.id
   init_secret_hash           = local.initSecretHash
@@ -189,6 +190,7 @@ module "instance_group_worker" {
   uid                        = local.uid
   security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
   disk_size                  = var.state_disk_size
+  state_disk_type            = var.state_disk_type
   availability_zone          = var.availability_zone
   network_id                 = openstack_networking_network_v2.vpc_network.id
   init_secret_hash           = local.initSecretHash

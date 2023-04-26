@@ -44,6 +44,7 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     source_type           = "blank"
     destination_type      = "volume"
     volume_size           = var.disk_size
+    volume_type           = var.state_disk_type
     boot_index            = 1
     delete_on_termination = true
   }
