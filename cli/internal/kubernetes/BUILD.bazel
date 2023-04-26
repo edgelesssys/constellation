@@ -13,7 +13,9 @@ go_library(
     deps = [
         "//cli/internal/helm",
         "//cli/internal/image",
+        "//cli/internal/terraform",
         "//internal/attestation/measurements",
+        "//internal/cloud/cloudprovider",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",

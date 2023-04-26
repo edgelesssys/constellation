@@ -152,7 +152,7 @@ const (
 	TerraformUpgradePlanFile = "plan.zip"
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an update.
 	TerraformUpgradeWorkingDir = "constellation-upgrade-terraform"
-	
+
 	//
 	// Kubernetes.
 	//
