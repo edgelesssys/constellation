@@ -1,6 +1,14 @@
 # Configuration migrations
 
 This document describes breaking changes in the configuration file format between Constellation releases.
+Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to automatically update an old config file to a new format.
+
+## Migrating from CLI versions before 2.8
+
+- The `measurements` field for each cloud service provider was replaced with a global `attestation` field.
+- The `confidentialVM`, `idKeyDigest`, and `enforceIdKeyDigest` fields for the Azure cloud service provider were removed in favor of using the global `attestation` field.
+- The optional global field `attestationVariant` was replaced by the now required `attestation` field.
+
 
 ## Migrating from CLI versions before 2.3
 
