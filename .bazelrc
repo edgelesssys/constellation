@@ -55,4 +55,4 @@ build:remote_cache --experimental_remote_cache_compression
 build:remote_cache --nolegacy_important_outputs
 build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
 
-try-import .bazeloverwriterc
+try-import %workspace%/.bazeloverwriterc
