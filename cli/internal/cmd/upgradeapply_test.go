@@ -91,7 +91,6 @@ type stubUpgrader struct {
 	nodeVersionErr   error
 	helmErr          error
 	planTerraformErr error
-	showTerraformErr error
 }
 
 func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) error {
@@ -110,6 +109,6 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error) {
+func (u stubUpgrader) PlanTerraformMigrations(context.Context, terraform.LogLevel, cloudprovider.Provider) (bool, error) {
 	return false, u.planTerraformErr
 }
