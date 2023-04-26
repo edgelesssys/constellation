@@ -54,7 +54,7 @@ func TestInitialize(t *testing.T) {
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
 		Type: "service_account",
 	}
-	testInitResp := &initproto.InitResponse{
+	testInitResp := &initproto.InitSuccessResponse{
 		Kubeconfig: []byte("kubeconfig"),
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
@@ -77,17 +77,17 @@ func TestInitialize(t *testing.T) {
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
@@ -119,7 +119,7 @@ func TestInitialize(t *testing.T) {
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 			configMutator: func(c *config.Config) { c.KubernetesVersion = strings.TrimPrefix(string(versions.Default), "v") },
 		},
 	}
@@ -205,13 +205,17 @@ func TestWriteOutput(t *testing.T) {
 	require := require.New(t)
 
 	resp := &initproto.InitResponse{
-		OwnerId:    []byte("ownerID"),
-		ClusterId:  []byte("clusterID"),
-		Kubeconfig: []byte("kubeconfig"),
+		Kind: &initproto.InitResponse_InitSuccess{
+			InitSuccess: &initproto.InitSuccessResponse{
+				OwnerId:    []byte("ownerID"),
+				ClusterId:  []byte("clusterID"),
+				Kubeconfig: []byte("kubeconfig"),
+			},
+		},
 	}
 
-	ownerID := hex.EncodeToString(resp.OwnerId)
-	clusterID := hex.EncodeToString(resp.ClusterId)
+	ownerID := hex.EncodeToString(resp.GetInitSuccess().GetOwnerId())
+	clusterID := hex.EncodeToString(resp.GetInitSuccess().GetClusterId())
 
 	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,
@@ -241,7 +245,7 @@ func TestWriteOutput(t *testing.T) {
 	afs := afero.Afero{Fs: testFs}
 	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
-	assert.Equal(string(resp.Kubeconfig), string(adminConf))
+	assert.Equal(string(resp.GetInitSuccess().GetKubeconfig()), string(adminConf))
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)
@@ -389,10 +393,14 @@ func TestAttestation(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	initServerAPI := &stubInitServer{initResp: &initproto.InitResponse{
-		Kubeconfig: []byte("kubeconfig"),
-		OwnerId:    []byte("ownerID"),
-		ClusterId:  []byte("clusterID"),
+	initServerAPI := &stubInitServer{res: &initproto.InitResponse{
+		Kind: &initproto.InitResponse_InitSuccess{
+			InitSuccess: &initproto.InitSuccessResponse{
+				Kubeconfig: []byte("kubeconfig"),
+				OwnerId:    []byte("ownerID"),
+				ClusterId:  []byte("clusterID"),
+			},
+		},
 	}}
 	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
 
@@ -499,14 +507,15 @@ func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte
 }
 
 type stubInitServer struct {
-	initResp *initproto.InitResponse
-	initErr  error
+	res     *initproto.InitResponse
+	initErr error
 
 	initproto.UnimplementedAPIServer
 }
 
-func (s *stubInitServer) Init(_ context.Context, _ *initproto.InitRequest) (*initproto.InitResponse, error) {
-	return s.initResp, s.initErr
+func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
+	stream.Send(s.res)
+	return s.initErr
 }
 
 type stubMerger struct {

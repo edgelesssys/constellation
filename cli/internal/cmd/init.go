@@ -259,7 +259,19 @@ func (d *initDoer) Do(ctx context.Context) error {
 	if err != nil {
 		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
 	}
-	d.resp = resp
+
+	for {
+		res, err := resp.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return &nonRetriableError{err}
+		}
+
+		d.resp = res // currently doesnt work for log streaming
+	}
+
 	return nil
 }
 
@@ -284,13 +296,15 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, resp *initproto.InitResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
+	idFile clusterid.File, initResp *initproto.InitResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	ownerID := hex.EncodeToString(resp.OwnerId)
+	resp := initResp.GetInitSuccess()
+
+	ownerID := hex.EncodeToString(resp.GetOwnerId())
 	// i.log.Debugf("Owner id is %s", ownerID)
-	clusterID := hex.EncodeToString(resp.ClusterId)
+	clusterID := hex.EncodeToString(resp.GetClusterId())
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
@@ -299,7 +313,7 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.AdminConfFilename, resp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
