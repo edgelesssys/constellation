@@ -49,7 +49,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	go.uber.org/goleak v1.2.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 	golang.org/x/mod v0.10.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	libvirt.org/go/libvirt v1.8010.0
