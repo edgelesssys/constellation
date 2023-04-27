@@ -32,10 +32,6 @@ cd build
 # After the first run, set the pushed imaged to public.
 bazel run //:devbuild --container_prefix=ghcr.io/USERNAME/constellation
 ./constellation ...
-# modify code
-# rerun to ensure that all binaries are up to date
-bazel run //:devbuild
-./constellation ...
 ```
 
 Overwrite the default container_prefix in the `.bazeloverwriterc` in the root of the workspace:
