@@ -95,9 +95,15 @@ func main() {
 	default:
 		if !strings.Contains(*base, "pre") {
 			// "v2.7.0" inside the version.txt will lead to "v2.7.0" as version
-			fmt.Println(*base)
+			// "2.7.0" inside the version.txt will lead to "2.7.0" as version
+			if *skipV {
+				fmt.Println(strings.TrimPrefix(*base, "v"))
+			} else {
+				fmt.Println(*base)
+			}
 		} else {
-			// "2.7.0-pre" inside the version.txt will lead to "v2.7.0-pre.0.20230313121936-bab76e8a9acf" as version
+			// "v2.7.0-pre" inside the version.txt will lead to "v2.7.0-pre.0.20230313121936-bab76e8a9acf" as version
+			// "2.7.0-pre" inside the version.txt will lead to "v0.0.0-20230313121936-bab76e8a9acf" as version
 			fmt.Println(version)
 		}
 	}
