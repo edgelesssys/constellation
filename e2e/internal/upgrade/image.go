@@ -28,7 +28,7 @@ import (
 type upgradeInfo struct {
 	measurements measurements.M
 	shortPath    string
-	wantImage    string
+	imageRef     string
 }
 
 func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage string) (upgradeInfo, error) {
@@ -61,7 +61,7 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 	}
 	info.measurements = fetchedMeasurements
 
-	wantImage, err := fetchWantImage(ctx, versionsClient, csp, versionsapi.ImageInfo{
+	imageRef, err := fetchImageRef(ctx, versionsClient, csp, versionsapi.ImageInfo{
 		Ref:     ver.Ref,
 		Stream:  ver.Stream,
 		Version: ver.Version,
@@ -69,7 +69,7 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 	if err != nil {
 		return upgradeInfo{}, err
 	}
-	info.wantImage = wantImage
+	info.imageRef = imageRef
 
 	return info, nil
 }
@@ -124,7 +124,7 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 	return content, nil
 }
 
-func fetchWantImage(ctx context.Context, client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
+func fetchImageRef(ctx context.Context, client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
 	imageInfo, err := client.FetchImageInfo(ctx, imageInfo)
 	if err != nil {
 		return "", err
