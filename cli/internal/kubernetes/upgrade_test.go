@@ -537,7 +537,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 
 			u := upgrader(tc.tf)
 
-			diff, err := u.PlanTerraformMigrations(context.Background(), terraform.LogLevelDebug, cloudprovider.Unknown)
+			diff, err := u.PlanTerraformMigrations(context.Background(), terraform.LogLevelDebug, cloudprovider.Unknown, &terraform.QEMUVariables{})
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -630,7 +630,7 @@ type stubTerraformUpgrader struct {
 	CreateClusterErr    error
 }
 
-func (u *stubTerraformUpgrader) PrepareUpgradeWorkspace(string, string, string) error {
+func (u *stubTerraformUpgrader) PrepareUpgradeWorkspace(string, string, string, terraform.Variables) error {
 	return u.prepareWorkspaceErr
 }
 

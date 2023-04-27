@@ -87,7 +87,7 @@ type Upgrader struct {
 
 // a terraformUpgrader performs the Terraform interactions in an upgrade.
 type terraformUpgrader interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string) error
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
@@ -135,8 +135,8 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 // PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error) {
-	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(csp.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir)
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables) (bool, error) {
+	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(csp.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir, vars)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}

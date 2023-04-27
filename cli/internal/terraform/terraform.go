@@ -79,7 +79,7 @@ func (c *Client) Show(ctx context.Context) (*tfjson.State, error) {
 // PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
 func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
-		return err
+		return fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	return c.writeVars(vars)
@@ -87,8 +87,12 @@ func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 
 // PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
 // It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
-func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string) error {
-	return prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir)
+func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+
+	return c.writeVars(vars)
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
