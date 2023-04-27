@@ -26,6 +26,11 @@ variable "state_disk_size" {
   description = "The size of the state disk in GB."
 }
 
+variable "state_disk_type" {
+  type        = string
+  description = "Disk/volume type to be used."
+}
+
 variable "availability_zone" {
   type        = string
   description = "The availability zone to deploy the nodes in."

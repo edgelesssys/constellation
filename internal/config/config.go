@@ -226,6 +226,9 @@ type OpenStackConfig struct {
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
 	// description: |
+	//   Type of a node's state disk. The type influences boot time and I/O performance. Use `openstack volume type list` to get a list of available types.
+	StateDiskType string `yaml:"stateDiskType" validate:"required"`
+	// description: |
 	// AuthURL is the OpenStack Identity endpoint to use inside the cluster.
 	AuthURL string `yaml:"authURL" validate:"required"`
 	// description: |

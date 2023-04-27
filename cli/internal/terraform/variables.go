@@ -232,6 +232,8 @@ type OpenStackClusterVariables struct {
 	FlavorID string
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string
+	// StateDiskType is the OpenStack disk type to use for the state disk.
+	StateDiskType string
 	// ImageURL is the URL of the OpenStack image to use.
 	ImageURL string
 	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
@@ -258,6 +260,7 @@ func (v *OpenStackClusterVariables) String() string {
 	writeLinef(b, "floating_ip_pool_id = %q", v.FloatingIPPoolID)
 	writeLinef(b, "image_url = %q", v.ImageURL)
 	writeLinef(b, "direct_download = %t", v.DirectDownload)
+	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
 	writeLinef(b, "openstack_user_domain_name = %q", v.OpenstackUserDomainName)
 	writeLinef(b, "openstack_username = %q", v.OpenstackUsername)
 	writeLinef(b, "openstack_password = %q", v.OpenstackPassword)
