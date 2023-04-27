@@ -26,6 +26,9 @@ build --define=gotags=netgo
 # enable tpm simulator for tests
 test --//bazel/settings:tpm_simulator
 
+# set registry flag alias
+build --flag_alias=container_prefix=//bazel/settings:container_prefix
+
 # disable test caching (rerun all test cases even if they passed before)
 test --cache_test_results=no
 
@@ -52,4 +55,4 @@ build:remote_cache --experimental_remote_cache_compression
 build:remote_cache --nolegacy_important_outputs
 build:remote_cache_readonly --noremote_upload_local_results # Uploads logs & artifacts without writing to cache
 
-try-import .bazeloverwriterc
+try-import %workspace%/.bazeloverwriterc

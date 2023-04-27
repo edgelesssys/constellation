@@ -35,6 +35,12 @@ string_flag(
     ],
 )
 
+string_flag(
+    name = "container_prefix",
+    build_setting_default = "ghcr.io/edgelesssys/constellation",
+    visibility = ["//visibility:public"],
+)
+
 bool_flag(
     name = "select_never",
     build_setting_default = False,

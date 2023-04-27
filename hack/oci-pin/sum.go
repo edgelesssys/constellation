@@ -28,15 +28,10 @@ func newSumCmd() *cobra.Command {
 
 	cmd.Flags().String("oci-path", "", "Path to the OCI image to pin.")
 	cmd.Flags().String("output", "-", "Output file. If not set, the output is written to stdout.")
-	cmd.Flags().String("registry", "", "OCI registry to use.")
-	cmd.Flags().String("prefix", "", "Prefix of the OCI image to pin.")
 	cmd.Flags().String("image-name", "", "Short name (suffix) of the OCI image to pin.")
-	cmd.Flags().String("image-tag", "", "Tag of the OCI image to pin. Optional.")
-	cmd.Flags().String("image-tag-file", "", "Tag file of the OCI image to pin. Optional.")
-	cmd.MarkFlagsMutuallyExclusive("image-tag", "image-tag-file")
-	must(cmd.MarkFlagRequired("registry"))
+	cmd.Flags().String("repoimage-tag-file", "", "Tag file of the OCI image to pin.")
+	must(cmd.MarkFlagRequired("repoimage-tag-file"))
 	must(cmd.MarkFlagRequired("oci-path"))
-	must(cmd.MarkFlagRequired("image-name"))
 
 	return cmd
 }
@@ -49,7 +44,12 @@ func runSum(cmd *cobra.Command, _ []string) error {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	log.Debugf("Generating sum file for OCI image %s.", flags.imageName)
+	registry, prefix, name, tag, err := splitRepoTag(flags.imageRepoTag)
+	if err != nil {
+		return fmt.Errorf("splitting repo tag: %w", err)
+	}
+
+	log.Debugf("Generating sum file for OCI image %s.", name)
 
 	ociIndexPath := filepath.Join(flags.ociPath, "index.json")
 	index, err := os.Open(ociIndexPath)
@@ -79,10 +79,10 @@ func runSum(cmd *cobra.Command, _ []string) error {
 
 	refs := []sums.PinnedImageReference{
 		{
-			Registry: flags.registry,
-			Prefix:   flags.prefix,
-			Name:     flags.imageName,
-			Tag:      flags.imageTag,
+			Registry: registry,
+			Prefix:   prefix,
+			Name:     name,
+			Tag:      tag,
 			Digest:   digest,
 		},
 	}
@@ -96,13 +96,10 @@ func runSum(cmd *cobra.Command, _ []string) error {
 }
 
 type sumFlags struct {
-	ociPath   string
-	output    string
-	registry  string
-	prefix    string
-	imageName string
-	imageTag  string
-	logLevel  zapcore.Level
+	ociPath      string
+	output       string
+	imageRepoTag string
+	logLevel     zapcore.Level
 }
 
 func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
@@ -114,33 +111,17 @@ func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
 	if err != nil {
 		return sumFlags{}, err
 	}
-	registry, err := cmd.Flags().GetString("registry")
+
+	imageTagFile, err := cmd.Flags().GetString("repoimage-tag-file")
 	if err != nil {
 		return sumFlags{}, err
 	}
-	prefix, err := cmd.Flags().GetString("prefix")
+	tag, err := os.ReadFile(imageTagFile)
 	if err != nil {
-		return sumFlags{}, err
+		return sumFlags{}, fmt.Errorf("reading image repotag file %q: %w", imageTagFile, err)
 	}
-	imageName, err := cmd.Flags().GetString("image-name")
-	if err != nil {
-		return sumFlags{}, err
-	}
-	imageTag, err := cmd.Flags().GetString("image-tag")
-	if err != nil {
-		return sumFlags{}, err
-	}
-	imageTagFile, err := cmd.Flags().GetString("image-tag-file")
-	if err != nil {
-		return sumFlags{}, err
-	}
-	if imageTagFile != "" {
-		tag, err := os.ReadFile(imageTagFile)
-		if err != nil {
-			return sumFlags{}, fmt.Errorf("reading image tag file %q: %w", imageTagFile, err)
-		}
-		imageTag = strings.TrimSpace(string(tag))
-	}
+	imageRepoTag := strings.TrimSpace(string(tag))
+
 	verbose, err := cmd.Flags().GetBool("verbose")
 	if err != nil {
 		return sumFlags{}, err
@@ -151,12 +132,9 @@ func parseSumFlags(cmd *cobra.Command) (sumFlags, error) {
 	}
 
 	return sumFlags{
-		ociPath:   ociPath,
-		output:    output,
-		registry:  registry,
-		prefix:    prefix,
-		imageName: imageName,
-		imageTag:  imageTag,
-		logLevel:  logLevel,
+		ociPath:      ociPath,
+		output:       output,
+		imageRepoTag: imageRepoTag,
+		logLevel:     logLevel,
 	}, nil
 }

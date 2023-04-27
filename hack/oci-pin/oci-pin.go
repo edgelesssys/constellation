@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -82,4 +83,33 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func splitRepoTag(ref string) (registry, prefix, name, tag string, err error) {
+	// last colon is separator between name and tag
+	tagSep := strings.LastIndexByte(ref, ':')
+	if tagSep == -1 {
+		return "", "", "", "", fmt.Errorf("invalid OCI image reference %q: missing tag", ref)
+	}
+	tag = ref[tagSep+1:]
+	base := ref[:tagSep]
+
+	// first slash is separator between registry and full name
+	registrySep := strings.IndexByte(base, '/')
+	if registrySep == -1 {
+		return "", "", "", "", fmt.Errorf("invalid OCI image reference %q: missing registry", ref)
+	}
+
+	registry = base[:registrySep]
+	fullName := base[registrySep+1:]
+
+	// last slash is separator between prefix and short name
+	nameSep := strings.LastIndexByte(fullName, '/')
+	if nameSep == -1 {
+		name = fullName
+	} else {
+		prefix = fullName[:nameSep]
+		name = fullName[nameSep+1:]
+	}
+	return
 }

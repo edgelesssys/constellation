@@ -3,25 +3,48 @@ This folder contains labels used to collect release artifacts.
 """
 
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
-load("//bazel/oci:containers.bzl", "container_sum", "containers", "oci_push", "oci_tarball")
-load("//bazel/oci:pin.bzl", "oci_sum_merge")
+load("@rules_oci//oci:defs.bzl", "oci_push")
+load("//bazel/oci:containers.bzl", "container_reponame", "containers")
+load("//bazel/oci:pin.bzl", "oci_sum", "oci_sum_merge")
 
 [
-    oci_tarball(
-        name = container["name"] + "_tar",
-        image = container["oci"],
+    container_reponame(
+        name = container["name"] + "_reponame",
+        container_name = container["image_name"],
     )
     for container in containers()
 ]
 
 [
-    container_sum(
-        name = container["name"],
+    genrule(
+        name = container["name"] + "_repotag",
+        srcs = [
+            "//bazel/release:" + container["name"] + "_reponame",
+            "//bazel/settings:tag",
+        ],
+        outs = [container["repotag_file"]],
+        cmd = "echo -n ':' | cat $(location //bazel/release:" + container["name"] + "_reponame) - $(location //bazel/settings:tag) > $@",
+        visibility = ["//visibility:public"],
+    )
+    for container in containers()
+]
+
+# TODO(3u13r): re-enable target once https://github.com/bazel-contrib/rules_oci/issues/184 is fixed
+# [
+#     oci_tarball(
+#         name = container["name"] + "_tar",
+#         image = container["oci"],
+#         repotag_file = container["repotag_file"],
+#     )
+#     for container in containers()
+# ]
+
+[
+    oci_sum(
+        name = container["name"] + "_sum",
         image_name = container["image_name"],
         oci = container["oci"],
-        prefix = container["prefix"],
-        registry = container["registry"],
-        tag_file = container["tag_file"],
+        repotag_file = container["repotag_file"],
     )
     for container in containers()
 ]
@@ -35,16 +58,11 @@ oci_sum_merge(
     visibility = ["//visibility:public"],
 )
 
-# TODO(malt3): use config setting to allow devs the use of custom registries
-# https://www.grahambrooks.com/software-development/2021/08/30/user-defined-bazel-arguments.html
 [
     oci_push(
         name = container["name"] + "_push",
         image = container["oci"],
-        image_name = container["image_name"],
-        prefix = container["prefix"],
-        registry = container["registry"],
-        repotags = container["tag_file"],
+        repotags = container["repotag_file"],
     )
     for container in containers()
 ]
@@ -56,5 +74,14 @@ multirun(
         for container in containers()
     ],
     jobs = 0,  # execute in parallel
+    visibility = ["//visibility:public"],
+)
+
+multirun(
+    name = "build_and_push",
+    commands = [
+        "//bazel/devbuild:devbuild",
+        "//bazel/release:push",
+    ],
     visibility = ["//visibility:public"],
 )
