@@ -51,5 +51,4 @@ jobs:
             /home/runner/.cache/bazel
             /home/runner/.cache/shared_bazel_repository_cache
             /home/runner/.cache/shared_bazel_action_cache
-            /tmp/bazel-zig-cc
           key: ${{ env.CACHE_KEY }}

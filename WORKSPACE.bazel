@@ -50,14 +50,14 @@ buildifier_deps()
 
 # C / C++ toolchains
 
-load("//bazel/toolchains:zig_cc_deps.bzl", "zig_cc_deps")
+load("//bazel/toolchains:hermetic_cc_deps.bzl", "hermetic_cc_deps")
 
-zig_cc_deps()
+hermetic_cc_deps()
 
-load("@bazel-zig-cc//toolchain:defs.bzl", zig_toolchains = "toolchains")
+load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
 
 # If needed, we can specify a specific version of the Zig toolchain to use.
-# If not specified, bazel-zig-cc will use a known good version of Zig.
+# If not specified, hermetic_cc_toolchain will use a known good version of Zig.
 # See https://ziglang.org/download/ for the latest releases
 
 # zig_toolchains(
