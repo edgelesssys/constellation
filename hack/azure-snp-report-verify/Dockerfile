@@ -1,4 +1,4 @@
-FROM ubuntu:20.04@sha256:24a0df437301598d1a4b62ddf59fa0ed2969150d70d748c84225e6501e9c36b9 AS build
+FROM ubuntu:20.04@sha256:db8bf6f4fb351aa7a26e27ba2686cf35a6a409f65603e59d4c203e58387dc6b3 AS build
 RUN apt-get update && apt-get install -y \
   build-essential \
   libcurl4-openssl-dev \
@@ -10,7 +10,7 @@ RUN wget -q https://github.com/Azure/confidential-computing-cvm-guest-attestatio
   && touch Utils.h \
   && g++ -Os -I/usr/include/azguestattestation1 -oclient main.cpp -lazguestattestation
 
-FROM ubuntu:20.04@sha256:24a0df437301598d1a4b62ddf59fa0ed2969150d70d748c84225e6501e9c36b9 AS release
+FROM ubuntu:20.04@sha256:db8bf6f4fb351aa7a26e27ba2686cf35a6a409f65603e59d4c203e58387dc6b3 AS release
 COPY --from=build client azguestattestation1_1.0.2_amd64.deb /
 RUN apt-get update && apt-get install -y /azguestattestation1_1.0.2_amd64.deb
 ENTRYPOINT ["/client"]
