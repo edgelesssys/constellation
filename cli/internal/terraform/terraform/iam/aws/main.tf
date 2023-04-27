@@ -130,7 +130,7 @@ resource "aws_iam_role_policy_attachment" "attach_control_plane_policy" {
 
 resource "aws_iam_instance_profile" "worker_node_instance_profile" {
   name = "${var.name_prefix}_worker_node_instance_profile"
-  role = aws_iam_role.control_plane_role.name
+  role = aws_iam_role.worker_node_role.name
 }
 
 resource "aws_iam_role" "worker_node_role" {
@@ -189,4 +189,34 @@ EOF
 resource "aws_iam_role_policy_attachment" "attach_worker_node_policy" {
   role       = aws_iam_role.worker_node_role.name
   policy_arn = aws_iam_policy.worker_node_policy.arn
+}
+
+
+// Add all permissions here, which are needed by the bootstrapper
+resource "aws_iam_policy" "constellation_bootstrapper_policy" {
+  name   = "${var.name_prefix}_constellation_bootstrapper_policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:DescribeLoadBalancers"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attach_bootstrapper_policy_worker" {
+  role       = aws_iam_role.worker_node_role.name
+  policy_arn = aws_iam_policy.constellation_bootstrapper_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "attach_bootstrapper_policy_control_plane" {
+  role       = aws_iam_role.control_plane_role.name
+  policy_arn = aws_iam_policy.constellation_bootstrapper_policy.arn
 }
