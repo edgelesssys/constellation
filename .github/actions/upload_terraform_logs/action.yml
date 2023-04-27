@@ -1,0 +1,16 @@
+name: Upload Terraform logs
+description: "Upload the Terraform log file as an artifact."
+
+inputs:
+  artifactNameSuffix:
+    description: "Name suffix for the created artifact."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-logs-${{ inputs.artifactNameSuffix }}
+        path: terraform.log

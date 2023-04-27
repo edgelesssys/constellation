@@ -184,7 +184,7 @@ runs:
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
-        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force --debug
+        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force --debug --tf-log=DEBUG
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'

@@ -79,7 +79,10 @@ outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     value: ${{ steps.constellation-create.outputs.kubeconfig }}
-
+  namePrefix:
+    description: "The name prefix of the cloud resources used in the e2e test."
+    value: ${{ steps.create-prefix.outputs.prefix }}
+    
 runs:
   using: "composite"
   steps:
