@@ -7,6 +7,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Clean env to prevent warnings
+      shell: bash
+      run: |
+        echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=" >> "$GITHUB_ENV"
+        echo "GOOGLE_APPLICATION_CREDENTIALS=" >> "$GITHUB_ENV"
+        echo "GOOGLE_GHA_CREDS_PATH=" >> "$GITHUB_ENV"
+        echo "CLOUDSDK_CORE_PROJECT=" >> "$GITHUB_ENV"
+        echo "CLOUDSDK_PROJECT=" >> "$GITHUB_ENV"
+        echo "GCLOUD_PROJECT=" >> "$GITHUB_ENV"
+        echo "GCP_PROJECT=" >> "$GITHUB_ENV"
+        echo "GOOGLE_CLOUD_PROJECT=" >> "$GITHUB_ENV"
+
     # As described at:
     # https://github.com/google-github-actions/setup-gcloud#service-account-key-json
     - name: Authorize GCP access
