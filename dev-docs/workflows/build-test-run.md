@@ -41,7 +41,7 @@ bazel run //:devbuild
 Overwrite the default container_prefix in the `.bazeloverwriterc` in the root of the workspace:
 ```bazel
 # cat .bazeloverwriterc
-build --container_prefix=ghcr.io/USERNAME
+build --container_prefix=ghcr.io/USERNAME/constellation
 ```
 
 Bazel build:
