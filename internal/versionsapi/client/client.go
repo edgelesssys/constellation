@@ -40,10 +40,11 @@ import (
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"golang.org/x/mod/semver"
+
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"golang.org/x/mod/semver"
 )
 
 // Client is the client for the versions API.
@@ -105,7 +106,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 		distributionID:               distributionID,
 		dryRun:                       dryRun,
 		log:                          log,
-		cacheInvalidationWaitTimeout: 5 * time.Minute,
+		cacheInvalidationWaitTimeout: 10 * time.Minute,
 	}, nil
 }
 
