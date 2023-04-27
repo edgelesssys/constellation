@@ -2,8 +2,8 @@
 This folder contains labels used to collect release artifacts.
 """
 
-load("@rules_oci//oci:defs.bzl", "oci_push")
 load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
+load("@rules_oci//oci:defs.bzl", "oci_push")
 load("//bazel/oci:containers.bzl", "container_reponame", "containers")
 load("//bazel/oci:pin.bzl", "oci_sum", "oci_sum_merge")
 

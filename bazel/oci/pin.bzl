@@ -76,12 +76,12 @@ _go_source_attrs = {
         mandatory = True,
         doc = "Package to use for the generated Go source.",
     ),
-    "tag": attr.string(
-        doc = "OCI image tag to use for the generated Go source.",
-    ),
     "repotag_file": attr.label(
         allow_single_file = True,
         doc = "OCI image tag file to use for the generated Go source.",
+    ),
+    "tag": attr.string(
+        doc = "OCI image tag to use for the generated Go source.",
     ),
     "_oci_pin": attr.label(
         allow_single_file = True,
