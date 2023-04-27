@@ -370,9 +370,20 @@ jobs:
       matrix:
         csp: [aws, azure, gcp, openstack, qemu]
         upload-variant: [""]
-        # include:
-        #   - csp: azure
-        #     upload-variant: TrustedLaunch
+    env:
+      AWS_IMAGE_PATH: mkosi.output.aws/fedora~37/image.raw
+      AWS_JSON_OUTPUT: mkosi.output.aws/fedora~37/image-upload.json
+      AZURE_IMAGE_PATH: mkosi.output.azure/fedora~37/image.vhd
+      AZURE_JSON_OUTPUT: mkosi.output.azure/fedora~37/image-upload.json
+      AZURE_RAW_IMAGE_PATH: mkosi.output.azure/fedora~37/image.raw
+      GCP_IMAGE_PATH: mkosi.output.gcp/fedora~37/image.tar.gz
+      GCP_JSON_OUTPUT: mkosi.output.gcp/fedora~37/image-upload.json
+      GCP_RAW_IMAGE_PATH: mkosi.output.gcp/fedora~37/image.raw
+      OPENSTACK_IMAGE_PATH: mkosi.output.openstack/fedora~37/image.raw
+      OPENSTACK_JSON_OUTPUT: mkosi.output.openstack/fedora~37/image-upload.json
+      QEMU_IMAGE_PATH: mkosi.output.qemu/fedora~37/image.raw
+      QEMU_JSON_OUTPUT: mkosi.output.qemu/fedora~37/image-upload.json
+      SHORTNAME: ${{ needs.build-settings.outputs.imageNameShort }}
     steps:
       - name: Checkout
         uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
@@ -385,19 +396,6 @@ jobs:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
 
-      - name: Configure input variables
-        id: vars
-        uses: ./.github/actions/os_build_variables
-        with:
-          csp: ${{ matrix.csp }}
-          uploadVariant: ${{ matrix.upload-variant }}
-          basePath: ${{ github.workspace }}/image
-          ref: ${{ needs.build-settings.outputs.ref }}
-          stream: ${{ needs.build-settings.outputs.stream }}
-          imageVersion: ${{ needs.build-settings.outputs.imageVersion }}
-          imageType: ${{ needs.build-settings.outputs.imageType }}
-          debug: ${{ needs.build-settings.outputs.imageType == 'debug' }}
-
       - name: Install tools
         shell: bash
         run: |
@@ -407,14 +405,9 @@ jobs:
             pigz \
             qemu-utils \
             python3-pip
-          pip install google_crc32c
           echo "::endgroup::"
 
       - name: Login to AWS
-        # on AWS, login is required to upload the image as AMI
-        # on Azure, login is done to download the VMGS from S3
-        # on QEMU, login is done to upload the image to S3
-        if: matrix.csp == 'aws' || matrix.csp == 'azure' || matrix.csp == 'openstack' || matrix.csp == 'qemu'
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
@@ -439,39 +432,19 @@ jobs:
         run: |
           ln -s ${{ needs.build-settings.outputs.pkiSet }} pki
 
-      - name: Download VMGS blob
-        if: matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported')
-        working-directory: ${{ github.workspace }}/image
-        env:
-          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
-          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
-          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
-        run: |
-          aws s3 cp \
-            --region "${AZURE_VMGS_REGION}" \
-            "s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
-            "${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
-            --no-progress
-
       - name: Upload AWS image
         if: matrix.csp == 'aws'
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        env:
-          PKI: ${{ github.workspace }}/image/pki
-          AWS_JSON_OUTPUT: ${{ steps.vars.outputs.awsJsonOutput }}
-          AWS_BUCKET: ${{ steps.vars.outputs.awsBucket }}
-          AWS_EFIVARS_PATH: ${{ steps.vars.outputs.awsEfivarsPath }}
-          AWS_IMAGE_FILENAME: ${{ steps.vars.outputs.awsImageFilename }}
-          AWS_IMAGE_NAME: ${{ steps.vars.outputs.awsImageName }}
-          AWS_IMAGE_PATH: ${{ steps.vars.outputs.awsImagePath }}
-          AWS_REGION: ${{ steps.vars.outputs.awsRegion }}
-          AWS_REPLICATION_REGIONS: ${{ steps.vars.outputs.awsReplicationRegions }}
-          AWS_PUBLISH: ${{ steps.vars.outputs.awsPublish }}
         run: |
           echo "::group::Upload AWS image"
-          secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
-          upload/upload_aws.sh
+          bazel run //image/upload -- \
+            aws \
+            --verbose \
+            --raw-image "${AWS_IMAGE_PATH}" \
+            --variant ""  \
+            --version "${SHORTNAME}" \
+            --out "${AWS_JSON_OUTPUT}"
           echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${AWS_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
@@ -479,21 +452,16 @@ jobs:
         if: matrix.csp == 'gcp'
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        env:
-          PKI: ${{ github.workspace }}/image/pki
-          GCP_JSON_OUTPUT: ${{ steps.vars.outputs.gcpJsonOutput }}
-          GCP_BUCKET: ${{ steps.vars.outputs.gcpBucket }}
-          GCP_IMAGE_FAMILY: ${{ steps.vars.outputs.gcpImageFamily }}
-          GCP_IMAGE_FILENAME: ${{ steps.vars.outputs.gcpImageFilename }}
-          GCP_IMAGE_NAME: ${{ steps.vars.outputs.gcpImageName }}
-          GCP_IMAGE_PATH: ${{ steps.vars.outputs.gcpImagePath }}
-          GCP_PROJECT: ${{ steps.vars.outputs.gcpProject }}
-          GCP_RAW_IMAGE_PATH: ${{ steps.vars.outputs.gcpRawImagePath }}
-          GCP_REGION: ${{ steps.vars.outputs.gcpRegion }}
         run: |
           echo "::group::Upload GCP image"
           upload/pack.sh gcp "${GCP_RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
-          upload/upload_gcp.sh
+          bazel run //image/upload -- \
+            gcp \
+            --verbose \
+            --raw-image "${GCP_IMAGE_PATH}" \
+            --variant sev-es  \
+            --version "${SHORTNAME}" \
+            --out "${GCP_JSON_OUTPUT}"
           echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${GCP_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
@@ -501,46 +469,32 @@ jobs:
         if: matrix.csp == 'azure'
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        env:
-          PKI: ${{ github.workspace }}/image/pki
-          AZURE_JSON_OUTPUT: ${{ steps.vars.outputs.azureJsonOutput }}
-          AZURE_DISK_NAME: ${{ steps.vars.outputs.azureDiskName }}
-          AZURE_GALLERY_NAME: ${{ steps.vars.outputs.azureGalleryName }}
-          AZURE_IMAGE_DEFINITION: ${{ steps.vars.outputs.azureImageDefinition }}
-          AZURE_IMAGE_OFFER: ${{ steps.vars.outputs.azureImageOffer }}
-          AZURE_IMAGE_PATH: ${{ steps.vars.outputs.azureImagePath }}
-          AZURE_IMAGE_VERSION: ${{ steps.vars.outputs.azureImageVersion }}
-          AZURE_PUBLISHER: ${{ steps.vars.outputs.azurePublisher }}
-          AZURE_RAW_IMAGE_PATH: ${{ steps.vars.outputs.azureRawImagePath }}
-          AZURE_REGION: ${{ steps.vars.outputs.azureRegion }}
-          AZURE_REPLICATION_REGIONS: ${{ steps.vars.outputs.azureReplicationRegions }}
-          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
-          AZURE_RESOURCE_GROUP_NAME: ${{ steps.vars.outputs.azureResourceGroupName }}
-          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
-          AZURE_SKU: ${{ steps.vars.outputs.azureSku }}
-          AZURE_VMGS_PATH: ${{ steps.vars.outputs.azureVmgsPath }}
         run: |
           echo "::group::Upload Azure image"
           upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-          upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
-          echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+          bazel run //image/upload -- \
+            azure \
+            --verbose \
+            --raw-image "${AZURE_IMAGE_PATH}" \
+            --variant cvm  \
+            --version "${SHORTNAME}" \
+            --out "${AZURE_JSON_OUTPUT}"
+          echo -e "Uploaded Azure image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload OpenStack image
         if: matrix.csp == 'openstack'
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        env:
-          OPENSTACK_JSON_OUTPUT: ${{ steps.vars.outputs.openStackJsonOutput }}
-          OPENSTACK_BUCKET: ${{ steps.vars.outputs.openStackBucket }}
-          OPENSTACK_BASE_URL: ${{ steps.vars.outputs.openStackBaseUrl }}
-          OPENSTACK_IMAGE_PATH: ${{ steps.vars.outputs.openStackImagePath }}
-          REF: ${{needs.build-settings.outputs.ref }}
-          STREAM: ${{needs.build-settings.outputs.stream }}
-          IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
         run: |
           echo "::group::Upload OpenStack image"
-          upload/upload_openstack.sh
+          bazel run //image/upload -- \
+            openstack \
+            --verbose \
+            --raw-image "${OPENSTACK_IMAGE_PATH}" \
+            --variant sev \
+            --version "${SHORTNAME}" \
+            --out "${OPENSTACK_JSON_OUTPUT}"
           echo -e "Uploaded OpenStack image: \n\n\`\`\`\n$(jq < "${OPENSTACK_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
@@ -548,17 +502,15 @@ jobs:
         if: matrix.csp == 'qemu'
         shell: bash
         working-directory: ${{ github.workspace }}/image
-        env:
-          QEMU_JSON_OUTPUT: ${{ steps.vars.outputs.qemuJsonOutput }}
-          QEMU_BUCKET: ${{ steps.vars.outputs.qemuBucket }}
-          QEMU_BASE_URL: ${{ steps.vars.outputs.qemuBaseUrl }}
-          QEMU_IMAGE_PATH: ${{ steps.vars.outputs.qemuImagePath }}
-          REF: ${{needs.build-settings.outputs.ref }}
-          STREAM: ${{needs.build-settings.outputs.stream }}
-          IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
         run: |
           echo "::group::Upload QEMU image"
-          upload/upload_qemu.sh
+          bazel run //image/upload -- \
+            qemu \
+            --verbose \
+            --raw-image "${QEMU_IMAGE_PATH}" \
+            --variant default  \
+            --version "${SHORTNAME}" \
+            --out "${QEMU_JSON_OUTPUT}"
           echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${QEMU_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
