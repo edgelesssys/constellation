@@ -22,10 +22,10 @@ def zig_cc_deps():
     http_archive(
         name = "bazel-zig-cc",
         sha256 = "bea372f7f9bd8541f7b0a152c76c7b9396201c36a0ed229b36c48301815c3141",
-        strip_prefix = "bazel-zig-cc-f3e4542bd62f4aef794a3d184140a9d30b8fadb8",
+        strip_prefix = "bazel-zig-cc-9855851dd0558f203effbdc4f215452cdf0ca5a9",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/bea372f7f9bd8541f7b0a152c76c7b9396201c36a0ed229b36c48301815c3141",
-            "https://github.com/uber/bazel-zig-cc/archive/f3e4542bd62f4aef794a3d184140a9d30b8fadb8.tar.gz",
+            "https://github.com/uber/bazel-zig-cc/archive/9855851dd0558f203effbdc4f215452cdf0ca5a9.tar.gz",
         ],
         type = "tar.gz",
     )
