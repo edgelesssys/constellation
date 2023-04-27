@@ -29,7 +29,7 @@ load("//bazel/oci:pin.bzl", "oci_sum", "oci_sum_merge")
     for container in containers()
 ]
 
-# TODO(3u13r): re-enable target one https://github.com/bazel-contrib/rules_oci/issues/184 is fixed
+# TODO(3u13r): re-enable target once https://github.com/bazel-contrib/rules_oci/issues/184 is fixed
 # [
 #     oci_tarball(
 #         name = container["name"] + "_tar",

@@ -29,7 +29,8 @@ cd build
 # build required binaries for a dev build
 # and symlink them into the current directory
 # also push the built container images
-bazel run //:devbuild --container_prefix=ghcr.io/USERNAME
+# After the first run, set the pushed imaged to public.
+bazel run //:devbuild --container_prefix=ghcr.io/USERNAME/constellation
 ./constellation ...
 # modify code
 # rerun to ensure that all binaries are up to date
