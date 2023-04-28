@@ -33,8 +33,22 @@ ensure_pseudo_version_tool() {
   if [[ ! -f "${REPOSITORY_ROOT}/tools/pseudo-version" ]]; then
     get_pseudo_version_tool
   fi
+
   expected=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
-  if ! shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version"); then
+
+  local need_pseudo_version_tool=0
+  if type sha256sum > /dev/null 2>&1; then
+    sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version")
+    need_pseudo_version_tool=$?
+  elif type shasum > /dev/null 2>&1; then
+    shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version")
+    need_pseudo_version_tool=$?
+  else
+    echo "sha256sum or shasum is required to verify the pseudo-version tool" >&2
+    exit 1
+  fi
+
+  if [[ ${need_pseudo_version_tool} -ne 0 ]]; then
     get_pseudo_version_tool
   fi
 }
