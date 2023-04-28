@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload referenced container images
         shell: bash
-        run: bazel run //:push
+        run: bazel run //bazel/release:push
 
   provenance-subjects:
     runs-on: ubuntu-22.04

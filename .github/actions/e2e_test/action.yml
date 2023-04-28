@@ -82,7 +82,7 @@ outputs:
   namePrefix:
     description: "The name prefix of the cloud resources used in the e2e test."
     value: ${{ steps.create-prefix.outputs.prefix }}
-    
+
 runs:
   using: "composite"
   steps:
@@ -165,7 +165,7 @@ runs:
     - name: Upload container images
       if: inputs.cliVersion == ''
       shell: bash
-      run: bazel run //:push
+      run: bazel run //bazel/release:push
 
     - name: Login to GCP (IAM service account)
       if: inputs.cloudProvider == 'gcp'
