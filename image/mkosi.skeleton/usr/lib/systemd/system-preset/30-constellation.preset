@@ -8,3 +8,4 @@ enable systemd-networkd.socket
 enable systemd-resolved.service
 enable measurements.service
 enable export_constellation_debug.service
+enable kdump.service
