@@ -133,7 +133,7 @@ func TestBackupCRs(t *testing.T) {
 			}
 			assert.NoError(err)
 
-			data, err := afero.ReadFile(memFs, filepath.Join(backupFolder, tc.resource.GetName()+".yaml"))
+			data, err := afero.ReadFile(memFs, filepath.Join(backupFolder, tc.resource.GetKind(), tc.resource.GetNamespace(), tc.resource.GetName()+".yaml"))
 			require.NoError(err)
 			assert.YAMLEq(tc.expectedFile, string(data))
 		})
