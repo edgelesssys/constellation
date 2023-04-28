@@ -180,6 +180,7 @@ jobs:
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
 
+          bazelisk run //bazel/release:push
           bazelisk run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Always fetch logs
