@@ -23,6 +23,7 @@ type imdsAPI interface {
 	initSecretHash(ctx context.Context) (string, error)
 	role(ctx context.Context) (role.Role, error)
 	vpcIP(ctx context.Context) (string, error)
+	networkIDs(ctx context.Context) ([]string, error)
 }
 
 type serversAPI interface {

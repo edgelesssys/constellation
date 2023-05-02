@@ -67,3 +67,13 @@ dependencies:
     condition: azure.deployCSIDriver
     tags:
       - Azure
+  - name: yawol-config
+    version: 0.0.0
+    condition: openstack.deployYawolLoadBalancer
+    tags:
+      - OpenStack
+  - name: yawol-controller
+    version: 0.0.0
+    condition: openstack.deployYawolLoadBalancer
+    tags:
+      - OpenStack

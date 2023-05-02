@@ -98,7 +98,7 @@ func (k AccountKey) CloudINI() CloudINI {
 		AuthURL:          k.AuthURL,
 		Username:         k.Username,
 		Password:         k.Password,
-		TenantID:         k.ProjectID,
+		ProjectID:        k.ProjectID,
 		TenantName:       k.ProjectName,
 		UserDomainName:   k.UserDomainName,
 		TenantDomainName: k.ProjectDomainName,
@@ -111,20 +111,20 @@ type CloudINI struct {
 	AuthURL          string `gcfg:"auth-url" mapstructure:"auth-url" name:"os-authURL" dependsOn:"os-password|os-trustID|os-applicationCredentialSecret|os-clientCertPath"`
 	Username         string `name:"os-userName" value:"optional" dependsOn:"os-password"`
 	Password         string `name:"os-password" value:"optional" dependsOn:"os-domainID|os-domainName,os-projectID|os-projectName,os-userID|os-userName"`
-	TenantID         string `gcfg:"tenant-id" mapstructure:"project-id" name:"os-projectID" value:"optional" dependsOn:"os-password|os-clientCertPath"`
+	ProjectID        string `gcfg:"project-id" mapstructure:"project-id" name:"os-projectID" value:"optional" dependsOn:"os-password|os-clientCertPath"`
 	TenantName       string `gcfg:"tenant-name" mapstructure:"project-name" name:"os-projectName" value:"optional" dependsOn:"os-password|os-clientCertPath"`
 	UserDomainName   string `gcfg:"user-domain-name" mapstructure:"user-domain-name" name:"os-userDomainName" value:"optional"`
 	TenantDomainName string `gcfg:"tenant-domain-name" mapstructure:"project-domain-name" name:"os-projectDomainName" value:"optional"`
 	Region           string `name:"os-region"`
 }
 
-// String returns the string representation of the CloudINI.
-func (i CloudINI) String() string {
+// FullConfiguration returns the string representation of the full CloudINI.
+func (i CloudINI) FullConfiguration() string {
 	// sanitize parameters to not include newlines
 	authURL := newlineRegexp.ReplaceAllString(i.AuthURL, "")
 	username := newlineRegexp.ReplaceAllString(i.Username, "")
 	password := newlineRegexp.ReplaceAllString(i.Password, "")
-	tenantID := newlineRegexp.ReplaceAllString(i.TenantID, "")
+	tenantID := newlineRegexp.ReplaceAllString(i.ProjectID, "")
 	tenantName := newlineRegexp.ReplaceAllString(i.TenantName, "")
 	userDomainName := newlineRegexp.ReplaceAllString(i.UserDomainName, "")
 	tenantDomainName := newlineRegexp.ReplaceAllString(i.TenantDomainName, "")
@@ -140,6 +140,26 @@ user-domain-name = %s
 tenant-domain-name = %s
 region = %s
 `, authURL, username, password, tenantID, tenantName, userDomainName, tenantDomainName, region)
+}
+
+// YawolConfiguration returns the string representation of the CloudINI subset yawol expects.
+func (i CloudINI) YawolConfiguration() string {
+	// sanitize parameters to not include newlines
+	authURL := newlineRegexp.ReplaceAllString(i.AuthURL, "")
+	username := newlineRegexp.ReplaceAllString(i.Username, "")
+	password := newlineRegexp.ReplaceAllString(i.Password, "")
+	projectID := newlineRegexp.ReplaceAllString(i.ProjectID, "")
+	userDomainName := newlineRegexp.ReplaceAllString(i.UserDomainName, "")
+	region := newlineRegexp.ReplaceAllString(i.Region, "")
+
+	return fmt.Sprintf(`[Global]
+auth-url = %s
+username = %s
+password = %s
+project-id = %s
+domain-name = %s
+region = %s
+`, authURL, username, password, projectID, userDomainName, region)
 }
 
 var newlineRegexp = regexp.MustCompile(`[\r\n]+`)

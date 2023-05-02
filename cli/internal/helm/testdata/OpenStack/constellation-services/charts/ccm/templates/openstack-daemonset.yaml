@@ -20,7 +20,7 @@ spec:
           args:
           - /bin/openstack-cloud-controller-manager
           - --cloud-provider=openstack
-          - --cloud-config=/etc/config/cloud.conf
+          - --cloud-config=/etc/config/cloudprovider.conf
           - --leader-elect=true
           - --allocate-node-cidrs=false
           - -v=2

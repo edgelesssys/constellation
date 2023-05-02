@@ -17,6 +17,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+	"helm.sh/helm/pkg/ignore"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
+
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -24,11 +30,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/pkg/errors"
-	"helm.sh/helm/pkg/ignore"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
 )
 
 // Run `go generate` to download (and patch) upstream helm charts.
@@ -506,6 +507,21 @@ func extendConstellationServicesValues(
 	case cloudprovider.GCP:
 		in["gcp"] = map[string]any{
 			"deployCSIDriver": cfg.DeployCSIDriver(),
+		}
+
+	case cloudprovider.OpenStack:
+		in["openstack"] = map[string]any{
+			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
+		}
+		if cfg.DeployYawolLoadBalancer() {
+			in["yawol-controller"] = map[string]any{
+				"yawolOSSecretName": "yawolkey",
+				// has to be larger than ~30s to account for slow OpenStack API calls.
+				"openstackTimeout": "1m",
+				"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
+				"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
+				"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
+			}
 		}
 	}
 

@@ -230,6 +230,15 @@ type OpenStackConfig struct {
 	// description: |
 	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
 	DirectDownload *bool `yaml:"directDownload" validate:"required"`
+	// description: |
+	//   Deploy Yawol loadbalancer. For details see: https://github.com/stackitcloud/yawol
+	DeployYawolLoadBalancer *bool `yaml:"deployYawolLoadBalancer" validate:"required"`
+	// description: |
+	//   OpenStack OS image used by the yawollet. For details see: https://github.com/stackitcloud/yawol
+	YawolImageID string `yaml:"yawolImageID"`
+	// description: |
+	//   OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol
+	YawolFlavorID string `yaml:"yawolFlavorID"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -321,7 +330,8 @@ func Default() *Config {
 				DeployCSIDriver:       toPtr(true),
 			},
 			OpenStack: &OpenStackConfig{
-				DirectDownload: toPtr(true),
+				DirectDownload:          toPtr(true),
+				DeployYawolLoadBalancer: toPtr(true),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -521,6 +531,11 @@ func (c *Config) UpdateMAAURL(maaURL string) {
 func (c *Config) DeployCSIDriver() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.DeployCSIDriver != nil && *c.Provider.Azure.DeployCSIDriver ||
 		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver
+}
+
+// DeployYawolLoadBalancer returns whether the Yawol load balancer should be deployed.
+func (c *Config) DeployYawolLoadBalancer() bool {
+	return c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployYawolLoadBalancer != nil && *c.Provider.OpenStack.DeployYawolLoadBalancer
 }
 
 // Validate checks the config values and returns validation errors.
