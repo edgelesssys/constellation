@@ -20,7 +20,7 @@ on:
 jobs:
   on-failure-quit:
     runs-on: ubuntu-22.04
-    if: github.event.workflow_run.conclusion == 'failure'
+    if: github.event.workflow_run.conclusion != 'success'
     steps:
       - run: |
           echo 'Release workflow failed, exiting..'
@@ -234,6 +234,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      checks: write
+      packages: write
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
