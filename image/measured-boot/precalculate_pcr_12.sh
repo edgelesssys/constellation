@@ -26,7 +26,7 @@ cmdline_measure() {
   # convert to utf-16le and add a null terminator
   iconv -f utf-8 -t utf-16le "${path}" -o "${tmp}"
   truncate -s +2 "${tmp}"
-  shasum -a 256 "${tmp}" | cut -d " " -f 1
+  sha256sum "${tmp}" | cut -d " " -f 1
   rm "${tmp}"
 }
 
@@ -62,11 +62,11 @@ cmdline_hash=$(cmdline_measure "${DIR}/cmdline")
 cleanup "${DIR}"
 
 expected_pcr_12=0000000000000000000000000000000000000000000000000000000000000000
-expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "shasum -a 256")
+expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "sha256sum")
 if [[ ${CSP} == "azure" ]]; then
   # Azure displays the boot menu
   # triggering an extra measurement of the kernel command line.
-  expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "shasum -a 256")
+  expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "sha256sum")
 fi
 
 echo "Kernel commandline:            ${cmdline}"

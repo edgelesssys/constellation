@@ -11,7 +11,7 @@ debug_info() {
 
   echo "Getting debug info"
 
-  shasum -a 256 ./*.raw
+  sha256sum ./*.raw
 
   ls -lisah
 

@@ -70,7 +70,7 @@ jobs:
           fi
           echo "Detected changes after tidy"
           echo "untidy=true" | tee -a "$GITHUB_OUTPUT"
-          diffsum=$(echo "$diff" | shasum -a 256 | cut -d' ' -f1)
+          diffsum=$(echo "$diff" | sha256sum | cut -d' ' -f1)
           echo "diffsum=${diffsum}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Run Bazel generate
@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           diff=$(git diff)
-          diffsum=$(echo "$diff" | shasum -a 256| cut -d' ' -f1)
+          diffsum=$(echo "$diff" | sha256sum| cut -d' ' -f1)
           if [[ "${{ steps.untidy.outputs.diffsum }}" == "${diffsum}" ]]; then
             echo "Everything is tidy."
             echo "ungenerated=false" | tee -a "$GITHUB_OUTPUT"
