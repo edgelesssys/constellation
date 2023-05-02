@@ -29,26 +29,31 @@ goarch() {
   esac
 }
 
-ensure_pseudo_version_tool() {
+need_pseudo_version_tool() {
   if [[ ! -f "${REPOSITORY_ROOT}/tools/pseudo-version" ]]; then
-    get_pseudo_version_tool
+    return 1
   fi
 
   expected=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
-
   local need_pseudo_version_tool=0
   if type sha256sum > /dev/null 2>&1; then
-    sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version")
-    need_pseudo_version_tool=$?
+    need_pseudo_version_tool=$(sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version") && echo 0 || echo 1)
   elif type shasum > /dev/null 2>&1; then
-    shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version")
-    need_pseudo_version_tool=$?
+    need_pseudo_version_tool=$(shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version") && echo 0 || echo 1)
   else
     echo "sha256sum or shasum is required to verify the pseudo-version tool" >&2
     exit 1
   fi
 
-  if [[ ${need_pseudo_version_tool} -ne 0 ]]; then
+  return "${need_pseudo_version_tool}"
+}
+
+# shellcheck disable=SC2310
+ensure_pseudo_version_tool() {
+  local should_download=0
+  should_download=$(need_pseudo_version_tool && echo 0 || echo 1)
+
+  if [[ ${should_download} -ne 0 ]]; then
     get_pseudo_version_tool
   fi
 }
