@@ -86,9 +86,9 @@ const (
 	//nolint:revive
 	V1_25 ValidK8sVersion = "v1.25.9" // renovate:kubernetes-release
 	//nolint:revive
-	V1_26 ValidK8sVersion = "v1.26.3" // renovate:kubernetes-release
+	V1_26 ValidK8sVersion = "v1.26.4" // renovate:kubernetes-release
 	//nolint:revive
-	V1_27 ValidK8sVersion = "v1.27.0" // renovate:kubernetes-release
+	V1_27 ValidK8sVersion = "v1.27.1" // renovate:kubernetes-release
 
 	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_26

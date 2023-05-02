@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -177,11 +178,17 @@ func TestNewWithDefaultOptions(t *testing.T) {
 
 			// Test
 			c, err := New(fileHandler, constants.ConfigFilename, false)
+
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
+
 			assert.NoError(err)
+			var validationErr *ValidationError
+			if errors.As(err, &validationErr) {
+				t.Log(validationErr.LongMessage())
+			}
 			assert.Equal(c.Provider.Azure.ClientSecretValue, tc.wantClientSecretValue)
 		})
 	}
