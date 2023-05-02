@@ -16,6 +16,10 @@ gcp:
 azure:
   deployCSIDriver: false
 
+# OpenStack specific configuration
+openstack:
+  deployYawolLoadBalancer: false
+
 # Set one of the tags to true to indicate which CSP you are deploying to.
 tags:
   AWS: false

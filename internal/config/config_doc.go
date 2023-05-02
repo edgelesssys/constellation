@@ -276,7 +276,7 @@ func init() {
 			FieldName: "openstack",
 		},
 	}
-	OpenStackConfigDoc.Fields = make([]encoder.Doc, 14)
+	OpenStackConfigDoc.Fields = make([]encoder.Doc, 17)
 	OpenStackConfigDoc.Fields[0].Name = "cloud"
 	OpenStackConfigDoc.Fields[0].Type = "string"
 	OpenStackConfigDoc.Fields[0].Note = ""
@@ -347,6 +347,21 @@ func init() {
 	OpenStackConfigDoc.Fields[13].Note = ""
 	OpenStackConfigDoc.Fields[13].Description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
 	OpenStackConfigDoc.Fields[13].Comments[encoder.LineComment] = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
+	OpenStackConfigDoc.Fields[14].Name = "deployYawolLoadBalancer"
+	OpenStackConfigDoc.Fields[14].Type = "bool"
+	OpenStackConfigDoc.Fields[14].Note = ""
+	OpenStackConfigDoc.Fields[14].Description = "Deploy Yawol loadbalancer. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[14].Comments[encoder.LineComment] = "Deploy Yawol loadbalancer. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[15].Name = "yawolImageID"
+	OpenStackConfigDoc.Fields[15].Type = "string"
+	OpenStackConfigDoc.Fields[15].Note = ""
+	OpenStackConfigDoc.Fields[15].Description = "OpenStack OS image used by the yawollet. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[15].Comments[encoder.LineComment] = "OpenStack OS image used by the yawollet. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[16].Name = "yawolFlavorID"
+	OpenStackConfigDoc.Fields[16].Type = "string"
+	OpenStackConfigDoc.Fields[16].Note = ""
+	OpenStackConfigDoc.Fields[16].Description = "OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[16].Comments[encoder.LineComment] = "OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol"
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."

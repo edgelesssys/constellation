@@ -18,6 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
+
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -29,10 +34,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
@@ -481,13 +482,31 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		if err != nil {
 			return nil, err
 		}
-		credsIni := creds.CloudINI().String()
+		credsIni := creds.CloudINI().FullConfiguration()
+		networkIDsGetter, ok := k.providerMetadata.(openstackMetadata)
+		if !ok {
+			return nil, errors.New("generating yawol configuration: cloud provider metadata does not implement OpenStack specific methods")
+		}
+		networkIDs, err := networkIDsGetter.GetNetworkIDs(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting network IDs: %w", err)
+		}
+		if len(networkIDs) == 0 {
+			return nil, errors.New("getting network IDs: no network IDs found")
+		}
 		extraVals["ccm"] = map[string]any{
 			"OpenStack": map[string]any{
 				"secretData": credsIni,
 			},
 		}
-
+		yawolIni := creds.CloudINI().YawolConfiguration()
+		extraVals["yawol-config"] = map[string]any{
+			"secretData": yawolIni,
+		}
+		extraVals["yawol-controller"] = map[string]any{
+			"yawolNetworkID": networkIDs[0],
+			"yawolAPIHost":   fmt.Sprintf("https://%s:%d", serviceConfig.loadBalancerIP, constants.KubernetesPort),
+		}
 	}
 	return extraVals, nil
 }
@@ -514,4 +533,8 @@ type constellationServicesConfig struct {
 	subnetworkPodCIDR      string
 	cloudServiceAccountURI string
 	loadBalancerIP         string
+}
+
+type openstackMetadata interface {
+	GetNetworkIDs(ctx context.Context) ([]string, error)
 }

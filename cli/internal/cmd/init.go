@@ -22,6 +22,15 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
+	"sigs.k8s.io/yaml"
+
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -40,14 +49,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
-	"sigs.k8s.io/yaml"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.

@@ -143,7 +143,7 @@ func TestAccountKeyToCloudINI(t *testing.T) {
 		AuthURL:          "auth-url",
 		Username:         "username",
 		Password:         "password",
-		TenantID:         "project-id",
+		ProjectID:        "project-id",
 		TenantName:       "project-name",
 		UserDomainName:   "user-domain-name",
 		TenantDomainName: "project-domain-name",
@@ -151,12 +151,12 @@ func TestAccountKeyToCloudINI(t *testing.T) {
 	}, ini)
 }
 
-func TestCloudINIToString(t *testing.T) {
+func TestFullConfiguration(t *testing.T) {
 	ini := CloudINI{
 		AuthURL:          "auth-url",
 		Username:         "username",
 		Password:         "password",
-		TenantID:         "project-id",
+		ProjectID:        "project-id",
 		TenantName:       "project-name",
 		UserDomainName:   "user-domain-name",
 		TenantDomainName: "project-domain-name",
@@ -171,5 +171,26 @@ tenant-name = project-name
 user-domain-name = user-domain-name
 tenant-domain-name = project-domain-name
 region = region-name
-`, ini.String())
+`, ini.FullConfiguration())
+}
+
+func TestYawolConfiguration(t *testing.T) {
+	ini := CloudINI{
+		AuthURL:          "auth-url",
+		Username:         "username",
+		Password:         "password",
+		ProjectID:        "project-id",
+		TenantName:       "project-name",
+		UserDomainName:   "user-domain-name",
+		TenantDomainName: "project-domain-name",
+		Region:           "region-name",
+	}
+	assert.Equal(t, `[Global]
+auth-url = auth-url
+username = username
+password = password
+project-id = project-id
+domain-name = user-domain-name
+region = region-name
+`, ini.YawolConfiguration())
 }
