@@ -5,9 +5,6 @@ name: e2e test qemu (MiniConstellation)
 # e2e-test-release uses the same branch as the triggering workflow and not the commit of the triggering workflow. This is because the release workflow produces further commits.
 
 on:
-  workflow_run:
-    workflows: ["Release"]
-    types: [completed]
   workflow_dispatch:
     inputs:
       ref:

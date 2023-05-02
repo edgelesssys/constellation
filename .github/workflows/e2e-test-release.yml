@@ -6,26 +6,23 @@ name: e2e test release
 # - any tests on the last release
 # - loadbalancer tests for AWS. Test test is currently broken and should not block a release. AB#2780.
 #
-# The workflow is triggered by the completion of the release workflow.
-# The workflow only executes, after being triggered, if the triggering workflow completed successfully.
-# e2e-test-release uses the same branch as the triggering workflow and not the commit of the triggering workflow. This is because the release workflow produces further commits.
-# e2e-test-release depends on the fact that actions/constellation_create does not overwrite the default osImage, if no osImage is supplied.
+# The workflow is triggered as the last step of the release workflow.
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Release"]
-    types: [completed]
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: true
 
 jobs:
-  on-failure-quit:
-    runs-on: ubuntu-22.04
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
-    steps:
-      - run: |
-          echo 'Release workflow failed, exiting..'
-          exit 1
-
   e2e-tests:
     strategy:
       fail-fast: false
@@ -39,19 +36,6 @@ jobs:
           # sonobuoy full test on all k8s versions
           - test: "sonobuoy full"
             provider: "gcp"
-            kubernetes-version: "v1.27"
-            runner: "ubuntu-22.04"
-          - test: "sonobuoy full"
-            provider: "azure"
-            kubernetes-version: "v1.27"
-            runner: "ubuntu-22.04"
-          - test: "sonobuoy full"
-            provider: "aws"
-            kubernetes-version: "v1.27"
-            runner: "ubuntu-22.04"
-
-          - test: "sonobuoy full"
-            provider: "gcp"
             kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "sonobuoy full"
@@ -74,68 +58,81 @@ jobs:
           - test: "sonobuoy full"
             provider: "aws"
             kubernetes-version: "v1.25"
+            runner: "ubuntu-22.04"
+
+          - test: "sonobuoy full"
+            provider: "gcp"
+            kubernetes-version: "v1.24"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "azure"
+            kubernetes-version: "v1.24"
+            runner: "ubuntu-22.04"
+          - test: "sonobuoy full"
+            provider: "aws"
+            kubernetes-version: "v1.24"
             runner: "ubuntu-22.04"
 
           # verify test on latest k8s version
           - test: "verify"
             provider: "gcp"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "verify"
             provider: "azure"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "verify"
             provider: "aws"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
 
           # recover test on latest k8s version
           - test: "recover"
             provider: "gcp"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "recover"
             provider: "azure"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "recover"
             provider: "aws"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
 
           # lb test on latest k8s version
           - test: "lb"
             provider: "gcp"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "lb"
             provider: "azure"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "lb"
             provider: "aws"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
 
           # autoscaling test on latest k8s version, not supported on AWS
           - test: "autoscaling"
             provider: "gcp"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "autoscaling"
             provider: "azure"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
             provider: "gcp"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
           - test: "perf-bench"
             provider: "azure"
-            kubernetes-version: "v1.27"
+            kubernetes-version: "v1.26"
             runner: "ubuntu-22.04"
 
           #
@@ -143,11 +140,11 @@ jobs:
           #
           - test: "verify"
             provider: "azure"
-            kubernetes-version: "v1.26"
+            kubernetes-version: "v1.25"
             runner: "macos-12"
           - test: "recover"
             provider: "gcp"
-            kubernetes-version: "v1.26"
+            kubernetes-version: "v1.25"
             runner: "macos-12"
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -165,7 +162,7 @@ jobs:
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
           fetch-depth: 0
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.event.workflow_run.head_branch || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup Go environment
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
@@ -254,3 +251,4 @@ jobs:
       cloudProvider: ${{ matrix.cloudProvider }}
       workerNodesCount: 2
       controlNodesCount: 3
+      gitRef: ${{ inputs.ref || github.head_ref }}
