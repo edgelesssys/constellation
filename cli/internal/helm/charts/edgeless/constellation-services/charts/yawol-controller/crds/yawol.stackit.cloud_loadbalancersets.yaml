@@ -1,0 +1,306 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: loadbalancersets.yawol.stackit.cloud
+spec:
+  group: yawol.stackit.cloud
+  names:
+    kind: LoadBalancerSet
+    listKind: LoadBalancerSetList
+    plural: loadbalancersets
+    shortNames:
+    - lbs
+    singular: loadbalancerset
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.replicas
+      name: DESIRED
+      type: string
+    - jsonPath: .status.replicas
+      name: CURRENT
+      type: string
+    - jsonPath: .status.readyReplicas
+      name: READY
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: LoadBalancerSet is the Schema for the LoadBalancerSet's API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LoadBalancerSetSpec defines the desired state of LoadBalancerSet.
+            properties:
+              replicas:
+                default: 1
+                description: Replicas defines the number of LoadBalancer that should
+                  run. Defaults to 1.
+                minimum: 0
+                type: integer
+              selector:
+                description: Selector is a label query over pods that should match
+                  the replica count.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              template:
+                description: Template defines a template for the LoadBalancerMachine.
+                  This is used to instantiate LoadBalancerMachine.
+                properties:
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels for the LoadBalancerMachine
+                    type: object
+                  spec:
+                    description: Spec is the spec for the LoadBalancerMachine.
+                    properties:
+                      infrastructure:
+                        description: Infrastructure defines parameters for the Infrastructure.
+                        properties:
+                          additionalNetworks:
+                            description: AdditionalNetworks defines additional networks
+                              that will be added to the LoadBalancerMachines.
+                            items:
+                              description: LoadBalancerAdditionalNetwork defines additional
+                                networks for the LoadBalancer
+                              properties:
+                                networkID:
+                                  description: NetworkID defines an openstack ID for
+                                    the network.
+                                  type: string
+                              required:
+                              - networkID
+                              type: object
+                            type: array
+                          authSecretRef:
+                            description: AuthSecretRef defines a secretRef for the
+                              openstack secret.
+                            properties:
+                              name:
+                                description: name is unique within a namespace to
+                                  reference a secret resource.
+                                type: string
+                              namespace:
+                                description: namespace defines the space within which
+                                  the secret name must be unique.
+                                type: string
+                            type: object
+                            x-kubernetes-map-type: atomic
+                          availabilityZone:
+                            description: AvailabilityZone defines the openstack availability
+                              zone for the LoadBalancer.
+                            type: string
+                          defaultNetwork:
+                            description: DefaultNetwork defines the default/listener
+                              network for the Loadbalancer. TODO Remove optional when
+                              Deprecations are removed
+                            properties:
+                              floatingNetID:
+                                description: FloatingNetID defines an openstack ID
+                                  for the floatingNet.
+                                type: string
+                              networkID:
+                                description: NetworkID defines an openstack ID for
+                                  the network.
+                                type: string
+                            required:
+                            - networkID
+                            type: object
+                          flavor:
+                            description: Flavor defines openstack flavor for the LoadBalancer.
+                            properties:
+                              flavor_id:
+                                description: 'Deprecated: use flavorID instead.'
+                                type: string
+                              flavor_name:
+                                description: 'Deprecated: use flavorName instead.'
+                                type: string
+                              flavor_search:
+                                description: 'Deprecated: use flavorSearch instead.'
+                                type: string
+                              flavorID:
+                                description: FlavorID is the flavor ID used for requesting
+                                  virtual machines.
+                                type: string
+                              flavorName:
+                                description: NOT IMPLEMENTED ONLY FlavorID is supported.
+                                  FlavorName is the name of the flavor used for requesting
+                                  virtual machines. FlavorName is only used if FlavorID
+                                  is not defined.
+                                type: string
+                              flavorSearch:
+                                description: NOT IMPLEMENTED ONLY FlavorID is supported.
+                                  FlavorSearch is a search string to find the flavor
+                                  used for requesting virtual machines. Search will
+                                  be performed in metadata of the flavors. FlavorSearch
+                                  is only used if FlavorName and FlavorID are not
+                                  defined.
+                                type: string
+                            type: object
+                          floatingNetID:
+                            description: 'Deprecated: use defaultNetwork instead FloatingNetID
+                              defines a openstack ID for the floatingNet.'
+                            type: string
+                          image:
+                            description: Image defines openstack image for the LoadBalancer.
+                            properties:
+                              image_id:
+                                description: 'Deprecated: use imageID instead.'
+                                type: string
+                              image_name:
+                                description: 'Deprecated: use imageName instead.'
+                                type: string
+                              image_search:
+                                description: 'Deprecated: use imageSearch instead.'
+                                type: string
+                              imageID:
+                                description: ImageID is the image ID used for requesting
+                                  virtual machines.
+                                type: string
+                              imageName:
+                                description: NOT IMPLEMENTED ONLY ImageID is supported.
+                                  ImageName is the name of the image used for requesting
+                                  virtual machines. ImageName is only used if ImageID
+                                  is not defined.
+                                type: string
+                              imageSearch:
+                                description: NOT IMPLEMENTED ONLY ImageID is supported.
+                                  ImageSearch is a search string to find the image
+                                  used for requesting virtual machines. Search will
+                                  be performed in metadata of the images. ImageSearch
+                                  is only used if ImageName and ImageID are not defined.
+                                type: string
+                            type: object
+                          networkID:
+                            description: 'Deprecated: use defaultNetwork instead NetworkID
+                              defines a openstack ID for the network.'
+                            type: string
+                          projectID:
+                            description: ProjectID defines an openstack project ID
+                              which will be used instead of the project from the secret
+                              ref. If not set the project from the secret ref will
+                              be used.
+                            type: string
+                        required:
+                        - authSecretRef
+                        - flavor
+                        - image
+                        type: object
+                      loadBalancerRef:
+                        description: LoadBalancerRef defines a reference to the LoadBalancer
+                          Object.
+                        properties:
+                          name:
+                            description: Name is unique within a namespace to reference
+                              a LoadBalancer resource.
+                            type: string
+                          namespace:
+                            description: Namespace defines the space within which
+                              the LoadBalancer name must be unique.
+                            type: string
+                        required:
+                        - name
+                        - namespace
+                        type: object
+                      portID:
+                        description: PortID defines the openstack ID of the port attached
+                          to the FloatingIP.
+                        type: string
+                      serverGroupID:
+                        description: ServerGroupID defines the openstack ID of the
+                          openstack server group.
+                        type: string
+                    required:
+                    - infrastructure
+                    - loadBalancerRef
+                    - portID
+                    type: object
+                required:
+                - labels
+                - spec
+                type: object
+            required:
+            - selector
+            - template
+            type: object
+          status:
+            description: LoadBalancerSetStatus defines the observed state of LoadBalancerSet.
+            properties:
+              availableReplicas:
+                description: AvailableReplicas are the current running replicas.
+                type: integer
+              readyReplicas:
+                description: ReadyReplicas are the current ready replicas.
+                type: integer
+              replicas:
+                description: Replicas are the desired replicas.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      scale:
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}

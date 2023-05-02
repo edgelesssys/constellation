@@ -1,0 +1,140 @@
+{{- if .Values.yawolCloudController.gardenerMonitoringEnabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yawol-cloud-controller-monitoring-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    extensions.gardener.cloud/configuration: monitoring
+data:
+  scrape_config: |
+    - job_name: yawol-cloud-controller
+      scheme: http
+      honor_labels: false
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: [{{ .Release.Namespace }}]
+      relabel_configs:
+      - source_labels:
+        - __meta_kubernetes_service_name
+        - __meta_kubernetes_endpoint_port_name
+        action: keep
+        regex: yawol-cloud-controller;metrics
+      # common metrics
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        target_label: pod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yawol-cloud-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: yawol-cloud-controller
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 8080
+      protocol: TCP
+  selector:
+    app: kubernetes
+    role: yawol-cloud-controller
+{{- end }}
+{{- if .Values.yawolController.gardenerMonitoringEnabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yawol-controller-monitoring-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    extensions.gardener.cloud/configuration: monitoring
+data:
+  scrape_config: |
+    - job_name: yawol-loadbalancer-controller-metrics
+      scheme: http
+      honor_labels: false
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: [{{ .Release.Namespace }}]
+      relabel_configs:
+      - source_labels:
+        - __meta_kubernetes_service_name
+        - __meta_kubernetes_endpoint_port_name
+        action: keep
+        regex: yawol-controller;metrics-lb
+      # common metrics
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        target_label: pod
+    - job_name: yawol-loadbalancerset-controller-metrics
+      scheme: http
+      honor_labels: false
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: [{{ .Release.Namespace }}]
+      relabel_configs:
+      - source_labels:
+        - __meta_kubernetes_service_name
+        - __meta_kubernetes_endpoint_port_name
+        action: keep
+        regex: yawol-controller;metrics-lbs
+      # common metrics
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        target_label: pod
+    - job_name: yawol-loadbalancermachine-controller-metrics
+      scheme: http
+      honor_labels: false
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: [{{ .Release.Namespace }}]
+      relabel_configs:
+      - source_labels:
+        - __meta_kubernetes_service_name
+        - __meta_kubernetes_endpoint_port_name
+        action: keep
+        regex: yawol-controller;metrics-lbm
+      # common metrics
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [ __meta_kubernetes_pod_name ]
+        target_label: pod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yawol-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: yawol-controller
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: metrics-lb
+      port: 8080
+      protocol: TCP
+    - name: metrics-lbs
+      port: 8081
+      protocol: TCP
+    - name: metrics-lbm
+      port: 8082
+      protocol: TCP
+  selector:
+    app: kubernetes
+    role: yawol-controller
+{{- end }}
