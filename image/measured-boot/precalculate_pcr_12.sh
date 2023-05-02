@@ -23,9 +23,8 @@ cmdline_measure() {
   local path="$1"
   local tmp
   tmp=$(mktemp)
-  # convert to utf-16le and add a null terminator
+  # convert to utf-16le
   iconv -f utf-8 -t utf-16le "${path}" -o "${tmp}"
-  truncate -s +2 "${tmp}"
   sha256sum "${tmp}" | cut -d " " -f 1
   rm "${tmp}"
 }
