@@ -1,0 +1,100 @@
+replicas: 1
+podAnnotations: {}
+podLabels: {}
+featureGates: {}
+proxy: {}
+namespace: kube-system
+vpa:
+  enabled: false
+  yawolCloudController:
+    mode: Auto
+  yawolController:
+    mode: Auto
+
+yawolCloudController:
+  enabled: true
+  gardenerMonitoringEnabled: false
+  clusterRoleEnabled: true
+  image:
+    repository: ghcr.io/stackitcloud/yawol/yawol-cloud-controller
+    # -- Allows you to override the yawol version in this chart. Use at your own risk.
+    tag: ""
+
+yawolController:
+  gardenerMonitoringEnabled: false
+  errorBackoffBaseDelay: 5ms
+  errorBackoffMaxDelay: 1000s
+  image:
+    repository: ghcr.io/stackitcloud/yawol/yawol-controller
+    # -- Allows you to override the yawol version in this chart. Use at your own risk.
+    tag: ""
+
+resources:
+  yawolCloudController:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  yawolControllerLoadbalancer:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  yawolControllerLoadbalancerset:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  yawolControllerLoadbalancermachine:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+#yawolClassName: debug
+#openstackTimeout: 20s
+
+# the name of the Kubernetes secret that contains the .openrc file contents
+# with the correct permissions to connect to the OpenStack API
+#
+# Placed in LoadBalancer.spec.infrastructure.authSecretRef.name
+yawolOSSecretName:
+
+# floating IP ID of the IP pool that yawol uses to request IPs
+#
+# Placed in LoadBalancer.spec.infrastructure.floatingNetID
+yawolFloatingID:
+
+# OpenStack network ID in which the Load Balancer is placed
+#
+# Placed in LoadBalancer.spec.infrastructure.networkID
+yawolNetworkID:
+
+# default value for flavor that yawol Load Balancer instances should use
+# can be overridden by annotation
+#
+# Placed in LoadBalancer.spec.infrastructure.flavor.flavor_id
+yawolFlavorID:
+
+# default value for ID of the image used for the Load Balancer instance
+# can be overridden by annotation
+#
+# Placed in LoadBalancer.spec.infrastructure.image.image_id
+yawolImageID:
+
+# default value for the AZ used for the Load Balancer instance
+# can be overridden by annotation. If not set, empty string is used.
+#
+# Placed in LoadBalancer.spec.infrastructure.availabilityZone
+yawolAvailabilityZone: ""
+
+# URL/IP of the Kubernetes API server that contains the LoadBalancer resources
+yawolAPIHost:

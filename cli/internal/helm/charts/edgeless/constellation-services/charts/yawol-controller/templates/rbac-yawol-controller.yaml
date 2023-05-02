@@ -1,0 +1,84 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: yawol-controller
+  namespace: {{ .Values.namespace }}
+rules:
+  - apiGroups: ["yawol.stackit.cloud"]
+    resources:
+    - "loadbalancersets"
+    - "loadbalancersets/status"
+    - "loadbalancermachines"
+    - "loadbalancermachines/status"
+    - "loadbalancers"
+    - "loadbalancers/status"
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources:
+      - "secrets"
+    verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
+  - apiGroups: [""]
+    resources:
+      - "serviceaccounts"
+    verbs: ["*"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources:
+      - "events"
+    verbs:
+      - create
+      - patch
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups: [""]
+    resources:
+      - configmaps/status
+    verbs:
+      - get
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: yawol-controller
+  namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: yawol-controller
+subjects:
+  - kind: ServiceAccount
+    name: yawol-controller
+    namespace: {{ .Values.namespace }}

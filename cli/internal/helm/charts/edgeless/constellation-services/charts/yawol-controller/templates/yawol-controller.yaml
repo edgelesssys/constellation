@@ -1,0 +1,131 @@
+apiVersion: {{ include "deploymentversion" . }}
+kind: Deployment
+metadata:
+  name: yawol-controller
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: kubernetes
+    role: yawol-controller
+spec:
+  revisionHistoryLimit: 0
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: yawol-controller
+  template:
+    metadata:
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        app: kubernetes
+        role: yawol-controller
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: yawol-controller
+      containers:
+      - name: yawol-controller-loadbalancer
+        image: "{{ .Values.yawolController.image.repository }}:{{ default .Chart.AppVersion .Values.yawolController.image.tag }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: metrics
+        args:
+          - -leader-elect
+          - -enable-loadbalancer-controller
+          {{- if .Values.openstackTimeout }}
+          - -openstack-timeout={{ .Values.openstackTimeout }}
+          {{- end }}
+          {{- if .Values.yawolController.errorBackoffBaseDelay }}
+          - -error-backoff-base-delay={{ .Values.yawolController.errorBackoffBaseDelay }}
+          {{- end }}
+          {{- if .Values.yawolController.errorBackoffMaxDelay }}
+          - -error-backoff-max-delay={{ .Values.yawolController.errorBackoffMaxDelay }}
+          {{- end }}
+        env:
+        {{- if .Values.namespace }}
+        - name: CLUSTER_NAMESPACE
+          value: {{ .Values.namespace }}
+        {{- end }}
+        {{- if .Values.resources.yawolControllerLoadbalancer }}
+        resources:
+{{ toYaml .Values.resources.yawolControllerLoadbalancer | indent 10 }}
+        {{- end }}
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      - name: yawol-controller-loadbalancerset
+        image: "{{ .Values.yawolController.image.repository }}:{{ default .Chart.AppVersion .Values.yawolController.image.tag }}"
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8081
+            name: metrics
+        args:
+          - -leader-elect
+          - -enable-loadbalancerset-controller
+          {{- if .Values.yawolController.errorBackoffBaseDelay }}
+          - -error-backoff-base-delay={{ .Values.yawolController.errorBackoffBaseDelay }}
+          {{- end }}
+          {{- if .Values.yawolController.errorBackoffMaxDelay }}
+          - -error-backoff-max-delay={{ .Values.yawolController.errorBackoffMaxDelay }}
+          {{- end }}
+        env:
+          {{- if .Values.namespace }}
+          - name: CLUSTER_NAMESPACE
+            value: {{ .Values.namespace }}
+          {{- end }}
+        {{- if .Values.resources.yawolControllerLoadbalancerset }}
+        resources:
+{{ toYaml .Values.resources.yawolControllerLoadbalancerset | indent 10 }}
+        {{- end }}
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      - name: yawol-controller-loadbalancermachine
+        image: "{{ .Values.yawolController.image.repository }}:{{ default .Chart.AppVersion .Values.yawolController.image.tag }}"
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8082
+            name: metrics
+        args:
+          - -leader-elect
+          - -enable-loadbalancermachine-controller
+          {{- if .Values.openstackTimeout }}
+          - -openstack-timeout={{ .Values.openstackTimeout }}
+          {{- end }}
+          {{- if .Values.yawolController.errorBackoffBaseDelay }}
+          - -error-backoff-base-delay={{ .Values.yawolController.errorBackoffBaseDelay }}
+          {{- end }}
+          {{- if .Values.yawolController.errorBackoffMaxDelay }}
+          - -error-backoff-max-delay={{ .Values.yawolController.errorBackoffMaxDelay }}
+          {{- end }}
+        env:
+          {{- if .Values.namespace }}
+          - name: CLUSTER_NAMESPACE
+            value: {{ .Values.namespace }}
+            {{- end }}
+          {{- if .Values.yawolAPIHost }}
+          - name: API_ENDPOINT
+            value: {{ .Values.yawolAPIHost }}
+          {{- end }}
+        {{- if .Values.resources.yawolControllerLoadbalancermachine }}
+        resources:
+{{ toYaml .Values.resources.yawolControllerLoadbalancermachine | indent 10 }}
+        {{- end }}
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      restartPolicy: Always

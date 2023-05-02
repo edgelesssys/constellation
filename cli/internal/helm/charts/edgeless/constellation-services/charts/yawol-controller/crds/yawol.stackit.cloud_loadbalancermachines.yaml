@@ -1,0 +1,319 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: loadbalancermachines.yawol.stackit.cloud
+spec:
+  group: yawol.stackit.cloud
+  names:
+    kind: LoadBalancerMachine
+    listKind: LoadBalancerMachineList
+    plural: loadbalancermachines
+    shortNames:
+    - lbm
+    singular: loadbalancermachine
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="EnvoyUpToDate")].status
+      name: EnvoyUpToDate
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="KeepalivedMaster")].status
+      name: KeepalivedMaster
+      type: string
+    - jsonPath: .status.metrics[?(@.type=="load1")].value
+      name: Load1
+      type: string
+    - jsonPath: .status.creationTimestamp
+      name: creationTimestamp
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: LoadBalancerMachine is the Schema for the LoadBalancerMachine's
+          API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LoadBalancerMachineSpec defines the desired state of LoadBalancerMachine
+            properties:
+              infrastructure:
+                description: Infrastructure defines parameters for the Infrastructure.
+                properties:
+                  additionalNetworks:
+                    description: AdditionalNetworks defines additional networks that
+                      will be added to the LoadBalancerMachines.
+                    items:
+                      description: LoadBalancerAdditionalNetwork defines additional
+                        networks for the LoadBalancer
+                      properties:
+                        networkID:
+                          description: NetworkID defines an openstack ID for the network.
+                          type: string
+                      required:
+                      - networkID
+                      type: object
+                    type: array
+                  authSecretRef:
+                    description: AuthSecretRef defines a secretRef for the openstack
+                      secret.
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  availabilityZone:
+                    description: AvailabilityZone defines the openstack availability
+                      zone for the LoadBalancer.
+                    type: string
+                  defaultNetwork:
+                    description: DefaultNetwork defines the default/listener network
+                      for the Loadbalancer. TODO Remove optional when Deprecations
+                      are removed
+                    properties:
+                      floatingNetID:
+                        description: FloatingNetID defines an openstack ID for the
+                          floatingNet.
+                        type: string
+                      networkID:
+                        description: NetworkID defines an openstack ID for the network.
+                        type: string
+                    required:
+                    - networkID
+                    type: object
+                  flavor:
+                    description: Flavor defines openstack flavor for the LoadBalancer.
+                    properties:
+                      flavor_id:
+                        description: 'Deprecated: use flavorID instead.'
+                        type: string
+                      flavor_name:
+                        description: 'Deprecated: use flavorName instead.'
+                        type: string
+                      flavor_search:
+                        description: 'Deprecated: use flavorSearch instead.'
+                        type: string
+                      flavorID:
+                        description: FlavorID is the flavor ID used for requesting
+                          virtual machines.
+                        type: string
+                      flavorName:
+                        description: NOT IMPLEMENTED ONLY FlavorID is supported. FlavorName
+                          is the name of the flavor used for requesting virtual machines.
+                          FlavorName is only used if FlavorID is not defined.
+                        type: string
+                      flavorSearch:
+                        description: NOT IMPLEMENTED ONLY FlavorID is supported. FlavorSearch
+                          is a search string to find the flavor used for requesting
+                          virtual machines. Search will be performed in metadata of
+                          the flavors. FlavorSearch is only used if FlavorName and
+                          FlavorID are not defined.
+                        type: string
+                    type: object
+                  floatingNetID:
+                    description: 'Deprecated: use defaultNetwork instead FloatingNetID
+                      defines a openstack ID for the floatingNet.'
+                    type: string
+                  image:
+                    description: Image defines openstack image for the LoadBalancer.
+                    properties:
+                      image_id:
+                        description: 'Deprecated: use imageID instead.'
+                        type: string
+                      image_name:
+                        description: 'Deprecated: use imageName instead.'
+                        type: string
+                      image_search:
+                        description: 'Deprecated: use imageSearch instead.'
+                        type: string
+                      imageID:
+                        description: ImageID is the image ID used for requesting virtual
+                          machines.
+                        type: string
+                      imageName:
+                        description: NOT IMPLEMENTED ONLY ImageID is supported. ImageName
+                          is the name of the image used for requesting virtual machines.
+                          ImageName is only used if ImageID is not defined.
+                        type: string
+                      imageSearch:
+                        description: NOT IMPLEMENTED ONLY ImageID is supported. ImageSearch
+                          is a search string to find the image used for requesting
+                          virtual machines. Search will be performed in metadata of
+                          the images. ImageSearch is only used if ImageName and ImageID
+                          are not defined.
+                        type: string
+                    type: object
+                  networkID:
+                    description: 'Deprecated: use defaultNetwork instead NetworkID
+                      defines a openstack ID for the network.'
+                    type: string
+                  projectID:
+                    description: ProjectID defines an openstack project ID which will
+                      be used instead of the project from the secret ref. If not set
+                      the project from the secret ref will be used.
+                    type: string
+                required:
+                - authSecretRef
+                - flavor
+                - image
+                type: object
+              loadBalancerRef:
+                description: LoadBalancerRef defines a reference to the LoadBalancer
+                  Object.
+                properties:
+                  name:
+                    description: Name is unique within a namespace to reference a
+                      LoadBalancer resource.
+                    type: string
+                  namespace:
+                    description: Namespace defines the space within which the LoadBalancer
+                      name must be unique.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              portID:
+                description: PortID defines the openstack ID of the port attached
+                  to the FloatingIP.
+                type: string
+              serverGroupID:
+                description: ServerGroupID defines the openstack ID of the openstack
+                  server group.
+                type: string
+            required:
+            - infrastructure
+            - loadBalancerRef
+            - portID
+            type: object
+          status:
+            description: LoadBalancerMachineStatus defines the observed state of LoadBalancerMachine.
+            properties:
+              conditions:
+                description: Conditions contains condition information for a LoadBalancerMachine.
+                items:
+                  description: NodeCondition contains condition information for a
+                    node.
+                  properties:
+                    lastHeartbeatTime:
+                      description: Last time we got an update on a given condition.
+                      format: date-time
+                      type: string
+                    lastTransitionTime:
+                      description: Last time the condition transit from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Human readable message indicating details about
+                        last transition.
+                      type: string
+                    reason:
+                      description: (brief) reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of node condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              creationTimestamp:
+                description: CreationTimestamp contains the creation timestamp a LoadBalancerMachine.
+                format: date-time
+                type: string
+              defaultPortID:
+                description: DefaultPortID contains the default openstack port ID
+                  for a LoadBalancerMachine.
+                type: string
+              defaultPortIP:
+                description: DefaultPortIP contains the default openstack port IP
+                  for a LoadBalancerMachine.
+                type: string
+              defaultPortName:
+                description: DefaultPortName contains the default openstack port Name
+                  for a LoadBalancerMachine.
+                type: string
+              lastOpenstackReconcile:
+                description: LastOpenstackReconcile contains the timestamp of the
+                  last openstack reconciliation.
+                format: date-time
+                type: string
+              metrics:
+                description: Metrics contains metrics for a LoadBalancerMachine.
+                items:
+                  description: LoadBalancerMachineMetric describes a metric of the
+                    LoadBalancerMachine
+                  properties:
+                    timestamp:
+                      description: Time is the timestamp if the metric
+                      format: date-time
+                      type: string
+                    type:
+                      description: Type is the type of the metric
+                      type: string
+                    value:
+                      description: Value is the value of a metric
+                      type: string
+                  required:
+                  - timestamp
+                  - type
+                  - value
+                  type: object
+                type: array
+              portID:
+                description: 'Deprecated: use defaultPortID instead PortID contains
+                  the openstack port ID for a LoadBalancerMachine.'
+                type: string
+              roleBindingName:
+                description: RoleBindingName contains the namespacedName from the
+                  RoleBinding for a LoadBalancerMachine.
+                type: string
+              roleName:
+                description: RoleName contains the namespacedName from the Role for
+                  a LoadBalancerMachine.
+                type: string
+              serverID:
+                description: ServerID contains the openstack server ID for a LoadBalancerMachine.
+                type: string
+              serviceAccountName:
+                description: ServiceAccountName contains the namespacedName from the
+                  ServiceAccount for a LoadBalancerMachine.
+                type: string
+              serviceAccountSecretName:
+                description: SecretName contains the namespacedName from the Secret
+                  which belongs to the Serviceaccount.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

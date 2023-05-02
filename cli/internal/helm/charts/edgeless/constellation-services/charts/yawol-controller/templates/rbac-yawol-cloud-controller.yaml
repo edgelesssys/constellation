@@ -1,0 +1,113 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: yawol-cloud-controller
+  namespace: {{ .Values.namespace }}
+rules:
+  - apiGroups: ["yawol.stackit.cloud"]
+    resources:
+    - "loadbalancers"
+    - "loadbalancers/status"
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources:
+      - "events"
+    verbs:
+    - create
+    - get
+    - list
+    - watch
+    - patch
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups: [""]
+    resources:
+      - configmaps/status
+      - services/status
+    verbs:
+      - get
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: yawol-cloud-controller
+  namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: yawol-cloud-controller
+subjects:
+  - kind: ServiceAccount
+    name: yawol-cloud-controller
+    namespace: {{ .Values.namespace }}
+{{- if .Values.yawolCloudController.clusterRoleEnabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: yawol-cloud-controller
+rules:
+  - apiGroups: [""]
+    resources:
+      - "events"
+    verbs:
+    - create
+    - get
+    - list
+    - watch
+    - patch
+  - apiGroups: [""]
+    resources:
+      - services
+      - services/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/status
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: yawol-cloud-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: yawol-cloud-controller
+subjects:
+  - kind: ServiceAccount
+    name: yawol-cloud-controller
+    namespace: {{ .Values.namespace }}
+{{- end }}

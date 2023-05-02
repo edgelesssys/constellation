@@ -1,0 +1,27 @@
+{{- if .Values.vpa.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: yawol-cloud-controller-vpa
+  namespace: {{ .Values.namespace }}
+spec:
+  targetRef:
+    apiVersion: {{ include "deploymentversion" . }}
+    kind: Deployment
+    name: yawol-cloud-controller
+  updatePolicy:
+    updateMode: {{ .Values.vpa.yawolCloudController.mode }}
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: yawol-controller-vpa
+  namespace: {{ .Values.namespace }}
+spec:
+  targetRef:
+    apiVersion: {{ include "deploymentversion" . }}
+    kind: Deployment
+    name: yawol-controller
+  updatePolicy:
+    updateMode: {{ .Values.vpa.yawolController.mode }}
+{{- end }}

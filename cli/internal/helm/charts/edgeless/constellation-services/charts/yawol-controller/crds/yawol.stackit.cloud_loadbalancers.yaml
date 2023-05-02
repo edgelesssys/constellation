@@ -1,0 +1,454 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: loadbalancers.yawol.stackit.cloud
+spec:
+  group: yawol.stackit.cloud
+  names:
+    kind: LoadBalancer
+    listKind: LoadBalancerList
+    plural: loadbalancers
+    shortNames:
+    - lb
+    singular: loadbalancer
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.replicas
+      name: DESIRED
+      type: string
+    - jsonPath: .status.replicas
+      name: CURRENT
+      type: string
+    - jsonPath: .status.readyReplicas
+      name: READY
+      type: string
+    - jsonPath: .status.externalIP
+      name: externalIP
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: LoadBalancer is the Schema for the YAWOL LoadBalancer API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LoadBalancerSpec defines the desired state of LoadBalancer
+            properties:
+              debugSettings:
+                description: Debug are settings for debugging an loadbalancer.
+                properties:
+                  enabled:
+                    description: Enabled defines if debugging is enabled
+                    type: boolean
+                  sshkeyName:
+                    description: SshKey is a openstack sshkey name for debugging
+                    type: string
+                type: object
+              endpoints:
+                description: Endpoints defines the Endpoints for the LoadBalancer.
+                items:
+                  description: LoadBalancerEndpoint defines a Endpoint for the LoadBalancer
+                  properties:
+                    addresses:
+                      description: Addresses is a list of addresses for the endpoint,
+                        they can contain IPv4 and IPv6 addresses.
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      description: 'Name defines a name for the Endpoint (example:
+                        node name).'
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              existingFloatingIP:
+                description: ExistingFloatingIP uses a existing Floating IP as FIP
+                type: string
+              infrastructure:
+                description: Infrastructure defines parameters for the Infrastructure
+                properties:
+                  additionalNetworks:
+                    description: AdditionalNetworks defines additional networks that
+                      will be added to the LoadBalancerMachines.
+                    items:
+                      description: LoadBalancerAdditionalNetwork defines additional
+                        networks for the LoadBalancer
+                      properties:
+                        networkID:
+                          description: NetworkID defines an openstack ID for the network.
+                          type: string
+                      required:
+                      - networkID
+                      type: object
+                    type: array
+                  authSecretRef:
+                    description: AuthSecretRef defines a secretRef for the openstack
+                      secret.
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  availabilityZone:
+                    description: AvailabilityZone defines the openstack availability
+                      zone for the LoadBalancer.
+                    type: string
+                  defaultNetwork:
+                    description: DefaultNetwork defines the default/listener network
+                      for the Loadbalancer. TODO Remove optional when Deprecations
+                      are removed
+                    properties:
+                      floatingNetID:
+                        description: FloatingNetID defines an openstack ID for the
+                          floatingNet.
+                        type: string
+                      networkID:
+                        description: NetworkID defines an openstack ID for the network.
+                        type: string
+                    required:
+                    - networkID
+                    type: object
+                  flavor:
+                    description: Flavor defines openstack flavor for the LoadBalancer.
+                    properties:
+                      flavor_id:
+                        description: 'Deprecated: use flavorID instead.'
+                        type: string
+                      flavor_name:
+                        description: 'Deprecated: use flavorName instead.'
+                        type: string
+                      flavor_search:
+                        description: 'Deprecated: use flavorSearch instead.'
+                        type: string
+                      flavorID:
+                        description: FlavorID is the flavor ID used for requesting
+                          virtual machines.
+                        type: string
+                      flavorName:
+                        description: NOT IMPLEMENTED ONLY FlavorID is supported. FlavorName
+                          is the name of the flavor used for requesting virtual machines.
+                          FlavorName is only used if FlavorID is not defined.
+                        type: string
+                      flavorSearch:
+                        description: NOT IMPLEMENTED ONLY FlavorID is supported. FlavorSearch
+                          is a search string to find the flavor used for requesting
+                          virtual machines. Search will be performed in metadata of
+                          the flavors. FlavorSearch is only used if FlavorName and
+                          FlavorID are not defined.
+                        type: string
+                    type: object
+                  floatingNetID:
+                    description: 'Deprecated: use defaultNetwork instead FloatingNetID
+                      defines a openstack ID for the floatingNet.'
+                    type: string
+                  image:
+                    description: Image defines openstack image for the LoadBalancer.
+                    properties:
+                      image_id:
+                        description: 'Deprecated: use imageID instead.'
+                        type: string
+                      image_name:
+                        description: 'Deprecated: use imageName instead.'
+                        type: string
+                      image_search:
+                        description: 'Deprecated: use imageSearch instead.'
+                        type: string
+                      imageID:
+                        description: ImageID is the image ID used for requesting virtual
+                          machines.
+                        type: string
+                      imageName:
+                        description: NOT IMPLEMENTED ONLY ImageID is supported. ImageName
+                          is the name of the image used for requesting virtual machines.
+                          ImageName is only used if ImageID is not defined.
+                        type: string
+                      imageSearch:
+                        description: NOT IMPLEMENTED ONLY ImageID is supported. ImageSearch
+                          is a search string to find the image used for requesting
+                          virtual machines. Search will be performed in metadata of
+                          the images. ImageSearch is only used if ImageName and ImageID
+                          are not defined.
+                        type: string
+                    type: object
+                  networkID:
+                    description: 'Deprecated: use defaultNetwork instead NetworkID
+                      defines a openstack ID for the network.'
+                    type: string
+                  projectID:
+                    description: ProjectID defines an openstack project ID which will
+                      be used instead of the project from the secret ref. If not set
+                      the project from the secret ref will be used.
+                    type: string
+                required:
+                - authSecretRef
+                - flavor
+                - image
+                type: object
+              options:
+                description: Options for additional LoadBalancer settings
+                properties:
+                  internalLB:
+                    default: false
+                    description: InternalLB is a bool for internal LoadBalancer. If
+                      set to false a FloatingIP will be assigned to the LB. Defaults
+                      to false.
+                    type: boolean
+                  loadBalancerSourceRanges:
+                    description: LoadBalancerSourceRanges restrict traffic to IP ranges
+                      for the LoadBalancer (copy from service)
+                    items:
+                      type: string
+                    type: array
+                  logForward:
+                    description: LogForward enables log forward to a loki instance
+                    properties:
+                      enabled:
+                        description: Enabled defines if log forward is enabled
+                        type: boolean
+                      lokiUrl:
+                        description: 'LokiUrl defines the loki push url (Example:
+                          http://example.com:3100/loki/api/v1/push).'
+                        type: string
+                    type: object
+                  serverGroupPolicy:
+                    description: ServerGroupPolicy creates a server group with that
+                      policy. Can be 'affinity', 'anti-affinity' 'soft-affinity',
+                      'soft-anti-affinity' depending on the OpenStack Infrastructure.
+                      If empty Openstack server group will not be used. Default is
+                      disabled
+                    type: string
+                  tcpIdleTimeout:
+                    description: TCPIdleTimeout sets TCP idle Timeout for all TCP
+                      connections from this LoadBalancer. Value is in Seconds. With
+                      0 you disable the idle timeout, be careful this can lead to
+                      side effects. Default is 1h.
+                    type: string
+                  tcpProxyProtocol:
+                    description: TCPProxyProtocol enables HAProxy TCP Proxy Protocol
+                    type: boolean
+                  tcpProxyProtocolPortFilter:
+                    description: TCPProxyProtocolPortList enables HAProxy TCP Proxy
+                      Protocol for specified ports. If empty it is enabled for all
+                      ports. Only has an affect if TCPProxyProtocol is enabled.
+                    items:
+                      format: int32
+                      type: integer
+                    type: array
+                  udpIdleTimeout:
+                    description: UDPIdleTimeout sets UDP idle Timeout for all UDP
+                      connections from this LoadBalancer. Value is in Seconds. With
+                      0 you disable the idle timeout, be careful this can lead to
+                      side effects. Default is 1m.
+                    type: string
+                type: object
+              ports:
+                description: Ports defines the Ports for the LoadBalancer (copy from
+                  service)
+                items:
+                  description: ServicePort contains information on service's port.
+                  properties:
+                    appProtocol:
+                      description: The application protocol for this port. This field
+                        follows standard Kubernetes label syntax. Un-prefixed names
+                        are reserved for IANA standard service names (as per RFC-6335
+                        and https://www.iana.org/assignments/service-names). Non-standard
+                        protocols should use prefixed names such as mycompany.com/my-custom-protocol.
+                      type: string
+                    name:
+                      description: The name of this port within the service. This
+                        must be a DNS_LABEL. All ports within a ServiceSpec must have
+                        unique names. When considering the endpoints for a Service,
+                        this must match the 'name' field in the EndpointPort. Optional
+                        if only one ServicePort is defined on this service.
+                      type: string
+                    nodePort:
+                      description: 'The port on each node on which this service is
+                        exposed when type is NodePort or LoadBalancer.  Usually assigned
+                        by the system. If a value is specified, in-range, and not
+                        in use it will be used, otherwise the operation will fail.  If
+                        not specified, a port will be allocated if this Service requires
+                        one.  If this field is specified when creating a Service which
+                        does not need it, creation will fail. This field will be wiped
+                        when updating a Service to no longer need it (e.g. changing
+                        type from NodePort to ClusterIP). More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport'
+                      format: int32
+                      type: integer
+                    port:
+                      description: The port that will be exposed by this service.
+                      format: int32
+                      type: integer
+                    protocol:
+                      default: TCP
+                      description: The IP protocol for this port. Supports "TCP",
+                        "UDP", and "SCTP". Default is TCP.
+                      type: string
+                    targetPort:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: 'Number or name of the port to access on the pods
+                        targeted by the service. Number must be in the range 1 to
+                        65535. Name must be an IANA_SVC_NAME. If this is a string,
+                        it will be looked up as a named port in the target Pod''s
+                        container ports. If this is not specified, the value of the
+                        ''port'' field is used (an identity map). This field is ignored
+                        for services with clusterIP=None, and should be omitted or
+                        set equal to the ''port'' field. More info: https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service'
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - port
+                  type: object
+                type: array
+              replicas:
+                default: 1
+                description: Replicas defines the number of LoadBalancers that should
+                  run.
+                minimum: 0
+                type: integer
+              selector:
+                description: This label selector matches the load balancer sets deriving
+                  from the load balancer
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+            required:
+            - infrastructure
+            - selector
+            type: object
+          status:
+            description: LoadBalancerStatus defines the observed state of LoadBalancer.
+            properties:
+              externalIP:
+                description: ExternalIP is the current externalIP (FIP or private).
+                  If not defined, no ExternalIP is bound yet.
+                type: string
+              floatingID:
+                description: FloatingID is the current openstack ID from the FloatingIP.
+                type: string
+              floatingName:
+                description: FloatingName is the current openstack name from the FloatingIP.
+                type: string
+              lastOpenstackReconcile:
+                description: LastOpenstackReconcile contains the timestamp of the
+                  last openstack reconciliation.
+                format: date-time
+                type: string
+              openstackReconcileHash:
+                description: OpenstackReconcileHash contains a hash of openstack related
+                  settings to reset the LastOpenstackReconcile timer if needed.
+                type: string
+              portID:
+                description: PortID is the current openstack ID from the virtual Port.
+                type: string
+              portIP:
+                description: PortIP is the IP from the openstack virtual Port.
+                type: string
+              portName:
+                description: PortName is the current openstack name from the virtual
+                  Port.
+                type: string
+              readyReplicas:
+                description: ReadyReplicas are the current running replicas.
+                type: integer
+              replicas:
+                description: Replicas displays the running lb replicas under this
+                  deployment
+                type: integer
+              security_group_id:
+                description: 'Deprecated: use securityGroupID instead.'
+                type: string
+              security_group_name:
+                description: 'Deprecated: use securityGroupName instead.'
+                type: string
+              securityGroupID:
+                description: SecurityGroupID is the current security group ID mapped
+                  to the port
+                type: string
+              securityGroupName:
+                description: SecurityGroupName is the current security group name
+                  mapped to the port
+                type: string
+              serverGroupID:
+                description: ServerGroupID is the current sever group ID
+                type: string
+              serverGroupName:
+                description: ServerGroupName is the current sever group name
+                type: string
+            type: object
+        required:
+        - metadata
+        type: object
+    served: true
+    storage: true
+    subresources:
+      scale:
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}
