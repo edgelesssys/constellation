@@ -101,7 +101,7 @@ func TestUpgrade(t *testing.T) {
 	log.Println(string(data))
 
 	log.Println("Triggering upgrade.")
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug")
+	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "-y")
 	msg, err := cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
 	require.NoError(containsUnexepectedMsg(string(msg)))
@@ -192,7 +192,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
 	require.NoError(err)
 
-	return versionContainer{image: info.wantImage, kubernetes: kubernetesVersion, microservices: microserviceVersion}
+	return versionContainer{imageRef: info.imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
 }
 
 func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string, timeout time.Duration) {
@@ -226,8 +226,8 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 		for _, node := range nodes.Items {
 			for key, value := range node.Annotations {
 				if key == "constellation.edgeless.systems/node-image" {
-					log.Printf("\t%s: Image %s\n", node.Name, value)
-					if value != targetVersions.image {
+					if !strings.EqualFold(value, targetVersions.imageRef) {
+						log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.imageRef)
 						allUpdated = false
 					}
 				}
@@ -329,7 +329,7 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 }
 
 type versionContainer struct {
-	image         string
+	imageRef      string
 	kubernetes    semver.Semver
 	microservices string
 }

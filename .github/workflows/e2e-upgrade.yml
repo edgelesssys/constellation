@@ -37,6 +37,10 @@ on:
         description: Microservice version to target for the upgrade, empty for target's default version.
         type: string
         required: false
+      simulatedTargetVersion:
+        description: Enter a version to build the CLI with. This can be used to simulate a patch-upgrade.
+        type: string
+        required: false
   workflow_call:
     inputs:
       cloudProvider:
@@ -72,13 +76,10 @@ on:
         description: Kubernetes version to target for the upgrade, empty for target's default version.
         type: string
         required: false
-
-
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
+      simulatedTargetVersion:
+        description: Enter a version to build the CLI with. This can be used to simulate a patch-upgrade.
+        type: string
+        required: false
 
 jobs:
   e2e-upgrade:
@@ -136,6 +137,11 @@ jobs:
           command: latest
           ref: main
           stream: nightly
+
+      - name: Simulate patch upgrade
+        if: inputs.simulatedTargetVersion != ''
+        run: |
+          echo ${{ inputs.simulatedTargetVersion }} > version.txt
 
       - name: Create cluster with 'fromVersion' CLI.
         id: e2e_test
