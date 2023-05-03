@@ -199,10 +199,12 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		// The server stops itself after the current call is done.
 		log.Warnf("Node is already in a join process")
 
+		err = status.Error(codes.FailedPrecondition, "node is already being activated")
+
 		// send back the error
 		stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Error(codes.FailedPrecondition, "node is already being activated").Error()},
+				InitFailure: &initproto.InitFailureResponse{Error: err.Error()},
 			},
 		})
 		if e := s.sendLogs(stream); e != nil {
