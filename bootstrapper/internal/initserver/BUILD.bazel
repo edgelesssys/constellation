@@ -18,7 +18,6 @@ go_library(
         "//internal/grpc/grpclog",
         "//internal/kms/kms",
         "//internal/kms/setup",
-        "//internal/kms/uri",
         "//internal/logger",
         "//internal/nodestate",
         "//internal/role",
@@ -41,7 +40,6 @@ go_test(
     deps = [
         "//bootstrapper/initproto",
         "//internal/atls",
-        "//internal/crypto",
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/kms/setup",
