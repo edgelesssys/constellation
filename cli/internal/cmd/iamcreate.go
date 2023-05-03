@@ -402,18 +402,9 @@ func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 		zone:   zone,
 	}
 
-	if strings.HasPrefix(zone, "eu-central-1") {
-		flags.aws.region = "eu-central-1"
-	} else if strings.HasPrefix(zone, "eu-west-1") {
-		flags.aws.region = "eu-west-1"
-	} else if strings.HasPrefix(zone, "eu-west-3") {
-		flags.aws.region = "eu-west-3"
-	} else if strings.HasPrefix(zone, "us-east-2") {
-		flags.aws.region = "us-east-2"
-	} else if strings.HasPrefix(zone, "ap-south-1") {
-		flags.aws.region = "ap-south-1"
-	} else {
-		return iamFlags{}, fmt.Errorf("invalid AWS region, to find a correct region please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
+	flags.aws.region, err = awsZoneToRegion(zone)
+	if err != nil {
+		return iamFlags{}, fmt.Errorf("invalid AWS zone. To find a valid zone, please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
 	}
 
 	// Setup IAM config.
@@ -609,4 +600,18 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// awsZoneToRegion converts an AWS zone string to a region string.
+// Example: "us-east-1a" -> "us-east-1"
+// It does not check against a list of valid zones.
+// Instead, it just checks that the zone string is in the correct format:
+// "The code for Availability Zone is its Region code followed by a letter identifier."
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones .
+func awsZoneToRegion(zone string) (string, error) {
+	parts := strings.Split(zone, "-")
+	if len(parts) < 3 || len(parts[2]) < 1 {
+		return "", fmt.Errorf("invalid zone string: %s", zone)
+	}
+	return fmt.Sprintf("%s-%s-%c", parts[0], parts[1], parts[2][0]), nil
 }

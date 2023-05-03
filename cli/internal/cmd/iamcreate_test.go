@@ -212,7 +212,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
-			zoneFlag:   "us-west-5b",
+			zoneFlag:   "us-west",
 			prefixFlag: "test",
 			yesFlag:    true,
 			wantErr:    true,
