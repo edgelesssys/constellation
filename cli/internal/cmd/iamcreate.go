@@ -404,6 +404,10 @@ func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 
 	if strings.HasPrefix(zone, "eu-central-1") {
 		flags.aws.region = "eu-central-1"
+	} else if strings.HasPrefix(zone, "eu-west-1") {
+		flags.aws.region = "eu-west-1"
+	} else if strings.HasPrefix(zone, "eu-west-3") {
+		flags.aws.region = "eu-west-3"
 	} else if strings.HasPrefix(zone, "us-east-2") {
 		flags.aws.region = "us-east-2"
 	} else if strings.HasPrefix(zone, "ap-south-1") {

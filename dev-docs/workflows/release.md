@@ -83,6 +83,8 @@ Depending on how far the pipeline ran we need to delete:
 **Important:** You need to repeat the following steps for every region supported by Constellation!
 Currently, this includes: 
 - Frankfurt (eu-central-1)
+- Ireland (eu-west-1)
+- Paris (eu-west-3)
 - Ohio (us-east-2)
 - Mumbai (ap-south-1) 
 

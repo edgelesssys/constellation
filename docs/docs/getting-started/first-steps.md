@@ -57,6 +57,8 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     Constellation OS images are currently replicated to the following regions:
      * `eu-central-1`
+     * `eu-west-1`
+     * `eu-west-3`
      * `us-east-2`
      * `ap-south-1`
 

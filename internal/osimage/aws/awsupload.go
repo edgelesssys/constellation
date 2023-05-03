@@ -586,5 +586,5 @@ const (
 
 var (
 	errAMIDoesNotExist = errors.New("ami does not exist")
-	replicationRegions = []string{"us-east-2", "ap-south-1"}
+	replicationRegions = []string{"eu-west-1", "eu-west-3", "us-east-2", "ap-south-1"}
 )
