@@ -4,7 +4,7 @@ The following steps guide you through the process of creating a cluster and depl
 and have access to a cloud subscription.
 
 :::tip
-If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md#using-miniconstellation) or [constellation with qemu](../getting-started/first-steps-local.md#local-setup-with-qemu), which lets you set up a local Constellation cluster using virtualization.
+If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md#using-miniconstellation) or [constellation with Qemu](../getting-started/first-steps-local.md#local-setup-with-qemu), which lets you set up a local Constellation cluster using virtualization.
 :::
 
 :::note

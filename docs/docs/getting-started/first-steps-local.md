@@ -1,6 +1,6 @@
 # First steps with a local cluster
 
-To set up a local cluster on your computer, you can either use [MiniConstellation](#using-miniconstellation) or [qemu](#local-setup-with-qemu).
+To set up a local cluster on your computer, you can either use [MiniConstellation](#using-miniconstellation) or [Qemu](#local-setup-with-qemu).
 
 ## Using MiniConstellation
 
@@ -120,9 +120,9 @@ constellation mini down
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
 
-## Local setup with qemu
+## Local setup with Qemu
 
-With [qemu](https://www.qemu.org/), you can create a local constellation cluster as if it were in the cloud. It utilizes different virtual machines over qemu to create multiple nodes which interact with each other.
+With [Qemu](https://www.qemu.org/), you can create a local constellation cluster as if it were in the cloud. It utilizes different virtual machines over Qemu to create multiple nodes which interact with each other.
 
 :::caution
 
@@ -143,7 +143,7 @@ attaching persistent storage, or autoscaling aren't available.
   * [Constellation CLI](./install.md#install-the-constellation-cli)
   * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
   * [Docker](https://docs.docker.com/engine/install/)
-  * [qemu](https://www.qemu.org/)
+  * [Qemu](https://www.qemu.org/)
   * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
   * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 * Other system requirements
@@ -166,7 +166,7 @@ attaching persistent storage, or autoscaling aren't available.
   constellation config generate qemu
   ```
 
-  This creates a [configuration file](../workflows/config.md) for qemu called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
+  This creates a [configuration file](../workflows/config.md) for Qemu called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
 2. Now you can create your cluster and it's nodes. `constellation create` uses the options set in `constellation-conf.yaml`. If you want to manually use [Terraform](../reference/terraform.md) instead, follow the corresponding instructions in [Create Workflow](../workflows/create.md).
 
   ```shell-session
