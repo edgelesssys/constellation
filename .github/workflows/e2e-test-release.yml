@@ -136,7 +136,7 @@ jobs:
         if: matrix.provider == 'azure'
         shell: bash
         run: |
-          uuid=$(cat /proc/sys/kernel/random/uuid)
+          uuid=$(uuidgen)
           name=e2e-test-${uuid%%-*}
           az group create --location northeurope --name "$name" --tags e2e
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"

@@ -146,7 +146,7 @@ jobs:
         if: matrix.provider == 'azure'
         shell: bash
         run: |
-          uuid=$(cat /proc/sys/kernel/random/uuid)
+          uuid=$(uuidgen)
           name=e2e-test-${uuid%%-*}
           az group create --location northeurope --name "$name" --tags e2e
           echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
@@ -217,12 +217,11 @@ jobs:
 
   e2e-upgrade:
     strategy:
-        fail-fast: false
-        max-parallel: 1
-        matrix:
-          fromVersion:
-            ["v2.6.0"]
-          cloudProvider: ["gcp", "azure"]
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        fromVersion: ["v2.6.0"]
+        cloudProvider: ["gcp", "azure"]
     name: Run upgrade tests
     secrets: inherit
     permissions:
