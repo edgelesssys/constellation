@@ -138,11 +138,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "invalid init secret %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -152,11 +156,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: fmt.Errorf("creating kms client: %w", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -167,11 +175,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "deriving measurement values: %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -181,11 +193,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "locking node: %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -202,11 +218,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		err = status.Error(codes.FailedPrecondition, "node is already being activated")
 
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: err.Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -220,11 +240,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "setting up disk: %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -237,11 +261,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "persisting node state: %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -265,11 +293,15 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	)
 	if err != nil {
 		// send back the error
-		stream.Send(&initproto.InitResponse{
+		e := stream.Send(&initproto.InitResponse{
 			Kind: &initproto.InitResponse_InitFailure{
 				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "initializing cluster: %s", err).Error()},
 			},
 		})
+		if e != nil {
+			err = e
+		}
+
 		if e := s.sendLogs(stream); e != nil {
 			err = e
 		}
@@ -285,9 +317,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		},
 	}
 
-	stream.Send(&initproto.InitResponse{Kind: successMessage})
-
-	return nil
+	return stream.Send(&initproto.InitResponse{Kind: successMessage})
 }
 
 func (s *Server) sendLogs(stream initproto.API_InitServer) error {
