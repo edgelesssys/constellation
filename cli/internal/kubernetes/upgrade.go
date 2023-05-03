@@ -89,8 +89,8 @@ type Upgrader struct {
 type terraformUpgrader interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
+	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
 }
 
 // NewUpgrader returns a new Upgrader.
@@ -135,19 +135,19 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 // PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables) (bool, error) {
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables, targets ...string) (bool, error) {
 	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(csp.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir, vars)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
-	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile)
+	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile, targets...)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
 	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, logLevel, path.Join(constants.TerraformUpgradeWorkingDir, constants.TerraformUpgradePlanFile), u.outWriter); err != nil {
+		if err := u.tf.ShowPlan(ctx, logLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}

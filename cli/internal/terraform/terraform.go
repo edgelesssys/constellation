@@ -96,7 +96,7 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir stri
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel, targets ...string) (CreateOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return CreateOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -105,7 +105,12 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOu
 		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
-	if err := c.tf.Apply(ctx); err != nil {
+	opts := []tfexec.ApplyOption{}
+	for _, target := range targets {
+		opts = append(opts, tfexec.Target(target))
+	}
+
+	if err := c.tf.Apply(ctx, opts...); err != nil {
 		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
@@ -307,7 +312,7 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 
 // Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.
 // If there is a diff, the returned bool is true. Otherwise, it is false.
-func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (bool, error) {
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string, targets ...string) (bool, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -318,6 +323,9 @@ func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (
 
 	opts := []tfexec.PlanOption{
 		tfexec.Out(planFile),
+	}
+	for _, target := range targets {
+		opts = append(opts, tfexec.Target(target))
 	}
 	return c.tf.Plan(ctx, opts...)
 }

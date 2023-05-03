@@ -209,7 +209,7 @@ func State() string {
 
 var (
 	// versionInfo is the version of a binary. Left as a separate variable to allow override during build.
-	versionInfo = "0.0.0"
+	versionInfo = "2.8.0"
 	// timestamp is the commit timestamp of a binary. Left as a separate variable to allow override during build.
 	timestamp = "1970-01-01T00:00:00Z"
 	// commit is the commit hash of a binary. Left as a separate variable to allow override during build.

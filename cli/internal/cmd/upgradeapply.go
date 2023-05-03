@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
@@ -100,11 +101,17 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if conf.GetProvider() == cloudprovider.Azure {
 		u.log.Debugf("Planning Terraform migrations")
 
+		upgradeTargets := []string{"azurerm_attestation_provider.attestation_provider"}
+
 		// Fetch variables to execute Terraform script with
 		imageRef, err := image.New().FetchReference(cmd.Context(), conf)
 		if err != nil {
 			return fmt.Errorf("fetching image reference: %w", err)
 		}
+		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
+		imageRef = strings.Replace(imageRef, "Images", "images", 1)
+		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
+
 		vars := &terraform.AzureClusterVariables{
 			CommonVariables: terraform.CommonVariables{
 				Name:            conf.Name,
@@ -121,9 +128,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 			SecureBoot:           *conf.Provider.Azure.SecureBoot,
 			Debug:                conf.IsDebugCluster(),
 		}
+		u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 		// Check if there are any Terraform migrations to apply
-		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure, vars)
+		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure, vars, upgradeTargets...)
 		if err != nil {
 			return fmt.Errorf("planning Terraform migrations: %w", err)
 		}
@@ -278,5 +286,5 @@ type cloudUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
 	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
-	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables) (bool, error)
+	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables, targets ...string) (bool, error)
 }

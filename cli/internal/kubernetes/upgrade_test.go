@@ -638,10 +638,10 @@ func (u *stubTerraformUpgrader) ShowPlan(context.Context, terraform.LogLevel, st
 	return u.showErr
 }
 
-func (u *stubTerraformUpgrader) Plan(context.Context, terraform.LogLevel, string) (bool, error) {
+func (u *stubTerraformUpgrader) Plan(context.Context, terraform.LogLevel, string, ...string) (bool, error) {
 	return u.hasDiff, u.planErr
 }
 
-func (u *stubTerraformUpgrader) CreateCluster(context.Context, terraform.LogLevel) (terraform.CreateOutput, error) {
+func (u *stubTerraformUpgrader) CreateCluster(context.Context, terraform.LogLevel, ...string) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{}, u.CreateClusterErr
 }
