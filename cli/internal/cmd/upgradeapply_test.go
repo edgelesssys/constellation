@@ -14,7 +14,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -87,10 +86,11 @@ func TestUpgradeApply(t *testing.T) {
 }
 
 type stubUpgrader struct {
-	currentConfig    config.AttestationCfg
-	nodeVersionErr   error
-	helmErr          error
-	planTerraformErr error
+	currentConfig     config.AttestationCfg
+	nodeVersionErr    error
+	helmErr           error
+	planTerraformErr  error
+	applyTerraformErr error
 }
 
 func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) error {
@@ -109,6 +109,10 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) PlanTerraformMigrations(context.Context, terraform.LogLevel, cloudprovider.Provider, terraform.Variables, ...string) (bool, error) {
+func (u stubUpgrader) PlanTerraformMigrations(context.Context, kubernetes.TerraformUpgradeOptions) (bool, error) {
 	return false, u.planTerraformErr
+}
+
+func (u stubUpgrader) ApplyTerraformMigrations(context.Context, file.Handler, kubernetes.TerraformUpgradeOptions) error {
+	return u.applyTerraformErr
 }

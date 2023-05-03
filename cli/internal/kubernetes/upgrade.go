@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -24,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -132,27 +134,64 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 	}, nil
 }
 
-// PlanTerraformMigrations plans the Terraform migrations for the Constellation upgrade.
+// TerraformUpgradeOptions are the options used for the Terraform upgrade.
+type TerraformUpgradeOptions struct {
+	// LogLevel is the log level used for Terraform.
+	LogLevel terraform.LogLevel
+	// CSP is the cloud provider to perform the upgrade on.
+	CSP cloudprovider.Provider
+	// Vars are the Terraform variables used for the upgrade.
+	Vars terraform.Variables
+	// Targets are the Terraform targets used for the upgrade.
+	Targets []string
+	// OutputFile is the file to write the Terraform output to.
+	OutputFile string
+}
+
+// PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables, targets ...string) (bool, error) {
-	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(csp.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir, vars)
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions) (bool, error) {
+	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(opts.CSP.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir, opts.Vars)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
-	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile, targets...)
+	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, opts.Targets...)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
 	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, logLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
+		if err := u.tf.ShowPlan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}
 
 	return hasDiff, nil
+}
+
+// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations and writes the output to the specified file.
+// If PlanTerraformMigrations has not been executed before, it will return an error.
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, file file.Handler, opts TerraformUpgradeOptions) error {
+	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
+	if err != nil {
+		return fmt.Errorf("terraform apply: %w", err)
+	}
+
+	outputFileContents := clusterid.File{
+		CloudProvider:  opts.CSP,
+		InitSecret:     []byte(tfOutput.Secret),
+		IP:             tfOutput.IP,
+		UID:            tfOutput.UID,
+		AttestationURL: tfOutput.AttestationURL,
+	}
+
+	if err := file.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
+		return fmt.Errorf("writing terraform output to file: %w", err)
+	}
+
+	return nil
 }
 
 // UpgradeHelmServices upgrade helm services.

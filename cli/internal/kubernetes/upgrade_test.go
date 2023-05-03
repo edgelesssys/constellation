@@ -537,7 +537,13 @@ func TestPlanTerraformMigrations(t *testing.T) {
 
 			u := upgrader(tc.tf)
 
-			diff, err := u.PlanTerraformMigrations(context.Background(), terraform.LogLevelDebug, cloudprovider.Unknown, &terraform.QEMUVariables{})
+			opts := TerraformUpgradeOptions{
+				LogLevel: terraform.LogLevelDebug,
+				CSP:      cloudprovider.Unknown,
+				Vars:     &terraform.QEMUVariables{},
+			}
+
+			diff, err := u.PlanTerraformMigrations(context.Background(), opts)
 			if tc.wantErr {
 				require.Error(err)
 			} else {

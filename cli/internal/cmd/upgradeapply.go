@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
@@ -97,61 +98,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-
-	if conf.GetProvider() == cloudprovider.Azure {
-		u.log.Debugf("Planning Terraform migrations")
-
-		upgradeTargets := []string{"azurerm_attestation_provider.attestation_provider"}
-
-		// Fetch variables to execute Terraform script with
-		imageRef, err := image.New().FetchReference(cmd.Context(), conf)
-		if err != nil {
-			return fmt.Errorf("fetching image reference: %w", err)
-		}
-		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
-		imageRef = strings.Replace(imageRef, "Images", "images", 1)
-		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
-
-		vars := &terraform.AzureClusterVariables{
-			CommonVariables: terraform.CommonVariables{
-				Name:            conf.Name,
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-				// Ignore node count as their values are only being respected for creation
-				// See here: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#ignore_changes
-			},
-			Location:             conf.Provider.Azure.Location,
-			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
-			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
-			InstanceType:         conf.Provider.Azure.InstanceType,
-			StateDiskType:        conf.Provider.Azure.StateDiskType,
-			ImageID:              imageRef,
-			SecureBoot:           *conf.Provider.Azure.SecureBoot,
-			Debug:                conf.IsDebugCluster(),
-		}
-		u.log.Debugf("Using Terraform variables:\n%v", vars)
-
-		// Check if there are any Terraform migrations to apply
-		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure, vars, upgradeTargets...)
-		if err != nil {
-			return fmt.Errorf("planning Terraform migrations: %w", err)
-		}
-		if hasDiff {
-			// If there are any Terraform migrations to apply, ask for confirmation
-			if !flags.yes {
-				ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
-				if err != nil {
-					return fmt.Errorf("asking for confirmation: %w", err)
-				}
-				if !ok {
-					cmd.Println("Aborting upgrade.")
-					return nil
-				}
-			}
-			u.log.Debugf("Applying Terraform migrations")
-			// TODO: Apply Terraform migrations
-		} else {
-			u.log.Debugf("No Terraform diff detected")
-		}
+	if err := u.migrateTerraform(cmd, fileHandler, conf, flags); err != nil {
+		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
@@ -178,6 +126,127 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	return nil
+}
+
+// migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
+// of cloud resources with Terraform. If so, the migration is performed.
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, conf *config.Config, flags upgradeApplyFlags) error {
+	u.log.Debugf("Planning Terraform migrations")
+
+	targets, vars, err := u.parseUpgradeVars(cmd, conf)
+	if err != nil {
+		return fmt.Errorf("parsing upgrade variables: %w", err)
+	}
+	u.log.Debugf("Using migration targets:\n%v", targets)
+	u.log.Debugf("Using Terraform variables:\n%v", vars)
+
+	opts := kubernetes.TerraformUpgradeOptions{
+		LogLevel:   flags.terraformLogLevel,
+		CSP:        conf.GetProvider(),
+		Vars:       vars,
+		Targets:    targets,
+		OutputFile: "terraform-migration-output.json",
+	}
+
+	// Check if there are any Terraform migrations to apply
+	hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	if err != nil {
+		return fmt.Errorf("planning Terraform migrations: %w", err)
+	}
+
+	if hasDiff {
+		// If there are any Terraform migrations to apply, ask for confirmation
+		if !flags.yes {
+			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Aborting upgrade.")
+				return fmt.Errorf("aborted by user")
+			}
+		}
+		u.log.Debugf("Applying Terraform migrations")
+		err := u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		if err != nil {
+			return fmt.Errorf("applying Terraform migrations: %w", err)
+		}
+		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n", opts.OutputFile)
+	} else {
+		u.log.Debugf("No Terraform diff detected")
+	}
+
+	return nil
+}
+
+func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config) ([]string, terraform.Variables, error) {
+	// Fetch variables to execute Terraform script with
+	imageRef, err := image.New().FetchReference(cmd.Context(), conf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	commonVariables := terraform.CommonVariables{
+		Name:            conf.Name,
+		StateDiskSizeGB: conf.StateDiskSizeGB,
+		// Ignore node count as their values are only being respected for creation
+		// See here: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#ignore_changes
+	}
+
+	switch conf.GetProvider() {
+	case cloudprovider.AWS:
+		targets := []string{}
+
+		vars := &terraform.AWSClusterVariables{
+			CommonVariables:        commonVariables,
+			StateDiskType:          conf.Provider.AWS.StateDiskType,
+			Region:                 conf.Provider.AWS.Region,
+			Zone:                   conf.Provider.AWS.Zone,
+			InstanceType:           conf.Provider.AWS.InstanceType,
+			AMIImageID:             imageRef,
+			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
+			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
+			Debug:                  conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	case cloudprovider.Azure:
+		targets := []string{"azurerm_attestation_provider.attestation_provider"}
+
+		// Azure Terraform provider is very strict about it's casing
+		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
+		imageRef = strings.Replace(imageRef, "Images", "images", 1)
+		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
+
+		vars := &terraform.AzureClusterVariables{
+			CommonVariables:      commonVariables,
+			Location:             conf.Provider.Azure.Location,
+			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
+			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
+			InstanceType:         conf.Provider.Azure.InstanceType,
+			StateDiskType:        conf.Provider.Azure.StateDiskType,
+			ImageID:              imageRef,
+			SecureBoot:           *conf.Provider.Azure.SecureBoot,
+			Debug:                conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	case cloudprovider.GCP:
+		targets := []string{}
+
+		vars := &terraform.GCPClusterVariables{
+			CommonVariables: commonVariables,
+			Project:         conf.Provider.GCP.Project,
+			Region:          conf.Provider.GCP.Region,
+			Zone:            conf.Provider.GCP.Zone,
+			CredentialsFile: conf.Provider.GCP.ServiceAccountKeyPath,
+			InstanceType:    conf.Provider.GCP.InstanceType,
+			StateDiskType:   conf.Provider.GCP.StateDiskType,
+			ImageID:         imageRef,
+			Debug:           conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	default:
+		return nil, nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
+	}
 }
 
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
@@ -286,5 +355,6 @@ type cloudUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
 	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
-	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables, targets ...string) (bool, error)
+	PlanTerraformMigrations(ctx context.Context, opts kubernetes.TerraformUpgradeOptions) (bool, error)
+	ApplyTerraformMigrations(ctx context.Context, file file.Handler, opts kubernetes.TerraformUpgradeOptions) error
 }
