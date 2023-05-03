@@ -19,10 +19,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -549,6 +551,80 @@ func TestPlanTerraformMigrations(t *testing.T) {
 			} else {
 				require.NoError(err)
 				require.Equal(tc.want, diff)
+			}
+		})
+	}
+}
+
+func TestApplyTerraformMigrations(t *testing.T) {
+	someErr := errors.New("some error")
+	upgrader := func(tf terraformUpgrader) *Upgrader {
+		return &Upgrader{
+			tf:  tf,
+			log: logger.NewTest(t),
+		}
+	}
+	fileHandler := func(existingFiles ...string) file.Handler {
+		fh := file.NewHandler(afero.NewMemMapFs())
+		for _, f := range existingFiles {
+			if err := fh.Write(f, []byte("some content")); err != nil {
+				t.Fatalf("failed to create file %s: %v", f, err)
+			}
+		}
+		return fh
+	}
+
+	testCases := map[string]struct {
+		tf             terraformUpgrader
+		fs             file.Handler
+		outputFileName string
+		wantErr        bool
+	}{
+		"success": {
+			tf:             &stubTerraformUpgrader{},
+			fs:             fileHandler(),
+			outputFileName: "test.json",
+		},
+		"create cluster error": {
+			tf: &stubTerraformUpgrader{
+				CreateClusterErr: someErr,
+			},
+			fs:             fileHandler(),
+			outputFileName: "test.json",
+			wantErr:        true,
+		},
+		"empty file name": {
+			tf:             &stubTerraformUpgrader{},
+			fs:             fileHandler(),
+			outputFileName: "",
+			wantErr:        true,
+		},
+		"file already exists": {
+			tf:             &stubTerraformUpgrader{},
+			fs:             fileHandler("test.json"),
+			outputFileName: "test.json",
+			wantErr:        true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			u := upgrader(tc.tf)
+
+			opts := TerraformUpgradeOptions{
+				LogLevel:   terraform.LogLevelDebug,
+				CSP:        cloudprovider.Unknown,
+				Vars:       &terraform.QEMUVariables{},
+				OutputFile: tc.outputFileName,
+			}
+
+			err := u.ApplyTerraformMigrations(context.Background(), tc.fs, opts)
+			if tc.wantErr {
+				require.Error(err)
+			} else {
+				require.NoError(err)
 			}
 		})
 	}
