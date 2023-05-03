@@ -215,7 +215,7 @@ attaching persistent storage, or autoscaling aren't available.
 
   :::caution
 
-  Please note that connections via `qemu+tcp` are not encrypted and should not be used in a security relevant environment!
+  Please note that connections via `qemu+tcp` aren't encrypted and shouldn't be used in a security relevant environment!
 
   :::
 
@@ -252,7 +252,7 @@ To terminate your cluster after you finished, run:
 constellation terminate
 ```
 
-This will destroy your cluster and clean your workspace. The VM image as well as `constellation-conf.yaml` will be kept to allow reusage.
+This will destroy your cluster and clean your workspace. The VM image as well as `constellation-conf.yaml` will be kept to allow reuse.
 
 ## Troubleshooting
 
