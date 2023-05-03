@@ -206,10 +206,10 @@ attaching persistent storage, or autoscaling aren't available.
   If you want to connect to one of those machines, run
 
   ```shell-session
-  console <VM-ID>
+  console <ID>
   ```
 
-  where `<VM-ID>` would be the id of your vm as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the virtual machine.
+  where `<ID>` would be the id of your vm as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the virtual machine.
 
   :::
 
