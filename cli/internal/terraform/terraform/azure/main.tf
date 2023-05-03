@@ -227,7 +227,7 @@ module "scale_set_control_plane" {
     local.tags,
     { constellation-role = "control-plane" },
     { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = azurerm_attestation_provider.attestation_provider[0].attestation_uri },
+    { constellation-maa-url = azurerm_attestation_provider.attestation_provider.attestation_uri },
   )
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
@@ -255,7 +255,7 @@ module "scale_set_worker" {
     local.tags,
     { constellation-role = "worker" },
     { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = azurerm_attestation_provider.attestation_provider[0].attestation_uri },
+    { constellation-maa-url = azurerm_attestation_provider.attestation_provider.attestation_uri },
   )
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
