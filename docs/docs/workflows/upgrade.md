@@ -31,6 +31,7 @@ To learn which Kubernetes versions are supported by a particular CLI, run [const
 
 The Constellation configuration file is located in the file `constellation-conf.yaml` in your workspace.
 Refer to the [migration reference](../reference/config-migration.md) to check if you need to update fields in your configuration file.
+Use [`constellation config migrate`](../reference/cli.md#constellation-config-migrate) to automatically update an old config file to a new format.
 
 ## Check for upgrades
 

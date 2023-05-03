@@ -35,7 +35,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new GCP validator with the provided PCR values.
-func NewValidator(cfg config.GCPSEVES, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.GCPSEVES, log vtpm.AttestationLogger) *Validator {
 	v := &Validator{
 		restClient: newInstanceClient,
 	}

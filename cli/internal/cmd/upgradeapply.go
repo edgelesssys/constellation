@@ -12,13 +12,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -81,6 +83,17 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return fmt.Errorf("reading cluster ID file: %w", err)
+	}
+	conf.UpdateMAAURL(idFile.AttestationURL)
+
+	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
+	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+		return fmt.Errorf("upgrading measurements: %w", err)
+	}
+
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP {
 		err = u.handleServiceUpgrade(cmd, conf, flags)
 		upgradeErr := &compatibility.InvalidUpgradeError{}
@@ -104,37 +117,37 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		cmd.PrintErrln("WARNING: Skipping service and image upgrades, which are currently only supported for Azure and GCP.")
 	}
 
-	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	if err := u.upgradeMeasurementsIfDiff(cmd, conf.GetMeasurements(), flags); err != nil {
-		return fmt.Errorf("upgrading measurements: %w", err)
-	}
-
 	return nil
 }
 
-// upgradeMeasurementsIfDiff checks if the locally configured measurements are different from the cluster's measurements.
+// upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
-func (u *upgradeApplyCmd) upgradeMeasurementsIfDiff(cmd *cobra.Command, newMeasurements measurements.M, flags upgradeApplyFlags) error {
-	clusterMeasurements, _, err := u.upgrader.GetClusterMeasurements(cmd.Context())
-	if err != nil {
+func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+	clusterAttestationConfig, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
+	// Config migration from v2.7 to v2.8 requires us to skip comparing configs if the cluster is still using the legacy config.
+	// TODO: v2.9 Remove error type check and always run comparison.
+	if err != nil && !errors.Is(err, kubernetes.ErrLegacyJoinConfig) {
 		return fmt.Errorf("getting cluster measurements: %w", err)
 	}
-	if clusterMeasurements.EqualTo(newMeasurements) {
-		return nil
+	if err == nil {
+		// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
+		if equal, err := newConfig.EqualTo(clusterAttestationConfig); err != nil || equal {
+			return err
+		}
 	}
 
 	if !flags.yes {
-		ok, err := askToConfirm(cmd, "You are about to change your cluster's measurements. Are you sure you want to continue?")
+		ok, err := askToConfirm(cmd, "You are about to change your cluster's attestation config. Are you sure you want to continue?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
 		if !ok {
-			cmd.Println("Aborting upgrade.")
+			cmd.Println("Skipping upgrade.")
 			return nil
 		}
 	}
-	if err := u.upgrader.UpdateMeasurements(cmd.Context(), newMeasurements); err != nil {
-		return fmt.Errorf("updating measurements: %w", err)
+	if err := u.upgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
+		return fmt.Errorf("updating attestation config: %w", err)
 	}
 	return nil
 }
@@ -149,7 +162,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}
 			if !ok {
-				cmd.Println("Aborting upgrade.")
+				cmd.Println("Skipping upgrade.")
 				return nil
 			}
 		}
@@ -193,6 +206,6 @@ type upgradeApplyFlags struct {
 type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
-	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
-	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
+	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 }

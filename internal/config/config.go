@@ -19,6 +19,7 @@ All config relevant definitions, parsing and validation functions should go here
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -42,17 +43,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
-// Measurements is a required alias since docgen is not able to work with
-// types in other packages.
-type Measurements = measurements.M
-
-// Digests is a required alias since docgen is not able to work with
-// types in other packages.
-type Digests = idkeydigest.List
-
 const (
-	// Version2 is the second version number for Constellation config file.
-	Version2 = "v2"
+	// Version3 is the third version number for Constellation config file.
+	Version3 = "v3"
 
 	defaultName = "constell"
 )
@@ -61,7 +54,7 @@ const (
 type Config struct {
 	// description: |
 	//   Schema version of this configuration file.
-	Version string `yaml:"version" validate:"eq=v2"`
+	Version string `yaml:"version" validate:"eq=v3"`
 	// description: |
 	//   Machine image version used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required,version_compatibility"`
@@ -81,11 +74,11 @@ type Config struct {
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
-	//   Attestation variant used to verify the integrity of a node.
-	AttestationVariant string `yaml:"attestationVariant,omitempty" validate:"valid_attestation_variant"` // TODO: v2.8: Mark required
-	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
+	// description: |
+	//   Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee our docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
+	Attestation AttestationConfig `yaml:"attestation" validate:"dive"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
@@ -129,9 +122,6 @@ type AWSConfig struct {
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
-	// description: |
-	//   Expected VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -167,20 +157,8 @@ type AzureConfig struct {
 	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
-	//   Use Confidential VMs. Always needs to be true.
-	ConfidentialVM *bool `yaml:"confidentialVM,omitempty" validate:"omitempty,deprecated"` // TODO: v2.8 remove
-	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
-	// description: |
-	//   List of accepted values for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
-	IDKeyDigest Digests `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
-	// description: |
-	//   Enforce the specified idKeyDigest value during remote attestation.
-	EnforceIDKeyDigest idkeydigest.Enforcement `yaml:"enforceIdKeyDigest" validate:"required"`
-	// description: |
-	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -206,9 +184,6 @@ type GCPConfig struct {
 	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
-	// description: |
-	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // OpenStackConfig holds config information for OpenStack based Constellation deployments.
@@ -255,9 +230,6 @@ type OpenStackConfig struct {
 	// description: |
 	//   If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack.
 	DirectDownload *bool `yaml:"directDownload" validate:"required"`
-	// description: |
-	//   Measurement used to enable measured boot.
-	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -286,15 +258,34 @@ type QEMUConfig struct {
 	// description: |
 	//   Path to the OVMF firmware. Leave empty for auto selection.
 	Firmware string `yaml:"firmware"`
+}
+
+// AttestationConfig configuration values used for attestation.
+// Fields should remain pointer-types so custom specific configs can nil them
+// if not required.
+type AttestationConfig struct {
 	// description: |
-	//   Measurement used to enable measured boot.
-	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
+	//   AWS Nitro TPM attestation.
+	AWSNitroTPM *AWSNitroTPM `yaml:"awsNitroTPM,omitempty" validate:"omitempty,dive"`
+	// description: |
+	//   Azure SEV-SNP attestation.\nSee our docs for more information on configurable values
+	//   TODO(AB#3071): add link after docs are written
+	AzureSEVSNP *AzureSEVSNP `yaml:"azureSEVSNP,omitempty" validate:"omitempty,dive"`
+	// description: |
+	//   Azure TPM attestation (Trusted Launch).
+	AzureTrustedLaunch *AzureTrustedLaunch `yaml:"azureTrustedLaunch,omitempty" validate:"omitempty,dive"`
+	// description: |
+	//   GCP SEV-ES attestation.
+	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty,dive"`
+	// description: |
+	//   QEMU vTPM attestation.
+	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
 
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		Version:             Version2,
+		Version:             Version3,
 		Image:               defaultImage,
 		Name:                defaultName,
 		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo()),
@@ -308,7 +299,6 @@ func Default() *Config {
 				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
-				Measurements:           measurements.DefaultsFor(cloudprovider.AWS),
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -319,10 +309,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      toPtr(true),
-				IDKeyDigest:          idkeydigest.DefaultList(),
-				EnforceIDKeyDigest:   idkeydigest.MAAFallback,
 				SecureBoot:           toPtr(false),
-				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
 			},
 			GCP: &GCPConfig{
 				Project:               "",
@@ -332,11 +319,9 @@ func Default() *Config {
 				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
 				DeployCSIDriver:       toPtr(true),
-				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
 			},
 			OpenStack: &OpenStackConfig{
 				DirectDownload: toPtr(true),
-				Measurements:   measurements.DefaultsFor(cloudprovider.OpenStack),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -346,8 +331,14 @@ func Default() *Config {
 				LibvirtURI:            "",
 				LibvirtContainerImage: imageversion.Libvirt(),
 				NVRAM:                 "production",
-				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 			},
+		},
+		Attestation: AttestationConfig{
+			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS)},
+			AzureSEVSNP:        DefaultForAzureSEVSNP(),
+			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure)},
+			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP)},
+			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU)},
 		},
 	}
 }
@@ -389,7 +380,7 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	}
 
 	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.
-	// In case the field is not set in an old config we prefil it with the default value.
+	// In case the field is not set in an old config we prefill it with the default value.
 	if c.MicroserviceVersion == "" {
 		c.MicroserviceVersion = Default().MicroserviceVersion
 	}
@@ -415,21 +406,21 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 }
 
 // UpdateMeasurements overwrites measurements in config with the provided ones.
-func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
-	if c.Provider.AWS != nil {
-		c.Provider.AWS.Measurements.CopyFrom(newMeasurements)
+func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
+	if c.Attestation.AWSNitroTPM != nil {
+		c.Attestation.AWSNitroTPM.Measurements.CopyFrom(newMeasurements)
 	}
-	if c.Provider.Azure != nil {
-		c.Provider.Azure.Measurements.CopyFrom(newMeasurements)
+	if c.Attestation.AzureSEVSNP != nil {
+		c.Attestation.AzureSEVSNP.Measurements.CopyFrom(newMeasurements)
 	}
-	if c.Provider.GCP != nil {
-		c.Provider.GCP.Measurements.CopyFrom(newMeasurements)
+	if c.Attestation.AzureTrustedLaunch != nil {
+		c.Attestation.AzureTrustedLaunch.Measurements.CopyFrom(newMeasurements)
 	}
-	if c.Provider.OpenStack != nil {
-		c.Provider.OpenStack.Measurements.CopyFrom(newMeasurements)
+	if c.Attestation.GCPSEVES != nil {
+		c.Attestation.GCPSEVES.Measurements.CopyFrom(newMeasurements)
 	}
-	if c.Provider.QEMU != nil {
-		c.Provider.QEMU.Measurements.CopyFrom(newMeasurements)
+	if c.Attestation.QEMUVTPM != nil {
+		c.Attestation.QEMUVTPM.Measurements.CopyFrom(newMeasurements)
 	}
 }
 
@@ -439,19 +430,30 @@ func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
 func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}
+
+	// TODO(AB#2976): Replace attestation replacement
+	// with custom function for attestation selection
+	currentAttetationConfigs := c.Attestation
+	c.Attestation = AttestationConfig{}
 	switch provider {
 	case cloudprovider.AWS:
 		c.Provider.AWS = currentProviderConfigs.AWS
+		c.Attestation.AWSNitroTPM = currentAttetationConfigs.AWSNitroTPM
 	case cloudprovider.Azure:
 		c.Provider.Azure = currentProviderConfigs.Azure
+		c.Attestation.AzureSEVSNP = currentAttetationConfigs.AzureSEVSNP
 	case cloudprovider.GCP:
 		c.Provider.GCP = currentProviderConfigs.GCP
+		c.Attestation.GCPSEVES = currentAttetationConfigs.GCPSEVES
 	case cloudprovider.OpenStack:
 		c.Provider.OpenStack = currentProviderConfigs.OpenStack
+		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
 	case cloudprovider.QEMU:
 		c.Provider.QEMU = currentProviderConfigs.QEMU
+		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
 	default:
 		c.Provider = currentProviderConfigs
+		c.Attestation = currentAttetationConfigs
 	}
 }
 
@@ -488,40 +490,31 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 	return cloudprovider.Unknown
 }
 
-// GetMeasurements returns the configured measurements or nil if no provder is set.
-func (c *Config) GetMeasurements() measurements.M {
-	if c.Provider.AWS != nil {
-		return c.Provider.AWS.Measurements
+// GetAttestationConfig returns the configured attestation config.
+func (c *Config) GetAttestationConfig() AttestationCfg {
+	if c.Attestation.AWSNitroTPM != nil {
+		return c.Attestation.AWSNitroTPM
 	}
-	if c.Provider.Azure != nil {
-		return c.Provider.Azure.Measurements
+	if c.Attestation.AzureSEVSNP != nil {
+		return c.Attestation.AzureSEVSNP
 	}
-	if c.Provider.GCP != nil {
-		return c.Provider.GCP.Measurements
+	if c.Attestation.AzureTrustedLaunch != nil {
+		return c.Attestation.AzureTrustedLaunch
 	}
-	if c.Provider.OpenStack != nil {
-		return c.Provider.OpenStack.Measurements
+	if c.Attestation.GCPSEVES != nil {
+		return c.Attestation.GCPSEVES
 	}
-	if c.Provider.QEMU != nil {
-		return c.Provider.QEMU.Measurements
+	if c.Attestation.QEMUVTPM != nil {
+		return c.Attestation.QEMUVTPM
 	}
-	return nil
+	return &DummyCfg{}
 }
 
-// IDKeyDigestPolicy returns the IDKeyDigest checking policy for a cloud provider.
-func (c *Config) IDKeyDigestPolicy() idkeydigest.Enforcement {
-	if c.Provider.Azure != nil {
-		return c.Provider.Azure.EnforceIDKeyDigest
+// UpdateMAAURL updates the MAA URL in the config.
+func (c *Config) UpdateMAAURL(maaURL string) {
+	if c.Attestation.AzureSEVSNP != nil {
+		c.Attestation.AzureSEVSNP.FirmwareSignerConfig.MAAURL = maaURL
 	}
-	return idkeydigest.Unknown
-}
-
-// IDKeyDigests returns the ID Key Digests for the configured cloud provider.
-func (c *Config) IDKeyDigests() idkeydigest.List {
-	if c.Provider.Azure != nil {
-		return c.Provider.Azure.IDKeyDigest
-	}
-	return nil
 }
 
 // DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.
@@ -587,10 +580,6 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	if err := validate.RegisterTranslation("valid_attestation_variant", trans, registerValidAttestVariantError, c.translateValidAttestVariantError); err != nil {
-		return err
-	}
-
 	if err := validate.RegisterValidation("valid_name", c.validateName); err != nil {
 		return err
 	}
@@ -627,16 +616,22 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	if err := validate.RegisterValidation("valid_attestation_variant", c.validAttestVariant); err != nil {
-		return err
-	}
-
 	if err := validate.RegisterValidation("deprecated", warnDeprecated); err != nil {
 		return err
 	}
 
 	// Register provider validation
 	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
+
+	// Register Attestation validation error types
+	if err := validate.RegisterTranslation("no_attestation", trans, registerNoAttestationError, translateNoAttestationError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("more_than_one_attestation", trans, registerMoreThanOneAttestationError, c.translateMoreThanOneAttestationError); err != nil {
+		return err
+	}
+
+	validate.RegisterStructValidation(validateAttestation, AttestationConfig{})
 
 	err := validate.Struct(c)
 	if err == nil {
@@ -660,7 +655,7 @@ func (c *Config) Validate(force bool) error {
 type AWSNitroTPM struct {
 	// description: |
 	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GetVariant returns aws-nitro-tpm as the variant.
@@ -673,11 +668,25 @@ func (c AWSNitroTPM) GetMeasurements() measurements.M {
 	return c.Measurements
 }
 
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AWSNitroTPM) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AWSNitroTPM) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*AWSNitroTPM)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
 // AzureSEVSNP is the configuration for Azure SEV-SNP attestation.
 type AzureSEVSNP struct {
 	// description: |
-	//   Expected confidential VM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
 	BootloaderVersion uint8 `json:"bootloaderVersion" yaml:"bootloaderVersion"`
@@ -701,8 +710,8 @@ type AzureSEVSNP struct {
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers are hard coded and should be updated with each new release.
 // TODO(AB#3042): replace with dynamic lookup for configurable values.
-func DefaultForAzureSEVSNP() AzureSEVSNP {
-	return AzureSEVSNP{
+func DefaultForAzureSEVSNP() *AzureSEVSNP {
+	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure),
 		BootloaderVersion: 2,
 		TEEVersion:        0,
@@ -727,6 +736,29 @@ func (c AzureSEVSNP) GetMeasurements() measurements.M {
 	return c.Measurements
 }
 
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AzureSEVSNP) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
+	otherCfg, ok := old.(*AzureSEVSNP)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, old)
+	}
+
+	firmwareSignerCfgEqual := c.FirmwareSignerConfig.EqualTo(otherCfg.FirmwareSignerConfig)
+	measurementsEqual := c.Measurements.EqualTo(otherCfg.Measurements)
+	bootloaderEqual := c.BootloaderVersion == otherCfg.BootloaderVersion
+	teeEqual := c.TEEVersion == otherCfg.TEEVersion
+	snpEqual := c.SNPVersion == otherCfg.SNPVersion
+	microcodeEqual := c.MicrocodeVersion == otherCfg.MicrocodeVersion
+	rootKeyEqual := bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
+
+	return firmwareSignerCfgEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
+}
+
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
 type SNPFirmwareSignerConfig struct {
 	// description: |
@@ -740,11 +772,16 @@ type SNPFirmwareSignerConfig struct {
 	MAAURL string `json:"maaURL,omitempty" yaml:"maaURL,omitempty" validate:"len=0"`
 }
 
+// EqualTo returns true if the config is equal to the given config.
+func (c SNPFirmwareSignerConfig) EqualTo(other SNPFirmwareSignerConfig) bool {
+	return c.AcceptedKeyDigests.EqualTo(other.AcceptedKeyDigests) && c.EnforcementPolicy == other.EnforcementPolicy && c.MAAURL == other.MAAURL
+}
+
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
 type AzureTrustedLaunch struct {
 	// description: |
 	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GetVariant returns azure-trusted-launch as the variant.
@@ -757,11 +794,25 @@ func (c AzureTrustedLaunch) GetMeasurements() measurements.M {
 	return c.Measurements
 }
 
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AzureTrustedLaunch) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AzureTrustedLaunch) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*AzureTrustedLaunch)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
 // GCPSEVES is the configuration for GCP SEV-ES attestation.
 type GCPSEVES struct {
 	// description: |
 	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GetVariant returns gcp-sev-es as the variant.
@@ -774,11 +825,25 @@ func (c GCPSEVES) GetMeasurements() measurements.M {
 	return c.Measurements
 }
 
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *GCPSEVES) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c GCPSEVES) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*GCPSEVES)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
 // QEMUVTPM is the configuration for QEMU vTPM attestation.
 type QEMUVTPM struct {
 	// description: |
 	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements"`
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GetVariant returns qemu-vtpm as the variant.
@@ -789,6 +854,20 @@ func (QEMUVTPM) GetVariant() variant.Variant {
 // GetMeasurements returns the measurements used for attestation.
 func (c QEMUVTPM) GetMeasurements() measurements.M {
 	return c.Measurements
+}
+
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *QEMUVTPM) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c QEMUVTPM) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*QEMUVTPM)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 func toPtr[T any](v T) *T {

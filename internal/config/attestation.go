@@ -16,12 +16,44 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-// AttestationConfig is the common interface for passing attestation configs.
-type AttestationConfig interface {
+// AttestationCfg is the common interface for passing attestation configs.
+type AttestationCfg interface {
 	// GetMeasurements returns the measurements that should be used for attestation.
 	GetMeasurements() measurements.M
+	// SetMeasurements updates a config's measurements using the given measurements.
+	SetMeasurements(m measurements.M)
 	// GetVariant returns the variant of the attestation config.
 	GetVariant() variant.Variant
+	// NewerThan returns true if the config is equal to the given config.
+	EqualTo(AttestationCfg) (bool, error)
+}
+
+// UnmarshalAttestationConfig unmarshals the config file into the correct type.
+func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (AttestationCfg, error) {
+	switch attestVariant {
+	case variant.AWSNitroTPM{}:
+		return unmarshalTypedConfig[*AWSNitroTPM](data)
+	case variant.AzureSEVSNP{}:
+		return unmarshalTypedConfig[*AzureSEVSNP](data)
+	case variant.AzureTrustedLaunch{}:
+		return unmarshalTypedConfig[*AzureTrustedLaunch](data)
+	case variant.GCPSEVES{}:
+		return unmarshalTypedConfig[*GCPSEVES](data)
+	case variant.QEMUVTPM{}:
+		return unmarshalTypedConfig[*QEMUVTPM](data)
+	case variant.Dummy{}:
+		return unmarshalTypedConfig[*DummyCfg](data)
+	default:
+		return nil, fmt.Errorf("unknown variant: %s", attestVariant)
+	}
+}
+
+func unmarshalTypedConfig[T AttestationCfg](data []byte) (AttestationCfg, error) {
+	var cfg T
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // Certificate is a wrapper around x509.Certificate allowing custom marshaling.
@@ -72,4 +104,31 @@ func mustParsePEM(data string) Certificate {
 		panic(err)
 	}
 	return cert
+}
+
+// DummyCfg is a placeholder for unknown attestation configs.
+type DummyCfg struct {
+	// description: |
+	//   The measurements that should be used for attestation.
+	Measurements measurements.M `json:"measurements,omitempty"`
+}
+
+// GetMeasurements returns the configs measurements.
+func (c DummyCfg) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// GetVariant returns a dummy variant.
+func (DummyCfg) GetVariant() variant.Variant {
+	return variant.Dummy{}
+}
+
+// SetMeasurements sets the configs measurements.
+func (c *DummyCfg) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if measurements of the configs are equal.
+func (c DummyCfg) EqualTo(other AttestationCfg) (bool, error) {
+	return c.Measurements.EqualTo(other.GetMeasurements()), nil
 }

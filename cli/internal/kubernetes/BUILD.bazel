@@ -19,6 +19,7 @@ go_library(
         "//internal/constants",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
+        "//internal/variant",
         "//internal/versions",
         "//internal/versions/components",
         "//internal/versionsapi",

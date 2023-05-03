@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
@@ -39,6 +40,10 @@ import (
 
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
 var ErrInProgress = errors.New("upgrade in progress")
+
+// ErrLegacyJoinConfig signals that a legacy join-config was found.
+// TODO: v2.9 remove.
+var ErrLegacyJoinConfig = errors.New("legacy join-config with missing attestationConfig found")
 
 // GetConstellationVersion queries the constellation-version object for a given field.
 func GetConstellationVersion(ctx context.Context, client DynamicInterface) (updatev1alpha1.NodeVersion, error) {
@@ -164,10 +169,6 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return errors.Join(upgradeErrs...)
 	}
 
-	if err := u.UpdateMeasurements(ctx, conf.GetMeasurements()); err != nil {
-		return fmt.Errorf("updating measurements: %w", err)
-	}
-
 	updatedNodeVersion, err := u.applyNodeVersion(ctx, nodeVersion)
 	if err != nil {
 		return fmt.Errorf("applying upgrade: %w", err)
@@ -209,51 +210,67 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 	return nodeVersion.Spec.KubernetesClusterVersion, nil
 }
 
-// UpdateMeasurements fetches the cluster's measurements, compares them to a set of new measurements
-// and updates the cluster's measurements if they are different from the new ones.
-func (u *Upgrader) UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
-	currentMeasurements, existingConf, err := u.GetClusterMeasurements(ctx)
+// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
+// and updates the cluster's config if it is different from the new one.
+func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
+	currentAttestConfig, joinConfig, err := u.GetClusterAttestationConfig(ctx, newAttestConfig.GetVariant())
 	if err != nil {
-		return fmt.Errorf("getting cluster measurements: %w", err)
+		if !errors.Is(err, ErrLegacyJoinConfig) {
+			return fmt.Errorf("getting cluster attestation config: %w", err)
+		}
+		currentAttestConfig, joinConfig, err = joinConfigMigration(joinConfig, newAttestConfig.GetVariant())
+		if err != nil {
+			return fmt.Errorf("migrating join config: %w", err)
+		}
 	}
-	if currentMeasurements.EqualTo(newMeasurements) {
-		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
+	equal, err := newAttestConfig.EqualTo(currentAttestConfig)
+	if err != nil {
+		return fmt.Errorf("comparing attestation configs: %w", err)
+	}
+	if equal {
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen attestation config, skipping config upgrade")
 		return nil
 	}
 
 	// backup of previous measurements
-	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
+	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
 
-	measurementsJSON, err := json.Marshal(newMeasurements)
+	newConfigJSON, err := json.Marshal(newAttestConfig)
 	if err != nil {
-		return fmt.Errorf("marshaling measurements: %w", err)
+		return fmt.Errorf("marshaling attestation config: %w", err)
 	}
-	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
-	u.log.Debugf("Triggering measurements config map update now")
-	if _, err = u.stableInterface.updateConfigMap(ctx, existingConf); err != nil {
-		return fmt.Errorf("setting new measurements: %w", err)
+	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
+	u.log.Debugf("Triggering attestation config update now")
+	if _, err = u.stableInterface.updateConfigMap(ctx, joinConfig); err != nil {
+		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
-	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's expected measurements")
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
 	return nil
 }
 
-// GetClusterMeasurements fetches the join-config configmap from the cluster, extracts the measurements
-// and returns both the full configmap and the measurements.
-func (u *Upgrader) GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error) {
+// GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
+// and returns both the full configmap and the attestation config.
+func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
 	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
-		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
-	if _, ok := existingConf.Data[constants.MeasurementsFilename]; !ok {
-		return measurements.M{}, &corev1.ConfigMap{}, errors.New("measurements missing from join-config")
-	}
-	var currentMeasurements measurements.M
-	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
-		return measurements.M{}, &corev1.ConfigMap{}, fmt.Errorf("retrieving current measurements: %w", err)
+	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
+		// TODO: v2.9 remove legacy config detection since it is only required for upgrades from v2.7
+		if _, ok := existingConf.Data["measurements"]; ok {
+			u.log.Debugf("Legacy join config detected, migrating to new config")
+			return nil, existingConf, ErrLegacyJoinConfig
+		}
+		return nil, nil, errors.New("attestation config missing from join-config")
 	}
 
-	return currentMeasurements, existingConf, nil
+	existingAttestationConfig, err := config.UnmarshalAttestationConfig([]byte(existingConf.Data[constants.AttestationConfigFilename]), variant)
+	if err != nil {
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+	}
+
+	return existingAttestationConfig, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
@@ -414,6 +431,45 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 		return "", err
 	}
 	return serverVersion.GitVersion, nil
+}
+
+// joinConfigMigration prepares a join-config ConfigMap for migration from v2.7 to v2.8.
+// TODO: v2.9: remove this function.
+func joinConfigMigration(existingConf *corev1.ConfigMap, attestVariant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
+	m, ok := existingConf.Data["measurements"]
+	if !ok {
+		return nil, nil, errors.New("no measurements found in configmap")
+	}
+
+	var measurements measurements.M
+	if err := json.Unmarshal([]byte(m), &measurements); err != nil {
+		return nil, nil, fmt.Errorf("unmarshalling measurements: %w", err)
+	}
+
+	var oldConf config.AttestationCfg
+	switch attestVariant {
+	case variant.AWSNitroTPM{}:
+		oldConf = &config.AWSNitroTPM{}
+	case variant.AzureSEVSNP{}:
+		oldConf = &config.AzureSEVSNP{}
+	case variant.AzureTrustedLaunch{}:
+		oldConf = &config.AzureTrustedLaunch{}
+	case variant.GCPSEVES{}:
+		oldConf = &config.GCPSEVES{}
+	case variant.QEMUVTPM{}:
+		oldConf = &config.QEMUVTPM{}
+	default:
+		return nil, nil, fmt.Errorf("unknown variant: %s", attestVariant)
+	}
+
+	oldConf.SetMeasurements(measurements)
+	oldConfJSON, err := json.Marshal(oldConf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshalling previous config: %w", err)
+	}
+	existingConf.Data[constants.AttestationConfigFilename] = string(oldConfJSON)
+
+	return oldConf, existingConf, nil
 }
 
 type helmInterface interface {

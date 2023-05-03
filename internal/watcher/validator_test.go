@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -40,31 +39,30 @@ func TestMain(m *testing.M) {
 
 func TestNewUpdateableValidator(t *testing.T) {
 	testCases := map[string]struct {
-		variant   variant.Variant
-		writeFile bool
-		wantErr   bool
+		variant variant.Variant
+		config  config.AttestationCfg
+		wantErr bool
 	}{
 		"azure": {
-			variant:   variant.AzureSEVSNP{},
-			writeFile: true,
+			variant: variant.AzureSEVSNP{},
+			config:  config.DefaultForAzureSEVSNP(),
 		},
 		"gcp": {
-			variant:   variant.GCPSEVES{},
-			writeFile: true,
+			variant: variant.GCPSEVES{},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		},
 		"qemu": {
-			variant:   variant.QEMUVTPM{},
-			writeFile: true,
+			variant: variant.QEMUVTPM{},
+			config:  &config.QEMUVTPM{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		},
 		"no file": {
-			variant:   variant.AzureSEVSNP{},
-			writeFile: false,
-			wantErr:   true,
+			variant: variant.AzureSEVSNP{},
+			wantErr: true,
 		},
 		"invalid provider": {
-			variant:   fakeOID{1, 3, 9900, 9999, 9999},
-			writeFile: true,
-			wantErr:   true,
+			variant: fakeOID{1, 3, 9900, 9999, 9999},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+			wantErr: true,
 		},
 	}
 
@@ -74,18 +72,10 @@ func TestNewUpdateableValidator(t *testing.T) {
 			require := require.New(t)
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			if tc.writeFile {
+			if tc.config != nil {
 				require.NoError(handler.WriteJSON(
-					filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-					measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
-				))
-
-				require.NoError(handler.WriteJSON(
-					filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-					config.SNPFirmwareSignerConfig{
-						AcceptedKeyDigests: idkeydigest.DefaultList(),
-						EnforcementPolicy:  idkeydigest.WarnOnly,
-					},
+					filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
+					tc.config,
 				))
 			}
 
@@ -121,15 +111,8 @@ func TestUpdate(t *testing.T) {
 
 	// write measurement config
 	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
-	))
-	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		config.SNPFirmwareSignerConfig{
-			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
-			EnforcementPolicy:  idkeydigest.WarnOnly,
-		},
+		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 	))
 
 	// call update once to initialize the server's validator
@@ -164,18 +147,6 @@ func TestUpdate(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	assert.Error(err)
-
-	// test old ID Key Digest format
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
-		[]byte{},
-	))
-	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
-		[]byte("false"),
-	))
-
-	assert.NoError(validator.Update())
 }
 
 func TestOIDConcurrency(t *testing.T) {
@@ -184,15 +155,8 @@ func TestOIDConcurrency(t *testing.T) {
 
 	handler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
-	))
-	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		config.SNPFirmwareSignerConfig{
-			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
-			EnforcementPolicy:  idkeydigest.WarnOnly,
-		},
+		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 	))
 
 	// create server
@@ -231,16 +195,9 @@ func TestUpdateConcurrency(t *testing.T) {
 		variant:     variant.Dummy{},
 	}
 	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)},
+		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
 		file.OptNone,
-	))
-	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.IDKeyConfigFilename),
-		config.SNPFirmwareSignerConfig{
-			AcceptedKeyDigests: idkeydigest.List{[]byte{0x00}},
-			EnforcementPolicy:  idkeydigest.WarnOnly,
-		},
 	))
 
 	var wg sync.WaitGroup

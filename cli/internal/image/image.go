@@ -92,11 +92,7 @@ func imageVariant(provider cloudprovider.Provider, config *config.Config) (strin
 	case cloudprovider.AWS:
 		return config.Provider.AWS.Region, nil
 	case cloudprovider.Azure:
-		attestVariant, err := variant.FromString(config.AttestationVariant)
-		if err != nil {
-			return "", fmt.Errorf("parsing attestation variant: %w", err)
-		}
-		if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
+		if config.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
 			return "trustedlaunch", nil
 		}
 		return "cvm", nil

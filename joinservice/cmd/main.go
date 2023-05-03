@@ -104,8 +104,8 @@ func main() {
 	defer watcher.Close()
 
 	go func() {
-		log.Infof("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename))
-		if err := watcher.Watch(filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename)); err != nil {
+		log.Infof("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename))
+		if err := watcher.Watch(filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename)); err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to watch measurements file")
 		}
 	}()

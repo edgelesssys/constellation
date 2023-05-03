@@ -24,6 +24,7 @@ func NewConfigCmd() *cobra.Command {
 	cmd.AddCommand(newConfigFetchMeasurementsCmd())
 	cmd.AddCommand(newConfigInstanceTypesCmd())
 	cmd.AddCommand(newConfigKubernetesVersionsCmd())
+	cmd.AddCommand(newConfigMigrateCmd())
 
 	return cmd
 }

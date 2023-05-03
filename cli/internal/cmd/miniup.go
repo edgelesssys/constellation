@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -255,8 +256,8 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 			cmd.PrintErrf("Rollback succeeded.\n\n")
 		}
 	}()
-	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
+	newDialer := func(validator atls.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator, &net.Dialer{})
 	}
 	m.log.Debugf("Created new dialer")
 	cmd.Flags().String("master-secret", "", "")

@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -131,7 +131,7 @@ func TestInitialize(t *testing.T) {
 
 			// Networking
 			netDialer := testdialer.NewBufconnDialer()
-			newDialer := func(*cloudcmd.Validator) *dialer.Dialer {
+			newDialer := func(atls.Validator) *dialer.Dialer {
 				return dialer.New(nil, nil, netDialer)
 			}
 			serverCreds := atlscredentials.New(nil, nil)
@@ -397,13 +397,6 @@ func TestAttestation(t *testing.T) {
 	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
 
 	netDialer := testdialer.NewBufconnDialer()
-	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
-		validator := &testValidator{
-			Getter: variant.QEMUVTPM{},
-			pcrs:   v.PCRS(),
-		}
-		return dialer.New(nil, validator, netDialer)
-	}
 
 	issuer := &testIssuer{
 		Getter: variant.QEMUVTPM{},
@@ -436,16 +429,23 @@ func TestAttestation(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.Image = "image"
-	cfg.AttestationVariant = variant.QEMUVTPM{}.String()
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
-	cfg.Provider.QEMU.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[2] = measurements.WithAllBytes(0x22, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[3] = measurements.WithAllBytes(0x33, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[9] = measurements.WithAllBytes(0x99, measurements.Enforce)
-	cfg.Provider.QEMU.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[2] = measurements.WithAllBytes(0x22, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[3] = measurements.WithAllBytes(0x33, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x99, measurements.Enforce)
+	cfg.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
+
+	newDialer := func(v atls.Validator) *dialer.Dialer {
+		validator := &testValidator{
+			Getter: variant.QEMUVTPM{},
+			pcrs:   cfg.GetAttestationConfig().GetMeasurements(),
+		}
+		return dialer.New(nil, validator, netDialer)
+	}
 
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
@@ -530,7 +530,6 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 	switch csp {
 	case cloudprovider.Azure:
-		conf.AttestationVariant = variant.AzureSEVSNP{}.String()
 		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.Location = "test-location"
@@ -538,23 +537,21 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
 		conf.Provider.Azure.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
-		conf.Provider.Azure.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
-		conf.Provider.Azure.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
-		conf.Provider.Azure.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
+		conf.Attestation.AzureSEVSNP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
+		conf.Attestation.AzureSEVSNP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
+		conf.Attestation.AzureSEVSNP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	case cloudprovider.GCP:
-		conf.AttestationVariant = variant.GCPSEVES{}.String()
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
 		conf.Provider.GCP.Zone = "test-zone"
 		conf.Provider.GCP.ServiceAccountKeyPath = "test-key-path"
-		conf.Provider.GCP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
-		conf.Provider.GCP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
-		conf.Provider.GCP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
+		conf.Attestation.GCPSEVES.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
+		conf.Attestation.GCPSEVES.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
+		conf.Attestation.GCPSEVES.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	case cloudprovider.QEMU:
-		conf.AttestationVariant = variant.QEMUVTPM{}.String()
-		conf.Provider.QEMU.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
-		conf.Provider.QEMU.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
-		conf.Provider.QEMU.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
+		conf.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce)
+		conf.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce)
+		conf.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce)
 	}
 
 	conf.RemoveProviderExcept(csp)
