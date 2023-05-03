@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -98,11 +99,36 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 	if conf.GetProvider() == cloudprovider.Azure {
 		u.log.Debugf("Planning Terraform migrations")
-		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure)
+
+		// Fetch variables to execute Terraform script with
+		imageRef, err := image.New().FetchReference(cmd.Context(), conf)
+		if err != nil {
+			return fmt.Errorf("fetching image reference: %w", err)
+		}
+		vars := &terraform.AzureClusterVariables{
+			CommonVariables: terraform.CommonVariables{
+				Name:            conf.Name,
+				StateDiskSizeGB: conf.StateDiskSizeGB,
+				// Ignore node count as their values are only being respected for creation
+				// See here: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#ignore_changes
+			},
+			Location:             conf.Provider.Azure.Location,
+			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
+			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
+			InstanceType:         conf.Provider.Azure.InstanceType,
+			StateDiskType:        conf.Provider.Azure.StateDiskType,
+			ImageID:              imageRef,
+			SecureBoot:           *conf.Provider.Azure.SecureBoot,
+			Debug:                conf.IsDebugCluster(),
+		}
+
+		// Check if there are any Terraform migrations to apply
+		hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), flags.terraformLogLevel, cloudprovider.Azure, vars)
 		if err != nil {
 			return fmt.Errorf("planning Terraform migrations: %w", err)
 		}
 		if hasDiff {
+			// If there are any Terraform migrations to apply, ask for confirmation
 			if !flags.yes {
 				ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 				if err != nil {
@@ -252,5 +278,5 @@ type cloudUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	UpdateMeasurements(ctx context.Context, newMeasurements measurements.M) error
 	GetClusterMeasurements(ctx context.Context) (measurements.M, *corev1.ConfigMap, error)
-	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider) (bool, error)
+	PlanTerraformMigrations(ctx context.Context, logLevel terraform.LogLevel, csp cloudprovider.Provider, vars terraform.Variables) (bool, error)
 }
