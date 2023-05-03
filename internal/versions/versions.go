@@ -87,7 +87,7 @@ const (
 	NodeMaintenanceOperatorImage = "quay.io/medik8s/node-maintenance-operator:v0.14.0@sha256:2dffb6ffdbbe997d317799fc709baf030d678bde0be0264931ff6b3e94fd89ab" // renovate:container
 
 	// QEMUMetadataImage image of QEMU metadata api service.
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.7.1@sha256:217bd56d8027794c487289762b11da91d05afeb106381fbba707746671e1cbd3" // renovate:container
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.7.1@sha256:57ccf658c83ce77102a4e03da41c7b529e0393ceaf696898dd9ad5aec167492a" // renovate:container
 	// LibvirtImage image that provides libvirt.
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.7.0-pre.0.20230330151913-6a2c9792e0ce@sha256:56d218cc501d471d25f6a6da940db48a008a040bc26dea1fe8a61edf9ca7ce73" // renovate:container
 
