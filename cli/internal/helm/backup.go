@@ -63,7 +63,7 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 			}
 
 			for _, cr := range crs {
-				targetFolder := filepath.Join(backupFolder, cr.GetKind(), cr.GetNamespace())
+				targetFolder := filepath.Join(backupFolder, gvr.Group, gvr.Version, cr.GetNamespace(), cr.GetKind())
 				if err := c.fs.MkdirAll(targetFolder); err != nil {
 					return fmt.Errorf("creating resource dir: %w", err)
 				}
