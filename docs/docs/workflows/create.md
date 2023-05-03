@@ -16,7 +16,7 @@ Creating your cluster requires two steps:
 See the [architecture](../architecture/orchestration.md) section for details on the inner workings of this process.
 
 :::tip
-If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
+If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md#using-miniconstellation) or [constellation with qemu](../getting-started/first-steps-local.md#local-setup-with-qemu), which lets you set up a local Constellation cluster using virtualization.
 :::
 
 ## The *create* step
