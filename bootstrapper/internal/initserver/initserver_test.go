@@ -245,121 +245,60 @@ func TestInit(t *testing.T) {
 	}
 }
 
-// func TestGetLogs(t *testing.T) {
-// 	initSecret := []byte("password")
-// 	initSecretHash, err := bcrypt.GenerateFromPassword(initSecret, bcrypt.DefaultCost)
-// 	require.NoError(t, err)
+func TestSendLogs(t *testing.T) {
+	someError := errors.New("failed")
 
-// 	masterSecret := uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}
+	testCases := map[string]struct {
+		logCollector   journaldCollection
+		stream         stubStream
+		expectedResult string
+		wantErr        bool
+	}{
+		"success": {
+			logCollector:   &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
+			stream:         stubStream{},
+			expectedResult: "asdf",
+		},
+		"fail collection": {
+			logCollector: &stubJournaldCollector{collectErr: someError},
+			wantErr:      true,
+		},
+		"fail to send": {
+			logCollector: &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
+			stream:       stubStream{sendError: someError},
+			wantErr:      true,
+		},
+		"fail to read": {
+			logCollector: &stubJournaldCollector{logPipe: &stubReadCloser{readErr: someError}},
+			wantErr:      true,
+		},
+	}
 
-// 	decryptor := func() cipher.AEAD {
-// 		key, err := crypto.DeriveKey(masterSecret.Key, masterSecret.Salt, nil, 16) // 16 byte = 128 bit
-// 		require.NoError(t, err)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
 
-// 		block, err := aes.NewCipher(key)
-// 		require.NoError(t, err)
-// 		decryptor, err := cipher.NewGCM(block)
-// 		require.NoError(t, err)
+			serverStopper := newStubServeStopper()
+			server := &Server{
+				grpcServer:        serverStopper,
+				journaldCollector: tc.logCollector,
+			}
 
-// 		return decryptor
-// 	}
-// 	testCases := map[string]struct {
-// 		initSecretHash    []byte
-// 		masterSecret      uri.MasterSecret
-// 		req               *initproto.LogRequest
-// 		stream            stubStream
-// 		decryptor         cipher.AEAD
-// 		journaldCollector stubJournaldCollector
-// 		wantErr           bool
-// 		wantNoRes         bool
-// 		tryDecrypt        bool // useful if sending fails
-// 		wantDecryptable   bool
-// 	}{
-// 		"success": {
-// 			initSecretHash:    initSecretHash,
-// 			masterSecret:      masterSecret,
-// 			req:               &initproto.LogRequest{InitSecret: initSecret},
-// 			journaldCollector: stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewBuffer([]byte("asdf"))}},
-// 			stream:            stubStream{},
-// 			decryptor:         decryptor(),
-// 			wantDecryptable:   true,
-// 		},
-// 		"collection error": {
-// 			initSecretHash:    initSecretHash,
-// 			req:               &initproto.LogRequest{InitSecret: initSecret},
-// 			journaldCollector: stubJournaldCollector{collectErr: errors.New("failed")},
-// 			wantErr:           true,
-// 			wantNoRes:         true,
-// 		},
-// 		"wrong init secret": {
-// 			initSecretHash: initSecretHash,
-// 			req:            &initproto.LogRequest{InitSecret: []byte("asdf")},
-// 			wantErr:        true,
-// 			wantNoRes:      true,
-// 		},
-// 		"error executing command": {
-// 			initSecretHash: initSecretHash,
-// 			req:            &initproto.LogRequest{InitSecret: initSecret},
-// 			wantErr:        true,
-// 			wantNoRes:      true,
-// 		},
-// 		"decode master secret fail": {
-// 			initSecretHash: initSecretHash,
-// 			req:            &initproto.LogRequest{InitSecret: initSecret},
-// 			masterSecret:   uri.MasterSecret{Key: nil, Salt: nil},
-// 			wantErr:        true,
-// 			wantNoRes:      true,
-// 		},
-// 		"send error": {
-// 			initSecretHash:    initSecretHash,
-// 			req:               &initproto.LogRequest{InitSecret: initSecret},
-// 			stream:            stubStream{sendError: errors.New("failed")},
-// 			journaldCollector: stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewBuffer([]byte("asdf"))}},
-// 			masterSecret:      masterSecret,
-// 			decryptor:         decryptor(),
-// 			wantErr:           true,
-// 			wantNoRes:         true,
-// 		},
-// 	}
+			err := server.sendLogs(&tc.stream)
 
-// 	for name, tc := range testCases {
-// 		t.Run(name, func(t *testing.T) {
-// 			assert := assert.New(t)
-// 			require := require.New(t)
+			if tc.wantErr {
+				assert.Error(err)
 
-// 			server := &Server{
-// 				initSecretHash:    tc.initSecretHash,
-// 				kmsURI:            tc.masterSecret.EncodeToURI(),
-// 				journaldCollector: &tc.journaldCollector,
-// 				log:               logger.NewTest(t),
-// 			}
+				return
+			}
 
-// 			err := server.GetLogs(tc.req, &tc.stream)
-
-// 			if tc.wantDecryptable {
-// 				for _, res := range tc.stream.res {
-// 					nonce := res.Nonce
-// 					ciphertext := res.Log
-// 					decrypted, err := tc.decryptor.Open(nil, nonce, ciphertext, nil)
-// 					require.NoError(err)
-// 					assert.Equal([]byte("asdf"), decrypted)
-// 				}
-// 			}
-
-// 			if tc.wantErr {
-// 				assert.Error(err)
-// 			} else {
-// 				assert.NoError(err)
-// 			}
-
-// 			if tc.wantNoRes {
-// 				assert.Empty(tc.stream.res)
-// 			} else {
-// 				assert.NotEmpty(tc.stream.res)
-// 			}
-// 		})
-// 	}
-// }
+			assert.NoError(err)
+			for _, res := range tc.stream.res {
+				assert.Equal(tc.expectedResult, string(res.GetLog().Log))
+			}
+		})
+	}
+}
 
 func TestSetupDisk(t *testing.T) {
 	testCases := map[string]struct {
