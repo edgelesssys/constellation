@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package initserver
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -101,6 +103,7 @@ func TestInit(t *testing.T) {
 		fileHandler    file.Handler
 		req            *initproto.InitRequest
 		stream         stubStream
+		logCollector   stubJournaldCollector
 		initSecretHash []byte
 		wantErr        bool
 		wantShutdown   bool
@@ -113,6 +116,7 @@ func TestInit(t *testing.T) {
 			initSecretHash: initSecretHash,
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			wantShutdown:   true,
 		},
 		"node locked": {
@@ -122,6 +126,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 		},
@@ -132,6 +137,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -143,6 +149,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -154,6 +161,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -165,6 +173,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -176,6 +185,7 @@ func TestInit(t *testing.T) {
 			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
 			req:            &initproto.InitRequest{InitSecret: initSecret, KmsUri: masterSecret.EncodeToURI(), StorageUri: uri.NoStoreURI},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			initSecretHash: initSecretHash,
 			wantErr:        true,
 			wantShutdown:   true,
@@ -188,6 +198,7 @@ func TestInit(t *testing.T) {
 			initSecretHash: initSecretHash,
 			req:            &initproto.InitRequest{InitSecret: []byte("wrongpassword")},
 			stream:         stubStream{},
+			logCollector:   stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte{})}},
 			wantErr:        true,
 		},
 	}
@@ -198,14 +209,15 @@ func TestInit(t *testing.T) {
 
 			serveStopper := newStubServeStopper()
 			server := &Server{
-				nodeLock:       tc.nodeLock,
-				initializer:    tc.initializer,
-				disk:           tc.disk,
-				fileHandler:    tc.fileHandler,
-				log:            logger.NewTest(t),
-				grpcServer:     serveStopper,
-				cleaner:        &fakeCleaner{serveStopper: serveStopper},
-				initSecretHash: tc.initSecretHash,
+				nodeLock:          tc.nodeLock,
+				initializer:       tc.initializer,
+				disk:              tc.disk,
+				fileHandler:       tc.fileHandler,
+				log:               logger.NewTest(t),
+				grpcServer:        serveStopper,
+				cleaner:           &fakeCleaner{serveStopper: serveStopper},
+				initSecretHash:    tc.initSecretHash,
+				journaldCollector: &tc.logCollector,
 			}
 
 			err := server.Init(tc.req, &tc.stream)
@@ -520,28 +532,28 @@ func (s *stubStream) Context() context.Context {
 	return context.Background()
 }
 
-// type stubJournaldCollector struct {
-// 	logPipe    io.ReadCloser
-// 	collectErr error
-// }
+type stubJournaldCollector struct {
+	logPipe    io.ReadCloser
+	collectErr error
+}
 
-// func (s *stubJournaldCollector) Start() (io.ReadCloser, error) {
-// 	return s.logPipe, s.collectErr
-// }
+func (s *stubJournaldCollector) Start() (io.ReadCloser, error) {
+	return s.logPipe, s.collectErr
+}
 
-// type stubReadCloser struct {
-// 	reader   io.Reader
-// 	readErr  error
-// 	closeErr error
-// }
+type stubReadCloser struct {
+	reader   io.Reader
+	readErr  error
+	closeErr error
+}
 
-// func (s *stubReadCloser) Read(p []byte) (n int, err error) {
-// 	if s.readErr != nil {
-// 		return 0, s.readErr
-// 	}
-// 	return s.reader.Read(p)
-// }
+func (s *stubReadCloser) Read(p []byte) (n int, err error) {
+	if s.readErr != nil {
+		return 0, s.readErr
+	}
+	return s.reader.Read(p)
+}
 
-// func (s *stubReadCloser) Close() error {
-// 	return s.closeErr
-// }
+func (s *stubReadCloser) Close() error {
+	return s.closeErr
+}
