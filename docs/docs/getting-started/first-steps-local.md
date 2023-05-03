@@ -209,7 +209,7 @@ attaching persistent storage, or autoscaling aren't available.
   console <VM-ID>
   ```
 
-  where `<VM-ID>` would be the id of your vm as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the VM.
+  where `<VM-ID>` would be the id of your vm as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the virtual machine.
 
   :::
 
