@@ -180,7 +180,7 @@ attaching persistent storage, or autoscaling aren't available.
   Your Constellation cluster was created successfully.
   ```
 
-  This will create 2 virtual machines, one worker and one control plane, but if you want, you can change the numbers of nodes, as long as your computer has enough resources.
+  This will create 2 virtual machines, one worker and one control plane. You can change the numbers of nodes as long as your computer has enough resources.
 
   :::tip
 
