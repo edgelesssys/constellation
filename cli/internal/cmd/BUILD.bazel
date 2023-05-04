@@ -41,6 +41,7 @@ go_library(
         "//cli/internal/clusterid",
         "//cli/internal/helm",
         "//cli/internal/iamid",
+        "//cli/internal/image",
         "//cli/internal/kubernetes",
         "//cli/internal/libvirt",
         "//cli/internal/terraform",
