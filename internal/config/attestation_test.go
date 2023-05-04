@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,22 +27,22 @@ func TestUnmarshalAttestationConfig(t *testing.T) {
 		cfg AttestationCfg
 	}{
 		"AWSNitroTPM": {
-			cfg: &AWSNitroTPM{Measurements: measurements.DefaultsFor(variant.AWSNitroTPM{})},
+			cfg: &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 		},
 		"AzureSEVSNP": {
 			cfg: DefaultForAzureSEVSNP(),
 		},
 		"AzureTrustedLaunch": {
-			cfg: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(variant.AzureTrustedLaunch{})},
+			cfg: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
 		},
 		"GCPSEVES": {
-			cfg: &GCPSEVES{Measurements: measurements.DefaultsFor(variant.GCPSEVES{})},
+			cfg: &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 		},
 		"QEMUVTPM": {
-			cfg: &QEMUVTPM{Measurements: measurements.DefaultsFor(variant.QEMUVTPM{})},
+			cfg: &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
 		"QEMUTDX": {
-			cfg: &QEMUTDX{Measurements: measurements.DefaultsFor(variant.QEMUTDX{})},
+			cfg: &QEMUTDX{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUTDX{})},
 		},
 	}
 

@@ -9,7 +9,6 @@ package measurements
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -188,7 +187,6 @@ func TestUnmarshal(t *testing.T) {
 				err := json.Unmarshal([]byte(tc.inputJSON), &m)
 
 				if tc.wantErr {
-					fmt.Println(err)
 					assert.Error(err, "json.Unmarshal should have failed")
 				} else {
 					require.NoError(err, "json.Unmarshal failed")

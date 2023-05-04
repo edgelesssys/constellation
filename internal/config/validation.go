@@ -377,10 +377,12 @@ func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError
 
 func getPlaceholderEntries(m measurements.M) []uint32 {
 	var placeholders []uint32
-	placeholder := measurements.PlaceHolderMeasurement()
+	placeholderTDX := measurements.PlaceHolderMeasurement(measurements.TDXMeasurementLength)
+	placeholderTPM := measurements.PlaceHolderMeasurement(measurements.PCRMeasurementLength)
 
 	for idx, measurement := range m {
-		if bytes.Equal(measurement.Expected[:], placeholder.Expected[:]) {
+		if bytes.Equal(measurement.Expected, placeholderTDX.Expected) ||
+			bytes.Equal(measurement.Expected, placeholderTPM.Expected) {
 			placeholders = append(placeholders, idx)
 		}
 	}
