@@ -192,19 +192,27 @@ func TestValidate(t *testing.T) {
 	const azErrCount = 9
 	const gcpErrCount = 6
 
+	// TODO(AB#3132,3u13r): refactor config validation tests
+	// Note that the `cnf.Image = ""` is a hack to align `bazel test` with `go test` behavior
+	// since first does version stamping.
 	testCases := map[string]struct {
 		cnf          *Config
 		wantErr      bool
 		wantErrCount int
 	}{
 		"default config is not valid": {
-			cnf:          Default(),
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Image = ""
+				return cnf
+			}(),
 			wantErr:      true,
 			wantErrCount: defaultErrCount,
 		},
 		"v0 is one error": {
 			cnf: func() *Config {
 				cnf := Default()
+				cnf.Image = ""
 				cnf.Version = "v0"
 				return cnf
 			}(),
@@ -214,6 +222,7 @@ func TestValidate(t *testing.T) {
 		"v0 and negative state disk are two errors": {
 			cnf: func() *Config {
 				cnf := Default()
+				cnf.Image = ""
 				cnf.Version = "v0"
 				cnf.StateDiskSizeGB = -1
 				return cnf
@@ -224,6 +233,7 @@ func TestValidate(t *testing.T) {
 		"default Azure config is not valid": {
 			cnf: func() *Config {
 				cnf := Default()
+				cnf.Image = ""
 				cnf.RemoveProviderExcept(cloudprovider.Azure)
 				return cnf
 			}(),
@@ -251,15 +261,18 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
+
 		"default GCP config is not valid": {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.RemoveProviderExcept(cloudprovider.GCP)
+				cnf.Image = ""
 				return cnf
 			}(),
 			wantErr:      true,
 			wantErrCount: gcpErrCount,
 		},
+
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
@@ -277,26 +290,6 @@ func TestValidate(t *testing.T) {
 				}
 				return cnf
 			}(),
-		},
-		// TODO: v2.7: remove this test as it should start breaking after v2.6 is released.
-		"k8s vMAJOR.MINOR is valid in v2.7": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.KubernetesVersion = "v1.25"
-				return cnf
-			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount,
-		},
-		// TODO: v2.7: remove this test as it should start breaking after v2.6 is released.
-		"k8s MAJOR.MINOR is valid in v2.7": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.KubernetesVersion = "1.25"
-				return cnf
-			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount,
 		},
 	}
 
