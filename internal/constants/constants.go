@@ -152,6 +152,8 @@ const (
 	TerraformUpgradePlanFile = "plan.zip"
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an update.
 	TerraformUpgradeWorkingDir = "constellation-upgrade-terraform"
+	// TerraformMigrationOutputFile is the file name of the output file created by a successful Terraform migration.
+	TerraformMigrationOutputFile = "terraform-migration-output.json"
 
 	//
 	// Kubernetes.

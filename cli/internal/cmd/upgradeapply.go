@@ -148,7 +148,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		CSP:        conf.GetProvider(),
 		Vars:       vars,
 		Targets:    targets,
-		OutputFile: "terraform-migration-output.json",
+		OutputFile: constants.TerraformMigrationOutputFile,
 	}
 
 	// Check if there are any Terraform migrations to apply
