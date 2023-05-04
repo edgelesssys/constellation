@@ -64,12 +64,15 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log}
+	fetcher := image.New()
+
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, fetcher: fetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
 	upgrader cloudUpgrader
+	fetcher  imageFetcher
 	log      debugLog
 }
 
@@ -98,7 +101,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	if err := u.migrateTerraform(cmd, fileHandler, conf, flags); err != nil {
+	if err := u.migrateTerraform(cmd, fileHandler, u.fetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
 
@@ -130,10 +133,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
-func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, conf *config.Config, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
 	u.log.Debugf("Planning Terraform migrations")
 
-	targets, vars, err := u.parseUpgradeVars(cmd, conf)
+	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -179,9 +182,9 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	return nil
 }
 
-func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config) ([]string, terraform.Variables, error) {
+func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
 	// Fetch variables to execute Terraform script with
-	imageRef, err := image.New().FetchReference(cmd.Context(), conf)
+	imageRef, err := fetcher.FetchReference(cmd.Context(), conf)
 	if err != nil {
 		return nil, nil, fmt.Errorf("fetching image reference: %w", err)
 	}
@@ -247,6 +250,10 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 	default:
 		return nil, nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
 	}
+}
+
+type imageFetcher interface {
+	FetchReference(ctx context.Context, conf *config.Config) (string, error)
 }
 
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.

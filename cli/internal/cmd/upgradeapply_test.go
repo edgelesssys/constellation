@@ -30,6 +30,7 @@ func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		upgrader stubUpgrader
+		fetcher  stubImageFetcher
 		wantErr  bool
 	}{
 		"success": {
@@ -54,6 +55,31 @@ func TestUpgradeApply(t *testing.T) {
 				helmErr:       someErr,
 			},
 			wantErr: true,
+			fetcher: stubImageFetcher{},
+		},
+		"plan terraform error": {
+			upgrader: stubUpgrader{
+				currentConfig:    config.DefaultForAzureSEVSNP(),
+				planTerraformErr: someErr,
+			},
+			fetcher: stubImageFetcher{},
+			wantErr: true,
+		},
+		"apply terraform error": {
+			upgrader: stubUpgrader{
+				currentConfig:     config.DefaultForAzureSEVSNP(),
+				applyTerraformErr: someErr,
+				terraformDiff:     true,
+			},
+			fetcher: stubImageFetcher{},
+			wantErr: true,
+		},
+		"fetch reference error": {
+			upgrader: stubUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+			},
+			fetcher: stubImageFetcher{fetchReferenceErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -74,7 +100,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t)}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), fetcher: tc.fetcher}
 			err = upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)
@@ -89,6 +115,7 @@ type stubUpgrader struct {
 	currentConfig     config.AttestationCfg
 	nodeVersionErr    error
 	helmErr           error
+	terraformDiff     bool
 	planTerraformErr  error
 	applyTerraformErr error
 }
@@ -110,9 +137,17 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 }
 
 func (u stubUpgrader) PlanTerraformMigrations(context.Context, kubernetes.TerraformUpgradeOptions) (bool, error) {
-	return false, u.planTerraformErr
+	return u.terraformDiff, u.planTerraformErr
 }
 
 func (u stubUpgrader) ApplyTerraformMigrations(context.Context, file.Handler, kubernetes.TerraformUpgradeOptions) error {
 	return u.applyTerraformErr
+}
+
+type stubImageFetcher struct {
+	fetchReferenceErr error
+}
+
+func (s stubImageFetcher) FetchReference(context.Context, *config.Config) (string, error) {
+	return "", s.fetchReferenceErr
 }
