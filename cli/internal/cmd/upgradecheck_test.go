@@ -40,7 +40,7 @@ func TestBuildString(t *testing.T) {
 			upgrade: versionUpgrade{
 				newServices: "v2.5.0",
 				newImages: map[string]measurements.M{
-					"v2.5.0": measurements.DefaultsFor(variant.QEMUVTPM{}),
+					"v2.5.0": measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{}),
 				},
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
 				newCLI:            []string{"v2.5.0", "v2.6.0"},
@@ -237,7 +237,7 @@ func TestUpgradeCheck(t *testing.T) {
 				supportedServicesVersions: "v2.5.0",
 				supportedImages:           []versionsapi.Version{v2_3},
 				supportedImageVersions: map[string]measurements.M{
-					"v2.3.0": measurements.DefaultsFor(variant.QEMUVTPM{}),
+					"v2.3.0": measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{}),
 				},
 				supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
 				currentServicesVersions: "v2.4.0",

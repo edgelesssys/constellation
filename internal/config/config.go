@@ -287,6 +287,9 @@ type AttestationConfig struct {
 	//   GCP SEV-ES attestation.
 	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty,dive"`
 	// description: |
+	//   QEMU tdx attestation.
+	QEMUTDX *QEMUTDX `yaml:"qemuTDX,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   QEMU vTPM attestation.
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
@@ -343,12 +346,18 @@ func Default() *Config {
 				NVRAM:                 "production",
 			},
 		},
+		// TODO(malt3): remove default attestation config as soon as one-to-one mapping is no longer possible.
+		// Some problematic pairings:
+		// OpenStack uses qemu-vtpm as attestation variant
+		// QEMU uses qemu-vtpm as attestation variant
+		// AWS uses aws-nitro-tpm as attestation variant
+		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(variant.AWSNitroTPM{})},
+			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
-			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(variant.AzureTrustedLaunch{})},
-			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(variant.GCPSEVES{})},
-			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(variant.QEMUVTPM{})},
+			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
+			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
+			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
 	}
 }
@@ -727,7 +736,7 @@ type AzureSEVSNP struct {
 // TODO(AB#3042): replace with dynamic lookup for configurable values.
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
-		Measurements:      measurements.DefaultsFor(variant.AzureSEVSNP{}),
+		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
 		BootloaderVersion: 2,
 		TEEVersion:        0,
 		SNPVersion:        6,

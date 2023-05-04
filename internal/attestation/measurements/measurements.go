@@ -30,6 +30,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
@@ -129,6 +130,15 @@ func (m *M) CopyFrom(other M) {
 	for idx := range other {
 		(*m)[idx] = other[idx]
 	}
+}
+
+// Copy creates a new map with the same values as the original.
+func (m *M) Copy() M {
+	newM := make(M, len(*m))
+	for idx := range *m {
+		newM[idx] = (*m)[idx]
+	}
+	return newM
 }
 
 // EqualTo tests whether the provided other Measurements are equal to these
@@ -336,10 +346,36 @@ func WithAllBytes(b byte, validationOpt MeasurementValidationOption, len int) Me
 }
 
 // PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
-func PlaceHolderMeasurement() Measurement {
+func PlaceHolderMeasurement(len int) Measurement {
 	return Measurement{
-		Expected:      bytes.Repeat([]byte{0x12, 0x34}, 16),
+		Expected:      bytes.Repeat([]byte{0x12, 0x34}, len/2),
 		ValidationOpt: Enforce,
+	}
+}
+
+// DefaultsFor provides the default measurements for given cloud provider.
+func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Variant) M {
+	switch {
+	case provider == cloudprovider.AWS && attestationVariant == variant.AWSNitroTPM{}:
+		return aws_AWSNitroTPM.Copy()
+
+	case provider == cloudprovider.Azure && attestationVariant == variant.AzureSEVSNP{}:
+		return azure_AzureSEVSNP.Copy()
+
+	case provider == cloudprovider.Azure && attestationVariant == variant.AzureTrustedLaunch{}:
+		return azure_AzureTrustedLaunch.Copy()
+
+	case provider == cloudprovider.GCP && attestationVariant == variant.GCPSEVES{}:
+		return gcp_GCPSEVES.Copy()
+
+	case provider == cloudprovider.QEMU && attestationVariant == variant.QEMUTDX{}:
+		return qemu_QEMUTDX.Copy()
+
+	case provider == cloudprovider.QEMU && attestationVariant == variant.QEMUVTPM{}:
+		return qemu_QEMUVTPM.Copy()
+
+	default:
+		return nil
 	}
 }
 

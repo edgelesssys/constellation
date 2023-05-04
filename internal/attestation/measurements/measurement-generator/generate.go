@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"golang.org/x/tools/go/ast/astutil"
 )
@@ -59,31 +60,31 @@ func main() {
 	newFile := astutil.Apply(file, func(cursor *astutil.Cursor) bool {
 		n := cursor.Node()
 
-		// find all switch cases for the CSPs of the form:
-		// switch provider {
-		// case cloudprovider.XYZ:
-		// 	return M{...}
+		// find all variables of the form <provider>_<variant> and replace them with updated measurements
+		// see ../measurements_enterprise.go for an example
 
-		if clause, ok := n.(*ast.CaseClause); ok && len(clause.List) > 0 && len(clause.Body) > 0 {
-			sel, ok := clause.List[0].(*ast.SelectorExpr)
+		if clause, ok := n.(*ast.ValueSpec); ok && len(clause.Names) == 1 && len(clause.Values) == 1 {
+			varName := clause.Names[0].Name
+			_, ok := clause.Values[0].(*ast.CompositeLit)
 			if !ok {
 				return true
 			}
-			returnStmt, ok := clause.Body[0].(*ast.ReturnStmt)
-			if !ok || len(returnStmt.Results) == 0 {
+
+			nameParts := strings.Split(varName, "_")
+			if len(nameParts) != 2 {
 				return true
 			}
-
-			provider := cloudprovider.FromString(sel.Sel.Name)
-			if provider == cloudprovider.Unknown {
-				log.Fatalf("unknown provider %s", sel.Sel.Name)
+			provider := cloudprovider.FromString(nameParts[0])
+			variant, err := attestationVariantFromGoIdentifier(nameParts[1])
+			if err != nil {
+				log.Fatalf("error parsing variant %s: %s", nameParts[1], err)
 			}
-			log.Println("Found", provider)
+			log.Println("Found", variant)
 			returnStmtCtr++
 			// retrieve and validate measurements for the given CSP and image
 			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, defaultConf.Image)
 			// replace the return statement with a composite literal containing the validated measurements
-			returnStmt.Results[0] = measurementsCompositeLiteral(measuremnts)
+			clause.Values[0] = measurementsCompositeLiteral(measuremnts)
 		}
 		return true
 	}, nil,
@@ -262,6 +263,26 @@ func measurementsCompositeLiteral(measurements measurements.M) *ast.CompositeLit
 		},
 		Elts: elts,
 	}
+}
+
+func attestationVariantFromGoIdentifier(identifier string) (variant.Variant, error) {
+	switch identifier {
+	case "Dummy":
+		return variant.Dummy{}, nil
+	case "AWSNitroTPM":
+		return variant.AWSNitroTPM{}, nil
+	case "GCPSEVES":
+		return variant.GCPSEVES{}, nil
+	case "AzureSEVSNP":
+		return variant.AzureSEVSNP{}, nil
+	case "AzureTrustedLaunch":
+		return variant.AzureTrustedLaunch{}, nil
+	case "QEMUVTPM":
+		return variant.QEMUVTPM{}, nil
+	case "QEMUTDX":
+		return variant.QEMUTDX{}, nil
+	}
+	return nil, fmt.Errorf("unknown identifier: %q", identifier)
 }
 
 type rekorVerifier interface {
