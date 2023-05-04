@@ -15,9 +15,9 @@ The following table summarizes the state of features for different infrastructur
 
 | **Feature**                   | **Azure** | **GCP** | **AWS** | **OpenStack (Yoga)** |
 |-------------------------------|-----------|---------|---------|----------------------|
-| **1. Custom images**          | Yes       | Yes     | No      | Yes                  |
-| **2. SEV-SNP or TDX**         | Yes       | No      | No      | Depends on kernel/HV |
-| **3. Raw guest attestation**  | Yes       | No      | No      | Depends on kernel/HV |
+| **1. Custom images**          | Yes       | Yes*    | Yes     | Yes                  |
+| **2. SEV-SNP or TDX**         | Yes       | Yes*    | Yes     | Depends on kernel/HV |
+| **3. Raw guest attestation**  | Yes       | Yes*    | Yes     | Depends on kernel/HV |
 | **4. Reviewable firmware**    | No*       | No      | No      | Depends on kernel/HV |
 
 ## Microsoft Azure
@@ -30,9 +30,11 @@ With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-comp
 
 The [CVMs available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled. This impacts attestation capabilities. Currently, GCP doesn't offer CVM-based attestation at all. Instead, GCP provides attestation statements based on its regular [vTPM](https://cloud.google.com/blog/products/identity-security/virtual-trusted-platform-module-for-shielded-vms-security-in-plaintext), which is managed by the hypervisor. On GCP, the hypervisor is thus currently part of Constellation's TCB.
 
-## Amazon Web Services (AWS)
+\* Intel and Google have [joined forces](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX, and have recently [revealed](https://venturebeat.com/security/intel-launches-confidential-computing-solution-for-virtual-machines/) their plans to make TDX compatible with Google Cloud in the near future.
 
-AWS currently doesn't offer CVMs. AWS proprietary Nitro Enclaves offer some related features but [are explicitly not designed to keep AWS itself out](https://aws.amazon.com/blogs/security/confidential-computing-an-aws-perspective/). Besides, they aren't suitable for running entire Kubernetes nodes inside them. Therefore, Constellation uses regular EC2 instances on AWS [Nitro](https://aws.amazon.com/ec2/nitro/) without runtime encryption. Attestation is based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html), which is a vTPM managed by the Nitro hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
+## Amazon Web Services (AWS)
+Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/). Regarding (3), AWS provides direct access to remote-attestation statements. However, regarding (4), the CVMs still include closed-source firmware running in VM Privilege Level (VMPL) 0.
+Attestation is partially based on the [NitroTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) for [measured boot](../architecture/attestation.md#measured-boot), which is a vTPM managed by the Nitro hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
 
 ## OpenStack
 
