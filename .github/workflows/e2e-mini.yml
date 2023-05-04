@@ -24,7 +24,7 @@ on:
 jobs:
   on-failure-quit:
     runs-on: ubuntu-22.04
-    if: github.event.workflow_run.conclusion != 'success'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
     steps:
       - run: |
           echo 'Release workflow failed, exiting..'
