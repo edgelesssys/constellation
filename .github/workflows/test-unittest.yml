@@ -24,8 +24,6 @@ on:
 jobs:
   test-linux:
     runs-on: ubuntu-22.04
-    env:
-      CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
@@ -48,12 +46,10 @@ jobs:
         working-directory: build
         env:
           TMPDIR: ${{ runner.temp }}
-        run: ctest -R unit
+        run: bazelisk test //... --test_output=errors
 
   test-darwin:
     runs-on: macos-12
-    env:
-      CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
@@ -67,7 +63,7 @@ jobs:
           cache: true
 
       - name: CLI Unit Tests
-        run: go test -race -count=3 ./cli/...
+        run: bazelisk test //cli/... --test_output=errors
 
       - name: cdbg/debugd Unit Tests
-        run: go test -race -count=3 ./debugd/...
+        run: bazelisk test //debugd/... --test_output=errors
