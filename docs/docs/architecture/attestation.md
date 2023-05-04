@@ -220,6 +220,47 @@ The latter means that the value can be generated offline and compared to the one
 </tabItem>
 </tabs>
 
+### CVM verification
+
+To verify the integrity of the received attestation statement, a chain of trust from the CVM technology to the interface providing the statement has to be established.
+For verification of the CVM technology, Constellation may expose additional options in its config file.
+
+<tabs groupId="csp">
+<tabItem value="azure" label="Azure SEV-SNP">
+
+On Azure, AMD SEV-SNP is used to provide runtime encryption to the VMs.
+An SEV-SNP attestation report is used to establish trust in the vTPM running inside the VM.
+You may customize certain parameters for verification of the attestation statement using the Constellation config file.
+
+* TCB versions
+
+  You can set the minimum version numbers of components in the SEV-SNP TCB.
+  Use the latest versions to enforce that only machines with the most recent firmware updates are allowed to join the cluster.
+  Alternatively, you can set a lower minimum version to allow slightly out-of-date machines to still be able to join the cluster.
+
+* AMD Root Key Certificate
+
+  This certificate is the root of trust for verifying the SEV-SNP certificate chain.
+
+* Firmware Signer
+
+  This config option allows you to specify how the firmware signer should be verified.
+  More explicitly, it controls the verification of the `IDKeyDigest` value in the SEV-SNP attestation report.
+  You can provide a list of accepted key digests and specify a policy on how this list is compared against the reported `IDKeyDigest`.
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+There is no additional configuration available for GCP.
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+There is no additional configuration available for AWS.
+
+</tabItem>
+</tabs>
+
 ## Cluster attestation
 
 Cluster-facing, Constellation's [*JoinService*](microservices.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
