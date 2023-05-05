@@ -76,7 +76,15 @@ jobs:
         uses: ./.github/actions/pseudo_version
 
       - name: Update QEMU/MiniConstellation image version
-        run: sed -i "s/defaultImage = \"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/defaultImage = \"ref\/${{ steps.version.outputs.branchName }}\/stream\/nightly\/${{ steps.version.outputs.version }}\"/" internal/config/image.go
+        run: |
+          defaultVersionReg='defaultImage = \"[^\"]*\"'
+
+          # Ensure regexp matches (otherwise the file was changed or the workflow is broken).
+          grep -E "${defaultVersionReg}" internal/config/image.go
+
+          # Update version.
+          newVersion="ref\/${{ steps.version.outputs.branchName }}\/stream\/nightly\/${{ steps.version.outputs.version }}"
+          sed -i "s/${defaultVersionReg}/defaultImage = \"${newVersion}\"/" internal/config/image.go
 
       - name: Build generateMeasurements tool
         working-directory: internal/attestation/measurements/measurement-generator
