@@ -10,9 +10,9 @@ replace (
 
 require (
 	cloud.google.com/go/compute v1.18.0
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.5.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.1.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator v0.0.0
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
