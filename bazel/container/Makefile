@@ -1,7 +1,7 @@
 export DOCKER_BUILDKIT=1
 
 CONTAINER_NAME := ghcr.io/edgelesssys/bazel-container
-CONTAINER_VERSION := v6.1.0-0
+CONTAINER_VERSION := v6.1.2-0
 
 .PHONY: container container-push
 
