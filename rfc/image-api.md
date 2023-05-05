@@ -74,6 +74,11 @@ The following HTTP endpoints are available:
 
 - `GET /constellation/v2/ref/<REF>/stream/<STREAM>/<VERSION>/image/`
   - [`info.json` returns the lookup table for the given image version.](#image-lookup-table-v2)
+  - `measurements.json` contains the measurements for the given image version.
+  - `measurements.json.sig` returns the signature of the measurements file.
+
+
+
 - `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/`
   - [`info.json` returns the lookup table for the given image version.](#image-lookup-table-v1)
   - `sbom.<format>.json` contains SBOM files for the given image version. The exact formats and file names are TBD.
@@ -162,6 +167,31 @@ If required, the fields in the `.list` array can be extended in the future to in
 This document is not signed and can be extended in the future to include more image references.
 The same document can be used to identify old images that are no longer used and can be deleted for cost optimization.
 
+
+## Image measurements (v2)
+
+The image measurements are a JSON file that contains sets of measurements for the given image version:
+
+```
+/constellation/v2/ref/<REF>/stream/<STREAM>/<VERSION>/image/measurements.json
+```
+
+```json
+{
+  "version": "<VERSION>",
+  "ref": "<REF>",
+  "stream": "<STREAM>",
+  "list": [
+    "csp": "<CSP>",
+    "attestationVariant": "<ATTESTATION_VARIANT>",
+    "measurements": {"<PCR_INDEX>": {<MEASUREMENT>}}
+  ]
+}
+```
+
+If required, the fields in the `.list` array can be extended in the future to include additional information while maintaining backwards compatibility.
+
+This document has a detached signature that can be retrieved from `measurements.json.sig`.
 
 ## Image lookup table (v1)
 
