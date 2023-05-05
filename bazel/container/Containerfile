@@ -1,6 +1,11 @@
 # syntax=docker/dockerfile:1.5-labs
 FROM fedora:37
 
+# Self-documenting containers for the win.
+COPY Containerfile Containerfile
+
+COPY entrypoint.sh entrypoint.sh
+
 ARG TARGETOS
 ARG TARGETARCH
 ARG BAZEL_VERSION=6.1.0
@@ -31,4 +36,4 @@ WORKDIR /workspace
 RUN git config --global --add safe.directory /workspace && \
     USE_BAZEL_VERSION=${BAZEL_VERSION} bazel version
 
-ENTRYPOINT [ "/usr/local/bin/bazel" ]
+ENTRYPOINT [ "/entrypoint.sh" ]
