@@ -121,25 +121,44 @@ runs:
       if: inputs.keepMeasurements == 'false'
       shell: bash
       run: |
-        yq eval -i \
-          "(.attestation | select(. | has(\"awsNitroTPM\")).awsNitroTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-          constellation-conf.yaml
+        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
+        then
+          yq eval -i \
+            "(.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
 
-        yq eval -i \
-          "(.attestation | select(. | has(\"azureSEVSNP\")).azureSEVSNP.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-          constellation-conf.yaml
+          yq eval -i \
+            "(.provider | select(. | has(\"azure\")).azure.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
 
-        yq eval -i \
-          "(.attestation | select(. | has(\"azureTrustedLaunch\")).azureTrustedLaunch.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-          constellation-conf.yaml
+          yq eval -i \
+            "(.provider | select(. | has(\"gcp\")).gcp.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
+            constellation-conf.yaml
 
-        yq eval -i \
-          "(.attestation | select(. | has(\"gcpSEVES\")).gcpSEVES.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
-          constellation-conf.yaml
+          yq eval -i \
+            "(.provider | select(. | has(\"qemu\")).qemu.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
+        else
+          yq eval -i \
+            "(.attestation | select(. | has(\"awsNitroTPM\")).awsNitroTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
 
-        yq eval -i \
-          "(.attestation | select(. | has(\"qemuVTPM\")).qemuVTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-          constellation-conf.yaml
+          yq eval -i \
+            "(.attestation | select(. | has(\"azureSEVSNP\")).azureSEVSNP.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
+
+          yq eval -i \
+            "(.attestation | select(. | has(\"azureTrustedLaunch\")).azureTrustedLaunch.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
+
+          yq eval -i \
+            "(.attestation | select(. | has(\"gcpSEVES\")).gcpSEVES.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
+            constellation-conf.yaml
+
+          yq eval -i \
+            "(.attestation | select(. | has(\"qemuVTPM\")).qemuVTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
+        fi
 
     - name: Set image
       id: setImage
