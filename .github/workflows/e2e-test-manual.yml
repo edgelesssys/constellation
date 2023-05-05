@@ -43,7 +43,7 @@ on:
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
-        default: "1.25"
+        default: "1.26"
         required: true
       keepMeasurements:
         description: "Keep measurements embedded in the CLI."
