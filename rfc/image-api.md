@@ -72,8 +72,10 @@ Where applicable, the API uses the following CSP names:
 
 The following HTTP endpoints are available:
 
+- `GET /constellation/v2/ref/<REF>/stream/<STREAM>/<VERSION>/image/`
+  - [`info.json` returns the lookup table for the given image version.](#image-lookup-table-v2)
 - `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/`
-  - [`info.json` returns the lookup table for the given image version.](#image-lookup-table)
+  - [`info.json` returns the lookup table for the given image version.](#image-lookup-table-v1)
   - `sbom.<format>.json` contains SBOM files for the given image version. The exact formats and file names are TBD.
 - `GET /constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/csp/<csp>/` contains files with measurements and signatures for the given image version and CSP.
   - `measurements.json` contains the measurements for the given image version and CSP.
@@ -81,8 +83,87 @@ The following HTTP endpoints are available:
   - `image.raw` returns the raw image for the given image version and CSP.
 
 
+## Image lookup table (v2)
 
-## Image lookup table
+The image lookup table is a JSON file that maps the image name consisting of `ref`, `stream` and `version` to the CSP-specific image references:
+
+```
+/constellation/v2/ref/<REF>/stream/<STREAM>/<VERSION>/image/info.json
+```
+
+
+
+```json
+{
+  "version": "<VERSION>",
+  "ref": "<REF>",
+  "stream": "<STREAM>",
+  "list": [
+    {
+      "csp": "<CSP>",
+      "attestationVariant": "<ATTESTATION_VARIANT>",
+      "reference": "<CSP_SPECIFIC_IMAGE_REFERENCE>",
+      "region": "<CSP_REGION>"
+    },
+    {
+      "csp": "aws",
+      "attestationVariant": "aws-nitro-tpm",
+      "reference": "ami-123",
+      "region": "us-east-1"
+    },
+    {
+      "csp": "aws",
+      "attestationVariant": "aws-nitro-tpm",
+      "reference": "ami-456",
+      "region": "us-west-2"
+    },
+    {
+      "csp": "azure",
+      "attestationVariant": "azure-sev-snp",
+      "reference": "azure-cvm-123"
+    }
+    {
+      "csp": "azure",
+      "attestationVariant": "azure-trustedlaunch",
+      "reference": "azure-trusted-launch-123"
+    },
+    {
+      "csp": "gcp",
+      "attestationVariant": "gcp-sev-es",
+      "reference": "gcp-image-123",
+    },
+    {
+      "csp": "openstack",
+      "attestationVariant": "qemu-vtpm",
+      "reference": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/csp/openstack/qemu-vtpm/image.raw"
+    },
+    {
+      "csp": "qemu",
+      "attestationVariant": "qemu-vtpm",
+      "reference": "https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/csp/qemu/qemu-vtpm/image.raw"
+    }
+  ]
+}
+```
+
+Fields:
+
+- `version`: The version of the image.
+- `ref`: The reference of the image.
+- `stream`: The stream of the image.
+- `list`: An array of image references for each CSP.
+  - `csp`: The cloud service provider. Required.
+  - `attestationVariant`: The attestation variant of the image. Required.
+  - `reference`: The CSP-specific image reference. Required.
+  - `region`: The (optional) CSP-specific region of the image.
+
+If required, the fields in the `.list` array can be extended in the future to include additional information while maintaining backwards compatibility.
+
+This document is not signed and can be extended in the future to include more image references.
+The same document can be used to identify old images that are no longer used and can be deleted for cost optimization.
+
+
+## Image lookup table (v1)
 
 The image lookup table is a JSON file that maps the image name consisting of `ref`, `stream` and `version` to the CSP-specific image references:
 
@@ -136,12 +217,12 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 The CLI can find a CSP- and region specific image reference by looking up the image name in the following order:
 
 - if a local file `<IMAGE NAME>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/ref/<REF>/stream/<STREAM>/<VERSION>/image/info.json`) and use the lookup table in that file
-- choose the CSP-specific image reference for the current region and security type:
-  - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
-  - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)
-  - On GCP, use the only image ID (e.g. `.gcp.sev-es`)
-  - On QEMU, use the only image ID (e.g. `.qemu.default`)
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v2/ref/<REF>/stream/<STREAM>/<VERSION>/image/info.json`) and use the lookup table in that file
+- choose the CSP-specific image reference for the current region and attestation variant:
+  - On AWS, use the AMI ID for the current region (e.g. `us-east-1`) and attestation variant (e.g. `aws-nitro-tpm`)
+  - On Azure, use the image ID for the attestation variant (CVM or Trusted Launch) (e.g. `azure-sev-snp`)
+  - On GCP, use the image ID for the attestation variant (e.g. `gcp-sev-es`)
+  - On QEMU, use the image ID for the attestation variant (e.g. `qemu-vtpm`)
 
 This allows customers to upload images to their own cloud subscription and use them with the CLI by providing the image lookup table as a local file.
 
