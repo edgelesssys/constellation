@@ -84,7 +84,7 @@ attaching persistent storage, or autoscaling aren't available.
 
 :::
 
-### Create the cluster
+### Create your cluster
 
 1. To set up your local cluster, you need to create a configuration file for constellation first.
 
