@@ -514,7 +514,7 @@ type stubInitServer struct {
 }
 
 func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
-	stream.Send(s.res)
+	_ = stream.Send(s.res)
 	return s.initErr
 }
 

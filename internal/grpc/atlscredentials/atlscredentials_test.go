@@ -122,6 +122,6 @@ type fakeAPI struct {
 }
 
 func (f *fakeAPI) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
-	stream.Send(&initproto.InitResponse{})
+	_ = stream.Send(&initproto.InitResponse{})
 	return nil
 }
