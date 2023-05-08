@@ -77,3 +77,13 @@ dependencies:
     condition: openstack.deployYawolLoadBalancer
     tags:
       - OpenStack
+  - name: cinder-config
+    version: 1.0.0
+    condition: openstack.deployCSIDriver
+    tags:
+      - OpenStack
+  - name: cinder-csi-plugin
+    version: 1.0.0
+    condition: openstack.deployCSIDriver
+    tags:
+      - OpenStack
