@@ -54,59 +54,7 @@ constellation mini up
 ```
 
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
-All `constellation` commands concerning this cluster need to be issued from this directory.
-
-### Connecting to the cluster
-
-
-MiniConstellation automatically configures `kubectl` to talk to your local cluster.
-
-Your cluster initially consists of a single control-plane node:
-
-```shell-session
-$ kubectl get nodes
-NAME              STATUS   ROLES           AGE   VERSION
-control-plane-0   Ready    control-plane   66s   v1.24.6
-```
-
-A worker node will request to join the cluster shortly. Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
-If verification passes successfully, the new node receives keys and certificates to join the cluster.
-
-You can follow this process by viewing the logs of the JoinService:
-
-```shell-session
-$ kubectl logs -n kube-system daemonsets/join-service -f
-{"level":"INFO","ts":"2022-10-14T09:32:20Z","caller":"cmd/main.go:48","msg":"Constellation Node Join Service","version":"2.1.0","cloudProvider":"qemu"}
-{"level":"INFO","ts":"2022-10-14T09:32:20Z","logger":"validator","caller":"watcher/validator.go:96","msg":"Updating expected measurements"}
-...
-```
-
-Once the worker node has joined your cluster, it may take a couple of minutes for all resources to become available.
-You can check on the state of your cluster by running the following:
-
-```shell-session
-$ kubectl get nodes
-NAME              STATUS   ROLES           AGE     VERSION
-control-plane-0   Ready    control-plane   2m59s   v1.24.6
-worker-0          Ready    <none>          32s     v1.24.6
-```
-
-### Deploy a sample application
-
-1. Deploy the [emojivoto app](https://github.com/BuoyantIO/emojivoto)
-
-  ```bash
-  kubectl apply -k github.com/BuoyantIO/emojivoto/kustomize/deployment
-  ```
-
-2. Expose the frontend service locally
-
-  ```bash
-  kubectl wait --for=condition=available --timeout=60s -n emojivoto --all deployments
-  kubectl -n emojivoto port-forward svc/web-svc 8080:80 &
-  curl http://localhost:8080
-  kill %1
-  ```
+All `constellation` commands concerning this cluster need to be issued from this directory. You are now ready to [connect to the cluster](#connecting-to-the-cluster).
 
 ### Terminate your cluster
 
@@ -181,9 +129,7 @@ attaching persistent storage, or autoscaling aren't available.
           export KUBECONFIG="$PWD/constellation-admin.conf"
   ```
 
-### Connect `kubectl` and deploy a sample application
-
-This process is the same as described in the [MiniConstellation](#connecting-to-the-cluster) section.
+  You are now ready to [connect to the cluster](#connecting-to-the-cluster).
 
 ### Terminate your cluster
 
@@ -194,6 +140,63 @@ constellation terminate
 ```
 
 This will destroy your cluster and clean your workspace. The VM image as well as `constellation-conf.yaml` will be kept to allow reuse.
+
+## Connecting to the cluster
+
+If you used MiniConstellation, `kubectl` was automatically configured for you. If you used QEMU, please run
+
+```
+export KUBECONFIG="$PWD/constellation-admin.conf"
+```
+
+in your workspace before proceeding.
+
+Your cluster initially consists of a single control-plane node:
+
+```shell-session
+$ kubectl get nodes
+NAME              STATUS   ROLES           AGE   VERSION
+control-plane-0   Ready    control-plane   66s   v1.24.6
+```
+
+A worker node will request to join the cluster shortly. Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
+If verification passes successfully, the new node receives keys and certificates to join the cluster.
+
+You can follow this process by viewing the logs of the JoinService:
+
+```shell-session
+$ kubectl logs -n kube-system daemonsets/join-service -f
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","caller":"cmd/main.go:48","msg":"Constellation Node Join Service","version":"2.1.0","cloudProvider":"qemu"}
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","logger":"validator","caller":"watcher/validator.go:96","msg":"Updating expected measurements"}
+...
+```
+
+Once the worker node has joined your cluster, it may take a couple of minutes for all resources to become available.
+You can check on the state of your cluster by running the following:
+
+```shell-session
+$ kubectl get nodes
+NAME              STATUS   ROLES           AGE     VERSION
+control-plane-0   Ready    control-plane   2m59s   v1.24.6
+worker-0          Ready    <none>          32s     v1.24.6
+```
+
+### Deploy a sample application
+
+1. Deploy the [emojivoto app](https://github.com/BuoyantIO/emojivoto)
+
+  ```bash
+  kubectl apply -k github.com/BuoyantIO/emojivoto/kustomize/deployment
+  ```
+
+2. Expose the frontend service locally
+
+  ```bash
+  kubectl wait --for=condition=available --timeout=60s -n emojivoto --all deployments
+  kubectl -n emojivoto port-forward svc/web-svc 8080:80 &
+  curl http://localhost:8080
+  kill %1
+  ```
 
 ## Troubleshooting
 
