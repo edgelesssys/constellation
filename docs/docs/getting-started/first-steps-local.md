@@ -1,6 +1,26 @@
 # First steps with a local cluster
 
-To set up a local cluster on your computer, you can either use [MiniConstellation](#using-miniconstellation) or [Qemu](#local-setup-with-qemu).
+To set up a local cluster on your computer, you can either use [MiniConstellation](#using-miniconstellation) or [QEMU](#local-setup-with-qemu).
+
+## Prerequisites
+
+* A Linux OS with the following components installed
+  * [Constellation CLI](./install.md#install-the-constellation-cli)
+  * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
+  * [Docker](https://docs.docker.com/engine/install/)
+  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
+* Other system requirements
+  * An x86-64 CPU with at least 4 cores (6 cores are recommended)
+  * At least 4 GB RAM (6 GB are recommended)
+  * 20 GB of free disk space
+  * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
+  * `iptables` rules configured to not drop forwarded packages.
+    If running the following command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access):
+
+    ```bash
+    sudo iptables -S | grep -q -- '-P FORWARD DROP'
+    ```
 
 ## Using MiniConstellation
 
@@ -23,26 +43,6 @@ attaching persistent storage, or autoscaling aren't available.
 
 :::
 
-### Prerequisites
-
-* A Linux OS with the following components installed
-  * [Constellation CLI](./install.md#install-the-constellation-cli)
-  * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
-  * [Docker](https://docs.docker.com/engine/install/)
-  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
-  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
-* Other system requirements
-  * An x86-64 CPU with at least 4 cores (6 cores are recommended)
-  * At least 4 GB RAM (6 GB are recommended)
-  * 20 GB of free disk space
-  * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
-  * `iptables` rules configured to not drop forwarded packages.
-    If running the following command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access):
-
-    ```bash
-    sudo iptables -S | grep -q -- '-P FORWARD DROP'
-    ```
-
 ### Create your cluster
 
 The following creates your MiniConstellation cluster (may take up to 10 minutes to complete):
@@ -54,13 +54,10 @@ constellation mini up
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
 
-### Connect `kubectl`
+### Connecting to the cluster
 
-Configure `kubectl` to connect to your local Constellation cluster:
 
-```bash
-export KUBECONFIG="$PWD/constellation-admin.conf"
-```
+MiniConstellation automatically configures `kubectl` to talk to your local cluster.
 
 Your cluster initially consists of a single control-plane node:
 
@@ -120,9 +117,9 @@ constellation mini down
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
 
-## Local setup with Qemu
+## Local setup with QEMU
 
-With [Qemu](https://www.qemu.org/), you can create a local constellation cluster as if it were in the cloud. It utilizes different virtual machines over Qemu to create multiple nodes which interact with each other.
+With [QEMU](https://www.qemu.org/), you can create a local constellation cluster as if it were in the cloud. It utilizes different virtual machines over QEMU to create multiple nodes which interact with each other.
 
 :::caution
 
@@ -137,27 +134,6 @@ attaching persistent storage, or autoscaling aren't available.
 
 :::
 
-### Prerequisites
-
-* A Linux OS with the following components installed
-  * [Constellation CLI](./install.md#install-the-constellation-cli)
-  * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
-  * [Docker](https://docs.docker.com/engine/install/)
-  * [Qemu](https://www.qemu.org/)
-  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
-  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
-* Other system requirements
-  * An x86-64 CPU with at least 4 cores (6 cores are recommended)
-  * At least 4 GB RAM (6 GB are recommended)
-  * 20 GB of free disk space
-  * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
-  * `iptables` rules configured to not drop forwarded packages.
-    If running the following command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access):
-
-    ```bash
-    sudo iptables -S | grep -q -- '-P FORWARD DROP'
-    ```
-
 ### Create the cluster
 
 1. To set up your local cluster, you need to create a configuration file for constellation first.
@@ -166,7 +142,7 @@ attaching persistent storage, or autoscaling aren't available.
   constellation config generate qemu
   ```
 
-  This creates a [configuration file](../workflows/config.md) for Qemu called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
+  This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
 2. Now you can create your cluster and it's nodes. `constellation create` uses the options set in `constellation-conf.yaml`. If you want to manually use [Terraform](../reference/terraform.md) instead, follow the corresponding instructions in [Create Workflow](../workflows/create.md).
 
   ```shell-session
@@ -242,7 +218,7 @@ attaching persistent storage, or autoscaling aren't available.
 
 ### Connect `kubectl` and deploy a sample application
 
-This process is the same as described in the [MiniConstellation](#connect-kubectl) section.
+This process is the same as described in the [MiniConstellation](#connecting-to-the-cluster) section.
 
 ### Terminate your cluster
 
