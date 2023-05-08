@@ -226,3 +226,13 @@ resource "aws_iam_role_policy_attachment" "attach_bootstrapper_policy_control_pl
   role       = aws_iam_role.control_plane_role.name
   policy_arn = aws_iam_policy.constellation_bootstrapper_policy.arn
 }
+
+resource "aws_iam_role_policy_attachment" "csi_driver_policy_worker" {
+  role       = aws_iam_role.worker_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "csi_driver_policy_control_plane" {
+  role       = aws_iam_role.control_plane_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
