@@ -160,43 +160,6 @@ attaching persistent storage, or autoscaling aren't available.
 
   This will create 2 virtual machines, one worker and one control plane. You can change the numbers of nodes as long as your computer has enough resources.
 
-  :::tip
-
-  If you want to look at and interact with the created virtual machines manually, run
-
-  ```shell-session
-  virsh -c qemu+tcp://localhost:16599/system
-  ```
-
-  which gives you a new `virsh` shell. In this shell, you can run
-  ```shell-session
-  list
-  ```
-   to see the created virtual machines, as well as their status. This should look something like this:
-
-  ```txt
-  Id   Name                       State
-  ------------------------------------------
-  1    constell-control-plane-0   running
-  2    constell-worker-0          running
-  ```
-
-  If you want to connect to one of those machines, run
-
-  ```shell-session
-  console <ID>
-  ```
-
-  where `<ID>` would be the id of your virtual machine as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the virtual machine.
-
-  :::
-
-  :::caution
-
-  Please note that connections via `qemu+tcp` aren't encrypted and shouldn't be used in a security relevant environment!
-
-  :::
-
 3. Finally, initialize the cluster by running
 
   ```shell-session

@@ -94,6 +94,39 @@ Then restart libvirt
 sudo systemctl restart libvirtd
 ```
 
+### Connecting to a console
+
+Once you created a cluster via constellation you can connect to the virtual machines using the following commands. First, run
+
+```shell-session
+virsh -c qemu+tcp://localhost:16599/system
+```
+
+which gives you a new `virsh` shell. In this shell, you can run
+
+```shell-session
+list
+```
+
+ to see the created virtual machines, as well as their status. This should look something like this:
+
+```txt
+Id   Name                       State
+------------------------------------------
+1    constell-control-plane-0   running
+2    constell-worker-0          running
+```
+
+If you want to connect to one of those machines, run
+
+```shell-session
+console <ID>
+```
+
+where `<ID>` would be the id of your virtual machine as seen above (e.g. `1`). After that, press Enter another time and you should drop into a shell on the virtual machine.
+
+Please note that connecting via `qemu+tcp` is not encrypted and should not be used in a security relevant environment.
+
 ## Troubleshooting
 
 ### VMs are not properly cleaned up after a failed `constellation create` command
