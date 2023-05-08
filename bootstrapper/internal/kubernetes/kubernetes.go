@@ -507,6 +507,10 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			"yawolNetworkID": networkIDs[0],
 			"yawolAPIHost":   fmt.Sprintf("https://%s:%d", serviceConfig.loadBalancerIP, constants.KubernetesPort),
 		}
+		cinderIni := creds.CloudINI().CinderCSIConfiguration()
+		extraVals["cinder-config"] = map[string]any{
+			"secretData": cinderIni,
+		}
 	}
 	return extraVals, nil
 }

@@ -162,4 +162,28 @@ region = %s
 `, authURL, username, password, projectID, userDomainName, region)
 }
 
+// CinderCSIConfiguration returns the string representation of the CloudINI subset cinder expects.
+func (i CloudINI) CinderCSIConfiguration() string {
+	// sanitize parameters to not include newlines
+	authURL := newlineRegexp.ReplaceAllString(i.AuthURL, "")
+	username := newlineRegexp.ReplaceAllString(i.Username, "")
+	password := newlineRegexp.ReplaceAllString(i.Password, "")
+	projectID := newlineRegexp.ReplaceAllString(i.ProjectID, "")
+	projectName := newlineRegexp.ReplaceAllString(i.TenantName, "")
+	userDomainName := newlineRegexp.ReplaceAllString(i.UserDomainName, "")
+	tenantDomainName := newlineRegexp.ReplaceAllString(i.TenantDomainName, "")
+	region := newlineRegexp.ReplaceAllString(i.Region, "")
+
+	return fmt.Sprintf(`[Global]
+auth-url = %s
+username = %s
+password = %s
+project-id = %s
+project-name = %s
+user-domain-name = %s
+project-domain-name = %s
+region = %s
+`, authURL, username, password, projectID, projectName, userDomainName, tenantDomainName, region)
+}
+
 var newlineRegexp = regexp.MustCompile(`[\r\n]+`)

@@ -512,6 +512,7 @@ func extendConstellationServicesValues(
 	case cloudprovider.OpenStack:
 		in["openstack"] = map[string]any{
 			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
+			"deployCSIDriver":         cfg.DeployCSIDriver(),
 		}
 		if cfg.DeployYawolLoadBalancer() {
 			in["yawol-controller"] = map[string]any{
