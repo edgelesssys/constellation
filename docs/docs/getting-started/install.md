@@ -103,7 +103,7 @@ The CLI supports autocompletion for various shells. To set it up, run `constella
 The CLI makes authenticated calls to the CSP API. Therefore, you need to set up Constellation with the credentials for your CSP.
 
 :::tip
-If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md#using-miniconstellation) or [constellation with Qemu](../getting-started/first-steps-local.md#local-setup-with-qemu), which lets you set up a local Constellation cluster using virtualization.
+If you don't have a cloud subscription, you can also set up a [local Constellation cluster using virtualization](../getting-started/first-steps-local.md) for testing.
 :::
 
 ### Required permissions
