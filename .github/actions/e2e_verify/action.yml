@@ -15,13 +15,42 @@ runs:
     - name: Clear current measurements
       shell: bash
       run: |
-        yq -i 'del(.provider.${{ inputs.cloudProvider }}.measurements)' constellation-conf.yaml
+        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
+        then
+          yq -i 'del(.provider.${{ inputs.cloudProvider }}.measurements)' constellation-conf.yaml
+        else
+          yq -i 'del(.attestation.awsNitroTPM.measurements)' constellation-conf.yaml
+          yq -i 'del(.attestation.azureSEVSNP.measurements)' constellation-conf.yaml
+          yq -i 'del(.attestation.azureTrustedLaunch.measurements)' constellation-conf.yaml
+          yq -i 'del(.attestation.gcpSEVES.measurements)' constellation-conf.yaml
+          yq -i 'del(.attestation.qemuVTPM.measurements)' constellation-conf.yaml
+        fi
 
     - name: Expand version path
       id: expand-version
       uses: ./.github/actions/shortname
       with:
         shortname: ${{ inputs.osImage }}
+
+    - name: Get attestation variant
+      id: get-variant
+      shell: bash
+      run: |
+        # TODO(AB#3144): Refactor when API is update for attestation variants
+        case ${{ inputs.cloudProvider }} in
+          aws)
+            echo ATTESTATION_VARIANT=awsNitroTPM >> $GITHUB_OUTPUT
+            ;;
+          azure)
+            echo ATTESTATION_VARIANT=azureSEVSNP >> $GITHUB_OUTPUT
+            ;;
+          gcp)
+            echo ATTESTATION_VARIANT=gcpSEVES >> $GITHUB_OUTPUT
+            ;;
+          qemu)
+            echo ATTESTATION_VARIANT=qemuVTPM >> $GITHUB_OUTPUT
+            ;;
+        esac
 
     - name: Fetch & write measurements
       shell: bash
@@ -33,9 +62,20 @@ runs:
         MEASUREMENTS=$(curl -fsSL https://cdn.confidential.cloud/constellation/v1/${verPath}/image/csp/${{ inputs.cloudProvider }}/measurements.json | jq '.measurements' -r)
         for key in $(echo $MEASUREMENTS | jq 'keys[]' -r); do
             echo Updating $key to $(echo $MEASUREMENTS | jq ".\"$key\"" -r)
-            yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
+            if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
+            then
+              yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
+            else
+              yq -i ".attestation.${{ steps.get-variant.outputs.ATTESTATION_VARIANT }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
+            fi
         done
-        yq -i '.provider.${{ inputs.cloudProvider }}.measurements |= array_to_map' constellation-conf.yaml
+
+        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
+        then
+          yq -i '.provider.${{ inputs.cloudProvider }}.measurements |= array_to_map' constellation-conf.yaml
+        else
+          yq -i '.attestation.${{ steps.get-variant.outputs.ATTESTATION_VARIANT }}.measurements |= array_to_map' constellation-conf.yaml
+        fi
         cat constellation-conf.yaml
 
     - name: Constellation verify
