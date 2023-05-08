@@ -20,7 +20,7 @@ This list does not claim to be complete, since we only focus on points relevant 
 
 ## [`buildah/podman`](https://github.com/containers/buildah)
 
-Since podman internally [uses](https://podman.io/blogs/2018/10/31/podman-buildah-relationship.html) buildah to build the image and this rfc only covers building and not execution the names are used synonymously.
+Since podman internally uses buildah to build the image and this rfc only covers building and not execution the names are used synonymously.
 With buildah, Containerfiles/Dockerfiles can be used as usual. This means we can adjust the build to include necessary libraries for i.e CGO builds. Only the build command itself has to be adjusted to omit timestamps.
 
 ## [`ko`](https://github.com/ko-build/ko)
@@ -59,7 +59,7 @@ This seems to happen more or less regularly. We should try to avoid a build syst
 * Eliminate dependencies on libraries (make executable static)
 
 Striping metadata from the binary can be done in the building process.
-This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and [`go help build`](https://pkg.go.dev/cmd/go).
+This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and [`go help build`](https://pkg.go.dev/cmd/go)).
 
 * `buildvcs=false`: Omit version control information
 * `-trimpath`: Remove file system paths from executable
