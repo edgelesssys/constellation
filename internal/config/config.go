@@ -239,6 +239,9 @@ type OpenStackConfig struct {
 	// description: |
 	//   OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol
 	YawolFlavorID string `yaml:"yawolFlavorID"`
+	// description: |
+	//   Deploy Cinder CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
+	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -332,6 +335,7 @@ func Default() *Config {
 			OpenStack: &OpenStackConfig{
 				DirectDownload:          toPtr(true),
 				DeployYawolLoadBalancer: toPtr(true),
+				DeployCSIDriver:         toPtr(true),
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -530,7 +534,8 @@ func (c *Config) UpdateMAAURL(maaURL string) {
 // DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.
 func (c *Config) DeployCSIDriver() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.DeployCSIDriver != nil && *c.Provider.Azure.DeployCSIDriver ||
-		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver
+		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver ||
+		c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployCSIDriver != nil && *c.Provider.OpenStack.DeployCSIDriver
 }
 
 // DeployYawolLoadBalancer returns whether the Yawol load balancer should be deployed.

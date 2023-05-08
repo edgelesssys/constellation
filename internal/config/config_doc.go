@@ -276,7 +276,7 @@ func init() {
 			FieldName: "openstack",
 		},
 	}
-	OpenStackConfigDoc.Fields = make([]encoder.Doc, 17)
+	OpenStackConfigDoc.Fields = make([]encoder.Doc, 18)
 	OpenStackConfigDoc.Fields[0].Name = "cloud"
 	OpenStackConfigDoc.Fields[0].Type = "string"
 	OpenStackConfigDoc.Fields[0].Note = ""
@@ -362,6 +362,11 @@ func init() {
 	OpenStackConfigDoc.Fields[16].Note = ""
 	OpenStackConfigDoc.Fields[16].Description = "OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol"
 	OpenStackConfigDoc.Fields[16].Comments[encoder.LineComment] = "OpenStack flavor id used for yawollets. For details see: https://github.com/stackitcloud/yawol"
+	OpenStackConfigDoc.Fields[17].Name = "deployCSIDriver"
+	OpenStackConfigDoc.Fields[17].Type = "bool"
+	OpenStackConfigDoc.Fields[17].Note = ""
+	OpenStackConfigDoc.Fields[17].Description = "Deploy Cinder CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	OpenStackConfigDoc.Fields[17].Comments[encoder.LineComment] = "Deploy Cinder CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."
