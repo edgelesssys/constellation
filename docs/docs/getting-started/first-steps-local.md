@@ -123,7 +123,7 @@ With [QEMU](https://www.qemu.org/), you can create a local constellation cluster
 
 :::caution
 
-Using this has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites-1) when setting up.
+Using this has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
 
 :::
 
