@@ -11,7 +11,7 @@ For Constellation, the ideal environment provides the following:
 
 (1) is a functional must-have. (2)--(4) are required for remote attestation that fully keeps the infrastructure/cloud out. Constellation can work without them or with approximations, but won't protect against certain privileged attackers anymore.
 
-The following table summarizes the state of features for different infrastructures as of September 2022.
+The following table summarizes the state of features for different infrastructures as of May 2023.
 
 | **Feature**                   | **Azure** | **GCP** | **AWS** | **OpenStack (Yoga)** |
 |-------------------------------|-----------|---------|---------|----------------------|
@@ -32,7 +32,7 @@ The [CVMs Generally Available in GCP](https://cloud.google.com/compute/confident
 CVMs with SEV-SNP enabled are currently in [private preview](https://cloud.google.com/blog/products/identity-security/rsa-snp-vm-more-confidential). Regarding (3), with their SEV-SNP offering Google provides direct access to remote-attestation statements.
 However, regarding (4), the CVMs still include closed-source firmware.
 
-Intel and Google have [joined forces](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX, and have recently [revealed](https://venturebeat.com/security/intel-launches-confidential-computing-solution-for-virtual-machines/) their plans to make TDX compatible with Google Cloud.
+Intel and Google have [collaborated](https://cloud.google.com/blog/products/identity-security/rsa-google-intel-confidential-computing-more-secure) to enhance the security of TDX, and have recently [revealed](https://venturebeat.com/security/intel-launches-confidential-computing-solution-for-virtual-machines/) their plans to make TDX compatible with Google Cloud.
 
 ## Amazon Web Services (AWS)
 Amazon EC2 [supports AMD SEV-SNP](https://aws.amazon.com/de/about-aws/whats-new/2023/04/amazon-ec2-amd-sev-snp/). Regarding (3), AWS provides direct access to remote-attestation statements.
