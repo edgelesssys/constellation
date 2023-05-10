@@ -245,7 +245,7 @@ func TestInit(t *testing.T) {
 	}
 }
 
-func TestSendLogs(t *testing.T) {
+func TestSendLogsWithMessage(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -294,7 +294,7 @@ func TestSendLogs(t *testing.T) {
 				journaldCollector: tc.logCollector,
 			}
 
-			err := server.sendLogsWithError(&tc.stream, errors.New(tc.failureMessage))
+			err := server.sendLogsWithMessage(&tc.stream, errors.New(tc.failureMessage))
 
 			if tc.wantErr {
 				assert.Error(err)
