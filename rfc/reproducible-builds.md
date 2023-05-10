@@ -20,7 +20,7 @@ This list does not claim to be complete, since we only focus on points relevant 
 
 ## [`buildah/podman`](https://github.com/containers/buildah)
 
-Since podman internally [uses](https://podman.io/blogs/2018/10/31/podman-buildah-relationship.html) buildah to build the image and this rfc only covers building and not execution the names are used synonymously.
+Since podman internally [uses](https://github.com/containers/buildah#buildah-and-podman-relationship) buildah to build the image and this rfc only covers building and not execution the names are used synonymously.
 With buildah, Containerfiles/Dockerfiles can be used as usual. This means we can adjust the build to include necessary libraries for i.e CGO builds. Only the build command itself has to be adjusted to omit timestamps.
 
 ## [`ko`](https://github.com/ko-build/ko)
