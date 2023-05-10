@@ -189,7 +189,7 @@ func (k *KubeWrapper) InitCluster(
 
 	log.Infof("Waiting for Cilium to become healthy")
 	timeToStartWaiting := time.Now()
-	// TODO(Nirusu): Reduce the timeout when we switched the package repository - this is only this high because I once
+	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
 	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
 	waitCtx, cancel = context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()

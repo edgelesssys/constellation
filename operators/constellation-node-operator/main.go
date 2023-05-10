@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	awsclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client"
 	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
 	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
 	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
@@ -101,6 +102,12 @@ func main() {
 			setupLog.Error(clientErr, "unable to create GCP client")
 			os.Exit(1)
 		}
+	case "aws":
+		cspClient, clientErr = awsclient.New(context.Background())
+		if clientErr != nil {
+			setupLog.Error(clientErr, "unable to create AWS client")
+			os.Exit(1)
+		}
 	default:
 		setupLog.Info("CSP does not support upgrades", "csp", csp)
 		cspClient = &cloudfake.Client{}
@@ -142,7 +149,7 @@ func main() {
 		os.Exit(1)
 	}
 	// Create Controllers
-	if csp == "azure" || csp == "gcp" {
+	if csp == "azure" || csp == "gcp" || csp == "aws" {
 		if err = controllers.NewNodeVersionReconciler(
 			cspClient, etcdClient, upgrade.NewClient(), discoveryClient, mgr.GetClient(), mgr.GetScheme(),
 		).SetupWithManager(mgr); err != nil {

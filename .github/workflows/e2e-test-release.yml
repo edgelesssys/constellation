@@ -127,6 +127,10 @@ jobs:
             provider: "azure"
             kubernetes-version: "v1.27"
             runner: "ubuntu-22.04"
+          - test: "autoscaling"
+            provider: "aws"
+            kubernetes-version: "v1.27"
+            runner: "ubuntu-22.04"
 
           # perf-bench test on latest k8s version, not supported on AWS
           - test: "perf-bench"
@@ -238,8 +242,8 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        fromVersion: ["v2.6.0"]
-        cloudProvider: ["gcp", "azure"]
+        fromVersion: ["v2.7.1"]
+        cloudProvider: ["gcp", "azure", "aws"]
     name: Run upgrade tests
     secrets: inherit
     permissions:
