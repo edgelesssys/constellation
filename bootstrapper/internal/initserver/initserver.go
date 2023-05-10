@@ -137,17 +137,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.kmsURI = req.KmsUri
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "invalid init secret %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "invalid init secret %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -155,17 +145,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: fmt.Errorf("creating kms client: %w", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "creating kms client: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -174,17 +154,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	// generate values for cluster attestation
 	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "deriving measurement values: %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "deriving measurement values: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -192,17 +162,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "locking node: %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "locking node: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -217,17 +177,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 		err = status.Error(codes.FailedPrecondition, "node is already being activated")
 
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: err.Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, err); e != nil {
 			err = e
 		}
 		return err
@@ -239,17 +189,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	s.cleaner.Clean()
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "setting up disk: %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "setting up disk: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -260,17 +200,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		MeasurementSalt: measurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "persisting node state: %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "persisting node state: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -292,17 +222,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		s.log,
 	)
 	if err != nil {
-		// send back the error
-		e := stream.Send(&initproto.InitResponse{
-			Kind: &initproto.InitResponse_InitFailure{
-				InitFailure: &initproto.InitFailureResponse{Error: status.Errorf(codes.Internal, "initializing cluster: %s", err).Error()},
-			},
-		})
-		if e != nil {
-			err = e
-		}
-
-		if e := s.sendLogs(stream); e != nil {
+		if e := s.sendLogsWithError(stream, status.Errorf(codes.Internal, "initializing cluster: %s", err)); e != nil {
 			err = e
 		}
 		return err
@@ -320,7 +240,16 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	return stream.Send(&initproto.InitResponse{Kind: successMessage})
 }
 
-func (s *Server) sendLogs(stream initproto.API_InitServer) error {
+func (s *Server) sendLogsWithError(stream initproto.API_InitServer, message error) error {
+	// send back the error message
+	if err := stream.Send(&initproto.InitResponse{
+		Kind: &initproto.InitResponse_InitFailure{
+			InitFailure: &initproto.InitFailureResponse{Error: message.Error()},
+		},
+	}); err != nil {
+		return err
+	}
+
 	logPipe, err := s.journaldCollector.Start()
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)

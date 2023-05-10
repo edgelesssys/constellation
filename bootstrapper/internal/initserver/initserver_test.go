@@ -249,28 +249,38 @@ func TestSendLogs(t *testing.T) {
 	someError := errors.New("failed")
 
 	testCases := map[string]struct {
-		logCollector   journaldCollection
-		stream         stubStream
-		expectedResult string
-		wantErr        bool
+		logCollector           journaldCollection
+		stream                 stubStream
+		failureMessage         string
+		expectedResult         string
+		expectedFailureMessage string
+		wantErr                bool
 	}{
 		"success": {
-			logCollector:   &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
-			stream:         stubStream{},
-			expectedResult: "asdf",
+			logCollector:           &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
+			stream:                 stubStream{},
+			failureMessage:         "fdsa",
+			expectedResult:         "asdf",
+			expectedFailureMessage: "fdsa",
 		},
 		"fail collection": {
-			logCollector: &stubJournaldCollector{collectErr: someError},
-			wantErr:      true,
+			logCollector:           &stubJournaldCollector{collectErr: someError},
+			failureMessage:         "fdsa",
+			wantErr:                true,
+			expectedFailureMessage: "fdsa",
 		},
 		"fail to send": {
-			logCollector: &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
-			stream:       stubStream{sendError: someError},
-			wantErr:      true,
+			logCollector:           &stubJournaldCollector{logPipe: &stubReadCloser{reader: bytes.NewReader([]byte("asdf"))}},
+			stream:                 stubStream{sendError: someError},
+			failureMessage:         "fdsa",
+			wantErr:                true,
+			expectedFailureMessage: "fdsa",
 		},
 		"fail to read": {
-			logCollector: &stubJournaldCollector{logPipe: &stubReadCloser{readErr: someError}},
-			wantErr:      true,
+			logCollector:           &stubJournaldCollector{logPipe: &stubReadCloser{readErr: someError}},
+			failureMessage:         "fdsa",
+			wantErr:                true,
+			expectedFailureMessage: "fdsa",
 		},
 	}
 
@@ -284,7 +294,7 @@ func TestSendLogs(t *testing.T) {
 				journaldCollector: tc.logCollector,
 			}
 
-			err := server.sendLogs(&tc.stream)
+			err := server.sendLogsWithError(&tc.stream, errors.New(tc.failureMessage))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -292,8 +302,10 @@ func TestSendLogs(t *testing.T) {
 				return
 			}
 
+			assert.Equal(tc.stream.res[0].GetInitFailure().GetError(), tc.expectedFailureMessage)
+
 			assert.NoError(err)
-			for _, res := range tc.stream.res {
+			for _, res := range tc.stream.res[1:] {
 				assert.Equal(tc.expectedResult, string(res.GetLog().Log))
 			}
 		})
