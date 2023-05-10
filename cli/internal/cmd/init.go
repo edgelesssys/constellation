@@ -260,6 +260,8 @@ func (d *initDoer) Do(ctx context.Context) error {
 		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
 	}
 
+	fail := false
+
 	for {
 		res, err := resp.Recv()
 		if err == io.EOF {
@@ -269,7 +271,15 @@ func (d *initDoer) Do(ctx context.Context) error {
 			return &nonRetriableError{err}
 		}
 
-		d.resp = res // currently doesnt work for log streaming
+		if res.GetInitFailure() != nil {
+			d.log.Debugf("Received init failure from server")
+			fail = true
+			continue
+		}
+
+		if !fail {
+			d.resp = res
+		}
 	}
 
 	return nil
