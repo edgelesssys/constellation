@@ -66,11 +66,9 @@ Alternatively, you can manually scale your cluster up or down:
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-:::caution
-
-Scaling isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
-
-:::
+1. Go to Auto Scaling Groups and select the worker ASG to scale up.
+2. Click **Edit**
+3. Set the new (increased) **Desired capacity** and **Update**.
 
 </tabItem>
 </tabs>
@@ -100,11 +98,9 @@ To increase the number of control-plane nodes, follow these steps:
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-:::caution
-
-Scaling isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
-
-:::
+1. Go to Auto Scaling Groups and select the control-plane ASG to scale up.
+2. Click **Edit**
+3. Set the new (increased) **Desired capacity** and **Update**.
 
 </tabItem>
 </tabs>
