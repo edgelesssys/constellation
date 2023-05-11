@@ -22,6 +22,7 @@ go_library(
         "//cli/internal/terraform",
         "//internal/atls",
         "//internal/attestation/choose",
+        "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
