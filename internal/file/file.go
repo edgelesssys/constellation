@@ -14,10 +14,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -174,4 +176,31 @@ func (h *Handler) Stat(name string) (fs.FileInfo, error) {
 // MkdirAll creates a directory path and all parents that does not exist yet.
 func (h *Handler) MkdirAll(name string) error {
 	return h.fs.MkdirAll(name, 0o700)
+}
+
+// CopyDir copies a directory recursively with the given options.
+func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
+	var walkFunc func(path string, info fs.FileInfo, err error) error
+	walkFunc = func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return walkFunc(filepath.Join(path, info.Name()), info, nil)
+		}
+
+		return h.CopyFile(path, filepath.Join(dst, path), opts...)
+	}
+	return h.fs.Walk(src, walkFunc)
+}
+
+// CopyFile copies the file from src to dst with the given options.
+func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
+	content, err := h.fs.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("reading source file: %w", err)
+	}
+
+	return h.Write(dst, content, opts...)
 }

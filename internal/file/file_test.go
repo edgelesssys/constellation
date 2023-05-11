@@ -8,6 +8,7 @@ package file
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -349,4 +350,74 @@ func TestRemove(t *testing.T) {
 	assert.ErrorIs(err, afero.ErrFileNotFound)
 
 	assert.Error(handler.Remove("d"))
+}
+
+func TestCopyFile(t *testing.T) {
+	setupFs := func(existingFiles []string) afero.Fs {
+		fs := afero.NewMemMapFs()
+		aferoHelper := afero.Afero{Fs: fs}
+		for _, file := range existingFiles {
+			aferoHelper.WriteFile(file, []byte{}, 0o644)
+		}
+		return fs
+	}
+
+	testCases := map[string]struct {
+		fs         afero.Fs
+		copyFiles  [][]string
+		checkFiles []string
+		opts       []Option
+		wantErr    bool
+	}{
+		"successful copy": {
+			fs:         setupFs([]string{"a"}),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+		},
+		"copy to existing file overwrite": {
+			fs:         setupFs([]string{"a", "b"}),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+			opts:       []Option{OptOverwrite},
+		},
+		"copy to new dir": {
+			fs:         setupFs([]string{"a"}),
+			copyFiles:  [][]string{{"a", filepath.Join("someDir", "otherDir", "b")}},
+			checkFiles: []string{filepath.Join("someDir", "otherDir", "b")},
+			opts:       []Option{OptMkdirAll},
+		},
+		"copy to existing file no overwrite": {
+			fs:         setupFs([]string{"a", "b"}),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+			wantErr:    true,
+		},
+		"file doesn't exist": {
+			fs:         setupFs([]string{"a"}),
+			copyFiles:  [][]string{{"b", "c"}},
+			checkFiles: []string{"a"},
+			wantErr:    true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			handler := NewHandler(tc.fs)
+			for _, files := range tc.copyFiles {
+				err := handler.CopyFile(files[0], files[1], tc.opts...)
+				if tc.wantErr {
+					assert.Error(err)
+				} else {
+					assert.NoError(err)
+				}
+			}
+
+			for _, file := range tc.checkFiles {
+				_, err := handler.fs.Stat(file)
+				require.NoError(t, err)
+			}
+		})
+	}
 }
