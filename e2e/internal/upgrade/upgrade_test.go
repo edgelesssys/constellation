@@ -52,7 +52,7 @@ var (
 // setup checks that the prerequisites for the test are met:
 // - a workspace is set
 // - a CLI path is set
-// - the constellation-upgrade folder does not exist.
+// - the upgrade folder does not exist.
 func setup() error {
 	workingDir, err := workingDir(*workspace)
 	if err != nil {
@@ -66,8 +66,8 @@ func setup() error {
 	if _, err := getCLIPath(*cliPath); err != nil {
 		return fmt.Errorf("getting CLI path: %w", err)
 	}
-	if _, err := os.Stat("constellation-upgrade"); err == nil {
-		return errors.New("please remove the existing constellation-upgrade folder")
+	if _, err := os.Stat(constants.UpgradeDir); err == nil {
+		return fmt.Errorf("please remove the existing %s folder", constants.UpgradeDir)
 	}
 
 	return nil

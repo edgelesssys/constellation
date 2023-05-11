@@ -150,10 +150,14 @@ const (
 	TerraformLogFile = "terraform.log"
 	// TerraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
 	TerraformUpgradePlanFile = "plan.zip"
-	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an update.
+	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an upgrade.
 	TerraformUpgradeWorkingDir = "constellation-upgrade-terraform"
+	// TerraformUpgradeBackupDir is the directory name being used to backup the pre-upgrade state in an upgrade.
+	TerraformUpgradeBackupDir = "constellation-upgrade-terraform"
 	// TerraformMigrationOutputFile is the file name of the output file created by a successful Terraform migration.
 	TerraformMigrationOutputFile = "terraform-migration-output.json"
+	// UpgradeDir is the name of the directory being used for cluster upgrades.
+	UpgradeDir = "constellation-upgrade"
 
 	//
 	// Kubernetes.

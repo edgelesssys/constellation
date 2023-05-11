@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -110,7 +110,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	tfClient, err := terraform.New(ctx, constants.TerraformUpgradeWorkingDir)
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -144,7 +144,12 @@ type TerraformUpgradeOptions struct {
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
 func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions) (bool, error) {
-	err := u.tf.PrepareUpgradeWorkspace(path.Join("terraform", strings.ToLower(opts.CSP.String())), constants.TerraformWorkingDir, constants.TerraformUpgradeWorkingDir, opts.Vars)
+	err := u.tf.PrepareUpgradeWorkspace(
+		filepath.Join("terraform", strings.ToLower(opts.CSP.String())),
+		constants.TerraformWorkingDir,
+		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
+		opts.Vars,
+	)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
