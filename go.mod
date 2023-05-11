@@ -38,11 +38,11 @@ replace (
 )
 
 require (
-	cloud.google.com/go/compute v1.19.0
+	cloud.google.com/go/compute v1.19.2
 	cloud.google.com/go/compute/metadata v0.2.3
-	cloud.google.com/go/kms v1.10.1
+	cloud.google.com/go/kms v1.10.2
 	cloud.google.com/go/logging v1.7.0
-	cloud.google.com/go/secretmanager v1.10.0
+	cloud.google.com/go/secretmanager v1.10.1
 	cloud.google.com/go/storage v1.30.1
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0
