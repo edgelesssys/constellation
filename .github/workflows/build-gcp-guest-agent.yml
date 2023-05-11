@@ -30,7 +30,7 @@ jobs:
           beforeDot="${semver%%.*}"
           afterDot="${semver#*.}"
           afterDotEvaluated=$((afterDot))
-          semver="$beforeDot.$afterDotEvaluated"
+          semver="v${beforeDot}.${afterDotEvaluated}.0"
           echo "Semver tag of guest-agent is $semver"
           echo "latest=$semver" | tee -a "$GITHUB_OUTPUT"
 
@@ -100,7 +100,7 @@ jobs:
       - name: Log in to the Container registry
         id: docker-login
         if: steps.needs-build.outputs.out == 'true'
-        uses: ./.github/actions/container_registry_login
+        uses: ./constellation/.github/actions/container_registry_login
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
