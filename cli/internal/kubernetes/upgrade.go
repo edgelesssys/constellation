@@ -87,14 +87,6 @@ type Upgrader struct {
 	tf               terraformUpgrader
 }
 
-// a terraformUpgrader performs the Terraform interactions in an upgrade.
-type terraformUpgrader interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
-	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
-}
-
 // NewUpgrader returns a new Upgrader.
 func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
@@ -479,6 +471,14 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 		}
 	}
 	return false
+}
+
+// a terraformUpgrader performs the Terraform interactions in an upgrade.
+type terraformUpgrader interface {
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
+	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
+	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
 }
 
 type stableInterface interface {
