@@ -228,6 +228,7 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 			StateDiskType:        conf.Provider.Azure.StateDiskType,
 			ImageID:              imageRef,
 			SecureBoot:           *conf.Provider.Azure.SecureBoot,
+			CreateMAA:            conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
 			Debug:                conf.IsDebugCluster(),
 		}
 		return targets, vars, nil
