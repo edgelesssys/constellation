@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/google/go-licenses v1.6.0
 	github.com/katexochen/sh/v3 v3.6.0
-	golang.org/x/tools v0.9.1
-	golang.org/x/vuln v0.0.0-20230411201117-aaaefcd264f6
+	golang.org/x/tools v0.8.1-0.20230421161920-b9619ee54b47
+	golang.org/x/vuln v0.1.0
 )
 
 require (
