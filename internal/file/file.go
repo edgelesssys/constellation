@@ -186,7 +186,6 @@ func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
 	root := filepath.Join(src, string(filepath.Separator))
 
 	walkFunc := func(path string, info fs.FileInfo, err error) error {
-		fmt.Println("Walking", path)
 		if err != nil {
 			return err
 		}
