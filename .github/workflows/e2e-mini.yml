@@ -36,6 +36,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: write
     steps:
       - name: Checkout
         id: checkout
@@ -57,3 +58,5 @@ jobs:
           azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azureTenantID: ${{ secrets.AZURE_TENANT_ID }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
