@@ -353,11 +353,11 @@ func TestRemove(t *testing.T) {
 }
 
 func TestCopyFile(t *testing.T) {
-	setupFs := func(existingFiles []string) afero.Fs {
+	setupFs := func(existingFiles ...string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		aferoHelper := afero.Afero{Fs: fs}
 		for _, file := range existingFiles {
-			aferoHelper.WriteFile(file, []byte{}, 0o644)
+			require.NoError(t, aferoHelper.WriteFile(file, []byte{}, 0o644))
 		}
 		return fs
 	}
@@ -370,30 +370,24 @@ func TestCopyFile(t *testing.T) {
 		wantErr    bool
 	}{
 		"successful copy": {
-			fs:         setupFs([]string{"a"}),
+			fs:         setupFs("a"),
 			copyFiles:  [][]string{{"a", "b"}},
 			checkFiles: []string{"b"},
 		},
 		"copy to existing file overwrite": {
-			fs:         setupFs([]string{"a", "b"}),
+			fs:         setupFs("a", "b"),
 			copyFiles:  [][]string{{"a", "b"}},
 			checkFiles: []string{"b"},
 			opts:       []Option{OptOverwrite},
 		},
-		"copy to new dir": {
-			fs:         setupFs([]string{"a"}),
-			copyFiles:  [][]string{{"a", filepath.Join("someDir", "otherDir", "b")}},
-			checkFiles: []string{filepath.Join("someDir", "otherDir", "b")},
-			opts:       []Option{OptMkdirAll},
-		},
 		"copy to existing file no overwrite": {
-			fs:         setupFs([]string{"a", "b"}),
+			fs:         setupFs("a", "b"),
 			copyFiles:  [][]string{{"a", "b"}},
 			checkFiles: []string{"b"},
 			wantErr:    true,
 		},
 		"file doesn't exist": {
-			fs:         setupFs([]string{"a"}),
+			fs:         setupFs("a"),
 			copyFiles:  [][]string{{"b", "c"}},
 			checkFiles: []string{"a"},
 			wantErr:    true,
@@ -403,6 +397,7 @@ func TestCopyFile(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			handler := NewHandler(tc.fs)
 			for _, files := range tc.copyFiles {
@@ -416,7 +411,58 @@ func TestCopyFile(t *testing.T) {
 
 			for _, file := range tc.checkFiles {
 				_, err := handler.fs.Stat(file)
-				require.NoError(t, err)
+				require.NoError(err)
+			}
+		})
+	}
+}
+
+func TestCopyDir(t *testing.T) {
+	setupHandler := func(existingFiles ...string) Handler {
+		fs := afero.NewMemMapFs()
+		handler := NewHandler(fs)
+		for _, file := range existingFiles {
+			handler.Write(file, []byte("some content"), OptMkdirAll)
+		}
+		return handler
+	}
+
+	testCases := map[string]struct {
+		handler    Handler
+		copyFiles  [][]string
+		checkFiles []string
+		opts       []Option
+	}{
+		"successful copy": {
+			handler:    setupHandler(filepath.Join("someDir", "someFile"), filepath.Join("someDir", "someOtherDir", "someOtherFile")),
+			copyFiles:  [][]string{{"someDir", "copiedDir"}},
+			checkFiles: []string{filepath.Join("copiedDir", "someFile"), filepath.Join("copiedDir", "someOtherDir", "someOtherFile")},
+		},
+		"copy file": {
+			handler:    setupHandler("someFile"),
+			copyFiles:  [][]string{{"someFile", "copiedFile"}},
+			checkFiles: []string{"copiedFile"},
+		},
+		"copy to existing dir overwrite": {
+			handler:    setupHandler(filepath.Join("someDir", "someFile"), filepath.Join("someDir", "someOtherDir", "someOtherFile"), filepath.Join("copiedDir", "someExistingFile")),
+			copyFiles:  [][]string{{"someDir", "copiedDir"}},
+			checkFiles: []string{filepath.Join("copiedDir", "someFile"), filepath.Join("copiedDir", "someOtherDir", "someOtherFile"), filepath.Join("copiedDir", "someExistingFile")},
+			opts:       []Option{OptOverwrite},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			for _, files := range tc.copyFiles {
+				err := tc.handler.CopyDir(files[0], files[1], tc.opts...)
+				require.NoError(err)
+			}
+
+			for _, file := range tc.checkFiles {
+				_, err := tc.handler.fs.Stat(file)
+				require.NoError(err)
 			}
 		})
 	}

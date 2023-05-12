@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -178,20 +179,26 @@ func (h *Handler) MkdirAll(name string) error {
 	return h.fs.MkdirAll(name, 0o700)
 }
 
-// CopyDir copies a directory recursively with the given options.
+// CopyDir copies the src directory recursively into dst with the given options. OptMkdirAll
+// is always set. CopyDir does not follow symlinks.
 func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
-	var walkFunc func(path string, info fs.FileInfo, err error) error
-	walkFunc = func(path string, info fs.FileInfo, err error) error {
+	opts = append(opts, OptMkdirAll)
+	root := filepath.Join(src, string(filepath.Separator))
+
+	walkFunc := func(path string, info fs.FileInfo, err error) error {
+		fmt.Println("Walking", path)
 		if err != nil {
 			return err
 		}
 
 		if info.IsDir() {
-			return walkFunc(filepath.Join(path, info.Name()), info, nil)
+			return nil
 		}
 
-		return h.CopyFile(path, filepath.Join(dst, path), opts...)
+		pathWithoutRoot := strings.TrimPrefix(path, root)
+		return h.CopyFile(path, filepath.Join(dst, pathWithoutRoot), opts...)
 	}
+
 	return h.fs.Walk(src, walkFunc)
 }
 
@@ -199,7 +206,7 @@ func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
 func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
 	content, err := h.fs.ReadFile(src)
 	if err != nil {
-		return fmt.Errorf("reading source file: %w", err)
+		return fmt.Errorf("read source file: %w", err)
 	}
 
 	return h.Write(dst, content, opts...)
