@@ -220,7 +220,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	config.StateDiskSizeGB = 8
 
 	// only release images (e.g. v2.7.0) use the production NVRAM
-	if strings.Contains(config.Image, "pre") {
+	if config.IsReleaseImage() {
 		config.Provider.QEMU.NVRAM = "testing"
 	}
 
