@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -566,10 +567,13 @@ func TestApplyTerraformMigrations(t *testing.T) {
 	}
 	fileHandler := func(existingFiles ...string) file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
+		require.NoError(t,
+			fh.Write(
+				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir, "someFile"),
+				[]byte("some content"),
+			))
 		for _, f := range existingFiles {
-			if err := fh.Write(f, []byte("some content")); err != nil {
-				t.Fatalf("failed to create file %s: %v", f, err)
-			}
+			require.NoError(t, fh.Write(f, []byte("some content")))
 		}
 		return fh
 	}
