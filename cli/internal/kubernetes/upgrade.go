@@ -168,8 +168,10 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUp
 	return hasDiff, nil
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations and writes the output to the specified file.
+// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
+// In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
+// By the new one.
 func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, file file.Handler, opts TerraformUpgradeOptions) error {
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
 	if err != nil {
@@ -182,6 +184,14 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, file file.Handl
 		IP:             tfOutput.IP,
 		UID:            tfOutput.UID,
 		AttestationURL: tfOutput.AttestationURL,
+	}
+
+	if err := file.RemoveAll(constants.TerraformWorkingDir); err != nil {
+		return fmt.Errorf("removing old terraform directory: %w", err)
+	}
+
+	if err := file.CopyDir(filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
+		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
 	if err := file.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
