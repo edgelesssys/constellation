@@ -107,8 +107,17 @@ func TestUpgrade(t *testing.T) {
 	log.Println(string(data))
 
 	log.Println("Triggering upgrade.")
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", "--tf-log=DEBUG")
-	msg, err := cmd.CombinedOutput()
+
+	tfLogFlag := ""
+	cmd = exec.CommandContext(context.Background(), cli, "--help")
+	msg, err = cmd.CombinedOutput()
+	require.NoErrorf(err, "%s", string(msg))
+	if strings.Contains(string(msg), "--tf-log") {
+		tfLogFlag = "--tf-log=DEBUG"
+	}
+
+	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", tfLogFlag)
+	msg, err = cmd.CombinedOutput()
 	require.NoErrorf(err, "%s", string(msg))
 	require.NoError(containsUnexepectedMsg(string(msg)))
 	log.Println(string(msg))
