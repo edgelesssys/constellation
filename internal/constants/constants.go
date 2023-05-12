@@ -153,7 +153,7 @@ const (
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an upgrade.
 	TerraformUpgradeWorkingDir = "constellation-upgrade-terraform"
 	// TerraformUpgradeBackupDir is the directory name being used to backup the pre-upgrade state in an upgrade.
-	TerraformUpgradeBackupDir = "constellation-upgrade-terraform"
+	TerraformUpgradeBackupDir = "constellation-upgrade-terraform-backup"
 	// TerraformMigrationOutputFile is the file name of the output file created by a successful Terraform migration.
 	TerraformMigrationOutputFile = "terraform-migration-output.json"
 	// UpgradeDir is the name of the directory being used for cluster upgrades.

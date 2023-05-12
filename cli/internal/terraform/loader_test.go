@@ -193,6 +193,10 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 				require.NoError(err)
 			}
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.newWorkingDir, tc.expectedFiles)
+			checkFiles(t, file, func(err error) { assert.NoError(err) },
+				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+				tc.oldWorkspaceFiles,
+			)
 		})
 	}
 }
