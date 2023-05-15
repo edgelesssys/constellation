@@ -13,8 +13,49 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
+
+type AttestationType (string)
+
+const (
+	AttestationTypeAWSNitroTPM        AttestationType = "aws-nitro-tpm"
+	AttestationTypeAzureSEVSNP        AttestationType = "azure-sev-snp"
+	AttestationTypeAzureTrustedLaunch AttestationType = "azure-trusted-launch"
+	AttestationTypeGCPSEVES           AttestationType = "gcp-sev-es"
+	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"
+)
+
+func GetDefaultAttestationType(provider cloudprovider.Provider) AttestationType {
+	switch provider {
+	case cloudprovider.AWS:
+		return AttestationTypeAWSNitroTPM
+	case cloudprovider.Azure:
+		return AttestationTypeAzureSEVSNP
+	case cloudprovider.GCP:
+		return AttestationTypeGCPSEVES
+	case cloudprovider.OpenStack, cloudprovider.QEMU:
+		return AttestationTypeQEMUVTPM
+	default:
+		return AttestationType("")
+	}
+}
+
+func (a AttestationType) ValidProvider(provider cloudprovider.Provider) bool {
+	switch provider {
+	case cloudprovider.AWS:
+		return a == AttestationTypeAWSNitroTPM
+	case cloudprovider.Azure:
+		return a == AttestationTypeAzureSEVSNP || a == AttestationTypeAzureTrustedLaunch
+	case cloudprovider.GCP:
+		return a == AttestationTypeGCPSEVES
+	case cloudprovider.QEMU, cloudprovider.OpenStack:
+		return a == AttestationTypeQEMUVTPM
+	default:
+		return false
+	}
+}
 
 // AttestationCfg is the common interface for passing attestation configs.
 type AttestationCfg interface {

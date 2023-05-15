@@ -36,13 +36,15 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
+	cmd.Flags().StringP("attestation", "a", "", "Attestation type to use {aws-nitro-tpm|azure-sev-snp|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used.")
 
 	return cmd
 }
 
 type generateFlags struct {
-	file       string
-	k8sVersion string
+	file            string
+	k8sVersion      string
+	attestationType config.AttestationType
 }
 
 type configGenerateCmd struct {
@@ -69,7 +71,10 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf := createConfig(provider)
+	conf, err := createConfigWithAttestationType(provider, flags.attestationType)
+	if err != nil {
+		return err
+	}
 	conf.KubernetesVersion = flags.k8sVersion
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
@@ -96,7 +101,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfig(provider cloudprovider.Provider) *config.Config {
+func createConfigWithAttestationType(provider cloudprovider.Provider, attestationType config.AttestationType) (*config.Config, error) {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
@@ -105,7 +110,24 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 		conf.StateDiskSizeGB = 10
 	}
 
-	return conf
+	if provider == cloudprovider.Unknown {
+		return conf, nil // TODO tests use Unknown provider... the CLI doesn't allow it.. why do we do that?
+	}
+	if attestationType == "" {
+		attestationType = config.GetDefaultAttestationType(provider)
+	} else {
+		if !attestationType.ValidProvider(provider) {
+			return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationType)
+		}
+	}
+	conf.SetAttestation(attestationType)
+	return conf, nil
+}
+
+// createConfig creates a config file for the given provider.
+func createConfig(provider cloudprovider.Provider) *config.Config {
+	res, _ := createConfigWithAttestationType(provider, config.AttestationType(""))
+	return res
 }
 
 // supportedVersions prints the supported version without v prefix and without patch version.
@@ -135,13 +157,40 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		return generateFlags{}, fmt.Errorf("resolving kuberentes version from flag: %w", err)
 	}
 
+	attestationString, err := cmd.Flags().GetString("attestation")
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("parsing attestation flag: %w", err)
+	}
+
+	var attestationType config.AttestationType
+	// if no attestation type is specified, use the default for the cloud provider
+	if attestationString == "" {
+		attestationType = config.AttestationType("")
+	} else {
+		resType := validateAttestationType(attestationString)
+		if resType == nil {
+			return generateFlags{}, fmt.Errorf("invalid attestation type: %s", attestationString)
+		} else {
+			attestationType = *resType
+		}
+	}
 	return generateFlags{
-		file:       file,
-		k8sVersion: resolvedVersion,
+		file:            file,
+		k8sVersion:      resolvedVersion,
+		attestationType: attestationType,
 	}, nil
 }
 
-// createCompletion handles the completion of the create command. It is frequently called
+func validateAttestationType(attestationType string) *config.AttestationType {
+	for _, aType := range []config.AttestationType{config.AttestationTypeAWSNitroTPM, config.AttestationTypeAzureSEVSNP, config.AttestationTypeAzureTrustedLaunch, config.AttestationTypeGCPSEVES, config.AttestationTypeQEMUVTPM} {
+		if attestationType == string(aType) {
+			return &aType
+		}
+	}
+	return nil
+}
+
+// generateCompletion handles the completion of the create command. It is frequently called
 // while the user types arguments of the command to suggest completion.
 func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {

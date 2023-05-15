@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -87,7 +88,7 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	wantConf := config.Default()
-	wantConf.RemoveProviderExcept(cloudprovider.GCP)
+	wantConf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
@@ -138,4 +139,98 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
 
 	assert.Equal(*config.Default(), readConfig)
+}
+
+func TestNoValidProviderAttestationCombination(t *testing.T) {
+	assert := assert.New(t)
+	tests := []struct {
+		provider    cloudprovider.Provider
+		attestation config.AttestationType
+	}{
+		{cloudprovider.Azure, config.AttestationTypeAWSNitroTPM},
+		{cloudprovider.AWS, config.AttestationTypeAzureTrustedLaunch},
+		{cloudprovider.GCP, config.AttestationTypeAWSNitroTPM},
+		{cloudprovider.QEMU, config.AttestationTypeAWSNitroTPM},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			_, err := createConfigWithAttestationType(test.provider, test.attestation)
+			assert.Error(err)
+		})
+	}
+}
+
+func TestValidProviderAttestationCombination(t *testing.T) {
+	defaultAttestation := config.Default().Attestation
+	tests := []struct {
+		provider    cloudprovider.Provider
+		attestation config.AttestationType
+		expected    config.AttestationConfig
+	}{
+		{cloudprovider.Azure, config.AttestationTypeAzureTrustedLaunch, config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch}},
+		{cloudprovider.Azure, config.AttestationTypeAzureSEVSNP, config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP}},
+
+		{cloudprovider.AWS, config.AttestationTypeAWSNitroTPM, config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM}},
+		{cloudprovider.GCP, config.AttestationTypeGCPSEVES, config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES}},
+
+		{cloudprovider.QEMU, config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM}},
+		{cloudprovider.OpenStack, config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM}},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("Provider:%s,Attestation:%s", test.provider, test.attestation), func(t *testing.T) {
+			sut, err := createConfigWithAttestationType(test.provider, test.attestation)
+			assert := assert.New(t)
+			assert.NoError(err)
+			assert.Equal(test.expected, sut.Attestation)
+		})
+	}
+}
+
+func TestInvalidAttestationArgument(t *testing.T) {
+	require := assert.New(t)
+	assert := assert.New(t)
+
+	cmd := newConfigGenerateCmd()
+	require.NoError(cmd.Flags().Set("attestation", "unknown"))
+
+	fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	assert.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
+}
+
+func TestAttestationConfigWithAttestationFlag(t *testing.T) {
+	require := assert.New(t)
+	assert := assert.New(t)
+
+	cmd := newConfigGenerateCmd()
+	require.NoError(cmd.Flags().Set("attestation", "azure-sev-snp"))
+
+	fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Azure))
+
+	var readConfig config.Config
+	require.NoError(fileHandler.ReadYAML(constants.ConfigFilename, &readConfig))
+
+	defaultAttestation := config.Default().Attestation
+	assert.NotNil(config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP}, readConfig.Attestation.AzureSEVSNP)
+}
+
+func TestAttestationConfigWithoutAttestationFlag(t *testing.T) {
+	require := assert.New(t)
+	assert := assert.New(t)
+
+	cmd := newConfigGenerateCmd()
+	fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Azure))
+
+	var readConfig config.Config
+	require.NoError(fileHandler.ReadYAML(constants.ConfigFilename, &readConfig))
+
+	defaultAttestation := config.Default().Attestation
+	assert.NotNil(config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP}, readConfig.Attestation.AzureSEVSNP)
 }
