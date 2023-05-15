@@ -1,7 +1,7 @@
 # First steps with a local cluster
 
 To set up your local cluster, you have two options available.
-You can use [MiniConstellation](#using-miniconstellation) to quickly set up a cluster for testing things out.
+You can use [MiniConstellation](#using-miniconstellation) to automatically deploy a two node cluster for testing things out.
 If you want more fine grained control, you can create your cluster using the [QEMU provider](#local-setup-with-qemu).
 
 ## Prerequisites
