@@ -473,6 +473,7 @@ multirun(
         ],
     }),
     jobs = 0,  # execute concurrently
+    stop_on_error = False,
     visibility = ["//visibility:public"],
 )
 
