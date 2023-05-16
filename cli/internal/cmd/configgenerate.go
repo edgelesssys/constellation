@@ -77,7 +77,7 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 }
 
 func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
-	flags, err := parseGenerateFlags(cmd)
+	flags, err := parseGenerateFlags(cmd, provider)
 	if err != nil {
 		return err
 	}
@@ -126,12 +126,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 	if provider == cloudprovider.Unknown {
 		return conf, nil // TODO tests use Unknown provider... the CLI doesn't allow it.. why do we do that?
 	}
-	if attestationVariant.Equal(variant.Default{}) {
-		attestationVariant = variant.GetDefaultAttestation(provider)
-		if attestationVariant.Equal(variant.Default{}) {
-			return nil, fmt.Errorf("provider %s does not have a default attestation variant", provider)
-		}
-	} else if !variant.ValidProvider(provider, attestationVariant) {
+	if !variant.ValidProvider(provider, attestationVariant) {
 		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationVariant)
 	}
 	conf.SetAttestation(attestationVariant)
@@ -140,7 +135,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
-	res, _ := createConfigWithAttestationType(provider, variant.Default{})
+	res, _ := createConfigWithAttestationType(provider, variant.GetDefaultAttestation(provider))
 	return res
 }
 
@@ -157,7 +152,7 @@ func supportedVersions() string {
 	return builder.String()
 }
 
-func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
+func parseGenerateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (generateFlags, error) {
 	file, err := cmd.Flags().GetString("file")
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing file flag: %w", err)
@@ -179,28 +174,21 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	var attestationType variant.Variant
 	// if no attestation type is specified, use the default for the cloud provider
 	if attestationString == "" {
-		attestationType = variant.Default{}
+		attestationType = variant.GetDefaultAttestation(provider)
+		if attestationType.Equal(variant.Dummy{}) {
+			return generateFlags{}, fmt.Errorf("provider %s does not have a default attestation variant", provider)
+		}
 	} else {
-		resType := validateAttestationType(attestationString)
-		if resType == nil {
+		attestationType, err = variant.FromString(attestationString)
+		if err != nil {
 			return generateFlags{}, fmt.Errorf("invalid attestation variant: %s", attestationString)
 		}
-		attestationType = *resType
 	}
 	return generateFlags{
 		file:               file,
 		k8sVersion:         resolvedVersion,
 		attestationVariant: attestationType,
 	}, nil
-}
-
-func validateAttestationType(attestationType string) *variant.Variant {
-	for _, variant := range variant.GetAvailableAttestationTypes() {
-		if attestationType == variant.String() {
-			return &variant
-		}
-	}
-	return nil
 }
 
 // generateCompletion handles the completion of the create command. It is frequently called

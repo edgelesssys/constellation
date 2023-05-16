@@ -44,11 +44,11 @@ const (
 	awsNitroTPM        = "aws-nitro-tpm"
 	gcpSEVES           = "gcp-sev-es"
 	azureSEVSNP        = "azure-sev-snp"
-	azureTrustedLaunch = "azure-trusted-launch"
+	azureTrustedLaunch = "azure-trustedlaunch"
 	qemuVTPM           = "qemu-vtpm"
 )
 
-var providerAttestationMapping map[cloudprovider.Provider][]Variant = map[cloudprovider.Provider][]Variant{
+var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
 	cloudprovider.AWS:       {AWSNitroTPM{}},
 	cloudprovider.Azure:     {AzureSEVSNP{}, AzureTrustedLaunch{}},
 	cloudprovider.GCP:       {GCPSEVES{}},
@@ -62,7 +62,7 @@ func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	if ok {
 		return res[0]
 	}
-	return Default{}
+	return Dummy{}
 }
 
 func removeDuplicate(sliceList []Variant) []Variant {
@@ -138,24 +138,6 @@ func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
 		}
 	}
 	return false
-}
-
-// Default is the default variant for the cloud provider.
-type Default struct{}
-
-// OID returns the struct's object identifier.
-func (Default) OID() asn1.ObjectIdentifier {
-	return asn1.ObjectIdentifier{1, 3, 9900, 0, 0}
-}
-
-// String returns the string representation of the OID.
-func (Default) String() string {
-	return "default"
-}
-
-// Equal returns true if the other variant is also a Dummy.
-func (Default) Equal(other Getter) bool {
-	return other.OID().Equal(Default{}.OID())
 }
 
 // Dummy OID for testfing.
