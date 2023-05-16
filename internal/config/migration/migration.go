@@ -8,8 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package migration
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -60,21 +62,21 @@ type AWSConfig struct {
 
 // AzureConfig are Azure specific configuration values used by the CLI.
 type AzureConfig struct {
-	SubscriptionID       string                  `yaml:"subscription" validate:"uuid"`
-	TenantID             string                  `yaml:"tenant" validate:"uuid"`
-	Location             string                  `yaml:"location" validate:"required"`
-	ResourceGroup        string                  `yaml:"resourceGroup" validate:"required"`
-	UserAssignedIdentity string                  `yaml:"userAssignedIdentity" validate:"required"`
-	AppClientID          string                  `yaml:"appClientID" validate:"uuid"`
-	ClientSecretValue    string                  `yaml:"clientSecretValue" validate:"required"`
-	InstanceType         string                  `yaml:"instanceType" validate:"azure_instance_type"`
-	StateDiskType        string                  `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
-	DeployCSIDriver      *bool                   `yaml:"deployCSIDriver" validate:"required"`
-	ConfidentialVM       *bool                   `yaml:"confidentialVM,omitempty" validate:"omitempty,deprecated"`
-	SecureBoot           *bool                   `yaml:"secureBoot" validate:"required"`
-	IDKeyDigest          idkeydigest.List        `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
-	EnforceIDKeyDigest   idkeydigest.Enforcement `yaml:"enforceIdKeyDigest" validate:"required"`
-	Measurements         measurements.M          `yaml:"measurements" validate:"required,no_placeholders"`
+	SubscriptionID       string                 `yaml:"subscription" validate:"uuid"`
+	TenantID             string                 `yaml:"tenant" validate:"uuid"`
+	Location             string                 `yaml:"location" validate:"required"`
+	ResourceGroup        string                 `yaml:"resourceGroup" validate:"required"`
+	UserAssignedIdentity string                 `yaml:"userAssignedIdentity" validate:"required"`
+	AppClientID          string                 `yaml:"appClientID" validate:"uuid"`
+	ClientSecretValue    string                 `yaml:"clientSecretValue" validate:"required"`
+	InstanceType         string                 `yaml:"instanceType" validate:"azure_instance_type"`
+	StateDiskType        string                 `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
+	DeployCSIDriver      *bool                  `yaml:"deployCSIDriver" validate:"required"`
+	ConfidentialVM       *bool                  `yaml:"confidentialVM,omitempty" validate:"omitempty,deprecated"`
+	SecureBoot           *bool                  `yaml:"secureBoot" validate:"required"`
+	IDKeyDigest          idkeydigest.List       `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty"`
+	EnforceIDKeyDigest   IDKeyDigestEnforcement `yaml:"enforceIdKeyDigest" validate:"required"`
+	Measurements         measurements.M         `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -118,6 +120,73 @@ type QEMUConfig struct {
 	NVRAM                 string         `yaml:"nvram" validate:"required"`
 	Firmware              string         `yaml:"firmware"`
 	Measurements          measurements.M `yaml:"measurements" validate:"required,no_placeholders"`
+}
+
+// IDKeyDigestEnforcement is the legacy format of idkeydigest.Enforcement.
+type IDKeyDigestEnforcement uint32
+
+const (
+	// Unknown is reserved for invalid configurations.
+	Unknown IDKeyDigestEnforcement = iota
+	// StrictChecking will return an error if the ID key digest is not found in the expected list.
+	StrictChecking
+	// MAAFallback attempts to verify the attestation using Microsoft Azure Attestation (MAA),
+	// if the ID key digest is not found in the expected list.
+	MAAFallback
+	// WarnOnly logs a warning if the ID key digest is not found in the expected list.
+	// No error is returned.
+	WarnOnly
+)
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (e *IDKeyDigestEnforcement) UnmarshalYAML(unmarshal func(any) error) error {
+	return e.unmarshal(unmarshal)
+}
+
+func (e *IDKeyDigestEnforcement) unmarshal(unmarshalFunc func(any) error) error {
+	// Check for legacy format: IDKeyDigestEnforcement might be a boolean.
+	// If set to true, the value will be set to StrictChecking.
+	// If set to false, the value will be set to WarnOnly.
+	var legacyEnforce bool
+	legacyErr := unmarshalFunc(&legacyEnforce)
+	if legacyErr == nil {
+		if legacyEnforce {
+			*e = StrictChecking
+		} else {
+			*e = WarnOnly
+		}
+		return nil
+	}
+
+	var enforce string
+	if err := unmarshalFunc(&enforce); err != nil {
+		return errors.Join(
+			err,
+			fmt.Errorf("trying legacy format: %w", legacyErr),
+		)
+	}
+
+	*e = e.enforcePolicyFromString(enforce)
+	if *e == Unknown {
+		return fmt.Errorf("unknown EnforceIDKeyDigest value: %q", enforce)
+	}
+
+	return nil
+}
+
+// enforcePolicyFromString returns IDKeyDigestEnforcement from string.
+func (e *IDKeyDigestEnforcement) enforcePolicyFromString(s string) IDKeyDigestEnforcement {
+	s = strings.ToLower(s)
+	switch s {
+	case "strictchecking":
+		return StrictChecking
+	case "maafallback":
+		return MAAFallback
+	case "warnonly":
+		return WarnOnly
+	default:
+		return Unknown
+	}
 }
 
 // V2ToV3 converts an existing v2 config to a v3 config.
@@ -177,7 +246,7 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 			cfgV3.Attestation.AzureSEVSNP.Measurements = cfgV2.Provider.Azure.Measurements
 			cfgV3.Attestation.AzureSEVSNP.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
 				AcceptedKeyDigests: cfgV2.Provider.Azure.IDKeyDigest,
-				EnforcementPolicy:  cfgV2.Provider.Azure.EnforceIDKeyDigest,
+				EnforcementPolicy:  idkeydigest.Enforcement(cfgV2.Provider.Azure.EnforceIDKeyDigest),
 			}
 		}
 	case cfgV2.Provider.GCP != nil:
