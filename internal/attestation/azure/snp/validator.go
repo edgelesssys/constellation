@@ -147,7 +147,7 @@ func (v *Validator) validateSNPReport(
 		return errDebugEnabled
 	}
 
-	if !report.CommittedTCB.isVersion(v.config.BootloaderVersion, v.config.TEEVersion, v.config.SNPVersion, v.config.MicrocodeVersion) {
+	if !report.CommittedTCB.isVersion(v.config.BootloaderVersion.Value(), v.config.TEEVersion.Value(), v.config.SNPVersion.Value(), v.config.MicrocodeVersion.Value()) {
 		return &versionError{"COMMITTED_TCB", report.CommittedTCB}
 	}
 	if report.LaunchTCB != report.CommittedTCB {

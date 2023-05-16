@@ -27,6 +27,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/config/version"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -704,16 +705,16 @@ type AzureSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion uint8 `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion version.Version `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion uint8 `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion version.Version `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion uint8 `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion version.Version `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion uint8 `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion version.Version `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   Configuration for validating the firmware signature.
 	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
@@ -724,14 +725,13 @@ type AzureSEVSNP struct {
 
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers are hard coded and should be updated with each new release.
-// TODO(AB#3042): replace with dynamic lookup for configurable values.
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure),
-		BootloaderVersion: 2,
-		TEEVersion:        0,
-		SNPVersion:        6,
-		MicrocodeVersion:  93,
+		BootloaderVersion: version.GetVersion(version.Bootloader),
+		TEEVersion:        version.GetVersion(version.TEE),
+		SNPVersion:        version.GetVersion(version.SNP),
+		MicrocodeVersion:  version.GetVersion(version.Microcode),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -772,6 +772,36 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 	rootKeyEqual := bytes.Equal(c.AMDRootKey.Raw, otherCfg.AMDRootKey.Raw)
 
 	return firmwareSignerCfgEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
+}
+
+// UnmarshalYAML implements a custom unmarshaler to resolve the latest version value.
+func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type rawAzureSEVSNP AzureSEVSNP
+	if err := unmarshal((*rawAzureSEVSNP)(c)); err != nil {
+		return err
+	}
+	c.updateVersion(version.Bootloader)
+	c.updateVersion(version.TEE)
+	c.updateVersion(version.SNP)
+	c.updateVersion(version.Microcode)
+	return nil
+}
+
+func (c *AzureSEVSNP) updateVersion(versionType version.Type) {
+	var v *version.Version
+	switch versionType {
+	case version.Bootloader:
+		v = &c.BootloaderVersion
+	case version.TEE:
+		v = &c.TEEVersion
+	case version.SNP:
+		v = &c.SNPVersion
+	case version.Microcode:
+		v = &c.MicrocodeVersion
+	}
+	if *v == "latest" {
+		*v = version.GetVersion(versionType)
+	}
 }
 
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.

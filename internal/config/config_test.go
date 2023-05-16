@@ -87,6 +87,28 @@ func TestFromFile(t *testing.T) {
 				return conf
 			}(),
 		},
+		"latest as version value gets replaced with integer value": {
+			config: func() *Config {
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = "latest"
+				return conf
+			}(),
+			configName: constants.ConfigFilename,
+			wantResult: func() *Config {
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = "2"
+				return conf
+			}(),
+		},
+		"refuse invalid version value": {
+			config: func() *Config {
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = "1a"
+				return conf
+			}(),
+			configName: constants.ConfigFilename,
+			wantErr:    true,
+		},
 	}
 
 	for name, tc := range testCases {
