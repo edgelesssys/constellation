@@ -7,22 +7,29 @@ terraform {
   }
 }
 
-locals {
-  state_disk_size_byte = 1073741824 * var.state_disk_size
-  ip_range_start       = 100
-}
-
 resource "libvirt_domain" "instance_group" {
   name     = "${var.name}-${var.role}-${count.index}"
   count    = var.amount
   memory   = var.memory
   vcpu     = var.vcpus
   machine  = var.machine
-  firmware = var.firmware
-  nvram {
-    file     = "/var/lib/libvirt/qemu/nvram/${var.role}-${count.index}_VARS.fd"
-    template = var.nvram
+  firmware = local.firmware
+  dynamic "nvram" {
+    for_each = var.boot_mode == "uefi" ? [1] : []
+    content {
+      file     = "/var/lib/libvirt/qemu/nvram/${var.role}-${count.index}_VARS.fd"
+      template = var.nvram
+    }
   }
+  dynamic "xml" {
+    for_each = var.boot_mode == "uefi" ? [1] : []
+    content {
+      xslt = file("${path.module}/domain.xsl")
+    }
+  }
+  kernel  = local.kernel
+  initrd  = local.initrd
+  cmdline = local.cmdline
   tpm {
     backend_type    = "emulator"
     backend_version = "2.0"
@@ -44,9 +51,6 @@ resource "libvirt_domain" "instance_group" {
     type        = "pty"
     target_port = "0"
   }
-  xml {
-    xslt = file("${path.module}/domain.xsl")
-  }
 }
 
 resource "libvirt_volume" "boot_volume" {
@@ -62,4 +66,13 @@ resource "libvirt_volume" "state_volume" {
   pool   = var.pool
   size   = local.state_disk_size_byte
   format = "qcow2"
+}
+
+locals {
+  state_disk_size_byte = 1073741824 * var.state_disk_size
+  ip_range_start       = 100
+  kernel               = var.boot_mode == "direct-linux-boot" ? var.kernel_volume_id : null
+  initrd               = var.boot_mode == "direct-linux-boot" ? var.initrd_volume_id : null
+  cmdline              = var.boot_mode == "direct-linux-boot" ? [{ "_" = var.kernel_cmdline }] : null
+  firmware             = var.boot_mode == "uefi" ? var.firmware : null
 }
