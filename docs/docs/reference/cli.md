@@ -75,10 +75,10 @@ constellation config generate {aws|azure|gcp|openstack|qemu} [flags]
 ### Options
 
 ```
-  -f, --file string         path to output file, or '-' for stdout (default "constellation-conf.yaml")
-  -h, --help                help for generate
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
-  -a, --attestation string  Attestation type to use {aws-nitro-tpm|azure-sev-snp|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used.
+  -a, --attestation string   Attestation type to use {aws-nitro-tpm|azure-sev-snp|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used.
+  -f, --file string          path to output file, or '-' for stdout (default "constellation-conf.yaml")
+  -h, --help                 help for generate
+  -k, --kubernetes string    Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
 ```
 
 ### Options inherited from parent commands
@@ -753,3 +753,4 @@ constellation status [flags]
       --force           disable version compatibility checks - might result in corrupted clusters
       --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
 ```
+

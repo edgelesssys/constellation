@@ -36,9 +36,21 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
-	cmd.Flags().StringP("attestation", "a", "", "Attestation type to use {aws-nitro-tpm|azure-sev-snp|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used.")
+	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("Attestation type to use %s. If not specified, the default for the cloud provider is used.", printFormattedSlice(config.GetAvailableAttestationTypes())))
 
 	return cmd
+}
+
+func printFormattedSlice[T any](input []T) string {
+	return fmt.Sprintf("{%s}", strings.Join(toString(input), "|"))
+}
+
+func toString[T any](t []T) []string {
+	var res []string
+	for _, v := range t {
+		res = append(res, fmt.Sprintf("%v", v))
+	}
+	return res
 }
 
 type generateFlags struct {

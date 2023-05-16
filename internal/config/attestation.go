@@ -17,8 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-type AttestationType (string)
-
 const (
 	AttestationTypeAWSNitroTPM        AttestationType = "aws-nitro-tpm"
 	AttestationTypeAzureSEVSNP        AttestationType = "azure-sev-snp"
@@ -27,34 +25,43 @@ const (
 	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"
 )
 
+var providerAttestationMapping map[cloudprovider.Provider][]AttestationType = map[cloudprovider.Provider][]AttestationType{
+	cloudprovider.AWS:       {AttestationTypeAWSNitroTPM},
+	cloudprovider.Azure:     {AttestationTypeAzureSEVSNP, AttestationTypeAzureTrustedLaunch},
+	cloudprovider.GCP:       {AttestationTypeGCPSEVES},
+	cloudprovider.QEMU:      {AttestationTypeQEMUVTPM},
+	cloudprovider.OpenStack: {AttestationTypeQEMUVTPM},
+}
+
 func GetDefaultAttestationType(provider cloudprovider.Provider) AttestationType {
-	switch provider {
-	case cloudprovider.AWS:
-		return AttestationTypeAWSNitroTPM
-	case cloudprovider.Azure:
-		return AttestationTypeAzureSEVSNP
-	case cloudprovider.GCP:
-		return AttestationTypeGCPSEVES
-	case cloudprovider.OpenStack, cloudprovider.QEMU:
-		return AttestationTypeQEMUVTPM
-	default:
+	res, ok := providerAttestationMapping[provider]
+	if ok {
+		return res[0]
+	} else {
 		return AttestationType("")
 	}
 }
 
-func (a AttestationType) ValidProvider(provider cloudprovider.Provider) bool {
-	switch provider {
-	case cloudprovider.AWS:
-		return a == AttestationTypeAWSNitroTPM
-	case cloudprovider.Azure:
-		return a == AttestationTypeAzureSEVSNP || a == AttestationTypeAzureTrustedLaunch
-	case cloudprovider.GCP:
-		return a == AttestationTypeGCPSEVES
-	case cloudprovider.QEMU, cloudprovider.OpenStack:
-		return a == AttestationTypeQEMUVTPM
-	default:
-		return false
+func GetAvailableAttestationTypes() []AttestationType {
+	var res []AttestationType
+	for _, v := range providerAttestationMapping {
+		res = append(res, v...)
 	}
+	return res
+}
+
+type AttestationType (string)
+
+func (a AttestationType) ValidProvider(provider cloudprovider.Provider) bool {
+	validTypes, ok := providerAttestationMapping[provider]
+	if ok {
+		for _, aType := range validTypes {
+			if a == aType {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // AttestationCfg is the common interface for passing attestation configs.
