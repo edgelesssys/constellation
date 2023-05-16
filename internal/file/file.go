@@ -201,12 +201,27 @@ func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
 	return h.fs.Walk(src, walkFunc)
 }
 
-// CopyFile copies the file from src to dst with the given options.
+// CopyFile copies the file from src to dst with the given options, respecting file permissions.
 func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
+	srcInfo, err := h.fs.Stat(src)
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
 	content, err := h.fs.ReadFile(src)
 	if err != nil {
 		return fmt.Errorf("read source file: %w", err)
 	}
 
-	return h.Write(dst, content, opts...)
+	err = h.Write(dst, content, opts...)
+	if err != nil {
+		return fmt.Errorf("write destination file: %w", err)
+	}
+
+	err = h.fs.Chmod(dst, srcInfo.Mode())
+	if err != nil {
+			return fmt.Errorf("chmod destination file: %w", err)
+	}
+
+	return nil
 }

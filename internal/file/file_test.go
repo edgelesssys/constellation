@@ -8,6 +8,7 @@ package file
 
 import (
 	"encoding/json"
+	"io/fs"
 	"path/filepath"
 	"testing"
 
@@ -353,11 +354,13 @@ func TestRemove(t *testing.T) {
 }
 
 func TestCopyFile(t *testing.T) {
+	perms := fs.FileMode(0o644)
+
 	setupFs := func(existingFiles ...string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		aferoHelper := afero.Afero{Fs: fs}
 		for _, file := range existingFiles {
-			require.NoError(t, aferoHelper.WriteFile(file, []byte{}, 0o644))
+			require.NoError(t, aferoHelper.WriteFile(file, []byte{}, perms))
 		}
 		return fs
 	}
@@ -410,7 +413,8 @@ func TestCopyFile(t *testing.T) {
 			}
 
 			for _, file := range tc.checkFiles {
-				_, err := handler.fs.Stat(file)
+				info, err := handler.fs.Stat(file)
+				assert.Equal(perms, info.Mode())
 				require.NoError(err)
 			}
 		})
