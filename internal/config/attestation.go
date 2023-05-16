@@ -23,6 +23,7 @@ const (
 	AttestationTypeAzureTrustedLaunch AttestationType = "azure-trusted-launch"
 	AttestationTypeGCPSEVES           AttestationType = "gcp-sev-es"
 	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"
+	AttestationTypeDefault            AttestationType = "default"
 )
 
 var providerAttestationMapping map[cloudprovider.Provider][]AttestationType = map[cloudprovider.Provider][]AttestationType{

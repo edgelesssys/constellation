@@ -125,12 +125,10 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 	if provider == cloudprovider.Unknown {
 		return conf, nil // TODO tests use Unknown provider... the CLI doesn't allow it.. why do we do that?
 	}
-	if attestationType == "" {
+	if attestationType == config.AttestationTypeDefault {
 		attestationType = config.GetDefaultAttestationType(provider)
-	} else {
-		if !attestationType.ValidProvider(provider) {
-			return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationType)
-		}
+	} else if !attestationType.ValidProvider(provider) {
+		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationType)
 	}
 	conf.SetAttestation(attestationType)
 	return conf, nil
@@ -138,7 +136,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
-	res, _ := createConfigWithAttestationType(provider, config.AttestationType(""))
+	res, _ := createConfigWithAttestationType(provider, config.AttestationTypeDefault)
 	return res
 }
 
@@ -177,7 +175,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	var attestationType config.AttestationType
 	// if no attestation type is specified, use the default for the cloud provider
 	if attestationString == "" {
-		attestationType = config.AttestationType("")
+		attestationType = config.AttestationTypeDefault
 	} else {
 		resType := validateAttestationType(attestationString)
 		if resType == nil {

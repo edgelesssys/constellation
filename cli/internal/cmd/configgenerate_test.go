@@ -167,14 +167,37 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 		attestation config.AttestationType
 		expected    config.AttestationConfig
 	}{
-		{cloudprovider.Azure, config.AttestationTypeAzureTrustedLaunch, config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch}},
-		{cloudprovider.Azure, config.AttestationTypeAzureSEVSNP, config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP}},
+		{
+			cloudprovider.Azure,
+			config.AttestationTypeAzureTrustedLaunch,
+			config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch},
+		},
+		{
+			cloudprovider.Azure,
+			config.AttestationTypeAzureSEVSNP,
+			config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
+		},
 
-		{cloudprovider.AWS, config.AttestationTypeAWSNitroTPM, config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM}},
-		{cloudprovider.GCP, config.AttestationTypeGCPSEVES, config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES}},
+		{
+			cloudprovider.AWS,
+			config.AttestationTypeAWSNitroTPM,
+			config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM},
+		},
+		{
+			cloudprovider.GCP,
+			config.AttestationTypeGCPSEVES,
+			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
+		},
 
-		{cloudprovider.QEMU, config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM}},
-		{cloudprovider.OpenStack, config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM}},
+		{
+			cloudprovider.QEMU,
+			config.AttestationTypeQEMUVTPM,
+			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
+		},
+		{
+			cloudprovider.OpenStack,
+			config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
+		},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Provider:%s,Attestation:%s", test.provider, test.attestation), func(t *testing.T) {
