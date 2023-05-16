@@ -105,6 +105,11 @@ Before opening a PR, please run the tests and
 bazel run //:generate && bazel run //:tidy
 bazel run //:check
 ```
+
+The linter check doesn't work on Mac at the moment, but you can run the linter directly:
+```
+golangci-lint run
+```
 Furthermore, the PR titles are used for the changelog, so please stick to our [conventions](https://github.com/edgelesssys/constellation/blob/main/dev-docs/conventions.md#pr-conventions).
 
 # Deploy

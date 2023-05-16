@@ -148,10 +148,12 @@ func (Default) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 0, 0}
 }
 
+// String returns the string representation of the OID.
 func (Default) String() string {
 	return "default"
 }
 
+// Equal returns true if the other variant is also a Dummy.
 func (Default) Equal(other Getter) bool {
 	return other.OID().Equal(Default{}.OID())
 }
