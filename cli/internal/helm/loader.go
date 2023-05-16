@@ -100,16 +100,6 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 	}
 }
 
-// AvailableServiceVersions returns the chart version number of the bundled service versions.
-func AvailableServiceVersions() (string, error) {
-	servicesChart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
-	if err != nil {
-		return "", fmt.Errorf("loading constellation-services chart: %w", err)
-	}
-
-	return compatibility.EnsurePrefixV(servicesChart.Metadata.Version), nil
-}
-
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo)
