@@ -220,7 +220,7 @@ func (u *Uploader) blobURL(blobName string) string {
 }
 
 func (u *Uploader) imageName(version versionsapi.Version, variant string) string {
-	return strings.ReplaceAll(version.Version, ".", "-") + "-" + variant
+	return strings.ReplaceAll(version.Version, ".", "-") + "-" + variant + "-" + version.Stream
 }
 
 func (u *Uploader) imageFamily(version versionsapi.Version) string {
