@@ -196,7 +196,8 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 		},
 		{
 			cloudprovider.OpenStack,
-			config.AttestationTypeQEMUVTPM, config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
+			config.AttestationTypeQEMUVTPM,
+			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
 		},
 	}
 	for _, test := range tests {

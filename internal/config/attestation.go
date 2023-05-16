@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"sort"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -45,8 +46,18 @@ func GetDefaultAttestationType(provider cloudprovider.Provider) AttestationType 
 
 func GetAvailableAttestationTypes() []AttestationType {
 	var res []AttestationType
-	for _, v := range providerAttestationMapping {
-		res = append(res, v...)
+
+	// assumes that cloudprovider.Provider is a uint32 to sort the providers and get a consistent order
+	var keys []cloudprovider.Provider
+	for k := range providerAttestationMapping {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return uint(keys[i]) < uint(keys[j])
+	})
+
+	for _, k := range keys {
+		res = append(res, providerAttestationMapping[k]...)
 	}
 	return res
 }
