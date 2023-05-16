@@ -1,3 +1,4 @@
+load("@com_github_ash2k_bazel_tools//multirun:def.bzl", "multirun")
 load("//bazel/sh:def.bzl", "sh_template")
 
 filegroup(
@@ -30,4 +31,14 @@ sh_template(
     deps = [
         ":dependencies_lib",
     ],
+)
+
+multirun(
+    name = "push_remote_test",
+    commands = [
+        "//bazel/release:push",
+        ":remote_test",
+    ],
+    jobs = 1,  # execute sequentially
+    visibility = ["//visibility:public"],
 )
