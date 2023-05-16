@@ -38,11 +38,11 @@ replace (
 )
 
 require (
-	cloud.google.com/go/compute v1.19.0
+	cloud.google.com/go/compute v1.19.2
 	cloud.google.com/go/compute/metadata v0.2.3
-	cloud.google.com/go/kms v1.10.1
+	cloud.google.com/go/kms v1.10.2
 	cloud.google.com/go/logging v1.7.0
-	cloud.google.com/go/secretmanager v1.10.0
+	cloud.google.com/go/secretmanager v1.10.1
 	cloud.google.com/go/storage v1.30.1
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0
@@ -104,7 +104,7 @@ require (
 	golang.org/x/sys v0.7.0
 	golang.org/x/tools v0.8.0
 	google.golang.org/api v0.119.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm v2.17.0+incompatible
