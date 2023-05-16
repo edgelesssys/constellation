@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -113,16 +114,25 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(containsUnexepectedMsg(string(msg)))
 	log.Println(string(msg))
 
-	// Show versions set in cluster.
-	// The string after "Cluster status:" in the output might not be updated yet.
-	// This is only updated after the operator finishes one reconcile loop.
-	cmd = exec.CommandContext(context.Background(), cli, "status")
-	msg, err = cmd.CombinedOutput()
-	require.NoError(err, string(msg))
-	log.Println(string(msg))
+	wg := queryStatusAsync(t, cli)
 
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
 	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
+
+	wg.Wait()
+}
+
+func queryStatusAsync(t *testing.T, cli string) *sync.WaitGroup {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// The first control plane node should finish upgrading after 20 minutes. If it does not, something is fishy.
+		// Nodes can upgrade in <5mins.
+		testStatusEventuallyWorks(t, cli, 20*time.Minute)
+	}()
+
+	return &wg
 }
 
 // workingDir returns the path to the workspace.
@@ -204,6 +214,23 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	require.NoError(err)
 
 	return versionContainer{imageRef: info.imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
+}
+
+func testStatusEventuallyWorks(t *testing.T, cli string, timeout time.Duration) {
+	require.Eventually(t, func() bool {
+		// Show versions set in cluster.
+		// The string after "Cluster status:" in the output might not be updated yet.
+		// This is only updated after the operator finishes one reconcile loop.
+		cmd := exec.CommandContext(context.Background(), cli, "status")
+		msg, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("Error executing status command: %v\n", err)
+			return false
+		}
+
+		log.Println(string(msg))
+		return true
+	}, timeout, time.Minute)
 }
 
 func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string, timeout time.Duration) {
