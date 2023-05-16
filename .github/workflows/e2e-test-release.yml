@@ -222,7 +222,18 @@ jobs:
         with:
           artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}
 
+  determine-version:
+    runs-on: ubuntu-22.04
+    outputs:
+      targetVersion: ${{ steps.determine-version.outputs.targetVersion }}
+    steps:
+    - name: Determine version
+      id: determine-version
+      shell: bash
+      run: echo "targetVersion=$(cat version.txt)" | tee -a "$GITHUB_OUTPUT"
+
   e2e-upgrade:
+    needs: determine-version
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -239,6 +250,7 @@ jobs:
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
+      toImage: ${{ needs.determine-version.outputs.targetVersion }}
       cloudProvider: ${{ matrix.cloudProvider }}
       workerNodesCount: 2
       controlNodesCount: 3
