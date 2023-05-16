@@ -103,6 +103,7 @@ bazel test //...
 Before opening a PR, please run the tests and
 ```
 bazel run //:generate && bazel run //:tidy
+bazel run //:check
 ```
 Furthermore, the PR titles are used for the changelog, so please stick to our [conventions](https://github.com/edgelesssys/constellation/blob/main/dev-docs/conventions.md#pr-conventions).
 

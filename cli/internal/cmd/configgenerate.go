@@ -180,9 +180,8 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		resType := validateAttestationType(attestationString)
 		if resType == nil {
 			return generateFlags{}, fmt.Errorf("invalid attestation type: %s", attestationString)
-		} else {
-			attestationType = *resType
 		}
+		attestationType = *resType
 	}
 	return generateFlags{
 		file:            file,

@@ -434,14 +434,14 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 	}
 }
 
-// RemoveProviderAndAttestationExcept removes all provider specific configurations, i.e.,
-// sets them to nil, except the one specified.
-// If an unknown provider is passed, the same configuration is returned.
+// RemoveProviderAndAttestationExcept calls RemoveProviderExcept and sets the default attestations for the provider (only used for convenience in tests).
 func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provider) {
 	c.RemoveProviderExcept(provider)
 	c.SetAttestation(GetDefaultAttestationType(provider))
 }
 
+// RemoveProviderExcept removes all provider specific configurations, i.e.,
+// sets them to nil, except the one specified.
 func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}
@@ -462,6 +462,7 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
+// SetAttestation sets the attestation config for the given attestation type and removes all other attestation configs.
 func (c *Config) SetAttestation(attestationType AttestationType) {
 	currentAttetationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}

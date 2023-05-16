@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	AttestationTypeAWSNitroTPM        AttestationType = "aws-nitro-tpm"
-	AttestationTypeAzureSEVSNP        AttestationType = "azure-sev-snp"
-	AttestationTypeAzureTrustedLaunch AttestationType = "azure-trusted-launch"
-	AttestationTypeGCPSEVES           AttestationType = "gcp-sev-es"
-	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"
-	AttestationTypeDefault            AttestationType = "default"
+	AttestationTypeAWSNitroTPM        AttestationType = "aws-nitro-tpm"        // AttestationTypeAWSNitroTPM
+	AttestationTypeAzureSEVSNP        AttestationType = "azure-sev-snp"        // AttestationTypeAzureSEVSNP
+	AttestationTypeAzureTrustedLaunch AttestationType = "azure-trusted-launch" // AttestationTypeAzureTrustedLaunch
+	AttestationTypeGCPSEVES           AttestationType = "gcp-sev-es"           // AttestationTypeGCPSEVES
+	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"            // AttestationTypeQEMUVTPM
+	AttestationTypeDefault            AttestationType = "default"              // AttestationTypeDefault is the default attestation type for the cloud provider
 )
 
 var providerAttestationMapping map[cloudprovider.Provider][]AttestationType = map[cloudprovider.Provider][]AttestationType{
@@ -35,15 +35,16 @@ var providerAttestationMapping map[cloudprovider.Provider][]AttestationType = ma
 	cloudprovider.OpenStack: {AttestationTypeQEMUVTPM},
 }
 
+// GetDefaultAttestationType returns the default attestation type for the given provider.
 func GetDefaultAttestationType(provider cloudprovider.Provider) AttestationType {
 	res, ok := providerAttestationMapping[provider]
 	if ok {
 		return res[0]
-	} else {
-		return AttestationType("")
 	}
+	return AttestationType("")
 }
 
+// GetAvailableAttestationTypes returns the available attestation types.
 func GetAvailableAttestationTypes() []AttestationType {
 	var res []AttestationType
 
@@ -62,8 +63,10 @@ func GetAvailableAttestationTypes() []AttestationType {
 	return res
 }
 
+// AttestationType is the type of attestation.
 type AttestationType (string)
 
+// ValidProvider returns true if the attestation type is valid for the given provider.
 func (a AttestationType) ValidProvider(provider cloudprovider.Provider) bool {
 	validTypes, ok := providerAttestationMapping[provider]
 	if ok {
