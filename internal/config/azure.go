@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
+	"github.com/edgelesssys/constellation/v2/internal/config/version"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -209,18 +210,18 @@ func convertLatestToNumber(c *AzureSEVSNP, versionType snpversion.Type, aux *fus
 	return false
 }
 
-func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType snpversion.Type, aux *fusedAzureSEVSNP) (versionUint *uint8, versionString *string) {
+func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType version.Type, aux *fusedAzureSEVSNP) (versionUint *uint8, versionString *string) {
 	switch versionType {
-	case snpversion.Bootloader:
+	case version.Bootloader:
 		versionUint = &c.BootloaderVersion
 		versionString = &aux.BootloaderVersion
-	case snpversion.TEE:
+	case version.TEE:
 		versionUint = &c.TEEVersion
 		versionString = &aux.TEEVersion
-	case snpversion.SNP:
+	case version.SNP:
 		versionUint = &c.SNPVersion
 		versionString = &aux.SNPVersion
-	case snpversion.Microcode:
+	case version.Microcode:
 		versionUint = &c.MicrocodeVersion
 		versionString = &aux.MicrocodeVersion
 	}

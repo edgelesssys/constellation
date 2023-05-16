@@ -722,6 +722,7 @@ func (c AWSNitroTPM) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+
 }
 
 // SNPFirmwareSignerConfig is the configuration for validating the firmware signer.
