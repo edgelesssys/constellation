@@ -19,6 +19,7 @@ go_library(
         "//internal/compatibility",
         "//internal/config/imageversion",
         "//internal/config/instancetypes",
+        "//internal/config/version",
         "//internal/constants",
         "//internal/file",
         "//internal/variant",
