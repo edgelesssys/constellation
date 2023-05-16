@@ -75,7 +75,7 @@ constellation config generate {aws|azure|gcp|openstack|qemu} [flags]
 ### Options
 
 ```
-  -a, --attestation string   Attestation type to use {aws-nitro-tpm|azure-sev-snp|azure-trusted-launch|gcp-sev-es|qemu-vtpm|qemu-vtpm}. If not specified, the default for the cloud provider is used.
+  -a, --attestation string   Attestation variant to use {aws-nitro-tpm|azure-sev-snp|azure-trusted-launch|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used.
   -f, --file string          path to output file, or '-' for stdout (default "constellation-conf.yaml")
   -h, --help                 help for generate
   -k, --kubernetes string    Kubernetes version to use in format MAJOR.MINOR (default "v1.26")

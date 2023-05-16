@@ -437,7 +437,7 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 // RemoveProviderAndAttestationExcept calls RemoveProviderExcept and sets the default attestations for the provider (only used for convenience in tests).
 func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provider) {
 	c.RemoveProviderExcept(provider)
-	c.SetAttestation(GetDefaultAttestationType(provider))
+	c.SetAttestation(variant.GetDefaultAttestation(provider))
 }
 
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
@@ -462,20 +462,20 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
-// SetAttestation sets the attestation config for the given attestation type and removes all other attestation configs.
-func (c *Config) SetAttestation(attestationType AttestationType) {
+// SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
+func (c *Config) SetAttestation(attestation variant.Variant) {
 	currentAttetationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}
-	switch attestationType {
-	case AttestationTypeAzureSEVSNP:
+	switch attestation.(type) {
+	case variant.AzureSEVSNP:
 		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttetationConfigs.AzureSEVSNP}
-	case AttestationTypeAWSNitroTPM:
+	case variant.AWSNitroTPM:
 		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttetationConfigs.AWSNitroTPM}
-	case AttestationTypeAzureTrustedLaunch:
+	case variant.AzureTrustedLaunch:
 		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttetationConfigs.AzureTrustedLaunch}
-	case AttestationTypeGCPSEVES:
+	case variant.GCPSEVES:
 		c.Attestation = AttestationConfig{GCPSEVES: currentAttetationConfigs.GCPSEVES}
-	case AttestationTypeQEMUVTPM:
+	case variant.QEMUVTPM:
 		c.Attestation = AttestationConfig{QEMUVTPM: currentAttetationConfigs.QEMUVTPM}
 	}
 }

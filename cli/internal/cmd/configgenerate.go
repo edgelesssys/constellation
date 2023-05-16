@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -36,7 +37,7 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
-	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("Attestation type to use %s. If not specified, the default for the cloud provider is used.", printFormattedSlice(config.GetAvailableAttestationTypes())))
+	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("Attestation variant to use %s. If not specified, the default for the cloud provider is used.", printFormattedSlice(variant.GetAvailableAttestationTypes())))
 
 	return cmd
 }
@@ -54,9 +55,9 @@ func toString[T any](t []T) []string {
 }
 
 type generateFlags struct {
-	file            string
-	k8sVersion      string
-	attestationType config.AttestationType
+	file               string
+	k8sVersion         string
+	attestationVariant variant.Variant
 }
 
 type configGenerateCmd struct {
@@ -83,7 +84,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf, err := createConfigWithAttestationType(provider, flags.attestationType)
+	conf, err := createConfigWithAttestationType(provider, flags.attestationVariant)
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfigWithAttestationType(provider cloudprovider.Provider, attestationType config.AttestationType) (*config.Config, error) {
+func createConfigWithAttestationType(provider cloudprovider.Provider, attestationVariant variant.Variant) (*config.Config, error) {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
@@ -125,18 +126,21 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 	if provider == cloudprovider.Unknown {
 		return conf, nil // TODO tests use Unknown provider... the CLI doesn't allow it.. why do we do that?
 	}
-	if attestationType == config.AttestationTypeDefault {
-		attestationType = config.GetDefaultAttestationType(provider)
-	} else if !attestationType.ValidProvider(provider) {
-		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationType)
+	if attestationVariant.Equal(variant.Default{}) {
+		attestationVariant = variant.GetDefaultAttestation(provider)
+		if attestationVariant.Equal(variant.Default{}) {
+			return nil, fmt.Errorf("provider %s does not have a default attestation variant", provider)
+		}
+	} else if !variant.ValidProvider(provider, attestationVariant) {
+		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationVariant)
 	}
-	conf.SetAttestation(attestationType)
+	conf.SetAttestation(attestationVariant)
 	return conf, nil
 }
 
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
-	res, _ := createConfigWithAttestationType(provider, config.AttestationTypeDefault)
+	res, _ := createConfigWithAttestationType(provider, variant.Default{})
 	return res
 }
 
@@ -172,28 +176,28 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		return generateFlags{}, fmt.Errorf("parsing attestation flag: %w", err)
 	}
 
-	var attestationType config.AttestationType
+	var attestationType variant.Variant
 	// if no attestation type is specified, use the default for the cloud provider
 	if attestationString == "" {
-		attestationType = config.AttestationTypeDefault
+		attestationType = variant.Default{}
 	} else {
 		resType := validateAttestationType(attestationString)
 		if resType == nil {
-			return generateFlags{}, fmt.Errorf("invalid attestation type: %s", attestationString)
+			return generateFlags{}, fmt.Errorf("invalid attestation variant: %s", attestationString)
 		}
 		attestationType = *resType
 	}
 	return generateFlags{
-		file:            file,
-		k8sVersion:      resolvedVersion,
-		attestationType: attestationType,
+		file:               file,
+		k8sVersion:         resolvedVersion,
+		attestationVariant: attestationType,
 	}, nil
 }
 
-func validateAttestationType(attestationType string) *config.AttestationType {
-	for _, aType := range []config.AttestationType{config.AttestationTypeAWSNitroTPM, config.AttestationTypeAzureSEVSNP, config.AttestationTypeAzureTrustedLaunch, config.AttestationTypeGCPSEVES, config.AttestationTypeQEMUVTPM} {
-		if attestationType == string(aType) {
-			return &aType
+func validateAttestationType(attestationType string) *variant.Variant {
+	for _, variant := range variant.GetAvailableAttestationTypes() {
+		if attestationType == variant.String() {
+			return &variant
 		}
 	}
 	return nil

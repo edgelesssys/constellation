@@ -11,73 +11,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"sort"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
-
-const (
-	AttestationTypeAWSNitroTPM        AttestationType = "aws-nitro-tpm"        // AttestationTypeAWSNitroTPM
-	AttestationTypeAzureSEVSNP        AttestationType = "azure-sev-snp"        // AttestationTypeAzureSEVSNP
-	AttestationTypeAzureTrustedLaunch AttestationType = "azure-trusted-launch" // AttestationTypeAzureTrustedLaunch
-	AttestationTypeGCPSEVES           AttestationType = "gcp-sev-es"           // AttestationTypeGCPSEVES
-	AttestationTypeQEMUVTPM           AttestationType = "qemu-vtpm"            // AttestationTypeQEMUVTPM
-	AttestationTypeDefault            AttestationType = "default"              // AttestationTypeDefault is the default attestation type for the cloud provider
-)
-
-var providerAttestationMapping map[cloudprovider.Provider][]AttestationType = map[cloudprovider.Provider][]AttestationType{
-	cloudprovider.AWS:       {AttestationTypeAWSNitroTPM},
-	cloudprovider.Azure:     {AttestationTypeAzureSEVSNP, AttestationTypeAzureTrustedLaunch},
-	cloudprovider.GCP:       {AttestationTypeGCPSEVES},
-	cloudprovider.QEMU:      {AttestationTypeQEMUVTPM},
-	cloudprovider.OpenStack: {AttestationTypeQEMUVTPM},
-}
-
-// GetDefaultAttestationType returns the default attestation type for the given provider.
-func GetDefaultAttestationType(provider cloudprovider.Provider) AttestationType {
-	res, ok := providerAttestationMapping[provider]
-	if ok {
-		return res[0]
-	}
-	return AttestationType("")
-}
-
-// GetAvailableAttestationTypes returns the available attestation types.
-func GetAvailableAttestationTypes() []AttestationType {
-	var res []AttestationType
-
-	// assumes that cloudprovider.Provider is a uint32 to sort the providers and get a consistent order
-	var keys []cloudprovider.Provider
-	for k := range providerAttestationMapping {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return uint(keys[i]) < uint(keys[j])
-	})
-
-	for _, k := range keys {
-		res = append(res, providerAttestationMapping[k]...)
-	}
-	return res
-}
-
-// AttestationType is the type of attestation.
-type AttestationType (string)
-
-// ValidProvider returns true if the attestation type is valid for the given provider.
-func (a AttestationType) ValidProvider(provider cloudprovider.Provider) bool {
-	validTypes, ok := providerAttestationMapping[provider]
-	if ok {
-		for _, aType := range validTypes {
-			if a == aType {
-				return true
-			}
-		}
-	}
-	return false
-}
 
 // AttestationCfg is the common interface for passing attestation configs.
 type AttestationCfg interface {

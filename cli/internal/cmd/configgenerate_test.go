@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -145,12 +146,12 @@ func TestNoValidProviderAttestationCombination(t *testing.T) {
 	assert := assert.New(t)
 	tests := []struct {
 		provider    cloudprovider.Provider
-		attestation config.AttestationType
+		attestation variant.Variant
 	}{
-		{cloudprovider.Azure, config.AttestationTypeAWSNitroTPM},
-		{cloudprovider.AWS, config.AttestationTypeAzureTrustedLaunch},
-		{cloudprovider.GCP, config.AttestationTypeAWSNitroTPM},
-		{cloudprovider.QEMU, config.AttestationTypeAWSNitroTPM},
+		{cloudprovider.Azure, variant.AWSNitroTPM{}},
+		{cloudprovider.AWS, variant.AzureTrustedLaunch{}},
+		{cloudprovider.GCP, variant.AWSNitroTPM{}},
+		{cloudprovider.QEMU, variant.GCPSEVES{}},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
@@ -164,39 +165,39 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 	defaultAttestation := config.Default().Attestation
 	tests := []struct {
 		provider    cloudprovider.Provider
-		attestation config.AttestationType
+		attestation variant.Variant
 		expected    config.AttestationConfig
 	}{
 		{
 			cloudprovider.Azure,
-			config.AttestationTypeAzureTrustedLaunch,
+			variant.AzureTrustedLaunch{},
 			config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch},
 		},
 		{
 			cloudprovider.Azure,
-			config.AttestationTypeAzureSEVSNP,
+			variant.AzureSEVSNP{},
 			config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
 		},
 
 		{
 			cloudprovider.AWS,
-			config.AttestationTypeAWSNitroTPM,
+			variant.AWSNitroTPM{},
 			config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM},
 		},
 		{
 			cloudprovider.GCP,
-			config.AttestationTypeGCPSEVES,
+			variant.GCPSEVES{},
 			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
 		},
 
 		{
 			cloudprovider.QEMU,
-			config.AttestationTypeQEMUVTPM,
+			variant.QEMUVTPM{},
 			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
 		},
 		{
 			cloudprovider.OpenStack,
-			config.AttestationTypeQEMUVTPM,
+			variant.QEMUVTPM{},
 			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
 		},
 	}
