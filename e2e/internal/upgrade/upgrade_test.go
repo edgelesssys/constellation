@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	coreV1 "k8s.io/api/core/v1"
@@ -48,30 +49,6 @@ var (
 	wantControl = flag.Int("want-control", 0, "Number of wanted control nodes.")
 	timeout     = flag.Duration("timeout", 3*time.Hour, "Timeout after which the cluster should have converged to the target version.")
 )
-
-// setup checks that the prerequisites for the test are met:
-// - a workspace is set
-// - a CLI path is set
-// - the upgrade folder does not exist.
-func setup() error {
-	workingDir, err := workingDir(*workspace)
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
-
-	if err := os.Chdir(workingDir); err != nil {
-		return fmt.Errorf("changing working directory: %w", err)
-	}
-
-	if _, err := getCLIPath(*cliPath); err != nil {
-		return fmt.Errorf("getting CLI path: %w", err)
-	}
-	if _, err := os.Stat(constants.UpgradeDir); err == nil {
-		return fmt.Errorf("please remove the existing %s folder", constants.UpgradeDir)
-	}
-
-	return nil
-}
 
 // TestUpgrade checks that the workspace's kubeconfig points to a healthy cluster,
 // we can write an upgrade config, we can trigger an upgrade
@@ -97,7 +74,7 @@ func TestUpgrade(t *testing.T) {
 	// Migrate config if necessary.
 	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--force", "--debug")
 	msg, err := cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
+	require.NoError(err, string(msg))
 	log.Println(string(msg))
 
 	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
@@ -106,21 +83,11 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(err)
 	log.Println(string(data))
 
+	log.Println("Checking upgrade.")
+	runUpgradeCheck(require, cli, *targetKubernetes)
+
 	log.Println("Triggering upgrade.")
-
-	tfLogFlag := ""
-	cmd = exec.CommandContext(context.Background(), cli, "--help")
-	msg, err = cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
-	if strings.Contains(string(msg), "--tf-log") {
-		tfLogFlag = "--tf-log=DEBUG"
-	}
-
-	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", tfLogFlag)
-	msg, err = cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
-	require.NoError(containsUnexepectedMsg(string(msg)))
-	log.Println(string(msg))
+	runUpgradeApply(require, cli)
 
 	// Show versions set in cluster.
 	// The string after "Cluster status:" in the output might not be updated yet.
@@ -132,6 +99,30 @@ func TestUpgrade(t *testing.T) {
 
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
 	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
+}
+
+// setup checks that the prerequisites for the test are met:
+// - a workspace is set
+// - a CLI path is set
+// - the constellation-upgrade folder does not exist.
+func setup() error {
+	workingDir, err := workingDir(*workspace)
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+
+	if err := os.Chdir(workingDir); err != nil {
+		return fmt.Errorf("changing working directory: %w", err)
+	}
+
+	if _, err := getCLIPath(*cliPath); err != nil {
+		return fmt.Errorf("getting CLI path: %w", err)
+	}
+	if _, err := os.Stat(constants.UpgradeDir); err == nil {
+		return fmt.Errorf("please remove the existing %s folder", constants.UpgradeDir)
+	}
+
+	return nil
 }
 
 // workingDir returns the path to the workspace.
@@ -158,115 +149,6 @@ func getCLIPath(cliPath string) (string, error) {
 	default:
 		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
 	}
-}
-
-// containsUnexepectedMsg checks if the given input contains any unexpected messages.
-// unexepcted messages are:
-// "Skipping image & Kubernetes upgrades. Another upgrade is in progress".
-func containsUnexepectedMsg(input string) error {
-	if strings.Contains(input, "Skipping image & Kubernetes upgrades. Another upgrade is in progress") {
-		return errors.New("unexpected upgrade in progress")
-	}
-	return nil
-}
-
-func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
-	fileHandler := file.NewHandler(afero.NewOsFs())
-	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
-	var cfgErr *config.ValidationError
-	var longMsg string
-	if errors.As(err, &cfgErr) {
-		longMsg = cfgErr.LongMessage()
-	}
-	require.NoError(err, longMsg)
-
-	info, err := fetchUpgradeInfo(context.Background(), cfg.GetProvider(), image)
-	require.NoError(err)
-
-	log.Printf("Setting image version: %s\n", info.shortPath)
-	cfg.Image = info.shortPath
-	cfg.UpdateMeasurements(info.measurements)
-
-	defaultConfig := config.Default()
-	var kubernetesVersion semver.Semver
-	if kubernetes == "" {
-		kubernetesVersion, err = semver.New(defaultConfig.KubernetesVersion)
-		require.NoError(err)
-	} else {
-		kubernetesVersion, err = semver.New(kubernetes)
-		require.NoError(err)
-	}
-
-	var microserviceVersion string
-	if microservices == "" {
-		microserviceVersion = defaultConfig.MicroserviceVersion
-	} else {
-		microserviceVersion = microservices
-	}
-
-	log.Printf("Setting K8s version: %s\n", kubernetesVersion.String())
-	cfg.KubernetesVersion = kubernetesVersion.String()
-	log.Printf("Setting microservice version: %s\n", microserviceVersion)
-	cfg.MicroserviceVersion = microserviceVersion
-
-	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
-	require.NoError(err)
-
-	return versionContainer{imageRef: info.imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
-}
-
-func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string, timeout time.Duration) {
-	require.Eventually(t, func() bool {
-		version, err := servicesVersion(t)
-		if err != nil {
-			log.Printf("Unable to fetch microservice version: %v\n", err)
-			return false
-		}
-
-		if version != wantMicroserviceVersion {
-			log.Printf("Microservices still at version %v, want %v\n", version, wantMicroserviceVersion)
-			return false
-		}
-
-		return true
-	}, timeout, time.Minute)
-}
-
-func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targetVersions versionContainer, totalNodeCount int, timeout time.Duration) {
-	require.Eventually(t, func() bool {
-		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		require.False(t, len(nodes.Items) < totalNodeCount, "expected at least %v nodes, got %v", totalNodeCount, len(nodes.Items))
-
-		allUpdated := true
-		log.Printf("Node status (%v):", time.Now())
-		for _, node := range nodes.Items {
-			for key, value := range node.Annotations {
-				if key == "constellation.edgeless.systems/node-image" {
-					if !strings.EqualFold(value, targetVersions.imageRef) {
-						log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.imageRef)
-						allUpdated = false
-					}
-				}
-			}
-
-			kubeletVersion := node.Status.NodeInfo.KubeletVersion
-			if kubeletVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes.String())
-				allUpdated = false
-			}
-			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
-			if kubeProxyVersion != targetVersions.kubernetes.String() {
-				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes.String())
-				allUpdated = false
-			}
-		}
-
-		return allUpdated
-	}, timeout, time.Minute)
 }
 
 // testPodsEventuallyReady checks that:
@@ -346,6 +228,167 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 		return true
 	}, time.Minute*30, time.Minute)
+}
+
+func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
+	var cfgErr *config.ValidationError
+	var longMsg string
+	if errors.As(err, &cfgErr) {
+		longMsg = cfgErr.LongMessage()
+	}
+	require.NoError(err, longMsg)
+
+	info, err := fetchUpgradeInfo(context.Background(), cfg.GetProvider(), image)
+	require.NoError(err)
+
+	log.Printf("Setting image version: %s\n", info.shortPath)
+	cfg.Image = info.shortPath
+	cfg.UpdateMeasurements(info.measurements)
+
+	defaultConfig := config.Default()
+	var kubernetesVersion semver.Semver
+	if kubernetes == "" {
+		kubernetesVersion, err = semver.New(defaultConfig.KubernetesVersion)
+		require.NoError(err)
+	} else {
+		kubernetesVersion, err = semver.New(kubernetes)
+		require.NoError(err)
+	}
+
+	var microserviceVersion string
+	if microservices == "" {
+		microserviceVersion = defaultConfig.MicroserviceVersion
+	} else {
+		microserviceVersion = microservices
+	}
+
+	log.Printf("Setting K8s version: %s\n", kubernetesVersion.String())
+	cfg.KubernetesVersion = kubernetesVersion.String()
+	log.Printf("Setting microservice version: %s\n", microserviceVersion)
+	cfg.MicroserviceVersion = microserviceVersion
+
+	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
+	require.NoError(err)
+
+	return versionContainer{imageRef: info.imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
+}
+
+// runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
+// We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
+func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
+	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check")
+	msg, err := cmd.Output()
+	require.NoError(err, "%s", string(msg))
+
+	require.Contains(string(msg), "The following updates are available with this CLI:")
+	require.Contains(string(msg), "Kubernetes:")
+	log.Printf("targetKubernetes: %s\n", targetKubernetes)
+
+	if targetKubernetes == "" {
+		log.Printf("true\n")
+		require.True(containsAny(string(msg), versions.SupportedK8sVersions()))
+	} else {
+		log.Printf("false. targetKubernetes: %s\n", targetKubernetes)
+		require.Contains(string(msg), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
+	}
+
+	cliVersion, err := semver.New(constants.VersionInfo())
+	require.NoError(err)
+	require.Contains(string(msg), "Services:")
+	require.Contains(string(msg), fmt.Sprintf("--> %s", cliVersion.String()))
+
+	log.Println(string(msg))
+}
+
+func containsAny(text string, substrs []string) bool {
+	for _, substr := range substrs {
+		if strings.Contains(text, substr) {
+			return true
+		}
+	}
+	return false
+}
+
+func runUpgradeApply(require *require.Assertions, cli string) {
+	tfLogFlag := ""
+	cmd := exec.CommandContext(context.Background(), cli, "--help")
+	msg, err := cmd.CombinedOutput()
+	require.NoErrorf(err, "%s", string(msg))
+	if strings.Contains(string(msg), "--tf-log") {
+		tfLogFlag = "--tf-log=DEBUG"
+	}
+
+	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", tfLogFlag)
+	msg, err = cmd.CombinedOutput()
+	require.NoErrorf(err, "%s", string(msg))
+	require.NoError(containsUnexepectedMsg(string(msg)))
+	log.Println(string(msg))
+}
+
+// containsUnexepectedMsg checks if the given input contains any unexpected messages.
+// unexepcted messages are:
+// "Skipping image & Kubernetes upgrades. Another upgrade is in progress".
+func containsUnexepectedMsg(input string) error {
+	if strings.Contains(input, "Skipping image & Kubernetes upgrades. Another upgrade is in progress") {
+		return errors.New("unexpected upgrade in progress")
+	}
+	return nil
+}
+
+func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string, timeout time.Duration) {
+	require.Eventually(t, func() bool {
+		version, err := servicesVersion(t)
+		if err != nil {
+			log.Printf("Unable to fetch microservice version: %v\n", err)
+			return false
+		}
+
+		if version != wantMicroserviceVersion {
+			log.Printf("Microservices still at version %v, want %v\n", version, wantMicroserviceVersion)
+			return false
+		}
+
+		return true
+	}, timeout, time.Minute)
+}
+
+func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targetVersions versionContainer, totalNodeCount int, timeout time.Duration) {
+	require.Eventually(t, func() bool {
+		nodes, err := k.CoreV1().Nodes().List(context.Background(), metaV1.ListOptions{})
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		require.False(t, len(nodes.Items) < totalNodeCount, "expected at least %v nodes, got %v", totalNodeCount, len(nodes.Items))
+
+		allUpdated := true
+		log.Printf("Node status (%v):", time.Now())
+		for _, node := range nodes.Items {
+			for key, value := range node.Annotations {
+				if key == "constellation.edgeless.systems/node-image" {
+					if !strings.EqualFold(value, targetVersions.imageRef) {
+						log.Printf("\t%s: Image %s, want %s\n", node.Name, value, targetVersions.imageRef)
+						allUpdated = false
+					}
+				}
+			}
+
+			kubeletVersion := node.Status.NodeInfo.KubeletVersion
+			if kubeletVersion != targetVersions.kubernetes.String() {
+				log.Printf("\t%s: K8s (Kubelet) %s, want %s\n", node.Name, kubeletVersion, targetVersions.kubernetes.String())
+				allUpdated = false
+			}
+			kubeProxyVersion := node.Status.NodeInfo.KubeProxyVersion
+			if kubeProxyVersion != targetVersions.kubernetes.String() {
+				log.Printf("\t%s: K8s (Proxy) %s, want %s\n", node.Name, kubeProxyVersion, targetVersions.kubernetes.String())
+				allUpdated = false
+			}
+		}
+
+		return allUpdated
+	}, timeout, time.Minute)
 }
 
 type versionContainer struct {
