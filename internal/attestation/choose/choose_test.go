@@ -38,7 +38,7 @@ func TestIssuer(t *testing.T) {
 			variant: variant.QEMUVTPM{},
 		},
 		"dummy": {
-			variant: variant.Dummy{},
+			variant: variant.Default{},
 		},
 		"unknown": {
 			variant: unknownVariant{},

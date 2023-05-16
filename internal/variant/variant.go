@@ -62,7 +62,7 @@ func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	if ok {
 		return res[0]
 	}
-	return Dummy{}
+	return Default{}
 }
 
 func removeDuplicate(sliceList []Variant) []Variant {
@@ -112,7 +112,7 @@ type Variant interface {
 func FromString(oid string) (Variant, error) {
 	switch oid {
 	case dummy:
-		return Dummy{}, nil
+		return Default{}, nil
 	case awsNitroTPM:
 		return AWSNitroTPM{}, nil
 	case gcpSEVES:
@@ -140,22 +140,22 @@ func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
 	return false
 }
 
-// Dummy OID for testfing.
-type Dummy struct{}
+// Default OID for testfing.
+type Default struct{}
 
 // OID returns the struct's object identifier.
-func (Dummy) OID() asn1.ObjectIdentifier {
+func (Default) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 1, 1}
 }
 
 // String returns the string representation of the OID.
-func (Dummy) String() string {
+func (Default) String() string {
 	return dummy
 }
 
-// Equal returns true if the other variant is also a Dummy.
-func (Dummy) Equal(other Getter) bool {
-	return other.OID().Equal(Dummy{}.OID())
+// Equal returns true if the other variant is also a Default.
+func (Default) Equal(other Getter) bool {
+	return other.OID().Equal(Default{}.OID())
 }
 
 // AWSNitroTPM holds the AWS nitro TPM OID.

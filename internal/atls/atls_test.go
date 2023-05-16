@@ -193,7 +193,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 	var urls []string
 
 	for i := 0; i < serverCount; i++ {
-		serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
+		serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Default{}), NewFakeValidators(variant.Default{}))
 		require.NoError(err)
 
 		server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +211,7 @@ func TestClientConnectionConcurrency(t *testing.T) {
 	// Create client.
 	//
 
-	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
+	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Default{}), NewFakeValidators(variant.Default{}))
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 
@@ -266,7 +266,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 
 	var urls []string
 
-	serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
+	serverCfg, err := CreateAttestationServerTLSConfig(NewFakeIssuer(variant.Default{}), NewFakeValidators(variant.Default{}))
 	require.NoError(err)
 
 	for i := 0; i < serverCount; i++ {
@@ -285,7 +285,7 @@ func TestServerConnectionConcurrency(t *testing.T) {
 	// Create client.
 	//
 
-	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Dummy{}), NewFakeValidators(variant.Dummy{}))
+	clientConfig, err := CreateAttestationClientTLSConfig(NewFakeIssuer(variant.Default{}), NewFakeValidators(variant.Default{}))
 	require.NoError(err)
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 

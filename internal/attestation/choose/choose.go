@@ -33,8 +33,8 @@ func Issuer(attestationVariant variant.Variant, log vtpm.AttestationLogger) (atl
 		return gcp.NewIssuer(log), nil
 	case variant.QEMUVTPM{}:
 		return qemu.NewIssuer(log), nil
-	case variant.Dummy{}:
-		return atls.NewFakeIssuer(variant.Dummy{}), nil
+	case variant.Default{}:
+		return atls.NewFakeIssuer(variant.Default{}), nil
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", attestationVariant)
 	}
@@ -54,7 +54,7 @@ func Validator(cfg config.AttestationCfg, log vtpm.AttestationLogger) (atls.Vali
 	case *config.QEMUVTPM:
 		return qemu.NewValidator(cfg, log), nil
 	case *config.DummyCfg:
-		return atls.NewFakeValidator(variant.Dummy{}), nil
+		return atls.NewFakeValidator(variant.Default{}), nil
 	default:
 		return nil, fmt.Errorf("unknown attestation variant")
 	}
