@@ -3,9 +3,39 @@ variable "libvirt_uri" {
   description = "libvirt socket uri"
 }
 
+variable "constellation_boot_mode" {
+  type        = string
+  description = "constellation boot mode. Can be 'uefi' or 'direct-linux-boot'"
+  validation {
+    condition = anytrue([
+      var.constellation_boot_mode == "uefi",
+      var.constellation_boot_mode == "direct-linux-boot",
+    ])
+    error_message = "constellation_boot_mode must be 'uefi' or 'direct-linux-boot'"
+  }
+}
+
 variable "constellation_os_image" {
   type        = string
   description = "constellation OS file path"
+}
+
+variable "constellation_kernel" {
+  type        = string
+  description = "constellation Kernel file path"
+  default     = ""
+}
+
+variable "constellation_initrd" {
+  type        = string
+  description = "constellation initrd file path"
+  default     = ""
+}
+
+variable "constellation_cmdline" {
+  type        = string
+  description = "constellation kernel cmdline"
+  default     = ""
 }
 
 variable "image_format" {
