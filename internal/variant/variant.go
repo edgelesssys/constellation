@@ -260,7 +260,7 @@ func (QEMUTDX) Equal(other Getter) bool {
 }
 
 func removeDuplicate(sliceList []Variant) []Variant {
-	allKeys := make(map[Variant]bool)p
+	allKeys := make(map[Variant]bool)
 	list := []Variant{}
 	for _, item := range sliceList {
 		if _, value := allKeys[item]; !value {
