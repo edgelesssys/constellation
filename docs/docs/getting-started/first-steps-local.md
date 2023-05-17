@@ -60,7 +60,7 @@ All `constellation` commands concerning this cluster need to be issued from this
 </tabItem>
 <tabItem value="qemu" label="QEMU">
 
-With [QEMU](https://www.qemu.org/), you can create a local Constellation cluster as if it were in the cloud. It utilizes different VMs over QEMU to create multiple nodes which interact with each other.
+With the QEMU provider, you can create a local Constellation cluster as if it were in the cloud. The provider uses [QEMU](https://www.qemu.org/) to create multiple VMs for the cluster nodes, which interact with each other.
 
 :::caution
 
