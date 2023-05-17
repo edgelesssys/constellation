@@ -4,6 +4,7 @@ A local cluster lets you deploy and test Constellation without a cloud subscript
 You have two options:
 * Use MiniConstellation to automatically deploy a two-node cluster.
 * For more fine-grained control, create the cluster using the QEMU provider.
+
 Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
 ## Prerequisites
