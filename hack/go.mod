@@ -56,7 +56,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.19.0 // indirect
+	cloud.google.com/go/compute v1.19.2 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Masterminds/squirrel v1.5.3 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230124153114-0acdc8ae009b // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -125,6 +125,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0 // indirect
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f // indirect
+	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230307140231-bb361f158928 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -249,7 +250,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/siderolabs/talos/pkg/machinery v1.3.2 // indirect
+	github.com/siderolabs/talos/pkg/machinery v1.4.4 // indirect
 	github.com/sigstore/rekor v1.1.1 // indirect
 	github.com/sigstore/sigstore v1.6.3 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
@@ -259,6 +260,7 @@ require (
 	github.com/theupdateframework/go-tuf v0.5.2 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/transparency-dev/merkle v0.0.1 // indirect
+	github.com/vtolstov/go-ioctl v0.0.0-20151206205506-6be9cced4810 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
@@ -284,7 +286,7 @@ require (
 	google.golang.org/api v0.119.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
-	google.golang.org/grpc v1.54.0 // indirect
+	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

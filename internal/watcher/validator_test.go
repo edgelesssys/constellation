@@ -49,11 +49,11 @@ func TestNewUpdateableValidator(t *testing.T) {
 		},
 		"gcp": {
 			variant: variant.GCPSEVES{},
-			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 		},
 		"qemu": {
 			variant: variant.QEMUVTPM{},
-			config:  &config.QEMUVTPM{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+			config:  &config.QEMUVTPM{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 		},
 		"no file": {
 			variant: variant.AzureSEVSNP{},
@@ -61,7 +61,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 		},
 		"invalid provider": {
 			variant: fakeOID{1, 3, 9900, 9999, 9999},
-			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+			config:  &config.GCPSEVES{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 			wantErr: true,
 		},
 	}
@@ -112,7 +112,7 @@ func TestUpdate(t *testing.T) {
 	// write measurement config
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
-		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 	))
 
 	// call update once to initialize the server's validator
@@ -156,7 +156,7 @@ func TestOIDConcurrency(t *testing.T) {
 	handler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
-		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 	))
 
 	// create server
@@ -196,7 +196,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
-		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce)}},
+		&config.DummyCfg{Measurements: measurements.M{11: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)}},
 		file.OptNone,
 	))
 

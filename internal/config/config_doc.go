@@ -25,6 +25,7 @@ var (
 	AzureTrustedLaunchDoc      encoder.Doc
 	GCPSEVESDoc                encoder.Doc
 	QEMUVTPMDoc                encoder.Doc
+	QEMUTDXDoc                 encoder.Doc
 )
 
 func init() {
@@ -423,7 +424,7 @@ func init() {
 			FieldName: "attestation",
 		},
 	}
-	AttestationConfigDoc.Fields = make([]encoder.Doc, 5)
+	AttestationConfigDoc.Fields = make([]encoder.Doc, 6)
 	AttestationConfigDoc.Fields[0].Name = "awsNitroTPM"
 	AttestationConfigDoc.Fields[0].Type = "AWSNitroTPM"
 	AttestationConfigDoc.Fields[0].Note = ""
@@ -444,11 +445,16 @@ func init() {
 	AttestationConfigDoc.Fields[3].Note = ""
 	AttestationConfigDoc.Fields[3].Description = "GCP SEV-ES attestation."
 	AttestationConfigDoc.Fields[3].Comments[encoder.LineComment] = "GCP SEV-ES attestation."
-	AttestationConfigDoc.Fields[4].Name = "qemuVTPM"
-	AttestationConfigDoc.Fields[4].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[4].Name = "qemuTDX"
+	AttestationConfigDoc.Fields[4].Type = "QEMUTDX"
 	AttestationConfigDoc.Fields[4].Note = ""
-	AttestationConfigDoc.Fields[4].Description = "QEMU vTPM attestation."
-	AttestationConfigDoc.Fields[4].Comments[encoder.LineComment] = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[4].Description = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[4].Comments[encoder.LineComment] = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[5].Name = "qemuVTPM"
+	AttestationConfigDoc.Fields[5].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[5].Note = ""
+	AttestationConfigDoc.Fields[5].Description = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[5].Comments[encoder.LineComment] = "QEMU vTPM attestation."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
@@ -585,6 +591,22 @@ func init() {
 	QEMUVTPMDoc.Fields[0].Note = ""
 	QEMUVTPMDoc.Fields[0].Description = "Expected TPM measurements."
 	QEMUVTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	QEMUTDXDoc.Type = "QEMUTDX"
+	QEMUTDXDoc.Comments[encoder.LineComment] = "QEMUTDX is the configuration for QEMU TDX attestation."
+	QEMUTDXDoc.Description = "QEMUTDX is the configuration for QEMU TDX attestation."
+	QEMUTDXDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "qemuTDX",
+		},
+	}
+	QEMUTDXDoc.Fields = make([]encoder.Doc, 1)
+	QEMUTDXDoc.Fields[0].Name = "measurements"
+	QEMUTDXDoc.Fields[0].Type = "M"
+	QEMUTDXDoc.Fields[0].Note = ""
+	QEMUTDXDoc.Fields[0].Description = "Expected TDX measurements."
+	QEMUTDXDoc.Fields[0].Comments[encoder.LineComment] = "Expected TDX measurements."
 }
 
 func (_ Config) Doc() *encoder.Doc {
@@ -643,6 +665,10 @@ func (_ QEMUVTPM) Doc() *encoder.Doc {
 	return &QEMUVTPMDoc
 }
 
+func (_ QEMUTDX) Doc() *encoder.Doc {
+	return &QEMUTDXDoc
+}
+
 // GetConfigurationDoc returns documentation for the file ./config_doc.go.
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
@@ -663,6 +689,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&AzureTrustedLaunchDoc,
 			&GCPSEVESDoc,
 			&QEMUVTPMDoc,
+			&QEMUTDXDoc,
 		},
 	}
 }

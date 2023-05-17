@@ -30,6 +30,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
@@ -43,6 +44,17 @@ const (
 	// The value used to extend is derived from Constellation's master key.
 	// TODO: move to stable, non-debug PCR before use.
 	PCRIndexOwnerID = tpmutil.Handle(16)
+
+	// TDXIndexClusterID is the measurement used to mark the node as initialized.
+	// The value is the index of the RTMR + 1, since index 0 of the TDX measurements is reserved for MRTD.
+	TDXIndexClusterID = RTMRIndexClusterID + 1
+	// RTMRIndexClusterID is the RTMR we extend to mark the node as initialized.
+	RTMRIndexClusterID = 2
+
+	// PCRMeasurementLength holds the length for valid PCR measurements (SHA256).
+	PCRMeasurementLength = 32
+	// TDXMeasurementLength holds the length for valid TDX measurements (SHA384).
+	TDXMeasurementLength = 48
 )
 
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
@@ -120,6 +132,15 @@ func (m *M) CopyFrom(other M) {
 	}
 }
 
+// Copy creates a new map with the same values as the original.
+func (m *M) Copy() M {
+	newM := make(M, len(*m))
+	for idx := range *m {
+		newM[idx] = (*m)[idx]
+	}
+	return newM
+}
+
 // EqualTo tests whether the provided other Measurements are equal to these
 // measurements.
 func (m *M) EqualTo(other M) bool {
@@ -128,7 +149,7 @@ func (m *M) EqualTo(other M) bool {
 	}
 	for k, v := range *m {
 		otherExpected := other[k].Expected
-		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
+		if !bytes.Equal(v.Expected, otherExpected) {
 			return false
 		}
 		if v.ValidationOpt != other[k].ValidationOpt {
@@ -177,10 +198,45 @@ func (m *M) SetEnforced(enforced []uint32) error {
 	return nil
 }
 
+// UnmarshalJSON unmarshals measurements from json.
+// This function enforces all measurements to be of equal length.
+func (m *M) UnmarshalJSON(b []byte) error {
+	newM := make(map[uint32]Measurement)
+	if err := json.Unmarshal(b, &newM); err != nil {
+		return err
+	}
+
+	// check if all measurements are of equal length
+	if err := checkLength(newM); err != nil {
+		return err
+	}
+
+	*m = newM
+	return nil
+}
+
+// UnmarshalYAML unmarshals measurements from yaml.
+// This function enforces all measurements to be of equal length.
+func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
+	newM := make(map[uint32]Measurement)
+	if err := unmarshal(&newM); err != nil {
+		return err
+	}
+
+	// check if all measurements are of equal length
+	if err := checkLength(newM); err != nil {
+		return err
+	}
+
+	*m = newM
+	return nil
+}
+
 // Measurement wraps expected PCR value and whether it is enforced.
 type Measurement struct {
 	// Expected measurement value.
-	Expected [32]byte `json:"expected" yaml:"expected"`
+	// 32 bytes for vTPM attestation, 48 for TDX.
+	Expected []byte `json:"expected" yaml:"expected"`
 	// ValidationOpt indicates how measurement mismatches should be handled.
 	ValidationOpt MeasurementValidationOption `json:"warnOnly" yaml:"warnOnly"`
 }
@@ -269,29 +325,57 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		}
 	}
 
-	if len(expected) != 32 {
+	if len(expected) != 32 && len(expected) != 48 {
 		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
 	}
 
-	m.Expected = *(*[32]byte)(expected)
+	m.Expected = expected
 	m.ValidationOpt = eM.WarnOnly
 
 	return nil
 }
 
-// WithAllBytes returns a measurement value where all 32 bytes are set to b.
-func WithAllBytes(b byte, validationOpt MeasurementValidationOption) Measurement {
+// WithAllBytes returns a measurement value where all bytes are set to b. Takes a dynamic length as input.
+// Expected are either 32 bytes (PCRMeasurementLength) or 48 bytes (TDXMeasurementLength).
+// Over inputs are possible in this function, but potentially rejected elsewhere.
+func WithAllBytes(b byte, validationOpt MeasurementValidationOption, len int) Measurement {
 	return Measurement{
-		Expected:      *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
+		Expected:      bytes.Repeat([]byte{b}, len),
 		ValidationOpt: validationOpt,
 	}
 }
 
 // PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
-func PlaceHolderMeasurement() Measurement {
+func PlaceHolderMeasurement(len int) Measurement {
 	return Measurement{
-		Expected:      *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		Expected:      bytes.Repeat([]byte{0x12, 0x34}, len/2),
 		ValidationOpt: Enforce,
+	}
+}
+
+// DefaultsFor provides the default measurements for given cloud provider.
+func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Variant) M {
+	switch {
+	case provider == cloudprovider.AWS && attestationVariant == variant.AWSNitroTPM{}:
+		return aws_AWSNitroTPM.Copy()
+
+	case provider == cloudprovider.Azure && attestationVariant == variant.AzureSEVSNP{}:
+		return azure_AzureSEVSNP.Copy()
+
+	case provider == cloudprovider.Azure && attestationVariant == variant.AzureTrustedLaunch{}:
+		return azure_AzureTrustedLaunch.Copy()
+
+	case provider == cloudprovider.GCP && attestationVariant == variant.GCPSEVES{}:
+		return gcp_GCPSEVES.Copy()
+
+	case provider == cloudprovider.QEMU && attestationVariant == variant.QEMUTDX{}:
+		return qemu_QEMUTDX.Copy()
+
+	case provider == cloudprovider.QEMU && attestationVariant == variant.QEMUVTPM{}:
+		return qemu_QEMUVTPM.Copy()
+
+	default:
+		return nil
 	}
 }
 
@@ -314,6 +398,18 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
+}
+
+func checkLength(m map[uint32]Measurement) error {
+	var length int
+	for idx, measurement := range m {
+		if length == 0 {
+			length = len(measurement.Expected)
+		} else if len(measurement.Expected) != length {
+			return fmt.Errorf("inconsistent measurement length: index %d: expected %d, got %d", idx, length, len(measurement.Expected))
+		}
+	}
+	return nil
 }
 
 type encodedMeasurement struct {

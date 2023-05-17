@@ -130,7 +130,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
 				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce),
+					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				return c
 			}(),
@@ -152,7 +152,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
 				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce),
+					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				return c
 			}(),
@@ -253,7 +253,7 @@ func TestValidate(t *testing.T) {
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az
 				cnf.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce),
+					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				return cnf
 			}(),
@@ -280,7 +280,7 @@ func TestValidate(t *testing.T) {
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
 				cnf.Attestation.GCPSEVES.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce),
+					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
 				return cnf
 			}(),
@@ -404,9 +404,9 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 func TestConfig_UpdateMeasurements(t *testing.T) {
 	assert := assert.New(t)
 	newMeasurements := measurements.M{
-		1: measurements.WithAllBytes(0x00, measurements.Enforce),
-		2: measurements.WithAllBytes(0x01, measurements.Enforce),
-		3: measurements.WithAllBytes(0x02, measurements.Enforce),
+		1: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
+		2: measurements.WithAllBytes(0x01, measurements.Enforce, measurements.PCRMeasurementLength),
+		3: measurements.WithAllBytes(0x02, measurements.Enforce, measurements.PCRMeasurementLength),
 	}
 
 	{ // AWS

@@ -10,6 +10,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/qemu",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/attestation",
         "//internal/attestation/vtpm",
         "//internal/config",
         "//internal/variant",

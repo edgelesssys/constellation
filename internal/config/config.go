@@ -287,6 +287,9 @@ type AttestationConfig struct {
 	//   GCP SEV-ES attestation.
 	GCPSEVES *GCPSEVES `yaml:"gcpSEVES,omitempty" validate:"omitempty,dive"`
 	// description: |
+	//   QEMU tdx attestation.
+	QEMUTDX *QEMUTDX `yaml:"qemuTDX,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   QEMU vTPM attestation.
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
@@ -343,12 +346,18 @@ func Default() *Config {
 				NVRAM:                 "production",
 			},
 		},
+		// TODO(malt3): remove default attestation config as soon as one-to-one mapping is no longer possible.
+		// Some problematic pairings:
+		// OpenStack uses qemu-vtpm as attestation variant
+		// QEMU uses qemu-vtpm as attestation variant
+		// AWS uses aws-nitro-tpm as attestation variant
+		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS)},
+			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
-			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure)},
-			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP)},
-			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU)},
+			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
+			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
+			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
 	}
 }
@@ -741,7 +750,7 @@ type AzureSEVSNP struct {
 // TODO(AB#3042): replace with dynamic lookup for configurable values.
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
-		Measurements:      measurements.DefaultsFor(cloudprovider.Azure),
+		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
 		BootloaderVersion: 2,
 		TEEVersion:        0,
 		SNPVersion:        6,
@@ -893,6 +902,37 @@ func (c *QEMUVTPM) SetMeasurements(m measurements.M) {
 // EqualTo returns true if the config is equal to the given config.
 func (c QEMUVTPM) EqualTo(other AttestationCfg) (bool, error) {
 	otherCfg, ok := other.(*QEMUVTPM)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
+}
+
+// QEMUTDX is the configuration for QEMU TDX attestation.
+type QEMUTDX struct {
+	// description: |
+	//   Expected TDX measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+}
+
+// GetVariant returns qemu-tdx as the variant.
+func (QEMUTDX) GetVariant() variant.Variant {
+	return variant.QEMUTDX{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c QEMUTDX) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *QEMUTDX) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c QEMUTDX) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*QEMUTDX)
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}

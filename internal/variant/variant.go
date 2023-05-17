@@ -46,6 +46,7 @@ const (
 	azureSEVSNP        = "azure-sev-snp"
 	azureTrustedLaunch = "azure-trustedlaunch"
 	qemuVTPM           = "qemu-vtpm"
+	qemuTDX            = "qemu-tdx"
 )
 
 var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
@@ -111,6 +112,8 @@ func FromString(oid string) (Variant, error) {
 		return AzureTrustedLaunch{}, nil
 	case qemuVTPM:
 		return QEMUVTPM{}, nil
+	case qemuTDX:
+		return QEMUTDX{}, nil
 	}
 	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
@@ -234,6 +237,26 @@ func (QEMUVTPM) String() string {
 // Equal returns true if the other variant is also QEMUVTPM.
 func (QEMUVTPM) Equal(other Getter) bool {
 	return other.OID().Equal(QEMUVTPM{}.OID())
+}
+
+// QEMUTDX holds the QEMU TDX OID.
+// Placeholder for dev-cloud integration.
+type QEMUTDX struct{}
+
+// OID returns the struct's object identifier.
+// Placeholder for dev-cloud integration.
+func (QEMUTDX) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5, 99}
+}
+
+// String returns the string representation of the OID.
+func (QEMUTDX) String() string {
+	return qemuTDX
+}
+
+// Equal returns true if the other variant is also QEMUTDX.
+func (QEMUTDX) Equal(other Getter) bool {
+	return other.OID().Equal(QEMUTDX{}.OID())
 }
 
 func removeDuplicate(sliceList []Variant) []Variant {

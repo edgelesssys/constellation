@@ -280,6 +280,9 @@ type QEMUVariables struct {
 	LibvirtURI string
 	// LibvirtSocketPath is the path to the libvirt socket in case of unix socket.
 	LibvirtSocketPath string
+	// BootMode is the boot mode to use.
+	// Can be either "uefi" or "direct-linux-boot".
+	BootMode string
 	// CPUCount is the number of CPUs to allocate to each node.
 	CPUCount int
 	// MemorySizeMiB is the amount of memory to allocate to each node, in MiB.
@@ -298,6 +301,12 @@ type QEMUVariables struct {
 	NVRAM string
 	// Firmware is the path to the firmware.
 	Firmware string
+	// BzImagePath is the path to the bzImage (kernel).
+	BzImagePath string
+	// InitrdPath is the path to the initrd.
+	InitrdPath string
+	// KernelCmdline is the kernel command line.
+	KernelCmdline string
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -308,6 +317,10 @@ func (v *QEMUVariables) String() string {
 	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
 	writeLinef(b, "constellation_os_image = %q", v.ImagePath)
 	writeLinef(b, "image_format = %q", v.ImageFormat)
+	writeLinef(b, "constellation_boot_mode = %q", v.BootMode)
+	writeLinef(b, "constellation_kernel = %q", v.BzImagePath)
+	writeLinef(b, "constellation_initrd = %q", v.InitrdPath)
+	writeLinef(b, "constellation_cmdline = %q", v.KernelCmdline)
 	writeLinef(b, "vcpus = %d", v.CPUCount)
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)
 	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)

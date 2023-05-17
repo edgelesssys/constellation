@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	cloud.google.com/go/compute v1.19.0
+	cloud.google.com/go/compute v1.19.2
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1
@@ -98,7 +98,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

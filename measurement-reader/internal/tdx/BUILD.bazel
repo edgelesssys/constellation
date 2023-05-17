@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tdx",
+    srcs = ["tdx.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/measurement-reader/internal/tdx",
+    visibility = ["//measurement-reader:__subpackages__"],
+    deps = [
+        "//internal/attestation/tdx",
+        "//measurement-reader/internal/sorted",
+    ],
+)

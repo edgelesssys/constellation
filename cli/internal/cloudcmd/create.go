@@ -464,8 +464,11 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 			CountWorkers:       opts.WorkerCount,
 			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
 		},
-		LibvirtURI:         libvirtURI,
-		LibvirtSocketPath:  libvirtSocketPath,
+		LibvirtURI:        libvirtURI,
+		LibvirtSocketPath: libvirtSocketPath,
+		// TODO(malt3): auto select boot mode based on attestation variant.
+		// requires image info v2.
+		BootMode:           "uefi",
 		ImagePath:          imagePath,
 		ImageFormat:        opts.Config.Provider.QEMU.ImageFormat,
 		CPUCount:           opts.Config.Provider.QEMU.VCPUs,
@@ -474,6 +477,11 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		MetadataLibvirtURI: metadataLibvirtURI,
 		NVRAM:              opts.Config.Provider.QEMU.NVRAM,
 		Firmware:           opts.Config.Provider.QEMU.Firmware,
+		// TODO(malt3) enable once we have a way to auto-select values for these
+		// requires image info v2.
+		// BzImagePath:        placeholder,
+		// InitrdPath:         placeholder,
+		// KernelCmdline:      placeholder,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), &vars); err != nil {

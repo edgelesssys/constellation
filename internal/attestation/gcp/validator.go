@@ -16,6 +16,7 @@ import (
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -35,7 +36,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new GCP validator with the provided PCR values.
-func NewValidator(cfg *config.GCPSEVES, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.GCPSEVES, log attestation.Logger) *Validator {
 	v := &Validator{
 		restClient: newInstanceClient,
 	}
