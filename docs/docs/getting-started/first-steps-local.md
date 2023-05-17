@@ -4,6 +4,7 @@ A local cluster lets you deploy and test Constellation without a cloud subscript
 You have two options:
 * Use MiniConstellation to automatically deploy a two-node cluster.
 * For more fine-grained control, create the cluster using the QEMU provider.
+Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
 ## Prerequisites
 
@@ -31,10 +32,8 @@ You have two options:
 <tabItem value="mini" label="MiniConstellation">
 
 <!-- vale off -->
-With the `constellation mini` command, you can deploy and test Constellation locally without a cloud subscription. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
+With the `constellation mini` command, you can deploy and test Constellation locally. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
 <!-- vale on -->
-
-MiniConstellation uses virtualization to create a local cluster with one control-plane node and one worker node. It **doesn't** require hardware with Confidential VM (CVM) support. For attestation, MiniConstellation currently uses a software-based vTPM provided by KVM/QEMU.
 
 :::caution
 
