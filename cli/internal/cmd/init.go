@@ -8,8 +8,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -194,15 +192,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
-			cmd.PrintErrln("Attempting to collect logs from cluster...")
-			req := &initproto.LogRequest{
-				InitSecret: idFile.InitSecret,
-			}
-			if err := i.getLogsCall(cmd.Context(), idFile.IP, newDialer(validator), req); err != nil {
-				cmd.PrintErrf("Failed to collect logs from cluser: %s\n", err)
-				return err
-			}
-			cmd.PrintErrf("Cluster logs were successfully written to %s\n", constants.ErrorLog)
 
 		}
 		return err
@@ -236,65 +225,6 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		return nil, err
 	}
 	return doer.resp, nil
-}
-
-func (i *initCmd) getLogsCall(ctx context.Context, ip string, dialer grpcDialer, req *initproto.LogRequest) error {
-	connStr := net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort))
-	conn, err := dialer.Dial(ctx, connStr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	client := initproto.NewAPIClient(conn)
-	i.log.Debugf("Created gRPC client")
-
-	i.log.Debugf("Attempting query the GetLogs endpoint")
-	stream, err := client.GetLogs(ctx, req)
-	if err != nil {
-		return err
-	}
-	i.log.Debugf("Received stream connection from server")
-
-	i.log.Debugf("Deriving the decryption key")
-	key, err := crypto.DeriveKey(i.masterSecret.Key, i.masterSecret.Salt, nil, 16) // 16 byte = 128 bit
-	if err != nil {
-		return err
-	}
-
-	i.log.Debugf("Creating the cipher")
-	// set up AES-128 in GCM mode
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return err
-	}
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return err
-	}
-
-	i.log.Debugf("Receiving and decrypting stream")
-	for {
-		res, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		plaintext, err := aesgcm.Open(nil, res.Nonce, res.Log, nil)
-		if err != nil {
-			return err
-		}
-
-		err = i.fh.Write(constants.ErrorLog, plaintext, file.OptAppend)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 type initDoer struct {
