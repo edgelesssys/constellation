@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -35,7 +36,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(cfg *config.AzureTrustedLaunch, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AzureTrustedLaunch, log attestation.Logger) *Validator {
 	rootPool := x509.NewCertPool()
 	rootPool.AddCert(ameRoot)
 	v := &Validator{roots: rootPool}

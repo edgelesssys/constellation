@@ -8,62 +8,58 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package measurements
 
-import "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-
-// DefaultsFor provides the default measurements for given cloud provider.
-func DefaultsFor(provider cloudprovider.Provider) M {
-	switch provider {
-	case cloudprovider.AWS:
-		return M{
-			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, Enforce),
-			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, Enforce),
-			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, Enforce),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
-		}
-	case cloudprovider.Azure:
-		return M{
-			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, Enforce),
-			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, Enforce),
-			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, Enforce),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
-		}
-	case cloudprovider.GCP:
-		return M{
-			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, Enforce),
-			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, Enforce),
-			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, Enforce),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
-		}
-	case cloudprovider.QEMU:
-		return M{
-			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, Enforce),
-			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, Enforce),
-			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, Enforce),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
-		}
-	case cloudprovider.OpenStack:
-		return M{
-			4:                         PlaceHolderMeasurement(),
-			8:                         WithAllBytes(0x00, Enforce),
-			9:                         PlaceHolderMeasurement(),
-			11:                        WithAllBytes(0x00, Enforce),
-			12:                        PlaceHolderMeasurement(),
-			13:                        WithAllBytes(0x00, Enforce),
-			uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce),
-		}
-	default:
-		return nil
+// revive:disable:var-naming
+var (
+	aws_AWSNitroTPM = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 	}
-}
+	azure_AzureSEVSNP = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+	}
+	azure_AzureTrustedLaunch = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+	}
+	gcp_GCPSEVES = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+	}
+	qemu_QEMUTDX = M{
+		0:                         PlaceHolderMeasurement(TDXMeasurementLength),
+		1:                         PlaceHolderMeasurement(TDXMeasurementLength),
+		2:                         PlaceHolderMeasurement(TDXMeasurementLength),
+		uint32(TDXIndexClusterID): WithAllBytes(0x00, Enforce, TDXMeasurementLength),
+		4:                         PlaceHolderMeasurement(TDXMeasurementLength),
+	}
+	qemu_QEMUVTPM = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+	}
+)

@@ -30,14 +30,14 @@ func TestMarshal(t *testing.T) {
 	}{
 		"measurement": {
 			m: Measurement{
-				Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+				Expected: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 			},
 			wantYAML: "expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35\"\nwarnOnly: false",
 			wantJSON: `{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35","warnOnly":false}`,
 		},
 		"warn only": {
 			m: Measurement{
-				Expected:      [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
+				Expected:      []byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				ValidationOpt: WarnOnly,
 			},
 			wantYAML: "expected: \"0102030400000000000000000000000000000000000000000000000000000000\"\nwarnOnly: true",
@@ -81,10 +81,10 @@ func TestUnmarshal(t *testing.T) {
 			inputJSON: `{"2":{"expected":"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU="},"3":{"expected":"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754="}}`,
 			wantMeasurements: M{
 				2: {
-					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+					Expected: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 				},
 				3: {
-					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+					Expected: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
 				},
 			},
 		},
@@ -93,10 +93,22 @@ func TestUnmarshal(t *testing.T) {
 			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9e"}}`,
 			wantMeasurements: M{
 				2: {
-					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+					Expected: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 				},
 				3: {
-					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+					Expected: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+				},
+			},
+		},
+		"valid measurements hex 48 bytes": {
+			inputYAML: "2:\n expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35fd5de9df350e3bc4410ac06bbfe5ccde\"\n3:\n expected: \"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9efd5de9df350e3bc4410ac06bbfe5ccde\"",
+			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35fd5de9df350e3bc4410ac06bbfe5ccde"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9efd5de9df350e3bc4410ac06bbfe5ccde"}}`,
+			wantMeasurements: M{
+				2: {
+					Expected: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53, 253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222},
+				},
+				3: {
+					Expected: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158, 253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222},
 				},
 			},
 		},
@@ -105,10 +117,10 @@ func TestUnmarshal(t *testing.T) {
 			inputJSON: `{"2":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="},"3":{"expected":"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
 			wantMeasurements: M{
 				2: {
-					Expected: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+					Expected: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				},
 				3: {
-					Expected: [32]byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+					Expected: []byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				},
 			},
 		},
@@ -122,16 +134,21 @@ func TestUnmarshal(t *testing.T) {
 			inputJSON: `{"2":"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=","3":"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754="}`,
 			wantMeasurements: M{
 				2: {
-					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+					Expected: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 				},
 				3: {
-					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+					Expected: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
 				},
 			},
 		},
 		"invalid length hex": {
 			inputYAML: "2:\n expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef\"\n3:\n expected: \"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463f\"",
 			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463f"}}`,
+			wantErr:   true,
+		},
+		"mixed length hex": {
+			inputYAML: "2:\n expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35fd5de9df350e3bc4410ac06bbfe5ccde\"\n3:\n expected: \"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9e\"",
+			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35fd5de9df350e3bc4410ac06bbfe5ccde"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9e"}}`,
 			wantErr:   true,
 		},
 		"invalid length base64": {
@@ -187,8 +204,8 @@ func TestEncodeM(t *testing.T) {
 	}{
 		"basic": {
 			m: M{
-				1: WithAllBytes(1, false),
-				2: WithAllBytes(2, true),
+				1: WithAllBytes(1, false, PCRMeasurementLength),
+				2: WithAllBytes(2, WarnOnly, PCRMeasurementLength),
 			},
 			want: `1:
     expected: "0101010101010101010101010101010101010101010101010101010101010101"
@@ -200,10 +217,10 @@ func TestEncodeM(t *testing.T) {
 		},
 		"output is sorted": {
 			m: M{
-				3:  {},
-				1:  {},
-				11: {},
-				2:  {},
+				3:  WithAllBytes(0, false, PCRMeasurementLength),
+				1:  WithAllBytes(0, false, PCRMeasurementLength),
+				11: WithAllBytes(0, false, PCRMeasurementLength),
+				2:  WithAllBytes(0, false, PCRMeasurementLength),
 			},
 			want: `1:
     expected: "0000000000000000000000000000000000000000000000000000000000000000"
@@ -242,48 +259,48 @@ func TestMeasurementsCopyFrom(t *testing.T) {
 		"add to empty": {
 			current: M{},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"keep existing": {
 			current: M{
-				4: WithAllBytes(0x01, Enforce),
-				5: WithAllBytes(0x02, WarnOnly),
+				4: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				5: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
-				4: WithAllBytes(0x01, Enforce),
-				5: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
+				4: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				5: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"overwrite existing": {
 			current: M{
-				2: WithAllBytes(0x04, Enforce),
-				3: WithAllBytes(0x05, Enforce),
+				2: WithAllBytes(0x04, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x05, Enforce, PCRMeasurementLength),
 			},
 			newMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 			wantMeasurements: M{
-				1: WithAllBytes(0x00, WarnOnly),
-				2: WithAllBytes(0x01, WarnOnly),
-				3: WithAllBytes(0x02, WarnOnly),
+				1: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				3: WithAllBytes(0x02, WarnOnly, PCRMeasurementLength),
 			},
 		},
 	}
@@ -352,7 +369,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantSHA: "c04e13c1312b6f5659303871d14bf49b05c99a6515548763b6322f60bbb61a24",
 		},
@@ -363,7 +380,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signature:          "MEUCIQC9WI2ijlQjBktYFctKpbnqkUTey3U9W99Jp1NTLi5AbQIgNZxxOtiawgTkWPXLoH9D2CxpEjxQrqLn/zWF6NoKxWQ=",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantSHA: "648fcfd5d22e623a948ab2dd4eb334be2701d8f158231726084323003daab8d4",
 		},
@@ -473,15 +490,15 @@ func TestGetEnforced(t *testing.T) {
 	}{
 		"only warnings": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{},
 		},
 		"all enforced": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -490,9 +507,9 @@ func TestGetEnforced(t *testing.T) {
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, WarnOnly),
-				2: WithAllBytes(0x02, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
 			},
 			want: map[uint32]struct{}{
 				0: {},
@@ -524,56 +541,56 @@ func TestSetEnforced(t *testing.T) {
 	}{
 		"no enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{},
 			wantM: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"all enforced measurements": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 		},
 		"mixed": {
 			input: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
-				2: WithAllBytes(0x02, Enforce),
-				3: WithAllBytes(0x03, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x03, Enforce, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 2},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, WarnOnly),
-				2: WithAllBytes(0x02, Enforce),
-				3: WithAllBytes(0x03, WarnOnly),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
+				2: WithAllBytes(0x02, Enforce, PCRMeasurementLength),
+				3: WithAllBytes(0x03, WarnOnly, PCRMeasurementLength),
 			},
 		},
 		"warn only to enforced": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1},
 			wantM: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0x01, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x01, Enforce, PCRMeasurementLength),
 			},
 		},
 		"more enforced than measurements": {
 			input: M{
-				0: WithAllBytes(0x00, WarnOnly),
-				1: WithAllBytes(0x01, WarnOnly),
+				0: WithAllBytes(0x00, WarnOnly, PCRMeasurementLength),
+				1: WithAllBytes(0x01, WarnOnly, PCRMeasurementLength),
 			},
 			enforced: []uint32{0, 1, 2},
 			wantErr:  true,
@@ -603,49 +620,49 @@ func TestWithAllBytes(t *testing.T) {
 	}{
 		"0x00 warnOnly": {
 			b:        0x00,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				Expected:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 				ValidationOpt: WarnOnly,
 			},
 		},
 		"0x00": {
 			b:        0x00,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				Expected:      []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 				ValidationOpt: Enforce,
 			},
 		},
 		"0x01 warnOnly": {
 			b:        0x01,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				Expected:      []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 				ValidationOpt: WarnOnly,
 			},
 		},
 		"0x01": {
 			b:        0x01,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				Expected:      []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
 				ValidationOpt: Enforce,
 			},
 		},
 		"0xFF warnOnly": {
 			b:        0xFF,
-			warnOnly: true,
+			warnOnly: WarnOnly,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				Expected:      []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 				ValidationOpt: WarnOnly,
 			},
 		},
 		"0xFF": {
 			b:        0xFF,
-			warnOnly: false,
+			warnOnly: Enforce,
 			wantMeasurement: Measurement{
-				Expected:      [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				Expected:      []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 				ValidationOpt: Enforce,
 			},
 		},
@@ -654,7 +671,7 @@ func TestWithAllBytes(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			measurement := WithAllBytes(tc.b, tc.warnOnly)
+			measurement := WithAllBytes(tc.b, tc.warnOnly, PCRMeasurementLength)
 			assert.Equal(tc.wantMeasurement, measurement)
 		})
 	}
@@ -668,44 +685,44 @@ func TestEqualTo(t *testing.T) {
 	}{
 		"same values": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: true,
 		},
 		"different number of elements": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},
 		"different values": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0xFF, Enforce),
-				1: WithAllBytes(0x00, Enforce),
+				0: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},
 		"different warn settings": {
 			given: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, Enforce),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, Enforce, PCRMeasurementLength),
 			},
 			other: M{
-				0: WithAllBytes(0x00, Enforce),
-				1: WithAllBytes(0xFF, WarnOnly),
+				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+				1: WithAllBytes(0xFF, WarnOnly, PCRMeasurementLength),
 			},
 			wantEqual: false,
 		},

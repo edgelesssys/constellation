@@ -10,18 +10,19 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // Issuer returns the issuer for the given variant.
-func Issuer(attestationVariant variant.Variant, log vtpm.AttestationLogger) (atls.Issuer, error) {
+func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Issuer, error) {
 	switch attestationVariant {
 	case variant.AWSNitroTPM{}:
 		return aws.NewIssuer(log), nil
@@ -33,6 +34,8 @@ func Issuer(attestationVariant variant.Variant, log vtpm.AttestationLogger) (atl
 		return gcp.NewIssuer(log), nil
 	case variant.QEMUVTPM{}:
 		return qemu.NewIssuer(log), nil
+	case variant.QEMUTDX{}:
+		return tdx.NewIssuer(log), nil
 	case variant.Dummy{}:
 		return atls.NewFakeIssuer(variant.Dummy{}), nil
 	default:
@@ -41,7 +44,7 @@ func Issuer(attestationVariant variant.Variant, log vtpm.AttestationLogger) (atl
 }
 
 // Validator returns the validator for the given variant.
-func Validator(cfg config.AttestationCfg, log vtpm.AttestationLogger) (atls.Validator, error) {
+func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validator, error) {
 	switch cfg := cfg.(type) {
 	case *config.AWSNitroTPM:
 		return aws.NewValidator(cfg, log), nil
@@ -53,6 +56,8 @@ func Validator(cfg config.AttestationCfg, log vtpm.AttestationLogger) (atls.Vali
 		return gcp.NewValidator(cfg, log), nil
 	case *config.QEMUVTPM:
 		return qemu.NewValidator(cfg, log), nil
+	case *config.QEMUTDX:
+		return tdx.NewValidator(cfg, log), nil
 	case *config.DummyCfg:
 		return atls.NewFakeValidator(variant.Dummy{}), nil
 	default:

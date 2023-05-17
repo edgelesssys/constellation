@@ -1,5 +1,4 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "tpm",
@@ -7,21 +6,9 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/measurement-reader/internal/tpm",
     visibility = ["//measurement-reader:__subpackages__"],
     deps = [
-        "//internal/attestation/measurements",
         "//internal/attestation/vtpm",
         "//measurement-reader/internal/sorted",
         "@com_github_google_go_tpm//tpm2",
         "@com_github_google_go_tpm_tools//client",
-    ],
-)
-
-go_test(
-    name = "tpm_test",
-    srcs = ["tpm_test.go"],
-    embed = [":tpm"],
-    deps = [
-        "//internal/attestation/measurements",
-        "//measurement-reader/internal/sorted",
-        "@com_github_stretchr_testify//assert",
     ],
 )

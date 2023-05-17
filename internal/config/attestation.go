@@ -41,6 +41,8 @@ func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (Att
 		return unmarshalTypedConfig[*GCPSEVES](data)
 	case variant.QEMUVTPM{}:
 		return unmarshalTypedConfig[*QEMUVTPM](data)
+	case variant.QEMUTDX{}:
+		return unmarshalTypedConfig[*QEMUTDX](data)
 	case variant.Dummy{}:
 		return unmarshalTypedConfig[*DummyCfg](data)
 	default:

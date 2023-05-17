@@ -33,9 +33,36 @@ variable "pool" {
   description = "name of the storage pool to use"
 }
 
+variable "boot_mode" {
+  type        = string
+  description = "boot mode. Can be 'uefi' or 'direct-linux-boot'"
+  validation {
+    condition     = can(regex("^(uefi|direct-linux-boot)$", var.boot_mode))
+    error_message = "boot_mode must be 'uefi' or 'direct-linux-boot'"
+  }
+}
+
 variable "boot_volume_id" {
   type        = string
   description = "id of the constellation boot disk"
+}
+
+variable "kernel_volume_id" {
+  type        = string
+  description = "id of the constellation kernel volume"
+  default     = ""
+}
+
+variable "initrd_volume_id" {
+  type        = string
+  description = "id of the constellation initrd volume"
+  default     = ""
+}
+
+variable "kernel_cmdline" {
+  type        = string
+  description = "kernel cmdline"
+  default     = ""
 }
 
 variable "role" {
@@ -50,7 +77,7 @@ variable "machine" {
 
 variable "firmware" {
   type        = string
-  description = "path to UEFI firmware file."
+  description = "path to UEFI firmware file. Ignored for direct-linux-boot."
 }
 
 variable "nvram" {
@@ -62,4 +89,3 @@ variable "name" {
   type        = string
   description = "name prefix of the cluster VMs"
 }
-

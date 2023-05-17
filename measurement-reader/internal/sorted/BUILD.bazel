@@ -1,8 +1,20 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "sorted",
     srcs = ["sorted.go"],
     importpath = "github.com/edgelesssys/constellation/v2/measurement-reader/internal/sorted",
     visibility = ["//measurement-reader:__subpackages__"],
+    deps = ["//internal/attestation/measurements"],
+)
+
+go_test(
+    name = "sorted_test",
+    srcs = ["sorted_test.go"],
+    embed = [":sorted"],
+    deps = [
+        "//internal/attestation/measurements",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

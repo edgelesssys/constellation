@@ -15,6 +15,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -30,7 +31,7 @@ type Validator struct {
 }
 
 // NewValidator create a new Validator structure and returns it.
-func NewValidator(cfg *config.AWSNitroTPM, log vtpm.AttestationLogger) *Validator {
+func NewValidator(cfg *config.AWSNitroTPM, log attestation.Logger) *Validator {
 	v := &Validator{}
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,

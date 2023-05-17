@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -25,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func run(issuer atls.Issuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
+func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
 	cloudLogger logging.CloudLogger,
@@ -44,7 +45,7 @@ func run(issuer atls.Issuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 		cloudLogger.Disclose("Disk UUID: " + uuid)
 	}
 
-	nodeBootstrapped, err := vtpm.IsNodeBootstrapped(tpm)
+	nodeBootstrapped, err := initialize.IsNodeBootstrapped(openDevice)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to check if node was previously bootstrapped")
 	}
@@ -56,7 +57,7 @@ func run(issuer atls.Issuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 		return
 	}
 
-	nodeLock := nodelock.New(tpm)
+	nodeLock := nodelock.New(openDevice)
 	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuer, fileHandler, metadata, log)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create init server")

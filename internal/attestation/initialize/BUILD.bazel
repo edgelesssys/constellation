@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "initialize",
+    srcs = ["initialize.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/initialize",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation/measurements",
+        "//internal/attestation/tdx",
+        "@com_github_edgelesssys_go_tdx_qpl//tdx",
+        "@com_github_google_go_tpm//tpm2",
+    ],
+)
+
+go_test(
+    name = "initialize_test",
+    srcs = ["initialize_test.go"],
+    embed = [":initialize"],
+    deps = [
+        "//internal/attestation/measurements",
+        "//internal/attestation/simulator",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

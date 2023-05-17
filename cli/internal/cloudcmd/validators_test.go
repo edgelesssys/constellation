@@ -8,6 +8,7 @@ package cloudcmd
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"testing"
 
@@ -18,37 +19,37 @@ import (
 )
 
 func TestValidatorUpdateInitPCRs(t *testing.T) {
-	zero := measurements.WithAllBytes(0x00, measurements.WarnOnly)
-	one := measurements.WithAllBytes(0x11, measurements.WarnOnly)
+	zero := measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength)
+	one := measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength)
 	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
 	oneHash := sha256.Sum256(one.Expected[:])
 	pcrZeroUpdatedOne := sha256.Sum256(append(zero.Expected[:], oneHash[:]...))
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
-			0:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			1:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			2:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			3:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			4:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			5:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			6:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			7:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			8:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			9:  measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			10: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			11: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			12: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			13: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			14: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			15: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			16: measurements.WithAllBytes(0x00, measurements.WarnOnly),
-			17: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			18: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			19: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			20: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			21: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			22: measurements.WithAllBytes(0x11, measurements.WarnOnly),
-			23: measurements.WithAllBytes(0x00, measurements.WarnOnly),
+			0:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			1:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			2:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			3:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			4:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			5:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			6:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			7:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			8:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			9:  measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			10: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			11: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			12: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			13: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			14: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			15: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			16: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			17: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			18: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			19: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			20: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			21: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			22: measurements.WithAllBytes(0x11, measurements.WarnOnly, measurements.PCRMeasurementLength),
+			23: measurements.WithAllBytes(0x00, measurements.WarnOnly, measurements.PCRMeasurementLength),
 		}
 	}
 
@@ -114,7 +115,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := UpdateInitPCRs(tc.config, tc.ownerID, tc.clusterID)
+			err := UpdateInitMeasurements(tc.config, tc.ownerID, tc.clusterID)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -132,7 +133,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 				case i == int(measurements.PCRIndexClusterID):
 					pcr, ok := m[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
+					assert.Equal(pcrZeroUpdatedOne[:], pcr.Expected)
 
 				case i == int(measurements.PCRIndexOwnerID) && tc.ownerID == "":
 					// should be deleted
@@ -142,7 +143,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 				case i == int(measurements.PCRIndexOwnerID):
 					pcr, ok := m[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
+					assert.Equal(pcrZeroUpdatedOne[:], pcr.Expected)
 
 				default:
 					if i >= 17 && i <= 22 {
@@ -150,6 +151,74 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 					} else {
 						assert.Equal(zero, m[uint32(i)])
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestValidatorUpdateInitMeasurementsTDX(t *testing.T) {
+	zero := measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength)
+	one := measurements.WithAllBytes(0x11, true, measurements.TDXMeasurementLength)
+	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
+	oneHash := sha512.Sum384(one.Expected[:])
+	tdxZeroUpdatedOne := sha512.Sum384(append(zero.Expected[:], oneHash[:]...))
+	newTestTDXMeasurements := func() measurements.M {
+		return measurements.M{
+			0: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			1: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			2: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			3: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+			4: measurements.WithAllBytes(0x00, true, measurements.TDXMeasurementLength),
+		}
+	}
+
+	testCases := map[string]struct {
+		measurements measurements.M
+		clusterID    string
+		wantErr      bool
+	}{
+		"QEMUT TDX update update cluster ID": {
+			measurements: newTestTDXMeasurements(),
+			clusterID:    one64,
+		},
+		"cluster ID empty": {
+			measurements: newTestTDXMeasurements(),
+		},
+		"invalid encoding": {
+			measurements: newTestTDXMeasurements(),
+			clusterID:    "invalid",
+			wantErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cfg := &config.QEMUTDX{Measurements: tc.measurements}
+
+			err := UpdateInitMeasurements(cfg, "", tc.clusterID)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			for i := 0; i < len(tc.measurements); i++ {
+				switch {
+				case i == measurements.TDXIndexClusterID && tc.clusterID == "":
+					// should be deleted
+					_, ok := cfg.Measurements[uint32(i)]
+					assert.False(ok)
+
+				case i == measurements.TDXIndexClusterID:
+					pcr, ok := cfg.Measurements[uint32(i)]
+					assert.True(ok)
+					assert.Equal(tdxZeroUpdatedOne[:], pcr.Expected)
+
+				default:
+					assert.Equal(zero, cfg.Measurements[uint32(i)])
 				}
 			}
 		})
