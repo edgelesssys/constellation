@@ -3,16 +3,30 @@ load("//bazel/go:go_test.bzl", "go_ld_test", "go_test")
 
 go_library(
     name = "cryptmapper",
-    srcs = ["cryptmapper.go"],
+    srcs = [
+        "cryptmapper.go",
+        "cryptmapper_cgo.go",
+        "cryptmapper_cross.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/csi/cryptmapper",
     visibility = ["//visibility:public"],
-    deps = [
-        "//internal/crypto",
-        "//internal/cryptsetup",
-        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
-        "@io_k8s_mount_utils//:mount-utils",
-        "@io_k8s_utils//exec",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "//internal/crypto",
+            "//internal/cryptsetup",
+            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@io_k8s_mount_utils//:mount-utils",
+            "@io_k8s_utils//exec",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "//internal/crypto",
+            "//internal/cryptsetup",
+            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@io_k8s_mount_utils//:mount-utils",
+            "@io_k8s_utils//exec",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_test(
@@ -21,11 +35,19 @@ go_test(
     embed = [":cryptmapper"],
     # keep
     tags = ["manual"],
-    deps = [
-        "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
-        "@com_github_stretchr_testify//assert",
-        "@org_uber_go_goleak//:goleak",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@com_github_stretchr_testify//assert",
+            "@org_uber_go_goleak//:goleak",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
+            "@com_github_stretchr_testify//assert",
+            "@org_uber_go_goleak//:goleak",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_ld_test(
