@@ -5,7 +5,10 @@ load("//bazel/go:platform.bzl", "platform_binary")
 
 go_library(
     name = "qemu-metadata-api_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "main.go",
+        "main_cross.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api",
     visibility = ["//visibility:private"],
     deps = [
