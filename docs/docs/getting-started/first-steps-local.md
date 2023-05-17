@@ -55,7 +55,7 @@ constellation mini up
 ```
 
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
-All `constellation` commands concerning this cluster need to be issued from this directory. You are now ready to [connect to the cluster](#connecting-to-the-cluster).
+All `constellation` commands concerning this cluster need to be issued from this directory.
 
 </tabItem>
 <tabItem value="qemu" label="QEMU">
