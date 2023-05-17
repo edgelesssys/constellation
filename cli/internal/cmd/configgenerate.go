@@ -114,9 +114,9 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 	if provider == cloudprovider.Unknown {
 		return conf, nil
 	}
-	if attestationVariant.Equal(variant.Default{}) {
+	if attestationVariant.Equal(variant.Dummy{}) {
 		attestationVariant = variant.GetDefaultAttestation(provider)
-		if attestationVariant.Equal(variant.Default{}) {
+		if attestationVariant.Equal(variant.Dummy{}) {
 			return nil, fmt.Errorf("provider %s does not have a default attestation variant", provider)
 		}
 	} else if !variant.ValidProvider(provider, attestationVariant) {
@@ -128,7 +128,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
-	res, _ := createConfigWithAttestationType(provider, variant.Default{})
+	res, _ := createConfigWithAttestationType(provider, variant.Dummy{})
 	return res
 }
 
@@ -167,7 +167,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	var attestationType variant.Variant
 	// if no attestation type is specified, use the default for the cloud provider
 	if attestationString == "" {
-		attestationType = variant.Default{}
+		attestationType = variant.Dummy{}
 	} else {
 		attestationType, err = variant.FromString(attestationString)
 		if err != nil {

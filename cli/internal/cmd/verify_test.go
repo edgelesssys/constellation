@@ -384,7 +384,7 @@ func TestVerifyClient(t *testing.T) {
 				Nonce: tc.nonce,
 			}
 
-			_, err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Default{}))
+			_, err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(variant.Dummy{}))
 
 			if tc.wantErr {
 				assert.Error(err)

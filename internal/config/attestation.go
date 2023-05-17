@@ -43,7 +43,7 @@ func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (Att
 		return unmarshalTypedConfig[*QEMUVTPM](data)
 	case variant.QEMUTDX{}:
 		return unmarshalTypedConfig[*QEMUTDX](data)
-	case variant.Default{}:
+	case variant.Dummy{}:
 		return unmarshalTypedConfig[*DummyCfg](data)
 	default:
 		return nil, fmt.Errorf("unknown variant: %s", attestVariant)
@@ -122,7 +122,7 @@ func (c DummyCfg) GetMeasurements() measurements.M {
 
 // GetVariant returns a dummy variant.
 func (DummyCfg) GetVariant() variant.Variant {
-	return variant.Default{}
+	return variant.Dummy{}
 }
 
 // SetMeasurements sets the configs measurements.

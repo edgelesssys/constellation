@@ -36,8 +36,8 @@ func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Is
 		return qemu.NewIssuer(log), nil
 	case variant.QEMUTDX{}:
 		return tdx.NewIssuer(log), nil
-	case variant.Default{}:
-		return atls.NewFakeIssuer(variant.Default{}), nil
+	case variant.Dummy{}:
+		return atls.NewFakeIssuer(variant.Dummy{}), nil
 	default:
 		return nil, fmt.Errorf("unknown attestation variant: %s", attestationVariant)
 	}
@@ -59,7 +59,7 @@ func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validato
 	case *config.QEMUTDX:
 		return tdx.NewValidator(cfg, log), nil
 	case *config.DummyCfg:
-		return atls.NewFakeValidator(variant.Default{}), nil
+		return atls.NewFakeValidator(variant.Dummy{}), nil
 	default:
 		return nil, fmt.Errorf("unknown attestation variant")
 	}

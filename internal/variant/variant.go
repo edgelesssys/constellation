@@ -63,7 +63,7 @@ func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	if ok {
 		return res[0]
 	}
-	return Default{}
+	return Dummy{}
 }
 
 // GetAvailableAttestationTypes returns the available attestation types.
@@ -101,7 +101,7 @@ type Variant interface {
 func FromString(oid string) (Variant, error) {
 	switch oid {
 	case dummy:
-		return Default{}, nil
+		return Dummy{}, nil
 	case awsNitroTPM:
 		return AWSNitroTPM{}, nil
 	case gcpSEVES:
@@ -131,22 +131,22 @@ func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
 	return false
 }
 
-// Default OID for testfing.
-type Default struct{}
+// Dummy OID for testfing.
+type Dummy struct{}
 
 // OID returns the struct's object identifier.
-func (Default) OID() asn1.ObjectIdentifier {
+func (Dummy) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 1, 1}
 }
 
 // String returns the string representation of the OID.
-func (Default) String() string {
+func (Dummy) String() string {
 	return dummy
 }
 
 // Equal returns true if the other variant is also a Default.
-func (Default) Equal(other Getter) bool {
-	return other.OID().Equal(Default{}.OID())
+func (Dummy) Equal(other Getter) bool {
+	return other.OID().Equal(Dummy{}.OID())
 }
 
 // AWSNitroTPM holds the AWS nitro TPM OID.
@@ -260,7 +260,7 @@ func (QEMUTDX) Equal(other Getter) bool {
 }
 
 func removeDuplicate(sliceList []Variant) []Variant {
-	allKeys := make(map[Variant]bool)
+	allKeys := make(map[Variant]bool)p
 	list := []Variant{}
 	for _, item := range sliceList {
 		if _, value := allKeys[item]; !value {

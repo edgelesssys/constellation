@@ -75,8 +75,8 @@ func TestDial(t *testing.T) {
 			require := require.New(t)
 
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := New(nil, atls.NewFakeValidator(variant.Default{}), netDialer)
-			server := newServer(variant.Default{}, tc.tls)
+			dialer := New(nil, atls.NewFakeValidator(variant.Dummy{}), netDialer)
+			server := newServer(variant.Dummy{}, tc.tls)
 			api := &testAPI{}
 			grpc_testing.RegisterTestServiceServer(server, api)
 			go server.Serve(netDialer.GetListener("192.0.2.1:1234"))

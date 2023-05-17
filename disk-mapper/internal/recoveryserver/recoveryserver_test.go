@@ -36,7 +36,7 @@ func TestServe(t *testing.T) {
 	assert := assert.New(t)
 	log := logger.NewTest(t)
 	uuid := "uuid"
-	server := New(atls.NewFakeIssuer(variant.Default{}), newStubKMS(nil, nil), log)
+	server := New(atls.NewFakeIssuer(variant.Dummy{}), newStubKMS(nil, nil), log)
 	dialer := testdialer.NewBufconnDialer()
 	listener := dialer.GetListener("192.0.2.1:1234")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -53,7 +53,7 @@ func TestServe(t *testing.T) {
 	cancel()
 	wg.Wait()
 
-	server = New(atls.NewFakeIssuer(variant.Default{}), newStubKMS(nil, nil), log)
+	server = New(atls.NewFakeIssuer(variant.Dummy{}), newStubKMS(nil, nil), log)
 	dialer = testdialer.NewBufconnDialer()
 	listener = dialer.GetListener("192.0.2.1:1234")
 
@@ -105,7 +105,7 @@ func TestRecover(t *testing.T) {
 
 			ctx := context.Background()
 			serverUUID := "uuid"
-			server := New(atls.NewFakeIssuer(variant.Default{}), tc.factory, logger.NewTest(t))
+			server := New(atls.NewFakeIssuer(variant.Dummy{}), tc.factory, logger.NewTest(t))
 			netDialer := testdialer.NewBufconnDialer()
 			listener := netDialer.GetListener("192.0.2.1:1234")
 

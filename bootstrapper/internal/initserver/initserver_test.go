@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Default{}), fh, &tc.metadata, logger.NewTest(t))
+			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, atls.NewFakeIssuer(variant.Dummy{}), fh, &tc.metadata, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return

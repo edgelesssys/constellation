@@ -102,7 +102,7 @@ func TestUpdate(t *testing.T) {
 	// create server
 	validator := &Updatable{
 		log:         logger.NewTest(t),
-		variant:     variant.Default{},
+		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
 
@@ -129,7 +129,7 @@ func TestUpdate(t *testing.T) {
 	defer server.Close()
 
 	// test connection to server
-	clientOID := variant.Default{}
+	clientOID := variant.Dummy{}
 	resp, err := testConnection(require, server.URL, clientOID)
 	require.NoError(err)
 	defer resp.Body.Close()
@@ -162,7 +162,7 @@ func TestOIDConcurrency(t *testing.T) {
 	// create server
 	validator := &Updatable{
 		log:         logger.NewTest(t),
-		variant:     variant.Default{},
+		variant:     variant.Dummy{},
 		fileHandler: handler,
 	}
 
@@ -192,7 +192,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		variant:     variant.Default{},
+		variant:     variant.Dummy{},
 	}
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.AttestationConfigFilename),
