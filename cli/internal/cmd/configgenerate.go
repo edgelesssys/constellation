@@ -37,7 +37,7 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
-	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("Attestation variant to use %s. If not specified, the default for the cloud provider is used.", printFormattedSlice(variant.GetAvailableAttestationTypes())))
+	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationTypes())))
 
 	return cmd
 }
