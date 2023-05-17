@@ -135,6 +135,12 @@ func (u *Upgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
 	return u.tfUpgrader.CheckTerraformMigrations(fileHandler)
 }
 
+// CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
+// aborted by the user.
+func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
+	return u.tfUpgrader.CleanUpTerraformMigrations(fileHandler)
+}
+
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.

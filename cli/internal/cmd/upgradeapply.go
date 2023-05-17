@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -170,6 +171,9 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
+				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+					return fmt.Errorf("cleaning up Terraform migrations: %w", err)
+				}
 				return fmt.Errorf("aborted by user")
 			}
 		}
@@ -178,7 +182,9 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		if err != nil {
 			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
-		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n", opts.OutputFile)
+		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
+			"A backup of the pre-upgrade Terraform state has been written to: %s\n",
+			opts.OutputFile, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -368,4 +374,5 @@ type cloudUpgrader interface {
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
 	CheckTerraformMigrations(fileHandler file.Handler) error
+	CleanUpTerraformMigrations(fileHandler file.Handler) error
 }

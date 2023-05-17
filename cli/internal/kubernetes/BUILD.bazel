@@ -44,7 +44,6 @@ go_test(
     srcs = ["upgrade_test.go"],
     embed = [":kubernetes"],
     deps = [
-        "//cli/internal/terraform",
         "//internal/attestation/measurements",
         "//internal/compatibility",
         "//internal/config",

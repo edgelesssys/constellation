@@ -218,6 +218,76 @@ func TestApplyTerraformMigrations(t *testing.T) {
 	}
 }
 
+func TestCleanUpTerraformMigrations(t *testing.T) {
+	upgrader := func() *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil))
+		require.NoError(t, err)
+
+		return u
+	}
+
+	workspace := func(existingFiles []string) file.Handler {
+		fs := afero.NewMemMapFs()
+		for _, f := range existingFiles {
+			require.NoError(t, afero.WriteFile(fs, f, []byte{}, 0o644))
+		}
+
+		return file.NewHandler(fs)
+	}
+
+	testCases := map[string]struct {
+		workspace file.Handler
+		wantFiles []string
+		wantErr   bool
+	}{
+		"no files": {
+			workspace: workspace(nil),
+			wantFiles: []string{},
+		},
+		"clean backup dir": {
+			workspace: workspace([]string{
+				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+			}),
+			wantFiles: []string{},
+		},
+		"clean working dir": {
+			workspace: workspace([]string{
+				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
+			}),
+			wantFiles: []string{},
+		},
+		"clean backup dir leave other files": {
+			workspace: workspace([]string{
+				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+				filepath.Join(constants.UpgradeDir, "someFile"),
+			}),
+			wantFiles: []string{
+				filepath.Join(constants.UpgradeDir, "someFile"),
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			u := upgrader()
+			err := u.CleanUpTerraformMigrations(tc.workspace)
+			if tc.wantErr {
+				require.Error(err)
+				return
+			}
+
+			require.NoError(err)
+
+			for _, f := range tc.wantFiles {
+				_, err := tc.workspace.Stat(f)
+				require.NoError(err, "file %s should exist", f)
+			}
+		})
+	}
+}
+
 type stubTerraformClient struct {
 	hasDiff             bool
 	prepareWorkspaceErr error

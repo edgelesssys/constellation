@@ -66,6 +66,14 @@ func TestUpgradeApply(t *testing.T) {
 			fetcher: stubImageFetcher{},
 			wantErr: true,
 		},
+		"clean terraform error": {
+			upgrader: stubUpgrader{
+				currentConfig:     config.DefaultForAzureSEVSNP(),
+				cleanTerraformErr: someErr,
+			},
+			fetcher: stubImageFetcher{},
+			wantErr: true,
+		},
 		"plan terraform error": {
 			upgrader: stubUpgrader{
 				currentConfig:    config.DefaultForAzureSEVSNP(),
@@ -128,6 +136,7 @@ type stubUpgrader struct {
 	planTerraformErr  error
 	checkTerraformErr error
 	applyTerraformErr error
+	cleanTerraformErr error
 }
 
 func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) error {
@@ -148,6 +157,10 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 
 func (u stubUpgrader) CheckTerraformMigrations(file.Handler) error {
 	return u.checkTerraformErr
+}
+
+func (u stubUpgrader) CleanUpTerraformMigrations(file.Handler) error {
+	return u.cleanTerraformErr
 }
 
 func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
