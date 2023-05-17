@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -142,7 +143,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
-	opts := kubernetes.TerraformUpgradeOptions{
+	opts := upgrade.TerraformUpgradeOptions{
 		LogLevel:   flags.terraformLogLevel,
 		CSP:        conf.GetProvider(),
 		Vars:       vars,
@@ -360,6 +361,6 @@ type cloudUpgrader interface {
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
-	PlanTerraformMigrations(ctx context.Context, opts kubernetes.TerraformUpgradeOptions) (bool, error)
-	ApplyTerraformMigrations(ctx context.Context, file file.Handler, opts kubernetes.TerraformUpgradeOptions) error
+	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
+	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
 }

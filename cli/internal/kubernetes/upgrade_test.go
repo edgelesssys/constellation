@@ -11,21 +11,17 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -485,154 +481,6 @@ func TestUpdateK8s(t *testing.T) {
 	}
 }
 
-func TestPlanTerraformMigrations(t *testing.T) {
-	someErr := errors.New("some error")
-	upgrader := func(tf terraformUpgrader) *Upgrader {
-		return &Upgrader{
-			tf:  tf,
-			log: logger.NewTest(t),
-		}
-	}
-
-	testCases := map[string]struct {
-		tf      terraformUpgrader
-		want    bool
-		wantErr bool
-	}{
-		"success no diff": {
-			tf: &stubTerraformUpgrader{},
-		},
-		"success diff": {
-			tf: &stubTerraformUpgrader{
-				hasDiff: true,
-			},
-			want: true,
-		},
-		"prepare workspace error": {
-			tf: &stubTerraformUpgrader{
-				prepareWorkspaceErr: someErr,
-			},
-			wantErr: true,
-		},
-		"plan error": {
-			tf: &stubTerraformUpgrader{
-				planErr: someErr,
-			},
-			wantErr: true,
-		},
-		"show plan error no diff": {
-			tf: &stubTerraformUpgrader{
-				showErr: someErr,
-			},
-		},
-		"show plan error diff": {
-			tf: &stubTerraformUpgrader{
-				showErr: someErr,
-				hasDiff: true,
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			require := require.New(t)
-
-			u := upgrader(tc.tf)
-
-			opts := TerraformUpgradeOptions{
-				LogLevel: terraform.LogLevelDebug,
-				CSP:      cloudprovider.Unknown,
-				Vars:     &terraform.QEMUVariables{},
-			}
-
-			diff, err := u.PlanTerraformMigrations(context.Background(), opts)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				require.NoError(err)
-				require.Equal(tc.want, diff)
-			}
-		})
-	}
-}
-
-func TestApplyTerraformMigrations(t *testing.T) {
-	someErr := errors.New("some error")
-	upgrader := func(tf terraformUpgrader) *Upgrader {
-		return &Upgrader{
-			tf:  tf,
-			log: logger.NewTest(t),
-		}
-	}
-	fileHandler := func(existingFiles ...string) file.Handler {
-		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(t,
-			fh.Write(
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir, "someFile"),
-				[]byte("some content"),
-			))
-		for _, f := range existingFiles {
-			require.NoError(t, fh.Write(f, []byte("some content")))
-		}
-		return fh
-	}
-
-	testCases := map[string]struct {
-		tf             terraformUpgrader
-		fs             file.Handler
-		outputFileName string
-		wantErr        bool
-	}{
-		"success": {
-			tf:             &stubTerraformUpgrader{},
-			fs:             fileHandler(),
-			outputFileName: "test.json",
-		},
-		"create cluster error": {
-			tf: &stubTerraformUpgrader{
-				CreateClusterErr: someErr,
-			},
-			fs:             fileHandler(),
-			outputFileName: "test.json",
-			wantErr:        true,
-		},
-		"empty file name": {
-			tf:             &stubTerraformUpgrader{},
-			fs:             fileHandler(),
-			outputFileName: "",
-			wantErr:        true,
-		},
-		"file already exists": {
-			tf:             &stubTerraformUpgrader{},
-			fs:             fileHandler("test.json"),
-			outputFileName: "test.json",
-			wantErr:        true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			require := require.New(t)
-
-			u := upgrader(tc.tf)
-
-			opts := TerraformUpgradeOptions{
-				LogLevel:   terraform.LogLevelDebug,
-				CSP:        cloudprovider.Unknown,
-				Vars:       &terraform.QEMUVariables{},
-				OutputFile: tc.outputFileName,
-			}
-
-			err := u.ApplyTerraformMigrations(context.Background(), tc.fs, opts)
-			if tc.wantErr {
-				require.Error(err)
-			} else {
-				require.NoError(err)
-			}
-		})
-	}
-}
 
 func newJoinConfigMap(data string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{

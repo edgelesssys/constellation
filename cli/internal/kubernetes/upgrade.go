@@ -13,15 +13,13 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -83,8 +81,8 @@ type Upgrader struct {
 	helmClient       helmInterface
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
+	tfUpgrader       *upgrade.TerraformUpgrader
 	log              debugLog
-	tf               terraformUpgrader
 }
 
 // NewUpgrader returns a new Upgrader.
@@ -115,90 +113,35 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
 
+	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
+	}
+
 	return &Upgrader{
 		stableInterface:  &stableClient{client: kubeClient},
 		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
 		helmClient:       helmClient,
 		imageFetcher:     image.New(),
 		outWriter:        outWriter,
+		tfUpgrader:       tfUpgrader,
 		log:              log,
-		tf:               tfClient,
 	}, nil
-}
-
-// TerraformUpgradeOptions are the options used for the Terraform upgrade.
-type TerraformUpgradeOptions struct {
-	// LogLevel is the log level used for Terraform.
-	LogLevel terraform.LogLevel
-	// CSP is the cloud provider to perform the upgrade on.
-	CSP cloudprovider.Provider
-	// Vars are the Terraform variables used for the upgrade.
-	Vars terraform.Variables
-	// Targets are the Terraform targets used for the upgrade.
-	Targets []string
-	// OutputFile is the file to write the Terraform output to.
-	OutputFile string
 }
 
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
-func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions) (bool, error) {
-	err := u.tf.PrepareUpgradeWorkspace(
-		filepath.Join("terraform", strings.ToLower(opts.CSP.String())),
-		constants.TerraformWorkingDir,
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
-		opts.Vars,
-	)
-	if err != nil {
-		return false, fmt.Errorf("preparing terraform workspace: %w", err)
-	}
-
-	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, opts.Targets...)
-	if err != nil {
-		return false, fmt.Errorf("terraform plan: %w", err)
-	}
-
-	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
-			return false, fmt.Errorf("terraform show plan: %w", err)
-		}
-	}
-
-	return hasDiff, nil
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
+	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts)
 }
 
 // ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, file file.Handler, opts TerraformUpgradeOptions) error {
-	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
-	if err != nil {
-		return fmt.Errorf("terraform apply: %w", err)
-	}
-
-	outputFileContents := clusterid.File{
-		CloudProvider:  opts.CSP,
-		InitSecret:     []byte(tfOutput.Secret),
-		IP:             tfOutput.IP,
-		UID:            tfOutput.UID,
-		AttestationURL: tfOutput.AttestationURL,
-	}
-
-	if err := file.RemoveAll(constants.TerraformWorkingDir); err != nil {
-		return fmt.Errorf("removing old terraform directory: %w", err)
-	}
-
-	if err := file.CopyDir(filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
-		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
-	}
-
-	if err := file.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
-		return fmt.Errorf("writing terraform output to file: %w", err)
-	}
-
-	return nil
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error {
+	return u.tfUpgrader.ApplyTerraformMigrations(ctx, fileHandler, opts)
 }
 
 // UpgradeHelmServices upgrade helm services.
@@ -486,14 +429,6 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 		}
 	}
 	return false
-}
-
-// a terraformUpgrader performs the Terraform interactions in an upgrade.
-type terraformUpgrader interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
-	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
 }
 
 type stableInterface interface {
