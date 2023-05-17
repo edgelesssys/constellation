@@ -42,7 +42,7 @@ statuscode=0
 echo "Linting the following Go modules with golangci-lint:"
 for mod in "${modules[@]}"; do
   echo "  ${mod}"
-  GOROOT=$(${go} env GOROOT) ${golangcilint} run --timeout=15m "${mod}/..." || statuscode=$?
+  PATH="$(dirname "${go}"):${PATH}" GOROOT=$(${go} env GOROOT) GOPATH=$(${go} env GOPATH) GOCACHE=$(${go} env GOCACHE) ${golangcilint} run --timeout=15m "${mod}/..." || statuscode=$?
 done
 
 exit "${statuscode}"
