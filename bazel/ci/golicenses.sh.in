@@ -31,7 +31,11 @@ ${go} mod download
 
 err=0
 
-GOROOT=$(${go} env GOROOT) ${golicenses} csv ./... | {
+PATH="$(dirname "${go}"):${PATH}" \
+GOROOT=$(${go} env GOROOT) \
+GOPATH=$(${go} env GOPATH) \
+GOCACHE=$(${go} env GOCACHE) \
+  ${golicenses} csv ./... | {
   while read -r line; do
 
     pkg=${line%%,*}
