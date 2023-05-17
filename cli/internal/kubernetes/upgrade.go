@@ -129,6 +129,12 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 	}, nil
 }
 
+// CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
+// If the files that will be written during the upgrade already exist, it returns an error.
+func (u *Upgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
+	return u.tfUpgrader.CheckTerraformMigrations(fileHandler)
+}
+
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.

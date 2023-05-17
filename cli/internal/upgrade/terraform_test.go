@@ -22,6 +22,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCheckTerraformMigrations(t *testing.T) {
+	upgrader := func() *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil))
+		require.NoError(t, err)
+
+		return u
+	}
+
+	workspace := func(existingFiles []string) file.Handler {
+		fs := afero.NewMemMapFs()
+		for _, f := range existingFiles {
+			require.NoError(t, afero.WriteFile(fs, f, []byte{}, 0o644))
+		}
+
+		return file.NewHandler(fs)
+	}
+
+	testCases := map[string]struct {
+		workspace file.Handler
+		wantErr   bool
+	}{
+		"success": {
+			workspace: workspace(nil),
+		},
+		"migration output file already exists": {
+			workspace: workspace([]string{constants.TerraformMigrationOutputFile}),
+			wantErr:   true,
+		},
+		"terraform backup dir already exists": {
+			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir)}),
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			u := upgrader()
+			err := u.CheckTerraformMigrations(tc.workspace)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestPlanTerraformMigrations(t *testing.T) {
 	upgrader := func(tf tfClient) *TerraformUpgrader {
 		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil))

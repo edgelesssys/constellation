@@ -136,6 +136,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
 	u.log.Debugf("Planning Terraform migrations")
 
+	if err := u.upgrader.CheckTerraformMigrations(file); err != nil {
+		return fmt.Errorf("checking terraform migrations: %w", err)
+	}
+
 	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
@@ -154,7 +158,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	// Check if there are any Terraform migrations to apply
 	hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
-		return fmt.Errorf("planning Terraform migrations: %w", err)
+		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 
 	if hasDiff {
@@ -172,7 +176,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		u.log.Debugf("Applying Terraform migrations")
 		err := u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
 		if err != nil {
-			return fmt.Errorf("applying Terraform migrations: %w", err)
+			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n", opts.OutputFile)
 	} else {
@@ -363,4 +367,5 @@ type cloudUpgrader interface {
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
+	CheckTerraformMigrations(fileHandler file.Handler) error
 }

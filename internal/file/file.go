@@ -220,7 +220,7 @@ func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
 
 	err = h.fs.Chmod(dst, srcInfo.Mode())
 	if err != nil {
-			return fmt.Errorf("chmod destination file: %w", err)
+		return fmt.Errorf("chmod destination file: %w", err)
 	}
 
 	return nil

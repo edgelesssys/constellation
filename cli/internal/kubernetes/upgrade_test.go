@@ -13,7 +13,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -481,7 +480,6 @@ func TestUpdateK8s(t *testing.T) {
 	}
 }
 
-
 func newJoinConfigMap(data string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -554,28 +552,4 @@ type stubImageFetcher struct {
 
 func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
 	return f.reference, f.fetchReferenceErr
-}
-
-type stubTerraformUpgrader struct {
-	hasDiff             bool
-	prepareWorkspaceErr error
-	showErr             error
-	planErr             error
-	CreateClusterErr    error
-}
-
-func (u *stubTerraformUpgrader) PrepareUpgradeWorkspace(string, string, string, terraform.Variables) error {
-	return u.prepareWorkspaceErr
-}
-
-func (u *stubTerraformUpgrader) ShowPlan(context.Context, terraform.LogLevel, string, io.Writer) error {
-	return u.showErr
-}
-
-func (u *stubTerraformUpgrader) Plan(context.Context, terraform.LogLevel, string, ...string) (bool, error) {
-	return u.hasDiff, u.planErr
-}
-
-func (u *stubTerraformUpgrader) CreateCluster(context.Context, terraform.LogLevel, ...string) (terraform.CreateOutput, error) {
-	return terraform.CreateOutput{}, u.CreateClusterErr
 }
