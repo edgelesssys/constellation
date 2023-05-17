@@ -86,7 +86,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	cg.log.Debugf("Using cloud provider %s", provider.String())
 	conf, err := createConfigWithAttestationType(provider, flags.attestationVariant)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating config: %w", err)
 	}
 	conf.KubernetesVersion = flags.k8sVersion
 	if flags.file == "-" {
