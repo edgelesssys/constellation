@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && linux && cgo
 
 /*
 Copyright (c) Edgeless Systems GmbH
