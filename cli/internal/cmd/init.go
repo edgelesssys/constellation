@@ -261,12 +261,17 @@ func (d *initDoer) Do(ctx context.Context) error {
 	}
 
 	for {
+		d.log.Debugf("Receiving...")
 		res, err := resp.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return &nonRetriableError{err}
+		}
+		if res.GetInitFailure() != nil {
+			// should've been triggered by err, but just to be safe
+			return &nonRetriableError{errors.New(res.GetInitFailure().Error)}
 		}
 
 		d.resp = res
