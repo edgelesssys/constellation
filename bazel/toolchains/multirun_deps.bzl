@@ -5,11 +5,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def multirun_deps():
     http_archive(
         name = "com_github_ash2k_bazel_tools",
-        sha256 = "0ad31a16c9e48b01a1a11daf908227a6bf6106269187cccf7398625fea2ba45a",
-        strip_prefix = "bazel-tools-4e045b9b4e3e613970ab68941b556a356239d433",
+        sha256 = "a911dab6711bc12a00f02cc94b66ced7dc57650e382ebd4f17c9cdb8ec2cbd56",
+        strip_prefix = "bazel-tools-2add5bb84c2837a82a44b57e83c7414247aed43a",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/0ad31a16c9e48b01a1a11daf908227a6bf6106269187cccf7398625fea2ba45a",
-            "https://github.com/ash2k/bazel-tools/archive/4e045b9b4e3e613970ab68941b556a356239d433.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a911dab6711bc12a00f02cc94b66ced7dc57650e382ebd4f17c9cdb8ec2cbd56",
+            "https://github.com/ash2k/bazel-tools/archive/2add5bb84c2837a82a44b57e83c7414247aed43a.tar.gz",
         ],
         type = "tar.gz",
     )
