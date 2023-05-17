@@ -60,7 +60,7 @@ All `constellation` commands concerning this cluster need to be issued from this
 </tabItem>
 <tabItem value="qemu" label="QEMU">
 
-With [QEMU](https://www.qemu.org/), you can create a local Constellation cluster as if it were in the cloud. It utilizes different virtual machines over QEMU to create multiple nodes which interact with each other.
+With [QEMU](https://www.qemu.org/), you can create a local Constellation cluster as if it were in the cloud. It utilizes different VMs over QEMU to create multiple nodes which interact with each other.
 
 :::caution
 
@@ -89,7 +89,7 @@ attaching persistent storage, or autoscaling aren't available.
   constellation create --control-plane-nodes 1 --worker-nodes 1
   ```
 
-  This will create 2 virtual machines: one worker node, and one control plane node.
+  This will create 2 VMs: one worker node, and one control plane node.
 
   The Output should look like the following:
 
