@@ -65,18 +65,6 @@ func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	return Default{}
 }
 
-func removeDuplicate(sliceList []Variant) []Variant {
-	allKeys := make(map[Variant]bool)
-	list := []Variant{}
-	for _, item := range sliceList {
-		if _, value := allKeys[item]; !value {
-			allKeys[item] = true
-			list = append(list, item)
-		}
-	}
-	return list
-}
-
 // GetAvailableAttestationTypes returns the available attestation types.
 func GetAvailableAttestationTypes() []Variant {
 	var res []Variant
@@ -246,4 +234,16 @@ func (QEMUVTPM) String() string {
 // Equal returns true if the other variant is also QEMUVTPM.
 func (QEMUVTPM) Equal(other Getter) bool {
 	return other.OID().Equal(QEMUVTPM{}.OID())
+}
+
+func removeDuplicate(sliceList []Variant) []Variant {
+	allKeys := make(map[Variant]bool)
+	list := []Variant{}
+	for _, item := range sliceList {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }

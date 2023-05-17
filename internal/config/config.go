@@ -442,6 +442,7 @@ func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provi
 
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
 // sets them to nil, except the one specified.
+// If an unknown provider is passed, the same configuration is returned.
 func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}

@@ -42,18 +42,6 @@ func newConfigGenerateCmd() *cobra.Command {
 	return cmd
 }
 
-func printFormattedSlice[T any](input []T) string {
-	return fmt.Sprintf("{%s}", strings.Join(toString(input), "|"))
-}
-
-func toString[T any](t []T) []string {
-	var res []string
-	for _, v := range t {
-		res = append(res, fmt.Sprintf("%v", v))
-	}
-	return res
-}
-
 type generateFlags struct {
 	file               string
 	k8sVersion         string
@@ -124,7 +112,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 	}
 
 	if provider == cloudprovider.Unknown {
-		return conf, nil // TODO tests use Unknown provider... the CLI doesn't allow it.. why do we do that?
+		return conf, nil
 	}
 	if attestationVariant.Equal(variant.Default{}) {
 		attestationVariant = variant.GetDefaultAttestation(provider)
@@ -218,4 +206,16 @@ func resolveK8sVersion(k8sVersion string) (string, error) {
 	}
 
 	return extendedVersion, nil
+}
+
+func printFormattedSlice[T any](input []T) string {
+	return fmt.Sprintf("{%s}", strings.Join(toString(input), "|"))
+}
+
+func toString[T any](t []T) []string {
+	var res []string
+	for _, v := range t {
+		res = append(res, fmt.Sprintf("%v", v))
+	}
+	return res
 }
