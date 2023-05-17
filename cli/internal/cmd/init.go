@@ -261,7 +261,6 @@ func (d *initDoer) Do(ctx context.Context) error {
 	}
 
 	for {
-		d.log.Debugf("Receiving...")
 		res, err := resp.Recv()
 		if err == io.EOF {
 			break
