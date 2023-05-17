@@ -1,3 +1,5 @@
+//go:build linux && cgo
+
 /*
 Copyright (c) Edgeless Systems GmbH
 
