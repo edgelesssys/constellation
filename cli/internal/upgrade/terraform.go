@@ -138,6 +138,10 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
+	if err := fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir)); err != nil {
+		return fmt.Errorf("removing terraform upgrade directory: %w", err)
+	}
+
 	if err := fileHandler.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
 		return fmt.Errorf("writing terraform output to file: %w", err)
 	}
