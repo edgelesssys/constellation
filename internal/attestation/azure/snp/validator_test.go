@@ -364,7 +364,7 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 				assert.Equal(hex.EncodeToString(report.IDKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
 				cfg := config.DefaultForAzureSEVSNP()
-				assert.True(report.LaunchTCB.isVersion(cfg.BootloaderVersion.Value(), cfg.TEEVersion.Value(), cfg.SNPVersion.Value(), cfg.MicrocodeVersion.Value()))
+				assert.True(report.LaunchTCB.isVersion(cfg.BootloaderVersion, cfg.TEEVersion, cfg.SNPVersion, cfg.MicrocodeVersion))
 			}
 		})
 	}
