@@ -447,6 +447,12 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 	}
 }
 
+// RemoveProviderAndAttestationExcept calls RemoveProviderExcept and sets the default attestations for the provider (only used for convenience in tests).
+func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provider) {
+	c.RemoveProviderExcept(provider)
+	c.SetAttestation(variant.GetDefaultAttestation(provider))
+}
+
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
 // sets them to nil, except the one specified.
 // If an unknown provider is passed, the same configuration is returned.
@@ -454,29 +460,37 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}
 
-	// TODO(AB#2976): Replace attestation replacement
-	// with custom function for attestation selection
-	currentAttetationConfigs := c.Attestation
-	c.Attestation = AttestationConfig{}
 	switch provider {
 	case cloudprovider.AWS:
 		c.Provider.AWS = currentProviderConfigs.AWS
-		c.Attestation.AWSNitroTPM = currentAttetationConfigs.AWSNitroTPM
 	case cloudprovider.Azure:
 		c.Provider.Azure = currentProviderConfigs.Azure
-		c.Attestation.AzureSEVSNP = currentAttetationConfigs.AzureSEVSNP
 	case cloudprovider.GCP:
 		c.Provider.GCP = currentProviderConfigs.GCP
-		c.Attestation.GCPSEVES = currentAttetationConfigs.GCPSEVES
 	case cloudprovider.OpenStack:
 		c.Provider.OpenStack = currentProviderConfigs.OpenStack
-		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
 	case cloudprovider.QEMU:
 		c.Provider.QEMU = currentProviderConfigs.QEMU
-		c.Attestation.QEMUVTPM = currentAttetationConfigs.QEMUVTPM
 	default:
 		c.Provider = currentProviderConfigs
-		c.Attestation = currentAttetationConfigs
+	}
+}
+
+// SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
+func (c *Config) SetAttestation(attestation variant.Variant) {
+	currentAttetationConfigs := c.Attestation
+	c.Attestation = AttestationConfig{}
+	switch attestation.(type) {
+	case variant.AzureSEVSNP:
+		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttetationConfigs.AzureSEVSNP}
+	case variant.AWSNitroTPM:
+		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttetationConfigs.AWSNitroTPM}
+	case variant.AzureTrustedLaunch:
+		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttetationConfigs.AzureTrustedLaunch}
+	case variant.GCPSEVES:
+		c.Attestation = AttestationConfig{GCPSEVES: currentAttetationConfigs.GCPSEVES}
+	case variant.QEMUVTPM:
+		c.Attestation = AttestationConfig{QEMUVTPM: currentAttetationConfigs.QEMUVTPM}
 	}
 }
 

@@ -9,6 +9,8 @@ Prerequisites:
 * [Bazelisk installed as `bazel` in your path](https://github.com/bazelbuild/bazelisk/releases).
 * [Docker](https://docs.docker.com/engine/install/). Can be installed with these commands on Ubuntu 22.04: `sudo apt update && sudo apt install docker.io`. As the build spawns docker containers your user account either needs to be in the `docker` group (Add with `sudo usermod -a -G docker $USER`) or you have to run builds with `sudo`. When using `sudo` remember that your root user might (depending on your distro and local config) not have the go binary in it's PATH. The current PATH can be forwarded to the root env with `sudo env PATH=$PATH <cmd>`.
 
+---
+### On Linux
 * Packages on Ubuntu:
 
   ```sh
@@ -20,6 +22,20 @@ Prerequisites:
   ```sh
   sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
   ```
+
+### On Mac
+
+```
+brew install bash
+```
+to fix unsupported shell options used in some build script.
+
+To troubleshoot potential problems with bazel on ARM architecture when running it for the first time, it might help to purge and retry:
+```
+bazel clean --expunge
+```
+
+---
 
 Developer workspace:
 
@@ -82,6 +98,19 @@ Running unit tests with Bazel:
 ```sh
 bazel test //...
 ```
+
+# Opening a PR
+Before opening a PR, please run the tests and
+```
+bazel run //:generate && bazel run //:tidy
+bazel run //:check
+```
+
+The linter check doesn't work on Mac at the moment, but you can run the linter directly:
+```
+golangci-lint run
+```
+Furthermore, the PR titles are used for the changelog, so please stick to our [conventions](https://github.com/edgelesssys/constellation/blob/main/dev-docs/conventions.md#pr-conventions).
 
 # Deploy
 

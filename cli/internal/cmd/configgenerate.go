@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -36,13 +37,15 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
+	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationTypes())))
 
 	return cmd
 }
 
 type generateFlags struct {
-	file       string
-	k8sVersion string
+	file               string
+	k8sVersion         string
+	attestationVariant variant.Variant
 }
 
 type configGenerateCmd struct {
@@ -69,7 +72,10 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf := createConfig(provider)
+	conf, err := createConfigWithAttestationType(provider, flags.attestationVariant)
+	if err != nil {
+		return fmt.Errorf("creating config: %w", err)
+	}
 	conf.KubernetesVersion = flags.k8sVersion
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
@@ -96,7 +102,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfig(provider cloudprovider.Provider) *config.Config {
+func createConfigWithAttestationType(provider cloudprovider.Provider, attestationVariant variant.Variant) (*config.Config, error) {
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
 
@@ -105,7 +111,25 @@ func createConfig(provider cloudprovider.Provider) *config.Config {
 		conf.StateDiskSizeGB = 10
 	}
 
-	return conf
+	if provider == cloudprovider.Unknown {
+		return conf, nil
+	}
+	if attestationVariant.Equal(variant.Dummy{}) {
+		attestationVariant = variant.GetDefaultAttestation(provider)
+		if attestationVariant.Equal(variant.Dummy{}) {
+			return nil, fmt.Errorf("provider %s does not have a default attestation variant", provider)
+		}
+	} else if !variant.ValidProvider(provider, attestationVariant) {
+		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationVariant)
+	}
+	conf.SetAttestation(attestationVariant)
+	return conf, nil
+}
+
+// createConfig creates a config file for the given provider.
+func createConfig(provider cloudprovider.Provider) *config.Config {
+	res, _ := createConfigWithAttestationType(provider, variant.Dummy{})
+	return res
 }
 
 // supportedVersions prints the supported version without v prefix and without patch version.
@@ -135,13 +159,29 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		return generateFlags{}, fmt.Errorf("resolving kuberentes version from flag: %w", err)
 	}
 
+	attestationString, err := cmd.Flags().GetString("attestation")
+	if err != nil {
+		return generateFlags{}, fmt.Errorf("parsing attestation flag: %w", err)
+	}
+
+	var attestationType variant.Variant
+	// if no attestation type is specified, use the default for the cloud provider
+	if attestationString == "" {
+		attestationType = variant.Dummy{}
+	} else {
+		attestationType, err = variant.FromString(attestationString)
+		if err != nil {
+			return generateFlags{}, fmt.Errorf("invalid attestation variant: %s", attestationString)
+		}
+	}
 	return generateFlags{
-		file:       file,
-		k8sVersion: resolvedVersion,
+		file:               file,
+		k8sVersion:         resolvedVersion,
+		attestationVariant: attestationType,
 	}, nil
 }
 
-// createCompletion handles the completion of the create command. It is frequently called
+// generateCompletion handles the completion of the create command. It is frequently called
 // while the user types arguments of the command to suggest completion.
 func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {
@@ -166,4 +206,16 @@ func resolveK8sVersion(k8sVersion string) (string, error) {
 	}
 
 	return extendedVersion, nil
+}
+
+func printFormattedSlice[T any](input []T) string {
+	return fmt.Sprintf("{%s}", strings.Join(toString(input), "|"))
+}
+
+func toString[T any](t []T) []string {
+	var res []string
+	for _, v := range t {
+		res = append(res, fmt.Sprintf("%v", v))
+	}
+	return res
 }

@@ -62,7 +62,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.RemoveProviderExcept(cloudprovider.Azure)
+				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{},
@@ -84,7 +84,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.RemoveProviderExcept(cloudprovider.Azure)
+				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{someErr},
@@ -95,7 +95,7 @@ func TestCreator(t *testing.T) {
 			provider:       cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.RemoveProviderExcept(cloudprovider.Azure)
+				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher: &stubPolicyPatcher{},
@@ -106,7 +106,7 @@ func TestCreator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
 				cfg := config.Default()
-				cfg.RemoveProviderExcept(cloudprovider.Azure)
+				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
 			policyPatcher:         &stubPolicyPatcher{},

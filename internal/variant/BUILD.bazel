@@ -5,4 +5,5 @@ go_library(
     srcs = ["variant.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/variant",
     visibility = ["//:__subpackages__"],
+    deps = ["//internal/cloud/cloudprovider"],
 )

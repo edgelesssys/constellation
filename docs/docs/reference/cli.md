@@ -75,9 +75,10 @@ constellation config generate {aws|azure|gcp|openstack|qemu} [flags]
 ### Options
 
 ```
-  -f, --file string         path to output file, or '-' for stdout (default "constellation-conf.yaml")
-  -h, --help                help for generate
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
+  -a, --attestation string   attestation variant to use {aws-nitro-tpm|azure-sev-snp|azure-trustedlaunch|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used
+  -f, --file string          path to output file, or '-' for stdout (default "constellation-conf.yaml")
+  -h, --help                 help for generate
+  -k, --kubernetes string    Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
 ```
 
 ### Options inherited from parent commands
