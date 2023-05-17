@@ -138,7 +138,7 @@ attaching persistent storage, or autoscaling aren't available.
 </tabItem>
 </tabs>
 
-## Connecting to the cluster
+## Connect to the cluster
 
 Your cluster initially consists of a single control-plane node:
 
