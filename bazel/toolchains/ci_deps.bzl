@@ -399,7 +399,7 @@ def _ghh_deps():
         name = "com_github_katexochen_ghh_linux_amd64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/753f2095fb0aea24e834b9ceb64d41eb19f8d8f5f04af745ee8dd0ef0e954135",
-            "https://github.com/katexochen/ghh/releases/download/v0.2.0/ghh_0.2.0_linux_amd64.tar.gz",
+            "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
@@ -409,7 +409,7 @@ def _ghh_deps():
         name = "com_github_katexochen_ghh_linux_arm64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/ccac401106e7937838420209e9b9bfba438952a251344f5fdf935dfeeaee0043",
-            "https://github.com/katexochen/ghh/releases/download/v0.2.0/ghh_0.2.0_linux_arm64.tar.gz",
+            "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
@@ -419,7 +419,7 @@ def _ghh_deps():
         name = "com_github_katexochen_ghh_darwin_amd64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/a6c89f1143230697f09d30ad86fc152d7daf2ddee4121dfc0aa89aac087b11c4",
-            "https://github.com/katexochen/ghh/releases/download/v0.2.0/ghh_0.2.0_darwin_amd64.tar.gz",
+            "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
@@ -429,7 +429,7 @@ def _ghh_deps():
         name = "com_github_katexochen_ghh_darwin_arm64",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/4c11127967f8b4d1dc694f7a262243338b090e523c44017fe4a44c8864a6421c",
-            "https://github.com/katexochen/ghh/releases/download/v0.2.0/ghh_0.2.0_darwin_arm64.tar.gz",
+            "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
