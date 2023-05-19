@@ -27,6 +27,7 @@ type awsS3ClientAPI interface {
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 	CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
 }
 
 // Storage is an implementation of the Storage interface, storing keys in AWS S3 buckets.
@@ -74,6 +75,17 @@ func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 		return nil, fmt.Errorf("downloading DEK from storage: %w", err)
 	}
 	return io.ReadAll(output.Body)
+}
+
+func (s *Storage) Delete(ctx context.Context, keyID string) error {
+	deleteObjectInput := &s3.DeleteObjectInput{
+		Bucket: &s.bucketID,
+		Key:    &keyID,
+	}
+	if _, err := s.client.DeleteObject(ctx, deleteObjectInput); err != nil {
+		return fmt.Errorf("deleting DEK from storage: %w", err)
+	}
+	return nil
 }
 
 // Put saves a DEK to AWS S3 Storage by key ID.
