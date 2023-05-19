@@ -54,6 +54,14 @@ func (f *Fetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo)
 	return fetch(ctx, f.httpc, cliInfo)
 }
 
+func (f *Fetcher) FetchAttestationList(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionList) (versionsapi.AzureSEVSNPVersionList, error) {
+	return fetch(ctx, f.httpc, attestation)
+}
+
+func (f *Fetcher) FetchAttestationVersion(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionGet) (versionsapi.AzureSEVSNPVersionGet, error) {
+	return fetch(ctx, f.httpc, attestation)
+}
+
 type apiObject interface {
 	ValidateRequest() error
 	Validate() error
