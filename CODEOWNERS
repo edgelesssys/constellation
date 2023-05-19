@@ -36,7 +36,7 @@
 /internal/retry @katexochen
 /internal/sigstore @malt3
 /internal/versions @katexochen
-/internal/versionsapi @katexochen
+/internal/api/versionsapi @katexochen
 /joinservice @daniel-weisse
 /keyservice @daniel-weisse
 /operators @malt3

@@ -77,6 +77,7 @@ func (s *Storage) Get(ctx context.Context, keyID string) ([]byte, error) {
 	return io.ReadAll(output.Body)
 }
 
+// Delete removes a DEK from AWS S3 Storage by key ID.
 func (s *Storage) Delete(ctx context.Context, keyID string) error {
 	deleteObjectInput := &s3.DeleteObjectInput{
 		Bucket: &s.bucketID,

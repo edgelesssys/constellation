@@ -4,7 +4,6 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "versionsapi",
     srcs = [
-        "attestation.go",
         "cliinfo.go",
         "imageinfo.go",
         "latest.go",
@@ -12,12 +11,11 @@ go_library(
         "version.go",
         "versionsapi.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/versionsapi",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/versionsapi",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
         "//internal/constants",
-        "//internal/variant",
         "@org_golang_x_mod//semver",
     ],
 )

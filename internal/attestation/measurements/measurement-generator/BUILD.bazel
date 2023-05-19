@@ -7,13 +7,13 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/measurements/measurement-generator",
     visibility = ["//visibility:private"],
     deps = [
+        "//internal/api/versionsapi",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/config",
         "//internal/constants",
         "//internal/sigstore",
         "//internal/variant",
-        "//internal/versionsapi",
         "@org_golang_x_tools//go/ast/astutil",
     ],
 )
