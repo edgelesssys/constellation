@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "cryptsetup",
-    srcs = ["cryptsetup.go"],
+    srcs = [
+        "crypsetup_cross.go",
+        "cryptsetup_cgo.go",
+    ],
     # keep
     cdeps = [
         "@//rpm:cryptsetup",
