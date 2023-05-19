@@ -63,6 +63,7 @@ func NewPendingNodeReconciler(nodeStateGetter nodeStateGetter, client client.Cli
 // If the node is trying to join the cluster and fails to join within the deadline referenced in the PendingNode spec, the node is deleted.
 func (r *PendingNodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logr := log.FromContext(ctx)
+	logr.Info("Reconciling PendingNode", "pendingNode", req.NamespacedName)
 
 	var pendingNode updatev1alpha1.PendingNode
 	if err := r.Get(ctx, req.NamespacedName, &pendingNode); err != nil {

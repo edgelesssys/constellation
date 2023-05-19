@@ -363,8 +363,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2",
-        sum = "h1:GMupCNNI7FARX27L7GjCJM8NgivWbRgpjNI/hOQjFS8=",
-        version = "v1.17.8",
+        sum = "h1:882kkTpSFhdgYRKVZ/VCgf7sd0ru57p2JCxz4/oN5RY=",
+        version = "v1.18.0",
     )
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_aws_protocol_eventstream",
@@ -390,6 +390,7 @@ def go_dependencies():
         sum = "h1:oZCEFcrMppP/CNiS8myzv9JgOzq2s0d3v3MXYil/mxQ=",
         version = "v1.13.20",
     )
+
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_feature_ec2_imds",
         build_file_generation = "on",
@@ -411,16 +412,16 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2/internal/configsources",
-        sum = "h1:dpbVNUjczQ8Ae3QKHbpHBpfvaVkRdesxpTOe9pTouhU=",
-        version = "v1.1.32",
+        sum = "h1:kG5eQilShqmJbv11XL1VpyDbaEJzWxd4zRiCG30GSn4=",
+        version = "v1.1.33",
     )
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_internal_endpoints_v2",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
-        sum = "h1:QH2kOS3Ht7x+u0gHCh06CXL/h6G8LQJFpZfFBYBNboo=",
-        version = "v2.4.26",
+        sum = "h1:vFQlirhuM8lLlpI7imKOMsjdQLuN9CPi+k44F/OFVsk=",
+        version = "v2.4.27",
     )
     go_repository(
         name = "com_github_aws_aws_sdk_go_v2_internal_ini",
@@ -437,6 +438,14 @@ def go_dependencies():
         importpath = "github.com/aws/aws-sdk-go-v2/internal/v4a",
         sum = "h1:DWYZIsyqagnWL00f8M/SOr9fN063OEQWn9LLTbdYXsk=",
         version = "v1.0.23",
+    )
+    go_repository(
+        name = "com_github_aws_aws_sdk_go_v2_service_autoscaling",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/aws/aws-sdk-go-v2/service/autoscaling",
+        sum = "h1:OpzahvFZn/B+TNWLZf0ARovZoQB0Q2MvM+y13gdL+WY=",
+        version = "v1.28.6",
     )
 
     go_repository(
@@ -576,6 +585,7 @@ def go_dependencies():
         sum = "h1:hgz0X/DX0dGqTYpGALqXJoRKRj5oQ7150i5FdTePzO8=",
         version = "v1.13.5",
     )
+
     go_repository(
         name = "com_github_aybabtme_rgbterm",
         build_file_generation = "on",
@@ -5824,8 +5834,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/rogpeppe/go-internal",
-        sum = "h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=",
-        version = "v1.9.0",
+        sum = "h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=",
+        version = "v1.10.0",
     )
     go_repository(
         name = "com_github_rs_cors",
@@ -9165,8 +9175,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/vuln",
-        sum = "h1:SJ0lK20LZB3cfTHvYOXH2m7DCIEaFdSlXtICBRv5bYU=",
-        version = "v0.0.0-20230411201117-aaaefcd264f6",
+        sum = "h1:9GRdj6wAIkDrsMevuolY+SXERPjQPp2P1ysYA0jpZe0=",
+        version = "v0.1.0",
     )
 
     go_repository(

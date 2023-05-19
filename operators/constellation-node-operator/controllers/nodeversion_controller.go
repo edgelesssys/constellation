@@ -217,6 +217,7 @@ func (r *NodeVersionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	newNodeConfig := newNodeConfig{desiredNodeVersion, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
 	if err := r.createNewNodes(ctx, newNodeConfig); err != nil {
+		logr.Error(err, "Creating new nodes")
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 	// cleanup obsolete nodes

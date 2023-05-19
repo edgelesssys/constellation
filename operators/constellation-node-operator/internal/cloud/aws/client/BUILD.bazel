@@ -1,0 +1,46 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "client",
+    srcs = [
+        "api.go",
+        "autoscaler.go",
+        "client.go",
+        "nodeimage.go",
+        "pendingnode.go",
+        "scalinggroup.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
+        "@com_github_aws_aws_sdk_go_v2_service_autoscaling//:autoscaling",
+        "@com_github_aws_aws_sdk_go_v2_service_autoscaling//types",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+    ],
+)
+
+go_test(
+    name = "client_test",
+    srcs = [
+        "client_test.go",
+        "nodeimage_test.go",
+        "pendingnode_test.go",
+        "scalinggroup_test.go",
+    ],
+    embed = [":client"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "@com_github_aws_aws_sdk_go_v2_service_autoscaling//:autoscaling",
+        "@com_github_aws_aws_sdk_go_v2_service_autoscaling//types",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
