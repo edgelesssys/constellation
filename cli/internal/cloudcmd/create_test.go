@@ -41,18 +41,18 @@ func TestCreator(t *testing.T) {
 		"gcp": {
 			tfClient: &stubTerraformClient{ip: ip},
 			provider: cloudprovider.GCP,
-			config:   config.Default(),
+			config:   config.DefaultWithPanic(),
 		},
 		"gcp newTerraformClient error": {
 			newTfClientErr: someErr,
 			provider:       cloudprovider.GCP,
-			config:         config.Default(),
+			config:         config.DefaultWithPanic(),
 			wantErr:        true,
 		},
 		"gcp create cluster error": {
 			tfClient:              &stubTerraformClient{createClusterErr: someErr},
 			provider:              cloudprovider.GCP,
-			config:                config.Default(),
+			config:                config.DefaultWithPanic(),
 			wantErr:               true,
 			wantRollback:          true,
 			wantTerraformRollback: true,
@@ -61,7 +61,7 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{ip: ip},
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
@@ -71,7 +71,7 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{ip: ip},
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.Attestation = config.AttestationConfig{
 					AzureTrustedLaunch: &config.AzureTrustedLaunch{},
 				}
@@ -83,7 +83,7 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{ip: ip},
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
@@ -94,7 +94,7 @@ func TestCreator(t *testing.T) {
 			newTfClientErr: someErr,
 			provider:       cloudprovider.Azure,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
@@ -105,7 +105,7 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{createClusterErr: someErr},
 			provider: cloudprovider.Azure,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cfg
 			}(),
@@ -119,7 +119,7 @@ func TestCreator(t *testing.T) {
 			libvirt:  &stubLibvirtRunner{},
 			provider: cloudprovider.OpenStack,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.Provider.OpenStack.Cloud = "testcloud"
 				return cfg
 			}(),
@@ -128,7 +128,7 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{ip: ip},
 			libvirt:  &stubLibvirtRunner{},
 			provider: cloudprovider.OpenStack,
-			config:   config.Default(),
+			config:   config.DefaultWithPanic(),
 			wantErr:  true,
 		},
 		"openstack newTerraformClient error": {
@@ -136,7 +136,7 @@ func TestCreator(t *testing.T) {
 			libvirt:        &stubLibvirtRunner{},
 			provider:       cloudprovider.OpenStack,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.Provider.OpenStack.Cloud = "testcloud"
 				return cfg
 			}(),
@@ -147,7 +147,7 @@ func TestCreator(t *testing.T) {
 			libvirt:  &stubLibvirtRunner{},
 			provider: cloudprovider.OpenStack,
 			config: func() *config.Config {
-				cfg := config.Default()
+				cfg := config.DefaultWithPanic()
 				cfg.Provider.OpenStack.Cloud = "testcloud"
 				return cfg
 			}(),
@@ -159,21 +159,21 @@ func TestCreator(t *testing.T) {
 			tfClient: &stubTerraformClient{ip: ip},
 			libvirt:  &stubLibvirtRunner{},
 			provider: cloudprovider.QEMU,
-			config:   config.Default(),
+			config:   config.DefaultWithPanic(),
 			wantErr:  failOnNonAMD64,
 		},
 		"qemu newTerraformClient error": {
 			newTfClientErr: someErr,
 			libvirt:        &stubLibvirtRunner{},
 			provider:       cloudprovider.QEMU,
-			config:         config.Default(),
+			config:         config.DefaultWithPanic(),
 			wantErr:        true,
 		},
 		"qemu create cluster error": {
 			tfClient:              &stubTerraformClient{createClusterErr: someErr},
 			libvirt:               &stubLibvirtRunner{},
 			provider:              cloudprovider.QEMU,
-			config:                config.Default(),
+			config:                config.DefaultWithPanic(),
 			wantErr:               true,
 			wantRollback:          !failOnNonAMD64, // if we run on non-AMD64/linux, we don't get to a point where rollback is needed
 			wantTerraformRollback: true,
@@ -182,14 +182,14 @@ func TestCreator(t *testing.T) {
 			tfClient:              &stubTerraformClient{ip: ip},
 			libvirt:               &stubLibvirtRunner{startErr: someErr},
 			provider:              cloudprovider.QEMU,
-			config:                config.Default(),
+			config:                config.DefaultWithPanic(),
 			wantRollback:          !failOnNonAMD64,
 			wantTerraformRollback: false,
 			wantErr:               true,
 		},
 		"unknown provider": {
 			provider: cloudprovider.Unknown,
-			config:   config.Default(),
+			config:   config.DefaultWithPanic(),
 			wantErr:  true,
 		},
 	}

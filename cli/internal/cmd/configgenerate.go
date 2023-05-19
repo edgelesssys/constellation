@@ -36,7 +36,7 @@ func newConfigGenerateCmd() *cobra.Command {
 		RunE:              runConfigGenerate,
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
-	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
+	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.DefaultWithPanic().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationTypes())))
 
 	return cmd
@@ -103,7 +103,10 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 // createConfig creates a config file for the given provider.
 func createConfigWithAttestationType(provider cloudprovider.Provider, attestationVariant variant.Variant) (*config.Config, error) {
-	conf := config.Default()
+	conf, err := config.Default()
+	if err != nil {
+		return nil, fmt.Errorf("creating default config: %w", err)
+	}
 	conf.RemoveProviderExcept(provider)
 
 	// set a lower default for QEMU's state disk

@@ -183,7 +183,7 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+			config := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), tc.provider)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			if tc.idFile != nil {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))

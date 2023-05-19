@@ -156,7 +156,7 @@ func TestInitialize(t *testing.T) {
 			// File system preparation
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+			config := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), tc.provider)
 			if tc.configMutator != nil {
 				tc.configMutator(config)
 			}
@@ -427,7 +427,7 @@ func TestAttestation(t *testing.T) {
 	fileHandler := file.NewHandler(fs)
 	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, existingIDFile, file.OptNone))
 
-	cfg := config.Default()
+	cfg := config.DefaultWithPanic()
 	cfg.Image = "image"
 	cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)

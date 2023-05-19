@@ -242,7 +242,11 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 				Measurements: cfgV2.Provider.Azure.Measurements,
 			}
 		} else {
-			cfgV3.Attestation.AzureSEVSNP = config.DefaultForAzureSEVSNP()
+			azureSEVSNP, err := config.DefaultForAzureSEVSNP()
+			if err != nil {
+				return err
+			}
+			cfgV3.Attestation.AzureSEVSNP = azureSEVSNP
 			cfgV3.Attestation.AzureSEVSNP.Measurements = cfgV2.Provider.Azure.Measurements
 			cfgV3.Attestation.AzureSEVSNP.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
 				AcceptedKeyDigests: cfgV2.Provider.Azure.IDKeyDigest,

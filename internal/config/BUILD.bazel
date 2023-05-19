@@ -20,6 +20,7 @@ go_library(
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
+        "//internal/attestationapi",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
         "//internal/config/imageversion",

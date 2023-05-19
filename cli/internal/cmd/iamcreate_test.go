@@ -275,7 +275,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
 			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.DefaultWithPanic().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")
@@ -554,7 +554,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
 			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.DefaultWithPanic().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")
@@ -861,7 +861,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
 			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().String("kubernetes", semver.MajorMinor(config.DefaultWithPanic().KubernetesVersion), "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")

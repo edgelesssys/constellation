@@ -297,7 +297,11 @@ type AttestationConfig struct {
 }
 
 // Default returns a struct with the default config.
-func Default() *Config {
+func Default() (*Config, error) {
+	azureSEVSNP, err := DefaultForAzureSEVSNP()
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
 		Version:             Version3,
 		Image:               defaultImage,
@@ -357,12 +361,21 @@ func Default() *Config {
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
-			AzureSEVSNP:        DefaultForAzureSEVSNP(),
+			AzureSEVSNP:        azureSEVSNP,
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
 			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
+	}, nil
+}
+
+// DefaultWithPanic returns a struct with the default config.
+func DefaultWithPanic() *Config {
+	conf, err := Default()
+	if err != nil {
+		panic(err)
 	}
+	return conf
 }
 
 // fromFile returns config file with `name` read from `fileHandler` by parsing
@@ -404,7 +417,11 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	// Backwards compatibility: configs without the field `microserviceVersion` are valid in version 2.6.
 	// In case the field is not set in an old config we prefill it with the default value.
 	if c.MicroserviceVersion == "" {
-		c.MicroserviceVersion = Default().MicroserviceVersion
+		azureSEVSNP, err := Default()
+		if err != nil {
+			return nil, err
+		}
+		c.MicroserviceVersion = azureSEVSNP.MicroserviceVersion
 	}
 
 	return c, c.Validate(force)

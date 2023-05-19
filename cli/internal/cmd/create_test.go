@@ -27,7 +27,7 @@ func TestCreate(t *testing.T) {
 	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), provider)))
 		return fs
 	}
 	idFile := clusterid.File{IP: "192.0.2.1"}
@@ -114,7 +114,7 @@ func TestCreate(t *testing.T) {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -129,7 +129,7 @@ func TestCreate(t *testing.T) {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -162,7 +162,7 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
 			creator:             &stubCloudCreator{},

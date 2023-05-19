@@ -30,6 +30,8 @@ import (
 
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
+	azureSEVSNP, err := config.DefaultForAzureSEVSNP()
+	require.NoError(t, err)
 	testCases := map[string]struct {
 		upgrader stubUpgrader
 		fetcher  stubImageFetcher
@@ -38,12 +40,12 @@ func TestUpgradeApply(t *testing.T) {
 		stdin    string
 	}{
 		"success": {
-			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			upgrader: stubUpgrader{currentConfig: azureSEVSNP},
 			yesFlag:  true,
 		},
 		"nodeVersion some error": {
 			upgrader: stubUpgrader{
-				currentConfig:  config.DefaultForAzureSEVSNP(),
+				currentConfig:  azureSEVSNP,
 				nodeVersionErr: someErr,
 			},
 			wantErr: true,
@@ -51,14 +53,14 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"nodeVersion in progress error": {
 			upgrader: stubUpgrader{
-				currentConfig:  config.DefaultForAzureSEVSNP(),
+				currentConfig:  azureSEVSNP,
 				nodeVersionErr: kubernetes.ErrInProgress,
 			},
 			yesFlag: true,
 		},
 		"helm other error": {
 			upgrader: stubUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
+				currentConfig: azureSEVSNP,
 				helmErr:       someErr,
 			},
 			wantErr: true,
@@ -67,7 +69,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"check terraform error": {
 			upgrader: stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
+				currentConfig:     azureSEVSNP,
 				checkTerraformErr: someErr,
 			},
 			fetcher: stubImageFetcher{},
@@ -76,7 +78,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"abort": {
 			upgrader: stubUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
+				currentConfig: azureSEVSNP,
 				terraformDiff: true,
 			},
 			fetcher: stubImageFetcher{},
@@ -85,7 +87,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"clean terraform error": {
 			upgrader: stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
+				currentConfig:     azureSEVSNP,
 				cleanTerraformErr: someErr,
 				terraformDiff:     true,
 			},
@@ -95,7 +97,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"plan terraform error": {
 			upgrader: stubUpgrader{
-				currentConfig:    config.DefaultForAzureSEVSNP(),
+				currentConfig:    azureSEVSNP,
 				planTerraformErr: someErr,
 			},
 			fetcher: stubImageFetcher{},
@@ -104,7 +106,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"apply terraform error": {
 			upgrader: stubUpgrader{
-				currentConfig:     config.DefaultForAzureSEVSNP(),
+				currentConfig:     azureSEVSNP,
 				applyTerraformErr: someErr,
 				terraformDiff:     true,
 			},
@@ -114,7 +116,7 @@ func TestUpgradeApply(t *testing.T) {
 		},
 		"fetch reference error": {
 			upgrader: stubUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
+				currentConfig: azureSEVSNP,
 			},
 			fetcher: stubImageFetcher{fetchReferenceErr: someErr},
 			wantErr: true,
@@ -138,7 +140,7 @@ func TestUpgradeApply(t *testing.T) {
 			}
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
+			cfg := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 

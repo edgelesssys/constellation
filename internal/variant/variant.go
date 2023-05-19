@@ -82,7 +82,7 @@ func GetAvailableAttestationTypes() []Variant {
 	for _, k := range keys {
 		res = append(res, providerAttestationMapping[k]...)
 	}
-	return removeDuplicate(res)
+	return RemoveDuplicate(res)
 }
 
 // Getter returns an ASN.1 Object Identifier.
@@ -259,9 +259,10 @@ func (QEMUTDX) Equal(other Getter) bool {
 	return other.OID().Equal(QEMUTDX{}.OID())
 }
 
-func removeDuplicate(sliceList []Variant) []Variant {
-	allKeys := make(map[Variant]bool)
-	list := []Variant{}
+// RemoveDuplicate removes duplicate elements from a slice.
+func RemoveDuplicate[T comparable](sliceList []T) []T {
+	allKeys := make(map[T]bool)
+	list := []T{}
 	for _, item := range sliceList {
 		if _, value := allKeys[item]; !value {
 			allKeys[item] = true

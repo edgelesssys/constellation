@@ -8,16 +8,19 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestationapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/config/version"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // AzureSEVSNP is the configuration for Azure SEV-SNP attestation.
@@ -47,20 +50,26 @@ type AzureSEVSNP struct {
 
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers are hard coded and should be updated with each new release.
-func DefaultForAzureSEVSNP() *AzureSEVSNP {
+func DefaultForAzureSEVSNP() (*AzureSEVSNP, error) {
+	ctx := context.Background()
+	version, err := attestationapi.GetAzureSEVSNPVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: snpversion.GetLatest(snpversion.Bootloader),
-		TEEVersion:        snpversion.GetLatest(snpversion.TEE),
-		SNPVersion:        snpversion.GetLatest(snpversion.SNP),
-		MicrocodeVersion:  snpversion.GetLatest(snpversion.Microcode),
+		BootloaderVersion: version.Bootloader,
+		TEEVersion:        version.TEE,
+		SNPVersion:        version.SNP,
+		MicrocodeVersion:  version.Microcode,
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
 		},
 		// AMD root key. Received from the AMD Key Distribution System API (KDS).
 		AMDRootKey: mustParsePEM(`-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAIC\nBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBMHsxFDAS\nBgNVBAsMC0VuZ2luZWVyaW5nMQswCQYDVQQGEwJVUzEUMBIGA1UEBwwLU2FudGEg\nQ2xhcmExCzAJBgNVBAgMAkNBMR8wHQYDVQQKDBZBZHZhbmNlZCBNaWNybyBEZXZp\nY2VzMRIwEAYDVQQDDAlBUkstTWlsYW4wHhcNMjAxMDIyMTcyMzA1WhcNNDUxMDIy\nMTcyMzA1WjB7MRQwEgYDVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDAS\nBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5j\nZWQgTWljcm8gRGV2aWNlczESMBAGA1UEAwwJQVJLLU1pbGFuMIICIjANBgkqhkiG\n9w0BAQEFAAOCAg8AMIICCgKCAgEA0Ld52RJOdeiJlqK2JdsVmD7FktuotWwX1fNg\nW41XY9Xz1HEhSUmhLz9Cu9DHRlvgJSNxbeYYsnJfvyjx1MfU0V5tkKiU1EesNFta\n1kTA0szNisdYc9isqk7mXT5+KfGRbfc4V/9zRIcE8jlHN61S1ju8X93+6dxDUrG2\nSzxqJ4BhqyYmUDruPXJSX4vUc01P7j98MpqOS95rORdGHeI52Naz5m2B+O+vjsC0\n60d37jY9LFeuOP4Meri8qgfi2S5kKqg/aF6aPtuAZQVR7u3KFYXP59XmJgtcog05\ngmI0T/OitLhuzVvpZcLph0odh/1IPXqx3+MnjD97A7fXpqGd/y8KxX7jksTEzAOg\nbKAeam3lm+3yKIcTYMlsRMXPcjNbIvmsBykD//xSniusuHBkgnlENEWx1UcbQQrs\n+gVDkuVPhsnzIRNgYvM48Y+7LGiJYnrmE8xcrexekBxrva2V9TJQqnN3Q53kt5vi\nQi3+gCfmkwC0F0tirIZbLkXPrPwzZ0M9eNxhIySb2npJfgnqz55I0u33wh4r0ZNQ\neTGfw03MBUtyuzGesGkcw+loqMaq1qR4tjGbPYxCvpCq7+OgpCCoMNit2uLo9M18\nfHz10lOMT8nWAUvRZFzteXCm+7PHdYPlmQwUw3LvenJ/ILXoQPHfbkH0CyPfhl1j\nWhJFZasCAwEAAaN+MHwwDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSFrBrRQ/fI\nrFXUxR1BSKvVeErUUzAPBgNVHRMBAf8EBTADAQH/MDoGA1UdHwQzMDEwL6AtoCuG\nKWh0dHBzOi8va2RzaW50Zi5hbWQuY29tL3ZjZWsvdjEvTWlsYW4vY3JsMEYGCSqG\nSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZI\nAWUDBAICBQCiAwIBMKMDAgEBA4ICAQC6m0kDp6zv4Ojfgy+zleehsx6ol0ocgVel\nETobpx+EuCsqVFRPK1jZ1sp/lyd9+0fQ0r66n7kagRk4Ca39g66WGTJMeJdqYriw\nSTjjDCKVPSesWXYPVAyDhmP5n2v+BYipZWhpvqpaiO+EGK5IBP+578QeW/sSokrK\ndHaLAxG2LhZxj9aF73fqC7OAJZ5aPonw4RE299FVarh1Tx2eT3wSgkDgutCTB1Yq\nzT5DuwvAe+co2CIVIzMDamYuSFjPN0BCgojl7V+bTou7dMsqIu/TW/rPCX9/EUcp\nKGKqPQ3P+N9r1hjEFY1plBg93t53OOo49GNI+V1zvXPLI6xIFVsh+mto2RtgEX/e\npmMKTNN6psW88qg7c1hTWtN6MbRuQ0vm+O+/2tKBF2h8THb94OvvHHoFDpbCELlq\nHnIYhxy0YKXGyaW1NjfULxrrmxVW4wcn5E8GddmvNa6yYm8scJagEi13mhGu4Jqh\n3QU3sf8iUSUr09xQDwHtOQUVIqx4maBZPBtSMf+qUDtjXSSq8lfWcd8bLr9mdsUn\nJZJ0+tuPMKmBnSH860llKk+VpVQsgqbzDIvOLvD6W1Umq25boxCYJ+TuBoa4s+HH\nCViAvgT9kf/rBq1d+ivj6skkHxuzcxbk1xv6ZGxrteJxVH7KlX7YRdZ6eARKwLe4\nAFZEAwoKCQ==\n-----END CERTIFICATE-----\n`),
-	}
+	}, nil
 }
 
 // GetVariant returns azure-sev-snp as the variant.
@@ -97,23 +106,47 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // UnmarshalYAML implements a custom unmarshaler to support setting "latest" as version.
-func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(any) error) error {
+func (a *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	aux := &fusedAzureSEVSNP{
-		auxAzureSEVSNP: (*auxAzureSEVSNP)(c),
+		auxAzureSEVSNP: (*auxAzureSEVSNP)(a),
 	}
 	if err := unmarshal(aux); err != nil {
 		return fmt.Errorf("unmarshal AzureSEVSNP: %w", err)
 	}
-	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
+	a = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
 
-	for _, versionType := range []snpversion.Type{snpversion.Bootloader, snpversion.TEE, snpversion.SNP, snpversion.Microcode} {
-		if !convertLatestToNumber(c, versionType, aux) {
-			if err := convertStringToUint(c, versionType, aux); err != nil {
-				return fmt.Errorf("convert %s version to number: %w", versionType, err)
+	versions, err := attestationapi.GetAzureSEVSNPVersion(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get AzureSEVSNP versions: %w", err)
+	}
+	for _, versionType := range []attestationapi.Type{attestationapi.Bootloader, attestationapi.TEE, attestationapi.SNP, attestationapi.Microcode} {
+		if !convertLatestToNumber(a, versions, versionType, aux) {
+			if err := convertStringToUint(a, versionType, aux); err != nil {
+				return fmt.Errorf("failed to convert %s version to number: %w", versionType, err)
 			}
 		}
 	}
 	return nil
+}
+
+func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType attestationapi.Type, aux *fusedAzureSEVSNP) (*uint8, *string) {
+	var v *uint8
+	var stringV *string
+	switch versionType {
+	case attestationapi.Bootloader:
+		v = &c.BootloaderVersion
+		stringV = &aux.BootloaderVersion
+	case attestationapi.TEE:
+		v = &c.TEEVersion
+		stringV = &aux.TEEVersion
+	case attestationapi.SNP:
+		v = &c.SNPVersion
+		stringV = &aux.SNPVersion
+	case attestationapi.Microcode:
+		v = &c.MicrocodeVersion
+		stringV = &aux.MicrocodeVersion
+	}
+	return v, stringV
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
@@ -180,13 +213,13 @@ type fusedAzureSEVSNP struct {
 	//   Lowest acceptable bootloader version.
 	BootloaderVersion string `yaml:"bootloaderVersion"`
 	// description: |
-	//   Lowest acceptable bootloader version.
+	//   Lowest acceptable TEE version.
 	TEEVersion string `yaml:"teeVersion"`
 	// description: |
-	//   Lowest acceptable bootloader version.
+	//   Lowest acceptable SEV-SNP version.
 	SNPVersion string `yaml:"snpVersion"`
 	// description: |
-	//   Lowest acceptable bootloader version.
+	//   Lowest acceptable microcode version.
 	MicrocodeVersion string `yaml:"microcodeVersion"`
 }
 
@@ -201,29 +234,11 @@ func convertStringToUint(c *AzureSEVSNP, versionType snpversion.Type, aux *fused
 	return nil
 }
 
-func convertLatestToNumber(c *AzureSEVSNP, versionType snpversion.Type, aux *fusedAzureSEVSNP) bool {
+func convertLatestToNumber(c *AzureSEVSNP, versions versionsapi.AzureSEVSNPVersion, versionType version.Type, aux *fusedAzureSEVSNP) bool {
 	v, stringV := getUintAndStringPtrToVersion(c, versionType, aux)
 	if strings.ToLower(*stringV) == "latest" {
-		*v = snpversion.GetLatest(versionType)
+		*v = attestationapi.GetVersionByType(versions, versionType)
 		return true
 	}
 	return false
-}
-
-func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType version.Type, aux *fusedAzureSEVSNP) (versionUint *uint8, versionString *string) {
-	switch versionType {
-	case version.Bootloader:
-		versionUint = &c.BootloaderVersion
-		versionString = &aux.BootloaderVersion
-	case version.TEE:
-		versionUint = &c.TEEVersion
-		versionString = &aux.TEEVersion
-	case version.SNP:
-		versionUint = &c.SNPVersion
-		versionString = &aux.SNPVersion
-	case version.Microcode:
-		versionUint = &c.MicrocodeVersion
-		versionString = &aux.MicrocodeVersion
-	}
-	return
 }

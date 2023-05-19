@@ -46,7 +46,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 	}{
 		"success": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.3"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
@@ -62,7 +62,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"only k8s upgrade": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.2"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
@@ -83,7 +83,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"only image upgrade": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.3"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
 				return conf
@@ -104,7 +104,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"not an upgrade": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.2"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[0]
 				return conf
@@ -120,7 +120,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"upgrade in progress": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.3"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
@@ -139,7 +139,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"get error": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.3"
 				return conf
 			}(),
@@ -151,7 +151,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"image too new valid k8s": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.4.2"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
@@ -173,7 +173,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		},
 		"apply returns bad object": {
 			conf: func() *config.Config {
-				conf := config.Default()
+				conf := config.DefaultWithPanic()
 				conf.Image = "v1.2.3"
 				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
 				return conf
