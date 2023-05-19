@@ -191,7 +191,6 @@ When building from source and not using Oh-My-Zsh, you can install the completio
 
 1. Locate the completion file, per default, it is located in `$HOME/.bazel/bin`
 2. Add a file with the following to your `$fpath`
-
   ```zsh
   fpath[1,0]=~/.zsh/completion/
   mkdir -p ~/.zsh/completion/
@@ -199,13 +198,12 @@ When building from source and not using Oh-My-Zsh, you can install the completio
   ```
 3. When installing for the first time, you may need to run `rm -f ~/.zcompdump; compinit` to rebuild the completion cache.
 4. (Optional) Add the following to your `.zshrc`
-
-    ```zsh
-    # This way the completion script does not have to parse Bazel's options
-    # repeatedly.  The directory in cache-path must be created manually.
-    zstyle ':completion:*' use-cache on
-    zstyle ':completion:*' cache-path ~/.zsh/cache
-    ```
+  ```zsh
+  # This way the completion script does not have to parse Bazel's options
+  # repeatedly.  The directory in cache-path must be created manually.
+  zstyle ':completion:*' use-cache on
+  zstyle ':completion:*' cache-path ~/.zsh/cache
+  ```
 
 # Image export
 
