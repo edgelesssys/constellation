@@ -64,7 +64,7 @@ runs:
         cat metadata.json
 
         issueURL=$(
-        bazelisk run //bazel/ci:ghh -- create-project-issue \
+        bazel run //bazel/ci:ghh -- create-project-issue \
           --body body.md \
           --metadata metadata.json \
           -v

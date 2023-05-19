@@ -51,12 +51,12 @@ jobs:
         if: startsWith(github.head_ref, 'renovate/')
         shell: bash
         run: |
-          bazelisk run //bazel/ci:deps_mirror_upgrade
-          bazelisk run //bazel/ci:deps_mirror_upload
+          bazel run //bazel/ci:deps_mirror_upgrade
+          bazel run //bazel/ci:deps_mirror_upload
 
       - name: Run Bazel tidy
         shell: bash
-        run: bazelisk run //:tidy
+        run: bazel run //:tidy
 
       - name: Check if untidy
         id: untidy
@@ -75,7 +75,7 @@ jobs:
 
       - name: Run Bazel generate
         shell: bash
-        run: bazelisk run //:generate
+        run: bazel run //:generate
 
       - name: Check if ungenerated
         id: ungenerated
@@ -121,7 +121,7 @@ jobs:
 
       - name: Run Bazel check
         shell: bash
-        run: bazelisk run //:check
+        run: bazel run //:check
 
       # The following steps are only executed if the previous tidy check failed
       # and the action runs on an renovate branch. In this case, we tidy all

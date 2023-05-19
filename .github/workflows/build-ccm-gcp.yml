@@ -48,7 +48,7 @@ jobs:
 
       - name: Build CCM
         run: |
-          bazelisk build //cmd/cloud-controller-manager:cloud-controller-manager
+          bazel build //cmd/cloud-controller-manager:cloud-controller-manager
 
       - name: Copy CCM
         run: |
