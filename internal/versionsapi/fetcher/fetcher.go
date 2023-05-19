@@ -30,7 +30,7 @@ type Fetcher struct {
 // NewFetcher returns a new Fetcher.
 func NewFetcher() *Fetcher {
 	return &Fetcher{
-		httpc: http.DefaultClient,
+		httpc: &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}, // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
 	}
 }
 
