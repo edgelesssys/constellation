@@ -29,8 +29,8 @@ test --//bazel/settings:tpm_simulator
 # set registry flag alias
 build --flag_alias=container_prefix=//bazel/settings:container_prefix
 
-# disable test caching (rerun all test cases even if they passed before)
-test --cache_test_results=no
+# build only what is needed for tests
+test --build_tests_only
 
 # bazel config for debug builds
 build:debug --compilation_mode=dbg --strip=never
