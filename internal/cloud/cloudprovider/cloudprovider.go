@@ -73,6 +73,8 @@ func FromString(s string) Provider {
 		return GCP
 	case "openstack":
 		return OpenStack
+	case "stackit":
+		return OpenStack // StackIT uses OpenStack, use this as a workaround to support commands using "stackit"
 	case "qemu":
 		return QEMU
 	default:

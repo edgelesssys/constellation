@@ -25,7 +25,7 @@ import (
 
 func newConfigGenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "generate {aws|azure|gcp|openstack|qemu}",
+		Use:   "generate {aws|azure|gcp|openstack|qemu|stackit}",
 		Short: "Generate a default configuration file",
 		Long:  "Generate a default configuration file for your selected cloud provider.",
 		Args: cobra.MatchAll(
@@ -186,7 +186,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 func generateCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {
 	case 0:
-		return []string{"aws", "gcp", "azure", "qemu"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{"aws", "gcp", "azure", "qemu", "stackit"}, cobra.ShellCompDirectiveNoFileComp
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}

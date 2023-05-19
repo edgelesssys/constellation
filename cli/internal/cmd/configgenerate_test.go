@@ -82,23 +82,34 @@ func TestConfigGenerateDefault(t *testing.T) {
 	assert.Equal(*config.Default(), readConfig)
 }
 
-func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
+	providers := []cloudprovider.Provider{
+		cloudprovider.AWS,
+		cloudprovider.Azure,
+		cloudprovider.GCP,
+		cloudprovider.OpenStack,
+	}
 
-	fileHandler := file.NewHandler(afero.NewMemMapFs())
-	cmd := newConfigGenerateCmd()
+	for _, provider := range providers {
+		t.Run(provider.String(), func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
 
-	wantConf := config.Default()
-	wantConf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			cmd := newConfigGenerateCmd()
 
-	cg := &configGenerateCmd{log: logger.NewTest(t)}
-	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
+			wantConf := config.Default()
+			wantConf.RemoveProviderAndAttestationExcept(provider)
 
-	var readConfig config.Config
-	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
-	assert.NoError(err)
-	assert.Equal(*wantConf, readConfig)
+			cg := &configGenerateCmd{log: logger.NewTest(t)}
+			require.NoError(cg.configGenerate(cmd, fileHandler, provider))
+
+			var readConfig config.Config
+			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
+			assert.NoError(err)
+			assert.Equal(*wantConf, readConfig)
+		})
+	}
 }
 
 func TestConfigGenerateDefaultExists(t *testing.T) {
@@ -153,6 +164,7 @@ func TestNoValidProviderAttestationCombination(t *testing.T) {
 		{cloudprovider.AWS, variant.AzureTrustedLaunch{}},
 		{cloudprovider.GCP, variant.AWSNitroTPM{}},
 		{cloudprovider.QEMU, variant.GCPSEVES{}},
+		{cloudprovider.OpenStack, variant.AWSNitroTPM{}},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
