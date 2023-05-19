@@ -22,7 +22,7 @@ on:
       - ".github/workflows/test-unittest.yml"
 
 jobs:
-  test-linux:
+  test-unittest:
     runs-on: [self-hosted, bazel-cached]
     steps:
       - name: Checkout
@@ -40,29 +40,3 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
         run: bazel test //... --test_output=errors --config=nostamp
-
-  test-darwin:
-    runs-on: macos-12
-    steps:
-      - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-        with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-
-      - name: Setup bazel
-        uses: ./.github/actions/setup_bazel
-        with:
-          useCache: "true"
-          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
-
-      - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
-        with:
-          go-version: "1.20.4"
-          cache: true
-
-      - name: CLI Unit Tests
-        run: bazel test //cli/... --test_output=errors
-
-      - name: cdbg/debugd Unit Tests
-        run: bazel test //debugd/... --test_output=errors
