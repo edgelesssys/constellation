@@ -11,7 +11,7 @@ on:
 jobs:
   tidycheck:
     name: tidy, check and generate
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, bazel-cached]
     permissions:
       id-token: write
       contents: read
