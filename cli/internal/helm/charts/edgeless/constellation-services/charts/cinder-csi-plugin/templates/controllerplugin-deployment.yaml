@@ -1,0 +1,194 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ include "cinder-csi.name" . }}-controllerplugin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cinder-csi.controllerplugin.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.csi.plugin.controllerPlugin.replicas }}
+  strategy:
+    type: {{ .Values.csi.plugin.controllerPlugin.strategy.type }}
+{{- if eq .Values.csi.plugin.controllerPlugin.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.csi.plugin.controllerPlugin.strategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.csi.plugin.controllerPlugin.strategy.rollingUpdate.maxSurge }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "cinder-csi.controllerplugin.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cinder-csi.controllerplugin.labels" . | nindent 8 }}
+    spec:
+      serviceAccount: csi-cinder-controller-sa
+      containers:
+        - name: csi-attacher
+          image: "{{ .Values.csi.attacher.image.repository }}:{{ .Values.csi.attacher.image.tag }}"
+          imagePullPolicy: {{ .Values.csi.attacher.image.pullPolicy }}
+          args:
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout={{ .Values.timeout }}"
+            - "--leader-election=true"
+            - "--default-fstype=ext4"
+            {{- if .Values.csi.attacher.extraArgs }}
+            {{- with .Values.csi.attacher.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources: {{ toYaml .Values.csi.attacher.resources | nindent 12 }}
+        - name: csi-provisioner
+          image: "{{ .Values.csi.provisioner.image.repository }}:{{ .Values.csi.provisioner.image.tag }}"
+          imagePullPolicy: {{ .Values.csi.provisioner.image.pullPolicy }}
+          args:
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout={{ .Values.timeout }}"
+            - "--leader-election=true"
+            - "--default-fstype=ext4"
+            - "--feature-gates=Topology={{ .Values.csi.provisioner.topology }}"
+            - "--extra-create-metadata"
+            {{- if .Values.csi.provisioner.extraArgs }}
+            {{- with .Values.csi.provisioner.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources: {{ toYaml .Values.csi.provisioner.resources | nindent 12 }}
+        - name: csi-snapshotter
+          image: "{{ .Values.csi.snapshotter.image.repository }}:{{ .Values.csi.snapshotter.image.tag }}"
+          imagePullPolicy: {{ .Values.csi.snapshotter.image.pullPolicy }}
+          args:
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout={{ .Values.timeout }}"
+            - "--leader-election=true"
+            {{- if .Values.csi.snapshotter.extraArgs }}
+            {{- with .Values.csi.snapshotter.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - mountPath: /var/lib/csi/sockets/pluginproxy/
+              name: socket-dir
+          resources: {{ toYaml .Values.csi.snapshotter.resources | nindent 12 }}
+        - name: csi-resizer
+          image: "{{ .Values.csi.resizer.image.repository }}:{{ .Values.csi.resizer.image.tag }}"
+          imagePullPolicy: {{ .Values.csi.resizer.image.pullPolicy }}
+          args:
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            - "--timeout={{ .Values.timeout }}"
+            - "--handle-volume-inuse-error=false"
+            - "--leader-election=true"
+            {{- if .Values.csi.resizer.extraArgs }}
+            {{- with .Values.csi.resizer.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          resources: {{ toYaml .Values.csi.resizer.resources | nindent 12 }}
+        - name: liveness-probe
+          image: "{{ .Values.csi.livenessprobe.image.repository }}:{{ .Values.csi.livenessprobe.image.tag }}"
+          imagePullPolicy: {{ .Values.csi.livenessprobe.image.pullPolicy }}
+          args:
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--csi-address=$(ADDRESS)"
+            {{- if .Values.csi.livenessprobe.extraArgs }}
+            {{- with .Values.csi.livenessprobe.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - mountPath: /var/lib/csi/sockets/pluginproxy/
+              name: socket-dir
+          resources: {{ toYaml .Values.csi.livenessprobe.resources | nindent 12 }}
+        - name: cinder-csi-plugin
+          image: "{{ .Values.csi.plugin.image.repository }}:{{ .Values.csi.plugin.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.csi.plugin.image.pullPolicy }}
+          args:
+            - /bin/cinder-csi-plugin
+            - "-v={{ .Values.logVerbosityLevel }}"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--cloud-config=$(CLOUD_CONFIG)"
+            - "--cluster=$(CLUSTER_NAME)"
+            - "--kms-addr={{ .Values.csi.kms.keyServiceName }}.{{ .Values.csi.kms.keyServiceNamespace | default .Release.Namespace }}:{{ .Values.csi.kms.keyServicePort }}"
+            {{- if .Values.csi.plugin.extraArgs }}
+            {{- with .Values.csi.plugin.extraArgs }}
+            {{- tpl . $ | trim | nindent 12 }}
+            {{- end }}
+            {{- end }}
+          env:
+            - name: CSI_ENDPOINT
+              value: unix://csi/csi.sock
+            - name: CLOUD_CONFIG
+              value: /etc/kubernetes/{{ .Values.secret.filename }}
+            - name: CLUSTER_NAME
+              value: "{{ .Values.clusterID }}"
+          ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+          # The probe
+          livenessProbe:
+            failureThreshold: {{ .Values.csi.livenessprobe.failureThreshold }}
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: {{ .Values.csi.livenessprobe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.csi.livenessprobe.timeoutSeconds }}
+            periodSeconds: {{ .Values.csi.livenessprobe.periodSeconds }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: cloud-config
+              mountPath: /etc/kubernetes/{{ .Values.secret.filename }}
+              readOnly: true
+              subPath: {{ .Values.secret.filename }}
+          resources: {{ toYaml .Values.csi.plugin.resources | nindent 12 }}
+      volumes:
+        - name: socket-dir
+          emptyDir:
+        - name: cloud-config
+        {{- if .Values.secret.enabled }}
+          secret:
+            secretName: {{ .Values.secret.name }}
+        {{- else }}
+          hostPath:
+            path: /etc/kubernetes
+        {{- end }}
+      affinity: {{ toYaml .Values.csi.plugin.controllerPlugin.affinity | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.csi.plugin.controllerPlugin.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.csi.plugin.controllerPlugin.tolerations | nindent 8 }}
+      imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+    {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+    {{- end }}
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

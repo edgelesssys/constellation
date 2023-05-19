@@ -1,0 +1,17 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "secretData": {
+            "description": "Cloud INI secret used for cinder.",
+            "type": "string",
+            "examples": [
+                "[Global]\nauth-url = ..."
+            ]
+        }
+    },
+    "required": [
+        "secretData"
+    ],
+    "title": "Values",
+    "type": "object"
+}

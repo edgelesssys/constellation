@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -15,8 +16,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
@@ -87,7 +90,7 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 
 	wantConf := config.Default()
-	wantConf.RemoveProviderExcept(cloudprovider.GCP)
+	wantConf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
@@ -138,4 +141,134 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
 
 	assert.Equal(*config.Default(), readConfig)
+}
+
+func TestNoValidProviderAttestationCombination(t *testing.T) {
+	assert := assert.New(t)
+	tests := []struct {
+		provider    cloudprovider.Provider
+		attestation variant.Variant
+	}{
+		{cloudprovider.Azure, variant.AWSNitroTPM{}},
+		{cloudprovider.AWS, variant.AzureTrustedLaunch{}},
+		{cloudprovider.GCP, variant.AWSNitroTPM{}},
+		{cloudprovider.QEMU, variant.GCPSEVES{}},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			_, err := createConfigWithAttestationType(test.provider, test.attestation)
+			assert.Error(err)
+		})
+	}
+}
+
+func TestValidProviderAttestationCombination(t *testing.T) {
+	defaultAttestation := config.Default().Attestation
+	tests := []struct {
+		provider    cloudprovider.Provider
+		attestation variant.Variant
+		expected    config.AttestationConfig
+	}{
+		{
+			cloudprovider.Azure,
+			variant.AzureTrustedLaunch{},
+			config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch},
+		},
+		{
+			cloudprovider.Azure,
+			variant.AzureSEVSNP{},
+			config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
+		},
+
+		{
+			cloudprovider.AWS,
+			variant.AWSNitroTPM{},
+			config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM},
+		},
+		{
+			cloudprovider.GCP,
+			variant.GCPSEVES{},
+			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
+		},
+
+		{
+			cloudprovider.QEMU,
+			variant.QEMUVTPM{},
+			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
+		},
+		{
+			cloudprovider.OpenStack,
+			variant.QEMUVTPM{},
+			config.AttestationConfig{QEMUVTPM: defaultAttestation.QEMUVTPM},
+		},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("Provider:%s,Attestation:%s", test.provider, test.attestation), func(t *testing.T) {
+			sut, err := createConfigWithAttestationType(test.provider, test.attestation)
+			assert := assert.New(t)
+			assert.NoError(err)
+			assert.Equal(test.expected, sut.Attestation)
+		})
+	}
+}
+
+func TestAttestationArgument(t *testing.T) {
+	defaultAttestation := config.Default().Attestation
+	tests := []struct {
+		name        string
+		provider    cloudprovider.Provider
+		expectErr   bool
+		expectedCfg config.AttestationConfig
+		setFlag     func(*cobra.Command) error
+	}{
+		{
+			name:      "InvalidAttestationArgument",
+			provider:  cloudprovider.Unknown,
+			expectErr: true,
+			setFlag: func(cmd *cobra.Command) error {
+				return cmd.Flags().Set("attestation", "unknown")
+			},
+		},
+		{
+			name:      "ValidAttestationArgument",
+			provider:  cloudprovider.Azure,
+			expectErr: false,
+			setFlag: func(cmd *cobra.Command) error {
+				return cmd.Flags().Set("attestation", "azure-trustedlaunch")
+			},
+			expectedCfg: config.AttestationConfig{AzureTrustedLaunch: defaultAttestation.AzureTrustedLaunch},
+		},
+		{
+			name:      "WithoutAttestationArgument",
+			provider:  cloudprovider.Azure,
+			expectErr: false,
+			setFlag: func(cmd *cobra.Command) error {
+				return nil
+			},
+			expectedCfg: config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require := assert.New(t)
+			assert := assert.New(t)
+
+			cmd := newConfigGenerateCmd()
+			require.NoError(test.setFlag(cmd))
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+			cg := &configGenerateCmd{log: logger.NewTest(t)}
+			err := cg.configGenerate(cmd, fileHandler, test.provider)
+			if test.expectErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				var readConfig config.Config
+				require.NoError(fileHandler.ReadYAML(constants.ConfigFilename, &readConfig))
+
+				assert.Equal(test.expectedCfg, readConfig.Attestation)
+			}
+		})
+	}
 }

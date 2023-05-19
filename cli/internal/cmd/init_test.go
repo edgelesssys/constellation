@@ -429,7 +429,7 @@ func TestAttestation(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.Image = "image"
-	cfg.RemoveProviderExcept(cloudprovider.QEMU)
+	cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[2] = measurements.WithAllBytes(0x22, measurements.Enforce, measurements.PCRMeasurementLength)
@@ -554,7 +554,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
 	}
 
-	conf.RemoveProviderExcept(csp)
+	conf.RemoveProviderAndAttestationExcept(csp)
 	return conf
 }
 

@@ -51,6 +51,7 @@ systemd
 unspoofable
 updatable
 proxied
+QEMU
 virsh
 [Ww]alkthrough
 whitepaper

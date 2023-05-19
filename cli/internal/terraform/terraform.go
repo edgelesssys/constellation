@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	tfVersion         = ">= 1.2.0"
+	tfVersion         = ">= 1.4.6"
 	terraformVarsFile = "terraform.tfvars"
 )
 

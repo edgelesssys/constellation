@@ -34,6 +34,9 @@ package variant
 import (
 	"encoding/asn1"
 	"fmt"
+	"sort"
+
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
 const (
@@ -45,6 +48,42 @@ const (
 	qemuVTPM           = "qemu-vtpm"
 	qemuTDX            = "qemu-tdx"
 )
+
+var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
+	cloudprovider.AWS:       {AWSNitroTPM{}},
+	cloudprovider.Azure:     {AzureSEVSNP{}, AzureTrustedLaunch{}},
+	cloudprovider.GCP:       {GCPSEVES{}},
+	cloudprovider.QEMU:      {QEMUVTPM{}},
+	cloudprovider.OpenStack: {QEMUVTPM{}},
+}
+
+// GetDefaultAttestation returns the default attestation type for the given provider. If not found, it returns the default variant.
+func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
+	res, ok := providerAttestationMapping[provider]
+	if ok {
+		return res[0]
+	}
+	return Dummy{}
+}
+
+// GetAvailableAttestationTypes returns the available attestation types.
+func GetAvailableAttestationTypes() []Variant {
+	var res []Variant
+
+	// assumes that cloudprovider.Provider is a uint32 to sort the providers and get a consistent order
+	var keys []cloudprovider.Provider
+	for k := range providerAttestationMapping {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return uint(keys[i]) < uint(keys[j])
+	})
+
+	for _, k := range keys {
+		res = append(res, providerAttestationMapping[k]...)
+	}
+	return removeDuplicate(res)
+}
 
 // Getter returns an ASN.1 Object Identifier.
 type Getter interface {
@@ -79,7 +118,20 @@ func FromString(oid string) (Variant, error) {
 	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
 
-// Dummy OID for testing.
+// ValidProvider returns true if the attestation type is valid for the given provider.
+func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
+	validTypes, ok := providerAttestationMapping[provider]
+	if ok {
+		for _, aType := range validTypes {
+			if variant.Equal(aType) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Dummy OID for testfing.
 type Dummy struct{}
 
 // OID returns the struct's object identifier.
@@ -92,7 +144,7 @@ func (Dummy) String() string {
 	return dummy
 }
 
-// Equal returns true if the other variant is also a Dummy.
+// Equal returns true if the other variant is also a Default.
 func (Dummy) Equal(other Getter) bool {
 	return other.OID().Equal(Dummy{}.OID())
 }
@@ -205,4 +257,16 @@ func (QEMUTDX) String() string {
 // Equal returns true if the other variant is also QEMUTDX.
 func (QEMUTDX) Equal(other Getter) bool {
 	return other.OID().Equal(QEMUTDX{}.OID())
+}
+
+func removeDuplicate(sliceList []Variant) []Variant {
+	allKeys := make(map[Variant]bool)
+	list := []Variant{}
+	for _, item := range sliceList {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }

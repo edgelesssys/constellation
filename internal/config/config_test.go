@@ -194,7 +194,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 		"set env works": {
 			confToWrite: func() *Config { // valid config with all, but clientSecretValue
 				c := Default()
-				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
@@ -215,7 +215,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 		"set env overwrites": {
 			confToWrite: func() *Config {
 				c := Default()
-				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
@@ -304,7 +304,7 @@ func TestValidate(t *testing.T) {
 		"default Azure config is not valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.RemoveProviderExcept(cloudprovider.Azure)
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				return cnf
 			}(),
 			wantErr:      true,
@@ -313,7 +313,7 @@ func TestValidate(t *testing.T) {
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.RemoveProviderExcept(cloudprovider.Azure)
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				cnf.Image = "v" + constants.VersionInfo()
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
@@ -334,7 +334,7 @@ func TestValidate(t *testing.T) {
 		"default GCP config is not valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.RemoveProviderExcept(cloudprovider.GCP)
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 				return cnf
 			}(),
 			wantErr:      true,
@@ -343,7 +343,7 @@ func TestValidate(t *testing.T) {
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
-				cnf.RemoveProviderExcept(cloudprovider.GCP)
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 				cnf.Image = "v" + constants.VersionInfo()
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
@@ -452,7 +452,7 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 			assert := assert.New(t)
 
 			conf := Default()
-			conf.RemoveProviderExcept(tc.removeExcept)
+			conf.RemoveProviderAndAttestationExcept(tc.removeExcept)
 
 			assert.Equal(tc.wantAWS, conf.Provider.AWS)
 			assert.Equal(tc.wantAzure, conf.Provider.Azure)
@@ -484,7 +484,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 
 	{ // AWS
 		conf := Default()
-		conf.RemoveProviderExcept(cloudprovider.AWS)
+		conf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
 		for k := range conf.Attestation.AWSNitroTPM.Measurements {
 			delete(conf.Attestation.AWSNitroTPM.Measurements, k)
 		}
@@ -493,7 +493,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	}
 	{ // Azure
 		conf := Default()
-		conf.RemoveProviderExcept(cloudprovider.Azure)
+		conf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 		for k := range conf.Attestation.AzureSEVSNP.Measurements {
 			delete(conf.Attestation.AzureSEVSNP.Measurements, k)
 		}
@@ -502,7 +502,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	}
 	{ // GCP
 		conf := Default()
-		conf.RemoveProviderExcept(cloudprovider.GCP)
+		conf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 		for k := range conf.Attestation.GCPSEVES.Measurements {
 			delete(conf.Attestation.GCPSEVES.Measurements, k)
 		}
@@ -511,7 +511,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	}
 	{ // QEMU
 		conf := Default()
-		conf.RemoveProviderExcept(cloudprovider.QEMU)
+		conf.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 		for k := range conf.Attestation.QEMUVTPM.Measurements {
 			delete(conf.Attestation.QEMUVTPM.Measurements, k)
 		}

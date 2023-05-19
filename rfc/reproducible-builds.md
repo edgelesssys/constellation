@@ -59,7 +59,7 @@ This seems to happen more or less regularly. We should try to avoid a build syst
 * Eliminate dependencies on libraries (make executable static)
 
 Striping metadata from the binary can be done in the building process.
-This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and [`go help build`](https://pkg.go.dev/cmd/go).
+This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and [`go help build`](https://pkg.go.dev/cmd/go)).
 
 * `buildvcs=false`: Omit version control information
 * `-trimpath`: Remove file system paths from executable

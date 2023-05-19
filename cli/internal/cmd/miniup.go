@@ -216,7 +216,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 
 	config := config.Default()
 	config.Name = constants.MiniConstellationUID
-	config.RemoveProviderExcept(cloudprovider.QEMU)
+	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8
 
 	// only release images (e.g. v2.7.0) use the production NVRAM

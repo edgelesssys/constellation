@@ -19,6 +19,7 @@ azure:
 # OpenStack specific configuration
 openstack:
   deployYawolLoadBalancer: false
+  deployCSIDriver: false
 
 # Set one of the tags to true to indicate which CSP you are deploying to.
 tags:

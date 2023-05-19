@@ -194,3 +194,26 @@ domain-name = user-domain-name
 region = region-name
 `, ini.YawolConfiguration())
 }
+
+func TestCinderCSIConfiguration(t *testing.T) {
+	ini := CloudINI{
+		AuthURL:          "auth-url",
+		Username:         "username",
+		Password:         "password",
+		ProjectID:        "project-id",
+		TenantName:       "project-name",
+		UserDomainName:   "user-domain-name",
+		TenantDomainName: "project-domain-name",
+		Region:           "region-name",
+	}
+	assert.Equal(t, `[Global]
+auth-url = auth-url
+username = username
+password = password
+project-id = project-id
+project-name = project-name
+user-domain-name = user-domain-name
+project-domain-name = project-domain-name
+region = region-name
+`, ini.CinderCSIConfiguration())
+}
