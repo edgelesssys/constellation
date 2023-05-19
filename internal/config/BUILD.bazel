@@ -5,9 +5,11 @@ go_library(
     name = "config",
     srcs = [
         "attestation.go",
+        "azure.go",
         "config.go",
         "config_doc.go",
         "image.go",
+        "qemu.go",
         "validation.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/config",
