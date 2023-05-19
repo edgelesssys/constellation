@@ -42,7 +42,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcryptsetup12 libcryptsetup-dev libvirt-dev
 
       - name: Create and populate build folder
-        run: mkdir build && cd build && cmake -DBAZEL:STRING=bazelisk ..
+        run: mkdir build && cd build && cmake ..
 
       - name: Unit Tests
         working-directory: build
