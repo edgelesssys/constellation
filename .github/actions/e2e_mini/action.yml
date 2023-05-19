@@ -49,4 +49,4 @@ runs:
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
-        bazelisk run //e2e/miniconstellation:push_remote_test
+        bazel run //e2e/miniconstellation:push_remote_test
