@@ -167,6 +167,46 @@ Whenever Go code is changed, you will have to run `bazel run //:tidy` to regener
 You can continue to use the default Go language server and editor integration. This will show you different paths for external dependencies and not use the Bazel cache.
 Alternatively, you can use [the go language server integration for Bazel](https://github.com/bazelbuild/rules_go/wiki/Editor-setup). This will use Bazel for dependency resolution and execute Bazel commands for building and testing.
 
+## Command-line completion
+
+[CLI completion for Bazel](https://bazel.build/install/completion) is available for Bash and zsh.
+
+### Bash
+
+When installing Bazel through the APT repository or Homebrew, completion scripts for bash should be installed automatically.
+
+When building from source, you can install the completion script by adding the following line to your `~/.bashrc`:
+
+```bash
+source <path-to-constellation-repo>/bazel/bazel-complete.bash
+```
+
+### Zsh
+
+When installing Bazel through the APT repository or Homebrew, completion scripts for zsh should be installed automatically. When using a heavily customized zsh config, you may need to follow [this workaround](https://bazel.build/install/completion).
+
+When using Oh-My-Zsh, you can simply enable the [`zsh-autocomplete`](https://github.com/marlonrichert/zsh-autocomplete) plugin.
+
+When building from source and not using Oh-My-Zsh, you can install the completion script as follows:
+
+1. Locate the completion file, per default, it is located in `$HOME/.bazel/bin`
+2. Add a file with the following to your `$fpath`
+
+  ```zsh
+  fpath[1,0]=~/.zsh/completion/
+  mkdir -p ~/.zsh/completion/
+  cp /path/from/above/step/_bazel ~/.zsh/completion
+  ```
+3. When installing for the first time, you may need to run `rm -f ~/.zcompdump; compinit` to rebuild the completion cache.
+4. (Optional) Add the following to your `.zshrc`
+
+    ```zsh
+    # This way the completion script does not have to parse Bazel's options
+    # repeatedly.  The directory in cache-path must be created manually.
+    zstyle ':completion:*' use-cache on
+    zstyle ':completion:*' cache-path ~/.zsh/cache
+    ```
+
 # Image export
 
 To download an image you will have to export it first.
