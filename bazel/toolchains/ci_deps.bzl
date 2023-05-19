@@ -398,40 +398,40 @@ def _ghh_deps():
     http_archive(
         name = "com_github_katexochen_ghh_linux_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/753f2095fb0aea24e834b9ceb64d41eb19f8d8f5f04af745ee8dd0ef0e954135",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/3d8f4c4f1aa59b4f983afe87131bf574738973bd18bade8a164dee6bdca22bf8",
             "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_linux_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "753f2095fb0aea24e834b9ceb64d41eb19f8d8f5f04af745ee8dd0ef0e954135",
+        sha256 = "3d8f4c4f1aa59b4f983afe87131bf574738973bd18bade8a164dee6bdca22bf8",
     )
     http_archive(
         name = "com_github_katexochen_ghh_linux_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/ccac401106e7937838420209e9b9bfba438952a251344f5fdf935dfeeaee0043",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/c7a13bb1f32ff984d10246159db003290d4008154b0e92615c7067a180cc8c35",
             "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_linux_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "ccac401106e7937838420209e9b9bfba438952a251344f5fdf935dfeeaee0043",
+        sha256 = "c7a13bb1f32ff984d10246159db003290d4008154b0e92615c7067a180cc8c35",
     )
     http_archive(
         name = "com_github_katexochen_ghh_darwin_amd64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a6c89f1143230697f09d30ad86fc152d7daf2ddee4121dfc0aa89aac087b11c4",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/d4caf11df2ab8d26222c6db35a44f53b5d8bfd0d8b12c79a0b9f8469efd0acfc",
             "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_darwin_amd64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "a6c89f1143230697f09d30ad86fc152d7daf2ddee4121dfc0aa89aac087b11c4",
+        sha256 = "d4caf11df2ab8d26222c6db35a44f53b5d8bfd0d8b12c79a0b9f8469efd0acfc",
     )
     http_archive(
         name = "com_github_katexochen_ghh_darwin_arm64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/4c11127967f8b4d1dc694f7a262243338b090e523c44017fe4a44c8864a6421c",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/7601f0926ba0df7ad36ac05e20a60347f97ac443262dc691bc5060f27d727b39",
             "https://github.com/katexochen/ghh/releases/download/v0.2.1/ghh_0.2.1_darwin_arm64.tar.gz",
         ],
         type = "tar.gz",
         build_file_content = """exports_files(["ghh"], visibility = ["//visibility:public"])""",
-        sha256 = "4c11127967f8b4d1dc694f7a262243338b090e523c44017fe4a44c8864a6421c",
+        sha256 = "7601f0926ba0df7ad36ac05e20a60347f97ac443262dc691bc5060f27d727b39",
     )
