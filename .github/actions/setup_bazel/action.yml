@@ -27,31 +27,42 @@ runs:
         fi
         echo "::endgroup::"
 
-    - name: Bazel repository cache (Linux)
-      uses: actions/cache/restore@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # v3.3.1
-      if: runner.os == 'Linux' && (inputs.useCache == 'true' || inputs.useCache == 'readonly')
-      with:
-        path: |
-          ${{ github.workspace }}/tools/pseudo-version
-          /home/runner/.cache/bazel
-          /home/runner/.cache/shared_bazel_repository_cache
-          /home/runner/.cache/shared_bazel_action_cache
-        key: bazel
+    - name: Configure Bazel (general)
+      shell: bash
+      env:
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        echo "::group::Configure Bazel"
+        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
+        build --color=yes
+        build --terminal_columns=143
+        build --build_metadata=ROLE=CI
+        build --show_progress_rate_limit=5
+        build --curses=yes
+        build --verbose_failures
+        build --announce_rc
+        test --show_timestamps
+        test --keep_going
+        EOF
+        echo "::endgroup::"
 
-    - name: Configure Bazel
+    - name: Configure Bazel (rw)
       shell: bash
       if: inputs.useCache == 'true' || inputs.useCache == 'readonly'
       env:
         BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
+        WORKSPACE: ${{ github.workspace }}
       run: |
         echo "::group::Configure Bazel"
-        cat <<EOF >> ~/.bazelrc
+        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
         build --bes_results_url=https://app.buildbuddy.io/invocation/
         build --bes_backend=grpcs://remote.buildbuddy.io
         build --remote_cache=grpcs://remote.buildbuddy.io
         build --remote_timeout=3600
         build --experimental_remote_build_event_upload=minimal
         build --experimental_remote_cache_compression
+        build --noremote_upload_local_results
+        build --nolegacy_important_outputs
         build --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
         EOF
         echo "::endgroup::"
@@ -61,7 +72,7 @@ runs:
       if: inputs.useCache == 'readonly'
       run: |
         echo "::group::Configure Bazel (readonly)"
-        echo "build --remote_upload_local_results=false" >> ~/.bazelrc
+        echo "build --remote_upload_local_results=false" >> "${WORKSPACE}/.bazeloverwriterc"
         echo "::endgroup::"
 
     - name: Check bazel version
