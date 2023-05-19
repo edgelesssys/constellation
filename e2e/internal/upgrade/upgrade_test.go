@@ -178,7 +178,8 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	cfg.Image = info.shortPath
 	cfg.UpdateMeasurements(info.measurements)
 
-	defaultConfig := config.Default()
+	defaultConfig := config.DefaultWithPanic()
+
 	var kubernetesVersion semver.Semver
 	if kubernetes == "" {
 		kubernetesVersion, err = semver.New(defaultConfig.KubernetesVersion)

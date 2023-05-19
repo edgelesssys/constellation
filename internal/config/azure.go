@@ -104,22 +104,22 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // UnmarshalYAML implements a custom unmarshaler to support setting "latest" as version.
-func (a *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	aux := &fusedAzureSEVSNP{
-		auxAzureSEVSNP: (*auxAzureSEVSNP)(a),
+		auxAzureSEVSNP: (*auxAzureSEVSNP)(c),
 	}
 	if err := unmarshal(aux); err != nil {
 		return fmt.Errorf("failed to unmarshal AzureSEVSNP: %w", err)
 	}
-	a = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
+	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
 
 	versions, err := attestationapi.GetAzureSEVSNPVersion(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to get AzureSEVSNP versions: %w", err)
 	}
 	for _, versionType := range []attestationapi.Type{attestationapi.Bootloader, attestationapi.TEE, attestationapi.SNP, attestationapi.Microcode} {
-		if !convertLatestToNumber(a, versions, versionType, aux) {
-			if err := convertStringToUint(a, versionType, aux); err != nil {
+		if !convertLatestToNumber(c, versions, versionType, aux) {
+			if err := convertStringToUint(c, versionType, aux); err != nil {
 				return fmt.Errorf("failed to convert %s version to number: %w", versionType, err)
 			}
 		}

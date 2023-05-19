@@ -24,11 +24,13 @@ type AzureSEVSNPVersion struct {
 	Microcode uint8 `json:"microcode"`
 }
 
+// AzureSEVSNPVersionGet is the request to get the version information of the specific version in the config api.
 type AzureSEVSNPVersionGet struct {
 	Version string `json:"-"`
 	AzureSEVSNPVersion
 }
 
+// URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionGet) URL() (string, error) {
 	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
@@ -38,20 +40,25 @@ func (i AzureSEVSNPVersionGet) URL() (string, error) {
 	return url.String(), nil
 }
 
+// JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionGet) JSONPath() string {
 	return path.Join(AttestationPath, variant.AzureSEVSNP{}.String(), i.Version)
 }
 
+// ValidateRequest validates the request.
 func (i AzureSEVSNPVersionGet) ValidateRequest() error {
 	return nil
 }
 
+// Validate validates the request.
 func (i AzureSEVSNPVersionGet) Validate() error {
 	return nil
 }
 
+// AzureSEVSNPVersionList is the request to list all versions in the config api.
 type AzureSEVSNPVersionList ([]string)
 
+// URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionList) URL() (string, error) {
 	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
@@ -61,14 +68,17 @@ func (i AzureSEVSNPVersionList) URL() (string, error) {
 	return url.String(), nil
 }
 
+// JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionList) JSONPath() string {
 	return path.Join(AttestationPath, variant.AzureSEVSNP{}.String(), "list")
 }
 
+// ValidateRequest validates the request.
 func (i AzureSEVSNPVersionList) ValidateRequest() error {
 	return nil
 }
 
+// Validate validates the request.
 func (i AzureSEVSNPVersionList) Validate() error {
 	return nil
 }

@@ -28,7 +28,7 @@ const (
 const AttestationPath = "constellation/v1/attestation"
 
 // AzureSEVSNP is the latest version of each component of the Azure SEVSNP.
-// used for testing only
+// used for testing only.
 var AzureSEVSNP = versionsapi.AzureSEVSNPVersion{
 	Bootloader: 2,
 	TEE:        0,
@@ -114,6 +114,7 @@ func (a AttestationVersionRepo) DeleteList(ctx context.Context, attestation vari
 	return a.Put(ctx, path.Join(AttestationPath, attestation.String(), "list"), bt)
 }
 
+// GetVersionByType returns the requested version of the given type.
 func GetVersionByType(res versionsapi.AzureSEVSNPVersion, t Type) uint8 {
 	switch t {
 	case Bootloader:

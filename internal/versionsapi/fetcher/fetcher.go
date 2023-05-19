@@ -54,10 +54,12 @@ func (f *Fetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo)
 	return fetch(ctx, f.httpc, cliInfo)
 }
 
+// FetchAttestationList fetches the version list information from the config API.
 func (f *Fetcher) FetchAttestationList(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionList) (versionsapi.AzureSEVSNPVersionList, error) {
 	return fetch(ctx, f.httpc, attestation)
 }
 
+// FetchAttestationVersion fetches the version information from the config API.
 func (f *Fetcher) FetchAttestationVersion(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionGet) (versionsapi.AzureSEVSNPVersionGet, error) {
 	return fetch(ctx, f.httpc, attestation)
 }

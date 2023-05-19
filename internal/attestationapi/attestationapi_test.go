@@ -3,6 +3,7 @@ package attestationapi_test
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -25,7 +26,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *awsAccessKey == "" || *awsAccessKeyID == "" || *awsBucket == "" || *awsRegion == "" {
 		flag.Usage()
-		panic("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region")
+		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region. Skipping tests.")
+		os.Exit(0)
 	}
 	os.Exit(m.Run())
 }
