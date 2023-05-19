@@ -79,7 +79,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
-	assert.Equal(*config.Default(), readConfig)
+	assert.Equal(*config.DefaultWithPanic(), readConfig)
 }
 
 func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
@@ -89,7 +89,7 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
 
-	wantConf := config.Default()
+	wantConf := config.DefaultWithPanic()
 	wantConf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
@@ -140,7 +140,7 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	var readConfig config.Config
 	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
 
-	assert.Equal(*config.Default(), readConfig)
+	assert.Equal(*config.DefaultWithPanic(), readConfig)
 }
 
 func TestNoValidProviderAttestationCombination(t *testing.T) {
@@ -163,7 +163,7 @@ func TestNoValidProviderAttestationCombination(t *testing.T) {
 }
 
 func TestValidProviderAttestationCombination(t *testing.T) {
-	defaultAttestation := config.Default().Attestation
+	defaultAttestation := config.DefaultWithPanic().Attestation
 	tests := []struct {
 		provider    cloudprovider.Provider
 		attestation variant.Variant
@@ -213,7 +213,7 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 }
 
 func TestAttestationArgument(t *testing.T) {
-	defaultAttestation := config.Default().Attestation
+	defaultAttestation := config.DefaultWithPanic().Attestation
 	tests := []struct {
 		name        string
 		provider    cloudprovider.Provider

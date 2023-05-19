@@ -38,6 +38,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewUpdateableValidator(t *testing.T) {
+	azureSEVSNP, err := config.DefaultForAzureSEVSNP()
+	require.NoError(t, err)
 	testCases := map[string]struct {
 		variant variant.Variant
 		config  config.AttestationCfg
@@ -45,7 +47,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 	}{
 		"azure": {
 			variant: variant.AzureSEVSNP{},
-			config:  config.DefaultForAzureSEVSNP(),
+			config:  azureSEVSNP,
 		},
 		"gcp": {
 			variant: variant.GCPSEVES{},

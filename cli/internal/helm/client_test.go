@@ -88,7 +88,7 @@ func TestUpgradeRelease(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart, tc.allowDestructive)
+			err = client.upgradeRelease(context.Background(), 0, config.DefaultWithPanic(), chart, tc.allowDestructive)
 			if tc.wantError {
 				tc.assertCorrectError(t, err)
 				return

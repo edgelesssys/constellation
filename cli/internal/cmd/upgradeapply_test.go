@@ -28,29 +28,31 @@ import (
 
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
+	azureSEVSNP, err := config.DefaultForAzureSEVSNP()
+	require.NoError(t, err)
 	testCases := map[string]struct {
 		upgrader stubUpgrader
 		wantErr  bool
 	}{
 		"success": {
-			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			upgrader: stubUpgrader{currentConfig: azureSEVSNP},
 		},
 		"nodeVersion some error": {
 			upgrader: stubUpgrader{
-				currentConfig:  config.DefaultForAzureSEVSNP(),
+				currentConfig:  azureSEVSNP,
 				nodeVersionErr: someErr,
 			},
 			wantErr: true,
 		},
 		"nodeVersion in progress error": {
 			upgrader: stubUpgrader{
-				currentConfig:  config.DefaultForAzureSEVSNP(),
+				currentConfig:  azureSEVSNP,
 				nodeVersionErr: kubernetes.ErrInProgress,
 			},
 		},
 		"helm other error": {
 			upgrader: stubUpgrader{
-				currentConfig: config.DefaultForAzureSEVSNP(),
+				currentConfig: azureSEVSNP,
 				helmErr:       someErr,
 			},
 			wantErr: true,
@@ -69,7 +71,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(err)
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
+			cfg := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 

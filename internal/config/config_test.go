@@ -50,7 +50,7 @@ func TestSettingLatestAsVersion(t *testing.T) {
 				// modify versions as string
 				m := getConfigAsMap(conf, t)
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "Latest"
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["snpVersion"] = "latest"
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["bootloaderVersion"] = 1
 				return m
@@ -60,6 +60,7 @@ func TestSettingLatestAsVersion(t *testing.T) {
 			wantResult: func() *Config {
 				conf := DefaultWithPanic()
 				conf.Attestation.AzureSEVSNP.BootloaderVersion = 1
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = 93
 				return conf
 			}(),
 		},

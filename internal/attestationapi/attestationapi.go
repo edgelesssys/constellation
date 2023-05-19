@@ -75,10 +75,8 @@ func (a AttestationVersionRepo) addVersionToList(ctx context.Context, attestatio
 	bt, err := a.Get(ctx, key)
 	if err == nil {
 		if err := json.Unmarshal(bt, &versions); err != nil {
-
 			return err
 		}
-
 	} else if !errors.Is(err, storage.ErrDEKUnset) {
 		return err
 	}
@@ -125,11 +123,10 @@ func GetVersionByType(res versionsapi.AzureSEVSNPVersion, t Type) uint8 {
 	case SNP:
 		return res.SNP
 	case Microcode:
-		return res.SNP
+		return res.Microcode
 	default:
 		return 1
 	}
-
 }
 
 // GetAzureSEVSNPVersion returns the requested version of the given type.

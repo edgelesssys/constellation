@@ -250,7 +250,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
-			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
+			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), cloudprovider.GCP)
 			gcpConfig.Image = "v999.999.999"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)

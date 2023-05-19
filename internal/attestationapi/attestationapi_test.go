@@ -43,7 +43,6 @@ func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
 	require.NoError(t, sut.UploadAzureSEVSNP(ctx, attestationapi.AzureSEVSNP, d))
-
 }
 
 func TestListVersions(t *testing.T) {

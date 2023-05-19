@@ -39,7 +39,10 @@ import (
 // TODO(v2.8 | AB#3130): Update tool to use variant.Variant instead of cloudprovider.Provider
 
 func main() {
-	defaultConf := config.Default()
+	defaultConf, err := config.Default()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Generating measurements for %s\n", defaultConf.Image)
 
 	const filePath = "./measurements_enterprise.go"

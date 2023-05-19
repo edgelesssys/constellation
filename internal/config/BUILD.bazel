@@ -17,11 +17,11 @@ go_library(
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
+        "//internal/attestationapi",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
         "//internal/config/imageversion",
         "//internal/config/instancetypes",
-        "//internal/config/version",
         "//internal/constants",
         "//internal/file",
         "//internal/variant",
