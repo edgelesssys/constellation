@@ -10,8 +10,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 type archivist interface {

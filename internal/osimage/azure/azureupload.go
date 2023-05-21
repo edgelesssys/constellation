@@ -21,9 +21,9 @@ import (
 	armcomputev4 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/pageblob"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // Uploader can upload and remove os images on Azure.

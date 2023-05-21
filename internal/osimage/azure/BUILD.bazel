@@ -11,7 +11,7 @@ go_library(
     deps = [
         "//internal/logger",
         "//internal/osimage",
-        "//internal/versionsapi",
+        "//internal/api/versionsapi",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
         "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
         "@com_github_azure_azure_sdk_for_go_sdk_resourcemanager_compute_armcompute_v4//:armcompute",

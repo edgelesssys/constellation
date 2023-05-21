@@ -13,12 +13,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/attestationapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // AzureSEVSNP is the configuration for Azure SEV-SNP attestation.
@@ -50,7 +50,8 @@ type AzureSEVSNP struct {
 // Version numbers are hard coded and should be updated with each new release.
 func DefaultForAzureSEVSNP() (*AzureSEVSNP, error) {
 	ctx := context.Background()
-	version, err := attestationapi.GetAzureSEVSNPVersion(ctx)
+	fetcher := fetcher.ConfigAPIFetcher{}
+	version, err := fetcher.FetchLatestAzureSEVSNPVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,11 +114,12 @@ func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
 
-	versions, err := attestationapi.GetAzureSEVSNPVersion(context.Background())
+	fetcher := fetcher.NewConfigAPIFetcher()
+	versions, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to get AzureSEVSNP versions: %w", err)
 	}
-	for _, versionType := range []attestationapi.Type{attestationapi.Bootloader, attestationapi.TEE, attestationapi.SNP, attestationapi.Microcode} {
+	for _, versionType := range []configapi.AzureSEVSNPVersionType{configapi.Bootloader, configapi.TEE, configapi.SNP, configapi.Microcode} {
 		if !convertLatestToNumber(c, versions, versionType, aux) {
 			if err := convertStringToUint(c, versionType, aux); err != nil {
 				return fmt.Errorf("failed to convert %s version to number: %w", versionType, err)
@@ -127,20 +129,20 @@ func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType attestationapi.Type, aux *fusedAzureSEVSNP) (*uint8, *string) {
+func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) (*uint8, *string) {
 	var v *uint8
 	var stringV *string
 	switch versionType {
-	case attestationapi.Bootloader:
+	case configapi.Bootloader:
 		v = &c.BootloaderVersion
 		stringV = &aux.BootloaderVersion
-	case attestationapi.TEE:
+	case configapi.TEE:
 		v = &c.TEEVersion
 		stringV = &aux.TEEVersion
-	case attestationapi.SNP:
+	case configapi.SNP:
 		v = &c.SNPVersion
 		stringV = &aux.SNPVersion
-	case attestationapi.Microcode:
+	case configapi.Microcode:
 		v = &c.MicrocodeVersion
 		stringV = &aux.MicrocodeVersion
 	}
@@ -221,7 +223,7 @@ type fusedAzureSEVSNP struct {
 	MicrocodeVersion string `yaml:"microcodeVersion"`
 }
 
-func convertStringToUint(c *AzureSEVSNP, versionType attestationapi.Type, aux *fusedAzureSEVSNP) error {
+func convertStringToUint(c *AzureSEVSNP, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) error {
 	v, stringV := getUintAndStringPtrToVersion(c, versionType, aux)
 
 	bvInt, err := strconv.ParseInt(*stringV, 10, 8)
@@ -232,10 +234,10 @@ func convertStringToUint(c *AzureSEVSNP, versionType attestationapi.Type, aux *f
 	return nil
 }
 
-func convertLatestToNumber(c *AzureSEVSNP, versions versionsapi.AzureSEVSNPVersion, versionType attestationapi.Type, aux *fusedAzureSEVSNP) bool {
+func convertLatestToNumber(c *AzureSEVSNP, versions configapi.AzureSEVSNPVersion, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) bool {
 	v, stringV := getUintAndStringPtrToVersion(c, versionType, aux)
 	if strings.ToLower(*stringV) == "latest" {
-		*v = attestationapi.GetVersionByType(versions, versionType)
+		*v = configapi.GetVersionByType(versions, versionType)
 		return true
 	}
 	return false

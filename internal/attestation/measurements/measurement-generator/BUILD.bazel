@@ -13,7 +13,7 @@ go_library(
         "//internal/constants",
         "//internal/sigstore",
         "//internal/variant",
-        "//internal/versionsapi",
+        "//internal/api/versionsapi",
         "@org_golang_x_tools//go/ast/astutil",
     ],
 )

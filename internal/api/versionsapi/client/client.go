@@ -42,9 +42,9 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"golang.org/x/mod/semver"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // Client is the client for the versions API.

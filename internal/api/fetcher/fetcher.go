@@ -18,50 +18,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
-// Fetcher fetches versions API resources without authentication.
-type Fetcher struct {
+// fetcher fetches versions API resources without authentication.
+type fetcher struct {
 	httpc httpc
 }
 
-// NewFetcher returns a new Fetcher.
-func NewFetcher() *Fetcher {
-	return &Fetcher{
+func newFetcher() *fetcher {
+	return &fetcher{
 		httpc: &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}, // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
 	}
-}
-
-// FetchVersionList fetches the given version list from the versions API.
-func (f *Fetcher) FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error) {
-	return fetch(ctx, f.httpc, list)
-}
-
-// FetchVersionLatest fetches the latest version from the versions API.
-func (f *Fetcher) FetchVersionLatest(ctx context.Context, latest versionsapi.Latest) (versionsapi.Latest, error) {
-	return fetch(ctx, f.httpc, latest)
-}
-
-// FetchImageInfo fetches the given image info from the versions API.
-func (f *Fetcher) FetchImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) (versionsapi.ImageInfo, error) {
-	return fetch(ctx, f.httpc, imageInfo)
-}
-
-// FetchCLIInfo fetches the given cli info from the versions API.
-func (f *Fetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
-	return fetch(ctx, f.httpc, cliInfo)
-}
-
-// FetchAttestationList fetches the version list information from the config API.
-func (f *Fetcher) FetchAttestationList(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionList) (versionsapi.AzureSEVSNPVersionList, error) {
-	return fetch(ctx, f.httpc, attestation)
-}
-
-// FetchAttestationVersion fetches the version information from the config API.
-func (f *Fetcher) FetchAttestationVersion(ctx context.Context, attestation versionsapi.AzureSEVSNPVersionGet) (versionsapi.AzureSEVSNPVersionGet, error) {
-	return fetch(ctx, f.httpc, attestation)
 }
 
 type apiObject interface {

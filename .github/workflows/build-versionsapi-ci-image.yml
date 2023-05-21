@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "internal/versionsapi/**"
+      - "internal/api/versionsapi/**"
       - ".github/workflows/build-versionsapi-ci-image.yml"
       - ".github/actions/versionsapi/**"
 

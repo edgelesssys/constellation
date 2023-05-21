@@ -3,12 +3,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "client",
     srcs = ["client.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/versionsapi/client",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/versionsapi/client",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/constants",
         "//internal/logger",
-        "//internal/versionsapi",
+        "//internal/api/versionsapi",
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",

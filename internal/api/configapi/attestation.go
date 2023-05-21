@@ -3,7 +3,7 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package versionsapi
+package configapi
 
 import (
 	"fmt"
@@ -14,8 +14,28 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-// AttestationPath is the path to the attestation versions.
-const AttestationPath = "constellation/v1/attestation" // TODO already in attestationonapi but import cycle otherwise
+const (
+	Bootloader AzureSEVSNPVersionType = "bootloader" // Bootloader is the version of the Azure SEVSNP bootloader.
+	TEE        AzureSEVSNPVersionType = "tee"        // TEE is the version of the Azure SEVSNP TEE.
+	SNP        AzureSEVSNPVersionType = "snp"        // SNP is the version of the Azure SEVSNP SNP.
+	Microcode  AzureSEVSNPVersionType = "microcode"  // Microcode is the version of the Azure SEVSNP microcode.
+)
+
+// AttestationURLPath is the URL path to the attestation versions.
+const AttestationURLPath = "constellation/v1/attestation"
+
+// TODO remove? (or use for fallback?)
+// AzureSEVSNP is the latest version of each component of the Azure SEVSNP.
+// used for testing only.
+var AzureSEVSNP = AzureSEVSNPVersion{
+	Bootloader: 2,
+	TEE:        0,
+	SNP:        6,
+	Microcode:  93,
+}
+
+// AzureSEVSNPVersionType is the type of the version to be requested.
+type AzureSEVSNPVersionType (string)
 
 // AzureSEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type AzureSEVSNPVersion struct {
@@ -47,7 +67,7 @@ func (i AzureSEVSNPVersionGet) URL() (string, error) {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionGet) JSONPath() string {
-	return path.Join(AttestationPath, variant.AzureSEVSNP{}.String(), i.Version)
+	return path.Join(AttestationURLPath, variant.AzureSEVSNP{}.String(), i.Version)
 }
 
 // ValidateRequest validates the request.
@@ -75,7 +95,7 @@ func (i AzureSEVSNPVersionList) URL() (string, error) {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionList) JSONPath() string {
-	return path.Join(AttestationPath, variant.AzureSEVSNP{}.String(), "list")
+	return path.Join(AttestationURLPath, variant.AzureSEVSNP{}.String(), "list")
 }
 
 // ValidateRequest validates the request.
@@ -86,4 +106,20 @@ func (i AzureSEVSNPVersionList) ValidateRequest() error {
 // Validate validates the request.
 func (i AzureSEVSNPVersionList) Validate() error {
 	return nil
+}
+
+// GetVersionByType returns the requested version of the given type.
+func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) uint8 {
+	switch t {
+	case Bootloader:
+		return res.Bootloader
+	case TEE:
+		return res.TEE
+	case SNP:
+		return res.SNP
+	case Microcode:
+		return res.Microcode
+	default:
+		return 1
+	}
 }

@@ -3,7 +3,7 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package attestationapi_test
+package configapi_test
 
 import (
 	"context"
@@ -13,10 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestationapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,16 +45,16 @@ var cfg = uri.AWSS3Config{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	sut, err := attestationapi.NewAttestationVersionRepo(ctx, cfg)
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	require.NoError(t, sut.UploadAzureSEVSNP(ctx, attestationapi.AzureSEVSNP, d))
+	require.NoError(t, sut.UploadAzureSEVSNP(ctx, configapi.AzureSEVSNP, d))
 }
 
 func TestListVersions(t *testing.T) {
 	ctx := context.Background()
 
-	sut, err := attestationapi.NewAttestationVersionRepo(ctx, cfg)
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
 	require.NoError(t, err)
 
 	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
@@ -66,7 +65,7 @@ func TestListVersions(t *testing.T) {
 	require.Equal(t, []string{}, res)
 
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	err = sut.UploadAzureSEVSNP(ctx, attestationapi.AzureSEVSNP, d)
+	err = sut.UploadAzureSEVSNP(ctx, configapi.AzureSEVSNP, d)
 	require.NoError(t, err)
 	res, err = sut.List(ctx, variant.AzureSEVSNP{})
 	require.NoError(t, err)
@@ -74,11 +73,4 @@ func TestListVersions(t *testing.T) {
 
 	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
 	require.NoError(t, err)
-}
-
-func TestGetVersion(t *testing.T) {
-	ctx := context.Background()
-	res, err := attestationapi.GetAzureSEVSNPVersion(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, uint8(2), res.Bootloader)
 }

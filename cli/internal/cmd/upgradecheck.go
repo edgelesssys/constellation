@@ -17,6 +17,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -27,8 +29,6 @@ import (
 	conSemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -66,7 +66,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	versionListFetcher := fetcher.NewFetcher()
+	versionListFetcher := fetcher.NewVersionAPIFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
@@ -82,7 +82,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
 			log:            log,
-			versionsapi:    fetcher.NewFetcher(),
+			versionsapi:    fetcher.NewVersionAPIFetcher(),
 		},
 		log: log,
 	}

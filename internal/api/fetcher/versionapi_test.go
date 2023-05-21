@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -190,7 +190,7 @@ func TestFetchVersionList(t *testing.T) {
 				return tc.serverResp
 			})
 
-			fetcher := &Fetcher{httpc: client}
+			fetcher := VersionAPIFetcher{&fetcher{httpc: client}}
 
 			list, err := fetcher.FetchVersionList(context.Background(), tc.list)
 

@@ -19,10 +19,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 )
 
 type upgradeInfo struct {
