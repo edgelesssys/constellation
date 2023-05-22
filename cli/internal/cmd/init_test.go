@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -196,6 +197,63 @@ func TestInitialize(t *testing.T) {
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
 			assert.NotEmpty(secret.Salt)
+		})
+	}
+}
+
+func TestGetLogs(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		resp         initproto.API_InitClient
+		fh           file.Handler
+		wantedOutput []byte
+		wantErr      bool
+	}{
+		"success": {
+			resp:         stubInitClient{res: bytes.NewReader([]byte("asdf"))},
+			fh:           file.NewHandler(afero.NewMemMapFs()),
+			wantedOutput: []byte("asdf"),
+		},
+		"receive error": {
+			resp:    stubInitClient{err: someErr},
+			fh:      file.NewHandler(afero.NewMemMapFs()),
+			wantErr: true,
+		},
+		"nil log": {
+			resp:    stubInitClient{res: bytes.NewReader([]byte{1}), setResNil: true},
+			fh:      file.NewHandler(afero.NewMemMapFs()),
+			wantErr: true,
+		},
+		"failed write": {
+			resp:    stubInitClient{res: bytes.NewReader([]byte("asdf"))},
+			fh:      file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			doer := initDoer{
+				fh:  tc.fh,
+				log: logger.NewTest(t),
+			}
+
+			err := doer.getLogs(tc.resp)
+
+			if tc.wantErr {
+				assert.Error(err)
+			}
+
+			text, err := tc.fh.Read(constants.ErrorLog)
+
+			if tc.wantedOutput == nil {
+				assert.Error(err)
+			}
+
+			assert.Equal(tc.wantedOutput, text)
 		})
 	}
 }
@@ -573,4 +631,40 @@ func (c *stubLicenseClient) QuotaCheck(_ context.Context, _ license.QuotaCheckRe
 	return license.QuotaCheckResponse{
 		Quota: 25,
 	}, nil
+}
+
+type stubInitClient struct {
+	res       io.Reader
+	err       error
+	setResNil bool
+	grpc.ClientStream
+}
+
+func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
+	if c.err != nil {
+		return &initproto.InitResponse{}, c.err
+	}
+
+	text := make([]byte, 1024)
+	n, err := c.res.Read(text)
+	text = text[:n]
+
+	res := &initproto.InitResponse{
+		Kind: &initproto.InitResponse_Log{
+			Log: &initproto.LogResponseType{
+				Log: text,
+			},
+		},
+	}
+	if c.setResNil {
+		res = &initproto.InitResponse{
+			Kind: &initproto.InitResponse_Log{
+				Log: &initproto.LogResponseType{
+					Log: nil,
+				},
+			},
+		}
+	}
+
+	return res, err
 }
