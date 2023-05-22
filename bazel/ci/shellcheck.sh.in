@@ -31,7 +31,7 @@ excludeDirs=(
 )
 
 excludeFiles=(
-  "ci/bazel-complete.bash"
+  "bazel/bazel-complete.bash"
 )
 
 echo "The following scripts are excluded by their directory and won't be linted with shellcheck:"
