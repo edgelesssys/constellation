@@ -4,7 +4,9 @@ package init;
 
 option go_package = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto";
 
-service API { rpc Init(InitRequest) returns (stream InitResponse); }
+service API {
+  rpc Init(InitRequest) returns (stream InitResponse);
+}
 
 message InitRequest {
   // repeated string autoscaling_node_groups = 1; removed
@@ -40,9 +42,13 @@ message InitSuccessResponse {
   bytes cluster_id = 3;
 }
 
-message InitFailureResponse { string error = 1; }
+message InitFailureResponse {
+  string error = 1;
+}
 
-message LogResponseType { bytes log = 1; }
+message LogResponseType {
+  bytes log = 1;
+}
 
 message KubernetesComponent {
   string url = 1;
