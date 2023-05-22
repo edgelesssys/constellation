@@ -3,27 +3,29 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "configapi",
-    srcs = ["configapi.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/configapi",
+    srcs = [
+        "attestation.go",
+        "configapi.go",
+        "repo.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/configapi",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/constants",
         "//internal/kms/storage",
         "//internal/kms/storage/awss3",
         "//internal/kms/uri",
         "//internal/variant",
-        "//internal/api/versionsapi",
-        "//internal/api/fetcher",
     ],
 )
 
 go_test(
     name = "configapi_test",
-    srcs = ["configapi_test.go"],
+    srcs = ["repo_test.go"],
     deps = [
         ":configapi",
         "//internal/kms/uri",
         "//internal/variant",
-        "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
 )

@@ -24,9 +24,9 @@ const (
 // AttestationURLPath is the URL path to the attestation versions.
 const AttestationURLPath = "constellation/v1/attestation"
 
-// TODO remove? (or use for fallback?)
 // AzureSEVSNP is the latest version of each component of the Azure SEVSNP.
 // used for testing only.
+// TODO remove? (or use for fallback?)
 var AzureSEVSNP = AzureSEVSNPVersion{
 	Bootloader: 2,
 	TEE:        0,

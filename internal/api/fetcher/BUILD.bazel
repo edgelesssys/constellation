@@ -3,15 +3,25 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "fetcher",
-    srcs = ["fetcher.go"],
+    srcs = [
+        "configapi.go",
+        "fetcher.go",
+        "versionapi.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/fetcher",
     visibility = ["//:__subpackages__"],
-    deps = ["//internal/api/versionsapi"],
+    deps = [
+        "//internal/api/configapi",
+        "//internal/api/versionsapi",
+    ],
 )
 
 go_test(
     name = "fetcher_test",
-    srcs = ["fetcher_test.go"],
+    srcs = [
+        "configapi_test.go",
+        "versionapi_test.go",
+    ],
     embed = [":fetcher"],
     deps = [
         "//internal/api/versionsapi",

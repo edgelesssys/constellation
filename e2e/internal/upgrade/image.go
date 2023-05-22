@@ -36,7 +36,7 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider, toImage s
 		measurements: make(measurements.M),
 		shortPath:    toImage,
 	}
-	versionsClient := fetcher.NewFetcher()
+	versionsClient := fetcher.NewVersionAPIFetcher()
 
 	ver, err := versionsapi.NewVersionFromShortPath(toImage, versionsapi.VersionKindImage)
 	if err != nil {
@@ -124,7 +124,7 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 	return content, nil
 }
 
-func fetchImageRef(ctx context.Context, client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
+func fetchImageRef(ctx context.Context, client *fetcher.VersionAPIFetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
 	imageInfo, err := client.FetchImageInfo(ctx, imageInfo)
 	if err != nil {
 		return "", err

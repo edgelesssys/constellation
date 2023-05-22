@@ -18,20 +18,20 @@ func NewConfigAPIFetcher() *ConfigAPIFetcher {
 	return &ConfigAPIFetcher{newFetcher()}
 }
 
-// FetchAttestationList fetches the version list information from the config API.
-func (f *ConfigAPIFetcher) FetchAttestationList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
+// FetchAzureSEVSNPVersionList fetches the version list information from the config API.
+func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
 	return fetch(ctx, f.httpc, attestation)
 }
 
-// FetchAttestationVersion fetches the version information from the config API.
-func (f *ConfigAPIFetcher) FetchAttestationVersion(ctx context.Context, attestation configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
+// FetchAzureSEVSNPVersion fetches the version information from the config API.
+func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
 	return fetch(ctx, f.httpc, attestation)
 }
 
 // FetchLatestAzureSEVSNPVersion returns the latest versions of the given type.
 func (f *ConfigAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context) (res configapi.AzureSEVSNPVersion, err error) {
 	var versions configapi.AzureSEVSNPVersionList
-	versions, err = f.FetchAttestationList(ctx, versions)
+	versions, err = f.FetchAzureSEVSNPVersionList(ctx, versions)
 	if err != nil {
 		return res, fmt.Errorf("failed fetching versions list: %w", err)
 	}
@@ -39,7 +39,7 @@ func (f *ConfigAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context) (r
 		return res, errors.New("no versions found in /list")
 	}
 	get := configapi.AzureSEVSNPVersionGet{Version: versions[0]} // get latest version (as sorted reversely alphanumerically)
-	get, err = f.FetchAttestationVersion(ctx, get)
+	get, err = f.FetchAzureSEVSNPVersion(ctx, get)
 	if err != nil {
 		return res, fmt.Errorf("failed fetching version: %w", err)
 	}

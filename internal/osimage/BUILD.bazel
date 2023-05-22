@@ -6,8 +6,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/osimage",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/api/versionsapi",
         "//internal/cloud/cloudprovider",
         "//internal/osimage/secureboot",
-        "//internal/api/versionsapi",
     ],
 )

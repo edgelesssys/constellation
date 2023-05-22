@@ -6,10 +6,10 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/cli-k8s-compatibility",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/logger",
-        "//internal/versions",
         "//internal/api/versionsapi",
         "//internal/api/versionsapi/client",
+        "//internal/logger",
+        "//internal/versions",
         "@org_uber_go_zap//zapcore",
     ],
 )

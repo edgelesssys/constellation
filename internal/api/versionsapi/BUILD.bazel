@@ -4,7 +4,6 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "versionsapi",
     srcs = [
-        "attestation.go",
         "cliinfo.go",
         "imageinfo.go",
         "latest.go",
@@ -17,7 +16,6 @@ go_library(
     deps = [
         "//internal/cloud/cloudprovider",
         "//internal/constants",
-        "//internal/variant",
         "@org_golang_x_mod//semver",
     ],
 )

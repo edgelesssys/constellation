@@ -50,7 +50,7 @@ type AzureSEVSNP struct {
 // Version numbers are hard coded and should be updated with each new release.
 func DefaultForAzureSEVSNP() (*AzureSEVSNP, error) {
 	ctx := context.Background()
-	fetcher := fetcher.ConfigAPIFetcher{}
+	fetcher := fetcher.NewConfigAPIFetcher()
 	version, err := fetcher.FetchLatestAzureSEVSNPVersion(ctx)
 	if err != nil {
 		return nil, err
