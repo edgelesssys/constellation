@@ -101,14 +101,14 @@ func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(any) error) error {
 		auxAzureSEVSNP: (*auxAzureSEVSNP)(c),
 	}
 	if err := unmarshal(aux); err != nil {
-		return fmt.Errorf("failed to unmarshal AzureSEVSNP: %w", err)
+		return fmt.Errorf("unmarshal AzureSEVSNP: %w", err)
 	}
 	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
 
 	for _, versionType := range []version.Type{version.Bootloader, version.TEE, version.SNP, version.Microcode} {
 		if !convertLatestToNumber(c, versionType, aux) {
 			if err := convertStringToUint(c, versionType, aux); err != nil {
-				return fmt.Errorf("failed to convert %s version to number: %w", versionType, err)
+				return fmt.Errorf("convert %s version to number: %w", versionType, err)
 			}
 		}
 	}
