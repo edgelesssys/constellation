@@ -192,7 +192,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
-
 		}
 		return err
 	}
@@ -210,6 +209,7 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 		req:      req,
 		log:      i.log,
 		spinner:  i.spinner,
+		fh:       file.NewHandler(afero.NewOsFs()),
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -235,6 +235,7 @@ type initDoer struct {
 	log           debugLog
 	spinner       spinnerInterf
 	connectedOnce bool
+	fh            file.Handler
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
@@ -265,22 +266,47 @@ func (d *initDoer) Do(ctx context.Context) error {
 		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
 	}
 
+	res, err := resp.Recv() // get first response, either success or failure
+	if err != nil {
+		if e := d.getLogs(resp); e != nil {
+			d.log.Debugf("Failed to collect logs: %w", e)
+		}
+		return &nonRetriableError{err}
+	}
+	if res.GetInitFailure() != nil {
+		if e := d.getLogs(resp); e != nil {
+			d.log.Debugf("Failed to collect logs: %w", e)
+		}
+		// should've been triggered by err, but just to be safe
+		return &nonRetriableError{errors.New(res.GetInitFailure().Error)}
+	}
+
+	d.resp = res
+
+	return nil
+}
+
+func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
+	d.log.Debugf("Attempting to collect cluster logs")
 	for {
 		res, err := resp.Recv()
 		if err == io.EOF {
+			d.log.Debugf("break")
 			break
 		}
 		if err != nil {
-			return &nonRetriableError{err}
-		}
-		if res.GetInitFailure() != nil {
-			// should've been triggered by err, but just to be safe
-			return &nonRetriableError{errors.New(res.GetInitFailure().Error)}
+			d.log.Debugf("err: %s", err)
+			return err
 		}
 
-		d.resp = res
+		log := res.GetLog().GetLog()
+		if log == nil {
+			d.log.Debugf("logs nil")
+			return errors.New("sent empty logs")
+		}
+
+		d.fh.Write(constants.ErrorLog, log, file.OptAppend)
 	}
-
 	return nil
 }
 
