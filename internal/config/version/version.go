@@ -28,6 +28,6 @@ func GetVersion(t Type) uint8 {
 	case Microcode:
 		return 93
 	default:
-		return 1
+		panic("invalid version type")
 	}
 }
