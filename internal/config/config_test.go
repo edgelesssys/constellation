@@ -101,7 +101,7 @@ func getConfigAsMap(conf *Config, t *testing.T) (res map[string]interface{}) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := yaml.Unmarshal(bytes, &res); err!= nil {
+	if err := yaml.Unmarshal(bytes, &res); err != nil {
 		t.Fatal(err)
 	}
 	return
