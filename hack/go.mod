@@ -164,9 +164,9 @@ require (
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.14.0 // indirect
-	github.com/google/go-sev-guest v0.4.1 // indirect
+	github.com/google/go-sev-guest v0.6.1 // indirect
 	github.com/google/go-tpm v0.3.3 // indirect
-	github.com/google/go-tpm-tools v0.3.10 // indirect
+	github.com/google/go-tpm-tools v0.3.12 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect
