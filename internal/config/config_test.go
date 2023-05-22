@@ -95,7 +95,7 @@ func TestSettingLatestAsVersion(t *testing.T) {
 	}
 }
 
-// getConfigAsMap returns a map of the attestation section of the config.
+// getConfigAsMap returns a map of the config.
 func getConfigAsMap(conf *Config, t *testing.T) map[string]interface{} {
 	d, err := yaml.Marshal(&conf)
 	if err != nil {
