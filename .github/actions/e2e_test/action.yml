@@ -67,7 +67,7 @@ inputs:
     required: false
   buildBuddyApiKey:
     description: "BuildBuddy API key for caching Bazel artifacts"
-    required: true
+    required: false
   registry:
     description: "Container registry to use"
     required: true
@@ -113,7 +113,7 @@ runs:
     - name: Setup bazel
       uses: ./.github/actions/setup_bazel
       with:
-        useCache: "true"
+        useCache: ${{ inputs.buildBuddyApiKey != '' }}
         buildBuddyApiKey: ${{ inputs.buildBuddyApiKey }}
 
     - name: Log in to the Container registry
