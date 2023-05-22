@@ -16,6 +16,7 @@ go_library(
         "//internal/cloud/cloudprovider",
         "//internal/sigstore",
         "//internal/variant",
+        "//internal/versionsapi",
         "@com_github_google_go_tpm//tpmutil",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
         "@in_gopkg_yaml_v3//:yaml_v3",
@@ -28,6 +29,8 @@ go_test(
     embed = [":measurements"],
     deps = [
         "//internal/cloud/cloudprovider",
+        "//internal/variant",
+        "//internal/versionsapi",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

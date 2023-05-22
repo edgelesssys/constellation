@@ -47,7 +47,7 @@ func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Archi
 
 // Archive reads the OS image in img and uploads it as key.
 func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, csp, variant string, img io.Reader) (string, error) {
-	key, err := url.JoinPath(version.ArtifactPath(), version.Kind.String(), "csp", csp, variant, "image.raw")
+	key, err := url.JoinPath(version.ArtifactPath("v1"), version.Kind.String(), "csp", csp, variant, "image.raw")
 	if err != nil {
 		return "", err
 	}

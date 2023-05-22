@@ -185,8 +185,12 @@ const (
 
 	// CDNRepositoryURL is the base URL of the Constellation CDN artifact repository.
 	CDNRepositoryURL = "https://cdn.confidential.cloud"
-	// CDNAPIPrefix is the prefix of the Constellation API.
-	CDNAPIPrefix = "constellation/v1"
+	// CDNAPIBase is the (un-versioned) prefix of the Constellation API.
+	CDNAPIBase = "constellation"
+	// CDNAPIPrefix is the prefix of the Constellation API (V1).
+	CDNAPIPrefix = CDNAPIBase + "/v1"
+	// CDNAPIPrefixV2 is the prefix of the Constellation API (v2).
+	CDNAPIPrefixV2 = CDNAPIBase + "/v2"
 	// CDNMeasurementsFile is name of file containing image measurements.
 	CDNMeasurementsFile = "measurements.json"
 	// CDNMeasurementsSignature is name of file containing signature for CDNMeasurementsFile.

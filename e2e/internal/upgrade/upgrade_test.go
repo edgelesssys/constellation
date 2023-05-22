@@ -240,7 +240,12 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	}
 	require.NoError(err, longMsg)
 
-	info, err := fetchUpgradeInfo(context.Background(), cfg.GetProvider(), image)
+	info, err := fetchUpgradeInfo(
+		context.Background(),
+		cfg.GetProvider(),
+		cfg.GetAttestationConfig().GetVariant(),
+		image,
+	)
 	require.NoError(err)
 
 	log.Printf("Setting image version: %s\n", info.shortPath)

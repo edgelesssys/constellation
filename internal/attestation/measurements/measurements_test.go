@@ -15,11 +15,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 func TestMarshal(t *testing.T) {
@@ -354,7 +357,9 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 
 	testCases := map[string]struct {
 		measurements       string
-		metadata           WithMetadata
+		csp                cloudprovider.Provider
+		attestationVariant variant.Variant
+		imageVersion       versionsapi.Version
 		measurementsStatus int
 		signature          string
 		signatureStatus    int
@@ -363,70 +368,66 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		wantError          bool
 	}{
 		"json measurements": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
 			wantMeasurements: M{
 				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 			},
-			wantSHA: "c04e13c1312b6f5659303871d14bf49b05c99a6515548763b6322f60bbb61a24",
-		},
-		"yaml measurements": {
-			measurements:       "csp: test\nimage: test\nmeasurements:\n 0:\n  expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n  warnOnly: false\n",
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
-			measurementsStatus: http.StatusOK,
-			signature:          "MEUCIQC9WI2ijlQjBktYFctKpbnqkUTey3U9W99Jp1NTLi5AbQIgNZxxOtiawgTkWPXLoH9D2CxpEjxQrqLn/zWF6NoKxWQ=",
-			signatureStatus:    http.StatusOK,
-			wantMeasurements: M{
-				0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
-			},
-			wantSHA: "648fcfd5d22e623a948ab2dd4eb334be2701d8f158231726084323003daab8d4",
+			wantSHA: "7269a1e8c6a379b86af605f993352df1d4a289bbf79fe655fd78338bd7549d52",
 		},
 		"404 measurements": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusNotFound,
-			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
 			wantError:          true,
 		},
 		"404 signature": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusNotFound,
 			wantError:          true,
 		},
 		"broken signature": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
 			signature:          "AAAAAAA1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
 			wantError:          true,
 		},
 		"metadata CSP mismatch": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.GCP, Image: "test"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.GCP,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
 			wantError:          true,
 		},
 		"metadata image mismatch": {
-			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "another-image"},
+			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-another-image", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
 			wantError:          true,
 		},
-		"not yaml or json": {
+		"not json": {
 			measurements:       "This is some content to be signed!\n",
-			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
+			csp:                cloudprovider.Unknown,
+			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIQCGA/lSu5qCJgNNvgMaTKJ9rj6vQMecUDaQo3ukaiAfUgIgWoxXRoDKLY9naN7YgxokM7r2fwnyYk3M2WKJJO1g6yo=",
 			signatureStatus:    http.StatusOK,
@@ -440,6 +441,10 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			if tc.attestationVariant == nil {
+				tc.attestationVariant = variant.Dummy{}
+			}
 
 			client := newTestClient(func(req *http.Request) *http.Response {
 				if req.URL.String() == measurementsURL.String() {
@@ -469,7 +474,9 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 				context.Background(), client,
 				measurementsURL, signatureURL,
 				cosignPublicKey,
-				tc.metadata,
+				tc.imageVersion,
+				tc.csp,
+				tc.attestationVariant,
 			)
 
 			if tc.wantError {
