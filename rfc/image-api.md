@@ -182,9 +182,11 @@ The image measurements are a JSON file that contains sets of measurements for th
   "ref": "<REF>",
   "stream": "<STREAM>",
   "list": [
-    "csp": "<CSP>",
-    "attestationVariant": "<ATTESTATION_VARIANT>",
-    "measurements": {"<PCR_INDEX>": {<MEASUREMENT>}}
+    {
+      "csp": "<CSP>",
+      "attestationVariant": "<ATTESTATION_VARIANT>",
+      "measurements": {"<PCR_INDEX>": {<MEASUREMENT>}}
+    }
   ]
 }
 ```

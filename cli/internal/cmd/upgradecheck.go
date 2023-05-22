@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	conSemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
@@ -139,7 +140,8 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	u.log.Debugf("Read configuration from %q", flags.configPath)
 	// get current image version of the cluster
 	csp := conf.GetProvider()
-	u.log.Debugf("Using provider %s", csp.String())
+	attestationVariant := conf.GetAttestationConfig().GetVariant()
+	u.log.Debugf("Using provider %s with attestation variant %s", csp.String(), attestationVariant.String())
 
 	current, err := u.collect.currentVersions(cmd.Context())
 	if err != nil {
@@ -167,7 +169,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	semver.Sort(newKubernetes)
 
 	supported.image = filterImageUpgrades(current.image, supported.image)
-	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, supported.image)
+	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, attestationVariant, supported.image)
 	if err != nil {
 		return err
 	}
@@ -240,7 +242,7 @@ type collector interface {
 	currentVersions(ctx context.Context) (currentVersionInfo, error)
 	supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error)
 	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
-	newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error)
+	newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error)
 	newerVersions(ctx context.Context, allowedVersions []string) ([]versionsapi.Version, error)
 	newCLIVersions(ctx context.Context) ([]string, error)
 	filterCompatibleCLIVersions(ctx context.Context, cliPatchVersions []string, currentK8sVersion string) ([]string, error)
@@ -259,9 +261,9 @@ type versionCollector struct {
 	log            debugLog
 }
 
-func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, images []versionsapi.Version) (map[string]measurements.M, error) {
+func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error) {
 	// get expected measurements for each image
-	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.rekor, []byte(v.flags.cosignPubKey), csp, images, v.log)
+	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.rekor, []byte(v.flags.cosignPubKey), csp, attestationVariant, images, v.log)
 	if err != nil {
 		return nil, fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
@@ -524,13 +526,13 @@ func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (s
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
 func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, rekor rekorVerifier, pubK []byte,
-	csp cloudprovider.Provider, versions []versionsapi.Version, log debugLog,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, versions []versionsapi.Version, log debugLog,
 ) (map[string]measurements.M, error) {
 	upgrades := make(map[string]measurements.M)
 	for _, version := range versions {
 		log.Debugf("Fetching measurements for image: %s", version)
 		shortPath := version.ShortPath()
-		measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version, csp)
+		measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version)
 		if err != nil {
 			return nil, err
 		}
@@ -542,10 +544,9 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 			measurementsURL,
 			signatureURL,
 			pubK,
-			measurements.WithMetadata{
-				CSP:   csp,
-				Image: shortPath,
-			},
+			version,
+			csp,
+			attestationVariant,
 		)
 		if err != nil {
 			if _, err := fmt.Fprintf(writer, "Skipping compatible image %q: %s\n", shortPath, err); err != nil {
