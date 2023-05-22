@@ -138,7 +138,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	u.log.Debugf("Planning Terraform migrations")
 
 	if err := u.upgrader.CheckTerraformMigrations(file); err != nil {
-		return fmt.Errorf("checking terraform migrations: %w", err)
+		return fmt.Errorf("checking workspace: %w", err)
 	}
 
 	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
@@ -172,7 +172,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 			if !ok {
 				cmd.Println("Aborting upgrade.")
 				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
-					return fmt.Errorf("cleaning up Terraform migrations: %w", err)
+					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
 			}

@@ -65,7 +65,7 @@ func (u *TerraformUpgrader) CheckTerraformMigrations(fileHandler file.Handler) e
 	}
 
 	if len(existingFiles) > 0 {
-		return fmt.Errorf("terraform migrations not possible: files / directories %s already exist", strings.Join(existingFiles, ", "))
+		return fmt.Errorf("file(s) %s already exist", strings.Join(existingFiles, ", "))
 	}
 	return nil
 }
