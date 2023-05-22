@@ -38,7 +38,7 @@ replace (
 )
 
 require (
-	cloud.google.com/go/compute v1.19.2
+	cloud.google.com/go/compute v1.19.3
 	cloud.google.com/go/compute/metadata v0.2.3
 	cloud.google.com/go/kms v1.10.2
 	cloud.google.com/go/logging v1.7.0
@@ -104,7 +104,7 @@ require (
 	golang.org/x/mod v0.10.0
 	golang.org/x/sys v0.8.0
 	golang.org/x/tools v0.9.1
-	google.golang.org/api v0.119.0
+	google.golang.org/api v0.122.0
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -126,7 +126,7 @@ require (
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/s2a-go v0.1.2 // indirect
+	github.com/google/s2a-go v0.1.3 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	k8s.io/cli-runtime v0.26.3 // indirect
@@ -315,7 +315,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
