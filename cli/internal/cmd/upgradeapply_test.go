@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -33,9 +34,12 @@ func TestUpgradeApply(t *testing.T) {
 		upgrader stubUpgrader
 		fetcher  stubImageFetcher
 		wantErr  bool
+		yesFlag  bool
+		stdin    string
 	}{
 		"success": {
 			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			yesFlag:  true,
 		},
 		"nodeVersion some error": {
 			upgrader: stubUpgrader{
@@ -43,12 +47,14 @@ func TestUpgradeApply(t *testing.T) {
 				nodeVersionErr: someErr,
 			},
 			wantErr: true,
+			yesFlag: true,
 		},
 		"nodeVersion in progress error": {
 			upgrader: stubUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubernetes.ErrInProgress,
 			},
+			yesFlag: true,
 		},
 		"helm other error": {
 			upgrader: stubUpgrader{
@@ -57,6 +63,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			wantErr: true,
 			fetcher: stubImageFetcher{},
+			yesFlag: true,
 		},
 		"check terraform error": {
 			upgrader: stubUpgrader{
@@ -65,14 +72,26 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fetcher: stubImageFetcher{},
 			wantErr: true,
+			yesFlag: true,
+		},
+		"abort": {
+			upgrader: stubUpgrader{
+				currentConfig: config.DefaultForAzureSEVSNP(),
+				terraformDiff: true,
+			},
+			fetcher: stubImageFetcher{},
+			wantErr: true,
+			stdin:   "no\n",
 		},
 		"clean terraform error": {
 			upgrader: stubUpgrader{
 				currentConfig:     config.DefaultForAzureSEVSNP(),
 				cleanTerraformErr: someErr,
+				terraformDiff:     true,
 			},
 			fetcher: stubImageFetcher{},
 			wantErr: true,
+			stdin:   "no\n",
 		},
 		"plan terraform error": {
 			upgrader: stubUpgrader{
@@ -81,6 +100,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fetcher: stubImageFetcher{},
 			wantErr: true,
+			yesFlag: true,
 		},
 		"apply terraform error": {
 			upgrader: stubUpgrader{
@@ -90,6 +110,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fetcher: stubImageFetcher{},
 			wantErr: true,
+			yesFlag: true,
 		},
 		"fetch reference error": {
 			upgrader: stubUpgrader{
@@ -97,6 +118,7 @@ func TestUpgradeApply(t *testing.T) {
 			},
 			fetcher: stubImageFetcher{fetchReferenceErr: someErr},
 			wantErr: true,
+			yesFlag: true,
 		},
 	}
 
@@ -105,12 +127,15 @@ func TestUpgradeApply(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 			cmd := newUpgradeApplyCmd()
+			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
 			cmd.Flags().String("tf-log", "DEBUG", "")                  // register persistent flag manually
 
-			err := cmd.Flags().Set("yes", "true")
-			require.NoError(err)
+			if tc.yesFlag {
+				err := cmd.Flags().Set("yes", "true")
+				require.NoError(err)
+			}
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
@@ -118,7 +143,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), fetcher: tc.fetcher}
-			err = upgrader.upgradeApply(cmd, handler)
+			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
