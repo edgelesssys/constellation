@@ -19,6 +19,7 @@ export INSTALL_DEBUGD            ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
 csps := aws azure gcp openstack qemu
+variants := aws_aws-nitro-tpm azure_azure-sev-snp gcp_gcp-sev-es gcp_gcp-sev-snp openstack_qemu-vtpm qemu_qemu-vtpm
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
@@ -28,13 +29,19 @@ PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 
-.PHONY: all clean inject-bins $(csps)
+.PHONY: all clean inject-bins $(csps) $(variants)
 
 .NOTPARALLEL: mkosi.output.%/fedora~37/image.raw clean-%
 
 all: $(csps)
 
-$(csps): %: mkosi.output.%/fedora~37/image.raw
+aws: aws_aws-nitro-tpm
+azure: azure_azure-sev-snp
+gcp: gcp_gcp-sev-es gcp_gcp-sev-snp
+openstack: openstack_qemu-vtpm
+qemu: qemu_qemu-vtpm
+
+$(variants): %: mkosi.output.%/fedora~37/image.raw
 
 prebuilt/rpms/systemd/%.rpm:
 	@echo "Downloading $*"
@@ -57,13 +64,18 @@ prebuilt/rpms/azure/%.rpm:
 mkosi.output.%/fedora~37/image.raw: inject-bins inject-certs
 	rm -rf .csp/
 	mkdir -p .csp/
-	touch .csp/$*
+	$(eval csp := $(firstword $(subst _, ,$*)))
+	$(eval attestation_variant := $(lastword $(subst _, ,$*)))
+	touch .csp/$(csp)
 	mkosi \
 		--image-version=$(IMAGE_VERSION) \
 		$(AUTOLOGIN_ARGS) \
 		--environment=INSTALL_DEBUGD \
 		--environment=CONSOLE_MOTD \
 		--kernel-command-line="$(KERNEL_DEBUG_CMDLNE)" \
+		--kernel-command-line="constel.attestation-variant=$(attestation_variant)" \
+		--kernel-command-line="constel.csp=$(csp)" \
+		--output-dir=mkosi.output.$* \
 		$(SEARCH_PATHS_PARAM) \
 		build
 	secure-boot/signed-shim.sh $@
