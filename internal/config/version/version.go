@@ -14,7 +14,7 @@ const (
 )
 
 // Type is the type of the version to be requested.
-type Type (string)
+type Type string
 
 // GetVersion returns the version of the given type.
 func GetVersion(t Type) uint8 {
