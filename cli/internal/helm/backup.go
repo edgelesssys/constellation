@@ -11,14 +11,15 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 )
 
-const (
-	crdBackupFolder = "constellation-upgrade/backups/crds/"
-	backupFolder    = "constellation-upgrade/backups/"
+var (
+	backupFolder    = filepath.Join(constants.UpgradeDir, "backups") + string(filepath.Separator)
+	crdBackupFolder = filepath.Join(backupFolder, "crds") + string(filepath.Separator)
 )
 
 func (c *Client) backupCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {

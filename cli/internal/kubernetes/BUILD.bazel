@@ -13,10 +13,13 @@ go_library(
     deps = [
         "//cli/internal/helm",
         "//cli/internal/image",
+        "//cli/internal/terraform",
+        "//cli/internal/upgrade",
         "//internal/attestation/measurements",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",
+        "//internal/file",
         "//internal/kubernetes",
         "//internal/kubernetes/kubectl",
         "//internal/variant",

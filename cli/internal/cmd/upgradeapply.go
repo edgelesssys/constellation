@@ -10,11 +10,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -55,17 +60,20 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), log)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log}
+	fetcher := image.New()
+
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, fetcher: fetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
 	upgrader cloudUpgrader
+	fetcher  imageFetcher
 	log      debugLog
 }
 
@@ -94,6 +102,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
+	if err := u.migrateTerraform(cmd, fileHandler, u.fetcher, conf, flags); err != nil {
+		return fmt.Errorf("performing Terraform migrations: %w", err)
+	}
+
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		err = u.handleServiceUpgrade(cmd, conf, flags)
 		upgradeErr := &compatibility.InvalidUpgradeError{}
@@ -118,6 +130,141 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	return nil
+}
+
+// migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
+// of cloud resources with Terraform. If so, the migration is performed.
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
+	u.log.Debugf("Planning Terraform migrations")
+
+	if err := u.upgrader.CheckTerraformMigrations(file); err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
+
+	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
+	if err != nil {
+		return fmt.Errorf("parsing upgrade variables: %w", err)
+	}
+	u.log.Debugf("Using migration targets:\n%v", targets)
+	u.log.Debugf("Using Terraform variables:\n%v", vars)
+
+	opts := upgrade.TerraformUpgradeOptions{
+		LogLevel:   flags.terraformLogLevel,
+		CSP:        conf.GetProvider(),
+		Vars:       vars,
+		Targets:    targets,
+		OutputFile: constants.TerraformMigrationOutputFile,
+	}
+
+	// Check if there are any Terraform migrations to apply
+	hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	if err != nil {
+		return fmt.Errorf("planning terraform migrations: %w", err)
+	}
+
+	if hasDiff {
+		// If there are any Terraform migrations to apply, ask for confirmation
+		if !flags.yes {
+			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Aborting upgrade.")
+				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+					return fmt.Errorf("cleaning up workspace: %w", err)
+				}
+				return fmt.Errorf("aborted by user")
+			}
+		}
+		u.log.Debugf("Applying Terraform migrations")
+		err := u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		if err != nil {
+			return fmt.Errorf("applying terraform migrations: %w", err)
+		}
+		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
+			"A backup of the pre-upgrade Terraform state has been written to: %s\n",
+			opts.OutputFile, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
+	} else {
+		u.log.Debugf("No Terraform diff detected")
+	}
+
+	return nil
+}
+
+func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
+	// Fetch variables to execute Terraform script with
+	imageRef, err := fetcher.FetchReference(cmd.Context(), conf)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	commonVariables := terraform.CommonVariables{
+		Name:            conf.Name,
+		StateDiskSizeGB: conf.StateDiskSizeGB,
+		// Ignore node count as their values are only being respected for creation
+		// See here: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#ignore_changes
+	}
+
+	switch conf.GetProvider() {
+	case cloudprovider.AWS:
+		targets := []string{}
+
+		vars := &terraform.AWSClusterVariables{
+			CommonVariables:        commonVariables,
+			StateDiskType:          conf.Provider.AWS.StateDiskType,
+			Region:                 conf.Provider.AWS.Region,
+			Zone:                   conf.Provider.AWS.Zone,
+			InstanceType:           conf.Provider.AWS.InstanceType,
+			AMIImageID:             imageRef,
+			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
+			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
+			Debug:                  conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	case cloudprovider.Azure:
+		targets := []string{"azurerm_attestation_provider.attestation_provider"}
+
+		// Azure Terraform provider is very strict about it's casing
+		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
+		imageRef = strings.Replace(imageRef, "Images", "images", 1)
+		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
+
+		vars := &terraform.AzureClusterVariables{
+			CommonVariables:      commonVariables,
+			Location:             conf.Provider.Azure.Location,
+			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
+			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
+			InstanceType:         conf.Provider.Azure.InstanceType,
+			StateDiskType:        conf.Provider.Azure.StateDiskType,
+			ImageID:              imageRef,
+			SecureBoot:           *conf.Provider.Azure.SecureBoot,
+			CreateMAA:            conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+			Debug:                conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	case cloudprovider.GCP:
+		targets := []string{}
+
+		vars := &terraform.GCPClusterVariables{
+			CommonVariables: commonVariables,
+			Project:         conf.Provider.GCP.Project,
+			Region:          conf.Provider.GCP.Region,
+			Zone:            conf.Provider.GCP.Zone,
+			CredentialsFile: conf.Provider.GCP.ServiceAccountKeyPath,
+			InstanceType:    conf.Provider.GCP.InstanceType,
+			StateDiskType:   conf.Provider.GCP.StateDiskType,
+			ImageID:         imageRef,
+			Debug:           conf.IsDebugCluster(),
+		}
+		return targets, vars, nil
+	default:
+		return nil, nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
+	}
+}
+
+type imageFetcher interface {
+	FetchReference(ctx context.Context, conf *config.Config) (string, error)
 }
 
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
@@ -193,14 +340,30 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		return upgradeApplyFlags{}, fmt.Errorf("parsing force argument: %w", err)
 	}
 
-	return upgradeApplyFlags{configPath: configPath, yes: yes, upgradeTimeout: timeout, force: force}, nil
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+
+	return upgradeApplyFlags{
+		configPath:        configPath,
+		yes:               yes,
+		upgradeTimeout:    timeout,
+		force:             force,
+		terraformLogLevel: logLevel,
+	}, nil
 }
 
 type upgradeApplyFlags struct {
-	configPath     string
-	yes            bool
-	upgradeTimeout time.Duration
-	force          bool
+	configPath        string
+	yes               bool
+	upgradeTimeout    time.Duration
+	force             bool
+	terraformLogLevel terraform.LogLevel
 }
 
 type cloudUpgrader interface {
@@ -208,4 +371,8 @@ type cloudUpgrader interface {
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
+	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
+	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
+	CheckTerraformMigrations(fileHandler file.Handler) error
+	CleanUpTerraformMigrations(fileHandler file.Handler) error
 }

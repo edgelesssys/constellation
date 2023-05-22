@@ -12,14 +12,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/image"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -77,11 +81,12 @@ type Upgrader struct {
 	helmClient       helmInterface
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
+	tfUpgrader       *upgrade.TerraformUpgrader
 	log              debugLog
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
+func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -103,14 +108,52 @@ func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
+
+	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
+	}
+
 	return &Upgrader{
 		stableInterface:  &stableClient{client: kubeClient},
 		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
 		helmClient:       helmClient,
 		imageFetcher:     image.New(),
 		outWriter:        outWriter,
+		tfUpgrader:       tfUpgrader,
 		log:              log,
 	}, nil
+}
+
+// CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
+// If the files that will be written during the upgrade already exist, it returns an error.
+func (u *Upgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
+	return u.tfUpgrader.CheckTerraformMigrations(fileHandler)
+}
+
+// CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
+// aborted by the user.
+func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
+	return u.tfUpgrader.CleanUpTerraformMigrations(fileHandler)
+}
+
+// PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
+// If a diff exists, it's being written to the upgrader's output writer. It also returns
+// a bool indicating whether a diff exists.
+func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
+	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts)
+}
+
+// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// If PlanTerraformMigrations has not been executed before, it will return an error.
+// In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
+// By the new one.
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error {
+	return u.tfUpgrader.ApplyTerraformMigrations(ctx, fileHandler, opts)
 }
 
 // UpgradeHelmServices upgrade helm services.

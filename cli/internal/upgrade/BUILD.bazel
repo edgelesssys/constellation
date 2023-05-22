@@ -1,0 +1,34 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "upgrade",
+    srcs = [
+        "terraform.go",
+        "upgrade.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/upgrade",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//cli/internal/clusterid",
+        "//cli/internal/terraform",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/file",
+    ],
+)
+
+go_test(
+    name = "upgrade_test",
+    srcs = ["terraform_test.go"],
+    embed = [":upgrade"],
+    deps = [
+        "//cli/internal/terraform",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
