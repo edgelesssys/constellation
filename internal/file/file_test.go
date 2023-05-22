@@ -426,7 +426,8 @@ func TestCopyDir(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		handler := NewHandler(fs)
 		for _, file := range existingFiles {
-			handler.Write(file, []byte("some content"), OptMkdirAll)
+			err := handler.Write(file, []byte("some content"), OptMkdirAll)
+			require.NoError(t, err)
 		}
 		return handler
 	}
