@@ -146,6 +146,7 @@ func (u *Uploader) createImage(ctx context.Context, version versionsapi.Version,
 			GuestOsFeatures: []*computepb.GuestOsFeature{
 				{Type: toPtr("GVNIC")},
 				{Type: toPtr("SEV_CAPABLE")},
+				{Type: toPtr("SEV_SNP_CAPABLE")},
 				{Type: toPtr("VIRTIO_SCSI_MULTIQUEUE")},
 				{Type: toPtr("UEFI_COMPATIBLE")},
 			},
