@@ -302,7 +302,9 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 			return errors.New("sent empty logs")
 		}
 
-		d.fh.Write(constants.ErrorLog, log, file.OptAppend)
+		if err := d.fh.Write(constants.ErrorLog, log, file.OptAppend); err != nil {
+			return err
+		}
 	}
 	return nil
 }
