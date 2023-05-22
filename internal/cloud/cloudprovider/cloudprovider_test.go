@@ -235,6 +235,10 @@ func TestFromString(t *testing.T) {
 			input: "openstack",
 			want:  OpenStack,
 		},
+		"stackit": {
+			input: "stackit",
+			want:  OpenStack,
+		},
 		"qemu": {
 			input: "qemu",
 			want:  QEMU,

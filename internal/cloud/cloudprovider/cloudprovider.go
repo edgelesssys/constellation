@@ -64,6 +64,10 @@ func (p *Provider) UnmarshalYAML(unmarshal func(any) error) error {
 // FromString returns cloud provider from string.
 func FromString(s string) Provider {
 	s = strings.ToLower(s)
+	if isOpenStackProvider(s) {
+		return OpenStack
+	}
+
 	switch s {
 	case "aws":
 		return AWS
@@ -71,13 +75,18 @@ func FromString(s string) Provider {
 		return Azure
 	case "gcp":
 		return GCP
-	case "openstack":
-		return OpenStack
-	case "stackit":
-		return OpenStack // StackIT uses OpenStack, use this as a workaround to support commands using "stackit"
 	case "qemu":
 		return QEMU
 	default:
 		return Unknown
 	}
+}
+
+// IsOpenStackProvider returns true if the provider is based on OpenStack.
+func isOpenStackProvider(s string) bool {
+	switch strings.ToLower(s) {
+	case "openstack", "stackit":
+		return true
+	}
+	return false
 }

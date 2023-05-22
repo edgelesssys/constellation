@@ -61,10 +61,10 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	provider := cloudprovider.FromString(args[0])
 	cg := &configGenerateCmd{log: log}
-	return cg.configGenerate(cmd, fileHandler, provider)
+	return cg.configGenerate(cmd, fileHandler, provider, args[0])
 }
 
-func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
+func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider, rawProvider string) error {
 	flags, err := parseGenerateFlags(cmd)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf, err := createConfigWithAttestationType(provider, flags.attestationVariant)
+	conf, err := createConfigWithAttestationType(provider, rawProvider, flags.attestationVariant)
 	if err != nil {
 		return fmt.Errorf("creating config: %w", err)
 	}
@@ -102,8 +102,8 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 }
 
 // createConfig creates a config file for the given provider.
-func createConfigWithAttestationType(provider cloudprovider.Provider, attestationVariant variant.Variant) (*config.Config, error) {
-	conf := config.Default()
+func createConfigWithAttestationType(provider cloudprovider.Provider, rawProvider string, attestationVariant variant.Variant) (*config.Config, error) {
+	conf := config.Default().WithOpenStackProviderDefaults(rawProvider)
 	conf.RemoveProviderExcept(provider)
 
 	// set a lower default for QEMU's state disk
@@ -128,7 +128,8 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, attestatio
 
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
-	res, _ := createConfigWithAttestationType(provider, variant.Dummy{})
+	// rawProvider can be hardcoded as it only matters for OpenStack
+	res, _ := createConfigWithAttestationType(provider, "", variant.Dummy{})
 	return res
 }
 
