@@ -291,17 +291,14 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 	for {
 		res, err := resp.Recv()
 		if err == io.EOF {
-			d.log.Debugf("break")
 			break
 		}
 		if err != nil {
-			d.log.Debugf("err: %s", err)
 			return err
 		}
 
 		log := res.GetLog().GetLog()
 		if log == nil {
-			d.log.Debugf("logs nil")
 			return errors.New("sent empty logs")
 		}
 
