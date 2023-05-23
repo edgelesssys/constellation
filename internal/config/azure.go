@@ -15,7 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config/version"
+	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -49,10 +49,10 @@ type AzureSEVSNP struct {
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: version.GetVersion(version.Bootloader),
-		TEEVersion:        version.GetVersion(version.TEE),
-		SNPVersion:        version.GetVersion(version.SNP),
-		MicrocodeVersion:  version.GetVersion(version.Microcode),
+		BootloaderVersion: snpversion.GetLatest(snpversion.Bootloader),
+		TEEVersion:        snpversion.GetLatest(snpversion.TEE),
+		SNPVersion:        snpversion.GetLatest(snpversion.SNP),
+		MicrocodeVersion:  snpversion.GetLatest(snpversion.Microcode),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -105,7 +105,7 @@ func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
 
-	for _, versionType := range []version.Type{version.Bootloader, version.TEE, version.SNP, version.Microcode} {
+	for _, versionType := range []snpversion.Type{snpversion.Bootloader, snpversion.TEE, snpversion.SNP, snpversion.Microcode} {
 		if !convertLatestToNumber(c, versionType, aux) {
 			if err := convertStringToUint(c, versionType, aux); err != nil {
 				return fmt.Errorf("convert %s version to number: %w", versionType, err)
@@ -189,7 +189,7 @@ type fusedAzureSEVSNP struct {
 	MicrocodeVersion string `yaml:"microcodeVersion"`
 }
 
-func convertStringToUint(c *AzureSEVSNP, versionType version.Type, aux *fusedAzureSEVSNP) error {
+func convertStringToUint(c *AzureSEVSNP, versionType snpversion.Type, aux *fusedAzureSEVSNP) error {
 	v, stringV := getUintAndStringPtrToVersion(c, versionType, aux)
 
 	bvInt, err := strconv.ParseInt(*stringV, 10, 8)
@@ -200,27 +200,27 @@ func convertStringToUint(c *AzureSEVSNP, versionType version.Type, aux *fusedAzu
 	return nil
 }
 
-func convertLatestToNumber(c *AzureSEVSNP, versionType version.Type, aux *fusedAzureSEVSNP) bool {
+func convertLatestToNumber(c *AzureSEVSNP, versionType snpversion.Type, aux *fusedAzureSEVSNP) bool {
 	v, stringV := getUintAndStringPtrToVersion(c, versionType, aux)
 	if strings.ToLower(*stringV) == "latest" {
-		*v = version.GetVersion(versionType)
+		*v = snpversion.GetLatest(versionType)
 		return true
 	}
 	return false
 }
 
-func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType version.Type, aux *fusedAzureSEVSNP) (versionUint *uint8, versionString *string) {
+func getUintAndStringPtrToVersion(c *AzureSEVSNP, versionType snpversion.Type, aux *fusedAzureSEVSNP) (versionUint *uint8, versionString *string) {
 	switch versionType {
-	case version.Bootloader:
+	case snpversion.Bootloader:
 		versionUint = &c.BootloaderVersion
 		versionString = &aux.BootloaderVersion
-	case version.TEE:
+	case snpversion.TEE:
 		versionUint = &c.TEEVersion
 		versionString = &aux.TEEVersion
-	case version.SNP:
+	case snpversion.SNP:
 		versionUint = &c.SNPVersion
 		versionString = &aux.SNPVersion
-	case version.Microcode:
+	case snpversion.Microcode:
 		versionUint = &c.MicrocodeVersion
 		versionString = &aux.MicrocodeVersion
 	}

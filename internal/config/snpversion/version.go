@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package version
+package snpversion
 
 const (
 	Bootloader Type = "bootloader" // Bootloader is the version of the Azure SEVSNP bootloader.
