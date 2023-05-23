@@ -1,0 +1,68 @@
+name: AWS SNP Launch Measurement
+
+on:
+  schedule:
+    # Run daily at 22:00.
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Install necessary tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 python3-pip
+        sudo python3 -m pip install sev-snp-measure==0.0.5
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@29bd9290ef037a3ecbdafe83cbd2185e9dd0fa0a # tag=v20
+
+    - name: Download Firmware release
+      id: download-firmware
+      uses: robinraju/release-downloader@efa4cd07bd0195e6cc65e9e30c251b49ce4d3e51 # tag=v1.8
+      with:
+        repository: aws/uefi
+        latest: true
+        zipBall: true
+
+    - name: Build UEFI firmware
+      id: build-uefi
+      shell: bash
+      run: |
+        # Unzip into a extra dir so that we can find "default.nix" and make sure we end up in the right directory.
+        mkdir aws-uefi
+        zipLocation=$(find . -name "uefi-*.zip")
+        unzip -d aws-uefi "$zipLocation"
+        buildfilePath="$(find aws-uefi -name 'default.nix')"
+        pushd "$(dirname "$buildfilePath")" || exit 1
+
+        nix-build --pure
+
+        ovmfPath=$(realpath result/ovmf_img.fd)
+        echo "ovmfPath=${ovmfPath}" | tee -a "$GITHUB_OUTPUT"
+
+
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # tag=v3.5.2
+      with:
+        repository: IBM/sev-snp-measure.git
+        ref: main
+        path: sev-snp-measure
+
+    - name: Run sev-snp-measure
+      shell: bash
+      run: |
+        pushd sev-snp-measure || exit 1
+        echo '[]' > intermediate.json
+
+        for vcpus in 2 4 8 16 32 48 64;
+        do
+          measurement="$(./sev-snp-measure.py --mode snp --vmm-type=ec2 --vcpus="$vcpus" --ovmf=${{ steps.build-uefi.outputs.ovmf_path }})"
+
+          jq --arg vcpus "$vcpus" --arg measurement "$measurement" '. += [{"vcpus": $vcpus, "measurement": $measurement}]' intermediate.json > measurements.json
+          cp measurements.json intermediate.json
+        done
+
+        jq < measurements.json
