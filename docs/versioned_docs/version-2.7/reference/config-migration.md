@@ -5,7 +5,7 @@ This document describes breaking changes in the configuration file format betwee
 ## Migrating from CLI versions before 2.3
 
 - The `sshUsers` field was deprecated in v2.2 and has been removed from the configuration in v2.3.
-  As an alternative for SSH, check the workflow section [Connect to nodes](../workflows/troubleshooting.md#connect-to-nodes).
+  As an alternative for SSH, check the workflow section [Connect to nodes](../workflows/troubleshooting.md#node-shell-access).
 - The `image` field for each cloud service provider has been replaced with a global `image` field. Use the following mapping to migrate your configuration:
     <details>
     <summary>Show all</summary>
