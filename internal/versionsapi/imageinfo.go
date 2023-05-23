@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"sort"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
@@ -95,4 +96,46 @@ func (i ImageInfo) Validate() error {
 	}
 
 	return retErr
+}
+
+// MergeImageInfos combines the image info entries from multiple sources into a single
+// image info object.
+func MergeImageInfos(infos ...ImageInfo) (ImageInfo, error) {
+	if len(infos) == 0 {
+		return ImageInfo{}, errors.New("no image info objects specified")
+	}
+	if len(infos) == 1 {
+		return infos[0], nil
+	}
+	out := ImageInfo{
+		Ref:     infos[0].Ref,
+		Stream:  infos[0].Stream,
+		Version: infos[0].Version,
+		List:    []ImageInfoEntry{},
+	}
+	for _, info := range infos {
+		if info.Ref != out.Ref {
+			return ImageInfo{}, errors.New("image info objects have different refs")
+		}
+		if info.Stream != out.Stream {
+			return ImageInfo{}, errors.New("image info objects have different streams")
+		}
+		if info.Version != out.Version {
+			return ImageInfo{}, errors.New("image info objects have different versions")
+		}
+		out.List = append(out.List, info.List...)
+	}
+	sort.SliceStable(out.List, func(i, j int) bool {
+		if out.List[i].CSP != out.List[j].CSP {
+			return out.List[i].CSP < out.List[j].CSP
+		}
+		if out.List[i].AttestationVariant != out.List[j].AttestationVariant {
+			return out.List[i].AttestationVariant < out.List[j].AttestationVariant
+		}
+		if out.List[i].Region != out.List[j].Region {
+			return out.List[i].Region < out.List[j].Region
+		}
+		return out.List[i].Reference < out.List[j].Reference
+	})
+	return out, nil
 }
