@@ -42,10 +42,6 @@ runs:
         username: ${{ github.actor }}
         password: ${{ inputs.githubToken }}
 
-    - name: Upload referenced container images
-      shell: bash
-      run: bazelisk run //bazel/release:push
-
     - name: MiniConstellation E2E
       shell: bash
       env:
@@ -53,4 +49,4 @@ runs:
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}
         ARM_TENANT_ID: ${{ inputs.azureTenantID }}
       run: |
-        bazelisk run //e2e/miniconstellation:remote_test
+        bazelisk run //e2e/miniconstellation:push_remote_test

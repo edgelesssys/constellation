@@ -428,7 +428,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
 		if err := lv.Start(ctx, opts.Config.Name, opts.Config.Provider.QEMU.LibvirtContainerImage); err != nil {
-			return clusterid.File{}, err
+			return clusterid.File{}, fmt.Errorf("start libvirt container: %w", err)
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
 
@@ -485,7 +485,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), &vars); err != nil {
-		return clusterid.File{}, err
+		return clusterid.File{}, fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	// Allow rollback of QEMU Terraform workspace from this point on
@@ -493,7 +493,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 
 	tfOutput, err := cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
-		return clusterid.File{}, err
+		return clusterid.File{}, fmt.Errorf("create cluster: %w", err)
 	}
 
 	return clusterid.File{

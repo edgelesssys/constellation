@@ -411,13 +411,13 @@ func (c *Client) writeVars(vars Variables) error {
 		// If a variables file already exists, check if it's the same as we're expecting, so we can continue using it.
 		varsContent, err := c.file.Read(pathToVarsFile)
 		if err != nil {
-			return err
+			return fmt.Errorf("read variables file: %w", err)
 		}
 		if vars.String() != string(varsContent) {
 			return ErrTerraformWorkspaceExistsWithDifferentVariables
 		}
 	} else if err != nil {
-		return err
+		return fmt.Errorf("write variables file: %w", err)
 	}
 
 	return nil

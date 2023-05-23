@@ -10,6 +10,7 @@ package libvirt
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/docker/docker/api/types"
@@ -43,7 +44,7 @@ func New() *Runner {
 func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 	docker, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create docker client: %w", err)
 	}
 	defer docker.Close()
 
@@ -65,7 +66,7 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 	if len(images) == 0 {
 		reader, err := docker.ImagePull(ctx, imageName, types.ImagePullOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to pull image %q: %w", imageName, err)
 		}
 		defer reader.Close()
 		if _, err := io.Copy(io.Discard, reader); err != nil {
@@ -88,11 +89,11 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 		nil,
 		containerName,
 	); err != nil {
-		return err
+		return fmt.Errorf("failed to create container: %w", err)
 	}
 	if err := docker.ContainerStart(ctx, containerName, types.ContainerStartOptions{}); err != nil {
 		_ = docker.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true})
-		return err
+		return fmt.Errorf("failed to start container: %w", err)
 	}
 
 	// write the name of the container to a file so we can remove it later
