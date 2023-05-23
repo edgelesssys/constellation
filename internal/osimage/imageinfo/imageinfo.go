@@ -4,12 +4,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// package archive is used to archive OS images in S3.
-package archive
+// package imageinfo is used to upload image info JSON files to S3.
+package imageinfo
 
 import (
+	"bytes"
 	"context"
-	"io"
+	"encoding/json"
 	"net/url"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -21,8 +22,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
-// Archivist uploads OS images to S3.
-type Archivist struct {
+// Uploader uploads image info to S3.
+type Uploader struct {
 	uploadClient uploadClient
 	// bucket is the name of the S3 bucket to use.
 	bucket string
@@ -30,8 +31,8 @@ type Archivist struct {
 	log *logger.Logger
 }
 
-// New creates a new Archivist.
-func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Archivist, error) {
+// New creates a new Uploader.
+func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Uploader, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
 	if err != nil {
 		return nil, err
@@ -39,24 +40,34 @@ func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Archi
 	s3client := s3.NewFromConfig(cfg)
 	uploadClient := s3manager.NewUploader(s3client)
 
-	return &Archivist{
+	return &Uploader{
 		uploadClient: uploadClient,
 		bucket:       bucket,
 		log:          log,
 	}, nil
 }
 
-// Archive reads the OS image in img and uploads it as key.
-func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, csp, attestationVariant string, img io.Reader) (string, error) {
-	key, err := url.JoinPath(version.ArtifactPath(versionsapi.APIV1), version.Kind.String(), "csp", csp, attestationVariant, "image.raw")
+// Upload marshals the image info to JSON and uploads it to S3.
+func (a *Uploader) Upload(ctx context.Context, imageInfo versionsapi.ImageInfo) (string, error) {
+	ver := versionsapi.Version{
+		Ref:     imageInfo.Ref,
+		Stream:  imageInfo.Stream,
+		Version: imageInfo.Version,
+		Kind:    versionsapi.VersionKindImage,
+	}
+	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind.String(), "info.json")
 	if err != nil {
 		return "", err
 	}
-	a.log.Debugf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key)
+	a.log.Debugf("Archiving image info to s3://%v/%v", a.bucket, key)
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(imageInfo); err != nil {
+		return "", err
+	}
 	_, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,
-		Body:              img,
+		Body:              buf,
 		ChecksumAlgorithm: s3types.ChecksumAlgorithmSha256,
 	})
 	return constants.CDNRepositoryURL + "/" + key, err

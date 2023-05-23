@@ -41,6 +41,8 @@ func newRootCmd() *cobra.Command {
 	rootCmd.SetOut(os.Stdout)
 
 	rootCmd.AddCommand(cmd.NewImageCmd())
+	rootCmd.AddCommand(cmd.NewInfoCmd())
+	rootCmd.AddCommand(cmd.NewMeasurementsCmd())
 
 	return rootCmd
 }

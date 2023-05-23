@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "archive",
-    srcs = ["archive.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/archive",
+    name = "imageinfo",
+    srcs = ["imageinfo.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/imageinfo",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/constants",
