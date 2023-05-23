@@ -277,8 +277,8 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 34 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-	const azErrCount = 9
+	const defaultErrCount = 32 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const azErrCount = 7
 	const gcpErrCount = 6
 
 	// TODO(AB#3132,3u13r): refactor config validation tests

@@ -31,11 +31,9 @@ type GCPFile struct {
 
 // AzureFile contains the output information of a Microsoft Azure IAM configuration.
 type AzureFile struct {
-	SubscriptionID               string `json:"subscriptionID,omitempty"`
-	TenantID                     string `json:"tenantID,omitempty"`
-	ApplicationID                string `json:"applicationID,omitempty"`
-	UAMIID                       string `json:"uamiID,omitempty"`
-	ApplicationClientSecretValue string `json:"applicationClientSecretValue,omitempty"`
+	SubscriptionID string `json:"subscriptionID,omitempty"`
+	TenantID       string `json:"tenantID,omitempty"`
+	UAMIID         string `json:"uamiID,omitempty"`
 }
 
 // AWSFile contains the output information of an AWS IAM configuration.

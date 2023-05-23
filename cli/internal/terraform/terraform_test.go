@@ -116,9 +116,8 @@ func TestPrepareIAM(t *testing.T) {
 		ServiceAccountID: "const-test-case",
 	}
 	azureVars := &AzureIAMVariables{
-		Region:           "westus",
-		ServicePrincipal: "constell-test-sp",
-		ResourceGroup:    "constell-test-rg",
+		Region:        "westus",
+		ResourceGroup: "constell-test-rg",
 	}
 	awsVars := &AWSIAMVariables{
 		Region: "eu-east-2a",
@@ -480,9 +479,8 @@ func TestCreateIAM(t *testing.T) {
 		ServiceAccountID: "const-test-case",
 	}
 	azureVars := &AzureIAMVariables{
-		Region:           "westus",
-		ServicePrincipal: "constell-test-sp",
-		ResourceGroup:    "constell-test-rg",
+		Region:        "westus",
+		ResourceGroup: "constell-test-rg",
 	}
 	awsVars := &AWSIAMVariables{
 		Region: "eu-east-2a",
@@ -581,11 +579,9 @@ func TestCreateIAM(t *testing.T) {
 			tf:       &stubTerraform{showState: newTestState()},
 			fs:       afero.NewMemMapFs(),
 			want: IAMOutput{Azure: AzureIAMOutput{
-				SubscriptionID:               "test_subscription_id",
-				TenantID:                     "test_tenant_id",
-				ApplicationID:                "test_application_id",
-				ApplicationClientSecretValue: "test_application_client_secret_value",
-				UAMIID:                       "test_uami_id",
+				SubscriptionID: "test_subscription_id",
+				TenantID:       "test_tenant_id",
+				UAMIID:         "test_uami_id",
 			}},
 		},
 		"azure init fails": {

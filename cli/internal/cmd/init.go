@@ -449,13 +449,19 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 		return "", nil // AWS does not need a service account URI
 	case cloudprovider.Azure:
 		i.log.Debugf("Handling case for Azure")
+
+		// TODO(3u13r): Remove this fallback and enforce assigned managed identity after the v2.8.0 but before the v2.9.0 release.
+		authMethod := azureshared.AuthMethodUserAssignedIdentity
+		if config.Provider.Azure.AppClientID != "" {
+			authMethod = azureshared.AuthMethodServicePrincipal
+		}
+
 		creds := azureshared.ApplicationCredentials{
-			TenantID:          config.Provider.Azure.TenantID,
-			AppClientID:       config.Provider.Azure.AppClientID,
-			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
-			Location:          config.Provider.Azure.Location,
-			// TODO(malt3): Switch preferred auth method to uami as planned by AB#2961
-			PreferredAuthMethod: azureshared.AuthMethodServicePrincipal,
+			TenantID:            config.Provider.Azure.TenantID,
+			AppClientID:         config.Provider.Azure.AppClientID,
+			ClientSecretValue:   config.Provider.Azure.ClientSecretValue,
+			Location:            config.Provider.Azure.Location,
+			PreferredAuthMethod: authMethod,
 			UamiResourceID:      config.Provider.Azure.UserAssignedIdentity,
 		}
 		return creds.ToCloudServiceAccountURI(), nil

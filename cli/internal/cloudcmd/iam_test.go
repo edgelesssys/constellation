@@ -50,21 +50,17 @@ func TestIAMCreator(t *testing.T) {
 	}
 	validAzureIAMOutput := terraform.IAMOutput{
 		Azure: terraform.AzureIAMOutput{
-			SubscriptionID:               "test_subscription_id",
-			TenantID:                     "test_tenant_id",
-			ApplicationID:                "test_application_id",
-			ApplicationClientSecretValue: "test_application_client_secret_value",
-			UAMIID:                       "test_uami_id",
+			SubscriptionID: "test_subscription_id",
+			TenantID:       "test_tenant_id",
+			UAMIID:         "test_uami_id",
 		},
 	}
 	validAzureIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.Azure,
 		AzureOutput: iamid.AzureFile{
-			SubscriptionID:               "test_subscription_id",
-			TenantID:                     "test_tenant_id",
-			ApplicationID:                "test_application_id",
-			ApplicationClientSecretValue: "test_application_client_secret_value",
-			UAMIID:                       "test_uami_id",
+			SubscriptionID: "test_subscription_id",
+			TenantID:       "test_tenant_id",
+			UAMIID:         "test_uami_id",
 		},
 	}
 
