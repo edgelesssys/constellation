@@ -4,7 +4,7 @@ The following steps guide you through the process of creating a cluster and depl
 and have access to a cloud subscription.
 
 :::tip
-If you don't have a cloud subscription, check out [MiniConstellation](first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
+If you don't have a cloud subscription, you can also set up a [local Constellation cluster using virtualization](../getting-started/first-steps-local.md) for testing.
 :::
 
 :::note
@@ -57,6 +57,8 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     Constellation OS images are currently replicated to the following regions:
      * `eu-central-1`
+     * `eu-west-1`
+     * `eu-west-3`
      * `us-east-2`
      * `ap-south-1`
 
