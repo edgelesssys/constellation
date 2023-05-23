@@ -9,7 +9,7 @@ import (
 
 const defaultVersionValue = math.MaxUint8
 
-// NewLatestDummyVersion returns the latest version with a dummy value (should only be used for testing)
+// NewLatestDummyVersion returns the latest version with a dummy value (should only be used for testing).
 func NewLatestDummyVersion() Version {
 	return Version{
 		Value:    defaultVersionValue,
@@ -30,10 +30,7 @@ func (v *Version) UnmarshalYAML(unmarshal func(any) error) error {
 		return fmt.Errorf("raw unmarshal: %w", err)
 	}
 
-	if err := v.parseRawUnmarshal(rawUnmarshal); err != nil {
-		return err
-	}
-	return nil
+	return v.parseRawUnmarshal(rawUnmarshal)
 }
 
 func (v *Version) parseRawUnmarshal(rawUnmarshal any) error {
@@ -45,7 +42,7 @@ func (v *Version) parseRawUnmarshal(rawUnmarshal any) error {
 			return fmt.Errorf("invalid version  value: %s", string(s))
 		}
 	case float64:
-		v.Value = uint8(int(s))
+		v.Value = uint8(s)
 	default:
 		return fmt.Errorf("invalid version value input: %s", s)
 	}
@@ -66,8 +63,5 @@ func (v *Version) UnmarshalJSON(data []byte) (err error) {
 	if err := json.Unmarshal(data, &rawUnmarshal); err != nil {
 		return fmt.Errorf("raw unmarshal: %w", err)
 	}
-	if err := v.parseRawUnmarshal(rawUnmarshal); err != nil {
-		return err
-	}
-	return nil
+	return v.parseRawUnmarshal(rawUnmarshal)
 }
