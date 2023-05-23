@@ -24,7 +24,7 @@ func TestImageInfoJSONPath(t *testing.T) {
 				Stream:  "nightly",
 				Version: "v1.0.0",
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
+			wantPath: constants.CDNAPIPrefixV2 + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
 		},
 		"image info release": {
 			info: ImageInfo{
@@ -32,7 +32,7 @@ func TestImageInfoJSONPath(t *testing.T) {
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/-/stream/stable/v1.0.0/image/info.json",
+			wantPath: constants.CDNAPIPrefixV2 + "/ref/-/stream/stable/v1.0.0/image/info.json",
 		},
 	}
 
@@ -55,7 +55,7 @@ func TestImageInfoURL(t *testing.T) {
 				Stream:  "nightly",
 				Version: "v1.0.0",
 			},
-			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
+			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefixV2 + "/ref/test-ref/stream/nightly/v1.0.0/image/info.json",
 		},
 		"image info release": {
 			info: ImageInfo{
@@ -63,7 +63,7 @@ func TestImageInfoURL(t *testing.T) {
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
-			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/v1.0.0/image/info.json",
+			wantURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefixV2 + "/ref/-/stream/stable/v1.0.0/image/info.json",
 		},
 	}
 
@@ -87,10 +87,35 @@ func TestImageInfoValidate(t *testing.T) {
 				Ref:     "test-ref",
 				Stream:  "nightly",
 				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-2",
+					},
+					{
+						CSP:                "gcp",
+						AttestationVariant: "gcp-sev-es",
+						Reference:          "gcp-123",
+					},
+					{
+						CSP:                "azure",
+						AttestationVariant: "azure-sev-snp",
+						Reference:          "azure-123",
+					},
+					{
+						CSP:                "qemu",
+						AttestationVariant: "qemu-vtpm",
+						Reference:          "https://example.com/qemu-123/image.raw",
+					},
+				},
 			},
 		},
 		"invalid ref": {
@@ -98,10 +123,14 @@ func TestImageInfoValidate(t *testing.T) {
 				Ref:     "",
 				Stream:  "nightly",
 				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -110,10 +139,14 @@ func TestImageInfoValidate(t *testing.T) {
 				Ref:     "test-ref",
 				Stream:  "",
 				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -122,14 +155,18 @@ func TestImageInfoValidate(t *testing.T) {
 				Ref:     "test-ref",
 				Stream:  "nightly",
 				Version: "",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
 			},
 			wantErr: true,
 		},
-		"no provider": {
+		"no entries in list": {
 			info: ImageInfo{
 				Ref:     "test-ref",
 				Stream:  "nightly",
@@ -197,48 +234,19 @@ func TestImageInfoValidateRequest(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"invalid gcp": {
+		"request contains entries": {
 			info: ImageInfo{
 				Ref:     "test-ref",
 				Stream:  "nightly",
 				Version: "v1.0.0",
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid azure": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid aws": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid qemu": {
-			info: ImageInfo{
-				Ref:     "test-ref",
-				Stream:  "nightly",
-				Version: "v1.0.0",
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
-			},
-			wantErr: true,
-		},
-		"invalid openstack": {
-			info: ImageInfo{
-				Ref:       "test-ref",
-				Stream:    "nightly",
-				Version:   "v1.0.0",
-				OpenStack: map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -247,10 +255,14 @@ func TestImageInfoValidateRequest(t *testing.T) {
 				Ref:     "",
 				Stream:  "",
 				Version: "",
-				AWS:     map[string]string{"key": "value", "key2": "value2"},
-				GCP:     map[string]string{"key": "value", "key2": "value2"},
-				Azure:   map[string]string{"key": "value", "key2": "value2"},
-				QEMU:    map[string]string{"key": "value", "key2": "value2"},
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
 			},
 			wantErr: true,
 		},

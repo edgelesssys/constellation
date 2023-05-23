@@ -42,7 +42,7 @@ func newRootCmd() *cobra.Command {
 
 	rootCmd.PersistentFlags().String("raw-image", "", "Path to os image in CSP specific format that should be uploaded.")
 	rootCmd.PersistentFlags().String("pki", "", "Base path to the PKI (secure boot signing) files.")
-	rootCmd.PersistentFlags().String("variant", "", "Variant of the image being uploaded.")
+	rootCmd.PersistentFlags().String("attestation-variant", "", "Attestation variant of the image being uploaded.")
 	rootCmd.PersistentFlags().String("version", "", "Shortname of the os image version.")
 	rootCmd.PersistentFlags().String("timestamp", "", "Optional timestamp to use for resource names. Uses format 2006-01-02T15:04:05Z07:00.")
 	rootCmd.PersistentFlags().String("region", "eu-central-1", "AWS region of the archive S3 bucket")
@@ -50,7 +50,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().String("out", "", "Optional path to write the upload result to. If not set, the result is written to stdout.")
 	rootCmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	must(rootCmd.MarkPersistentFlagRequired("raw-image"))
-	must(rootCmd.MarkPersistentFlagRequired("variant"))
+	must(rootCmd.MarkPersistentFlagRequired("attestation-variant"))
 	must(rootCmd.MarkPersistentFlagRequired("version"))
 
 	rootCmd.AddCommand(cmd.NewAWSCmd())

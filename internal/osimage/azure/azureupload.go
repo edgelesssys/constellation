@@ -93,9 +93,9 @@ func New(subscription, location, resourceGroup string, log *logger.Logger) (*Upl
 }
 
 // Upload uploads an OS image to Azure.
-func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[string]string, error) {
+func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
 	formattedTime := req.Timestamp.Format(timestampFormat)
-	diskName := fmt.Sprintf("constellation-%s-%s-%s", req.Version.Stream, formattedTime, req.Variant)
+	diskName := fmt.Sprintf("constellation-%s-%s-%s", req.Version.Stream, formattedTime, req.AttestationVariant)
 	var sigName string
 	switch req.Version.Stream {
 	case "stable":
@@ -140,7 +140,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[
 	if err := u.ensureSIG(ctx, sigName); err != nil {
 		return nil, fmt.Errorf("ensuring sig exists: %w", err)
 	}
-	if err := u.ensureImageDefinition(ctx, sigName, definitionName, req.Version, req.Variant); err != nil {
+	if err := u.ensureImageDefinition(ctx, sigName, definitionName, req.Version, req.AttestationVariant); err != nil {
 		return nil, fmt.Errorf("ensuring image definition exists: %w", err)
 	}
 
@@ -154,8 +154,12 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[
 		return nil, fmt.Errorf("getting image reference: %w", err)
 	}
 
-	return map[string]string{
-		req.Variant: imageReference,
+	return []versionsapi.ImageInfoEntry{
+		{
+			CSP:                "azure",
+			AttestationVariant: req.AttestationVariant,
+			Reference:          imageReference,
+		},
 	}, nil
 }
 
@@ -337,7 +341,7 @@ func (u *Uploader) ensureSIG(ctx context.Context, sigName string) error {
 }
 
 // ensureImageDefinition creates an image definition (component of a SIG) if it does not exist yet.
-func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitionName string, version versionsapi.Version, variant string) error {
+func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitionName string, version versionsapi.Version, attestationVariant string) error {
 	_, err := u.image.Get(ctx, u.resourceGroup, sigName, definitionName, &armcomputev4.GalleryImagesClientGetOptions{})
 	if err == nil {
 		u.log.Debugf("Image definition %s/%s in %s exists", sigName, definitionName, u.resourceGroup)
@@ -349,10 +353,10 @@ func (u *Uploader) ensureImageDefinition(ctx context.Context, sigName, definitio
 	// based on wether a VMGS was provided or not.
 	// VMGS provided: ConfidentialVM
 	// No VMGS provided: ConfidentialVMSupported
-	switch strings.ToLower(variant) {
-	case "cvm":
+	switch strings.ToLower(attestationVariant) {
+	case "azure-sev-snp":
 		securityType = string("ConfidentialVMSupported")
-	case "trustedlaunch":
+	case "azure-trustedlaunch":
 		securityType = string(armcomputev4.SecurityTypesTrustedLaunch)
 	}
 	offer := imageOffer(version)

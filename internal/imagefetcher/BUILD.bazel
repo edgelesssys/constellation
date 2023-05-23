@@ -2,16 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
-    name = "image",
+    name = "imagefetcher",
     srcs = [
-        "image.go",
+        "imagegfetcher.go",
         "raw.go",
     ],
-    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/image",
+    importpath = "github.com/edgelesssys/constellation/v2/internal/imagefetcher",
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//internal/cloud/cloudprovider",
-        "//internal/config",
         "//internal/variant",
         "//internal/versionsapi",
         "//internal/versionsapi/fetcher",
@@ -21,16 +20,16 @@ go_library(
 )
 
 go_test(
-    name = "image_test",
+    name = "imagefetcher_test",
     srcs = [
-        "image_test.go",
+        "imagefetcher_test.go",
         "raw_test.go",
     ],
-    embed = [":image"],
+    embed = [":imagefetcher"],
     deps = [
         "//internal/cloud/cloudprovider",
-        "//internal/config",
         "//internal/file",
+        "//internal/variant",
         "//internal/versionsapi",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

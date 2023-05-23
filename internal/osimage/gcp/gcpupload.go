@@ -61,8 +61,8 @@ func New(ctx context.Context, project, location, bucketName string, log *logger.
 }
 
 // Upload uploads an OS image to GCP.
-func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[string]string, error) {
-	imageName := u.imageName(req.Version, req.Variant)
+func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
+	imageName := u.imageName(req.Version, req.AttestationVariant)
 	blobName := imageName + ".tar.gz"
 	if err := u.ensureBucket(ctx); err != nil {
 		return nil, fmt.Errorf("setup: ensuring bucket exists: %w", err)
@@ -86,8 +86,12 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[
 	if err != nil {
 		return nil, fmt.Errorf("creating image: %w", err)
 	}
-	return map[string]string{
-		req.Variant: imageRef,
+	return []versionsapi.ImageInfoEntry{
+		{
+			CSP:                "gcp",
+			AttestationVariant: req.AttestationVariant,
+			Reference:          imageRef,
+		},
 	}, nil
 }
 
@@ -220,8 +224,8 @@ func (u *Uploader) blobURL(blobName string) string {
 	}).String()
 }
 
-func (u *Uploader) imageName(version versionsapi.Version, variant string) string {
-	return strings.ReplaceAll(version.Version, ".", "-") + "-" + variant + "-" + version.Stream
+func (u *Uploader) imageName(version versionsapi.Version, attestationVariant string) string {
+	return strings.ReplaceAll(version.Version, ".", "-") + "-" + attestationVariant + "-" + version.Stream
 }
 
 func (u *Uploader) imageFamily(version versionsapi.Version) string {

@@ -546,6 +546,23 @@ func (c *Config) GetAttestationConfig() AttestationCfg {
 	return &DummyCfg{}
 }
 
+// GetRegion returns the configured region.
+func (c *Config) GetRegion() string {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return c.Provider.AWS.Region
+	case cloudprovider.Azure:
+		return c.Provider.Azure.Location
+	case cloudprovider.GCP:
+		return c.Provider.GCP.Region
+	case cloudprovider.OpenStack:
+		return c.Provider.OpenStack.RegionName
+	case cloudprovider.QEMU:
+		return ""
+	}
+	return ""
+}
+
 // UpdateMAAURL updates the MAA URL in the config.
 func (c *Config) UpdateMAAURL(maaURL string) {
 	if c.Attestation.AzureSEVSNP != nil {

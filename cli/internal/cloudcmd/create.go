@@ -25,12 +25,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -48,7 +48,7 @@ type Creator struct {
 func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out:   out,
-		image: image.New(),
+		image: imagefetcher.New(),
 		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
 			return terraform.New(ctx, constants.TerraformWorkingDir)
 		},
@@ -56,7 +56,7 @@ func NewCreator(out io.Writer) *Creator {
 			return libvirt.New()
 		},
 		newRawDownloader: func() rawDownloader {
-			return image.NewDownloader()
+			return imagefetcher.NewDownloader()
 		},
 		policyPatcher: policyPatcher{},
 	}
@@ -75,7 +75,10 @@ type CreateOptions struct {
 
 // Create creates the handed amount of instances and all the needed resources.
 func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.File, error) {
-	image, err := c.image.FetchReference(ctx, opts.Config)
+	provider := opts.Config.GetProvider()
+	attestationVariant := opts.Config.GetAttestationConfig().GetVariant()
+	region := opts.Config.GetRegion()
+	image, err := c.image.FetchReference(ctx, provider, attestationVariant, opts.Config.Image, region)
 	if err != nil {
 		return clusterid.File{}, fmt.Errorf("fetching image reference: %w", err)
 	}
