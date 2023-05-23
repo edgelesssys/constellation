@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -34,6 +35,76 @@ func TestDefaultConfig(t *testing.T) {
 	assert := assert.New(t)
 	def := Default()
 	assert.NotNil(def)
+}
+
+func TestSettingLatestAsVersion(t *testing.T) {
+	testCases := map[string]struct {
+		config     map[string]interface{}
+		configName string
+		wantResult *Config
+		wantErr    bool
+	}{
+		"mix of latest and uint as version value": {
+			config: func() map[string]interface{} {
+				conf := Default()
+				// modify versions as string
+				m := getConfigAsMap(conf, t)
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["snpVersion"] = "latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["bootloaderVersion"] = 1
+				return m
+			}(),
+
+			configName: constants.ConfigFilename,
+			wantResult: func() *Config {
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = 1
+				return conf
+			}(),
+		},
+		"refuse invalid version value": {
+			config: func() map[string]interface{} {
+				conf := Default()
+				m := getConfigAsMap(conf, t)
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "1a"
+				return m
+			}(),
+			configName: constants.ConfigFilename,
+			wantErr:    true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			if tc.config != nil {
+				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
+			}
+			result, err := fromFile(fileHandler, tc.configName)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				require.NoError(err)
+				assert.Equal(tc.wantResult, result)
+			}
+		})
+	}
+}
+
+// getConfigAsMap returns a map of the config.
+func getConfigAsMap(conf *Config, t *testing.T) (res map[string]interface{}) {
+	bytes, err := yaml.Marshal(&conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := yaml.Unmarshal(bytes, &res); err != nil {
+		t.Fatal(err)
+	}
+	return
 }
 
 func TestFromFile(t *testing.T) {
