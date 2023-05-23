@@ -746,3 +746,200 @@ func TestEqualTo(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeImageMeasurementsV2(t *testing.T) {
+	testCases := map[string]struct {
+		measurements     []ImageMeasurementsV2
+		wantMeasurements ImageMeasurementsV2
+		wantErr          bool
+	}{
+		"only one element": {
+			measurements: []ImageMeasurementsV2{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.AWS,
+							AttestationVariant: "aws-nitro-tpm",
+							Measurements: M{
+								0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+			},
+			wantMeasurements: ImageMeasurementsV2{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageMeasurementsV2Entry{
+					{
+						CSP:                cloudprovider.AWS,
+						AttestationVariant: "aws-nitro-tpm",
+						Measurements: M{
+							0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+						},
+					},
+				},
+			},
+		},
+		"valid measurements": {
+			measurements: []ImageMeasurementsV2{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.AWS,
+							AttestationVariant: "aws-nitro-tpm",
+							Measurements: M{
+								0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.GCP,
+							AttestationVariant: "gcp-sev-es",
+							Measurements: M{
+								1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+			},
+			wantMeasurements: ImageMeasurementsV2{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageMeasurementsV2Entry{
+					{
+						CSP:                cloudprovider.AWS,
+						AttestationVariant: "aws-nitro-tpm",
+						Measurements: M{
+							0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+						},
+					},
+					{
+						CSP:                cloudprovider.GCP,
+						AttestationVariant: "gcp-sev-es",
+						Measurements: M{
+							1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+						},
+					},
+				},
+			},
+		},
+		"sorting": {
+			measurements: []ImageMeasurementsV2{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.GCP,
+							AttestationVariant: "gcp-sev-es",
+							Measurements: M{
+								1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.AWS,
+							AttestationVariant: "aws-nitro-tpm",
+							Measurements: M{
+								0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+			},
+			wantMeasurements: ImageMeasurementsV2{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageMeasurementsV2Entry{
+					{
+						CSP:                cloudprovider.AWS,
+						AttestationVariant: "aws-nitro-tpm",
+						Measurements: M{
+							0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+						},
+					},
+					{
+						CSP:                cloudprovider.GCP,
+						AttestationVariant: "gcp-sev-es",
+						Measurements: M{
+							1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+						},
+					},
+				},
+			},
+		},
+		"mismatch in base info": {
+			measurements: []ImageMeasurementsV2{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.AWS,
+							AttestationVariant: "aws-nitro-tpm",
+							Measurements: M{
+								0: WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+				{
+					Ref:     "other-ref",
+					Stream:  "stable",
+					Version: "v2.0.0",
+					List: []ImageMeasurementsV2Entry{
+						{
+							CSP:                cloudprovider.GCP,
+							AttestationVariant: "gcp-sev-es",
+							Measurements: M{
+								1: WithAllBytes(0x11, Enforce, PCRMeasurementLength),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"empty list": {
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			gotMeasurements, err := MergeImageMeasurementsV2(tc.measurements...)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantMeasurements, gotMeasurements)
+		})
+	}
+}

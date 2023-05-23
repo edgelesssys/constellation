@@ -78,6 +78,42 @@ type ImageMeasurementsV2Entry struct {
 	Measurements       M                      `json:"measurements" yaml:"measurements"`
 }
 
+// MergeImageMeasurementsV2 combines the image measurement entries from multiple sources into a single
+// ImageMeasurementsV2 object.
+func MergeImageMeasurementsV2(measurements ...ImageMeasurementsV2) (ImageMeasurementsV2, error) {
+	if len(measurements) == 0 {
+		return ImageMeasurementsV2{}, errors.New("no measurement objects specified")
+	}
+	if len(measurements) == 1 {
+		return measurements[0], nil
+	}
+	out := ImageMeasurementsV2{
+		Version: measurements[0].Version,
+		Ref:     measurements[0].Ref,
+		Stream:  measurements[0].Stream,
+		List:    []ImageMeasurementsV2Entry{},
+	}
+	for _, m := range measurements {
+		if m.Version != out.Version {
+			return ImageMeasurementsV2{}, errors.New("version mismatch")
+		}
+		if m.Ref != out.Ref {
+			return ImageMeasurementsV2{}, errors.New("ref mismatch")
+		}
+		if m.Stream != out.Stream {
+			return ImageMeasurementsV2{}, errors.New("stream mismatch")
+		}
+		out.List = append(out.List, m.List...)
+	}
+	sort.SliceStable(out.List, func(i, j int) bool {
+		if out.List[i].CSP != out.List[j].CSP {
+			return out.List[i].CSP < out.List[j].CSP
+		}
+		return out.List[i].AttestationVariant < out.List[j].AttestationVariant
+	})
+	return out, nil
+}
+
 // MarshalYAML returns the YAML encoding of m.
 func (m M) MarshalYAML() (any, error) {
 	// cast to prevent infinite recursion
