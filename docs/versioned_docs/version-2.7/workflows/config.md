@@ -130,6 +130,8 @@ This command creates IAM configuration for the AWS zone `eu-central-1a` using th
 
 Constellation OS images are currently replicated to the following regions:
 * `eu-central-1`
+* `eu-west-1`
+* `eu-west-3`
 * `us-east-2`
 * `ap-south-1`
 
@@ -226,6 +228,8 @@ The following describes the configuration fields and how you obtain the required
 
   Constellation OS images are currently replicated to the following regions:
   * `eu-central-1`
+  * `eu-west-1`
+  * `eu-west-3`
   * `us-east-2`
   * `ap-south-1`
 
@@ -264,3 +268,8 @@ Delete the IAM configuration by executing the following command in the same dire
 ```bash
 constellation iam destroy
 ```
+
+:::caution
+For Azure, deleting the IAM configuration by executing `constellation iam destroy` will delete the whole resource group created by `constellation iam create`.
+This also includes any additional resources in the resource group that weren't created by Constellation.
+:::

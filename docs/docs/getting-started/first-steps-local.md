@@ -84,7 +84,7 @@ attaching persistent storage, or autoscaling aren't available.
 
   This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
 
-2. Now you can create your cluster and it's nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
+2. Now you can create your cluster and its nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
 
   ```bash
   constellation create --control-plane-nodes 1 --worker-nodes 1

@@ -1,23 +1,11 @@
-# First steps with MiniConstellation
+# First steps with a local cluster
 
-<!-- vale off -->
-With the `constellation mini` command, you can deploy and test Constellation locally without a cloud subscription. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
-<!-- vale on -->
+A local cluster lets you deploy and test Constellation without a cloud subscription.
+You have two options:
+* Use MiniConstellation to automatically deploy a two-node cluster.
+* For more fine-grained control, create the cluster using the QEMU provider.
 
-MiniConstellation uses virtualization to create a local cluster with one control-plane node and one worker node. It **doesn't** require hardware with Confidential VM (CVM) support. For attestation, MiniConstellation currently uses a software-based vTPM provided by KVM/QEMU.
-
-:::caution
-
-MiniConstellation has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
-
-:::
-
-:::note
-
-Since MiniConstellation runs on your local system, cloud features such as load balancing,
-attaching persistent storage, or autoscaling aren't available.
-
-:::
+Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
 ## Prerequisites
 
@@ -39,7 +27,27 @@ attaching persistent storage, or autoscaling aren't available.
     sudo iptables -S | grep -q -- '-P FORWARD DROP'
     ```
 
-## Create your cluster
+## Create a cluster
+
+<tabs groupId="csp">
+<tabItem value="mini" label="MiniConstellation">
+
+<!-- vale off -->
+With the `constellation mini` command, you can deploy and test Constellation locally. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
+<!-- vale on -->
+
+:::caution
+
+MiniConstellation has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
+
+:::
+
+:::note
+
+Since MiniConstellation runs on your local system, cloud features such as load balancing,
+attaching persistent storage, or autoscaling aren't available.
+
+:::
 
 The following creates your MiniConstellation cluster (may take up to 10 minutes to complete):
 
@@ -50,13 +58,88 @@ constellation mini up
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
 
-## Connect `kubectl`
+</tabItem>
+<tabItem value="qemu" label="QEMU">
 
-Configure `kubectl` to connect to your local Constellation cluster:
+With the QEMU provider, you can create a local Constellation cluster as if it were in the cloud. The provider uses [QEMU](https://www.qemu.org/) to create multiple VMs for the cluster nodes, which interact with each other.
 
-```bash
-export KUBECONFIG="$PWD/constellation-admin.conf"
-```
+:::caution
+
+Constellation on QEMU has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
+
+:::
+
+:::note
+
+Since Constellation on QEMU runs on your local system, cloud features such as load balancing,
+attaching persistent storage, or autoscaling aren't available.
+
+:::
+
+1. To set up your local cluster, you need to create a configuration file for Constellation first.
+
+  ```bash
+  constellation config generate qemu
+  ```
+
+  This creates a [configuration file](../workflows/config.md) for QEMU called `constellation-conf.yaml`. After that, your current folder also becomes your [workspace](../architecture/orchestration.md#workspaces). All `constellation` commands for your cluster need to be executed from this directory.
+
+2. Now you can create your cluster and its nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
+
+  ```bash
+  constellation create --control-plane-nodes 1 --worker-nodes 1
+  ```
+
+  This will create 2 VMs: one worker node, and one control plane node.
+
+  The Output should look like the following:
+
+  ```shell-session
+  $ constellation create ...
+  Your Constellation cluster was created successfully.
+  ```
+
+3. Initialize the cluster
+
+  ```bash
+  constellation init
+  ```
+
+  This should give the following output:
+
+  ```shell-session
+  $ constellation init
+  Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+  Initializing cluster ...
+  Your Constellation cluster was successfully initialized.
+
+  Constellation cluster identifier  g6iMP5wRU1b7mpOz2WEISlIYSfdAhB0oNaOg6XEwKFY=
+  Kubernetes configuration          constellation-admin.conf
+
+  You can now connect to your cluster by executing:
+          export KUBECONFIG="$PWD/constellation-admin.conf"
+  ```
+
+  The cluster's identifier will be different in your output.
+  Keep `constellation-mastersecret.json` somewhere safe.
+  This will allow you to [recover your cluster](../workflows/recovery.md) in case of a disaster.
+
+  :::info
+
+  Depending on your setup, `constellation init` may take 10+ minutes to complete.
+
+  :::
+
+4. Configure kubectl
+
+  ```bash
+  export KUBECONFIG="$PWD/constellation-admin.conf"
+  ```
+
+</tabItem>
+</tabs>
+
+## Connect to the cluster
 
 Your cluster initially consists of a single control-plane node:
 
@@ -107,6 +190,9 @@ worker-0          Ready    <none>          32s     v1.24.6
 
 ## Terminate your cluster
 
+<tabs groupId="csp">
+<tabItem value="mini" label="MiniConstellation">
+
 Once you are done, you can clean up the created resources using the following command:
 
 ```bash
@@ -115,6 +201,38 @@ constellation mini down
 
 This will destroy your cluster and clean up your workspace.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
+
+</tabItem>
+<tabItem value="qemu" label="QEMU">
+
+Once you are done, you can clean up the created resources using the following command:
+
+```bash
+constellation terminate
+```
+
+This should give the following output:
+
+```shell-session
+$ constellation terminate
+You are about to terminate a Constellation cluster.
+All of its associated resources will be DESTROYED.
+This action is irreversible and ALL DATA WILL BE LOST.
+Do you want to continue? [y/n]:
+```
+
+Confirm with `y` to terminate the cluster:
+
+```shell-session
+Terminating ...
+Your Constellation cluster was terminated successfully.
+```
+
+This will destroy your cluster and clean up your workspace.
+The VM image and cluster configuration file (`constellation-conf.yaml`) will be kept and may be reused to create new clusters.
+
+</tabItem>
+</tabs>
 
 ## Troubleshooting
 
