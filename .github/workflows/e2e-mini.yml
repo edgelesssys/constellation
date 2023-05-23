@@ -5,9 +5,6 @@ name: e2e test qemu (MiniConstellation)
 # e2e-test-release uses the same branch as the triggering workflow and not the commit of the triggering workflow. This is because the release workflow produces further commits.
 
 on:
-  workflow_run:
-    workflows: ["Release"]
-    types: [completed]
   workflow_dispatch:
     inputs:
       ref:
@@ -22,14 +19,6 @@ on:
         description: "Git ref to checkout"
 
 jobs:
-  on-failure-quit:
-    runs-on: ubuntu-22.04
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
-    steps:
-      - run: |
-          echo 'Release workflow failed, exiting..'
-          exit 1
-
   e2e-mini:
     runs-on: ubuntu-22.04
     environment: e2e

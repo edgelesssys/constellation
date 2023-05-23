@@ -6,12 +6,6 @@ You configure the desired versions in your local Constellation configuration and
 To learn about available versions you use the `upgrade check` command.
 Which versions are available depends on the CLI version you are using.
 
-:::caution
-
-Upgrades aren't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
-
-:::
-
 ## Update the CLI
 
 Each CLI comes with a set of supported microservice and Kubernetes versions.

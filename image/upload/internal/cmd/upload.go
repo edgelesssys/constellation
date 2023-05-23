@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -19,7 +20,7 @@ import (
 
 func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req *osimage.UploadRequest, out io.Writer) error {
 	// upload to S3 archive
-	archiveURL, err := archiveC.Archive(ctx, req.Version, req.Provider.String(), req.Variant, req.Image)
+	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.Variant, req.Image)
 	if err != nil {
 		return err
 	}

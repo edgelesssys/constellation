@@ -16,6 +16,8 @@ RUN chmod +x /usr/local/bin/bazelisk && \
 	dnf install -y \
 	git \
 	diffutils \
+	libxcrypt-compat \
+	python3 \
 	&& \
 	dnf clean all && \
 	groupadd --gid 1000 builder && \

@@ -144,7 +144,13 @@ jobs:
 
       - name: Update enterprise image version
         run: |
-          sed -i "s/defaultImage = \"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/defaultImage = \"${VERSION}\"/" internal/config/image.go
+          defaultVersionReg='defaultImage = \"[^\"]*\"'
+
+          # Ensure regexp matches (otherwise the file was changed or the workflow is broken).
+          grep -E "${defaultVersionReg}" internal/config/image.go
+
+          # Update version.
+          sed -i "s/${defaultVersionReg}/defaultImage = \"${VERSION}\"/" internal/config/image.go
           git add internal/config/image.go
 
       - name: Commit
@@ -240,3 +246,30 @@ jobs:
     secrets: inherit
     with:
       ref: "refs/tags/${{ inputs.version }}"
+      pushContainers: true
+
+  e2e-tests:
+    name: Run E2E tests
+    needs: [verify-inputs, draft-release-cli]
+    uses: ./.github/workflows/e2e-test-release.yml
+    permissions:
+      checks: write
+      packages: write
+      id-token: write
+      contents: read
+    secrets: inherit
+    with:
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  mini-e2e:
+    name: Run mini E2E tests
+    needs: [verify-inputs, draft-release-cli]
+    uses: ./.github/workflows/e2e-mini.yml
+    permissions:
+      checks: write
+      packages: write
+      id-token: write
+      contents: read
+    secrets: inherit
+    with:
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}

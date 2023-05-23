@@ -8,6 +8,8 @@ package file
 
 import (
 	"encoding/json"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -349,4 +351,124 @@ func TestRemove(t *testing.T) {
 	assert.ErrorIs(err, afero.ErrFileNotFound)
 
 	assert.Error(handler.Remove("d"))
+}
+
+func TestCopyFile(t *testing.T) {
+	perms := fs.FileMode(0o644)
+
+	setupFs := func(existingFiles ...string) afero.Fs {
+		fs := afero.NewMemMapFs()
+		aferoHelper := afero.Afero{Fs: fs}
+		for _, file := range existingFiles {
+			require.NoError(t, aferoHelper.WriteFile(file, []byte{}, perms))
+		}
+		return fs
+	}
+
+	testCases := map[string]struct {
+		fs         afero.Fs
+		copyFiles  [][]string
+		checkFiles []string
+		opts       []Option
+		wantErr    bool
+	}{
+		"successful copy": {
+			fs:         setupFs("a"),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+		},
+		"copy to existing file overwrite": {
+			fs:         setupFs("a", "b"),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+			opts:       []Option{OptOverwrite},
+		},
+		"copy to existing file no overwrite": {
+			fs:         setupFs("a", "b"),
+			copyFiles:  [][]string{{"a", "b"}},
+			checkFiles: []string{"b"},
+			wantErr:    true,
+		},
+		"file doesn't exist": {
+			fs:         setupFs("a"),
+			copyFiles:  [][]string{{"b", "c"}},
+			checkFiles: []string{"a"},
+			wantErr:    true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			handler := NewHandler(tc.fs)
+			for _, files := range tc.copyFiles {
+				err := handler.CopyFile(files[0], files[1], tc.opts...)
+				if tc.wantErr {
+					assert.Error(err)
+				} else {
+					assert.NoError(err)
+				}
+			}
+
+			for _, file := range tc.checkFiles {
+				info, err := handler.fs.Stat(file)
+				assert.Equal(perms, info.Mode())
+				require.NoError(err)
+			}
+		})
+	}
+}
+
+func TestCopyDir(t *testing.T) {
+	setupHandler := func(existingFiles ...string) Handler {
+		fs := afero.NewMemMapFs()
+		handler := NewHandler(fs)
+		for _, file := range existingFiles {
+			err := handler.Write(file, []byte("some content"), OptMkdirAll)
+			require.NoError(t, err)
+		}
+		return handler
+	}
+
+	testCases := map[string]struct {
+		handler    Handler
+		copyFiles  [][]string
+		checkFiles []string
+		opts       []Option
+	}{
+		"successful copy": {
+			handler:    setupHandler(filepath.Join("someDir", "someFile"), filepath.Join("someDir", "someOtherDir", "someOtherFile")),
+			copyFiles:  [][]string{{"someDir", "copiedDir"}},
+			checkFiles: []string{filepath.Join("copiedDir", "someFile"), filepath.Join("copiedDir", "someOtherDir", "someOtherFile")},
+		},
+		"copy file": {
+			handler:    setupHandler("someFile"),
+			copyFiles:  [][]string{{"someFile", "copiedFile"}},
+			checkFiles: []string{"copiedFile"},
+		},
+		"copy to existing dir overwrite": {
+			handler:    setupHandler(filepath.Join("someDir", "someFile"), filepath.Join("someDir", "someOtherDir", "someOtherFile"), filepath.Join("copiedDir", "someExistingFile")),
+			copyFiles:  [][]string{{"someDir", "copiedDir"}},
+			checkFiles: []string{filepath.Join("copiedDir", "someFile"), filepath.Join("copiedDir", "someOtherDir", "someOtherFile"), filepath.Join("copiedDir", "someExistingFile")},
+			opts:       []Option{OptOverwrite},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			require := require.New(t)
+
+			for _, files := range tc.copyFiles {
+				err := tc.handler.CopyDir(files[0], files[1], tc.opts...)
+				require.NoError(err)
+			}
+
+			for _, file := range tc.checkFiles {
+				_, err := tc.handler.fs.Stat(file)
+				require.NoError(err)
+			}
+		})
+	}
 }

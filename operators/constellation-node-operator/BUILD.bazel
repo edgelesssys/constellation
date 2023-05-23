@@ -13,6 +13,7 @@ go_library(
         "//3rdparty/node-maintenance-operator/api/v1beta1",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//operators/constellation-node-operator/controllers",
+        "//operators/constellation-node-operator/internal/cloud/aws/client",
         "//operators/constellation-node-operator/internal/cloud/azure/client",
         "//operators/constellation-node-operator/internal/cloud/fake/client",
         "//operators/constellation-node-operator/internal/cloud/gcp/client",

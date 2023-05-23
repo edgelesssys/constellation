@@ -30,10 +30,24 @@ excludeDirs=(
   "docs/node_modules"
 )
 
-echo "The following scripts are excluded and won't be linted with shellcheck:"
+excludeFiles=(
+  "bazel/bazel-complete.bash"
+)
+
+echo "The following scripts are excluded by their directory and won't be linted with shellcheck:"
 for exclude in "${excludeDirs[@]}"; do
   for i in "${!scripts[@]}"; do
     if [[ ${scripts[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
+      echo "  ${scripts[i]}"
+      unset 'scripts[i]'
+    fi
+  done
+done
+
+echo "The following scripts are excluded and won't be linted with shellcheck:"
+for exclude in "${excludeFiles[@]}"; do
+  for i in "${!scripts[@]}"; do
+    if [[ ${scripts[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
       echo "  ${scripts[i]}"
       unset 'scripts[i]'
     fi

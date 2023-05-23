@@ -112,7 +112,13 @@ resource "aws_iam_policy" "control_plane_policy" {
         "logs:DescribeLogGroups",
         "logs:ListTagsLogGroup",
         "logs:PutLogEvents",
-        "tag:GetResources"
+        "tag:GetResources",
+        "ec2:DescribeLaunchTemplateVersions",
+        "autoscaling:SetDesiredCapacity",
+        "autoscaling:TerminateInstanceInAutoScalingGroup",
+        "ec2:DescribeInstanceStatus",
+        "ec2:CreateLaunchTemplateVersion",
+        "ec2:ModifyLaunchTemplate"
       ],
       "Resource": [
         "*"

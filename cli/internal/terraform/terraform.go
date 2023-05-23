@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -78,14 +79,24 @@ func (c *Client) Show(ctx context.Context) (*tfjson.State, error) {
 // PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
 func (c *Client) PrepareWorkspace(path string, vars Variables) error {
 	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
-		return err
+		return fmt.Errorf("prepare workspace: %w", err)
+	}
+
+	return c.writeVars(vars)
+}
+
+// PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
+// It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
+func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
 	}
 
 	return c.writeVars(vars)
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel, targets ...string) (CreateOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return CreateOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -94,7 +105,12 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOu
 		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
-	if err := c.tf.Apply(ctx); err != nil {
+	opts := []tfexec.ApplyOption{}
+	for _, target := range targets {
+		opts = append(opts, tfexec.Target(target))
+	}
+
+	if err := c.tf.Apply(ctx, opts...); err != nil {
 		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
@@ -294,6 +310,45 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 	}
 }
 
+// Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.
+// If there is a diff, the returned bool is true. Otherwise, it is false.
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string, targets ...string) (bool, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	if err := c.tf.Init(ctx); err != nil {
+		return false, fmt.Errorf("terraform init: %w", err)
+	}
+
+	opts := []tfexec.PlanOption{
+		tfexec.Out(planFile),
+	}
+	for _, target := range targets {
+		opts = append(opts, tfexec.Target(target))
+	}
+	return c.tf.Plan(ctx, opts...)
+}
+
+// ShowPlan formats the diff in planFilePath and writes it to the specified output.
+func (c *Client) ShowPlan(ctx context.Context, logLevel LogLevel, planFilePath string, output io.Writer) error {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	planResult, err := c.tf.ShowPlanFileRaw(ctx, planFilePath)
+	if err != nil {
+		return fmt.Errorf("terraform show plan: %w", err)
+	}
+
+	_, err = output.Write([]byte(planResult))
+	if err != nil {
+		return fmt.Errorf("write plan output: %w", err)
+	}
+
+	return nil
+}
+
 // Destroy destroys Terraform-created cloud resources.
 func (c *Client) Destroy(ctx context.Context, logLevel LogLevel) error {
 	if err := c.setLogLevel(logLevel); err != nil {
@@ -386,6 +441,8 @@ type tfInterface interface {
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
+	Plan(ctx context.Context, opts ...tfexec.PlanOption) (bool, error)
+	ShowPlanFileRaw(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (string, error)
 	SetLog(level string) error
 	SetLogPath(path string) error
 }

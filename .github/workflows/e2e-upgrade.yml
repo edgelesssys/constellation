@@ -9,6 +9,7 @@ on:
         options:
           - "gcp"
           - "azure"
+          - "aws"
         default: "azure"
       workerNodesCount:
         description: "Number of worker nodes to spawn."

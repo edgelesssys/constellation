@@ -62,7 +62,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	checker, err := kubernetes.NewUpgrader(cmd.OutOrStdout(), log)
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
@@ -319,10 +319,9 @@ type supportedVersionInfo struct {
 // supportedVersions returns slices of supported versions.
 func (v *versionCollector) supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error) {
 	k8sVersions := versions.SupportedK8sVersions()
-	serviceVersion, err := helm.AvailableServiceVersions()
-	if err != nil {
-		return supportedVersionInfo{}, fmt.Errorf("loading service versions: %w", err)
-	}
+	// Each CLI comes with a set of services that have the same version as the CLI.
+	serviceVersion := compatibility.EnsurePrefixV(constants.VersionInfo())
+
 	imageVersions, err := v.newImages(ctx, version)
 	if err != nil {
 		return supportedVersionInfo{}, fmt.Errorf("loading image versions: %w", err)

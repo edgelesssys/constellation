@@ -14,10 +14,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -174,4 +177,51 @@ func (h *Handler) Stat(name string) (fs.FileInfo, error) {
 // MkdirAll creates a directory path and all parents that does not exist yet.
 func (h *Handler) MkdirAll(name string) error {
 	return h.fs.MkdirAll(name, 0o700)
+}
+
+// CopyDir copies the src directory recursively into dst with the given options. OptMkdirAll
+// is always set. CopyDir does not follow symlinks.
+func (h *Handler) CopyDir(src, dst string, opts ...Option) error {
+	opts = append(opts, OptMkdirAll)
+	root := filepath.Join(src, string(filepath.Separator))
+
+	walkFunc := func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		pathWithoutRoot := strings.TrimPrefix(path, root)
+		return h.CopyFile(path, filepath.Join(dst, pathWithoutRoot), opts...)
+	}
+
+	return h.fs.Walk(src, walkFunc)
+}
+
+// CopyFile copies the file from src to dst with the given options, respecting file permissions.
+func (h *Handler) CopyFile(src, dst string, opts ...Option) error {
+	srcInfo, err := h.fs.Stat(src)
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
+	content, err := h.fs.ReadFile(src)
+	if err != nil {
+		return fmt.Errorf("read source file: %w", err)
+	}
+
+	err = h.Write(dst, content, opts...)
+	if err != nil {
+		return fmt.Errorf("write destination file: %w", err)
+	}
+
+	err = h.fs.Chmod(dst, srcInfo.Mode())
+	if err != nil {
+		return fmt.Errorf("chmod destination file: %w", err)
+	}
+
+	return nil
 }
