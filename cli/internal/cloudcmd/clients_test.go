@@ -13,7 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tfjson "github.com/hashicorp/terraform-json"
 
 	"go.uber.org/goleak"
@@ -103,7 +103,10 @@ type stubImageFetcher struct {
 	fetchReferenceErr error
 }
 
-func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+func (f *stubImageFetcher) FetchReference(_ context.Context,
+	_ cloudprovider.Provider, _ variant.Variant,
+	_, _ string,
+) (string, error) {
 	return f.reference, f.fetchReferenceErr
 }
 

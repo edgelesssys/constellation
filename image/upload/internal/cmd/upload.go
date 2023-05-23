@@ -13,14 +13,13 @@ import (
 	"io"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req *osimage.UploadRequest, out io.Writer) error {
 	// upload to S3 archive
-	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.Variant, req.Image)
+	archiveURL, err := archiveC.Archive(ctx, req.Version, strings.ToLower(req.Provider.String()), req.AttestationVariant, req.Image)
 	if err != nil {
 		return err
 	}
@@ -34,8 +33,12 @@ func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req 
 		return err
 	}
 	if len(imageReferences) == 0 {
-		imageReferences = map[string]string{
-			req.Variant: archiveURL,
+		imageReferences = []versionsapi.ImageInfoEntry{
+			{
+				CSP:                req.Provider.String(),
+				AttestationVariant: req.AttestationVariant,
+				Reference:          archiveURL,
+			},
 		}
 	}
 
@@ -43,20 +46,7 @@ func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req 
 		Ref:     req.Version.Ref,
 		Stream:  req.Version.Stream,
 		Version: req.Version.Version,
-	}
-	switch req.Provider {
-	case cloudprovider.AWS:
-		imageInfo.AWS = imageReferences
-	case cloudprovider.Azure:
-		imageInfo.Azure = imageReferences
-	case cloudprovider.GCP:
-		imageInfo.GCP = imageReferences
-	case cloudprovider.OpenStack:
-		imageInfo.OpenStack = imageReferences
-	case cloudprovider.QEMU:
-		imageInfo.QEMU = imageReferences
-	default:
-		return fmt.Errorf("uploading image: cloud provider %s is not yet supported", req.Provider.String())
+		List:    imageReferences,
 	}
 
 	if err := json.NewEncoder(out).Encode(imageInfo); err != nil {

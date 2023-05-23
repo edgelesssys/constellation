@@ -8,5 +8,6 @@ go_library(
     deps = [
         "//internal/logger",
         "//internal/osimage",
+        "//internal/versionsapi",
     ],
 )

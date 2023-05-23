@@ -10,14 +10,13 @@ package upgrade
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 )
 
 type upgradeInfo struct {
@@ -27,13 +26,12 @@ type upgradeInfo struct {
 }
 
 func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider,
-	attestationVariant variant.Variant, toImage string,
+	attestationVariant variant.Variant, toImage, region string,
 ) (upgradeInfo, error) {
 	info := upgradeInfo{
 		measurements: make(measurements.M),
 		shortPath:    toImage,
 	}
-	versionsClient := fetcher.NewFetcher()
 
 	ver, err := versionsapi.NewVersionFromShortPath(toImage, versionsapi.VersionKindImage)
 	if err != nil {
@@ -55,33 +53,12 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider,
 	}
 	info.measurements = fetchedMeasurements
 
-	imageRef, err := fetchImageRef(ctx, versionsClient, csp, versionsapi.ImageInfo{
-		Ref:     ver.Ref,
-		Stream:  ver.Stream,
-		Version: ver.Version,
-	})
+	fetcher := imagefetcher.New()
+	imageRef, err := fetcher.FetchReference(ctx, csp, attestationVariant, toImage, region)
 	if err != nil {
 		return upgradeInfo{}, err
 	}
 	info.imageRef = imageRef
 
 	return info, nil
-}
-
-func fetchImageRef(ctx context.Context, client *fetcher.Fetcher, csp cloudprovider.Provider, imageInfo versionsapi.ImageInfo) (string, error) {
-	imageInfo, err := client.FetchImageInfo(ctx, imageInfo)
-	if err != nil {
-		return "", err
-	}
-
-	switch csp {
-	case cloudprovider.GCP:
-		return imageInfo.GCP["sev-es"], nil
-	case cloudprovider.Azure:
-		return imageInfo.Azure["cvm"], nil
-	case cloudprovider.AWS:
-		return imageInfo.AWS["eu-central-1"], nil
-	default:
-		return "", errors.New("finding wanted image")
-	}
 }

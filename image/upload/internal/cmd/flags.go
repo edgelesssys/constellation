@@ -18,16 +18,16 @@ import (
 )
 
 type commonFlags struct {
-	rawImage  string
-	pki       string
-	provider  cloudprovider.Provider
-	variant   string
-	version   versionsapi.Version
-	timestamp time.Time
-	region    string
-	bucket    string
-	out       string
-	logLevel  zapcore.Level
+	rawImage           string
+	pki                string
+	provider           cloudprovider.Provider
+	attestationVariant string
+	version            versionsapi.Version
+	timestamp          time.Time
+	region             string
+	bucket             string
+	out                string
+	logLevel           zapcore.Level
 }
 
 func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
@@ -43,7 +43,7 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 	if pki == "" {
 		pki = filepath.Join(workspaceDir, "image/pki")
 	}
-	variant, err := cmd.Flags().GetString("variant")
+	attestationVariant, err := cmd.Flags().GetString("attestation-variant")
 	if err != nil {
 		return commonFlags{}, err
 	}
@@ -88,15 +88,15 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 	}
 
 	return commonFlags{
-		rawImage:  rawImage,
-		pki:       pki,
-		variant:   variant,
-		version:   ver,
-		timestamp: timestmp,
-		region:    region,
-		bucket:    bucket,
-		out:       out,
-		logLevel:  logLevel,
+		rawImage:           rawImage,
+		pki:                pki,
+		attestationVariant: attestationVariant,
+		version:            ver,
+		timestamp:          timestmp,
+		region:             region,
+		bucket:             bucket,
+		out:                out,
+		logLevel:           logLevel,
 	}, nil
 }
 

@@ -16,7 +16,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
@@ -25,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -65,7 +65,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fetcher := image.New()
+	fetcher := imagefetcher.New()
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, fetcher: fetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
@@ -194,7 +194,10 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 
 func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
 	// Fetch variables to execute Terraform script with
-	imageRef, err := fetcher.FetchReference(cmd.Context(), conf)
+	provider := conf.GetProvider()
+	attestationVariant := conf.GetAttestationConfig().GetVariant()
+	region := conf.GetRegion()
+	imageRef, err := fetcher.FetchReference(cmd.Context(), provider, attestationVariant, conf.Image, region)
 	if err != nil {
 		return nil, nil, fmt.Errorf("fetching image reference: %w", err)
 	}
@@ -264,7 +267,10 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 }
 
 type imageFetcher interface {
-	FetchReference(ctx context.Context, conf *config.Config) (string, error)
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
 
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.

@@ -84,14 +84,14 @@ func runAWS(cmd *cobra.Command, _ []string) error {
 	}
 
 	uploadReq := &osimage.UploadRequest{
-		Provider:     flags.provider,
-		Version:      flags.version,
-		Variant:      flags.variant,
-		SBDatabase:   sbDatabase,
-		UEFIVarStore: uefiVarStore,
-		Size:         size,
-		Timestamp:    flags.timestamp,
-		Image:        file,
+		Provider:           flags.provider,
+		Version:            flags.version,
+		AttestationVariant: flags.attestationVariant,
+		SBDatabase:         sbDatabase,
+		UEFIVarStore:       uefiVarStore,
+		Size:               size,
+		Timestamp:          flags.timestamp,
+		Image:              file,
 	}
 	return uploadImage(cmd.Context(), archiveC, uploadC, uploadReq, out)
 }

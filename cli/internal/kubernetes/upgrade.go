@@ -16,14 +16,15 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/cli/internal/image"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
@@ -122,7 +123,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 		stableInterface:  &stableClient{client: kubeClient},
 		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
 		helmClient:       helmClient,
-		imageFetcher:     image.New(),
+		imageFetcher:     imagefetcher.New(),
 		outWriter:        outWriter,
 		tfUpgrader:       tfUpgrader,
 		log:              log,
@@ -164,7 +165,10 @@ func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Confi
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
 // The versions set in the config are validated against the versions running in the cluster.
 func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) error {
-	imageReference, err := u.imageFetcher.FetchReference(ctx, conf)
+	provider := conf.GetProvider()
+	attestationVariant := conf.GetAttestationConfig().GetVariant()
+	region := conf.GetRegion()
+	imageReference, err := u.imageFetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
 	if err != nil {
 		return fmt.Errorf("fetching image reference: %w", err)
 	}
@@ -526,5 +530,8 @@ type debugLog interface {
 
 // imageFetcher gets an image reference from the versionsapi.
 type imageFetcher interface {
-	FetchReference(ctx context.Context, config *config.Config) (string, error)
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
