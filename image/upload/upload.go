@@ -33,31 +33,14 @@ func execute() error {
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:              "upload",
-		Short:            "Uploads OS images to supported CSPs",
-		Long:             "Uploads OS images to supported CSPs.",
+		Short:            "Uploads OS image related artifacts",
+		Long:             "Uploads OS image related artifacts.",
 		PersistentPreRun: preRunRoot,
 	}
 
 	rootCmd.SetOut(os.Stdout)
 
-	rootCmd.PersistentFlags().String("raw-image", "", "Path to os image in CSP specific format that should be uploaded.")
-	rootCmd.PersistentFlags().String("pki", "", "Base path to the PKI (secure boot signing) files.")
-	rootCmd.PersistentFlags().String("attestation-variant", "", "Attestation variant of the image being uploaded.")
-	rootCmd.PersistentFlags().String("version", "", "Shortname of the os image version.")
-	rootCmd.PersistentFlags().String("timestamp", "", "Optional timestamp to use for resource names. Uses format 2006-01-02T15:04:05Z07:00.")
-	rootCmd.PersistentFlags().String("region", "eu-central-1", "AWS region of the archive S3 bucket")
-	rootCmd.PersistentFlags().String("bucket", "cdn-constellation-backend", "S3 bucket name of the archive")
-	rootCmd.PersistentFlags().String("out", "", "Optional path to write the upload result to. If not set, the result is written to stdout.")
-	rootCmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
-	must(rootCmd.MarkPersistentFlagRequired("raw-image"))
-	must(rootCmd.MarkPersistentFlagRequired("attestation-variant"))
-	must(rootCmd.MarkPersistentFlagRequired("version"))
-
-	rootCmd.AddCommand(cmd.NewAWSCmd())
-	rootCmd.AddCommand(cmd.NewAzureCmd())
-	rootCmd.AddCommand(cmd.NewGCPCommand())
-	rootCmd.AddCommand(cmd.NewOpenStackCmd())
-	rootCmd.AddCommand(cmd.NewQEMUCmd())
+	rootCmd.AddCommand(cmd.NewImageCmd())
 
 	return rootCmd
 }
@@ -91,10 +74,4 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 
 func preRunRoot(cmd *cobra.Command, _ []string) {
 	cmd.SilenceUsage = true
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

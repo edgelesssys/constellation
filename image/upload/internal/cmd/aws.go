@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewAWSCmd returns the command that uploads an OS image to AWS.
-func NewAWSCmd() *cobra.Command {
+// newAWSCmd returns the command that uploads an OS image to AWS.
+func newAWSCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: "Upload OS image to AWS",

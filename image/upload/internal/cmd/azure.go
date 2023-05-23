@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewAzureCmd returns the command that uploads an OS image to Azure.
-func NewAzureCmd() *cobra.Command {
+// newAzureCmd returns the command that uploads an OS image to Azure.
+func newAzureCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure",
 		Short: "Upload OS image to Azure",

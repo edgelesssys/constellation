@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewOpenStackCmd returns the command that uploads an OS image to OpenStack.
-func NewOpenStackCmd() *cobra.Command {
+// newOpenStackCmd returns the command that uploads an OS image to OpenStack.
+func newOpenStackCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "openstack",
 		Short: "Upload OS image to OpenStack",

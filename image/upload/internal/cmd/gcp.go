@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewGCPCommand returns the command that uploads an OS image to GCP.
-func NewGCPCommand() *cobra.Command {
+// newGCPCommand returns the command that uploads an OS image to GCP.
+func newGCPCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gcp",
 		Short: "Upload OS image to GCP",
