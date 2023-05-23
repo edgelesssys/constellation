@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
+	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -33,11 +34,17 @@ func TestMain(m *testing.M) {
 
 func TestDefaultConfig(t *testing.T) {
 	assert := assert.New(t)
-	def := DefaultWithPanic()
+	def := Default()
 	assert.NotNil(def)
 }
 
 func TestSettingLatestAsVersion(t *testing.T) {
+	//versions := map[string]any{
+	//	"microcodeVersion":  "Latest",
+	//	"teeVersion":        "latest",
+	//	"snpVersion":        "latest",
+	//	"bootloaderVersion": 1,
+	//}
 	testCases := map[string]struct {
 		config     map[string]interface{}
 		configName string
@@ -46,11 +53,11 @@ func TestSettingLatestAsVersion(t *testing.T) {
 	}{
 		"mix of latest and uint as version value": {
 			config: func() map[string]interface{} {
-				conf := DefaultWithPanic()
+				conf := Default()
 				// modify versions as string
 				m := getConfigAsMap(conf, t)
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "Latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "Latest"
+				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "latest"
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["snpVersion"] = "latest"
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["bootloaderVersion"] = 1
 				return m
@@ -58,15 +65,21 @@ func TestSettingLatestAsVersion(t *testing.T) {
 
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
-				conf := DefaultWithPanic()
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = 1
-				conf.Attestation.AzureSEVSNP.MicrocodeVersion = 93
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = snpversion.Version{
+					Value:    1,
+					IsLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = snpversion.Version{
+					Value:    93,
+					IsLatest: true,
+				}
 				return conf
 			}(),
 		},
 		"refuse invalid version value": {
 			config: func() map[string]interface{} {
-				conf := DefaultWithPanic()
+				conf := Default()
 				m := getConfigAsMap(conf, t)
 				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "1a"
 				return m
@@ -90,6 +103,11 @@ func TestSettingLatestAsVersion(t *testing.T) {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
+				//out, err := yaml.Marshal(&result.Attestation.AzureSEVSNP)
+				//require.NoError(err)
+				//var mp map[string]any
+				//require.NoError(yaml.Unmarshal(out, &mp))
+				//mp["microcodeVersion"] = tc.wantResult.Attestation.AzureSEVSNP.MicrocodeVersion
 				assert.Equal(tc.wantResult, result)
 			}
 		})
@@ -104,14 +122,14 @@ func TestFromFile(t *testing.T) {
 		wantErr    bool
 	}{
 		"default config from default file": {
-			config:     DefaultWithPanic(),
+			config:     Default(),
 			configName: constants.ConfigFilename,
-			wantResult: DefaultWithPanic(),
+			wantResult: Default(),
 		},
 		"default config from different path": {
-			config:     DefaultWithPanic(),
+			config:     Default(),
 			configName: "other-config.yaml",
-			wantResult: DefaultWithPanic(),
+			wantResult: Default(),
 		},
 		"default config when path empty": {
 			config:     nil,
@@ -134,14 +152,14 @@ func TestFromFile(t *testing.T) {
 		},
 		"modify default config": {
 			config: func() *Config {
-				conf := DefaultWithPanic()
+				conf := Default()
 				conf.Provider.GCP.Region = "eu-north1"
 				conf.Provider.GCP.Zone = "eu-north1-a"
 				return conf
 			}(),
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
-				conf := DefaultWithPanic()
+				conf := Default()
 				conf.Provider.GCP.Region = "eu-north1"
 				conf.Provider.GCP.Zone = "eu-north1-a"
 				return conf
@@ -180,7 +198,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 	}{
 		"set env works": {
 			confToWrite: func() *Config { // valid config with all, but clientSecretValue
-				c := DefaultWithPanic()
+				c := Default()
 				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
@@ -201,7 +219,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 		},
 		"set env overwrites": {
 			confToWrite: func() *Config {
-				c := DefaultWithPanic()
+				c := Default()
 				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				c.Image = "v" + constants.VersionInfo()
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
@@ -309,7 +327,7 @@ func TestValidate(t *testing.T) {
 		},
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
-				cnf := DefaultWithPanic()
+				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 				cnf.Image = "v" + constants.VersionInfo()
 				az := cnf.Provider.Azure
@@ -331,7 +349,7 @@ func TestValidate(t *testing.T) {
 
 		"default GCP config is not valid": {
 			cnf: func() *Config {
-				cnf := DefaultWithPanic()
+				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 				cnf.Image = ""
 				return cnf
@@ -342,7 +360,7 @@ func TestValidate(t *testing.T) {
 
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
-				cnf := DefaultWithPanic()
+				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 				cnf.Image = "v" + constants.VersionInfo()
 				gcp := cnf.Provider.GCP
@@ -385,9 +403,9 @@ func TestHasProvider(t *testing.T) {
 	assert.False((&Config{}).HasProvider(cloudprovider.Azure))
 	assert.False((&Config{}).HasProvider(cloudprovider.GCP))
 	assert.False((&Config{}).HasProvider(cloudprovider.QEMU))
-	assert.False(DefaultWithPanic().HasProvider(cloudprovider.Unknown))
-	assert.True(DefaultWithPanic().HasProvider(cloudprovider.Azure))
-	assert.True(DefaultWithPanic().HasProvider(cloudprovider.GCP))
+	assert.False(Default().HasProvider(cloudprovider.Unknown))
+	assert.True(Default().HasProvider(cloudprovider.Azure))
+	assert.True(Default().HasProvider(cloudprovider.GCP))
 	cnfWithAzure := Config{Provider: ProviderConfig{Azure: &AzureConfig{}}}
 	assert.False(cnfWithAzure.HasProvider(cloudprovider.Unknown))
 	assert.True(cnfWithAzure.HasProvider(cloudprovider.Azure))
@@ -404,26 +422,26 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 	}{
 		"except aws": {
 			removeExcept: cloudprovider.AWS,
-			wantAWS:      DefaultWithPanic().Provider.AWS,
+			wantAWS:      Default().Provider.AWS,
 		},
 		"except azure": {
 			removeExcept: cloudprovider.Azure,
-			wantAzure:    DefaultWithPanic().Provider.Azure,
+			wantAzure:    Default().Provider.Azure,
 		},
 		"except gcp": {
 			removeExcept: cloudprovider.GCP,
-			wantGCP:      DefaultWithPanic().Provider.GCP,
+			wantGCP:      Default().Provider.GCP,
 		},
 		"except qemu": {
 			removeExcept: cloudprovider.QEMU,
-			wantQEMU:     DefaultWithPanic().Provider.QEMU,
+			wantQEMU:     Default().Provider.QEMU,
 		},
 		"unknown provider": {
 			removeExcept: cloudprovider.Unknown,
-			wantAWS:      DefaultWithPanic().Provider.AWS,
-			wantAzure:    DefaultWithPanic().Provider.Azure,
-			wantGCP:      DefaultWithPanic().Provider.GCP,
-			wantQEMU:     DefaultWithPanic().Provider.QEMU,
+			wantAWS:      Default().Provider.AWS,
+			wantAzure:    Default().Provider.Azure,
+			wantGCP:      Default().Provider.GCP,
+			wantQEMU:     Default().Provider.QEMU,
 		},
 	}
 
@@ -431,7 +449,7 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			conf := DefaultWithPanic()
+			conf := Default()
 			conf.RemoveProviderAndAttestationExcept(tc.removeExcept)
 
 			assert.Equal(tc.wantAWS, conf.Provider.AWS)
@@ -463,7 +481,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	}
 
 	{ // AWS
-		conf := DefaultWithPanic()
+		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
 		for k := range conf.Attestation.AWSNitroTPM.Measurements {
 			delete(conf.Attestation.AWSNitroTPM.Measurements, k)
@@ -472,7 +490,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 		assert.Equal(newMeasurements, conf.Attestation.AWSNitroTPM.Measurements)
 	}
 	{ // Azure
-		conf := DefaultWithPanic()
+		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 		for k := range conf.Attestation.AzureSEVSNP.Measurements {
 			delete(conf.Attestation.AzureSEVSNP.Measurements, k)
@@ -481,7 +499,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 		assert.Equal(newMeasurements, conf.Attestation.AzureSEVSNP.Measurements)
 	}
 	{ // GCP
-		conf := DefaultWithPanic()
+		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
 		for k := range conf.Attestation.GCPSEVES.Measurements {
 			delete(conf.Attestation.GCPSEVES.Measurements, k)
@@ -490,7 +508,7 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 		assert.Equal(newMeasurements, conf.Attestation.GCPSEVES.Measurements)
 	}
 	{ // QEMU
-		conf := DefaultWithPanic()
+		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 		for k := range conf.Attestation.QEMUVTPM.Measurements {
 			delete(conf.Attestation.QEMUVTPM.Measurements, k)
@@ -507,7 +525,7 @@ func TestConfig_IsReleaseImage(t *testing.T) {
 	}{
 		"release image v0.0.0": {
 			conf: func() *Config {
-				conf := DefaultWithPanic()
+				conf := Default()
 				conf.Image = "v0.0.0"
 				return conf
 			}(),
@@ -515,7 +533,7 @@ func TestConfig_IsReleaseImage(t *testing.T) {
 		},
 		"branch image": {
 			conf: func() *Config {
-				conf := DefaultWithPanic()
+				conf := Default()
 				conf.Image = "feat-x-vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef"
 				return conf
 			}(),
@@ -523,7 +541,7 @@ func TestConfig_IsReleaseImage(t *testing.T) {
 		},
 		"debug image": {
 			conf: func() *Config {
-				conf := DefaultWithPanic()
+				conf := Default()
 				conf.Image = "debug-vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef"
 				return conf
 			}(),
@@ -669,11 +687,11 @@ func TestIsDebugCluster(t *testing.T) {
 			expectedResult: false,
 		},
 		"default config": {
-			config:         DefaultWithPanic(),
+			config:         Default(),
 			expectedResult: false,
 		},
 		"enabled": {
-			config: DefaultWithPanic(),
+			config: Default(),
 			prepareConfig: func(conf *Config) {
 				*conf.DebugCluster = true
 			},
@@ -736,7 +754,7 @@ func TestValidateProvider(t *testing.T) {
 			v := validator.New()
 			trans := ut.New(en.New()).GetFallback()
 
-			conf := DefaultWithPanic()
+			conf := Default()
 			conf.Provider = tc.provider
 
 			v.RegisterStructValidation(validateProvider, ProviderConfig{})

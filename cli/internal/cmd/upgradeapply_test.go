@@ -30,8 +30,7 @@ import (
 
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
-	azureSEVSNP, err := config.DefaultForAzureSEVSNP()
-	require.NoError(t, err)
+	azureSEVSNP := config.DefaultForAzureSEVSNP()
 	testCases := map[string]struct {
 		upgrader stubUpgrader
 		fetcher  stubImageFetcher
@@ -140,7 +139,7 @@ func TestUpgradeApply(t *testing.T) {
 			}
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), cloudprovider.Azure)
+			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 

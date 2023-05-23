@@ -213,7 +213,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				},
 			}
 
-			cfg, err := config.DefaultForAzureSEVSNP()
+			cfg := config.DefaultForAzureSEVSNP()
 			cfg.FirmwareSignerConfig = config.SNPFirmwareSignerConfig{
 				AcceptedKeyDigests: tc.idkeydigests,
 				EnforcementPolicy:  tc.enforceIDKeyDigest,
@@ -348,10 +348,7 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	cfg, err := config.DefaultForAzureSEVSNP()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.DefaultForAzureSEVSNP()
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
@@ -366,7 +363,7 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 				assert.NotNil(report)
 				assert.Equal(hex.EncodeToString(report.IDKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
-				assert.True(report.LaunchTCB.isVersion(cfg.BootloaderVersion, cfg.TEEVersion, cfg.SNPVersion, cfg.MicrocodeVersion))
+				assert.True(report.LaunchTCB.isVersion(cfg.BootloaderVersion.Value, cfg.TEEVersion.Value, cfg.SNPVersion.Value, cfg.MicrocodeVersion.Value))
 			}
 		})
 	}

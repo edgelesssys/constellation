@@ -17,17 +17,19 @@ const (
 type Type string
 
 // GetLatest returns the version of the given type.
-func GetLatest(t Type) uint8 {
+func GetLatest(t Type) (res Version) {
+	res.IsLatest = true
 	switch t {
 	case Bootloader:
-		return 2
+		res.Value = 2
 	case TEE:
-		return 0
+		res.Value = 0
 	case SNP:
-		return 6
+		res.Value = 6
 	case Microcode:
-		return 93
+		res.Value = 93
 	default:
 		panic("invalid version type")
 	}
+	return
 }

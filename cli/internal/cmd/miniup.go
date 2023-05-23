@@ -214,7 +214,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 		}
 	}
 
-	config, err := config.Default()
+	config := config.Default()
 	if err != nil {
 		return nil, err
 	}

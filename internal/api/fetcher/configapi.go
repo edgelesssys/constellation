@@ -39,7 +39,7 @@ func (f *ConfigAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context) (r
 	var versions configapi.AzureSEVSNPVersionList
 	versions, err = f.FetchAzureSEVSNPVersionList(ctx, versions)
 	if err != nil {
-		return res, fmt.Errorf("failed fetching versions list: %w", err)
+		return res, fmt.Errorf("fetching versions list: %w", err)
 	}
 	if len(versions) < 1 {
 		return res, errors.New("no versions found in /list")

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/require"
@@ -43,12 +44,26 @@ var cfg = uri.AWSS3Config{
 	Region:      *awsRegion,
 }
 
+func newVersion(version uint8) snpversion.Version {
+	return snpversion.Version{
+		Value:    version,
+		IsLatest: false,
+	}
+}
+
+var versionValues = configapi.AzureSEVSNPVersion{
+	Bootloader: newVersion(2),
+	TEE:        newVersion(0),
+	SNP:        newVersion(6),
+	Microcode:  newVersion(93),
+}
+
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
 	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	require.NoError(t, sut.UploadAzureSEVSNP(ctx, configapi.AzureSEVSNP, d))
+	require.NoError(t, sut.UploadAzureSEVSNP(ctx, versionValues, d))
 }
 
 func TestListVersions(t *testing.T) {
@@ -65,7 +80,7 @@ func TestListVersions(t *testing.T) {
 	require.Equal(t, []string{}, res)
 
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	err = sut.UploadAzureSEVSNP(ctx, configapi.AzureSEVSNP, d)
+	err = sut.UploadAzureSEVSNP(ctx, versionValues, d)
 	require.NoError(t, err)
 	res, err = sut.List(ctx, variant.AzureSEVSNP{})
 	require.NoError(t, err)

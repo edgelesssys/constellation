@@ -261,7 +261,7 @@ func TestUpgradeCheck(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), tc.csp)
+			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
 			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))
 
 			checkCmd := upgradeCheckCmd{

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"path"
 
+	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
@@ -24,29 +25,19 @@ const (
 // AttestationURLPath is the URL path to the attestation versions.
 const AttestationURLPath = "constellation/v1/attestation"
 
-// AzureSEVSNP is the latest version of each component of the Azure SEVSNP.
-// used for testing only.
-// TODO remove? (or use for fallback?)
-var AzureSEVSNP = AzureSEVSNPVersion{
-	Bootloader: 2,
-	TEE:        0,
-	SNP:        6,
-	Microcode:  93,
-}
-
 // AzureSEVSNPVersionType is the type of the version to be requested.
 type AzureSEVSNPVersionType (string)
 
 // AzureSEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type AzureSEVSNPVersion struct {
 	// Bootloader is the latest version of the Azure SEVSNP bootloader.
-	Bootloader uint8 `json:"bootloader"`
+	Bootloader snpversion.Version `json:"bootloader"`
 	// TEE is the latest version of the Azure SEVSNP TEE.
-	TEE uint8 `json:"tee"`
+	TEE snpversion.Version `json:"tee"`
 	// SNP is the latest version of the Azure SEVSNP SNP.
-	SNP uint8 `json:"snp"`
+	SNP snpversion.Version `json:"snp"`
 	// Microcode is the latest version of the Azure SEVSNP microcode.
-	Microcode uint8 `json:"microcode"`
+	Microcode snpversion.Version `json:"microcode"`
 }
 
 // AzureSEVSNPVersionGet is the request to get the version information of the specific version in the config api.
@@ -109,7 +100,7 @@ func (i AzureSEVSNPVersionList) Validate() error {
 }
 
 // GetVersionByType returns the requested version of the given type.
-func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) uint8 {
+func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) snpversion.Version {
 	switch t {
 	case Bootloader:
 		return res.Bootloader
@@ -120,6 +111,6 @@ func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) uint8 {
 	case Microcode:
 		return res.Microcode
 	default:
-		return 1
+		panic("unknown version type") // TODO
 	}
 }

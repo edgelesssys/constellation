@@ -153,7 +153,7 @@ func TestRecover(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 
-			config := defaultConfigWithExpectedMeasurements(t, config.DefaultWithPanic(), cloudprovider.GCP)
+			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 
 			require.NoError(fileHandler.WriteJSON(
