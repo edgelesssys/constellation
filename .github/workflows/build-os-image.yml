@@ -225,42 +225,54 @@ jobs:
     # TODO: flatten outputs once possible
     # https://github.com/community/community/discussions/17245
     outputs:
-      image-raw-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-sha256 }}
-      image-raw-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-azure-sha256 }}
-      image-raw-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-gcp-sha256 }}
-      image-raw-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-qemu-sha256 }}
-      image-efi-aws-sha256: ${{ steps.collect-hashes.outputs.image-efi-aws-sha256 }}
-      image-efi-azure-sha256: ${{ steps.collect-hashes.outputs.image-efi-azure-sha256 }}
-      image-efi-gcp-sha256: ${{ steps.collect-hashes.outputs.image-efi-gcp-sha256 }}
-      image-efi-qemu-sha256: ${{ steps.collect-hashes.outputs.image-efi-qemu-sha256 }}
-      image-initrd-aws-sha256: ${{ steps.collect-hashes.outputs.image-initrd-aws-sha256 }}
-      image-initrd-azure-sha256: ${{ steps.collect-hashes.outputs.image-initrd-azure-sha256 }}
-      image-initrd-gcp-sha256: ${{ steps.collect-hashes.outputs.image-initrd-gcp-sha256 }}
-      image-initrd-qemu-sha256: ${{ steps.collect-hashes.outputs.image-initrd-qemu-sha256 }}
-      image-root-raw-aws-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-aws-sha256 }}
-      image-root-raw-azure-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-azure-sha256 }}
-      image-root-raw-gcp-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-gcp-sha256 }}
-      image-root-raw-qemu-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-qemu-sha256 }}
-      image-root-verity-aws-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-aws-sha256 }}
-      image-root-verity-azure-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-azure-sha256 }}
-      image-root-verity-gcp-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-gcp-sha256 }}
-      image-root-verity-qemu-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-qemu-sha256 }}
-      image-vmlinuz-aws-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-aws-sha256 }}
-      image-vmlinuz-azure-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-azure-sha256 }}
-      image-vmlinuz-gcp-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-gcp-sha256 }}
-      image-vmlinuz-qemu-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-qemu-sha256 }}
-      image-raw-changelog-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-aws-sha256 }}
-      image-raw-changelog-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-azure-sha256 }}
-      image-raw-changelog-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-gcp-sha256 }}
-      image-raw-changelog-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-qemu-sha256 }}
-      image-raw-manifest-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-aws-sha256 }}
-      image-raw-manifest-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-azure-sha256 }}
-      image-raw-manifest-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-gcp-sha256 }}
-      image-raw-manifest-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-qemu-sha256 }}
+      image-raw-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-aws-nitro-tpm-sha256 }}
+      image-raw-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-azure-azure-sev-snp-sha256 }}
+      image-raw-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-gcp-gcp-sev-es-sha256 }}
+      image-raw-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-qemu-qemu-vtpm-sha256 }}
+      image-efi-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-efi-aws-aws-nitro-tpm-sha256 }}
+      image-efi-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-efi-azure-azure-sev-snp-sha256 }}
+      image-efi-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-efi-gcp-gcp-sev-es-sha256 }}
+      image-efi-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-efi-qemu-qemu-vtpm-sha256 }}
+      image-initrd-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-initrd-aws-aws-nitro-tpm-sha256 }}
+      image-initrd-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-initrd-azure-azure-sev-snp-sha256 }}
+      image-initrd-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-initrd-gcp-gcp-sev-es-sha256 }}
+      image-initrd-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-initrd-qemu-qemu-vtpm-sha256 }}
+      image-root-raw-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-aws-aws-nitro-tpm-sha256 }}
+      image-root-raw-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-azure-azure-sev-snp-sha256 }}
+      image-root-raw-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-gcp-gcp-sev-es-sha256 }}
+      image-root-raw-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-qemu-qemu-vtpm-sha256 }}
+      image-root-verity-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-aws-aws-nitro-tpm-sha256 }}
+      image-root-verity-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-azure-azure-sev-snp-sha256 }}
+      image-root-verity-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-gcp-gcp-sev-es-sha256 }}
+      image-root-verity-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-qemu-qemu-vtpm-sha256 }}
+      image-vmlinuz-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-aws-aws-nitro-tpm-sha256 }}
+      image-vmlinuz-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-azure-azure-sev-snp-sha256 }}
+      image-vmlinuz-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-gcp-gcp-sev-es-sha256 }}
+      image-vmlinuz-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-qemu-qemu-vtpm-sha256 }}
+      image-raw-changelog-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-aws-aws-nitro-tpm-sha256 }}
+      image-raw-changelog-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-azure-azure-sev-snp-sha256 }}
+      image-raw-changelog-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-gcp-gcp-sev-es-sha256 }}
+      image-raw-changelog-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-qemu-qemu-vtpm-sha256 }}
+      image-raw-manifest-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-aws-aws-nitro-tpm-sha256 }}
+      image-raw-manifest-azure-azure-sev-snp-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-azure-azure-sev-snp-sha256 }}
+      image-raw-manifest-gcp-gcp-sev-es-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-gcp-gcp-sev-es-sha256 }}
+      image-raw-manifest-qemu-qemu-vtpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-qemu-qemu-vtpm-sha256 }}
     strategy:
       fail-fast: false
       matrix:
-        csp: [aws, azure, gcp, openstack, qemu]
+        include:
+          - csp: aws
+            attestation_variant: aws-nitro-tpm
+          - csp: azure
+            attestation_variant: azure-sev-snp
+          - csp: gcp
+            attestation_variant: gcp-sev-es
+          - csp: gcp
+            attestation_variant: gcp-sev-snp
+          - csp: qemu
+            attestation_variant: qemu-vtpm
+          - csp: openstack
+            attestation_variant: qemu-vtpm
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
@@ -312,51 +324,52 @@ jobs:
           AUTOLOGIN: ${{ (needs.build-settings.outputs.stream == 'console' || needs.build-settings.outputs.stream == 'debug' ) && 'true' || 'false' }}
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
+          ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
         run: |
           echo "::group::Build"
-          sudo make IMAGE_VERSION="${IMAGE_VERSION}" DEBUG="${DEBUG}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}"
+          sudo make IMAGE_VERSION="${IMAGE_VERSION}" DEBUG="${DEBUG}" AUTOLOGIN="${AUTOLOGIN}" "${CSP}_${ATTESTATION_VARIANT}"
           echo "::endgroup::"
 
       - name: Collect hashes
         id: collect-hashes
-        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
+        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37
         run: |
           {
-            echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)"
-            echo "image-efi-${{ matrix.csp }}-sha256=$(sha256sum image.efi | head -c 64)"
-            echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.esp.raw | head -c 64)"
-            echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
-            echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
-            echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
-            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.changelog | head -c 64)"
-            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.manifest | head -c 64)"
+            echo "image-raw-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.raw | head -c 64)"
+            echo "image-efi-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.efi | head -c 64)"
+            echo "image-initrd-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.esp.raw | head -c 64)"
+            echo "image-root-raw-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.root-x86-64.raw | head -c 64)"
+            echo "image-root-verity-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.root-x86-64-verity.raw | head -c 64)"
+            echo "image-vmlinuz-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
+            echo "image-raw-changelog-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.changelog | head -c 64)"
+            echo "image-raw-manifest-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.manifest | head -c 64)"
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Upload raw OS image as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw
+          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.raw
 
       - name: Upload individual OS parts as artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          name: parts-${{ matrix.csp }}
+          name: parts-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.cmdline
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.efi
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.esp.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root-x86-64.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root-x86-64-verity.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.vmlinuz
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.cmdline
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.efi
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.esp.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.root-x86-64.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.root-x86-64-verity.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.vmlinuz
 
       - name: Upload manifest as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          name: manifest-${{ matrix.csp }}
+          name: manifest-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.changelog
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.manifest
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.changelog
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.manifest
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -368,22 +381,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        csp: [aws, azure, gcp, openstack, qemu]
-        upload-variant: [""]
+        include:
+          - csp: aws
+            attestation_variant: aws-nitro-tpm
+          - csp: azure
+            attestation_variant: azure-sev-snp
+          - csp: gcp
+            attestation_variant: gcp-sev-es
+          - csp: gcp
+            attestation_variant: gcp-sev-snp
+          - csp: qemu
+            attestation_variant: qemu-vtpm
+          - csp: openstack
+            attestation_variant: qemu-vtpm
     env:
-      AWS_IMAGE_PATH: mkosi.output.aws/fedora~37/image.raw
-      AWS_JSON_OUTPUT: mkosi.output.aws/fedora~37/image-upload.json
-      AZURE_IMAGE_PATH: mkosi.output.azure/fedora~37/image.vhd
-      AZURE_JSON_OUTPUT: mkosi.output.azure/fedora~37/image-upload.json
-      AZURE_RAW_IMAGE_PATH: mkosi.output.azure/fedora~37/image.raw
-      GCP_IMAGE_PATH: mkosi.output.gcp/fedora~37/image.tar.gz
-      GCP_JSON_OUTPUT: mkosi.output.gcp/fedora~37/image-upload.json
-      GCP_RAW_IMAGE_PATH: mkosi.output.gcp/fedora~37/image.raw
-      OPENSTACK_IMAGE_PATH: mkosi.output.openstack/fedora~37/image.raw
-      OPENSTACK_JSON_OUTPUT: mkosi.output.openstack/fedora~37/image-upload.json
-      QEMU_IMAGE_PATH: mkosi.output.qemu/fedora~37/image.raw
-      QEMU_JSON_OUTPUT: mkosi.output.qemu/fedora~37/image-upload.json
+      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.raw
+      JSON_OUTPUT: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image-upload.json
+      AZURE_IMAGE_PATH: mkosi.output.azure_${{ matrix.attestation_variant }}/fedora~37/image.vhd
+      GCP_IMAGE_PATH: mkosi.output.gcp_${{ matrix.attestation_variant }}/fedora~37/image.tar.gz
       SHORTNAME: ${{ needs.build-settings.outputs.imageNameShort }}
+      ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
@@ -393,8 +410,8 @@ jobs:
       - name: Download OS image artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
+          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37
 
       - name: Install tools
         shell: bash
@@ -438,14 +455,13 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload AWS image"
-          bazel run //image/upload -- \
-            aws \
+          bazel run //image/upload -- image aws \
             --verbose \
-            --raw-image "${AWS_IMAGE_PATH}" \
-            --variant ""  \
+            --raw-image "${RAW_IMAGE_PATH}" \
+            --attestation-variant "${ATTESTATION_VARIANT}" \
             --version "${SHORTNAME}" \
-            --out "${AWS_JSON_OUTPUT}"
-          echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${AWS_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+            --out "${JSON_OUTPUT}"
+          echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload GCP image
@@ -454,15 +470,14 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload GCP image"
-          upload/pack.sh gcp "${GCP_RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
-          bazel run //image/upload -- \
-            gcp \
+          upload/pack.sh gcp "${RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
+          bazel run //image/upload -- image gcp \
             --verbose \
             --raw-image "${GCP_IMAGE_PATH}" \
-            --variant sev-es  \
+            --attestation-variant "${ATTESTATION_VARIANT}" \
             --version "${SHORTNAME}" \
-            --out "${GCP_JSON_OUTPUT}"
-          echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${GCP_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+            --out "${JSON_OUTPUT}"
+          echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload Azure image
@@ -471,15 +486,14 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload Azure image"
-          upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
-          bazel run //image/upload -- \
-            azure \
+          upload/pack.sh azure "${RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
+          bazel run //image/upload -- image azure \
             --verbose \
             --raw-image "${AZURE_IMAGE_PATH}" \
-            --variant cvm  \
+            --attestation-variant "${ATTESTATION_VARIANT}" \
             --version "${SHORTNAME}" \
-            --out "${AZURE_JSON_OUTPUT}"
-          echo -e "Uploaded Azure image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+            --out "${JSON_OUTPUT}"
+          echo -e "Uploaded Azure image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload OpenStack image
@@ -488,14 +502,13 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload OpenStack image"
-          bazel run //image/upload -- \
-            openstack \
+          bazel run //image/upload -- image openstack \
             --verbose \
-            --raw-image "${OPENSTACK_IMAGE_PATH}" \
-            --variant sev \
+            --raw-image "${RAW_IMAGE_PATH}" \
+            --attestation-variant "${ATTESTATION_VARIANT}" \
             --version "${SHORTNAME}" \
-            --out "${OPENSTACK_JSON_OUTPUT}"
-          echo -e "Uploaded OpenStack image: \n\n\`\`\`\n$(jq < "${OPENSTACK_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+            --out "${JSON_OUTPUT}"
+          echo -e "Uploaded OpenStack image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload QEMU image
@@ -504,14 +517,13 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         run: |
           echo "::group::Upload QEMU image"
-          bazel run //image/upload -- \
-            qemu \
+          bazel run //image/upload -- image qemu \
             --verbose \
-            --raw-image "${QEMU_IMAGE_PATH}" \
-            --variant default  \
+            --raw-image "${RAW_IMAGE_PATH}" \
+            --attestation-variant "${ATTESTATION_VARIANT}" \
             --version "${SHORTNAME}" \
-            --out "${QEMU_JSON_OUTPUT}"
-          echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${QEMU_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
+            --out "${JSON_OUTPUT}"
+          echo -e "Uploaded QEMU image: \n\n\`\`\`\n$(jq < "${JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
 
       - name: Upload image lookup table as artifact
@@ -530,23 +542,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        csp: [aws, azure, gcp, openstack, qemu]
+        include:
+          - csp: aws
+            attestation_variant: aws-nitro-tpm
+          - csp: azure
+            attestation_variant: azure-sev-snp
+          - csp: gcp
+            attestation_variant: gcp-sev-es
+          - csp: gcp
+            attestation_variant: gcp-sev-snp
+          - csp: qemu
+            attestation_variant: qemu-vtpm
+          - csp: openstack
+            attestation_variant: qemu-vtpm
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
       - name: Download OS image artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          name: image-${{ matrix.csp }}
+          name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
 
       - name: Install dependencies
         run: |
@@ -561,12 +579,12 @@ jobs:
         run: |
           echo "::group::Calculate expected PCRs"
           {
-            ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}.json
-            ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}.json
-            ./precalculate_pcr_12.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-12-${{ matrix.csp }}.json ${{ matrix.csp }}
+            ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
+            ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
+            ./precalculate_pcr_12.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-12-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json ${{ matrix.csp }}
           } >> "$GITHUB_STEP_SUMMARY"
           cp pcr-stable.json ${{ github.workspace }}/
-          jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
+          jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
           echo "::endgroup::"
 
       - name: Add static PCRs
@@ -574,7 +592,7 @@ jobs:
           case ${{ matrix.csp }} in
             aws)
               yq e '.csp = "AWS" |
-                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .attestationVariant = "${{ matrix.attestation_variant }}" |
                 .measurements.0.warnOnly = true |
                 .measurements.0.expected = "737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12" |
                 .measurements.2.warnOnly = true |
@@ -594,11 +612,11 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
             azure)
               yq e '.csp = "Azure" |
-                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .attestationVariant = "${{ matrix.attestation_variant }}" |
                 .measurements.1.warnOnly = true |
                 .measurements.1.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
                 .measurements.2.warnOnly = true |
@@ -616,11 +634,11 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
             gcp)
               yq e '.csp = "GCP" |
-                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .attestationVariant = "${{ matrix.attestation_variant }}" |
                 .measurements.1.warnOnly = true |
                 .measurements.1.expected = "745f2fb4235e4647aa0ad5ace781cd929eb68c28870e7dd5d1a1535854325e56" |
                 .measurements.2.warnOnly = true |
@@ -640,11 +658,11 @@ jobs:
                 .measurements.14.warnOnly = true |
                 .measurements.14.expected = "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f" |
                 .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
             openstack)
               yq e '.csp = "OpenStack" |
-                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .attestationVariant = "${{ matrix.attestation_variant }}" |
                 .measurements.4.warnOnly = false |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
@@ -652,11 +670,11 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
             qemu)
               yq e '.csp = "QEMU" |
-                .image = "${{ needs.build-settings.outputs.imageNameShort }}" |
+                .attestationVariant = "${{ matrix.attestation_variant }}" |
                 .measurements.4.warnOnly = false |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
@@ -664,7 +682,7 @@ jobs:
                 .measurements.12.warnOnly = false |
                 .measurements.13.warnOnly = false |
                 .measurements.15.warnOnly = false' \
-                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+                -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
             ;;
             *)
               echo "Unknown CSP: ${{ matrix.csp }}"
@@ -672,11 +690,47 @@ jobs:
             ;;
           esac
 
-      - name: Upload expected PCRs as artifact
+      - name: Envelope measurements
+        shell: bash
+        run: |
+          echo "::group::Envelope measurements"
+          bazel run //image/upload -- measurements envelope \
+            --in "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json" \
+            --out "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json" \
+            --version "${{ needs.build-settings.outputs.imageNameShort }}" \
+            --csp "${{ matrix.csp }}" \
+            --attestation-variant "${{ matrix.attestation_variant }}"
+          echo "::endgroup::"
+
+      - name: Upload expected measurements as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          name: pcrs
-          path: pcrs-${{ matrix.csp }}.json
+          name: measurements
+          path: pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json
+
+  upload-pcrs:
+    name: "Sign & upload PCRs"
+    needs: [build-settings, calculate-pcrs]
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
+      - name: Download measurements
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: measurements
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
@@ -688,6 +742,15 @@ jobs:
           sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
           rm rekor-cli-linux-amd64
 
+      - name: Merge measurements
+        shell: bash
+        run: |
+          echo "::group::Merge measurements"
+          bazel run //image/upload -- measurements merge \
+            --out measurements.json \
+            pcrs-*.json
+          echo "::endgroup::"
+
       - name: Sign measurements
         shell: bash
         env:
@@ -698,34 +761,25 @@ jobs:
           echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
           # Enabling experimental mode also publishes signature to Rekor
           COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY \
-            "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json" > "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json.sig"
+            "${{ github.workspace }}/measurements.json" > "${{ github.workspace }}/measurements.json.sig"
           # Verify - As documentation & check
           # Local Signature (input: artifact, key, signature)
           cosign verify-blob --key cosign.pub \
-            --signature "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json.sig" \
-            "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+            --signature "measurements.json.sig" \
+            "measurements.json"
           # Transparency Log Signature (input: artifact, key)
-          uuid=$(rekor-cli search --artifact "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json" | tail -n 1)
+          uuid=$(rekor-cli search --artifact "${{ github.workspace }}/measurements.json" | tail -n 1)
           sig=$(rekor-cli get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
-          cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/pcrs-${{ matrix.csp }}.json"
+          cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/measurements.json"
 
-      - name: Upload signature of expected PCRs as artifact
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-        with:
-          name: pcrs-sig
-          path: pcrs-${{ matrix.csp }}.json.sig
-
-      - name: Upload expected PCRs to S3
+      - name: Upload measurements
         shell: bash
         run: |
-          aws s3 cp \
-            "pcrs-${{ matrix.csp }}.json" \
-            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json" \
-            --no-progress
-          aws s3 cp \
-            "pcrs-${{ matrix.csp }}.json.sig" \
-            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.json.sig" \
-            --no-progress
+          echo "::group::Upload measurements"
+          bazel run //image/upload -- measurements upload \
+            --measurements measurements.json \
+            --signature measurements.json.sig
+          echo "::endgroup::"
 
   generate-sbom:
     name: "Generate SBOM"
@@ -753,14 +807,14 @@ jobs:
         with:
           # downloading / using only the QEMU rootfs is fine
           # since the images only differ in the ESP partition
-          name: parts-qemu
+          name: parts-qemu-qemu-vtpm
 
       - name: Download manifest
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           # downloading / using only the QEMU manifest is fine
           # since the images only differ in the ESP partition
-          name: manifest-qemu
+          name: manifest-qemu-qemu-vtpm
 
       - name: Unpack squashfs
         run: |
@@ -799,38 +853,38 @@ jobs:
           ${{ needs.build-dependencies.outputs.disk-mapper-sha256 }} disk-mapper
           ${{ needs.build-dependencies.outputs.upgrade-agent-sha256 }} upgrade-agent
           ${{ needs.build-dependencies.outputs.measurement-reader-sha256 }} measurement-reader
-          ${{ needs.make-os-image.outputs.image-raw-aws-sha256 }} aws/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-aws-sha256 }} aws/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-aws-sha256 }} aws/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-aws-sha256 }} aws/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-aws-sha256 }} aws/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-aws-sha256 }} aws/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-azure-sha256 }} azure/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-azure-sha256 }} azure/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-azure-sha256 }} azure/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-azure-sha256 }} azure/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-azure-sha256 }} azure/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-azure-sha256 }} azure/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-azure-sha256 }} azure/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-azure-sha256 }} azure/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-gcp-sha256 }} gcp/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-gcp-sha256 }} gcp/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-sha256 }} gcp/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-gcp-sha256 }} gcp/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-gcp-sha256 }} gcp/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-gcp-sha256 }} gcp/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-gcp-sha256 }} gcp/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-gcp-sha256 }} gcp/image.vmlinuz
-          ${{ needs.make-os-image.outputs.image-raw-qemu-sha256 }} qemu/image.raw
-          ${{ needs.make-os-image.outputs.image-raw-changelog-qemu-sha256 }} qemu/image.changelog
-          ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-sha256 }} qemu/image.manifest
-          ${{ needs.make-os-image.outputs.image-efi-qemu-sha256 }} qemu/image.efi
-          ${{ needs.make-os-image.outputs.image-initrd-qemu-sha256 }} qemu/image.initrd
-          ${{ needs.make-os-image.outputs.image-root-raw-qemu-sha256 }} qemu/image.root-x86-64.raw
-          ${{ needs.make-os-image.outputs.image-root-verity-qemu-sha256 }} qemu/image.root.verity
-          ${{ needs.make-os-image.outputs.image-vmlinuz-qemu-sha256 }} qemu/image.vmlinuz
+          ${{ needs.make-os-image.outputs.image-raw-aws-aws-nitro-tpm-sha256 }} aws/image.raw
+          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-aws-nitro-tpm-sha256 }} aws/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-aws-nitro-tpm-sha256 }} aws/image.manifest
+          ${{ needs.make-os-image.outputs.image-efi-aws-aws-nitro-tpm-sha256 }} aws/image.efi
+          ${{ needs.make-os-image.outputs.image-initrd-aws-aws-nitro-tpm-sha256 }} aws/image.initrd
+          ${{ needs.make-os-image.outputs.image-root-raw-aws-aws-nitro-tpm-sha256 }} aws/image.root-x86-64.raw
+          ${{ needs.make-os-image.outputs.image-root-verity-aws-aws-nitro-tpm-sha256 }} aws/image.root.verity
+          ${{ needs.make-os-image.outputs.image-vmlinuz-aws-aws-nitro-tpm-sha256 }} aws/image.vmlinuz
+          ${{ needs.make-os-image.outputs.image-raw-azure-azure-sev-snp-sha256 }} azure/image.raw
+          ${{ needs.make-os-image.outputs.image-raw-changelog-azure-azure-sev-snp-sha256 }} azure/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-azure-azure-sev-snp-sha256 }} azure/image.manifest
+          ${{ needs.make-os-image.outputs.image-efi-azure-azure-sev-snp-sha256 }} azure/image.efi
+          ${{ needs.make-os-image.outputs.image-initrd-azure-azure-sev-snp-sha256 }} azure/image.initrd
+          ${{ needs.make-os-image.outputs.image-root-raw-azure-azure-sev-snp-sha256 }} azure/image.root-x86-64.raw
+          ${{ needs.make-os-image.outputs.image-root-verity-azure-azure-sev-snp-sha256 }} azure/image.root.verity
+          ${{ needs.make-os-image.outputs.image-vmlinuz-azure-azure-sev-snp-sha256 }} azure/image.vmlinuz
+          ${{ needs.make-os-image.outputs.image-raw-gcp-gcp-sev-es-sha256 }} gcp/image.raw
+          ${{ needs.make-os-image.outputs.image-raw-changelog-gcp-gcp-sev-es-sha256 }} gcp/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-gcp-gcp-sev-es-sha256 }} gcp/image.manifest
+          ${{ needs.make-os-image.outputs.image-efi-gcp-gcp-sev-es-sha256 }} gcp/image.efi
+          ${{ needs.make-os-image.outputs.image-initrd-gcp-gcp-sev-es-sha256 }} gcp/image.initrd
+          ${{ needs.make-os-image.outputs.image-root-raw-gcp-gcp-sev-es-sha256 }} gcp/image.root-x86-64.raw
+          ${{ needs.make-os-image.outputs.image-root-verity-gcp-gcp-sev-es-sha256 }} gcp/image.root.verity
+          ${{ needs.make-os-image.outputs.image-vmlinuz-gcp-gcp-sev-es-sha256 }} gcp/image.vmlinuz
+          ${{ needs.make-os-image.outputs.image-raw-qemu-qemu-vtpm-sha256 }} qemu/image.raw
+          ${{ needs.make-os-image.outputs.image-raw-changelog-qemu-qemu-vtpm-sha256 }} qemu/image.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-qemu-qemu-vtpm-sha256 }} qemu/image.manifest
+          ${{ needs.make-os-image.outputs.image-efi-qemu-qemu-vtpm-sha256 }} qemu/image.efi
+          ${{ needs.make-os-image.outputs.image-initrd-qemu-qemu-vtpm-sha256 }} qemu/image.initrd
+          ${{ needs.make-os-image.outputs.image-root-raw-qemu-qemu-vtpm-sha256 }} qemu/image.root-x86-64.raw
+          ${{ needs.make-os-image.outputs.image-root-verity-qemu-qemu-vtpm-sha256 }} qemu/image.root.verity
+          ${{ needs.make-os-image.outputs.image-vmlinuz-qemu-qemu-vtpm-sha256 }} qemu/image.vmlinuz
           EOF
           cat SHA256SUMS
           echo -e "SHA256SUMS:\n\`\`\`\n$(cat SHA256SUMS)\n\`\`\`" >> "$GITHUB_STEP_SUMMARY"
@@ -856,6 +910,11 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ inputs.ref || github.head_ref }}
+
       - name: Download image lookup table
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
@@ -867,41 +926,9 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
 
-      - name: Combine lookup tables for CSPs
-        shell: bash
-        run: |
-          echo '{}' > intermediate.json
-
-          jq '.ref = "${{  needs.build-settings.outputs.ref }}"' intermediate.json > lookup-table.json
-          cp lookup-table.json intermediate.json
-
-          jq '.stream = "${{ needs.build-settings.outputs.stream }}"' intermediate.json > lookup-table.json
-          cp lookup-table.json intermediate.json
-
-          jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' intermediate.json > lookup-table.json
-          cp lookup-table.json intermediate.json
-
-          for lut in mkosi.output.*/*/image-upload*.json; do
-            jq -scS '.[0] * .[1]' intermediate.json "${lut}" > lookup-table.json
-            cp lookup-table.json intermediate.json
-          done
-
-          rm -f intermediate.json
-
       - name: Upload lookup table to S3
         shell: bash
-        run: |
-          aws s3 cp \
-            "lookup-table.json" \
-            "s3://cdn-constellation-backend/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json" \
-            --no-progress
-          {
-            echo -e "Image version ([Lookup table](https://cdn.confidential.cloud/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json)):"
-            echo
-            echo -e "\`\`\`"
-            echo "${{ needs.build-settings.outputs.imageNameShort }}"
-            echo -e "\`\`\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: bazel run //image/upload -- info --verbose mkosi.output.*/*/image-upload*.json
 
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
