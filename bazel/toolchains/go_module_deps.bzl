@@ -1904,8 +1904,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/edgelesssys/go-tdx-qpl",
-        sum = "h1:uQMmc/B1RGE2VeSsh/NqjRgEheqp1cjy8ELIDTFpaUw=",
-        version = "v0.0.0-20230307140231-bb361f158928",
+        sum = "h1:0ubLdy3WZEC04nYWq0y3LtLUplsj2q+OhLJSMljqA+I=",
+        version = "v0.0.0-20230330144110-2d96fac401a5",
     )
 
     go_repository(
