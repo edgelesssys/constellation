@@ -8,14 +8,16 @@ go_library(
         "azure.go",
         "config.go",
         "config_doc.go",
-        "image.go",
+        # keep
+        "image_enterprise.go",
+        # keep
+        "image_oss.go",
         "qemu.go",
         "validation.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/api/configapi",
         "//internal/api/fetcher",
         "//internal/api/versionsapi",
         "//internal/attestation/idkeydigest",
@@ -24,6 +26,7 @@ go_library(
         "//internal/compatibility",
         "//internal/config/imageversion",
         "//internal/config/instancetypes",
+        "//internal/config/snpversion",
         "//internal/constants",
         "//internal/file",
         "//internal/variant",

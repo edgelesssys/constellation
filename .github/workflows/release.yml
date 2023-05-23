@@ -147,12 +147,11 @@ jobs:
           defaultVersionReg='defaultImage = \"[^\"]*\"'
 
           # Ensure regexp matches (otherwise the file was changed or the workflow is broken).
-          grep -E "${defaultVersionReg}" internal/config/image.go
+          grep -E "${defaultVersionReg}" internal/config/image_enterprise.go
 
           # Update version.
-          sed -i "s/${defaultVersionReg}/defaultImage = \"${VERSION}\"/" internal/config/image.go
-          git add internal/config/image.go
-
+          sed -i "s/${defaultVersionReg}/defaultImage = \"${VERSION}\"/" internal/config/image_enterprise.go
+          git add internal/config/image_enterprise.go
       - name: Commit
         run: |
           git config --global user.name "edgelessci"

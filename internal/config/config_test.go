@@ -96,20 +96,6 @@ func TestSettingLatestAsVersion(t *testing.T) {
 	}
 }
 
-// getConfigAsMap returns a map of the attestation section of the config.
-func getConfigAsMap(conf *Config, t *testing.T) map[string]interface{} {
-	d, err := yaml.Marshal(&conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var m map[string]interface{}
-	err = yaml.Unmarshal(d, &m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return m
-}
-
 func TestFromFile(t *testing.T) {
 	testCases := map[string]struct {
 		config     *Config
@@ -855,4 +841,16 @@ func TestConfigVersionCompatibility(t *testing.T) {
 			assert.Equal(tc.expectedConfig, config)
 		})
 	}
+}
+
+// getConfigAsMap returns a map of the config.
+func getConfigAsMap(conf *Config, t *testing.T) (res map[string]interface{}) {
+	bytes, err := yaml.Marshal(&conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := yaml.Unmarshal(bytes, &res); err != nil {
+		t.Fatal(err)
+	}
+	return
 }
