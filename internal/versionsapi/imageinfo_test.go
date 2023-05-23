@@ -281,3 +281,183 @@ func TestImageInfoValidateRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestMergeImageInfos(t *testing.T) {
+	testCases := map[string]struct {
+		infos    []ImageInfo
+		wantInfo ImageInfo
+		wantErr  bool
+	}{
+		"only one element": {
+			infos: []ImageInfo{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "aws",
+							AttestationVariant: "aws-nitro-tpm",
+							Reference:          "ami-123",
+							Region:             "us-east-1",
+						},
+					},
+				},
+			},
+			wantInfo: ImageInfo{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+				},
+			},
+		},
+		"valid image info": {
+			infos: []ImageInfo{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "aws",
+							AttestationVariant: "aws-nitro-tpm",
+							Reference:          "ami-123",
+							Region:             "us-east-1",
+						},
+					},
+				},
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "gcp",
+							AttestationVariant: "gcp-sev-es",
+							Reference:          "image-123",
+						},
+					},
+				},
+			},
+			wantInfo: ImageInfo{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+					{
+						CSP:                "gcp",
+						AttestationVariant: "gcp-sev-es",
+						Reference:          "image-123",
+					},
+				},
+			},
+		},
+		"sorting": {
+			infos: []ImageInfo{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "gcp",
+							AttestationVariant: "gcp-sev-es",
+							Reference:          "image-123",
+						},
+					},
+				},
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "aws",
+							AttestationVariant: "aws-nitro-tpm",
+							Reference:          "ami-123",
+							Region:             "us-east-1",
+						},
+					},
+				},
+			},
+			wantInfo: ImageInfo{
+				Ref:     "test-ref",
+				Stream:  "nightly",
+				Version: "v1.0.0",
+				List: []ImageInfoEntry{
+					{
+						CSP:                "aws",
+						AttestationVariant: "aws-nitro-tpm",
+						Reference:          "ami-123",
+						Region:             "us-east-1",
+					},
+					{
+						CSP:                "gcp",
+						AttestationVariant: "gcp-sev-es",
+						Reference:          "image-123",
+					},
+				},
+			},
+		},
+		"mismatch in base info": {
+			infos: []ImageInfo{
+				{
+					Ref:     "test-ref",
+					Stream:  "nightly",
+					Version: "v1.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "gcp",
+							AttestationVariant: "gcp-sev-es",
+							Reference:          "image-123",
+						},
+					},
+				},
+				{
+					Ref:     "other-ref",
+					Stream:  "stable",
+					Version: "v2.0.0",
+					List: []ImageInfoEntry{
+						{
+							CSP:                "aws",
+							AttestationVariant: "aws-nitro-tpm",
+							Reference:          "ami-123",
+							Region:             "us-east-1",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"empty list": {
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			gotInfo, err := MergeImageInfos(tc.infos...)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantInfo, gotInfo)
+		})
+	}
+}
