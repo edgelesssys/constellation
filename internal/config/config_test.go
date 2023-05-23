@@ -103,11 +103,6 @@ func TestSettingLatestAsVersion(t *testing.T) {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
-				//out, err := yaml.Marshal(&result.Attestation.AzureSEVSNP)
-				//require.NoError(err)
-				//var mp map[string]any
-				//require.NoError(yaml.Unmarshal(out, &mp))
-				//mp["microcodeVersion"] = tc.wantResult.Attestation.AzureSEVSNP.MicrocodeVersion
 				assert.Equal(tc.wantResult, result)
 			}
 		})

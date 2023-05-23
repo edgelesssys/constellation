@@ -18,6 +18,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/api/configapi",
         "//internal/api/fetcher",
         "//internal/api/versionsapi",
         "//internal/attestation/idkeydigest",
@@ -53,6 +54,7 @@ go_test(
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/config/instancetypes",
+        "//internal/config/snpversion",
         "//internal/constants",
         "//internal/file",
         "//internal/variant",

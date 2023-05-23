@@ -1,8 +1,22 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "snpversion",
-    srcs = ["snpversion.go"],
+    srcs = [
+        "snpversion.go",
+        "version.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/config/snpversion",
     visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "snpversion_test",
+    srcs = ["version_test.go"],
+    embed = [":snpversion"],
+    deps = [
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
 )
