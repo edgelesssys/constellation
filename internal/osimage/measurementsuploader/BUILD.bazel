@@ -1,11 +1,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "archive",
-    srcs = ["archive.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/archive",
+    name = "measurementsuploader",
+    srcs = ["measurementsuploader.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/measurementsuploader",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/attestation/measurements",
         "//internal/constants",
         "//internal/logger",
         "//internal/versionsapi",
