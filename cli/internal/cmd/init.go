@@ -192,6 +192,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
+			cmd.PrintErrf("The cluster logs were saved to %q\n", constants.ErrorLog)
 		}
 		return err
 	}
