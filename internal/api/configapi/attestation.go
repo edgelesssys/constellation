@@ -10,17 +10,12 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-const (
-	Bootloader AzureSEVSNPVersionType = "bootloader" // Bootloader is the version of the Azure SEVSNP bootloader.
-	TEE        AzureSEVSNPVersionType = "tee"        // TEE is the version of the Azure SEVSNP TEE.
-	SNP        AzureSEVSNPVersionType = "snp"        // SNP is the version of the Azure SEVSNP SNP.
-	Microcode  AzureSEVSNPVersionType = "microcode"  // Microcode is the version of the Azure SEVSNP microcode.
-)
+// BaseURL is the base URL of the config api.
+var BaseURL = constants.CDNRepositoryURL
 
 // AttestationURLPath is the URL path to the attestation versions.
 const AttestationURLPath = "constellation/v1/attestation"
@@ -31,13 +26,13 @@ type AzureSEVSNPVersionType (string)
 // AzureSEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type AzureSEVSNPVersion struct {
 	// Bootloader is the latest version of the Azure SEVSNP bootloader.
-	Bootloader snpversion.Version `json:"bootloader"`
+	Bootloader AttestationVersion `json:"bootloader"`
 	// TEE is the latest version of the Azure SEVSNP TEE.
-	TEE snpversion.Version `json:"tee"`
+	TEE AttestationVersion `json:"tee"`
 	// SNP is the latest version of the Azure SEVSNP SNP.
-	SNP snpversion.Version `json:"snp"`
+	SNP AttestationVersion `json:"snp"`
 	// Microcode is the latest version of the Azure SEVSNP microcode.
-	Microcode snpversion.Version `json:"microcode"`
+	Microcode AttestationVersion `json:"microcode"`
 }
 
 // AzureSEVSNPVersionGet is the request to get the version information of the specific version in the config api.
@@ -48,7 +43,7 @@ type AzureSEVSNPVersionGet struct {
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionGet) URL() (string, error) {
-	url, err := url.Parse(constants.CDNRepositoryURL)
+	url, err := url.Parse(BaseURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}
@@ -72,11 +67,11 @@ func (i AzureSEVSNPVersionGet) Validate() error {
 }
 
 // AzureSEVSNPVersionList is the request to list all versions in the config api.
-type AzureSEVSNPVersionList ([]string)
+type AzureSEVSNPVersionList []string
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionList) URL() (string, error) {
-	url, err := url.Parse(constants.CDNRepositoryURL)
+	url, err := url.Parse(BaseURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}
@@ -100,7 +95,7 @@ func (i AzureSEVSNPVersionList) Validate() error {
 }
 
 // GetVersionByType returns the requested version of the given type.
-func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) snpversion.Version {
+func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) AttestationVersion {
 	switch t {
 	case Bootloader:
 		return res.Bootloader

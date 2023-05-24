@@ -381,13 +381,17 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 
 // New creates a new config by:
 // 1. Reading config file via provided fileHandler from file with name.
-// 2. Read secrets from environment variables.
-// 3. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
+// 2. For "latest" version values of the attestation variants fetch the version numbers.
+// 3. Read secrets from environment variables.
+// 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
 func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
+	}
+	if azure := c.Attestation.AzureSEVSNP; azure != nil {
+		azure.FetchAndSetLatestVersionNumbers()
 	}
 
 	// Read secrets from env-vars.

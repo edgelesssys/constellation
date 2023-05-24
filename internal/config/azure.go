@@ -10,15 +10,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -29,16 +26,16 @@ type AzureSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion snpversion.Version `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion configapi.AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion snpversion.Version `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion configapi.AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion snpversion.Version `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion configapi.AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion snpversion.Version `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion configapi.AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   Configuration for validating the firmware signature.
 	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
@@ -52,10 +49,10 @@ type AzureSEVSNP struct {
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: snpversion.NewLatestDummyVersion(),
-		TEEVersion:        snpversion.NewLatestDummyVersion(),
-		SNPVersion:        snpversion.NewLatestDummyVersion(),
-		MicrocodeVersion:  snpversion.NewLatestDummyVersion(),
+		BootloaderVersion: configapi.NewLatestDummyVersion(),
+		TEEVersion:        configapi.NewLatestDummyVersion(),
+		SNPVersion:        configapi.NewLatestDummyVersion(),
+		MicrocodeVersion:  configapi.NewLatestDummyVersion(),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -98,29 +95,22 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 	return firmwareSignerCfgEqual && measurementsEqual && bootloaderEqual && teeEqual && snpEqual && microcodeEqual && rootKeyEqual, nil
 }
 
-// UnmarshalYAML implements a custom unmarshaler to support setting "latest" as version.
-func (c *AzureSEVSNP) UnmarshalYAML(unmarshal func(any) error) error {
-	aux := &fusedAzureSEVSNP{
-		auxAzureSEVSNP: (*auxAzureSEVSNP)(c),
-	}
-	if err := unmarshal(aux); err != nil {
-		return fmt.Errorf("unmarshal AzureSEVSNP: %w", err)
-	}
-	c = (*AzureSEVSNP)(aux.auxAzureSEVSNP)
-
+// FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers() {
 	fetcher := fetcher.NewConfigAPIFetcher()
 	versions, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
 	if err != nil {
-		return fmt.Errorf("get AzureSEVSNP versions: %w", err)
+		return
 	}
-	for _, versionType := range []configapi.AzureSEVSNPVersionType{configapi.Bootloader, configapi.TEE, configapi.SNP, configapi.Microcode} {
-		if !convertLatestToNumber(c, versions, versionType, aux) {
-			if err := convertStringToVersion(c, versionType, aux); err != nil {
-				return fmt.Errorf("failed to convert %s version to number: %w", versionType, err)
-			}
-		}
-	}
-	return nil
+	// set number and keep isLatest flag
+	c.mergeVersionNumbers(versions)
+}
+
+func (c *AzureSEVSNP) mergeVersionNumbers(versions configapi.AzureSEVSNPVersion) {
+	c.BootloaderVersion.Value = versions.Bootloader.Value
+	c.TEEVersion.Value = versions.TEE.Value
+	c.SNPVersion.Value = versions.SNP.Value
+	c.MicrocodeVersion.Value = versions.Microcode.Value
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.
@@ -152,88 +142,4 @@ func (c AzureTrustedLaunch) EqualTo(other AttestationCfg) (bool, error) {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
-}
-
-// auxAzureSEVSNP is a helper struct for unmarshaling the config from YAML for handling the version parsing.
-// The version fields are kept to make it convertable to the native AzureSEVSNP struct.
-type auxAzureSEVSNP struct {
-	// description: |
-	//   Expected TPM measurements.
-	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
-	// description: |
-	//   Lowest acceptable bootloader version.
-	BootloaderVersion snpversion.Version `yaml:"-"`
-	// description: |
-	//   Lowest acceptable TEE version.
-	TEEVersion snpversion.Version `json:"teeVersion" yaml:"-"`
-	// description: |
-	//   Lowest acceptable SEV-SNP version.
-	SNPVersion snpversion.Version `json:"snpVersion" yaml:"-"`
-	// description: |
-	//   Lowest acceptable microcode version.
-	MicrocodeVersion snpversion.Version `json:"microcodeVersion" yaml:"-"`
-	// description: |
-	//   Configuration for validating the firmware signature.
-	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
-	// description: |
-	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
-	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
-}
-
-// fusedAzureSEVSNP is a helper struct for unmarshaling the config from YAML for handling the version parsing.
-type fusedAzureSEVSNP struct {
-	*auxAzureSEVSNP `yaml:",inline"`
-	// description: |
-	//   Lowest acceptable bootloader version.
-	BootloaderVersion string `yaml:"bootloaderVersion"`
-	// description: |
-	//   Lowest acceptable bootloader version.
-	TEEVersion string `yaml:"teeVersion"`
-	// description: |
-	//   Lowest acceptable bootloader version.
-	SNPVersion string `yaml:"snpVersion"`
-	// description: |
-	//   Lowest acceptable bootloader version.
-	MicrocodeVersion string `yaml:"microcodeVersion"`
-}
-
-func convertStringToVersion(c *AzureSEVSNP, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) error {
-	v, stringV := getSNPVersionAndStringPtrToVersion(c, versionType, aux)
-
-	bvInt, err := strconv.ParseInt(*stringV, 10, 8)
-	if err != nil {
-		return err
-	}
-	*v = snpversion.Version{
-		Value:    uint8(bvInt),
-		IsLatest: false,
-	}
-	return nil
-}
-
-func convertLatestToNumber(c *AzureSEVSNP, versions configapi.AzureSEVSNPVersion, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) bool {
-	v, stringV := getSNPVersionAndStringPtrToVersion(c, versionType, aux)
-	if strings.ToLower(*stringV) == "latest" {
-		*v = configapi.GetVersionByType(versions, versionType)
-		return true
-	}
-	return false
-}
-
-func getSNPVersionAndStringPtrToVersion(c *AzureSEVSNP, versionType configapi.AzureSEVSNPVersionType, aux *fusedAzureSEVSNP) (versionUint *snpversion.Version, versionString *string) {
-	switch versionType {
-	case configapi.Bootloader:
-		versionUint = &c.BootloaderVersion
-		versionString = &aux.BootloaderVersion
-	case configapi.TEE:
-		versionUint = &c.TEEVersion
-		versionString = &aux.TEEVersion
-	case configapi.SNP:
-		versionUint = &c.SNPVersion
-		versionString = &aux.SNPVersion
-	case configapi.Microcode:
-		versionUint = &c.MicrocodeVersion
-		versionString = &aux.MicrocodeVersion
-	}
-	return
 }

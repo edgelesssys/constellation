@@ -1,4 +1,10 @@
-package snpversion
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+package configapi
 
 import (
 	"testing"
@@ -10,12 +16,12 @@ import (
 func TestVersionMarshalYAML(t *testing.T) {
 	tests := []struct {
 		name string
-		sut  Version
+		sut  AttestationVersion
 		want string
 	}{
 		{
 			name: "isLatest resolves to latest",
-			sut: Version{
+			sut: AttestationVersion{
 				Value:    1,
 				IsLatest: true,
 			},
@@ -23,7 +29,7 @@ func TestVersionMarshalYAML(t *testing.T) {
 		},
 		{
 			name: "value 5 resolves to 5",
-			sut: Version{
+			sut: AttestationVersion{
 				Value:    5,
 				IsLatest: false,
 			},

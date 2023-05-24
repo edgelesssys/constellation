@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/require"
@@ -44,8 +43,8 @@ var cfg = uri.AWSS3Config{
 	Region:      *awsRegion,
 }
 
-func newVersion(version uint8) snpversion.Version {
-	return snpversion.Version{
+func newVersion(version uint8) configapi.AttestationVersion {
+	return configapi.AttestationVersion{
 		Value:    version,
 		IsLatest: false,
 	}

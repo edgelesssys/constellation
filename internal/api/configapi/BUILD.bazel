@@ -5,13 +5,13 @@ go_library(
     name = "configapi",
     srcs = [
         "attestation.go",
+        "attestationversion.go",
         "configapi.go",
         "repo.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/configapi",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/config/snpversion",
         "//internal/constants",
         "//internal/kms/storage",
         "//internal/kms/storage/awss3",
@@ -22,12 +22,15 @@ go_library(
 
 go_test(
     name = "configapi_test",
-    srcs = ["repo_test.go"],
+    srcs = [
+        "attestationversion_test.go",
+        "repo_test.go",
+    ],
+    embed = [":configapi"],
     deps = [
-        ":configapi",
-        "//internal/config/snpversion",
         "//internal/kms/uri",
         "//internal/variant",
         "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )

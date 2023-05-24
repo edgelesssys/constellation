@@ -20,10 +20,10 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
-	"github.com/edgelesssys/constellation/v2/internal/config/snpversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -38,50 +38,54 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-func TestSettingLatestAsVersion(t *testing.T) {
-	//versions := map[string]any{
-	//	"microcodeVersion":  "Latest",
-	//	"teeVersion":        "latest",
-	//	"snpVersion":        "latest",
-	//	"bootloaderVersion": 1,
-	//}
+func TestWriteConfigWithLatestVersion(t *testing.T) {
+	conf := Default()
+	bt, err := yaml.Marshal(conf)
+	require := require.New(t)
+	require.NoError(err)
+
+	var mp configMap
+	require.NoError(yaml.Unmarshal(bt, &mp))
+	assert := assert.New(t)
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+}
+
+func TestReadConfigWithLatestVersion(t *testing.T) {
 	testCases := map[string]struct {
-		config     map[string]interface{}
+		config     configMap
 		configName string
 		wantResult *Config
 		wantErr    bool
 	}{
 		"mix of latest and uint as version value": {
-			config: func() map[string]interface{} {
+			config: func() configMap {
 				conf := Default()
-				// modify versions as string
 				m := getConfigAsMap(conf, t)
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "Latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["snpVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["bootloaderVersion"] = 1
+				m.setAzureSEVSNPVersion("microcodeVersion", "Latest")
+				m.setAzureSEVSNPVersion("teeVersion", "latest")
+				m.setAzureSEVSNPVersion("snpVersion", "latest")
+				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
 				return m
 			}(),
 
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
 				conf := Default()
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = snpversion.Version{
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = configapi.AttestationVersion{
 					Value:    1,
 					IsLatest: false,
-				}
-				conf.Attestation.AzureSEVSNP.MicrocodeVersion = snpversion.Version{
-					Value:    93,
-					IsLatest: true,
 				}
 				return conf
 			}(),
 		},
 		"refuse invalid version value": {
-			config: func() map[string]interface{} {
+			config: func() configMap {
 				conf := Default()
 				m := getConfigAsMap(conf, t)
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "1a"
+				m.setAzureSEVSNPVersion("microcodeVersion", "1a")
 				return m
 			}(),
 			configName: constants.ConfigFilename,
@@ -98,9 +102,8 @@ func TestSettingLatestAsVersion(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
 			}
 			result, err := fromFile(fileHandler, tc.configName)
-
 			if tc.wantErr {
-				assert.Error(err)
+				require.Error(err)
 			} else {
 				require.NoError(err)
 				assert.Equal(tc.wantResult, result)
@@ -849,8 +852,18 @@ func TestConfigVersionCompatibility(t *testing.T) {
 	}
 }
 
+type configMap map[string]interface{}
+
+func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {
+	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
+}
+
+func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {
+	return c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType]
+}
+
 // getConfigAsMap returns a map of the config.
-func getConfigAsMap(conf *Config, t *testing.T) (res map[string]interface{}) {
+func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 	bytes, err := yaml.Marshal(&conf)
 	if err != nil {
 		t.Fatal(err)
