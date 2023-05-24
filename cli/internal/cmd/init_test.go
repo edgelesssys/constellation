@@ -294,7 +294,7 @@ func TestWriteOutput(t *testing.T) {
 		log:    logger.NewTest(t),
 		merger: &stubMerger{},
 	}
-	err := i.writeOutput(idFile, resp, false, &out, fileHandler)
+	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -315,7 +315,7 @@ func TestWriteOutput(t *testing.T) {
 	// test config merging
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -327,7 +327,7 @@ func TestWriteOutput(t *testing.T) {
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)

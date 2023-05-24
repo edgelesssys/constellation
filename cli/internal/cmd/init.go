@@ -202,7 +202,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
 }
 
-func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {
 	doer := &initDoer{
 		dialer:   dialer,
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
@@ -231,7 +231,7 @@ type initDoer struct {
 	dialer        grpcDialer
 	endpoint      string
 	req           *initproto.InitRequest
-	resp          *initproto.InitResponse
+	resp          *initproto.InitSuccessResponse
 	log           debugLog
 	spinner       spinnerInterf
 	connectedOnce bool
@@ -273,15 +273,22 @@ func (d *initDoer) Do(ctx context.Context) error {
 		}
 		return &nonRetriableError{err}
 	}
-	if res.GetInitFailure() != nil {
-		if e := d.getLogs(resp); e != nil {
-			d.log.Debugf("Failed to collect logs: %w", e)
-		}
-		// should've been triggered by err, but just to be safe
-		return &nonRetriableError{errors.New(res.GetInitFailure().Error)}
-	}
 
-	d.resp = res
+	switch res.Kind.(type) {
+	case *initproto.InitResponse_InitFailure:
+		if e := d.getLogs(resp); e != nil {
+			d.log.Debugf("Failed to get logs from cluster: %w", e)
+		}
+		return &nonRetriableError{errors.New(res.GetInitFailure().GetError())}
+	case *initproto.InitResponse_InitSuccess:
+		d.resp = res.GetInitSuccess()
+	case nil:
+		d.log.Debugf("Cluster returned nil response type")
+		return &nonRetriableError{errors.New("empty response from cluster")}
+	default:
+		d.log.Debugf("Cluster returned unknown response type")
+		return &nonRetriableError{errors.New("unknown respone from cluster")}
+	}
 
 	return nil
 }
@@ -330,15 +337,13 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, initResp *initproto.InitResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
+	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	resp := initResp.GetInitSuccess()
-
-	ownerID := hex.EncodeToString(resp.GetOwnerId())
+	ownerID := hex.EncodeToString(initResp.GetOwnerId())
 	// i.log.Debugf("Owner id is %s", ownerID)
-	clusterID := hex.EncodeToString(resp.GetClusterId())
+	clusterID := hex.EncodeToString(initResp.GetClusterId())
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
@@ -347,7 +352,7 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(constants.AdminConfFilename, resp.GetKubeconfig(), file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
