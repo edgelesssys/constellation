@@ -13,10 +13,10 @@ import (
 	"time"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // Client manages (modifies) the version information for the attestation variants.

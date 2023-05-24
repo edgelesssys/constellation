@@ -11,8 +11,8 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 

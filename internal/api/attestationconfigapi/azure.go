@@ -12,8 +12,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // attestationURLPath is the URL path to the attestation versions.

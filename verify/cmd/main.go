@@ -12,9 +12,9 @@ import (
 	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/choose"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/verify/server"
 	"go.uber.org/zap"
 )

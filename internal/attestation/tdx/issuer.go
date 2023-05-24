@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/go-tdx-qpl/tdx"
 )
 

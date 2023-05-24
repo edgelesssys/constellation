@@ -12,9 +12,9 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation",
+        "//internal/attestation/variant",
         "//internal/attestation/vtpm",
         "//internal/config",
-        "//internal/variant",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",

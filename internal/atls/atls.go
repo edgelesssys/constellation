@@ -25,8 +25,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 const attestationTimeout = 30 * time.Second

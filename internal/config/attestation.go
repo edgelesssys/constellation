@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
 
 // AttestationCfg is the common interface for passing attestation configs.

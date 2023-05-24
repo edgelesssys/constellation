@@ -12,9 +12,9 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/attestation",
+        "//internal/attestation/variant",
         "//internal/attestation/vtpm",
         "//internal/config",
-        "//internal/variant",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_googleapis_gax_go_v2//:gax-go",

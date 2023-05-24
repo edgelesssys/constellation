@@ -9,9 +9,9 @@ go_library(
     deps = [
         "//internal/api/versionsapi",
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/sigstore",
-        "//internal/variant",
         "@org_golang_x_tools//go/ast/astutil",
     ],
 )
