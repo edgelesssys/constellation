@@ -20,6 +20,7 @@ package initserver
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -138,7 +139,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "invalid init secret %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -146,7 +147,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "creating kms client: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -155,7 +156,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "deriving measurement values: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -163,7 +164,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "locking node: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -178,7 +179,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		err = status.Error(codes.FailedPrecondition, "node is already being activated")
 
 		if e := s.sendLogsWithMessage(stream, err); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -190,7 +191,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "setting up disk: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -201,7 +202,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "persisting node state: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
@@ -223,7 +224,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "initializing cluster: %s", err)); e != nil {
-			err = e
+			err = errors.Join(err, e)
 		}
 		return err
 	}
