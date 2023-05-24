@@ -20,6 +20,9 @@ for file in "${operator_source[@]}"; do
   if [[ ${file} =~ _test\.go$ ]]; then
     continue
   fi
+  if [[ ${file} =~ _webhook\.go$ ]]; then
+    continue
+  fi
   operator_real_source+=("$(realpath "${file}")")
 done
 

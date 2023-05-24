@@ -22,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
@@ -124,7 +123,7 @@ func (r *ScalingGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.ScalingGroup{}).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.NodeVersion{}},
+			client.Object(&updatev1alpha1.NodeVersion{}),
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForNodeVersion),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
@@ -132,12 +131,12 @@ func (r *ScalingGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // findObjectsForNodeVersion requests reconcile calls for every scaling group referencing the node image.
-func (r *ScalingGroupReconciler) findObjectsForNodeVersion(nodeVersion client.Object) []reconcile.Request {
+func (r *ScalingGroupReconciler) findObjectsForNodeVersion(ctx context.Context, nodeVersion client.Object) []reconcile.Request {
 	attachedScalingGroups := &updatev1alpha1.ScalingGroupList{}
 	listOps := &client.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector(nodeVersionField, nodeVersion.GetName()),
 	}
-	if err := r.List(context.TODO(), attachedScalingGroups, listOps); err != nil {
+	if err := r.List(ctx, attachedScalingGroups, listOps); err != nil {
 		return []reconcile.Request{}
 	}
 

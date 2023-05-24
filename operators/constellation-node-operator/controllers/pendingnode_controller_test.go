@@ -137,7 +137,7 @@ func TestFindObjectsForNode(t *testing.T) {
 			reconciler := PendingNodeReconciler{
 				Client: newStubReaderClient(t, []runtime.Object{tc.pendingNode}, nil, tc.listPendingNodesErr),
 			}
-			requests := reconciler.findObjectsForNode(&corev1.Node{
+			requests := reconciler.findObjectsForNode(context.TODO(), &corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pending-node",
 				},
