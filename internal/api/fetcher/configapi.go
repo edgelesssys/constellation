@@ -31,6 +31,10 @@ func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, atte
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
 func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
+	// TODO check sig
+	//if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
+	//	return "", err
+	//}
 	return fetch(ctx, f.httpc, attestation)
 }
 

@@ -8,6 +8,7 @@ package fetcher_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -36,13 +37,15 @@ func TestGetVersion(t *testing.T) {
 }
 
 func startDummyConfigAPIServer(ctx context.Context, addr string) {
-	http.HandleFunc("/constellation/v1/attestation/azure-sev-snp/list", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/constellation/v1/attestation/azure-sev-snp/list", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode([]string{"2021-01-01-01-01.json"}); err != nil {
 			panic(err)
 		}
 	})
-	http.HandleFunc("/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]int{"bootloader": 2, "tee": 0, "snp": 6, "microcode": 93}); err != nil {
 			panic(err)
@@ -50,7 +53,8 @@ func startDummyConfigAPIServer(ctx context.Context, addr string) {
 	})
 
 	server := &http.Server{
-		Addr: addr,
+		Addr:    addr,
+		Handler: mux,
 	}
 	// wait for context to be done
 	go func() {
@@ -61,7 +65,7 @@ func startDummyConfigAPIServer(ctx context.Context, addr string) {
 	}()
 
 	// Start the HTTP server
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
 	}
 }
