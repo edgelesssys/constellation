@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
@@ -155,7 +154,7 @@ func (r *PendingNodeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.PendingNode{}).
 		Watches(
-			&source.Kind{Type: &corev1.Node{}},
+			client.Object(&corev1.Node{}),
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForNode),
 			builder.WithPredicates(nodeStateChangePredicate()),
 		).
@@ -192,9 +191,9 @@ func nodeStateChangePredicate() predicate.Predicate {
 }
 
 // findObjectsForNode requests reconciliation for PendingNode whenever the corresponding Node state changes.
-func (r *PendingNodeReconciler) findObjectsForNode(rawNode client.Object) []reconcile.Request {
+func (r *PendingNodeReconciler) findObjectsForNode(ctx context.Context, rawNode client.Object) []reconcile.Request {
 	var pendingNodesList updatev1alpha1.PendingNodeList
-	err := r.List(context.Background(), &pendingNodesList, client.MatchingFields{nodeNameKey: rawNode.GetName()})
+	err := r.List(ctx, &pendingNodesList, client.MatchingFields{nodeNameKey: rawNode.GetName()})
 	if err != nil {
 		return []reconcile.Request{}
 	}

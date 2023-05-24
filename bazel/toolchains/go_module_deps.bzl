@@ -2011,6 +2011,14 @@ def go_dependencies():
         sum = "h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=",
         version = "v1.3.0",
     )
+    go_repository(
+        name = "com_github_foxcpp_go_mockdns",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/foxcpp/go-mockdns",
+        sum = "h1:7jBqxd3WDWwi/6WhDvacvH1XsN3rOLXyHM1uhvIx6FI=",
+        version = "v1.0.0",
+    )
 
     go_repository(
         name = "com_github_franela_goblin",
@@ -5012,8 +5020,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/opencontainers/runc",
-        sum = "h1:nRCz/8sKg6K6jgYAFLDlXzPeITBZJyX28DBVhWD+5dg=",
-        version = "v1.1.4",
+        sum = "h1:XbhB8IfG/EsnhNvZtNdLB0GBw92GYEFvKlhaJk9jUgA=",
+        version = "v1.1.6",
     )
     go_repository(
         name = "com_github_opencontainers_runtime_spec",
@@ -6329,8 +6337,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/xeipuuv/gojsonpointer",
-        sum = "h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=",
-        version = "v0.0.0-20180127040702-4e3ac2762d5f",
+        sum = "h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=",
+        version = "v0.0.0-20190905194746-02993c407bfb",
     )
     go_repository(
         name = "com_github_xeipuuv_gojsonreference",
@@ -7937,8 +7945,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/cli-runtime",
-        sum = "h1:3ULe0oI28xmgeLMVXIstB+ZL5CTGvWSMVMLeHxitIuc=",
-        version = "v0.26.3",
+        sum = "h1:MMzp5Q/Xmr5L1Lrowuc+Y/r95XINC6c6/fE3aN7JDRM=",
+        version = "v0.27.1",
     )
     go_repository(
         name = "io_k8s_client_go",
@@ -7954,16 +7962,16 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/cloud-provider",
         replace = "k8s.io/cloud-provider",
-        sum = "h1:482W9e2Yp8LDgTUKrXAxT+nH4pHS2TiBElI/CnfGWac=",
-        version = "v0.27.1",
+        sum = "h1:IiQWyFtdzcPOqvrBZE9FCt0CDCx3GUcZhKkykEgKlM4=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_cluster_bootstrap",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/cluster-bootstrap",
-        sum = "h1:nOKU6xAemr5AfKmjl1R7jxC38xtnF4WEkIOsD3BCv34=",
-        version = "v0.27.1",
+        sum = "h1:OL3onrOwrUD7NQxBUqQwTl1Uu2GQKCkw9BMHpc4PbiA=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_code_generator",
@@ -7986,8 +7994,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/component-helpers",
-        sum = "h1:+JJ1gwyVsqSwZCJVLJotx/IPq2pMpo0kifeAzfo6i3U=",
-        version = "v0.26.2",
+        sum = "h1:uY63v834MAHuf3fBiKGQGPq/cToU5kY5SW/58Xv0gl4=",
+        version = "v0.27.1",
     )
     go_repository(
         name = "io_k8s_controller_manager",
@@ -7995,8 +8003,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/controller-manager",
         replace = "k8s.io/controller-manager",
-        sum = "h1:+4OGWAzg4JVLEauPSmyQFIfrYrYQoUsC4MbHmRuPaFU=",
-        version = "v0.27.1",
+        sum = "h1:S7984FVb5ajp8YqMQGAm8zXEUEl0Omw6FJlOiQU2Ne8=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_cri_api",
@@ -8012,8 +8020,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/csi-translation-lib",
         replace = "k8s.io/csi-translation-lib",
-        sum = "h1:D9Hw2iBZzFPriFH0FDyUFdfflYAW6S032P6Yps9sKq8=",
-        version = "v0.27.1",
+        sum = "h1:HbwiOk+M3jIkTC+e5nxUCwmux68OguKV/g9NaHDQhzs=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_dynamic_resource_allocation",
@@ -8021,8 +8029,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/dynamic-resource-allocation",
         replace = "k8s.io/dynamic-resource-allocation",
-        sum = "h1:4HsIhgO49Yv+C1Zsw4R18tzXgtuEfwChqOwDIi/AcxE=",
-        version = "v0.27.1",
+        sum = "h1:lNt4YOVoJqi+wcBesTVJ3KAfr3HnvLedO1/ZovE26pk=",
+        version = "v0.27.2",
     )
 
     go_repository(
@@ -8057,8 +8065,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kube-aggregator",
         replace = "k8s.io/kube-aggregator",
-        sum = "h1:NYgl5PDV/oX1yqAZIkRnb+KtW+eLykzc6hHg81ECgiI=",
-        version = "v0.27.1",
+        sum = "h1:jfHoPip+qN/fn3OcrYs8/xMuVYvkJHKo0H0DYciqdns=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_kube_controller_manager",
@@ -8066,8 +8074,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kube-controller-manager",
         replace = "k8s.io/kube-controller-manager",
-        sum = "h1:FbWWHaZ1uZU+PJ7ut/HkAJ+FA8z3m1ORTYl08BSpRoc=",
-        version = "v0.27.1",
+        sum = "h1:+sPNPN0Fyhycd8iRwpV+zG3eL/uAlekWihgOAZxGZs0=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_kube_openapi",
@@ -8083,8 +8091,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kube-proxy",
         replace = "k8s.io/kube-proxy",
-        sum = "h1:awlTLXvZhM/A4Nsu0ma34uKR4pHxigj9vhuQ9BHfwUk=",
-        version = "v0.27.1",
+        sum = "h1:nb/ASUpYoXlueURXnY+O2IZkCZmIYOnDprFEeiwwOCY=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_kube_scheduler",
@@ -8092,32 +8100,32 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kube-scheduler",
         replace = "k8s.io/kube-scheduler",
-        sum = "h1:Tq7ff+jUZaK8fejL4uOy1CC2B+bz2acKQ7Bf7fCtnhs=",
-        version = "v0.27.1",
+        sum = "h1:ZsN8meIkmJ+wnFrvhi5YzIbueBeBz2xx4I/0cKgpnlg=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_kubectl",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubectl",
-        sum = "h1:SMPB4j48eVFxsYluBq3VLyqXtE6b72YnszkbTAtFye4=",
-        version = "v0.26.2",
+        sum = "h1:9T5c5KdpburYiW8XKQSH0Uly1kMNE90aGSnbYUZNdcA=",
+        version = "v0.27.1",
     )
     go_repository(
         name = "io_k8s_kubelet",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubelet",
-        sum = "h1:IkfZ0N9CX/g6EDis7nJw8ZsOuHcpFA6cm0pXQx0g5TY=",
-        version = "v0.27.1",
+        sum = "h1:vpJnBkqQjxItEhehKG0toXoZ+G+tf4UXAOqtMJy6qgc=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_kubernetes",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubernetes",
-        sum = "h1:DFeW4Lv+kh5DyYcezOzwmQAbC3VqXAxnMyZabALiRSc=",
-        version = "v1.27.1",
+        sum = "h1:g4v9oY6u7vBUDEuq4FvC50Bbw2K7GZuvM00IIESWVf4=",
+        version = "v1.27.2",
     )
     go_repository(
         name = "io_k8s_legacy_cloud_providers",
@@ -8125,24 +8133,24 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/legacy-cloud-providers",
         replace = "k8s.io/legacy-cloud-providers",
-        sum = "h1:P0bzBX7gSx0yPeG9KDSspiy/M23gvLPLbwe4pYOS9bQ=",
-        version = "v0.27.1",
+        sum = "h1:4D56C4lm+Byu4z34f0sGBkMFlUWpPUqYjaawIrXaGZQ=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_metrics",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/metrics",
-        sum = "h1:2gUvUWWnHPdE2tyA5DvyHC8HGryr+izhY9i5dzLP06s=",
-        version = "v0.26.2",
+        sum = "h1:qIASSok+9dhKPrfAZmFreIdpgBgKTfXwkM9CQ+tNM90=",
+        version = "v0.27.1",
     )
     go_repository(
         name = "io_k8s_mount_utils",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/mount-utils",
-        sum = "h1:RSd0wslbIuwLRaGGNAGMZ3m9FLcvukxJ3FWlOm76W2A=",
-        version = "v0.27.1",
+        sum = "h1:fEqtBdAv88xpoPr3nR0MgYs6P+2PjXyUTwd4NmqSBjY=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_pod_security_admission",
@@ -8150,8 +8158,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/pod-security-admission",
         replace = "k8s.io/pod-security-admission",
-        sum = "h1:if4d1zzcpNOZNvljvJ0nTCshFPUmnkIsy7KYJg7FP08=",
-        version = "v0.27.1",
+        sum = "h1:dSGK0ftJwJNHSp5fMAwVuFIMMY1MlzW4k82mjar6G8I=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_sample_apiserver",
@@ -8159,8 +8167,8 @@ def go_dependencies():
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/sample-apiserver",
         replace = "k8s.io/sample-apiserver",
-        sum = "h1:/V3e0qh9uZraQVUSq+sk26XelMKJ5+ZI0dlzTUPHh3c=",
-        version = "v0.27.1",
+        sum = "h1:fF3AvtOh/D3HOoIIKC+PIkNHyZJP2uy8Wq/CXiOLXQw=",
+        version = "v0.27.2",
     )
     go_repository(
         name = "io_k8s_sigs_apiserver_network_proxy_konnectivity_client",
@@ -8194,14 +8202,7 @@ def go_dependencies():
         sum = "h1:kejWfLeJhUsTGioDoFNJET5LQe/ajzXhJGYoU+pJsiA=",
         version = "v0.13.2",
     )
-    go_repository(
-        name = "io_k8s_sigs_kustomize_kustomize_v4",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "sigs.k8s.io/kustomize/kustomize/v4",
-        sum = "h1:cDW6AVMl6t/SLuQaezMET8hgnadZGIAr8tUrxFVOrpg=",
-        version = "v4.5.7",
-    )
+
     go_repository(
         name = "io_k8s_sigs_kustomize_kustomize_v5",
         build_file_generation = "on",
@@ -8256,8 +8257,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/utils",
-        sum = "h1:qY1Ad8PODbnymg2pRbkyMT/ylpTrCM8P2RJ0yroCyIk=",
-        version = "v0.0.0-20230406110748-d93618cff8a2",
+        sum = "h1:EObNQ3TW2D+WptiYXlApGNLVy0zm/JIBVY9i+M4wpAU=",
+        version = "v0.0.0-20230505201702-9f6742963106",
     )
 
     go_repository(
@@ -8804,8 +8805,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "helm.sh/helm/v3",
-        sum = "h1:P3cLaFxfoxaGLGJVnoPrhf1j86LC5EDINSpYSpMUkkA=",
-        version = "v3.11.2",
+        sum = "h1:rOq2TPVzg5jt4q5ermAZGZFxNW2uQhKjRhBneAutMEM=",
+        version = "v3.12.0",
     )
     go_repository(
         name = "sm_step_go_crypto",
