@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -24,15 +25,17 @@ import (
 // NewTerraformUpgrader returns a new TerraformUpgrader.
 func NewTerraformUpgrader(tfClient tfClient, outWriter io.Writer) (*TerraformUpgrader, error) {
 	return &TerraformUpgrader{
-		tf:        tfClient,
-		outWriter: outWriter,
+		tf:            tfClient,
+		policyPatcher: cloudcmd.NewAzurePolicyPatcher(),
+		outWriter:     outWriter,
 	}, nil
 }
 
 // TerraformUpgrader is responsible for performing Terraform migrations on cluster upgrades.
 type TerraformUpgrader struct {
-	tf        tfClient
-	outWriter io.Writer
+	tf            tfClient
+	policyPatcher policyPatcher
+	outWriter     io.Writer
 }
 
 // TerraformUpgradeOptions are the options used for the Terraform upgrade.
@@ -139,6 +142,14 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
+	// AttestationURL is only set for Azure. In contrast to the rest of the implementation,
+	// this is not generic and should be refactored when further upgrades / CSPs are needed.
+	if tfOutput.AttestationURL != "" {
+		if err := u.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
+			return fmt.Errorf("patching policies: %w", err)
+		}
+	}
+
 	outputFileContents := clusterid.File{
 		CloudProvider:  opts.CSP,
 		InitSecret:     []byte(tfOutput.Secret),
@@ -172,4 +183,9 @@ type tfClient interface {
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
+}
+
+// policyPatcher interacts with the CSP (currently only applies for Azure) to update the attestation policy.
+type policyPatcher interface {
+	Patch(ctx context.Context, attestationURL string) error
 }
