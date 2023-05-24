@@ -287,7 +287,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 		return &nonRetriableError{errors.New("empty response from cluster")}
 	default:
 		d.log.Debugf("Cluster returned unknown response type")
-		return &nonRetriableError{errors.New("unknown respone from cluster")}
+		return &nonRetriableError{errors.New("unknown response from cluster")}
 	}
 
 	return nil
