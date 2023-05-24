@@ -107,10 +107,10 @@ func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers() {
 }
 
 func (c *AzureSEVSNP) mergeVersionNumbers(versions configapi.AzureSEVSNPVersion) {
-	c.BootloaderVersion.Value = versions.Bootloader.Value
-	c.TEEVersion.Value = versions.TEE.Value
-	c.SNPVersion.Value = versions.SNP.Value
-	c.MicrocodeVersion.Value = versions.Microcode.Value
+	c.BootloaderVersion.Value = versions.Bootloader
+	c.TEEVersion.Value = versions.TEE
+	c.SNPVersion.Value = versions.SNP
+	c.MicrocodeVersion.Value = versions.Microcode
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.

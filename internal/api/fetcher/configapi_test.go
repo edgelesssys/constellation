@@ -30,10 +30,7 @@ func TestGetVersion(t *testing.T) {
 	fetcher := fetcher.NewConfigAPIFetcher()
 	res, err := fetcher.FetchLatestAzureSEVSNPVersion(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, configapi.AttestationVersion{
-		Value:    2,
-		IsLatest: false,
-	}, res.Bootloader)
+	assert.Equal(t, uint8(2), res.Bootloader)
 }
 
 func startDummyConfigAPIServer(ctx context.Context, addr string) {

@@ -26,13 +26,13 @@ type AzureSEVSNPVersionType (string)
 // AzureSEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type AzureSEVSNPVersion struct {
 	// Bootloader is the latest version of the Azure SEVSNP bootloader.
-	Bootloader AttestationVersion `json:"bootloader"`
+	Bootloader uint8 `json:"bootloader"`
 	// TEE is the latest version of the Azure SEVSNP TEE.
-	TEE AttestationVersion `json:"tee"`
+	TEE uint8 `json:"tee"`
 	// SNP is the latest version of the Azure SEVSNP SNP.
-	SNP AttestationVersion `json:"snp"`
+	SNP uint8 `json:"snp"`
 	// Microcode is the latest version of the Azure SEVSNP microcode.
-	Microcode AttestationVersion `json:"microcode"`
+	Microcode uint8 `json:"microcode"`
 }
 
 // AzureSEVSNPVersionGet is the request to get the version information of the specific version in the config api.
@@ -95,7 +95,7 @@ func (i AzureSEVSNPVersionList) Validate() error {
 }
 
 // GetVersionByType returns the requested version of the given type.
-func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) AttestationVersion {
+func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) uint8 {
 	switch t {
 	case Bootloader:
 		return res.Bootloader

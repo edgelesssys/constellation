@@ -43,18 +43,11 @@ var cfg = uri.AWSS3Config{
 	Region:      *awsRegion,
 }
 
-func newVersion(version uint8) configapi.AttestationVersion {
-	return configapi.AttestationVersion{
-		Value:    version,
-		IsLatest: false,
-	}
-}
-
 var versionValues = configapi.AzureSEVSNPVersion{
-	Bootloader: newVersion(2),
-	TEE:        newVersion(0),
-	SNP:        newVersion(6),
-	Microcode:  newVersion(93),
+	Bootloader: 2,
+	TEE:        0,
+	SNP:        6,
+	Microcode:  93,
 }
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
