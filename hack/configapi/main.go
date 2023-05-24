@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	// AWS S3 credentials
+	// AWS S3 credentials.
 	awsAccessKeyID = pflag.String("key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
 	awsAccessKey   = pflag.String("key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
 	awsRegion      = "eu-central-1"
 	awsBucket      = "cdn-constellation-backend"
 
-	// Azure SEV-SNP version numbers
+	// Azure SEV-SNP version numbers.
 	bootloaderVersion = pflag.Uint8P("bootloader-version", "b", 0, "Bootloader version number")
 	teeVersion        = pflag.Uint8P("tee-version", "t", 0, "TEE version number")
 	snpVersion        = pflag.Uint8P("snp-version", "s", 0, "SNP version number")

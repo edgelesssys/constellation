@@ -238,6 +238,8 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 	}
+	cancel := configapi.UseDummyConfigAPIServer(8082)
+	defer cancel()
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -254,7 +256,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 
 			// Test
 			c, err := New(fileHandler, constants.ConfigFilename, false)
-
 			if tc.wantErr {
 				assert.Error(err)
 				return
