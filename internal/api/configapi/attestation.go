@@ -15,9 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-// baseURL is the base URL of the config api.
-var baseURL = constants.CDNRepositoryURL
-
 // attestationURLPath is the URL path to the attestation versions.
 const attestationURLPath = "constellation/v1/attestation"
 
@@ -44,7 +41,7 @@ type AzureSEVSNPVersionGet struct {
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionGet) URL() (string, error) {
-	url, err := url.Parse(baseURL)
+	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}
@@ -75,7 +72,7 @@ type AzureSEVSNPVersionList []string
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionList) URL() (string, error) {
-	url, err := url.Parse(baseURL)
+	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}

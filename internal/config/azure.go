@@ -49,10 +49,10 @@ type AzureSEVSNP struct {
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: configapi.NewLatestDummyVersion(),
-		TEEVersion:        configapi.NewLatestDummyVersion(),
-		SNPVersion:        configapi.NewLatestDummyVersion(),
-		MicrocodeVersion:  configapi.NewLatestDummyVersion(),
+		BootloaderVersion: configapi.NewLatestPlaceholderVersion(),
+		TEEVersion:        configapi.NewLatestPlaceholderVersion(),
+		SNPVersion:        configapi.NewLatestPlaceholderVersion(),
+		MicrocodeVersion:  configapi.NewLatestPlaceholderVersion(),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,

@@ -39,7 +39,7 @@ func main() {
 	if *awsAccessKey == "" || *awsAccessKeyID == "" {
 		pflag.Usage()
 		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id")
-		os.Exit(0)
+		os.Exit(1)
 	}
 	ctx := context.Background()
 	cfg := uri.AWSS3Config{

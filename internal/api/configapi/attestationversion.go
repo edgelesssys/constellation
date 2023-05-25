@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-const dummyVersionValue = 0
+const placeholderVersionValue = 0
 
-// NewLatestDummyVersion returns the latest version with a dummy version value.
-func NewLatestDummyVersion() AttestationVersion {
+// NewLatestPlaceholderVersion returns the latest version with a placeholder version value.
+func NewLatestPlaceholderVersion() AttestationVersion {
 	return AttestationVersion{
-		Value:    dummyVersionValue,
+		Value:    placeholderVersionValue,
 		IsLatest: true,
 	}
 }
