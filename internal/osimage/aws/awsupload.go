@@ -72,7 +72,7 @@ func New(region, bucketName string, log *logger.Logger) (*Uploader, error) {
 }
 
 // Upload uploads an OS image to AWS.
-func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[string]string, error) {
+func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
 	blobName := fmt.Sprintf("image-%s-%s-%d.raw", req.Version.Stream, req.Version.Version, req.Timestamp.Unix())
 	imageName := imageName(req.Version, req.Timestamp)
 	allRegions := []string{u.region}
@@ -129,6 +129,7 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[
 	}
 
 	// wait for replication, tag, publish
+	var imageInfo []versionsapi.ImageInfoEntry
 	for _, region := range allRegions {
 		if err := u.waitForImage(ctx, amiIDs[region], region); err != nil {
 			return nil, fmt.Errorf("waiting for image to become available in region %s: %w", region, err)
@@ -142,8 +143,15 @@ func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) (map[
 		if err := u.publishImage(ctx, amiIDs[region], region); err != nil {
 			return nil, fmt.Errorf("publishing image in region %s: %w", region, err)
 		}
+		imageInfo = append(imageInfo, versionsapi.ImageInfoEntry{
+			CSP:                "aws",
+			AttestationVariant: req.AttestationVariant,
+			Reference:          amiIDs[region],
+			Region:             region,
+		})
 	}
-	return amiIDs, nil
+
+	return imageInfo, nil
 }
 
 func (u *Uploader) ensureBucket(ctx context.Context) error {

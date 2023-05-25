@@ -100,16 +100,19 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 
 	cfm.log.Debugf("Fetching and verifying measurements")
+	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return err
+	}
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
 		ctx, client,
 		flags.measurementsURL,
 		flags.signatureURL,
 		cosignPublicKey,
-		measurements.WithMetadata{
-			CSP:   conf.GetProvider(),
-			Image: conf.Image,
-		},
+		imageVersion,
+		conf.GetProvider(),
+		conf.GetAttestationConfig().GetVariant(),
 	)
 	if err != nil {
 		return err
@@ -182,7 +185,7 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("creating version from image name: %w", err)
 	}
-	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(ver, conf.GetProvider())
+	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(ver)
 	if err != nil {
 		return err
 	}

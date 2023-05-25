@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewAzureCmd returns the command that uploads an OS image to Azure.
-func NewAzureCmd() *cobra.Command {
+// newAzureCmd returns the command that uploads an OS image to Azure.
+func newAzureCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure",
 		Short: "Upload OS image to Azure",
@@ -85,14 +85,14 @@ func runAzure(cmd *cobra.Command, _ []string) error {
 	}
 
 	uploadReq := &osimage.UploadRequest{
-		Provider:     flags.provider,
-		Version:      flags.version,
-		Variant:      flags.variant,
-		SBDatabase:   sbDatabase,
-		UEFIVarStore: uefiVarStore,
-		Size:         size,
-		Timestamp:    flags.timestamp,
-		Image:        file,
+		Provider:           flags.provider,
+		Version:            flags.version,
+		AttestationVariant: flags.attestationVariant,
+		SBDatabase:         sbDatabase,
+		UEFIVarStore:       uefiVarStore,
+		Size:               size,
+		Timestamp:          flags.timestamp,
+		Image:              file,
 	}
 	return uploadImage(cmd.Context(), archiveC, uploadC, uploadReq, out)
 }

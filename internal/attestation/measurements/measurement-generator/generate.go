@@ -82,7 +82,7 @@ func main() {
 			log.Println("Found", variant)
 			returnStmtCtr++
 			// retrieve and validate measurements for the given CSP and image
-			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, defaultConf.Image)
+			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, variant, defaultConf.Image)
 			// replace the return statement with a composite literal containing the validated measurements
 			clause.Values[0] = measurementsCompositeLiteral(measuremnts)
 		}
@@ -107,12 +107,17 @@ func main() {
 }
 
 // mustGetMeasurements fetches the measurements for the given image and CSP and verifies them.
-func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPublicKey []byte, client *http.Client, provider cloudprovider.Provider, image string) measurements.M {
-	measurementsURL, err := measurementURL(provider, image, "measurements.json")
+func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPublicKey []byte, client *http.Client, provider cloudprovider.Provider, attestationVariant variant.Variant, image string) measurements.M {
+	measurementsURL, err := measurementURL(image, "measurements.json")
 	if err != nil {
 		panic(err)
 	}
-	signatureURL, err := measurementURL(provider, image, "measurements.json.sig")
+	signatureURL, err := measurementURL(image, "measurements.json.sig")
+	if err != nil {
+		panic(err)
+	}
+
+	imageVersion, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
 		panic(err)
 	}
@@ -124,10 +129,9 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPubl
 		measurementsURL,
 		signatureURL,
 		cosignPublicKey,
-		measurements.WithMetadata{
-			CSP:   provider,
-			Image: image,
-		},
+		imageVersion,
+		provider,
+		attestationVariant,
 	)
 	if err != nil {
 		panic(err)
@@ -139,14 +143,14 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPubl
 }
 
 // measurementURL returns the URL for the measurements file for the given image and CSP.
-func measurementURL(provider cloudprovider.Provider, image, file string) (*url.URL, error) {
+func measurementURL(image, file string) (*url.URL, error) {
 	version, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
 		return nil, fmt.Errorf("parsing image name: %w", err)
 	}
 
 	return url.Parse(
-		version.ArtifactsURL() + path.Join("/image", "csp", strings.ToLower(provider.String()), file),
+		version.ArtifactsURL(versionsapi.APIV2) + path.Join("/image", file),
 	)
 }
 

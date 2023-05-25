@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -239,27 +238,27 @@ func (r *NodeVersionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.NodeVersion{}).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.ScalingGroup{}},
+			client.Object(&updatev1alpha1.ScalingGroup{}),
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForScalingGroup),
 			builder.WithPredicates(scalingGroupImageChangedPredicate()),
 		).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.AutoscalingStrategy{}},
+			client.Object(&updatev1alpha1.AutoscalingStrategy{}),
 			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(autoscalerEnabledStatusChangedPredicate()),
 		).
 		Watches(
-			&source.Kind{Type: &corev1.Node{}},
+			client.Object(&corev1.Node{}),
 			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(nodeReadyPredicate()),
 		).
 		Watches(
-			&source.Kind{Type: &nodemaintenancev1beta1.NodeMaintenance{}},
+			client.Object(&nodemaintenancev1beta1.NodeMaintenance{}),
 			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(nodeMaintenanceSucceededPredicate()),
 		).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.JoiningNode{}},
+			client.Object(&updatev1alpha1.JoiningNode{}),
 			handler.EnqueueRequestsFromMapFunc(r.findAllNodeVersions),
 			builder.WithPredicates(joiningNodeDeletedPredicate()),
 		).

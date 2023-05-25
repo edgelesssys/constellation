@@ -16,10 +16,10 @@ import (
 
 type archivist interface {
 	Archive(ctx context.Context,
-		version versionsapi.Version, csp, variant string, img io.Reader,
+		version versionsapi.Version, csp, attestationVariant string, img io.Reader,
 	) (string, error)
 }
 
 type uploader interface {
-	Upload(ctx context.Context, req *osimage.UploadRequest) (map[string]string, error)
+	Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error)
 }

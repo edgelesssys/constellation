@@ -172,7 +172,7 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 // After 10 minutes the retrier will be canceled and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
 	retriable := func(err error) bool {
-		return errors.Is(err, wait.ErrWaitTimeout) ||
+		return wait.Interrupted(err) ||
 			strings.Contains(err.Error(), "connection refused")
 	}
 

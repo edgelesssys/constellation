@@ -28,12 +28,14 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
+
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 const (
@@ -60,11 +62,56 @@ const (
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
 type M map[uint32]Measurement
 
-// WithMetadata is a struct supposed to provide CSP & image metadata next to measurements.
-type WithMetadata struct {
-	CSP          cloudprovider.Provider `json:"csp" yaml:"csp"`
-	Image        string                 `json:"image" yaml:"image"`
-	Measurements M                      `json:"measurements" yaml:"measurements"`
+// ImageMeasurementsV2 is a struct to hold measurements for a specific image.
+// .List contains measurements for all variants of the image.
+type ImageMeasurementsV2 struct {
+	Version string                     `json:"version" yaml:"version"`
+	Ref     string                     `json:"ref" yaml:"ref"`
+	Stream  string                     `json:"stream" yaml:"stream"`
+	List    []ImageMeasurementsV2Entry `json:"list" yaml:"list"`
+}
+
+// ImageMeasurementsV2Entry is a struct to hold measurements for one variant of a specific image.
+type ImageMeasurementsV2Entry struct {
+	CSP                cloudprovider.Provider `json:"csp" yaml:"csp"`
+	AttestationVariant string                 `json:"attestationVariant" yaml:"attestationVariant"`
+	Measurements       M                      `json:"measurements" yaml:"measurements"`
+}
+
+// MergeImageMeasurementsV2 combines the image measurement entries from multiple sources into a single
+// ImageMeasurementsV2 object.
+func MergeImageMeasurementsV2(measurements ...ImageMeasurementsV2) (ImageMeasurementsV2, error) {
+	if len(measurements) == 0 {
+		return ImageMeasurementsV2{}, errors.New("no measurement objects specified")
+	}
+	if len(measurements) == 1 {
+		return measurements[0], nil
+	}
+	out := ImageMeasurementsV2{
+		Version: measurements[0].Version,
+		Ref:     measurements[0].Ref,
+		Stream:  measurements[0].Stream,
+		List:    []ImageMeasurementsV2Entry{},
+	}
+	for _, m := range measurements {
+		if m.Version != out.Version {
+			return ImageMeasurementsV2{}, errors.New("version mismatch")
+		}
+		if m.Ref != out.Ref {
+			return ImageMeasurementsV2{}, errors.New("ref mismatch")
+		}
+		if m.Stream != out.Stream {
+			return ImageMeasurementsV2{}, errors.New("stream mismatch")
+		}
+		out.List = append(out.List, m.List...)
+	}
+	sort.SliceStable(out.List, func(i, j int) bool {
+		if out.List[i].CSP != out.List[j].CSP {
+			return out.List[i].CSP < out.List[j].CSP
+		}
+		return out.List[i].AttestationVariant < out.List[j].AttestationVariant
+	})
+	return out, nil
 }
 
 // MarshalYAML returns the YAML encoding of m.
@@ -86,9 +133,9 @@ func (m M) MarshalYAML() (any, error) {
 // The hash of the fetched measurements is returned.
 func (m *M) FetchAndVerify(
 	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
-	publicKey []byte, metadata WithMetadata,
+	publicKey []byte, version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
-	measurements, err := getFromURL(ctx, client, measurementsURL)
+	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
 	}
@@ -96,32 +143,36 @@ func (m *M) FetchAndVerify(
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
-	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
+	if err := sigstore.VerifySignature(measurementsRaw, signature, publicKey); err != nil {
 		return "", err
 	}
 
-	var mWithMetadata WithMetadata
-	if err := json.Unmarshal(measurements, &mWithMetadata); err != nil {
-		if yamlErr := yaml.Unmarshal(measurements, &mWithMetadata); yamlErr != nil {
-			return "", errors.Join(
-				err,
-				fmt.Errorf("trying yaml format: %w", yamlErr),
-			)
-		}
+	var measurements ImageMeasurementsV2
+	if err := json.Unmarshal(measurementsRaw, &measurements); err != nil {
+		return "", err
 	}
-
-	if mWithMetadata.CSP != metadata.CSP {
-		return "", fmt.Errorf("invalid measurement metadata: CSP mismatch: expected %s, got %s", metadata.CSP, mWithMetadata.CSP)
+	if err := m.fromImageMeasurementsV2(measurements, version, csp, attestationVariant); err != nil {
+		return "", err
 	}
-	if mWithMetadata.Image != metadata.Image {
-		return "", fmt.Errorf("invalid measurement metadata: image mismatch: expected %s, got %s", metadata.Image, mWithMetadata.Image)
-	}
-
-	*m = mWithMetadata.Measurements
-
-	shaHash := sha256.Sum256(measurements)
-
+	shaHash := sha256.Sum256(measurementsRaw)
 	return hex.EncodeToString(shaHash[:]), nil
+}
+
+// FetchNoVerify fetches measurement via provided URLs,
+// using client for download. Measurements are not verified.
+func (m *M) FetchNoVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL,
+	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
+) error {
+	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch measurements: %w", err)
+	}
+
+	var measurements ImageMeasurementsV2
+	if err := json.Unmarshal(measurementsRaw, &measurements); err != nil {
+		return err
+	}
+	return m.fromImageMeasurementsV2(measurements, version, csp, attestationVariant)
 }
 
 // CopyFrom copies over all values from other. Overwriting existing values,
@@ -229,6 +280,51 @@ func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 
 	*m = newM
+	return nil
+}
+
+func (m *M) fromImageMeasurementsV2(
+	measurements ImageMeasurementsV2, wantVersion versionsapi.Version,
+	csp cloudprovider.Provider, attestationVariant variant.Variant,
+) error {
+	gotVersion := versionsapi.Version{
+		Ref:     measurements.Ref,
+		Stream:  measurements.Stream,
+		Version: measurements.Version,
+		Kind:    versionsapi.VersionKindImage,
+	}
+	if !wantVersion.Equal(gotVersion) {
+		return fmt.Errorf("invalid measurement metadata: version mismatch: expected %s, got %s", wantVersion.ShortPath(), gotVersion.ShortPath())
+	}
+
+	// find measurements for requested image in list
+	var measurementsEntry ImageMeasurementsV2Entry
+	var found bool
+	for _, entry := range measurements.List {
+		gotCSP := entry.CSP
+		if gotCSP != csp {
+			continue
+		}
+		gotAttestationVariant, err := variant.FromString(entry.AttestationVariant)
+		if err != nil {
+			continue
+		}
+		if gotAttestationVariant == nil || attestationVariant == nil {
+			continue
+		}
+		if !gotAttestationVariant.Equal(attestationVariant) {
+			continue
+		}
+		measurementsEntry = entry
+		found = true
+		break
+	}
+
+	if !found {
+		return fmt.Errorf("invalid measurement metadata: no measurements found for csp %s, attestationVariant %s and image %s", csp.String(), attestationVariant, wantVersion.ShortPath())
+	}
+
+	*m = measurementsEntry.Measurements
 	return nil
 }
 

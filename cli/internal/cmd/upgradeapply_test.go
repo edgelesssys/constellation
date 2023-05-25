@@ -200,6 +200,9 @@ type stubImageFetcher struct {
 	fetchReferenceErr error
 }
 
-func (s stubImageFetcher) FetchReference(context.Context, *config.Config) (string, error) {
-	return "", s.fetchReferenceErr
+func (f stubImageFetcher) FetchReference(_ context.Context,
+	_ cloudprovider.Provider, _ variant.Variant,
+	_, _ string,
+) (string, error) {
+	return "", f.fetchReferenceErr
 }

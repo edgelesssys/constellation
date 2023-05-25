@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
@@ -46,23 +47,21 @@ func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Archi
 }
 
 // Archive reads the OS image in img and uploads it as key.
-func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, csp, variant string, img io.Reader) (string, error) {
-	key, err := url.JoinPath(version.ArtifactPath(), version.Kind.String(), "csp", csp, variant, "image.raw")
+func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, csp, attestationVariant string, img io.Reader) (string, error) {
+	key, err := url.JoinPath(version.ArtifactPath(versionsapi.APIV1), version.Kind.String(), "csp", csp, attestationVariant, "image.raw")
 	if err != nil {
 		return "", err
 	}
-	a.log.Debugf("Archiving OS image %s %s %v to s3://%v/%v", csp, variant, version.ShortPath(), a.bucket, key)
+	a.log.Debugf("Archiving OS image %s %s %v to s3://%v/%v", csp, attestationVariant, version.ShortPath(), a.bucket, key)
 	_, err = a.uploadClient.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            &a.bucket,
 		Key:               &key,
 		Body:              img,
 		ChecksumAlgorithm: s3types.ChecksumAlgorithmSha256,
 	})
-	return baseURL + key, err
+	return constants.CDNRepositoryURL + "/" + key, err
 }
 
 type uploadClient interface {
 	Upload(ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
-
-const baseURL = "https://cdn.confidential.cloud/"

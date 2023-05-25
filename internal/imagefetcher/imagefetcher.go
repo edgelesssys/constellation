@@ -5,11 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package image provides helping wrappers around a versionsapi fetcher.
+Package imagefetcher provides helping wrappers around a versionsapi fetcher.
 
 It also enables local image overrides and download of raw images.
 */
-package image
+package imagefetcher
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 )
@@ -42,14 +41,11 @@ func New() *Fetcher {
 }
 
 // FetchReference fetches the image reference for a given image version uid, CSP and image variant.
-func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (string, error) {
-	provider := config.GetProvider()
-	variant, err := imageVariant(provider, config)
-	if err != nil {
-		return "", fmt.Errorf("determining variant: %w", err)
-	}
-
-	ver, err := versionsapi.NewVersionFromShortPath(config.Image, versionsapi.VersionKindImage)
+func (f *Fetcher) FetchReference(ctx context.Context,
+	provider cloudprovider.Provider, attestationVariant variant.Variant,
+	image, region string,
+) (string, error) {
+	ver, err := versionsapi.NewVersionFromShortPath(image, versionsapi.VersionKindImage)
 	if err != nil {
 		return "", fmt.Errorf("parsing config image short path: %w", err)
 	}
@@ -83,29 +79,18 @@ func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (st
 		return "", fmt.Errorf("validating image info file: %w", err)
 	}
 
-	return getReferenceFromImageInfo(provider, variant, imgInfo)
+	return getReferenceFromImageInfo(provider, attestationVariant.String(), imgInfo, filters(provider, region)...)
 }
 
-// imageVariant returns the image variant for a given CSP and configuration.
-func imageVariant(provider cloudprovider.Provider, config *config.Config) (string, error) {
+func filters(provider cloudprovider.Provider, region string) []filter {
+	var filters []filter
 	switch provider {
 	case cloudprovider.AWS:
-		return config.Provider.AWS.Region, nil
-	case cloudprovider.Azure:
-		if config.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
-			return "trustedlaunch", nil
-		}
-		return "cvm", nil
-
-	case cloudprovider.GCP:
-		return "sev-es", nil
-	case cloudprovider.OpenStack:
-		return "sev", nil
-	case cloudprovider.QEMU:
-		return "default", nil
-	default:
-		return "", fmt.Errorf("unsupported provider: %s", provider)
+		filters = append(filters, func(i versionsapi.ImageInfoEntry) bool {
+			return i.Region == region
+		})
 	}
+	return filters
 }
 
 func getFromFile(fs *afero.Afero, imgInfo versionsapi.ImageInfo) (versionsapi.ImageInfo, error) {
@@ -132,36 +117,36 @@ func imageInfoFilename(imgInfo versionsapi.ImageInfo) string {
 }
 
 // getReferenceFromImageInfo returns the image reference for a given CSP and image variant.
-func getReferenceFromImageInfo(provider cloudprovider.Provider, variant string, imgInfo versionsapi.ImageInfo,
+func getReferenceFromImageInfo(provider cloudprovider.Provider,
+	attestationVariant string, imgInfo versionsapi.ImageInfo,
+	filt ...filter,
 ) (string, error) {
-	var providerList map[string]string
-	switch provider {
-	case cloudprovider.AWS:
-		providerList = imgInfo.AWS
-	case cloudprovider.Azure:
-		providerList = imgInfo.Azure
-	case cloudprovider.GCP:
-		providerList = imgInfo.GCP
-	case cloudprovider.OpenStack:
-		providerList = imgInfo.OpenStack
-	case cloudprovider.QEMU:
-		providerList = imgInfo.QEMU
-	default:
-		return "", fmt.Errorf("image not available in image info for CSP %q", provider.String())
+	var correctVariant versionsapi.ImageInfoEntry
+	var found bool
+variantLoop:
+	for _, variant := range imgInfo.List {
+		gotCSP := cloudprovider.FromString(variant.CSP)
+		if gotCSP != provider || variant.AttestationVariant != attestationVariant {
+			continue
+		}
+		for _, f := range filt {
+			if !f(variant) {
+				continue variantLoop
+			}
+		}
+		correctVariant = variant
+		found = true
+		break
+	}
+	if !found {
+		return "", fmt.Errorf("image not available in image info for CSP %q, variant %q and other filters", provider.String(), attestationVariant)
 	}
 
-	if providerList == nil {
-		return "", fmt.Errorf("image not available in image info for CSP %q", provider.String())
-	}
-
-	ref, ok := providerList[variant]
-	if !ok {
-		return "", fmt.Errorf("image not available in image info for variant %q", variant)
-	}
-
-	return ref, nil
+	return correctVariant.Reference, nil
 }
 
 type versionsAPIImageInfoFetcher interface {
 	FetchImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) (versionsapi.ImageInfo, error)
 }
+
+type filter func(versionsapi.ImageInfoEntry) bool

@@ -15,9 +15,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
+
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // ReleaseRef is the ref used for release versions.
@@ -80,6 +80,14 @@ func (v Version) Validate() error {
 		retErr = errors.Join(retErr, errors.New("version kind is unknown"))
 	}
 	return retErr
+}
+
+// Equal returns true if the versions are equal.
+func (v Version) Equal(other Version) bool {
+	return v.Ref == other.Ref &&
+		v.Stream == other.Stream &&
+		v.Version == other.Version &&
+		v.Kind == other.Kind
 }
 
 // Major returns the major version corresponding to the version.
@@ -146,15 +154,16 @@ func (v Version) ListPath(gran Granularity) string {
 
 // ArtifactsURL returns the URL to the artifacts stored for this version.
 // The URL points to a directory.
-func (v Version) ArtifactsURL() string {
-	return constants.CDNRepositoryURL + "/" + v.ArtifactPath()
+func (v Version) ArtifactsURL(apiVer apiVersion) string {
+	return constants.CDNRepositoryURL + "/" + v.ArtifactPath(apiVer)
 }
 
 // ArtifactPath returns the path to the artifacts stored for this version.
 // The path points to a directory.
-func (v Version) ArtifactPath() string {
+func (v Version) ArtifactPath(apiVer apiVersion) string {
 	return path.Join(
-		constants.CDNAPIPrefix,
+		constants.CDNAPIBase,
+		apiVer.String(),
 		"ref", v.Ref,
 		"stream", v.Stream,
 		v.Version,
@@ -325,17 +334,17 @@ func ValidateStream(ref, stream string) error {
 	return fmt.Errorf("stream %q is unknown or not supported on ref %q", stream, ref)
 }
 
-// MeasurementURL builds the measurement and signature URLs for the given version and CSP.
-func MeasurementURL(version Version, csp cloudprovider.Provider) (measurementURL, signatureURL *url.URL, err error) {
+// MeasurementURL builds the measurement and signature URLs for the given version.
+func MeasurementURL(version Version) (measurementURL, signatureURL *url.URL, err error) {
 	if version.Kind != VersionKindImage {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("kind %q is not supported", version.Kind)
 	}
 
-	measurementPath, err := url.JoinPath(version.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsFile)
+	measurementPath, err := url.JoinPath(version.ArtifactsURL(APIV2), "image", constants.CDNMeasurementsFile)
 	if err != nil {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for measurement: %w", err)
 	}
-	signaturePath, err := url.JoinPath(version.ArtifactsURL(), "image", "csp", strings.ToLower(csp.String()), constants.CDNMeasurementsSignature)
+	signaturePath, err := url.JoinPath(version.ArtifactsURL(APIV2), "image", constants.CDNMeasurementsSignature)
 	if err != nil {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for signature: %w", err)
 	}

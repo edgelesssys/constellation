@@ -10,9 +10,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewVersionFromShortPath(t *testing.T) {
@@ -468,8 +469,8 @@ func TestVersionArtifactURL(t *testing.T) {
 				Kind:    VersionKindImage,
 			},
 			csp:                cloudprovider.GCP,
-			wantMeasurementURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json",
-			wantSignatureURL:   constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/csp/gcp/measurements.json.sig",
+			wantMeasurementURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefixV2 + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/measurements.json",
+			wantSignatureURL:   constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefixV2 + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/measurements.json.sig",
 		},
 		"fail for wrong kind": {
 			ver: Version{
@@ -483,7 +484,7 @@ func TestVersionArtifactURL(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			measurementURL, signatureURL, err := MeasurementURL(tc.ver, tc.csp)
+			measurementURL, signatureURL, err := MeasurementURL(tc.ver)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -560,9 +561,9 @@ func TestVersionArtifactPathURL(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			path := tc.ver.ArtifactPath()
+			path := tc.ver.ArtifactPath(APIV1)
 			assert.Equal(tc.wantPath, path)
-			url := tc.ver.ArtifactsURL()
+			url := tc.ver.ArtifactsURL(APIV1)
 			assert.Equal(constants.CDNRepositoryURL+"/"+tc.wantPath, url)
 		})
 	}

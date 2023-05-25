@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "measurementsuploader",
+    srcs = ["measurementsuploader.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/measurementsuploader",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/versionsapi",
+        "//internal/attestation/measurements",
+        "//internal/constants",
+        "//internal/logger",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
+    ],
+)

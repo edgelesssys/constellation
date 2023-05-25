@@ -119,8 +119,8 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    ver.ArtifactsURL() + "/image/csp/gcp/measurements.json",
-			wantMeasurementsSigURL: ver.ArtifactsURL() + "/image/csp/gcp/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactsURL(versionsapi.APIV2) + "/image/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactsURL(versionsapi.APIV2) + "/image/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{
@@ -181,30 +181,58 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	cosignPublicKey := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
 	measurements := `{
-	"csp": "gcp",
-	"image": "v999.999.999",
-	"measurements": {
-		"0": "0000000000000000000000000000000000000000000000000000000000000000",
-		"1": "1111111111111111111111111111111111111111111111111111111111111111",
-		"2": "2222222222222222222222222222222222222222222222222222222222222222",
-		"3": "3333333333333333333333333333333333333333333333333333333333333333",
-		"4": "4444444444444444444444444444444444444444444444444444444444444444",
-		"5": "5555555555555555555555555555555555555555555555555555555555555555",
-		"6": "6666666666666666666666666666666666666666666666666666666666666666"
-	}
+	"version": "v999.999.999",
+	"ref": "-",
+	"stream": "stable",
+	"list": [
+		{
+			"csp": "GCP",
+			"attestationVariant":"gcp-sev-es",
+			"measurements": {
+				"0": {
+					"expected": "0000000000000000000000000000000000000000000000000000000000000000",
+					"warnOnly":false
+				},
+				"1": {
+					"expected": "1111111111111111111111111111111111111111111111111111111111111111",
+					"warnOnly":false
+				},
+				"2": {
+					"expected": "2222222222222222222222222222222222222222222222222222222222222222",
+					"warnOnly":false
+				},
+				"3": {
+					"expected": "3333333333333333333333333333333333333333333333333333333333333333",
+					"warnOnly":false
+				},
+				"4": {
+					"expected": "4444444444444444444444444444444444444444444444444444444444444444",
+					"warnOnly":false
+				},
+				"5": {
+					"expected": "5555555555555555555555555555555555555555555555555555555555555555",
+					"warnOnly":false
+				},
+				"6": {
+					"expected": "6666666666666666666666666666666666666666666666666666666666666666",
+					"warnOnly":false
+				}
+			}
+		}
+	]
 }
 `
-	signature := "MEYCIQDRAQNK2NjHJBGrnw3HQAyBsXMCmVCptBdgA6VZ3IlyiAIhAPG42waF1aFZq7dnjP3b2jsMNUtaKYDQQSazW1AX8jgF"
+	signature := "MEUCIHQETkvMRy8WaWMroX4Aa2J86bTW0kGMp8NG0YLXJKZJAiEA7ZdxoQzSTyBFNhZ1bwB5eT3av0biAdb66dJRFxQlKLA="
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/v999.999.999/image/csp/gcp/measurements.json" {
+		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/v999.999.999/image/csp/gcp/measurements.json.sig" {
+		if req.URL.Path == "/constellation/v2/ref/-/stream/stable/v999.999.999/image/measurements.json.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),

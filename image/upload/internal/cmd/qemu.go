@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewQEMUCmd returns the command that uploads an OS image to QEMU.
-func NewQEMUCmd() *cobra.Command {
+// newQEMUCmd returns the command that uploads an OS image to QEMU.
+func newQEMUCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "qemu",
 		Short: "Upload OS image to QEMU",

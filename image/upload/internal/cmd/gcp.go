@@ -18,8 +18,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewGCPCommand returns the command that uploads an OS image to GCP.
-func NewGCPCommand() *cobra.Command {
+// newGCPCommand returns the command that uploads an OS image to GCP.
+func newGCPCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gcp",
 		Short: "Upload OS image to GCP",
@@ -85,14 +85,14 @@ func runGCP(cmd *cobra.Command, _ []string) error {
 	}
 
 	uploadReq := &osimage.UploadRequest{
-		Provider:     flags.provider,
-		Version:      flags.version,
-		Variant:      flags.variant,
-		SBDatabase:   sbDatabase,
-		UEFIVarStore: uefiVarStore,
-		Size:         size,
-		Timestamp:    flags.timestamp,
-		Image:        file,
+		Provider:           flags.provider,
+		Version:            flags.version,
+		AttestationVariant: flags.attestationVariant,
+		SBDatabase:         sbDatabase,
+		UEFIVarStore:       uefiVarStore,
+		Size:               size,
+		Timestamp:          flags.timestamp,
+		Image:              file,
 	}
 	return uploadImage(cmd.Context(), archiveC, uploadC, uploadReq, out)
 }

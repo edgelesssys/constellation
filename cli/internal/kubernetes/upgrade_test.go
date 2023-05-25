@@ -14,10 +14,12 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -550,6 +552,9 @@ type stubImageFetcher struct {
 	fetchReferenceErr error
 }
 
-func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+func (f *stubImageFetcher) FetchReference(_ context.Context,
+	_ cloudprovider.Provider, _ variant.Variant,
+	_, _ string,
+) (string, error) {
 	return f.reference, f.fetchReferenceErr
 }

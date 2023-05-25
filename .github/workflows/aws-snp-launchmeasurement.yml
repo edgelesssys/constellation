@@ -59,7 +59,7 @@ jobs:
 
         for vcpus in 2 4 8 16 32 48 64;
         do
-          measurement="$(./sev-snp-measure.py --mode snp --vmm-type=ec2 --vcpus="$vcpus" --ovmf=${{ steps.build-uefi.outputs.ovmf_path }})"
+          measurement="$(./sev-snp-measure.py --mode snp --vmm-type=ec2 --vcpus="$vcpus" --ovmf=${{ steps.build-uefi.outputs.ovmfPath }})"
 
           jq --arg vcpus "$vcpus" --arg measurement "$measurement" '. += [{"vcpus": $vcpus, "measurement": $measurement}]' intermediate.json > measurements.json
           cp measurements.json intermediate.json

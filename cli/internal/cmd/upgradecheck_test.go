@@ -150,6 +150,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 	assert := assert.New(t)
 
 	csp := cloudprovider.Azure
+	attestationVariant := variant.AzureSEVSNP{}
 	zero := versionsapi.Version{
 		Ref:     "-",
 		Stream:  "stable",
@@ -204,7 +205,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
-	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, singleUUIDVerifier(), pubK, csp, images, logger.NewTest(t))
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, singleUUIDVerifier(), pubK, csp, attestationVariant, images, logger.NewTest(t))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {
@@ -297,7 +298,7 @@ type stubVersionCollector struct {
 	someErr                      error
 }
 
-func (s *stubVersionCollector) newMeasurements(_ context.Context, _ cloudprovider.Provider, _ []versionsapi.Version) (map[string]measurements.M, error) {
+func (s *stubVersionCollector) newMeasurements(_ context.Context, _ cloudprovider.Provider, _ variant.Variant, _ []versionsapi.Version) (map[string]measurements.M, error) {
 	return s.supportedImageVersions, nil
 }
 

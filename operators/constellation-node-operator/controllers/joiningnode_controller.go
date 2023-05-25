@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -122,15 +121,15 @@ func (r *JoiningNodesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.JoiningNode{}).
 		Watches(
-			&source.Kind{Type: &corev1.Node{}},
+			client.Object(&corev1.Node{}),
 			handler.EnqueueRequestsFromMapFunc(r.findAllJoiningNodes),
 		).
 		Complete(r)
 }
 
-func (r *JoiningNodesReconciler) findAllJoiningNodes(obj client.Object) []reconcile.Request {
+func (r *JoiningNodesReconciler) findAllJoiningNodes(ctx context.Context, obj client.Object) []reconcile.Request {
 	var joiningNodesList updatev1alpha1.JoiningNodeList
-	err := r.List(context.TODO(), &joiningNodesList, client.MatchingFields{joiningNodeNameKey: obj.GetName()})
+	err := r.List(ctx, &joiningNodesList, client.MatchingFields{joiningNodeNameKey: obj.GetName()})
 	if err != nil {
 		return []reconcile.Request{}
 	}

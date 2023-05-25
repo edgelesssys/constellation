@@ -12,13 +12,16 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // imageFetcher gets an image reference from the versionsapi.
 type imageFetcher interface {
-	FetchReference(ctx context.Context, config *config.Config) (string, error)
+	FetchReference(ctx context.Context,
+		provider cloudprovider.Provider, attestationVariant variant.Variant,
+		image, region string,
+	) (string, error)
 }
 
 type terraformClient interface {

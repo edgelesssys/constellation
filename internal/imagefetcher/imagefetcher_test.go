@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package image
+package imagefetcher
 
 import (
 	"context"
@@ -15,8 +15,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,59 +32,92 @@ func TestGetReference(t *testing.T) {
 		info          versionsapi.ImageInfo
 		provider      cloudprovider.Provider
 		variant       string
+		filter        filter
 		wantReference string
 		wantErr       bool
 	}{
+		"reference exists with filter": {
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "aws", AttestationVariant: "aws-nitro-tpm", Reference: "someReference"},
+					{CSP: "aws", AttestationVariant: "aws-nitro-tpm", Reference: "someOtherReference", Region: "someRegion"},
+				},
+			},
+			provider: cloudprovider.AWS,
+			variant:  "aws-nitro-tpm",
+			filter: func(entry versionsapi.ImageInfoEntry) bool {
+				return entry.Region == "someRegion"
+			},
+			wantReference: "someOtherReference",
+		},
 		"reference exists aws": {
-			info:          versionsapi.ImageInfo{AWS: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "aws", AttestationVariant: "aws-nitro-tpm", Reference: "someReference"},
+				},
+			},
 			provider:      cloudprovider.AWS,
-			variant:       "someVariant",
+			variant:       "aws-nitro-tpm",
 			wantReference: "someReference",
 		},
 		"reference exists azure": {
-			info:          versionsapi.ImageInfo{Azure: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "azure", AttestationVariant: "azure-sev-snp", Reference: "someReference"},
+				},
+			},
 			provider:      cloudprovider.Azure,
-			variant:       "someVariant",
+			variant:       "azure-sev-snp",
 			wantReference: "someReference",
 		},
 		"reference exists gcp": {
-			info:          versionsapi.ImageInfo{GCP: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "gcp", AttestationVariant: "gcp-sev-es", Reference: "someReference"},
+				},
+			},
 			provider:      cloudprovider.GCP,
-			variant:       "someVariant",
+			variant:       "gcp-sev-es",
 			wantReference: "someReference",
 		},
 		"reference exists openstack": {
-			info:          versionsapi.ImageInfo{OpenStack: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "openstack", AttestationVariant: "qemu-vtpm", Reference: "someReference"},
+				},
+			},
 			provider:      cloudprovider.OpenStack,
-			variant:       "someVariant",
+			variant:       "qemu-vtpm",
 			wantReference: "someReference",
 		},
 		"reference exists qemu": {
-			info:          versionsapi.ImageInfo{QEMU: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "qemu", AttestationVariant: "qemu-vtpm", Reference: "someReference"},
+				},
+			},
 			provider:      cloudprovider.QEMU,
-			variant:       "someVariant",
+			variant:       "qemu-vtpm",
 			wantReference: "someReference",
 		},
 		"csp does not exist": {
-			info:     versionsapi.ImageInfo{AWS: map[string]string{"someVariant": "someReference"}},
+			info:     versionsapi.ImageInfo{List: []versionsapi.ImageInfoEntry{}},
 			provider: cloudprovider.Unknown,
 			variant:  "someVariant",
 			wantErr:  true,
 		},
 		"variant does not exist": {
-			info:     versionsapi.ImageInfo{AWS: map[string]string{"someVariant": "someReference"}},
+			info: versionsapi.ImageInfo{
+				List: []versionsapi.ImageInfoEntry{
+					{CSP: "aws", AttestationVariant: "dummy", Reference: "someReference"},
+				},
+			},
 			provider: cloudprovider.AWS,
-			variant:  "nonExistingVariant",
+			variant:  "aws-nitro-tpm",
 			wantErr:  true,
 		},
 		"info is empty": {
 			info:     versionsapi.ImageInfo{},
-			provider: cloudprovider.AWS,
-			variant:  "someVariant",
-			wantErr:  true,
-		},
-		"csp is nil": {
-			info:     versionsapi.ImageInfo{AWS: nil},
 			provider: cloudprovider.AWS,
 			variant:  "someVariant",
 			wantErr:  true,
@@ -96,7 +129,11 @@ func TestGetReference(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			reference, err := getReferenceFromImageInfo(tc.provider, tc.variant, tc.info)
+			var filters []filter
+			if tc.filter != nil {
+				filters = []filter{tc.filter}
+			}
+			reference, err := getReferenceFromImageInfo(tc.provider, tc.variant, tc.info, filters...)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -108,79 +145,6 @@ func TestGetReference(t *testing.T) {
 	}
 }
 
-func TestImageVariant(t *testing.T) {
-	testCases := map[string]struct {
-		csp         cloudprovider.Provider
-		config      *config.Config
-		wantVariant string
-		wantErr     bool
-	}{
-		"AWS region": {
-			csp: cloudprovider.AWS,
-			config: &config.Config{Image: "someImage", Provider: config.ProviderConfig{
-				AWS: &config.AWSConfig{Region: "someRegion"},
-			}},
-			wantVariant: "someRegion",
-		},
-		"Azure cvm": {
-			csp: cloudprovider.Azure,
-			config: &config.Config{
-				Image: "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
-				Attestation: config.AttestationConfig{AzureSEVSNP: &config.AzureSEVSNP{}},
-			},
-			wantVariant: "cvm",
-		},
-		"Azure trustedlaunch": {
-			csp: cloudprovider.Azure,
-			config: &config.Config{
-				Image: "someImage", Provider: config.ProviderConfig{Azure: &config.AzureConfig{}},
-				Attestation: config.AttestationConfig{AzureTrustedLaunch: &config.AzureTrustedLaunch{}},
-			},
-			wantVariant: "trustedlaunch",
-		},
-		"GCP": {
-			csp: cloudprovider.GCP,
-			config: &config.Config{Image: "someImage", Provider: config.ProviderConfig{
-				GCP: &config.GCPConfig{},
-			}},
-			wantVariant: "sev-es",
-		},
-		"OpenStack": {
-			csp: cloudprovider.OpenStack,
-			config: &config.Config{Image: "someImage", Provider: config.ProviderConfig{
-				OpenStack: &config.OpenStackConfig{},
-			}},
-			wantVariant: "sev",
-		},
-		"QEMU": {
-			csp: cloudprovider.QEMU,
-			config: &config.Config{Image: "someImage", Provider: config.ProviderConfig{
-				QEMU: &config.QEMUConfig{},
-			}},
-			wantVariant: "default",
-		},
-		"invalid": {
-			csp:     cloudprovider.Provider(9999),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			vari, err := imageVariant(tc.csp, tc.config)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Equal(tc.wantVariant, vari)
-		})
-	}
-}
-
 func TestFetchReference(t *testing.T) {
 	img := "ref/abc/stream/nightly/v1.2.3"
 	newImgInfo := func() versionsapi.ImageInfo {
@@ -188,49 +152,47 @@ func TestFetchReference(t *testing.T) {
 			Ref:     "abc",
 			Stream:  "nightly",
 			Version: "v1.2.3",
-			QEMU:    map[string]string{"default": "someReference"},
-			AWS:     map[string]string{"foo": "bar"},
-			Azure:   map[string]string{"foo": "bar"},
-			GCP:     map[string]string{"foo": "bar"},
+			List: []versionsapi.ImageInfoEntry{
+				{
+					CSP:                "qemu",
+					AttestationVariant: "dummy",
+					Reference:          "someReference",
+				},
+			},
 		}
 	}
 	imgInfoPath := imageInfoFilename(newImgInfo())
 
 	testCases := map[string]struct {
-		config           *config.Config
+		provider         cloudprovider.Provider
+		image            string
 		imageInfoFetcher versionsAPIImageInfoFetcher
 		localFile        []byte
 		wantReference    string
 		wantErr          bool
 	}{
 		"reference fetched remotely": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider: cloudprovider.QEMU,
+			image:    img,
 			imageInfoFetcher: &stubVersionsAPIImageFetcher{
 				fetchImageInfoInfo: newImgInfo(),
 			},
 			wantReference: "someReference",
 		},
 		"reference fetched remotely fails": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider: cloudprovider.QEMU,
+			image:    img,
 			imageInfoFetcher: &stubVersionsAPIImageFetcher{
 				fetchImageInfoErr: errors.New("failed"),
 			},
 			wantErr: true,
 		},
 		"reference fetched locally": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider: cloudprovider.QEMU,
+			image:    img,
 			localFile: func() []byte {
 				info := newImgInfo()
-				info.QEMU["default"] = "localOverrideReference"
+				info.List[0].Reference = "localOverrideReference"
 				file, err := json.Marshal(info)
 				require.NoError(t, err)
 				return file
@@ -238,16 +200,14 @@ func TestFetchReference(t *testing.T) {
 			wantReference: "localOverrideReference",
 		},
 		"local file first": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider: cloudprovider.QEMU,
+			image:    img,
 			imageInfoFetcher: &stubVersionsAPIImageFetcher{
 				fetchImageInfoInfo: newImgInfo(),
 			},
 			localFile: func() []byte {
 				info := newImgInfo()
-				info.QEMU["default"] = "localOverrideReference"
+				info.List[0].Reference = "localOverrideReference"
 				file, err := json.Marshal(info)
 				require.NoError(t, err)
 				return file
@@ -255,18 +215,14 @@ func TestFetchReference(t *testing.T) {
 			wantReference: "localOverrideReference",
 		},
 		"local file is invalid": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider:  cloudprovider.QEMU,
+			image:     img,
 			localFile: []byte("invalid"),
 			wantErr:   true,
 		},
 		"local file has invalid image info": {
-			config: &config.Config{
-				Image:    img,
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
+			provider: cloudprovider.QEMU,
+			image:    img,
 			localFile: func() []byte {
 				info := newImgInfo()
 				info.Ref = ""
@@ -277,11 +233,9 @@ func TestFetchReference(t *testing.T) {
 			wantErr: true,
 		},
 		"image version does not exist": {
-			config: &config.Config{
-				Image:    "nonExistingImageName",
-				Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}},
-			},
-			wantErr: true,
+			provider: cloudprovider.QEMU,
+			image:    "nonExistingImageName",
+			wantErr:  true,
 		},
 	}
 
@@ -302,7 +256,7 @@ func TestFetchReference(t *testing.T) {
 				fs:      af,
 			}
 
-			reference, err := fetcher.FetchReference(context.Background(), tc.config)
+			reference, err := fetcher.FetchReference(context.Background(), tc.provider, variant.Dummy{}, tc.image, "someRegion")
 
 			if tc.wantErr {
 				assert.Error(err)

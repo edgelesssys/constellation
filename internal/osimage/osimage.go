@@ -18,12 +18,12 @@ import (
 
 // UploadRequest is a request to upload an os image.
 type UploadRequest struct {
-	Provider     cloudprovider.Provider
-	Version      versionsapi.Version
-	Variant      string
-	SBDatabase   secureboot.Database
-	UEFIVarStore secureboot.UEFIVarStore
-	Size         int64
-	Timestamp    time.Time
-	Image        io.ReadSeeker
+	Provider           cloudprovider.Provider
+	Version            versionsapi.Version
+	AttestationVariant string
+	SBDatabase         secureboot.Database
+	UEFIVarStore       secureboot.UEFIVarStore
+	Size               int64
+	Timestamp          time.Time
+	Image              io.ReadSeeker
 }

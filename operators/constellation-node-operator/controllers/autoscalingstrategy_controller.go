@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 )
@@ -148,16 +147,16 @@ func (r *AutoscalingStrategyReconciler) SetupWithManager(mgr ctrl.Manager) error
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&updatev1alpha1.AutoscalingStrategy{}).
 		Watches(
-			&source.Kind{Type: &updatev1alpha1.ScalingGroup{}},
+			client.Object(&updatev1alpha1.ScalingGroup{}),
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForDeployment),
 			builder.WithPredicates(scalingGroupChangePredicate()),
 		).
 		Complete(r)
 }
 
-func (r *AutoscalingStrategyReconciler) findObjectsForDeployment(_ client.Object) []reconcile.Request {
+func (r *AutoscalingStrategyReconciler) findObjectsForDeployment(ctx context.Context, _ client.Object) []reconcile.Request {
 	var autoscalingStrats updatev1alpha1.AutoscalingStrategyList
-	err := r.List(context.Background(), &autoscalingStrats)
+	err := r.List(ctx, &autoscalingStrats)
 	if err != nil {
 		return []reconcile.Request{}
 	}
