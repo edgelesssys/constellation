@@ -1,6 +1,7 @@
 name: CodeQL
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -17,6 +18,10 @@ jobs:
   codeql:
     name: CodeQL
     runs-on: ubuntu-22.04
+    env:
+      # Force CodeQL to run the extraction on the files compiled by our custom
+      # build command, as opposed to letting the autobuilder figure it out.
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
     permissions:
       actions: read
       contents: read
@@ -56,7 +61,8 @@ jobs:
           done
           echo "::endgroup::"
 
-      - name: Autobuild
+      - name: Build
+        if: matrix.language == 'python'
         uses: github/codeql-action/autobuild@29b1f65c5e92e24fe6b6647da1eaabe529cec70f # v2.3.3
 
       - name: Perform CodeQL Analysis
