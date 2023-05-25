@@ -28,11 +28,24 @@ jobs:
       MAJOR_MINOR: ${{ steps.version-info.outputs.MAJOR_MINOR }}
       MAJOR_MINOR_PATCH: ${{ steps.version-info.outputs.MAJOR_MINOR_PATCH }}
       RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
+      WORKING_BRANCH: ${{ steps.version-info.outputs.WORKING_BRANCH }}
     steps:
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+      - name: Working branch
+        run: echo "WORKING_BRANCH=$(git branch --show-current)" | tee -a "$GITHUB_ENV"
+
       - name: Verify version
         run: |
           if [[ ! "${FULL_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Version must be in the form of vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Verify temporary branch
+        run: |
+          if [[ ! "${WORKING_BRANCH}" =~ ^tmp/v[0-9]+\.[0-9]+\.[0-9]+(/.+)? ]]; then
+            echo "Workflow can only be triggered from a temporary branch in the form of tmp/vX.Y.Z/..."
             exit 1
           fi
 
@@ -53,10 +66,11 @@ jobs:
             echo "MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}"
             echo "MAJOR_MINOR_PATCH=${PART_MAJOR}.${PART_MINOR}.${PART_PATCH}"
             echo "RELEASE_BRANCH=release/v${PART_MAJOR}.${PART_MINOR}"
+            echo "WORKING_BRANCH=${WORKING_BRANCH}"
           } | tee -a "$GITHUB_OUTPUT"
 
   docs:
-    name: Create docs release
+    name: Create docs release (from main)
     runs-on: ubuntu-22.04
     if: inputs.kind == 'minor'
     needs: verify-inputs
@@ -70,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          ref: ${{ github.head_ref }}
+          ref: main
 
       - name: Create docs release
         working-directory: docs
@@ -95,40 +109,46 @@ jobs:
           # We need to push changes using a token, otherwise triggers like on:push and on:pull_request won't work.
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.CI_COMMIT_PUSH_PR || '' }}
 
-  prepare-release-branch:
-    name: Prepare release branch
+  check-working-branch:
+    name: Check temporary working branch
     runs-on: ubuntu-22.04
     needs: verify-inputs
     permissions:
       contents: write
     env:
-      BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      RELEASE_BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      WORKING_BRANCH: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
-      - name: Create release branch
-        if: inputs.kind == 'minor'
+      - name: Check if we are strictly ahead of the release branch (if it exists)
         run: |
           git fetch
           git pull
-          git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
-          git push origin "${BRANCH}"
+          git checkout "${RELEASE_BRANCH}" || exit 0
+          git checkout "${WORKING_BRANCH}"
+          ahead=$(git rev-list HEAD --not "${RELEASE_BRANCH}"  | wc -l)
+          if [[ "${ahead}" -gt 0 ]]; then
+            echo "The current branch is not strictly ahead of the release branch. Please rebase."
+            exit 1
+          fi
 
       - name: Write version to version.txt
         run: |
+          git checkout "${WORKING_BRANCH}"
           echo "${{ inputs.version }}" > version.txt
           git config --global user.name "edgelessci"
           git config --global user.email "edgelessci@users.noreply.github.com"
           git add version.txt
           git diff --staged --quiet || git commit -m "chore: update version.txt to ${{ inputs.version }}"
-          git push origin "${BRANCH}"
+          git push origin "${WORKING_BRANCH}"
 
   update-versions:
     name: Update container image versions
-    needs: [verify-inputs, prepare-release-branch]
+    needs: [verify-inputs, check-working-branch]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -140,7 +160,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
       - name: Update enterprise image version
         run: |
@@ -172,7 +192,7 @@ jobs:
       imageVersion: ${{ inputs.version }}
       isRelease: true
       stream: "stable"
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
   update-hardcoded-measurements:
     name: Update hardcoded measurements (in the CLI)
@@ -187,7 +207,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
       - name: Setup Go environment
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
@@ -224,7 +244,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+          ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
       - name: Tag release
         run: |
@@ -258,7 +278,7 @@ jobs:
       contents: read
     secrets: inherit
     with:
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
   mini-e2e:
     name: Run mini E2E tests
@@ -271,4 +291,4 @@ jobs:
       contents: read
     secrets: inherit
     with:
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
