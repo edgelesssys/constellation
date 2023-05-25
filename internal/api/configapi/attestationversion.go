@@ -9,11 +9,10 @@ package configapi
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 )
 
-const placeholderVersionValue = math.MaxUint8
+const placeholderVersionValue = 0
 
 // NewLatestPlaceholderVersion returns the latest version with a placeholder version value.
 func NewLatestPlaceholderVersion() AttestationVersion {
