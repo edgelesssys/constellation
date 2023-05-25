@@ -22,13 +22,22 @@ import (
 
 // fetcher fetches versions API resources without authentication.
 type fetcher struct {
-	httpc httpc
+	httpc HttpClienter
+}
+
+// NewHTTPClient returns a new http client.
+func NewHTTPClient() HttpClienter {
+	return &http.Client{Transport: &http.Transport{DisableKeepAlives: true}} // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
+}
+
+func newFetcherWith(client HttpClienter) *fetcher {
+	return &fetcher{
+		httpc: client,
+	}
 }
 
 func newFetcher() *fetcher {
-	return &fetcher{
-		httpc: &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}, // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
-	}
+	return newFetcherWith(NewHTTPClient()) // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
 }
 
 type apiObject interface {
@@ -37,7 +46,7 @@ type apiObject interface {
 	URL() (string, error)
 }
 
-func fetch[T apiObject](ctx context.Context, c httpc, obj T) (T, error) {
+func fetch[T apiObject](ctx context.Context, c HttpClienter, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
@@ -90,6 +99,7 @@ func (e *NotFoundError) Unwrap() error {
 	return e.err
 }
 
-type httpc interface {
+// HttpClienter is an interface for http clients.
+type HttpClienter interface {
 	Do(req *http.Request) (*http.Response, error)
 }

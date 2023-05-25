@@ -31,6 +31,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -385,13 +386,18 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
 func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
+	return NewWithClient(fileHandler, name, fetcher.NewHTTPClient(), force)
+}
+
+// NewWithClient is New with a custom HTTP client.
+func NewWithClient(fileHandler file.Handler, name string, client fetcher.HttpClienter, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
 	}
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		if err := azure.FetchAndSetLatestVersionNumbers(); err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(client); err != nil {
 			return c, err
 		}
 	}

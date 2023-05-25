@@ -23,6 +23,11 @@ func NewConfigAPIFetcher() *ConfigAPIFetcher {
 	return &ConfigAPIFetcher{newFetcher()}
 }
 
+// NewConfigAPIFetcherWithClient returns a new Fetcher with custom http client.
+func NewConfigAPIFetcherWithClient(client HttpClienter) *ConfigAPIFetcher {
+	return &ConfigAPIFetcher{newFetcherWith(client)}
+}
+
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
 func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
 	return fetch(ctx, f.httpc, attestation)

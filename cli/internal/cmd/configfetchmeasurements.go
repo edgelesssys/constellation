@@ -77,7 +77,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cfm.log.Debugf("Using flags %v", flags)
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.NewWithClient(fileHandler, flags.configPath, client, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

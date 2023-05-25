@@ -7,7 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -241,9 +245,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 	}
-	cancel := configapi.UseDummyConfigAPIServer(8082)
-	defer cancel()
-
+	client := newTestClient(&dummyConfigAPIHandler{})
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
@@ -258,7 +260,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(fileHandler, constants.ConfigFilename, false)
+			c, err := NewWithClient(fileHandler, constants.ConfigFilename, client, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -877,4 +879,46 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 		t.Fatal(err)
 	}
 	return
+}
+
+type dummyConfigAPIHandler struct{}
+
+// RoundTrip resolves the request and returns a dummy response.
+func (f *dummyConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
+		res := &http.Response{}
+		data := []string{"2021-01-01-01-01.json"}
+		bt, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.Header = http.Header{}
+		res.Header.Set("Content-Type", "application/json")
+		res.StatusCode = http.StatusOK
+		return res, nil
+	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json" {
+		res := &http.Response{}
+		bt, err := json.Marshal(configapi.AzureSEVSNPVersion{
+			Microcode:  93,
+			TEE:        0,
+			SNP:        6,
+			Bootloader: 2,
+		})
+		if err != nil {
+			return nil, err
+		}
+		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.StatusCode = http.StatusOK
+		return res, nil
+
+	}
+	return nil, errors.New("no endpoint found")
+}
+
+// newTestClient returns *http.Client with Transport replaced to avoid making real calls.
+func newTestClient(fn *dummyConfigAPIHandler) *http.Client {
+	return &http.Client{
+		Transport: fn,
+	}
 }
