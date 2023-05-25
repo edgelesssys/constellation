@@ -561,9 +561,9 @@ func TestVersionArtifactPathURL(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			path := tc.ver.ArtifactPath("v1")
+			path := tc.ver.ArtifactPath(APIV1)
 			assert.Equal(tc.wantPath, path)
-			url := tc.ver.ArtifactsURL("v1")
+			url := tc.ver.ArtifactsURL(APIV1)
 			assert.Equal(constants.CDNRepositoryURL+"/"+tc.wantPath, url)
 		})
 	}

@@ -154,16 +154,16 @@ func (v Version) ListPath(gran Granularity) string {
 
 // ArtifactsURL returns the URL to the artifacts stored for this version.
 // The URL points to a directory.
-func (v Version) ArtifactsURL(apiVersion string) string {
-	return constants.CDNRepositoryURL + "/" + v.ArtifactPath(apiVersion)
+func (v Version) ArtifactsURL(apiVer apiVersion) string {
+	return constants.CDNRepositoryURL + "/" + v.ArtifactPath(apiVer)
 }
 
 // ArtifactPath returns the path to the artifacts stored for this version.
 // The path points to a directory.
-func (v Version) ArtifactPath(apiVersion string) string {
+func (v Version) ArtifactPath(apiVer apiVersion) string {
 	return path.Join(
 		constants.CDNAPIBase,
-		apiVersion,
+		apiVer.String(),
 		"ref", v.Ref,
 		"stream", v.Stream,
 		v.Version,
@@ -336,16 +336,15 @@ func ValidateStream(ref, stream string) error {
 
 // MeasurementURL builds the measurement and signature URLs for the given version.
 func MeasurementURL(version Version) (measurementURL, signatureURL *url.URL, err error) {
-	const apiVersion = "v2"
 	if version.Kind != VersionKindImage {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("kind %q is not supported", version.Kind)
 	}
 
-	measurementPath, err := url.JoinPath(version.ArtifactsURL(apiVersion), "image", constants.CDNMeasurementsFile)
+	measurementPath, err := url.JoinPath(version.ArtifactsURL(APIV2), "image", constants.CDNMeasurementsFile)
 	if err != nil {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for measurement: %w", err)
 	}
-	signaturePath, err := url.JoinPath(version.ArtifactsURL(apiVersion), "image", constants.CDNMeasurementsSignature)
+	signaturePath, err := url.JoinPath(version.ArtifactsURL(APIV2), "image", constants.CDNMeasurementsSignature)
 	if err != nil {
 		return &url.URL{}, &url.URL{}, fmt.Errorf("joining path for signature: %w", err)
 	}
