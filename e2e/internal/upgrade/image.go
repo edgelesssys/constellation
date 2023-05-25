@@ -11,7 +11,6 @@ package upgrade
 import (
 	"context"
 	"net/http"
-	"net/url"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"

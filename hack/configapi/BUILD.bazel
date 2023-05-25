@@ -8,7 +8,7 @@ go_library(
     deps = [
         "//internal/api/configapi",
         "//internal/kms/uri",
-        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_cobra//:cobra",
     ],
 )
 

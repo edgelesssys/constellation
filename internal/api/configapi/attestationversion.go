@@ -9,10 +9,11 @@ package configapi
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
-const placeholderVersionValue = 0
+const placeholderVersionValue = math.MaxUint8
 
 // NewLatestPlaceholderVersion returns the latest version with a placeholder version value.
 func NewLatestPlaceholderVersion() AttestationVersion {
@@ -68,6 +69,7 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 	case string:
 		if strings.ToLower(s) == "latest" {
 			v.IsLatest = true
+			v.Value = placeholderVersionValue
 		} else {
 			return fmt.Errorf("invalid version value: %s", s)
 		}

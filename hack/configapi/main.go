@@ -9,59 +9,83 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 )
 
 const (
-	awsRegion = "eu-central-1"
-	awsBucket = "cdn-constellation-backend"
+	awsRegion      = "eu-central-1"
+	awsBucket      = "cdn-constellation-backend"
+	invalidDefault = 0
 )
 
 var (
 	// AWS S3 credentials.
-	awsAccessKeyID = pflag.String("key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsAccessKey   = pflag.String("key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsAccessKeyID string
+	awsAccessKey   string
 
 	// Azure SEV-SNP version numbers.
-	bootloaderVersion = pflag.Uint8P("bootloader-version", "b", 0, "Bootloader version number")
-	teeVersion        = pflag.Uint8P("tee-version", "t", 0, "TEE version number")
-	snpVersion        = pflag.Uint8P("snp-version", "s", 0, "SNP version number")
-	microcodeVersion  = pflag.Uint8P("microcode-version", "m", 0, "Microcode version number")
+	bootloaderVersion uint8
+	teeVersion        uint8
+	snpVersion        uint8
+	microcodeVersion  uint8
 )
 
-func main() {
-	pflag.Parse()
-	if *awsAccessKey == "" || *awsAccessKeyID == "" {
-		pflag.Usage()
-		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id")
-		os.Exit(1)
-	}
-	ctx := context.Background()
-	cfg := uri.AWSS3Config{
-		Bucket:      awsBucket,
-		AccessKeyID: *awsAccessKeyID,
-		AccessKey:   *awsAccessKey,
-		Region:      awsRegion,
-	}
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
+func handleError(err error) {
 	if err != nil {
 		panic(err)
 	}
-	versions := configapi.AzureSEVSNPVersion{
-		Bootloader: *bootloaderVersion,
-		TEE:        *teeVersion,
-		SNP:        *snpVersion,
-		Microcode:  *microcodeVersion,
-	}
+}
 
-	if err := sut.UploadAzureSEVSNP(ctx, versions, time.Now()); err != nil {
-		panic(err)
-	} else {
-		fmt.Println("Successfully uploaded version numbers", versions)
+func main() {
+	myCmd := &cobra.Command{
+		Use:   "upload a set of versions specific to the azure-sev-snp attestation variant to the config api",
+		Short: "upload a set of versions specific to the azure-sev-snp attestation variant to the config api",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			cfg := uri.AWSS3Config{
+				Bucket:      awsBucket,
+				AccessKeyID: awsAccessKeyID,
+				AccessKey:   awsAccessKey,
+				Region:      awsRegion,
+			}
+			sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
+			if err != nil {
+				panic(err)
+			}
+			versions := configapi.AzureSEVSNPVersion{
+				Bootloader: bootloaderVersion,
+				TEE:        teeVersion,
+				SNP:        snpVersion,
+				Microcode:  microcodeVersion,
+			}
+
+			if err := sut.UploadAzureSEVSNP(ctx, versions, time.Now()); err != nil {
+				panic(err)
+			} else {
+				fmt.Println("Successfully uploaded version numbers", versions)
+			}
+		},
 	}
+	myCmd.PersistentFlags().Uint8VarP(&bootloaderVersion, "bootloader-version", "b", invalidDefault, "Bootloader version number")
+	handleError(myCmd.MarkPersistentFlagRequired("bootloader-version"))
+
+	myCmd.PersistentFlags().Uint8VarP(&teeVersion, "tee-version", "t", invalidDefault, "TEE version number")
+	handleError(myCmd.MarkPersistentFlagRequired("tee-version"))
+
+	myCmd.PersistentFlags().Uint8VarP(&snpVersion, "snp-version", "s", invalidDefault, "SNP version number")
+	handleError(myCmd.MarkPersistentFlagRequired("snp-version"))
+
+	myCmd.PersistentFlags().Uint8VarP(&microcodeVersion, "microcode-version", "m", invalidDefault, "Microcode version number")
+	handleError(myCmd.MarkPersistentFlagRequired("microcode-version"))
+
+	myCmd.PersistentFlags().StringVar(&awsAccessKeyID, "key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	handleError(myCmd.MarkPersistentFlagRequired("key-id"))
+
+	myCmd.PersistentFlags().StringVar(&awsAccessKey, "key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	handleError(myCmd.MarkPersistentFlagRequired("key"))
+	handleError(myCmd.Execute())
 }
