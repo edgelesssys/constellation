@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "versionsapi",
     srcs = [
+        "apiconstants.go",
         "cliinfo.go",
         "imageinfo.go",
         "latest.go",

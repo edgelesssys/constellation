@@ -62,13 +62,6 @@ const (
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
 type M map[uint32]Measurement
 
-// WithMetadata is a struct supposed to provide CSP & image metadata next to measurements.
-type WithMetadata struct {
-	CSP          cloudprovider.Provider `json:"csp" yaml:"csp"`
-	Image        string                 `json:"image" yaml:"image"`
-	Measurements M                      `json:"measurements" yaml:"measurements"`
-}
-
 // ImageMeasurementsV2 is a struct to hold measurements for a specific image.
 // .List contains measurements for all variants of the image.
 type ImageMeasurementsV2 struct {

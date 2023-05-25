@@ -150,7 +150,7 @@ func measurementURL(image, file string) (*url.URL, error) {
 	}
 
 	return url.Parse(
-		version.ArtifactsURL("v2") + path.Join("/image", file),
+		version.ArtifactsURL(versionsapi.APIV2) + path.Join("/image", file),
 	)
 }
 

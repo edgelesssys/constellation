@@ -119,8 +119,8 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    ver.ArtifactsURL("v2") + "/image/measurements.json",
-			wantMeasurementsSigURL: ver.ArtifactsURL("v2") + "/image/measurements.json.sig",
+			wantMeasurementsURL:    ver.ArtifactsURL(versionsapi.APIV2) + "/image/measurements.json",
+			wantMeasurementsSigURL: ver.ArtifactsURL(versionsapi.APIV2) + "/image/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{
