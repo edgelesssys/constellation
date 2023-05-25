@@ -45,7 +45,7 @@ type AzureSEVSNP struct {
 }
 
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
-// Version numbers have dummy values and the true values are fetched from the configapi when calling config.readFile().
+// Version numbers have placeholder values and the latest available values can be fetched using [AzureSEVSNP.FetchAndSetLatestVersionNumbers].
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),

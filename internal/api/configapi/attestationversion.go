@@ -12,13 +12,6 @@ import (
 	"strings"
 )
 
-const (
-	Bootloader AzureSEVSNPVersionType = "bootloader" // Bootloader is the version of the Azure SEVSNP bootloader.
-	TEE        AzureSEVSNPVersionType = "tee"        // TEE is the version of the Azure SEVSNP TEE.
-	SNP        AzureSEVSNPVersionType = "snp"        // SNP is the version of the Azure SEVSNP SNP.
-	Microcode  AzureSEVSNPVersionType = "microcode"  // Microcode is the version of the Azure SEVSNP microcode.
-)
-
 const dummyVersionValue = 0
 
 // NewLatestDummyVersion returns the latest version with a dummy version value.
@@ -78,8 +71,6 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 		} else {
 			return fmt.Errorf("invalid version value: %s", s)
 		}
-	case float64:
-		v.Value = uint8(s)
 	case int:
 		v.Value = uint8(s)
 	default:

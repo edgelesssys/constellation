@@ -17,12 +17,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	awsRegion = "eu-central-1"
+	awsBucket = "cdn-constellation-backend"
+)
+
 var (
 	// AWS S3 credentials.
 	awsAccessKeyID = pflag.String("key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
 	awsAccessKey   = pflag.String("key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsRegion      = "eu-central-1"
-	awsBucket      = "cdn-constellation-backend"
 
 	// Azure SEV-SNP version numbers.
 	bootloaderVersion = pflag.Uint8P("bootloader-version", "b", 0, "Bootloader version number")
@@ -33,9 +36,9 @@ var (
 
 func main() {
 	pflag.Parse()
-	if *awsAccessKey == "" || *awsAccessKeyID == "" || awsBucket == "" || awsRegion == "" {
+	if *awsAccessKey == "" || *awsAccessKeyID == "" {
 		pflag.Usage()
-		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region. Skipping tests.")
+		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id")
 		os.Exit(0)
 	}
 	ctx := context.Background()

@@ -43,7 +43,7 @@ func (a AttestationVersionRepo) UploadAzureSEVSNP(ctx context.Context, versions 
 	variant := variant.AzureSEVSNP{}
 	fname := date.Format("2006-01-02-15-04") + ".json"
 
-	err = a.Put(ctx, fmt.Sprintf("%s/%s/%s", AttestationURLPath, variant.String(), fname), bt)
+	err = a.Put(ctx, fmt.Sprintf("%s/%s/%s", attestationURLPath, variant.String(), fname), bt)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (a AttestationVersionRepo) UploadAzureSEVSNP(ctx context.Context, versions 
 
 // List returns the list of versions for the given attestation type.
 func (a AttestationVersionRepo) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
-	key := path.Join(AttestationURLPath, attestation.String(), "list")
+	key := path.Join(attestationURLPath, attestation.String(), "list")
 	bt, err := a.Get(ctx, key)
 	if err != nil {
 		return nil, err
@@ -71,12 +71,12 @@ func (a AttestationVersionRepo) DeleteList(ctx context.Context, attestation vari
 	if err != nil {
 		return err
 	}
-	return a.Put(ctx, path.Join(AttestationURLPath, attestation.String(), "list"), bt)
+	return a.Put(ctx, path.Join(attestationURLPath, attestation.String(), "list"), bt)
 }
 
 func (a AttestationVersionRepo) addVersionToList(ctx context.Context, attestation variant.Variant, fname string) error {
 	versions := []string{}
-	key := path.Join(AttestationURLPath, attestation.String(), "list")
+	key := path.Join(attestationURLPath, attestation.String(), "list")
 	bt, err := a.Get(ctx, key)
 	if err == nil {
 		if err := json.Unmarshal(bt, &versions); err != nil {

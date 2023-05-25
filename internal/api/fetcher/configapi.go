@@ -8,7 +8,6 @@ package fetcher
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
@@ -31,7 +30,7 @@ func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, atte
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
 func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
-	// TODO check signature (sigstore.VerifySignature)
+	// TODO(elchead): follow-up PR for AB#3045 to check signature (sigstore.VerifySignature)
 	return fetch(ctx, f.httpc, attestation)
 }
 
@@ -41,9 +40,6 @@ func (f *ConfigAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context) (r
 	versions, err = f.FetchAzureSEVSNPVersionList(ctx, versions)
 	if err != nil {
 		return res, fmt.Errorf("fetching versions list: %w", err)
-	}
-	if len(versions) < 1 {
-		return res, errors.New("no versions found in /list")
 	}
 	get := configapi.AzureSEVSNPVersionGet{Version: versions[0]} // get latest version (as sorted reversely alphanumerically)
 	get, err = f.FetchAzureSEVSNPVersion(ctx, get)

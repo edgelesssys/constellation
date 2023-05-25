@@ -18,7 +18,7 @@ func UseDummyConfigAPIServer(port uint) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	addr := fmt.Sprintf(":%d", port)
 	go startDummyConfigAPIServer(ctx, addr)
-	BaseURL = fmt.Sprintf("http://localhost%s", addr)
+	baseURL = fmt.Sprintf("http://localhost%s", addr)
 	return cancel
 }
 

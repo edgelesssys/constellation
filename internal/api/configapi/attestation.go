@@ -9,19 +9,20 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-// BaseURL is the base URL of the config api.
-var BaseURL = constants.CDNRepositoryURL
+// baseURL is the base URL of the config api.
+var baseURL = constants.CDNRepositoryURL
 
-// AttestationURLPath is the URL path to the attestation versions.
-const AttestationURLPath = "constellation/v1/attestation"
+// attestationURLPath is the URL path to the attestation versions.
+const attestationURLPath = "constellation/v1/attestation"
 
 // AzureSEVSNPVersionType is the type of the version to be requested.
-type AzureSEVSNPVersionType (string)
+type AzureSEVSNPVersionType string
 
 // AzureSEVSNPVersion tracks the latest version of each component of the Azure SEVSNP.
 type AzureSEVSNPVersion struct {
@@ -43,7 +44,7 @@ type AzureSEVSNPVersionGet struct {
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionGet) URL() (string, error) {
-	url, err := url.Parse(BaseURL)
+	url, err := url.Parse(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}
@@ -53,15 +54,18 @@ func (i AzureSEVSNPVersionGet) URL() (string, error) {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionGet) JSONPath() string {
-	return path.Join(AttestationURLPath, variant.AzureSEVSNP{}.String(), i.Version)
+	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), i.Version)
 }
 
 // ValidateRequest validates the request.
 func (i AzureSEVSNPVersionGet) ValidateRequest() error {
+	if !strings.HasSuffix(i.Version, ".json") {
+		return fmt.Errorf("version has no .json suffix")
+	}
 	return nil
 }
 
-// Validate validates the request.
+// Validate is a No-Op at the moment.
 func (i AzureSEVSNPVersionGet) Validate() error {
 	return nil
 }
@@ -71,7 +75,7 @@ type AzureSEVSNPVersionList []string
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionList) URL() (string, error) {
-	url, err := url.Parse(BaseURL)
+	url, err := url.Parse(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing CDN URL: %w", err)
 	}
@@ -81,15 +85,18 @@ func (i AzureSEVSNPVersionList) URL() (string, error) {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (i AzureSEVSNPVersionList) JSONPath() string {
-	return path.Join(AttestationURLPath, variant.AzureSEVSNP{}.String(), "list")
+	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), "list")
 }
 
-// ValidateRequest validates the request.
+// ValidateRequest is a NoOp as there is no input.
 func (i AzureSEVSNPVersionList) ValidateRequest() error {
 	return nil
 }
 
-// Validate validates the request.
+// Validate validates the response.
 func (i AzureSEVSNPVersionList) Validate() error {
+	if len(i) < 1 {
+		return fmt.Errorf("no versions found in /list")
+	}
 	return nil
 }
