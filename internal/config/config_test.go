@@ -38,7 +38,7 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-func TestWriteConfigWithLatestVersion(t *testing.T) {
+func TestDefaultConfigWritesLatestVersion(t *testing.T) {
 	conf := Default()
 	bt, err := yaml.Marshal(conf)
 	require := require.New(t)
@@ -53,20 +53,19 @@ func TestWriteConfigWithLatestVersion(t *testing.T) {
 	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
 }
 
-func TestReadConfigWithLatestVersion(t *testing.T) {
+func TestReadConfigFile(t *testing.T) {
 	testCases := map[string]struct {
 		config     configMap
 		configName string
 		wantResult *Config
 		wantErr    bool
 	}{
-		"mix of latest and uint as version value": {
+		"mix of Latest and uint as version value": {
 			config: func() configMap {
 				conf := Default()
 				m := getConfigAsMap(conf, t)
-				m.setAzureSEVSNPVersion("microcodeVersion", "Latest")
-				m.setAzureSEVSNPVersion("teeVersion", "latest")
-				m.setAzureSEVSNPVersion("snpVersion", "latest")
+				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
+				m.setAzureSEVSNPVersion("teeVersion", 2)
 				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
 				return m
 			}(),
@@ -76,6 +75,10 @@ func TestReadConfigWithLatestVersion(t *testing.T) {
 				conf := Default()
 				conf.Attestation.AzureSEVSNP.BootloaderVersion = configapi.AttestationVersion{
 					Value:    1,
+					IsLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.TEEVersion = configapi.AttestationVersion{
+					Value:    2,
 					IsLatest: false,
 				}
 				return conf
@@ -103,9 +106,9 @@ func TestReadConfigWithLatestVersion(t *testing.T) {
 			}
 			result, err := fromFile(fileHandler, tc.configName)
 			if tc.wantErr {
-				require.Error(err)
+				assert.Error(err)
 			} else {
-				require.NoError(err)
+				assert.NoError(err)
 				assert.Equal(tc.wantResult, result)
 			}
 		})
@@ -853,6 +856,7 @@ func TestConfigVersionCompatibility(t *testing.T) {
 	}
 }
 
+// configMap is used to un-/marshal the config as an unstructured map.
 type configMap map[string]interface{}
 
 func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {

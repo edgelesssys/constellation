@@ -391,9 +391,7 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 		return nil, err
 	}
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		fmt.Println("Fetching latest version numbers for Azure SEV-SNP")
-		err := azure.FetchAndSetLatestVersionNumbers()
-		if err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(); err != nil {
 			return c, err
 		}
 	}

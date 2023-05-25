@@ -93,19 +93,3 @@ func (i AzureSEVSNPVersionList) ValidateRequest() error {
 func (i AzureSEVSNPVersionList) Validate() error {
 	return nil
 }
-
-// GetVersionByType returns the requested version of the given type.
-func GetVersionByType(res AzureSEVSNPVersion, t AzureSEVSNPVersionType) uint8 {
-	switch t {
-	case Bootloader:
-		return res.Bootloader
-	case TEE:
-		return res.TEE
-	case SNP:
-		return res.SNP
-	case Microcode:
-		return res.Microcode
-	default:
-		panic("unknown version type") // TODO
-	}
-}

@@ -215,9 +215,6 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	}
 
 	config := config.Default()
-	if err != nil {
-		return nil, err
-	}
 	config.Name = constants.MiniConstellationUID
 	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8

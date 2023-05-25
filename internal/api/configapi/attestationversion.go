@@ -19,12 +19,12 @@ const (
 	Microcode  AzureSEVSNPVersionType = "microcode"  // Microcode is the version of the Azure SEVSNP microcode.
 )
 
-const defaultVersionValue = 0
+const dummyVersionValue = 0
 
-// NewLatestDummyVersion returns the latest version with a dummy value (should only be used for testing).
+// NewLatestDummyVersion returns the latest version with a dummy version value.
 func NewLatestDummyVersion() AttestationVersion {
 	return AttestationVersion{
-		Value:    defaultVersionValue,
+		Value:    dummyVersionValue,
 		IsLatest: true,
 	}
 }
@@ -83,7 +83,7 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 	case int:
 		v.Value = uint8(s)
 	default:
-		return fmt.Errorf("invalid version value input: %s", s)
+		return fmt.Errorf("invalid version value type: %s", s)
 	}
 	return nil
 }

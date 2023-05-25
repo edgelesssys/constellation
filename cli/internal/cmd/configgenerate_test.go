@@ -78,7 +78,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
-	require.NoError(err)
+	assert.NoError(err)
 	assert.Equal(*config.Default(), readConfig)
 }
 
