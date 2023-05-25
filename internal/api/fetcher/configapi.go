@@ -24,7 +24,7 @@ func NewConfigAPIFetcher() *ConfigAPIFetcher {
 }
 
 // NewConfigAPIFetcherWithClient returns a new Fetcher with custom http client.
-func NewConfigAPIFetcherWithClient(client HttpClienter) *ConfigAPIFetcher {
+func NewConfigAPIFetcherWithClient(client HTTPClient) *ConfigAPIFetcher {
 	return &ConfigAPIFetcher{newFetcherWith(client)}
 }
 

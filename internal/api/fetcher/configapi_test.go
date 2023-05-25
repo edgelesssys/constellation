@@ -21,7 +21,7 @@ import (
 
 func TestGetVersion(t *testing.T) {
 	client := &http.Client{
-		Transport: &dummyConfigAPIHandler{},
+		Transport: &fakeConfigAPIHandler{},
 	}
 	fetcher := NewConfigAPIFetcherWithClient(client)
 	res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
@@ -29,10 +29,10 @@ func TestGetVersion(t *testing.T) {
 	assert.Equal(t, uint8(2), res.Bootloader)
 }
 
-type dummyConfigAPIHandler struct{}
+type fakeConfigAPIHandler struct{}
 
 // RoundTrip resolves the request and returns a dummy response.
-func (f *dummyConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
 		res := &http.Response{}
 		data := []string{"2021-01-01-01-01.json"}

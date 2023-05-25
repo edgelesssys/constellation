@@ -245,7 +245,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 	}
-	client := newTestClient(&dummyConfigAPIHandler{})
+	client := newTestClient(&fakeConfigAPIHandler{})
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
@@ -881,10 +881,10 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 	return
 }
 
-type dummyConfigAPIHandler struct{}
+type fakeConfigAPIHandler struct{}
 
 // RoundTrip resolves the request and returns a dummy response.
-func (f *dummyConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
 		res := &http.Response{}
 		data := []string{"2021-01-01-01-01.json"}
@@ -917,7 +917,7 @@ func (f *dummyConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, er
 }
 
 // newTestClient returns *http.Client with Transport replaced to avoid making real calls.
-func newTestClient(fn *dummyConfigAPIHandler) *http.Client {
+func newTestClient(fn *fakeConfigAPIHandler) *http.Client {
 	return &http.Client{
 		Transport: fn,
 	}

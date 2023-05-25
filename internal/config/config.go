@@ -390,7 +390,7 @@ func New(fileHandler file.Handler, name string, force bool) (*Config, error) {
 }
 
 // NewWithClient is New with a custom HTTP client.
-func NewWithClient(fileHandler file.Handler, name string, client fetcher.HttpClienter, force bool) (*Config, error) {
+func NewWithClient(fileHandler file.Handler, name string, client fetcher.HTTPClient, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
