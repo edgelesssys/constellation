@@ -18,40 +18,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
-// Fetcher fetches versions API resources without authentication.
-type Fetcher struct {
-	httpc httpc
+// fetcher fetches versions API resources without authentication.
+type fetcher struct {
+	httpc HTTPClient
 }
 
-// NewFetcher returns a new Fetcher.
-func NewFetcher() *Fetcher {
-	return &Fetcher{
-		httpc: http.DefaultClient,
+// NewHTTPClient returns a new http client.
+func NewHTTPClient() HTTPClient {
+	return &http.Client{Transport: &http.Transport{DisableKeepAlives: true}} // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
+}
+
+func newFetcherWith(client HTTPClient) *fetcher {
+	return &fetcher{
+		httpc: client,
 	}
 }
 
-// FetchVersionList fetches the given version list from the versions API.
-func (f *Fetcher) FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error) {
-	return fetch(ctx, f.httpc, list)
-}
-
-// FetchVersionLatest fetches the latest version from the versions API.
-func (f *Fetcher) FetchVersionLatest(ctx context.Context, latest versionsapi.Latest) (versionsapi.Latest, error) {
-	return fetch(ctx, f.httpc, latest)
-}
-
-// FetchImageInfo fetches the given image info from the versions API.
-func (f *Fetcher) FetchImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) (versionsapi.ImageInfo, error) {
-	return fetch(ctx, f.httpc, imageInfo)
-}
-
-// FetchCLIInfo fetches the given cli info from the versions API.
-func (f *Fetcher) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
-	return fetch(ctx, f.httpc, cliInfo)
+func newFetcher() *fetcher {
+	return newFetcherWith(NewHTTPClient()) // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
 }
 
 type apiObject interface {
@@ -60,7 +46,7 @@ type apiObject interface {
 	URL() (string, error)
 }
 
-func fetch[T apiObject](ctx context.Context, c httpc, obj T) (T, error) {
+func fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
@@ -113,6 +99,7 @@ func (e *NotFoundError) Unwrap() error {
 	return e.err
 }
 
-type httpc interface {
+// HTTPClient is an interface for http clients.
+type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }

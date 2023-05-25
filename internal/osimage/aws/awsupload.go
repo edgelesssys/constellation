@@ -23,10 +23,10 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 	"github.com/edgelesssys/constellation/v2/internal/osimage/secureboot"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // Uploader can upload and remove os images on GCP.

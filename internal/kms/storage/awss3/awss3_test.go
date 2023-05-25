@@ -43,6 +43,10 @@ func (s *stubAWSS3StorageClient) PutObject(_ context.Context, params *s3.PutObje
 	return &s3.PutObjectOutput{}, s.putObjectErr
 }
 
+func (s *stubAWSS3StorageClient) DeleteObject(_ context.Context, _ *s3.DeleteObjectInput, _ ...func(*s3.Options)) (*s3.DeleteObjectOutput, error) {
+	return &s3.DeleteObjectOutput{}, nil
+}
+
 func (s *stubAWSS3StorageClient) CreateBucket(_ context.Context, _ *s3.CreateBucketInput, _ ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
 	s.createBucketCalled = true
 	return &s3.CreateBucketOutput{}, s.createBucketErr

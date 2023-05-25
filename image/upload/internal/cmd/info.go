@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	infoupload "github.com/edgelesssys/constellation/v2/internal/osimage/imageinfo"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/cobra"
 )
 

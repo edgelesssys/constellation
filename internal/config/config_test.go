@@ -7,7 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -20,6 +24,7 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -37,37 +42,57 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-func TestSettingLatestAsVersion(t *testing.T) {
+func TestDefaultConfigWritesLatestVersion(t *testing.T) {
+	conf := Default()
+	bt, err := yaml.Marshal(conf)
+	require := require.New(t)
+	require.NoError(err)
+
+	var mp configMap
+	require.NoError(yaml.Unmarshal(bt, &mp))
+	assert := assert.New(t)
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+}
+
+func TestReadConfigFile(t *testing.T) {
 	testCases := map[string]struct {
-		config     map[string]interface{}
+		config     configMap
 		configName string
 		wantResult *Config
 		wantErr    bool
 	}{
-		"mix of latest and uint as version value": {
-			config: func() map[string]interface{} {
+		"mix of Latest and uint as version value": {
+			config: func() configMap {
 				conf := Default()
-				// modify versions as string
 				m := getConfigAsMap(conf, t)
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["teeVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["snpVersion"] = "latest"
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["bootloaderVersion"] = 1
+				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
+				m.setAzureSEVSNPVersion("teeVersion", 2)
+				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
 				return m
 			}(),
 
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
 				conf := Default()
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = 1
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = configapi.AttestationVersion{
+					Value:    1,
+					IsLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.TEEVersion = configapi.AttestationVersion{
+					Value:    2,
+					IsLatest: false,
+				}
 				return conf
 			}(),
 		},
 		"refuse invalid version value": {
-			config: func() map[string]interface{} {
+			config: func() configMap {
 				conf := Default()
 				m := getConfigAsMap(conf, t)
-				m["attestation"].(map[string]interface{})["azureSEVSNP"].(map[string]interface{})["microcodeVersion"] = "1a"
+				m.setAzureSEVSNPVersion("microcodeVersion", "1a")
 				return m
 			}(),
 			configName: constants.ConfigFilename,
@@ -84,27 +109,14 @@ func TestSettingLatestAsVersion(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
 			}
 			result, err := fromFile(fileHandler, tc.configName)
-
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
-				require.NoError(err)
+				assert.NoError(err)
 				assert.Equal(tc.wantResult, result)
 			}
 		})
 	}
-}
-
-// getConfigAsMap returns a map of the config.
-func getConfigAsMap(conf *Config, t *testing.T) (res map[string]interface{}) {
-	bytes, err := yaml.Marshal(&conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := yaml.Unmarshal(bytes, &res); err != nil {
-		t.Fatal(err)
-	}
-	return
 }
 
 func TestFromFile(t *testing.T) {
@@ -233,7 +245,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 	}
-
+	client := newTestClient(&fakeConfigAPIHandler{})
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
@@ -248,8 +260,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(fileHandler, constants.ConfigFilename, false)
-
+			c, err := NewWithClient(fileHandler, constants.ConfigFilename, client, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -844,5 +855,70 @@ func TestConfigVersionCompatibility(t *testing.T) {
 			assert.NoError(err)
 			assert.Equal(tc.expectedConfig, config)
 		})
+	}
+}
+
+// configMap is used to un-/marshal the config as an unstructured map.
+type configMap map[string]interface{}
+
+func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {
+	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
+}
+
+func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {
+	return c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType]
+}
+
+// getConfigAsMap returns a map of the config.
+func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
+	bytes, err := yaml.Marshal(&conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := yaml.Unmarshal(bytes, &res); err != nil {
+		t.Fatal(err)
+	}
+	return
+}
+
+type fakeConfigAPIHandler struct{}
+
+// RoundTrip resolves the request and returns a dummy response.
+func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
+		res := &http.Response{}
+		data := []string{"2021-01-01-01-01.json"}
+		bt, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.Header = http.Header{}
+		res.Header.Set("Content-Type", "application/json")
+		res.StatusCode = http.StatusOK
+		return res, nil
+	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json" {
+		res := &http.Response{}
+		bt, err := json.Marshal(configapi.AzureSEVSNPVersion{
+			Microcode:  93,
+			TEE:        0,
+			SNP:        6,
+			Bootloader: 2,
+		})
+		if err != nil {
+			return nil, err
+		}
+		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.StatusCode = http.StatusOK
+		return res, nil
+
+	}
+	return nil, errors.New("no endpoint found")
+}
+
+// newTestClient returns *http.Client with Transport replaced to avoid making real calls.
+func newTestClient(fn *fakeConfigAPIHandler) *http.Client {
+	return &http.Client{
+		Transport: fn,
 	}
 }

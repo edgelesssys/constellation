@@ -14,12 +14,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -77,7 +77,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cfm.log.Debugf("Using flags %v", flags)
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.NewWithClient(fileHandler, flags.configPath, client, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

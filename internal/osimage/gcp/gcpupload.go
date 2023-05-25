@@ -19,10 +19,10 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/storage"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 	"github.com/edgelesssys/constellation/v2/internal/osimage/secureboot"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 )
 

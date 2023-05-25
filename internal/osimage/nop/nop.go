@@ -10,9 +10,9 @@ package nop
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // Uploader is a no-op uploader.

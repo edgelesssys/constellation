@@ -13,8 +13,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req *osimage.UploadRequest, out io.Writer) error {

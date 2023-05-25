@@ -22,7 +22,7 @@ With `cdbg` and `yq` installed in your path:
 
 1. Run `constellation config generate` to create a new default configuration
 
-2. Locate the latest debugd images by running `(cd internal/versionsapi/cli && go build -o versionsapi . && ./versionsapi latest --ref main --stream debug)`
+2. Locate the latest debugd images by running `(cd internal/api/versionsapi/cli && go build -o versionsapi . && ./versionsapi latest --ref main --stream debug)`
 
 3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
 

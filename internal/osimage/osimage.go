@@ -11,9 +11,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/osimage/secureboot"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 )
 
 // UploadRequest is a request to upload an os image.

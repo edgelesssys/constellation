@@ -11,10 +11,10 @@ import (
 	"context"
 	"flag"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi/client"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi/client"
 	"go.uber.org/zap/zapcore"
 )
 
