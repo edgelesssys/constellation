@@ -197,6 +197,7 @@ resource "aws_iam_role_policy_attachment" "attach_worker_node_policy" {
   policy_arn = aws_iam_policy.worker_node_policy.arn
 }
 
+// TODO(msanft): incorporate this into the custom worker node policy
 resource "aws_iam_role_policy_attachment" "attach_worker_node_csi_policy" {
   role       = aws_iam_role.worker_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
