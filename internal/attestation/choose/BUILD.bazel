@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//internal/atls",
         "//internal/attestation",
-        "//internal/attestation/aws",
+        "//internal/attestation/aws/nitrotpm",
         "//internal/attestation/azure/snp",
         "//internal/attestation/azure/trustedlaunch",
         "//internal/attestation/gcp",

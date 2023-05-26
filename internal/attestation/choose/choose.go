@@ -11,8 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws/nitrotpm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
@@ -25,7 +24,7 @@ import (
 func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Issuer, error) {
 	switch attestationVariant {
 	case variant.AWSNitroTPM{}:
-		return aws.NewIssuer(log), nil
+		return nitrotpm.NewIssuer(log), nil
 	case variant.AzureTrustedLaunch{}:
 		return trustedlaunch.NewIssuer(log), nil
 	case variant.AzureSEVSNP{}:
@@ -47,7 +46,7 @@ func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Is
 func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validator, error) {
 	switch cfg := cfg.(type) {
 	case *config.AWSNitroTPM:
-		return aws.NewValidator(cfg, log), nil
+		return nitrotpm.NewValidator(cfg, log), nil
 	case *config.AzureTrustedLaunch:
 		return trustedlaunch.NewValidator(cfg, log), nil
 	case *config.AzureSEVSNP:
