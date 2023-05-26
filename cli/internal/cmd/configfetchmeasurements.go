@@ -14,10 +14,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
@@ -47,7 +47,8 @@ type fetchMeasurementsFlags struct {
 }
 
 type configFetchMeasurementsCmd struct {
-	log debugLog
+	canFetchMeasurements bool
+	log                  debugLog
 }
 
 func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
@@ -61,7 +62,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	cfm := &configFetchMeasurementsCmd{log: log}
+	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
 	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, http.DefaultClient)
 }
@@ -75,6 +76,11 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return err
 	}
 	cfm.log.Debugf("Using flags %v", flags)
+
+	if !cfm.canFetchMeasurements {
+		cmd.PrintErrln("Fetching measurements is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
+		return errors.New("fetching measurements is not supported")
+	}
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
 	conf, err := config.NewWithClient(fileHandler, flags.configPath, client, flags.force)

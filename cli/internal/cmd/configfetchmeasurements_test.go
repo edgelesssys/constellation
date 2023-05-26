@@ -277,7 +277,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
-			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
+			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
 
 			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, client)
 			if tc.wantErr {
