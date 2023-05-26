@@ -63,11 +63,11 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 	cfm := &configFetchMeasurementsCmd{log: log}
 
-	return cfm.configFetchMeasurements(cmd, rekor, []byte(constants.CosignPublicKey), fileHandler, http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command, verifier rekorVerifier, cosignPublicKey []byte,
+	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
 	fileHandler file.Handler, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
@@ -106,10 +106,9 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
-		ctx, client,
+		ctx, client, cosign,
 		flags.measurementsURL,
 		flags.signatureURL,
-		cosignPublicKey,
 		imageVersion,
 		conf.GetProvider(),
 		conf.GetAttestationConfig().GetVariant(),
@@ -119,7 +118,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 
 	cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
-	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
+	if err := sigstore.VerifyWithRekor(cmd.Context(), imageVersion, rekor, hash); err != nil {
 		cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
@@ -198,4 +197,13 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 		f.signatureURL = signatureURL
 	}
 	return nil
+}
+
+type rekorVerifier interface {
+	SearchByHash(context.Context, string) ([]string, error)
+	VerifyEntry(context.Context, string, string) error
+}
+
+type cosignVerifier interface {
+	VerifySignature(content, signature, publicKey []byte) error
 }

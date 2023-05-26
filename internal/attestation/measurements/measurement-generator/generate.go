@@ -9,7 +9,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -27,7 +26,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"golang.org/x/tools/go/ast/astutil"
@@ -82,7 +80,7 @@ func main() {
 			log.Println("Found", variant)
 			returnStmtCtr++
 			// retrieve and validate measurements for the given CSP and image
-			measuremnts := mustGetMeasurements(ctx, rekor, []byte(constants.CosignPublicKey), http.DefaultClient, provider, variant, defaultConf.Image)
+			measuremnts := mustGetMeasurements(ctx, rekor, provider, variant, defaultConf.Image)
 			// replace the return statement with a composite literal containing the validated measurements
 			clause.Values[0] = measurementsCompositeLiteral(measuremnts)
 		}
@@ -107,7 +105,7 @@ func main() {
 }
 
 // mustGetMeasurements fetches the measurements for the given image and CSP and verifies them.
-func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPublicKey []byte, client *http.Client, provider cloudprovider.Provider, attestationVariant variant.Variant, image string) measurements.M {
+func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, provider cloudprovider.Provider, attestationVariant variant.Variant, image string) measurements.M {
 	measurementsURL, err := measurementURL(image, "measurements.json")
 	if err != nil {
 		panic(err)
@@ -125,10 +123,9 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPubl
 	log.Println("Fetching measurements from", measurementsURL, "and signature from", signatureURL)
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
-		ctx, client,
+		ctx, http.DefaultClient, sigstore.CosignVerifier{},
 		measurementsURL,
 		signatureURL,
-		cosignPublicKey,
 		imageVersion,
 		provider,
 		attestationVariant,
@@ -136,7 +133,7 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, cosignPubl
 	if err != nil {
 		panic(err)
 	}
-	if err := verifyWithRekor(ctx, verifier, hash); err != nil {
+	if err := sigstore.VerifyWithRekor(ctx, imageVersion, verifier, hash); err != nil {
 		panic(err)
 	}
 	return fetchedMeasurements
@@ -151,29 +148,6 @@ func measurementURL(image, file string) (*url.URL, error) {
 
 	return url.Parse(
 		version.ArtifactsURL(versionsapi.APIV2) + path.Join("/image", file),
-	)
-}
-
-// verifyWithRekor verifies that the given hash is present in rekor and is valid.
-func verifyWithRekor(ctx context.Context, verifier rekorVerifier, hash string) error {
-	uuids, err := verifier.SearchByHash(ctx, hash)
-	if err != nil {
-		return fmt.Errorf("searching Rekor for hash: %w", err)
-	}
-
-	if len(uuids) == 0 {
-		return fmt.Errorf("no matching entries in Rekor")
-	}
-
-	// We expect the first entry in Rekor to be our original entry.
-	// SHA256 should ensure there is no entry with the same hash.
-	// Any subsequent hashes are treated as potential attacks and are ignored.
-	// Attacks on Rekor will be monitored from other backend services.
-	artifactUUID := uuids[0]
-
-	return verifier.VerifyEntry(
-		ctx, artifactUUID,
-		base64.StdEncoding.EncodeToString([]byte(constants.CosignPublicKey)),
 	)
 }
 

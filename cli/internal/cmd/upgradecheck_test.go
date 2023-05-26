@@ -203,9 +203,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
-
-	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, singleUUIDVerifier(), pubK, csp, attestationVariant, images, logger.NewTest(t))
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, images, logger.NewTest(t))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {
