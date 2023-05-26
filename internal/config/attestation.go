@@ -33,6 +33,8 @@ func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (Att
 	switch attestVariant {
 	case variant.AWSNitroTPM{}:
 		return unmarshalTypedConfig[*AWSNitroTPM](data)
+	case variant.AWSSEVSNP{}:
+		return unmarshalTypedConfig[*AWSSEVSNP](data)
 	case variant.AzureSEVSNP{}:
 		return unmarshalTypedConfig[*AzureSEVSNP](data)
 	case variant.AzureTrustedLaunch{}:

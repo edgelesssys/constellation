@@ -31,7 +31,7 @@ func UpdateInitMeasurements(config config.AttestationCfg, ownerID, clusterID str
 	m := config.GetMeasurements()
 
 	switch config.GetVariant() {
-	case variant.AWSNitroTPM{}, variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
+	case variant.AWSNitroTPM{}, variant.AWSSEVSNP{}, variant.AzureTrustedLaunch{}, variant.AzureSEVSNP{}, variant.GCPSEVES{}, variant.QEMUVTPM{}:
 		if err := updateMeasurementTPM(m, uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 			return err
 		}

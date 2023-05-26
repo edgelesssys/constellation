@@ -13,6 +13,7 @@ import (
 )
 
 type debugLog interface {
+	Warnf(format string, args ...any)
 	Debugf(format string, args ...any)
 	Sync()
 }

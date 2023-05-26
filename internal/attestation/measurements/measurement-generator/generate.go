@@ -249,6 +249,8 @@ func attestationVariantFromGoIdentifier(identifier string) (variant.Variant, err
 	switch identifier {
 	case "Dummy":
 		return variant.Dummy{}, nil
+	case "AWSSEVSNP":
+		return variant.AWSSEVSNP{}, nil
 	case "AWSNitroTPM":
 		return variant.AWSNitroTPM{}, nil
 	case "GCPSEVES":

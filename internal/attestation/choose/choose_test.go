@@ -22,6 +22,9 @@ func TestIssuer(t *testing.T) {
 		variant variant.Variant
 		wantErr bool
 	}{
+		"aws-sev-snp": {
+			variant: variant.AWSSEVSNP{},
+		},
 		"aws-nitro-tpm": {
 			variant: variant.AWSNitroTPM{},
 		},

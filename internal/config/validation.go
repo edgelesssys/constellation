@@ -144,6 +144,9 @@ func validateAttestation(sl validator.StructLevel) {
 	attestation := sl.Current().Interface().(AttestationConfig)
 	attestationCount := 0
 
+	if attestation.AWSSEVSNP != nil {
+		attestationCount++
+	}
 	if attestation.AWSNitroTPM != nil {
 		attestationCount++
 	}
@@ -174,7 +177,7 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 }
 
 func registerNoAttestationError(ut ut.Translator) error {
-	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either AWSNitroTPM, AzureSEVSNP, AzureTrustedLaunch, GCPSEVES, or QEMUVTPM)", true)
+	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
 }
 
 func registerMoreThanOneAttestationError(ut ut.Translator) error {
@@ -186,6 +189,9 @@ func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe valid
 
 	if c.Attestation.AWSNitroTPM != nil {
 		definedAttestations = append(definedAttestations, "AWSNitroTPM")
+	}
+	if c.Attestation.AWSSEVSNP != nil {
+		definedAttestations = append(definedAttestations, "AWSSEVSNP")
 	}
 	if c.Attestation.AzureSEVSNP != nil {
 		definedAttestations = append(definedAttestations, "AzureSEVSNP")
@@ -360,15 +366,31 @@ func validateNoPlaceholder(fl validator.FieldLevel) bool {
 	return len(getPlaceholderEntries(fl.Field().Interface().(measurements.M))) == 0
 }
 
+// validateMeasurement acts like validateNoPlaceholder, but is used for the measurements.Measurement type.
+func validateMeasurement(sl validator.StructLevel) {
+	measurement := sl.Current().Interface().(measurements.Measurement)
+	actual := measurement.Expected
+	placeHolder := measurements.PlaceHolderMeasurement(measurements.PCRMeasurementLength).Expected
+	if bytes.Equal(actual, placeHolder) {
+		sl.ReportError(measurement, "launchMeasurement", "launchMeasurement", "no_placeholders", "")
+	}
+}
+
 func registerContainsPlaceholderError(ut ut.Translator) error {
 	return ut.Add("no_placeholders", "{0} placeholder values (repeated 1234...)", true)
 }
 
 func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError) string {
-	placeholders := getPlaceholderEntries(fe.Value().(measurements.M))
-	msg := fmt.Sprintf("Measurements %v contain", placeholders)
-	if len(placeholders) == 1 {
-		msg = fmt.Sprintf("Measurement %v contains", placeholders)
+	var msg string
+	switch fe.Field() {
+	case "launchMeasurement":
+		msg = "launchMeasurement contains"
+	case "measurements":
+		placeholders := getPlaceholderEntries(fe.Value().(measurements.M))
+		msg = fmt.Sprintf("measurements %v contain", placeholders)
+		if len(placeholders) == 1 {
+			msg = fmt.Sprintf("measurement %v contains", placeholders)
+		}
 	}
 
 	t, _ := ut.T("no_placeholders", msg)

@@ -467,6 +467,9 @@ func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Var
 	case provider == cloudprovider.AWS && attestationVariant == variant.AWSNitroTPM{}:
 		return aws_AWSNitroTPM.Copy()
 
+	case provider == cloudprovider.AWS && attestationVariant == variant.AWSSEVSNP{}:
+		return aws_AWSSEVSNP.Copy()
+
 	case provider == cloudprovider.Azure && attestationVariant == variant.AzureSEVSNP{}:
 		return azure_AzureSEVSNP.Copy()
 

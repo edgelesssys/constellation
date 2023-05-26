@@ -219,6 +219,11 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 
 		{
 			cloudprovider.AWS,
+			variant.AWSSEVSNP{},
+			config.AttestationConfig{AWSSEVSNP: defaultAttestation.AWSSEVSNP},
+		},
+		{
+			cloudprovider.AWS,
 			variant.AWSNitroTPM{},
 			config.AttestationConfig{AWSNitroTPM: defaultAttestation.AWSNitroTPM},
 		},

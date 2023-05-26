@@ -279,6 +279,9 @@ type QEMUConfig struct {
 // if not required.
 type AttestationConfig struct {
 	// description: |
+	//   AWS SEV-SNP attestation. WARNING: NOT PRODUCTION READY, TESTING ONLY, NO MEANINGFUL ATTESTATION.
+	AWSSEVSNP *AWSSEVSNP `yaml:"awsSEVSNP,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   AWS Nitro TPM attestation.
 	AWSNitroTPM *AWSNitroTPM `yaml:"awsNitroTPM,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -358,6 +361,7 @@ func Default() *Config {
 		// AWS uses aws-nitro-tpm as attestation variant
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
+			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)},
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
@@ -447,6 +451,9 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 
 // UpdateMeasurements overwrites measurements in config with the provided ones.
 func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
+	if c.Attestation.AWSSEVSNP != nil {
+		c.Attestation.AWSSEVSNP.Measurements.CopyFrom(newMeasurements)
+	}
 	if c.Attestation.AWSNitroTPM != nil {
 		c.Attestation.AWSNitroTPM.Measurements.CopyFrom(newMeasurements)
 	}
@@ -500,6 +507,8 @@ func (c *Config) SetAttestation(attestation variant.Variant) {
 	switch attestation.(type) {
 	case variant.AzureSEVSNP:
 		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttetationConfigs.AzureSEVSNP}
+	case variant.AWSSEVSNP:
+		c.Attestation = AttestationConfig{AWSSEVSNP: currentAttetationConfigs.AWSSEVSNP}
 	case variant.AWSNitroTPM:
 		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttetationConfigs.AWSNitroTPM}
 	case variant.AzureTrustedLaunch:
@@ -546,6 +555,9 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 
 // GetAttestationConfig returns the configured attestation config.
 func (c *Config) GetAttestationConfig() AttestationCfg {
+	if c.Attestation.AWSSEVSNP != nil {
+		return c.Attestation.AWSSEVSNP
+	}
 	if c.Attestation.AWSNitroTPM != nil {
 		return c.Attestation.AWSNitroTPM
 	}
@@ -708,6 +720,7 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
+	validate.RegisterStructValidation(validateMeasurement, measurements.Measurement{})
 	validate.RegisterStructValidation(validateAttestation, AttestationConfig{})
 
 	err := validate.Struct(c)
@@ -749,6 +762,47 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 		return c
 	}
 	return c
+}
+
+// AWSSEVSNP is the configuration for AWS SEV-SNP attestation.
+type AWSSEVSNP struct {
+	// description: |
+	//   Expected TPM measurements.
+	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// description: |
+	//   Expected launch measurement in SNP report.
+	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+}
+
+// GetVariant returns aws-sev-snp as the variant.
+func (AWSSEVSNP) GetVariant() variant.Variant {
+	return variant.AWSSEVSNP{}
+}
+
+// GetMeasurements returns the measurements used for attestation.
+func (c AWSSEVSNP) GetMeasurements() measurements.M {
+	return c.Measurements
+}
+
+// SetMeasurements updates a config's measurements using the given measurements.
+func (c *AWSSEVSNP) SetMeasurements(m measurements.M) {
+	c.Measurements = m
+}
+
+// EqualTo returns true if the config is equal to the given config.
+func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
+	otherCfg, ok := other.(*AWSSEVSNP)
+	if !ok {
+		return false, fmt.Errorf("cannot compare %T with %T", c, other)
+	}
+	if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
+		return false, nil
+	}
+	if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
+		return false, nil
+	}
+
+	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
 
 // AWSNitroTPM is the configuration for AWS Nitro TPM attestation.

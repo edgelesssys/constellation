@@ -12,6 +12,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws/nitrotpm"
+	awssnp "github.com/edgelesssys/constellation/v2/internal/attestation/aws/snp"
+	azuresnp "github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
@@ -23,12 +25,14 @@ import (
 // Issuer returns the issuer for the given variant.
 func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Issuer, error) {
 	switch attestationVariant {
+	case variant.AWSSEVSNP{}:
+		return awssnp.NewIssuer(log), nil
 	case variant.AWSNitroTPM{}:
 		return nitrotpm.NewIssuer(log), nil
 	case variant.AzureTrustedLaunch{}:
 		return trustedlaunch.NewIssuer(log), nil
 	case variant.AzureSEVSNP{}:
-		return snp.NewIssuer(log), nil
+		return azuresnp.NewIssuer(log), nil
 	case variant.GCPSEVES{}:
 		return gcp.NewIssuer(log), nil
 	case variant.QEMUVTPM{}:
@@ -45,12 +49,14 @@ func Issuer(attestationVariant variant.Variant, log attestation.Logger) (atls.Is
 // Validator returns the validator for the given variant.
 func Validator(cfg config.AttestationCfg, log attestation.Logger) (atls.Validator, error) {
 	switch cfg := cfg.(type) {
+	case *config.AWSSEVSNP:
+		return awssnp.NewValidator(cfg, log), nil
 	case *config.AWSNitroTPM:
 		return nitrotpm.NewValidator(cfg, log), nil
 	case *config.AzureTrustedLaunch:
 		return trustedlaunch.NewValidator(cfg, log), nil
 	case *config.AzureSEVSNP:
-		return snp.NewValidator(cfg, log), nil
+		return azuresnp.NewValidator(cfg, log), nil
 	case *config.GCPSEVES:
 		return gcp.NewValidator(cfg, log), nil
 	case *config.QEMUVTPM:

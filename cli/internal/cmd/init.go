@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
 	"github.com/spf13/afero"
@@ -119,6 +120,10 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	if err != nil {
 		return err
+	}
+
+	if conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
+		i.log.Warnf("WARNING: SNP based attestation is still under active development. Please do not use in production.")
 	}
 
 	i.log.Debugf("Checking cluster ID file")

@@ -26,6 +26,9 @@ func TestUnmarshalAttestationConfig(t *testing.T) {
 	testCases := map[string]struct {
 		cfg AttestationCfg
 	}{
+		"AWSSEVSNP": {
+			cfg: &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.PlaceHolderMeasurement(48)},
+		},
 		"AWSNitroTPM": {
 			cfg: &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 		},

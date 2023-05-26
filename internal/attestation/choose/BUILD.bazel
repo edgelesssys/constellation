@@ -10,6 +10,7 @@ go_library(
         "//internal/atls",
         "//internal/attestation",
         "//internal/attestation/aws/nitrotpm",
+        "//internal/attestation/aws/snp",
         "//internal/attestation/azure/snp",
         "//internal/attestation/azure/trustedlaunch",
         "//internal/attestation/gcp",
