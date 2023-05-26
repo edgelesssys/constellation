@@ -19,7 +19,7 @@ export INSTALL_DEBUGD            ?= $(DEBUG)
 export CONSOLE_MOTD = $(AUTOLOGIN)
 -include $(CURDIR)/config.mk
 csps := aws azure gcp openstack qemu
-variants := aws_aws-nitro-tpm azure_azure-sev-snp gcp_gcp-sev-es gcp_gcp-sev-snp openstack_qemu-vtpm qemu_qemu-vtpm
+variants := aws_aws-sev-snp aws_aws-nitro-tpm azure_azure-sev-snp gcp_gcp-sev-es gcp_gcp-sev-snp openstack_qemu-vtpm qemu_qemu-vtpm
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 SYSTEMD_FIXED_RPMS := systemd-251.11-2.fc37.x86_64.rpm systemd-libs-251.11-2.fc37.x86_64.rpm systemd-networkd-251.11-2.fc37.x86_64.rpm systemd-pam-251.11-2.fc37.x86_64.rpm systemd-resolved-251.11-2.fc37.x86_64.rpm systemd-udev-251.11-2.fc37.x86_64.rpm
