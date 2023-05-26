@@ -62,3 +62,9 @@ variable "tags" {
   type        = map(string)
   description = "The tags to add to the instance group."
 }
+
+variable "enable_snp" {
+  type        = bool
+  default     = true
+  description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
+}

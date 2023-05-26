@@ -39,7 +39,7 @@ func (v *CommonVariables) String() string {
 	return b.String()
 }
 
-// AWSClusterVariables is user configuration for creating a cluster with Terraform on GCP.
+// AWSClusterVariables is user configuration for creating a cluster with Terraform on AWS.
 type AWSClusterVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
@@ -59,6 +59,8 @@ type AWSClusterVariables struct {
 	IAMProfileWorkerNodes string
 	// Debug is true if debug mode is enabled.
 	Debug bool
+	// EnableSNP controls enablement of the EC2 cpu-option "AmdSevSnp".
+	EnableSNP bool
 }
 
 func (v *AWSClusterVariables) String() string {
@@ -72,6 +74,7 @@ func (v *AWSClusterVariables) String() string {
 	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
 	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
 	writeLinef(b, "debug = %t", v.Debug)
+	writeLinef(b, "enable_snp = %t", v.EnableSNP)
 
 	return b.String()
 }
