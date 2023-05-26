@@ -142,7 +142,7 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	// AttestationURL is only set for Azure. 
+	// AttestationURL is only set for Azure.
 	if tfOutput.AttestationURL != "" {
 		if err := u.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
 			return fmt.Errorf("patching policies: %w", err)
