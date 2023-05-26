@@ -201,11 +201,9 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, opts *
 	return iamid.File{
 		CloudProvider: cloudprovider.Azure,
 		AzureOutput: iamid.AzureFile{
-			ApplicationID:                iamOutput.Azure.ApplicationID,
-			ApplicationClientSecretValue: iamOutput.Azure.ApplicationClientSecretValue,
-			SubscriptionID:               iamOutput.Azure.SubscriptionID,
-			TenantID:                     iamOutput.Azure.TenantID,
-			UAMIID:                       iamOutput.Azure.UAMIID,
+			SubscriptionID: iamOutput.Azure.SubscriptionID,
+			TenantID:       iamOutput.Azure.TenantID,
+			UAMIID:         iamOutput.Azure.UAMIID,
 		},
 	}, nil
 }

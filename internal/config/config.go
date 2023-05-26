@@ -143,10 +143,10 @@ type AzureConfig struct {
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//    Application client ID of the Active Directory app registration.
-	AppClientID string `yaml:"appClientID" validate:"uuid"`
+	AppClientID string `yaml:"appClientID,omitempty" validate:"omitempty,uuid"`
 	// description: |
 	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
-	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
+	ClientSecretValue string `yaml:"clientSecretValue,omitempty" validate:"omitempty"`
 	// description: |
 	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
@@ -417,6 +417,14 @@ func NewWithClient(fileHandler file.Handler, name string, client fetcher.HTTPCli
 	// In case the field is not set in an old config we prefill it with the default value.
 	if c.MicroserviceVersion == "" {
 		c.MicroserviceVersion = Default().MicroserviceVersion
+	}
+
+	// TODO(3u13r): Remove this deprecation warning and enforce assigned managed identity after the v2.8.0 but before the v2.9.0 release.
+	if c.Provider.Azure != nil &&
+		(c.Provider.Azure.AppClientID != "" || c.Provider.Azure.ClientSecretValue != "") {
+		// Deprecation warning for old auth method
+		fmt.Fprintf(os.Stderr, "WARNING: Using a service principal for authentication is deprecated and will be removed in an upcoming version.")
+		fmt.Fprintf(os.Stderr, "         Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.")
 	}
 
 	return c, c.Validate(force)

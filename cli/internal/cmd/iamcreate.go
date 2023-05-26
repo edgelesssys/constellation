@@ -486,8 +486,6 @@ func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, 
 	cmd.Printf("location:\t\t%s\n", flags.azure.region)
 	cmd.Printf("resourceGroup:\t\t%s\n", flags.azure.resourceGroup)
 	cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
-	cmd.Printf("appClientID:\t\t%s\n", iamFile.AzureOutput.ApplicationID)
-	cmd.Printf("clientSecretValue:\t%s\n\n", iamFile.AzureOutput.ApplicationClientSecretValue)
 }
 
 func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
@@ -496,8 +494,6 @@ func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags i
 	conf.Provider.Azure.Location = flags.azure.region
 	conf.Provider.Azure.ResourceGroup = flags.azure.resourceGroup
 	conf.Provider.Azure.UserAssignedIdentity = iamFile.AzureOutput.UAMIID
-	conf.Provider.Azure.AppClientID = iamFile.AzureOutput.ApplicationID
-	conf.Provider.Azure.ClientSecretValue = iamFile.AzureOutput.ApplicationClientSecretValue
 }
 
 func (c *azureIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {

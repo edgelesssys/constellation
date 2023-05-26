@@ -185,11 +185,9 @@ type GCPIAMOutput struct {
 
 // AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
 type AzureIAMOutput struct {
-	SubscriptionID               string
-	TenantID                     string
-	ApplicationID                string
-	UAMIID                       string
-	ApplicationClientSecretValue string
+	SubscriptionID string
+	TenantID       string
+	UAMIID         string
 }
 
 // AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
@@ -249,14 +247,6 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 		if !ok {
 			return IAMOutput{}, errors.New("invalid type in tenant id output: not a string")
 		}
-		applicationIDRaw, ok := tfState.Values.Outputs["application_id"]
-		if !ok {
-			return IAMOutput{}, errors.New("no application id output found")
-		}
-		applicationIDOutput, ok := applicationIDRaw.Value.(string)
-		if !ok {
-			return IAMOutput{}, errors.New("invalid type in application id output: not a string")
-		}
 		uamiIDRaw, ok := tfState.Values.Outputs["uami_id"]
 		if !ok {
 			return IAMOutput{}, errors.New("no UAMI id output found")
@@ -265,21 +255,11 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 		if !ok {
 			return IAMOutput{}, errors.New("invalid type in UAMI id output: not a string")
 		}
-		appClientSecretRaw, ok := tfState.Values.Outputs["application_client_secret_value"]
-		if !ok {
-			return IAMOutput{}, errors.New("no application client secret value output found")
-		}
-		appClientSecretOutput, ok := appClientSecretRaw.Value.(string)
-		if !ok {
-			return IAMOutput{}, errors.New("invalid type in application client secret valueoutput: not a string")
-		}
 		return IAMOutput{
 			Azure: AzureIAMOutput{
-				SubscriptionID:               subscriptionIDOutput,
-				TenantID:                     tenantIDOutput,
-				ApplicationID:                applicationIDOutput,
-				UAMIID:                       uamiIDOutput,
-				ApplicationClientSecretValue: appClientSecretOutput,
+				SubscriptionID: subscriptionIDOutput,
+				TenantID:       tenantIDOutput,
+				UAMIID:         uamiIDOutput,
 			},
 		}, nil
 	case cloudprovider.AWS:

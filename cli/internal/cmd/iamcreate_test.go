@@ -358,11 +358,9 @@ func TestIAMCreateAzure(t *testing.T) {
 	validIAMIDFile := iamid.File{
 		CloudProvider: cloudprovider.Azure,
 		AzureOutput: iamid.AzureFile{
-			SubscriptionID:               "test_subscription_id",
-			TenantID:                     "test_tenant_id",
-			ApplicationID:                "test_application_id",
-			ApplicationClientSecretValue: "test_application_client_secret_value",
-			UAMIID:                       "test_uami_id",
+			SubscriptionID: "test_subscription_id",
+			TenantID:       "test_tenant_id",
+			UAMIID:         "test_uami_id",
 		},
 	}
 
@@ -611,8 +609,6 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(readErr)
 				assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
 				assert.Equal(tc.creator.id.AzureOutput.TenantID, readConfig.Provider.Azure.TenantID)
-				assert.Equal(tc.creator.id.AzureOutput.ApplicationID, readConfig.Provider.Azure.AppClientID)
-				assert.Equal(tc.creator.id.AzureOutput.ApplicationClientSecretValue, readConfig.Provider.Azure.ClientSecretValue)
 				assert.Equal(tc.creator.id.AzureOutput.UAMIID, readConfig.Provider.Azure.UserAssignedIdentity)
 				assert.Equal(tc.regionFlag, readConfig.Provider.Azure.Location)
 				assert.Equal(tc.resourceGroupFlag, readConfig.Provider.Azure.ResourceGroup)

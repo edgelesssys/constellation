@@ -68,31 +68,3 @@ resource "azurerm_role_assignment" "uami_owner_role" {
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
 }
-
-# the app registration, application secrets
-# and role assignments below will be removed in the future
-# TODO(malt3): remove app registration as planned by AB#2961
-
-# Create application registration
-resource "azuread_application" "base_application" {
-  display_name = "${var.resource_group_name}-application"
-  owners       = [data.azuread_client_config.current.object_id]
-}
-
-resource "azuread_service_principal" "application_principal" {
-  application_id               = azuread_application.base_application.application_id
-  app_role_assignment_required = false
-  owners                       = [data.azuread_client_config.current.object_id]
-}
-
-# Set identity as base resource group owner
-resource "azurerm_role_assignment" "app_registration_owner_role" {
-  scope                = azurerm_resource_group.base_resource_group.id
-  role_definition_name = "Owner"
-  principal_id         = azuread_service_principal.application_principal.object_id
-}
-
-# Create application secret (password)
-resource "azuread_application_password" "base_application_secret" {
-  application_object_id = azuread_application.base_application.object_id
-}

@@ -1,7 +1,18 @@
-# Configuration migrations
+# Migrations
 
-This document describes breaking changes in the configuration file format between Constellation releases.
+This document describes breaking changes and migrations between Constellation releases.
 Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to automatically update an old config file to a new format.
+
+## Migrating from Azure's service principal authentication to managed identity authentication
+
+- The `provider.azure.appClientID` and `provider.azure.appClientSecret` fields are no longer required and should be removed.
+- To keep using an existing UAMI add the `Owner` permission with the scope of your `resourceGroup`.
+- Otherwise, simply [create new Constellation IAM credentials](../workflows/config.md#creating-iam-credentials) and use the created UAMI.
+- To migrate the authentication for an existing Constellation on Azure to an UAMI with the necessary permissions:
+  1. Remove the `aadClientId` and `aadClientSecret` from the azureconfig secret.
+  2. Set `useManagedIdentityExtension` to `true`  and use the `userAssignedIdentity` from the Constellation config for the value of `userAssignedIdentityID`.
+  3. Restart the CSI driver, cloud controller manager, cluster autoscaler, and Constellation operator pods.
+
 
 ## Migrating from CLI versions before 2.8
 
