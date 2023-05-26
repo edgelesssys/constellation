@@ -197,6 +197,23 @@ const (
 	CDNMeasurementsFile = "measurements.json"
 	// CDNMeasurementsSignature is name of file containing signature for CDNMeasurementsFile.
 	CDNMeasurementsSignature = "measurements.json.sig"
+
+	//
+	// PKI.
+	//
+
+	// CosignPublicKeyReleases signs all our releases.
+	CosignPublicKeyReleases = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
+JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
+-----END PUBLIC KEY-----
+`
+	// CosignPublicKeyDev signs all our development builds.
+	CosignPublicKeyDev = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELcPl4Ik+qZuH4K049wksoXK/Os3Z
+b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
+-----END PUBLIC KEY-----
+`
 )
 
 // VersionInfo returns the version of a binary.

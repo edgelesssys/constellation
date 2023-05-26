@@ -31,7 +31,6 @@ go_library(
         "upgradecheck.go",
         "userinteraction.go",
         "validargs.go",
-        "verifier.go",
         "verify.go",
         "version.go",
     ],

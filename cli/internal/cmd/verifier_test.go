@@ -34,3 +34,11 @@ func (v *stubRekorVerifier) SearchByHash(context.Context, string) ([]string, err
 func (v *stubRekorVerifier) VerifyEntry(context.Context, string, string) error {
 	return v.VerifyEntryError
 }
+
+type stubCosignVerifier struct {
+	verifyError error
+}
+
+func (v *stubCosignVerifier) VerifySignature(_, _, _ []byte) error {
+	return v.verifyError
+}
