@@ -15,7 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -46,7 +46,7 @@ func newMiniUpCmd() *cobra.Command {
 
 type miniUpCmd struct {
 	log           debugLog
-	configFetcher fetcher.ConfigAPIFetcher
+	configFetcher attestationconfigfetcher.AttestationConfigAPIFetcher
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {
@@ -62,7 +62,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
-	m := &miniUpCmd{log: log, configFetcher: fetcher.NewConfigAPIFetcher()}
+	m := &miniUpCmd{log: log, configFetcher: attestationconfigfetcher.New()}
 	return m.up(cmd, creator, spinner)
 }
 

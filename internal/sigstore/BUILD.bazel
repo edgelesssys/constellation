@@ -12,7 +12,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/constants",
         "@com_github_sigstore_rekor//pkg/client",
         "@com_github_sigstore_rekor//pkg/generated/client",

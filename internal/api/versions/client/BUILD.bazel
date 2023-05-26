@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "client",
+    srcs = ["client.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/versions/client",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/client",
+        "//internal/api/fetcher",
+        "//internal/api/versions",
+        "//internal/constants",
+        "//internal/logger",
+        "@org_golang_x_mod//semver",
+    ],
+)

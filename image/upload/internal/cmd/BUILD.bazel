@@ -24,7 +24,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/image/upload/internal/cmd",
     visibility = ["//image/upload:__subpackages__"],
     deps = [
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/logger",

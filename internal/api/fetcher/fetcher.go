@@ -5,11 +5,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package fetcher implements a client for the versions API.
+Package fetcher implements a client for the Constellation Resource API.
 
 The fetcher is used to get information from the versions API without having to
 authenticate with AWS, where the API is currently hosted. This package should be
 used in user-facing application code most of the time, like the CLI.
+
+Each sub-API included in the Constellation Resource API should define it's resources by implementing types that implement apiObject.
+The new package can then call this package's Fetch function to get the resource from the API.
+To modify resources, pkg internal/api/client should be used in a similar fashion.
 */
 package fetcher
 
@@ -17,56 +21,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 )
-
-// fetcher fetches versions API resources without authentication.
-type fetcher struct {
-	httpc HTTPClient
-}
 
 // NewHTTPClient returns a new http client.
 func NewHTTPClient() HTTPClient {
 	return &http.Client{Transport: &http.Transport{DisableKeepAlives: true}} // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
 }
 
-func newFetcherWith(client HTTPClient) *fetcher {
-	return &fetcher{
-		httpc: client,
-	}
-}
-
-func newFetcher() *fetcher {
-	return newFetcherWith(NewHTTPClient()) // DisableKeepAlives fixes concurrency issue see https://stackoverflow.com/a/75816347
-}
-
-type apiObject interface {
-	ValidateRequest() error
-	Validate() error
-	URL() (string, error)
-}
-
-// getFromURL fetches the content from the given URL and returns the content as a byte slice.
-func getFromURL(ctx context.Context, client HTTPClient, sourceURL *url.URL) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
-	}
-	return io.ReadAll(resp.Body)
-}
-
-func fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
+// Fetch fetches the given apiObject from the public Constellation CDN.
+// Fetch does not require authentication.
+func Fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
@@ -122,4 +87,10 @@ func (e *NotFoundError) Unwrap() error {
 // HTTPClient is an interface for http clients.
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
+}
+
+type apiObject interface {
+	ValidateRequest() error
+	Validate() error
+	URL() (string, error)
 }

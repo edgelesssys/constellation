@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/azure-snp-report-verify",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/api/configapi",
+        "//internal/api/attestationconfig",
         "@in_gopkg_square_go_jose_v2//:go-jose_v2",
         "@in_gopkg_square_go_jose_v2//jwt",
     ],

@@ -17,7 +17,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/sigstore/rekor/pkg/client"
 	genclient "github.com/sigstore/rekor/pkg/generated/client"
 	"github.com/sigstore/rekor/pkg/generated/client/entries"

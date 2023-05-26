@@ -13,7 +13,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 )
 

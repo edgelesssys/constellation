@@ -21,8 +21,8 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -75,11 +75,11 @@ func TestReadConfigFile(t *testing.T) {
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
 				conf := Default()
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = configapi.AttestationVersion{
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
 					Value:    1,
 					IsLatest: false,
 				}
-				conf.Attestation.AzureSEVSNP.TEEVersion = configapi.AttestationVersion{
+				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
 					Value:    2,
 					IsLatest: false,
 				}
@@ -892,8 +892,10 @@ func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configap
 	}, nil
 }
 
-func (f fakeConfigFetcher) FetchLatestAzureSEVSNPVersion(_ context.Context, _ versionsapi.Version) (configapi.AzureSEVSNPVersion, error) {
-	return testCfg, nil
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context, _ versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+	return configapi.AzureSEVSNPVersionGet{
+		AzureSEVSNPVersion: testCfg,
+	}, nil
 }
 
 var testCfg = configapi.AzureSEVSNPVersion{

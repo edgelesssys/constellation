@@ -19,7 +19,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
@@ -98,13 +98,13 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler}
-	fetcher := fetcher.NewConfigAPIFetcher()
+	fetcher := attestationconfigfetcher.New()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher fetcher.ConfigAPIFetcher,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher attestationconfigfetcher.AttestationConfigAPIFetcher,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {

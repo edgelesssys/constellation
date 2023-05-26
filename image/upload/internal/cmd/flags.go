@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"

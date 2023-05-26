@@ -11,7 +11,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/e2e/internal/upgrade",
     visibility = ["//e2e:__subpackages__"],
     deps = [
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
@@ -26,6 +26,7 @@ go_library(
 go_test(
     name = "upgrade_test",
     srcs = ["upgrade_test.go"],
+    # keep
     count = 1,
     data = [
         "//cli:cli_oss_linux_amd64",
@@ -34,11 +35,12 @@ go_test(
     env = {
         "PATH_CLI": "$(location //cli:cli_oss_linux_amd64)",
     },
+    # keep
     gotags = ["e2e"],
     tags = ["manual"],
     deps = [
         "//e2e/internal/kubectl",
-        "//internal/api/fetcher",
+        "//internal/api/attestationconfig/fetcher",
         "//internal/config",
         "//internal/constants",
         "//internal/file",

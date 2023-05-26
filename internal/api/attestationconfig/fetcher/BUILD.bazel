@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "fetcher",
+    srcs = ["fetcher.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/attestationconfig",
+        "//internal/api/fetcher",
+        "//internal/api/versions",
+        "//internal/sigstore",
+    ],
+)
+
+go_test(
+    name = "fetcher_test",
+    srcs = ["fetcher_test.go"],
+    embed = [":fetcher"],
+    deps = [
+        "//internal/api/attestationconfig",
+        "//internal/api/versions",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

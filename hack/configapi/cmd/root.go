@@ -12,7 +12,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	attestationconfigclient "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
 )
@@ -75,7 +76,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unmarshalling version file: %w", err)
 	}
 
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(cosignPwd), privateKey)
+	sut, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), privateKey)
 	if err != nil {
 		return fmt.Errorf("creating repo: %w", err)
 	}
