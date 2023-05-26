@@ -169,6 +169,16 @@ resource "aws_iam_policy" "worker_node_policy" {
     {
       "Effect": "Allow",
       "Action": [
+        "ec2:CreateSnapshot",
+        "ec2:AttachVolume",
+        "ec2:DetachVolume",
+        "ec2:ModifyVolume",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeInstances",
+        "ec2:DescribeSnapshots",
+        "ec2:DescribeTags",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeVolumesModifications",
         "ec2:DescribeImages",
         "ec2:DescribeInstances",
         "ec2:DescribeRegions",
