@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
@@ -73,6 +74,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 	up := &upgradeCheckCmd{
+		canUpgradeCheck: featureset.CanUpgradeCheck,
 		collect: &versionCollector{
 			writer:         cmd.OutOrStderr(),
 			checker:        checker,
@@ -123,8 +125,9 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 }
 
 type upgradeCheckCmd struct {
-	collect collector
-	log     debugLog
+	canUpgradeCheck bool
+	collect         collector
+	log             debugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -138,6 +141,12 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 	u.log.Debugf("Read configuration from %q", flags.configPath)
+
+	if !u.canUpgradeCheck {
+		cmd.PrintErrln("Planning Constellation upgrades automatically is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
+		return errors.New("upgrade check is not supported")
+	}
+
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()

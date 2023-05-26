@@ -264,8 +264,9 @@ func TestUpgradeCheck(t *testing.T) {
 			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))
 
 			checkCmd := upgradeCheckCmd{
-				collect: &tc.collector,
-				log:     logger.NewTest(t),
+				canUpgradeCheck: true,
+				collect:         &tc.collector,
+				log:             logger.NewTest(t),
 			}
 
 			cmd := newUpgradeCheckCmd()
