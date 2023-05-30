@@ -138,10 +138,10 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.3@sha256:47eb1c1e6a3bd6d0fb44ac4992885b6218f1448ea339de778d8b703df463c06f", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.12@sha256:4d3ef41c14f95c5d855fbc01e40b5dfd63357956cd754a251a88ad8bd21cea17", // renovate:container
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.14@sha256:ec3750ee2e8e466186aa7b96e60bb466c9d209a3ca96f117daed37ee66124885", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.12@sha256:5735db598627ca42f47d060f59c21f3f72d17f0342da0097414b8b5dbdb6f492", // renovate:container
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.14@sha256:b45bb9bfd30c0da34650f0992a91a77a7babe2b37d627b1a669f9485a5a47b5e", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5", // renovate:container
@@ -189,10 +189,10 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.26.1@sha256:2a43d2d5611ba920c49e23127cfd474fb7932fcade1671dddbef757921fcdb40", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.26.8@sha256:cc5e7a91c528cd9e71dd77a951ec0e19b8f7e4129396686b139a05da567abc2b", // renovate:container
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.26.10@sha256:4c4cd4c280cb85bf45567d50165cdd03670283ec2aa39ef8a242eac53a62d144", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.26.8@sha256:2cbf7f9bfe19ab4bfae6134b93cba18ffe8b2d1f04621755eb83ee9aa13ecc39", // renovate:container
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.26.10@sha256:8affb69b608f34e2d691a55328d9af150299f35d2e4c21897d30c1bf6937a5a6", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.0.1@sha256:db2b15a20ad690784a6015bfad55c4dff15826be8cf9f6ac77d70abd11b1f70c", // renovate:container
@@ -240,10 +240,10 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.27.1@sha256:c02832d2e4bb96ac4ea14a466982d261069f9bb366f2ad68889f9a5b10b8d1b0", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.27.1@sha256:fb338b05a81b7aa82dc780b6c8062a9e4de9c2dbdc1bf41baf48c9bfd7149af0", // renovate:container
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.27.4@sha256:d3f5823d2b7975e7a90d51007d0c677bc3e1a89d09069a71494d0eeb4a3c1941", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.27.1@sha256:9f5baf4cef45dad7163cc4bfae6e65e773279e848513ee1cc2c3aab278bd909b", // renovate:container
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.27.4@sha256:f4334277ece5db59c49fe919cde4bf564d2b3d6f80a50c6192ab7f309ac3a40c", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v26.0.1@sha256:db2b15a20ad690784a6015bfad55c4dff15826be8cf9f6ac77d70abd11b1f70c", // renovate:container
