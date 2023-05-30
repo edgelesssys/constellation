@@ -251,7 +251,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageOpenStack: "docker.io/k8scloudprovider/openstack-cloud-controller-manager:v1.26.2", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.1@sha256:0d93e3601aee4bd9e8b5e06c4bb3668c59a7d3b41b64e74982996dbacf0965a3", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.2@sha256:dfbb63a82d437253febc68540ced60ed796494edf242d1d2cb5b9665570e99c0", // renovate:container
 	},
 }
 
