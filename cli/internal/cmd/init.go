@@ -248,7 +248,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
 	if err != nil {
-		d.log.Debugf("Dialing init server failed: %w. Retrying...", err)
+		d.log.Debugf("Dialing init server failed: %s. Retrying...", err)
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
@@ -270,7 +270,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	res, err := resp.Recv() // get first response, either success or failure
 	if err != nil {
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debugf("Failed to collect logs: %w", e)
+			d.log.Debugf("Failed to collect logs: %s", e)
 		}
 		return &nonRetriableError{err}
 	}
@@ -278,7 +278,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	switch res.Kind.(type) {
 	case *initproto.InitResponse_InitFailure:
 		if e := d.getLogs(resp); e != nil {
-			d.log.Debugf("Failed to get logs from cluster: %w", e)
+			d.log.Debugf("Failed to get logs from cluster: %s", e)
 		}
 		return &nonRetriableError{errors.New(res.GetInitFailure().GetError())}
 	case *initproto.InitResponse_InitSuccess:
