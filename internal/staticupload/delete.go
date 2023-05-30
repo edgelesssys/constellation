@@ -23,9 +23,9 @@ func (c *Client) DeleteObject(ctx context.Context, params *s3.DeleteObjectInput,
 	if params == nil || params.Key == nil {
 		return nil, errors.New("key is not set")
 	}
-	output, deleteErr := c.s3Client.DeleteObject(ctx, params, optFns...)
-	if deleteErr != nil {
-		return nil, fmt.Errorf("deleting object: %w", deleteErr)
+	output, err := c.s3Client.DeleteObject(ctx, params, optFns...)
+	if err != nil {
+		return nil, fmt.Errorf("deleting object: %w", err)
 	}
 
 	if err := c.invalidate(ctx, []string{*params.Key}); err != nil {

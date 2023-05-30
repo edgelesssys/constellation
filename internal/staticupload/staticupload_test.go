@@ -57,11 +57,6 @@ func TestUpload(t *testing.T) {
 			wantInvalidations:            1,
 			wantInvalidationIDs:          []string{"test-invalidation-id-1"},
 		},
-		"eager invalidation without waiting": {
-			in:                        newInput(),
-			cacheInvalidationStrategy: CacheInvalidateEager,
-			wantInvalidations:         1,
-		},
 		"lazy invalidation": {
 			in:                           newInput(),
 			cacheInvalidationStrategy:    CacheInvalidateBatchOnClose,
@@ -184,10 +179,6 @@ func TestDeleteObject(t *testing.T) {
 			cacheInvalidationWaitTimeout: time.Microsecond,
 			wantInvalidations:            1,
 			wantInvalidationIDs:          []string{"test-invalidation-id-1"},
-		},
-		"eager invalidation without waiting": {
-			cacheInvalidationStrategy: CacheInvalidateEager,
-			wantInvalidations:         1,
 		},
 		"lazy invalidation": {
 			cacheInvalidationStrategy:    CacheInvalidateBatchOnClose,
@@ -489,9 +480,9 @@ func (c *fakeCDNClient) CreateInvalidation(
 	_ context.Context, _ *cloudfront.CreateInvalidationInput, _ ...func(*cloudfront.Options),
 ) (*cloudfront.CreateInvalidationOutput, error) {
 	c.mux.Lock()
+	defer c.mux.Unlock()
 	c.createInvalidationCounter++
 	ctr := c.createInvalidationCounter
-	c.mux.Unlock()
 	return &cloudfront.CreateInvalidationOutput{
 		Invalidation: &cftypes.Invalidation{
 			Id: ptr(fmt.Sprintf("test-invalidation-id-%d", ctr)),
@@ -503,6 +494,7 @@ func (c *fakeCDNClient) GetInvalidation(
 	_ context.Context, input *cloudfront.GetInvalidationInput, _ ...func(*cloudfront.Options),
 ) (*cloudfront.GetInvalidationOutput, error) {
 	c.mux.Lock()
+	defer c.mux.Unlock()
 	if c.statusCheckCounter == nil {
 		c.statusCheckCounter = make(map[string]int)
 	}
@@ -511,7 +503,6 @@ func (c *fakeCDNClient) GetInvalidation(
 	if s, ok := c.status[*input.Id]; ok {
 		status = *s
 	}
-	c.mux.Unlock()
 
 	return &cloudfront.GetInvalidationOutput{
 		Invalidation: &cftypes.Invalidation{
@@ -534,8 +525,8 @@ func (s *stubUploadClient) Upload(
 ) (*s3manager.UploadOutput, error) {
 	var err error
 	s.mux.Lock()
+	defer s.mux.Unlock()
 	s.uploadedData, err = io.ReadAll(input.Body)
-	s.mux.Unlock()
 	if err != nil {
 		panic(err)
 	}

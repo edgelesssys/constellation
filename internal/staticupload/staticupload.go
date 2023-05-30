@@ -37,7 +37,7 @@ type Client struct {
 
 	cacheInvalidationStrategy    CacheInvalidationStrategy
 	cacheInvalidationWaitTimeout time.Duration
-	// dirtyKeys is a list of keys that are currently dirty (await an invalidation).
+	// dirtyKeys is a list of keys that still needs to be invalidated by us.
 	dirtyKeys []string
 	// invalidationIDs is a list of invalidation IDs that are currently in progress.
 	invalidationIDs []string
@@ -140,9 +140,6 @@ func (c *Client) invalidate(ctx context.Context, keys []string) error {
 	invalidationID, err := c.invalidateCacheForKeys(ctx, keys)
 	if err != nil {
 		return err
-	}
-	if c.cacheInvalidationWaitTimeout == 0 {
-		return nil
 	}
 	c.mux.Lock()
 	defer c.mux.Unlock()
