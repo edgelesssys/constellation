@@ -20,6 +20,8 @@ go_library(
         "mini.go",
         "minidown.go",
         "miniup.go",
+        "miniup_cross.go",
+        "miniup_linux_amd64.go",
         "recover.go",
         "spinner.go",
         "status.go",
@@ -88,9 +90,16 @@ go_library(
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//connectivity",
         "@org_golang_x_mod//semver",
-        "@org_golang_x_sys//unix",
         "@org_uber_go_zap//zapcore",
-    ],
+    ] + select({
+        "@io_bazel_rules_go//go/platform:android_amd64": [
+            "@org_golang_x_sys//unix",
+        ],
+        "@io_bazel_rules_go//go/platform:linux_amd64": [
+            "@org_golang_x_sys//unix",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_test(

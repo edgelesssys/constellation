@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	slashpath "path"
 	"path/filepath"
 	"strings"
 
@@ -58,7 +59,8 @@ func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, oldWorkin
 
 // terraformCopier copies the embedded Terraform files into the workspace.
 func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error {
-	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
+	goEmbedRootDir := filepath.ToSlash(rootDir)
+	return fs.WalkDir(terraformFS, goEmbedRootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -66,11 +68,13 @@ func terraformCopier(fileHandler file.Handler, rootDir, workingDir string) error
 			return nil
 		}
 
-		content, err := terraformFS.ReadFile(path)
+		goEmbedPath := filepath.ToSlash(path)
+		content, err := terraformFS.ReadFile(goEmbedPath)
 		if err != nil {
 			return err
 		}
-		fileName := strings.Replace(filepath.Join(workingDir, path), rootDir+"/", "", 1)
+		// normalize
+		fileName := strings.Replace(slashpath.Join(workingDir, path), goEmbedRootDir+"/", "", 1)
 		if err := fileHandler.Write(fileName, content, file.OptMkdirAll); errors.Is(err, afero.ErrFileExists) {
 			// If a file already exists, check if it is identical. If yes, continue and don't write anything to disk.
 			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
