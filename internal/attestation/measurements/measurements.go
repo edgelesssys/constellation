@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -409,16 +408,7 @@ func (m Measurement) MarshalYAML() (any, error) {
 func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 	expected, err := hex.DecodeString(eM.Expected)
 	if err != nil {
-		// expected value might be in base64 legacy format
-		// TODO: Remove with v2.4.0
-		hexErr := err
-		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
-		if err != nil {
-			return errors.Join(
-				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
-				fmt.Errorf("not a base64 string: %w", err),
-			)
-		}
+		return fmt.Errorf("decoding measurement: %w", err)
 	}
 
 	if len(expected) != 32 && len(expected) != 48 {
