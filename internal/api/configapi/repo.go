@@ -15,26 +15,25 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
-	"github.com/edgelesssys/constellation/v2/internal/kms/storage/awss3"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // AttestationVersionRepo manages (modifies) the version information for the attestation variants.
 type AttestationVersionRepo struct {
-	*awss3.Storage
+	*staticupload.Client
 	cosignPwd []byte // used to decrypt the cosign private key
 	privKey   []byte // used to sign
 }
 
 // NewAttestationVersionRepo returns a new AttestationVersionRepo.
-func NewAttestationVersionRepo(ctx context.Context, cfg uri.AWSS3Config, cosignPwd, privateKey []byte) (*AttestationVersionRepo, error) {
-	s3, err := awss3.New(ctx, cfg)
+func NewAttestationVersionRepo(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte) (*AttestationVersionRepo, error) {
+	client, err := staticupload.New(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create s3 storage: %w", err)
 	}
-	return &AttestationVersionRepo{s3, cosignPwd, privateKey}, nil
+	return &AttestationVersionRepo{client, cosignPwd, privateKey}, nil
 }
 
 // UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP.

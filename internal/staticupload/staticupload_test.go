@@ -551,3 +551,11 @@ func (s *stubObjectStorageClient) DeleteObjects(
 ) (*s3.DeleteObjectsOutput, error) {
 	return s.deleteObjectsOut, s.err
 }
+
+// currently not needed so no-Op.
+func (s *stubObjectStorageClient) GetObject(
+	_ context.Context, _ *s3.GetObjectInput,
+	_ ...func(*s3.Options),
+) (*s3.GetObjectOutput, error) {
+	return nil, nil
+}

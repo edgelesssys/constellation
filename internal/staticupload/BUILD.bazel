@@ -5,17 +5,22 @@ go_library(
     name = "staticupload",
     srcs = [
         "delete.go",
+        "get.go",
         "staticupload.go",
         "upload.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/staticupload",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/kms/config",
+        "//internal/kms/storage",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
         "@com_github_aws_aws_sdk_go_v2_service_cloudfront//:cloudfront",
         "@com_github_aws_aws_sdk_go_v2_service_cloudfront//types",
         "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//types",
+        "@com_github_google_uuid//:uuid",
     ],
 )
 

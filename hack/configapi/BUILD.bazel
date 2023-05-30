@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/api/configapi",
-        "//internal/kms/uri",
+        "//internal/staticupload",
         "@com_github_spf13_cobra//:cobra",
     ],
 )

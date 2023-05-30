@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
 )
 
@@ -22,13 +22,11 @@ const (
 	awsRegion      = "eu-central-1"
 	awsBucket      = "cdn-constellation-backend"
 	invalidDefault = 0
+	envAwsKeyID    = "AWS_ACCESS_KEY_ID"
+	envAwsKey      = "AWS_ACCESS_KEY"
 )
 
 var (
-	// AWS S3 credentials.
-	awsAccessKeyID string
-	awsAccessKey   string
-
 	// Azure SEV-SNP version numbers.
 	bootloaderVersion uint8
 	teeVersion        uint8
@@ -48,15 +46,13 @@ func handleError(err error) {
 
 func main() {
 	myCmd := &cobra.Command{
-		Use:   "upload a set of versions specific to the azure-sev-snp attestation variant to the config api",
+		Use:   fmt.Sprintf("please set the %s and %s environment variables and all flags", envAwsKeyID, envAwsKey),
 		Short: "upload a set of versions specific to the azure-sev-snp attestation variant to the config api",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
-			cfg := uri.AWSS3Config{
-				Bucket:      awsBucket,
-				AccessKeyID: awsAccessKeyID,
-				AccessKey:   awsAccessKey,
-				Region:      awsRegion,
+			cfg := staticupload.Config{
+				Bucket: awsBucket,
+				Region: awsRegion,
 			}
 			privateKey := getBytesFromFilePath(privateKeyPath)
 
@@ -76,6 +72,15 @@ func main() {
 			}
 		},
 	}
+	myCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if _, present := os.LookupEnv(envAwsKey); !present {
+			return fmt.Errorf("%s not set", envAwsKey)
+		}
+		if _, present := os.LookupEnv(envAwsKeyID); !present {
+			return fmt.Errorf("%s not set", envAwsKeyID)
+		}
+		return nil
+	}
 	myCmd.PersistentFlags().Uint8VarP(&bootloaderVersion, "bootloader-version", "b", invalidDefault, "Bootloader version number")
 	handleError(myCmd.MarkPersistentFlagRequired("bootloader-version"))
 
@@ -87,12 +92,6 @@ func main() {
 
 	myCmd.PersistentFlags().Uint8VarP(&microcodeVersion, "microcode-version", "m", invalidDefault, "Microcode version number")
 	handleError(myCmd.MarkPersistentFlagRequired("microcode-version"))
-
-	myCmd.PersistentFlags().StringVar(&awsAccessKeyID, "key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	handleError(myCmd.MarkPersistentFlagRequired("key-id"))
-
-	myCmd.PersistentFlags().StringVar(&awsAccessKey, "key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	handleError(myCmd.MarkPersistentFlagRequired("key"))
 
 	myCmd.PersistentFlags().StringVar(&cosignPwd, "cosign-pwd", "", "Cosign password used to decrpyt the private key.")
 	handleError(myCmd.MarkPersistentFlagRequired("cosign-pwd"))
