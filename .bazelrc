@@ -29,6 +29,9 @@ test --//bazel/settings:tpm_simulator
 # set registry flag alias
 build --flag_alias=container_prefix=//bazel/settings:container_prefix
 
+# set cli edition flag alias
+build --flag_alias=cli_edition=//bazel/settings:cli_edition
+
 # build only what is needed for tests
 test --build_tests_only
 

@@ -46,13 +46,14 @@ cd build
 # and symlink them into the current directory
 # also push the built container images
 # After the first run, set the pushed imaged to public.
-bazel run //:devbuild --container_prefix=ghcr.io/USERNAME/constellation
+bazel run //:devbuild --cli_edition=oss --container_prefix=ghcr.io/USERNAME/constellation
 ./constellation ...
 ```
 
 Overwrite the default container_prefix in the `.bazeloverwriterc` in the root of the workspace:
 ```bazel
 # cat .bazeloverwriterc
+build --cli_edition=oss
 build --container_prefix=ghcr.io/USERNAME/constellation
 ```
 
