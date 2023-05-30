@@ -730,6 +730,29 @@ func (c *Config) Validate(force bool) error {
 	return &ValidationError{validationErrMsgs: validationErrMsgs}
 }
 
+// WithOpenStackProviderDefaults fills the default values for the specific OpenStack provider.
+// If the provider is not supported or not an OpenStack provider, the config is returned unchanged.
+func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config {
+	switch openStackProvider {
+	case "stackit":
+		c.Provider.OpenStack.Cloud = "stackit"
+		c.Provider.OpenStack.FlavorID = "2715eabe-3ffc-4c36-b02a-efa8c141a96a"
+		c.Provider.OpenStack.FloatingIPPoolID = "970ace5c-458f-484a-a660-0903bcfd91ad"
+		c.Provider.OpenStack.StateDiskType = "storage_premium_perf6"
+		c.Provider.OpenStack.AuthURL = "https://keystone.api.iaas.eu01.stackit.cloud/v3"
+		c.Provider.OpenStack.UserDomainName = "portal_mvp"
+		c.Provider.OpenStack.ProjectDomainName = "portal_mvp"
+		c.Provider.OpenStack.RegionName = "RegionOne"
+		c.Provider.OpenStack.DeployYawolLoadBalancer = toPtr(true)
+		c.Provider.OpenStack.YawolImageID = "43d9bede-1e7a-4ca7-82c5-0a5c72388619"
+		c.Provider.OpenStack.YawolFlavorID = "3b11b27e-6c73-470d-b595-1d85b95a8cdf"
+		c.Provider.OpenStack.DeployCSIDriver = toPtr(true)
+		c.Provider.OpenStack.DirectDownload = toPtr(true)
+		return c
+	}
+	return c
+}
+
 // AWSNitroTPM is the configuration for AWS Nitro TPM attestation.
 type AWSNitroTPM struct {
 	// description: |
