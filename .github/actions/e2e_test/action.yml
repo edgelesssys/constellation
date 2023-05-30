@@ -129,7 +129,7 @@ runs:
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
-        enterpriseCLI: ${{ inputs.keepMeasurements }}
+        enterpriseCLI: true
         outputPath: "build/constellation"
 
     - name: Download CLI

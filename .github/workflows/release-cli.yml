@@ -177,6 +177,7 @@ jobs:
         with:
           targetOS: "linux"
           targetArch: "amd64"
+          enterpriseCLI: true
 
       - name: Build signed SBOM
         run: |
