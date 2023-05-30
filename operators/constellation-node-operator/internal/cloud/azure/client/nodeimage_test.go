@@ -313,8 +313,6 @@ func TestDeleteNode(t *testing.T) {
 	}
 }
 
-// TODO: test capacityPollingHandler
-
 func TestCapacityPollingHandler(t *testing.T) {
 	assert := assert.New(t)
 	wantCapacity := int64(1)

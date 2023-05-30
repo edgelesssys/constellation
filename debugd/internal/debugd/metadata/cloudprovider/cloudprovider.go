@@ -97,10 +97,6 @@ func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
 	}
 
 	// The port of the endpoint is not the port we need. We need to strip it off.
-	//
-	// TODO: Tag the specific load balancer we are looking for with a distinct tag.
-	// Change the GetLoadBalancerEndpoint method to return the endpoint of a load
-	// balancer with a given tag.
 	lbIP, _, err := net.SplitHostPort(lbEndpoint)
 	if err != nil {
 		return "", fmt.Errorf("parsing load balancer endpoint: %w", err)
