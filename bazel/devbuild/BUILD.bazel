@@ -1,21 +1,28 @@
 load("//bazel/sh:def.bzl", "sh_template")
+load(":def.bzl", "cli_edition")
 
 sh_template(
     name = "devbuild",
     data = [
+        ":devbuild_cli_edition",
         "//bazel/release:container_sums",
         "//bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64",
-        "//cli:cli_oss_host",
+        "//cli:cli_edition_host",
         "//debugd/cmd/cdbg:cdbg_host",
         "//upgrade-agent/cmd:upgrade_agent_linux_amd64",
     ],
     substitutions = {
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64)",
         "@@CDBG@@": "$(rootpath //debugd/cmd/cdbg:cdbg_host)",
-        "@@CLI@@": "$(rootpath //cli:cli_oss_host)",
+        "@@CLI@@": "$(rootpath //cli:cli_edition_host)",
         "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",
+        "@@EDITION@@": "$(rootpath :devbuild_cli_edition)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",
     },
     template = "prepare_developer_workspace.sh.in",
     visibility = ["//visibility:public"],
+)
+
+cli_edition(
+    name = "devbuild_cli_edition",
 )

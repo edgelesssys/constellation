@@ -24,6 +24,7 @@ cdbg=$(realpath @@CDBG@@)
 stat "${cdbg}" >> /dev/null
 container_sums=$(realpath @@CONTAINER_SUMS@@)
 stat "${container_sums}" >> /dev/null
+edition=$(cat @@EDITION@@)
 
 cd "${BUILD_WORKING_DIRECTORY}"
 
@@ -51,8 +52,10 @@ else
   workdir="$1"
 fi
 
+echo "Using ${edition} cli edition"
+
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${bootstrapper}")" "${workdir}/bootstrapper"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${upgrade_agent}")" "${workdir}/upgrade-agent"
-ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cdbg}")" "${workdir}/cdbg"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${container_sums}")" "${workdir}/container_sums.sha256"
+ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"

@@ -41,6 +41,31 @@ string_flag(
     visibility = ["//visibility:public"],
 )
 
+string_flag(
+    name = "cli_edition",
+    build_setting_default = "",
+    values = [
+        "",
+        "enterprise",
+        "oss",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "cli_edition_enterprise",
+    flag_values = {
+        ":cli_edition": "enterprise",
+    },
+)
+
+config_setting(
+    name = "cli_edition_oss",
+    flag_values = {
+        ":cli_edition": "oss",
+    },
+)
+
 bool_flag(
     name = "select_never",
     build_setting_default = False,
