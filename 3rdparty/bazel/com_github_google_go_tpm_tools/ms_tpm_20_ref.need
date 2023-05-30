@@ -204,7 +204,7 @@ cc_library(
         # "-D_CRYPT_HASH_C_",
         # "-D_X509_SPT_",
         # from internal/internal_cgo.go
-        # TODO: cleanup these flags
+        # TODO(malt3): cleanup these flags
         "-fno-delete-null-pointer-checks",
         "-fwrapv",
         "-fno-sanitize=all",  # relax sanitizer checks for this test-only dependency

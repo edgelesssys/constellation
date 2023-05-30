@@ -200,7 +200,7 @@ func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors ma
 }
 
 // DeleteStorageClass deletes the storage class with the given name.
-// TODO: Remove with v2.9.
+// TODO(daniel-weisse): Remove with v2.9.
 func (k *Kubectl) DeleteStorageClass(ctx context.Context, name string) error {
 	return k.StorageV1().StorageClasses().Delete(ctx, name, metav1.DeleteOptions{})
 }

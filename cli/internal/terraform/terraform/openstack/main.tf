@@ -216,7 +216,7 @@ resource "openstack_compute_floatingip_associate_v2" "public_ip_associate" {
   ]
 }
 
-# TODO: get LoadBalancer API enabled in the test environment
+# TODO(malt3): get LoadBalancer API enabled in the test environment
 
 # resource "openstack_lb_loadbalancer_v2" "loadbalancer" {
 #   name          = local.name

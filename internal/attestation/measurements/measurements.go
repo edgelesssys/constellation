@@ -44,7 +44,7 @@ const (
 	PCRIndexClusterID = tpmutil.Handle(15)
 	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
 	// The value used to extend is derived from Constellation's master key.
-	// TODO: move to stable, non-debug PCR before use.
+	// TODO(daniel-weisse): move to stable, non-debug PCR before use.
 	PCRIndexOwnerID = tpmutil.Handle(16)
 
 	// TDXIndexClusterID is the measurement used to mark the node as initialized.

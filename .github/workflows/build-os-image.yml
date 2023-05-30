@@ -222,7 +222,7 @@ jobs:
     name: "Build OS using mkosi"
     needs: [build-settings, build-dependencies]
     runs-on: ubuntu-22.04
-    # TODO: flatten outputs once possible
+    # TODO(malt3): flatten outputs once possible
     # https://github.com/community/community/discussions/17245
     outputs:
       image-raw-aws-aws-nitro-tpm-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-aws-nitro-tpm-sha256 }}

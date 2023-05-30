@@ -92,7 +92,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 func (k *KubernetesUtil) InitCluster(
 	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
-	// TODO: audit policy should be user input
+	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("generating default audit policy: %w", err)
@@ -314,7 +314,7 @@ func (k *KubernetesUtil) FixCilium(ctx context.Context) error {
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error {
-	// TODO: audit policy should be user input
+	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
 		return fmt.Errorf("generating default audit policy: %w", err)

@@ -47,7 +47,7 @@ import (
 var ErrInProgress = errors.New("upgrade in progress")
 
 // ErrLegacyJoinConfig signals that a legacy join-config was found.
-// TODO: v2.9 remove.
+// TODO(daniel-weisse): v2.9 remove.
 var ErrLegacyJoinConfig = errors.New("legacy join-config with missing attestationConfig found")
 
 // GetConstellationVersion queries the constellation-version object for a given field.
@@ -304,7 +304,7 @@ func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant vari
 		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
 	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
-		// TODO: v2.9 remove legacy config detection since it is only required for upgrades from v2.7
+		// TODO(daniel-weisse): v2.9 remove legacy config detection since it is only required for upgrades from v2.7
 		if _, ok := existingConf.Data["measurements"]; ok {
 			u.log.Debugf("Legacy join config detected, migrating to new config")
 			return nil, existingConf, ErrLegacyJoinConfig
@@ -481,7 +481,7 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 }
 
 // joinConfigMigration prepares a join-config ConfigMap for migration from v2.7 to v2.8.
-// TODO: v2.9: remove this function.
+// TODO(daniel-weisse): v2.9: remove this function.
 func joinConfigMigration(existingConf *corev1.ConfigMap, attestVariant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
 	m, ok := existingConf.Data["measurements"]
 	if !ok {

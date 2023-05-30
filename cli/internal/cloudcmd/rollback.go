@@ -29,7 +29,7 @@ func rollbackOnError(w io.Writer, onErr *error, roll rollbacker, logLevel terraf
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
 	if err := roll.rollback(context.Background(), logLevel); err != nil {
-		*onErr = errors.Join(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or return it?
+		*onErr = errors.Join(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO(katexochen): print the error, or return it?
 		return
 	}
 	fmt.Fprintln(w, "Rollback succeeded.")

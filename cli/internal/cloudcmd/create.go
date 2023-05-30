@@ -357,7 +357,7 @@ func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClu
 }
 
 func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
-	// TODO: Remove this once OpenStack is supported.
+	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
 		return clusterid.File{}, errors.New("OpenStack isn't supported yet")
 	}
@@ -417,7 +417,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
 	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 
-	// TODO: render progress bar
+	// TODO(malt3): render progress bar
 	downloader := c.newRawDownloader()
 	imagePath, err := downloader.Download(ctx, c.out, false, opts.source, opts.Config.Image)
 	if err != nil {

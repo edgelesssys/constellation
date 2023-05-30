@@ -425,7 +425,7 @@ type crdClient interface {
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
 	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
 	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
-	DeleteStorageClass(ctx context.Context, name string) error // TODO: remove with v2.9
+	DeleteStorageClass(ctx context.Context, name string) error // TODO(daniel-weisse): remove with v2.9
 }
 
 type actionWrapper interface {

@@ -13,7 +13,7 @@ locals {
   tags        = distinct(sort(concat(var.tags, ["constellation-role-${local.role_dashed}"])))
 }
 
-# TODO: get this API enabled in the test environment
+# TODO(malt3): get this API enabled in the test environment
 # resource "openstack_compute_servergroup_v2" "instance_group" {
 #   name = local.name
 #   policies = ["soft-anti-affinity"]
@@ -26,7 +26,7 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
   flavor_id       = var.flavor_id
   security_groups = var.security_groups
   tags            = local.tags
-  # TODO: get this API enabled in the test environment
+  # TODO(malt3): get this API enabled in the test environment
   # scheduler_hints {
   #   group = openstack_compute_servergroup_v2.instance_group.id
   # }

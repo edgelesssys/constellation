@@ -207,7 +207,7 @@ func TestWriteJSON(t *testing.T) {
 			content: someContent,
 			options: OptMkdirAll,
 		},
-		// TODO: add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
+		// TODO(malt3): add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
 		// Currently, MemMapFs will create files in nonexistent directories due to a bug in afero,
 		// making it impossible to test the actual behavior of the mkdirAll parameter.
 	}
@@ -369,7 +369,7 @@ func TestWriteYAML(t *testing.T) {
 			content: someContent,
 			options: OptMkdirAll,
 		},
-		// TODO: add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
+		// TODO(malt3): add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
 		// Currently, MemMapFs will create files in nonexistent directories due to a bug in afero,
 		// making it impossible to test the actual behavior of the mkdirAll parameter.
 	}

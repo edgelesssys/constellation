@@ -68,7 +68,7 @@ This example considers only the `verification-service`. The same approach works 
 :::
 
 <!--
-TODO: Once mkosi is implemented
+TODO(malt3): Once mkosi is implemented
 ## Operating System
 -->
 
