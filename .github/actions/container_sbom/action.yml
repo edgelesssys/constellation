@@ -27,7 +27,6 @@ runs:
     - name: Generate SBOM
       shell: bash
       env:
-        # COSIGN_EXPERIMENTAL: 1 # This breaks verification with HTTP 404
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
