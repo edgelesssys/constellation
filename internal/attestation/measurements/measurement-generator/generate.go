@@ -20,12 +20,12 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"golang.org/x/tools/go/ast/astutil"
@@ -34,17 +34,19 @@ import (
 // this tool is used to generate hardcoded measurements for the enterprise build.
 // Measurements are embedded in the constellation cli.
 
-// TODO(v2.8 | AB#3130): Update tool to use variant.Variant instead of cloudprovider.Provider
-
 func main() {
-	defaultConf := config.Default()
-	log.Printf("Generating measurements for %s\n", defaultConf.Image)
+	const imageFilePath = "../../config/image_enterprise.go"
+	defaultImage, err := imageVersionFromFile(imageFilePath)
+	if err != nil {
+		log.Fatalf("error parsing image version from %s: %s", imageFilePath, err)
+	}
+	log.Printf("Generating measurements for %s\n", defaultImage)
 
-	const filePath = "./measurements_enterprise.go"
+	const outFilePath = "./measurements_enterprise.go"
 
 	ctx := context.Background()
 	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	outFile, err := parser.ParseFile(fset, outFilePath, nil, parser.ParseComments)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,7 +57,7 @@ func main() {
 
 	var returnStmtCtr int
 
-	newFile := astutil.Apply(file, func(cursor *astutil.Cursor) bool {
+	newFile := astutil.Apply(outFile, func(cursor *astutil.Cursor) bool {
 		n := cursor.Node()
 
 		// find all variables of the form <provider>_<variant> and replace them with updated measurements
@@ -80,7 +82,7 @@ func main() {
 			log.Println("Found", variant)
 			returnStmtCtr++
 			// retrieve and validate measurements for the given CSP and image
-			measuremnts := mustGetMeasurements(ctx, rekor, provider, variant, defaultConf.Image)
+			measuremnts := mustGetMeasurements(ctx, rekor, provider, variant, defaultImage)
 			// replace the return statement with a composite literal containing the validated measurements
 			clause.Values[0] = measurementsCompositeLiteral(measuremnts)
 		}
@@ -96,10 +98,10 @@ func main() {
 	printConfig := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
 
 	if err = printConfig.Fprint(&buf, fset, newFile); err != nil {
-		log.Fatalf("error formatting file %s: %s", filePath, err)
+		log.Fatalf("error formatting file %s: %s", outFilePath, err)
 	}
-	if err := os.WriteFile(filePath, buf.Bytes(), 0o644); err != nil {
-		log.Fatalf("error writing file %s: %s", filePath, err)
+	if err := os.WriteFile(outFilePath, buf.Bytes(), 0o644); err != nil {
+		log.Fatalf("error writing file %s: %s", outFilePath, err)
 	}
 	log.Println("Successfully generated hashes.")
 }
@@ -261,6 +263,47 @@ func attestationVariantFromGoIdentifier(identifier string) (variant.Variant, err
 		return variant.QEMUTDX{}, nil
 	}
 	return nil, fmt.Errorf("unknown identifier: %q", identifier)
+}
+
+func imageVersionFromFile(path string) (string, error) {
+	fset := token.NewFileSet()
+	imageFile, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var defaultImage string
+
+	_ = astutil.Apply(imageFile, func(cursor *astutil.Cursor) bool {
+		n := cursor.Node()
+
+		// find const of the form defaultImage = "<version>"
+
+		if clause, ok := n.(*ast.ValueSpec); ok && len(clause.Names) == 1 && len(clause.Values) == 1 {
+			constName := clause.Names[0].Name
+			constValue, ok := clause.Values[0].(*ast.BasicLit)
+			if !ok || constValue.Kind != token.STRING {
+				return true
+			}
+
+			if constName != "defaultImage" {
+				return true
+			}
+			unquoted, err := strconv.Unquote(constValue.Value)
+			if err != nil {
+				log.Printf("error parsing defaultImage: %s", err)
+				return true
+			}
+			defaultImage = unquoted
+		}
+		return true
+	}, nil,
+	)
+
+	if defaultImage == "" {
+		return "", fmt.Errorf("no defaultImage found")
+	}
+	return defaultImage, nil
 }
 
 type rekorVerifier interface {

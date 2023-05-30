@@ -38,6 +38,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
+//go:generate measurement-generator
+
 const (
 	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
 	// The value used to extend is a random generated 32 Byte value.
