@@ -9,6 +9,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
@@ -32,6 +34,10 @@ var (
 	teeVersion        uint8
 	snpVersion        uint8
 	microcodeVersion  uint8
+
+	// Cosign credentials.
+	cosignPwd      string
+	privateKeyPath string
 )
 
 func handleError(err error) {
@@ -52,10 +58,10 @@ func main() {
 				AccessKey:   awsAccessKey,
 				Region:      awsRegion,
 			}
-			sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
-			if err != nil {
-				panic(err)
-			}
+			privateKey := getBytesFromFilePath(privateKeyPath)
+
+			sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(cosignPwd), privateKey)
+			handleError(err)
 			versions := configapi.AzureSEVSNPVersion{
 				Bootloader: bootloaderVersion,
 				TEE:        teeVersion,
@@ -87,5 +93,21 @@ func main() {
 
 	myCmd.PersistentFlags().StringVar(&awsAccessKey, "key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
 	handleError(myCmd.MarkPersistentFlagRequired("key"))
+
+	myCmd.PersistentFlags().StringVar(&cosignPwd, "cosign-pwd", "", "Cosign password used to decrpyt the private key.")
+	handleError(myCmd.MarkPersistentFlagRequired("cosign-pwd"))
+
+	myCmd.PersistentFlags().StringVar(&privateKeyPath, "private-key", "", "File path of private key used to sign the payload.")
+	handleError(myCmd.MarkPersistentFlagRequired("private-key"))
+
 	handleError(myCmd.Execute())
+}
+
+func getBytesFromFilePath(path string) []byte {
+	file, err := os.Open(path)
+	handleError(err)
+
+	content, err := io.ReadAll(file)
+	handleError(err)
+	return content
 }

@@ -16,26 +16,60 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestGetVersion(t *testing.T) {
-	client := &http.Client{
-		Transport: &fakeConfigAPIHandler{},
-	}
-	fetcher := NewConfigAPIFetcherWithClient(client)
-	res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, uint8(2), res.Bootloader)
+var testCfg = configapi.AzureSEVSNPVersion{
+	Microcode:  93,
+	TEE:        0,
+	SNP:        6,
+	Bootloader: 2,
 }
 
-type fakeConfigAPIHandler struct{}
+func TestGetVersion(t *testing.T) {
+	testcases := map[string]struct {
+		signature []byte
+		wantErr   bool
+		want      configapi.AzureSEVSNPVersion
+	}{
+		"get version with valid signature": {
+			signature: []byte("MEUCIQDNn6wiSh9Nz9mtU9RvxvfkH3fNDFGeqopjTIRoBNkyrAIgSsKgdYNQXvPevaLWmmpnj/9WcgrltAQ+KfI+bQfklAo="),
+			want:      testCfg,
+		},
+		"fail with invalid signature": {
+			signature: []byte("invalid"),
+			wantErr:   true,
+		},
+	}
+	for name, tc := range testcases {
+		t.Run(name, func(t *testing.T) {
+			client := &http.Client{
+				Transport: &fakeConfigAPIHandler{
+					signature: tc.signature,
+				},
+			}
+			fetcher := NewConfigAPIFetcherWithClient(client)
+			res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
+
+			assert := assert.New(t)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(testCfg, res)
+			}
+		})
+	}
+}
+
+type fakeConfigAPIHandler struct {
+	signature []byte
+}
 
 // RoundTrip resolves the request and returns a dummy response.
 func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
 		res := &http.Response{}
-		data := []string{"2021-01-01-01-01.json"}
+		data := []string{"2021-01-01-01-01.json", "2019-01-01-01-02.json"} // return multiple versions to check that latest version is correctly selected
 		bt, err := json.Marshal(data)
 		if err != nil {
 			return nil, err
@@ -47,16 +81,17 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 		return res, nil
 	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json" {
 		res := &http.Response{}
-		bt, err := json.Marshal(configapi.AzureSEVSNPVersion{
-			Microcode:  93,
-			TEE:        0,
-			SNP:        6,
-			Bootloader: 2,
-		})
+		bt, err := json.Marshal(testCfg)
 		if err != nil {
 			return nil, err
 		}
 		res.Body = io.NopCloser(bytes.NewReader(bt))
+		res.StatusCode = http.StatusOK
+		return res, nil
+
+	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json.sig" {
+		res := &http.Response{}
+		res.Body = io.NopCloser(bytes.NewReader(f.signature))
 		res.StatusCode = http.StatusOK
 		return res, nil
 

@@ -21,28 +21,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	awsBucket = "cdn-constellation-backend"
+	awsRegion = "eu-central-1"
+)
+
+var cfg uri.AWSS3Config
+
 var (
-	awsRegion      = flag.String("aws-region", "us-east-1", "Region to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsBucket      = flag.String("aws-bucket", "", "Name of the S3 bucket to use for AWS storage test. Required for AWS storage test.")
+	awsAccessKeyID  = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	awsAccessKey    = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
+	cosignPwd       = flag.String("cosign-pwd", "", "Password to decrypt the cosign private key. Required for signing.")
+	priviateKeyPath = flag.String("private-key", "", "Path to the private key used for signing. Required for signing.")
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if *awsAccessKey == "" || *awsAccessKeyID == "" || *awsBucket == "" || *awsRegion == "" {
+	if *awsAccessKey == "" || *awsAccessKeyID == "" || *cosignPwd == "" || *priviateKeyPath == "" {
 		flag.Usage()
 		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region. Skipping tests.")
 		os.Exit(0)
 	}
+	cfg = uri.AWSS3Config{
+		AccessKeyID: *awsAccessKeyID,
+		AccessKey:   *awsAccessKey,
+		Bucket:      awsBucket,
+		Region:      awsRegion,
+	}
 	os.Exit(m.Run())
-}
-
-var cfg = uri.AWSS3Config{
-	Bucket:      *awsBucket,
-	AccessKeyID: *awsAccessKeyID,
-	AccessKey:   *awsAccessKey,
-	Region:      *awsRegion,
 }
 
 var versionValues = configapi.AzureSEVSNPVersion{
@@ -54,7 +60,7 @@ var versionValues = configapi.AzureSEVSNPVersion{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), []byte(*priviateKeyPath))
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
 	require.NoError(t, sut.UploadAzureSEVSNP(ctx, versionValues, d))
@@ -63,7 +69,7 @@ func TestUploadAzureSEVSNPVersions(t *testing.T) {
 func TestListVersions(t *testing.T) {
 	ctx := context.Background()
 
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), []byte(*priviateKeyPath))
 	require.NoError(t, err)
 
 	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})

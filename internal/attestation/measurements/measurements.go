@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -32,6 +31,7 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -135,11 +135,11 @@ func (m *M) FetchAndVerify(
 	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
 	publicKey []byte, version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
-	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
+	measurementsRaw, err := fetcher.FetchFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
 	}
-	signature, err := getFromURL(ctx, client, signatureURL)
+	signature, err := fetcher.FetchFromURL(ctx, client, signatureURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
@@ -163,7 +163,7 @@ func (m *M) FetchAndVerify(
 func (m *M) FetchNoVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL,
 	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) error {
-	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
+	measurementsRaw, err := fetcher.FetchFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return fmt.Errorf("failed to fetch measurements: %w", err)
 	}
@@ -473,27 +473,6 @@ func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Var
 	default:
 		return nil
 	}
-}
-
-func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return []byte{}, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return []byte{}, fmt.Errorf("http status code: %d", resp.StatusCode)
-	}
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return []byte{}, err
-	}
-	return content, nil
 }
 
 func checkLength(m map[uint32]Measurement) error {

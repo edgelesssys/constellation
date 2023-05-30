@@ -5,12 +5,14 @@ go_library(
     name = "sigstore",
     srcs = [
         "rekor.go",
+        "sign.go",
         "sigstore.go",
         "verify.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore",
     visibility = ["//:__subpackages__"],
     deps = [
+        "@com_github_sigstore_cosign_v2//pkg/cosign",
         "@com_github_sigstore_rekor//pkg/client",
         "@com_github_sigstore_rekor//pkg/generated/client",
         "@com_github_sigstore_rekor//pkg/generated/client/entries",
@@ -27,10 +29,13 @@ go_test(
     name = "sigstore_test",
     srcs = [
         "rekor_test.go",
+        "sign_test.go",
         "verify_test.go",
     ],
     embed = [":sigstore"],
     deps = [
+        "//internal/constants",
+        "@com_github_sigstore_cosign_v2//pkg/cosign",
         "@com_github_sigstore_rekor//pkg/generated/models",
         "@com_github_sigstore_rekor//pkg/types/hashedrekord/v0.0.1:v0_0_1",
         "@com_github_stretchr_testify//assert",
