@@ -5,7 +5,7 @@ package init;
 option go_package = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto";
 
 service API {
-  rpc Init(InitRequest) returns (InitResponse);
+  rpc Init(InitRequest) returns (stream InitResponse);
 }
 
 message InitRequest {
@@ -29,9 +29,25 @@ message InitRequest {
 }
 
 message InitResponse {
+  oneof kind {
+    InitSuccessResponse init_success = 1;
+    InitFailureResponse init_failure = 2;
+    LogResponseType log = 3;
+  }
+}
+
+message InitSuccessResponse {
   bytes kubeconfig = 1;
   bytes owner_id = 2;
   bytes cluster_id = 3;
+}
+
+message InitFailureResponse {
+  string error = 1;
+}
+
+message LogResponseType {
+  bytes log = 1;
 }
 
 message KubernetesComponent {

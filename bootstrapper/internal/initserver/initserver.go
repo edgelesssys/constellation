@@ -18,8 +18,11 @@ If a call from the CLI is received, the InitServer bootstraps the Kubernetes clu
 package initserver
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -27,6 +30,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/journald"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -62,7 +66,11 @@ type Server struct {
 
 	initSecretHash []byte
 
+	kmsURI string
+
 	log *logger.Logger
+
+	journaldCollector journaldCollection
 
 	initproto.UnimplementedAPIServer
 }
@@ -79,14 +87,20 @@ func New(ctx context.Context, lock locker, kube ClusterInitializer, issuer atls.
 		return nil, fmt.Errorf("init secret hash is empty")
 	}
 
+	jctlCollector, err := journald.NewCollector(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	server := &Server{
-		nodeLock:       lock,
-		disk:           diskencryption.New(),
-		initializer:    kube,
-		fileHandler:    fh,
-		issuer:         issuer,
-		log:            log,
-		initSecretHash: initSecretHash,
+		nodeLock:          lock,
+		disk:              diskencryption.New(),
+		initializer:       kube,
+		fileHandler:       fh,
+		issuer:            issuer,
+		log:               log,
+		initSecretHash:    initSecretHash,
+		journaldCollector: jctlCollector,
 	}
 
 	grpcServer := grpc.NewServer(
@@ -113,32 +127,46 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 }
 
 // Init initializes the cluster.
-func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServer) (err error) {
 	// Acquire lock to prevent shutdown while Init is still running
 	s.shutdownLock.RLock()
 	defer s.shutdownLock.RUnlock()
 
-	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
 	log.Infof("Init called")
 
+	s.kmsURI = req.KmsUri
+
 	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
-		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "invalid init secret %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
-	cloudKms, err := kmssetup.KMS(ctx, req.StorageUri, req.KmsUri)
+	cloudKms, err := kmssetup.KMS(stream.Context(), req.StorageUri, req.KmsUri)
 	if err != nil {
-		return nil, fmt.Errorf("creating kms client: %w", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "creating kms client: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	// generate values for cluster attestation
-	measurementSalt, clusterID, err := deriveMeasurementValues(ctx, cloudKms)
+	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "deriving measurement values: %s", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "deriving measurement values: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "locking node: %s", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "locking node: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 	if !nodeLockAcquired {
 		// The join client seems to already have a connection to an
@@ -147,7 +175,13 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		//
 		// The server stops itself after the current call is done.
 		log.Warnf("Node is already in a join process")
-		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
+
+		err = status.Error(codes.FailedPrecondition, "node is already being activated")
+
+		if e := s.sendLogsWithMessage(stream, err); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	// Stop the join client -> We no longer expect to join an existing cluster,
@@ -155,8 +189,11 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	// Any errors following this call will result in a failed node that may not join any cluster.
 	s.cleaner.Clean()
 
-	if err := s.setupDisk(ctx, cloudKms); err != nil {
-		return nil, status.Errorf(codes.Internal, "setting up disk: %s", err)
+	if err := s.setupDisk(stream.Context(), cloudKms); err != nil {
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "setting up disk: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	state := nodestate.NodeState{
@@ -164,7 +201,10 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		MeasurementSalt: measurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
-		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "persisting node state: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	clusterName := req.ClusterName
@@ -172,7 +212,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		clusterName = "constellation"
 	}
 
-	kubeconfig, err := s.initializer.InitCluster(ctx,
+	kubeconfig, err := s.initializer.InitCluster(stream.Context(),
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		clusterName,
@@ -183,14 +223,67 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		s.log,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "initializing cluster: %s", err)
+		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "initializing cluster: %s", err)); e != nil {
+			err = errors.Join(err, e)
+		}
+		return err
 	}
 
 	log.Infof("Init succeeded")
-	return &initproto.InitResponse{
-		Kubeconfig: kubeconfig,
-		ClusterId:  clusterID,
-	}, nil
+
+	successMessage := &initproto.InitResponse_InitSuccess{
+		InitSuccess: &initproto.InitSuccessResponse{
+			Kubeconfig: kubeconfig,
+			ClusterId:  clusterID,
+		},
+	}
+
+	return stream.Send(&initproto.InitResponse{Kind: successMessage})
+}
+
+func (s *Server) sendLogsWithMessage(stream initproto.API_InitServer, message error) error {
+	// send back the error message
+	if err := stream.Send(&initproto.InitResponse{
+		Kind: &initproto.InitResponse_InitFailure{
+			InitFailure: &initproto.InitFailureResponse{Error: message.Error()},
+		},
+	}); err != nil {
+		return err
+	}
+
+	logPipe, err := s.journaldCollector.Start()
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed starting the log collector: %s", err)
+	}
+
+	reader := bufio.NewReader(logPipe)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := io.ReadFull(reader, buffer)
+		buffer = buffer[:n] // cap the buffer so that we don't have a bunch of nullbytes at the end
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if err != io.ErrUnexpectedEOF {
+				return status.Errorf(codes.Internal, "failed to read from pipe: %s", err)
+			}
+		}
+
+		err = stream.Send(&initproto.InitResponse{
+			Kind: &initproto.InitResponse_Log{
+				Log: &initproto.LogResponseType{
+					Log: buffer,
+				},
+			},
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to send chunk: %s", err)
+		}
+	}
+
+	return nil
 }
 
 // Stop stops the initialization server gracefully.
@@ -290,4 +383,10 @@ type cleaner interface {
 type MetadataAPI interface {
 	// InitSecretHash returns the initSecretHash of the instance.
 	InitSecretHash(ctx context.Context) ([]byte, error)
+}
+
+// journaldCollection is an interface for collecting journald logs.
+type journaldCollection interface {
+	// Start starts the journald collector and returns a pipe from which the system logs can be read.
+	Start() (io.ReadCloser, error)
 }

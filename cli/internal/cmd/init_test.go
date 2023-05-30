@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -54,7 +55,7 @@ func TestInitialize(t *testing.T) {
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
 		Type: "service_account",
 	}
-	testInitResp := &initproto.InitResponse{
+	testInitResp := &initproto.InitSuccessResponse{
 		Kubeconfig: []byte("kubeconfig"),
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
@@ -77,17 +78,17 @@ func TestInitialize(t *testing.T) {
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"initialize some azure instances": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"initialize some qemu instances": {
 			provider:      cloudprovider.QEMU,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 		},
 		"non retriable error": {
 			provider:                cloudprovider.QEMU,
@@ -119,7 +120,7 @@ func TestInitialize(t *testing.T) {
 		"k8s version without v works": {
 			provider:      cloudprovider.Azure,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			initServerAPI: &stubInitServer{res: &initproto.InitResponse{Kind: &initproto.InitResponse_InitSuccess{InitSuccess: testInitResp}}},
 			configMutator: func(c *config.Config) { c.KubernetesVersion = strings.TrimPrefix(string(versions.Default), "v") },
 		},
 	}
@@ -200,18 +201,79 @@ func TestInitialize(t *testing.T) {
 	}
 }
 
+func TestGetLogs(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		resp         initproto.API_InitClient
+		fh           file.Handler
+		wantedOutput []byte
+		wantErr      bool
+	}{
+		"success": {
+			resp:         stubInitClient{res: bytes.NewReader([]byte("asdf"))},
+			fh:           file.NewHandler(afero.NewMemMapFs()),
+			wantedOutput: []byte("asdf"),
+		},
+		"receive error": {
+			resp:    stubInitClient{err: someErr},
+			fh:      file.NewHandler(afero.NewMemMapFs()),
+			wantErr: true,
+		},
+		"nil log": {
+			resp:    stubInitClient{res: bytes.NewReader([]byte{1}), setResNil: true},
+			fh:      file.NewHandler(afero.NewMemMapFs()),
+			wantErr: true,
+		},
+		"failed write": {
+			resp:    stubInitClient{res: bytes.NewReader([]byte("asdf"))},
+			fh:      file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			doer := initDoer{
+				fh:  tc.fh,
+				log: logger.NewTest(t),
+			}
+
+			err := doer.getLogs(tc.resp)
+
+			if tc.wantErr {
+				assert.Error(err)
+			}
+
+			text, err := tc.fh.Read(constants.ErrorLog)
+
+			if tc.wantedOutput == nil {
+				assert.Error(err)
+			}
+
+			assert.Equal(tc.wantedOutput, text)
+		})
+	}
+}
+
 func TestWriteOutput(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	resp := &initproto.InitResponse{
-		OwnerId:    []byte("ownerID"),
-		ClusterId:  []byte("clusterID"),
-		Kubeconfig: []byte("kubeconfig"),
+		Kind: &initproto.InitResponse_InitSuccess{
+			InitSuccess: &initproto.InitSuccessResponse{
+				OwnerId:    []byte("ownerID"),
+				ClusterId:  []byte("clusterID"),
+				Kubeconfig: []byte("kubeconfig"),
+			},
+		},
 	}
 
-	ownerID := hex.EncodeToString(resp.OwnerId)
-	clusterID := hex.EncodeToString(resp.ClusterId)
+	ownerID := hex.EncodeToString(resp.GetInitSuccess().GetOwnerId())
+	clusterID := hex.EncodeToString(resp.GetInitSuccess().GetClusterId())
 
 	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,
@@ -232,7 +294,7 @@ func TestWriteOutput(t *testing.T) {
 		log:    logger.NewTest(t),
 		merger: &stubMerger{},
 	}
-	err := i.writeOutput(idFile, resp, false, &out, fileHandler)
+	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -241,7 +303,7 @@ func TestWriteOutput(t *testing.T) {
 	afs := afero.Afero{Fs: testFs}
 	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
-	assert.Equal(string(resp.Kubeconfig), string(adminConf))
+	assert.Equal(string(resp.GetInitSuccess().GetKubeconfig()), string(adminConf))
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)
@@ -253,7 +315,7 @@ func TestWriteOutput(t *testing.T) {
 	// test config merging
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -265,7 +327,7 @@ func TestWriteOutput(t *testing.T) {
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp, true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -389,10 +451,14 @@ func TestAttestation(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	initServerAPI := &stubInitServer{initResp: &initproto.InitResponse{
-		Kubeconfig: []byte("kubeconfig"),
-		OwnerId:    []byte("ownerID"),
-		ClusterId:  []byte("clusterID"),
+	initServerAPI := &stubInitServer{res: &initproto.InitResponse{
+		Kind: &initproto.InitResponse_InitSuccess{
+			InitSuccess: &initproto.InitSuccessResponse{
+				Kubeconfig: []byte("kubeconfig"),
+				OwnerId:    []byte("ownerID"),
+				ClusterId:  []byte("clusterID"),
+			},
+		},
 	}}
 	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
 
@@ -499,14 +565,15 @@ func (i *testIssuer) Issue(_ context.Context, userData []byte, _ []byte) ([]byte
 }
 
 type stubInitServer struct {
-	initResp *initproto.InitResponse
-	initErr  error
+	res     *initproto.InitResponse
+	initErr error
 
 	initproto.UnimplementedAPIServer
 }
 
-func (s *stubInitServer) Init(_ context.Context, _ *initproto.InitRequest) (*initproto.InitResponse, error) {
-	return s.initResp, s.initErr
+func (s *stubInitServer) Init(_ *initproto.InitRequest, stream initproto.API_InitServer) error {
+	_ = stream.Send(s.res)
+	return s.initErr
 }
 
 type stubMerger struct {
@@ -564,4 +631,40 @@ func (c *stubLicenseClient) QuotaCheck(_ context.Context, _ license.QuotaCheckRe
 	return license.QuotaCheckResponse{
 		Quota: 25,
 	}, nil
+}
+
+type stubInitClient struct {
+	res       io.Reader
+	err       error
+	setResNil bool
+	grpc.ClientStream
+}
+
+func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
+	if c.err != nil {
+		return &initproto.InitResponse{}, c.err
+	}
+
+	text := make([]byte, 1024)
+	n, err := c.res.Read(text)
+	text = text[:n]
+
+	res := &initproto.InitResponse{
+		Kind: &initproto.InitResponse_Log{
+			Log: &initproto.LogResponseType{
+				Log: text,
+			},
+		},
+	}
+	if c.setResNil {
+		res = &initproto.InitResponse{
+			Kind: &initproto.InitResponse_Log{
+				Log: &initproto.LogResponseType{
+					Log: nil,
+				},
+			},
+		}
+	}
+
+	return res, err
 }

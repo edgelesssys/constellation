@@ -68,9 +68,11 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log     debugLog
-	merger  configMerger
-	spinner spinnerInterf
+	log          debugLog
+	merger       configMerger
+	spinner      spinnerInterf
+	masterSecret uri.MasterSecret
+	fh           *file.Handler
 }
 
 // runInitialize runs the initialize command.
@@ -94,7 +96,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler}
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient())
 }
 
@@ -153,6 +155,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	i.log.Debugf("Successfully marshaled service account URI")
 	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
+	i.masterSecret = masterSecret
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
@@ -183,11 +186,13 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
 	i.spinner.Stop()
+
 	if err != nil {
 		var nonRetriable *nonRetriableError
 		if errors.As(err, &nonRetriable) {
 			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
 			cmd.PrintErrln("Terminate your cluster and try again.")
+			cmd.PrintErrf("The cluster logs were saved to %q\n", constants.ErrorLog)
 		}
 		return err
 	}
@@ -198,13 +203,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
 }
 
-func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {
 	doer := &initDoer{
 		dialer:   dialer,
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
 		req:      req,
 		log:      i.log,
 		spinner:  i.spinner,
+		fh:       file.NewHandler(afero.NewOsFs()),
 	}
 
 	// Create a wrapper function that allows logging any returned error from the retrier before checking if it's the expected retriable one.
@@ -226,10 +232,11 @@ type initDoer struct {
 	dialer        grpcDialer
 	endpoint      string
 	req           *initproto.InitRequest
-	resp          *initproto.InitResponse
+	resp          *initproto.InitSuccessResponse
 	log           debugLog
 	spinner       spinnerInterf
 	connectedOnce bool
+	fh            file.Handler
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
@@ -241,7 +248,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
 	if err != nil {
-		d.log.Debugf("Dialing init server failed: %w. Retrying...", err)
+		d.log.Debugf("Dialing init server failed: %s. Retrying...", err)
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
@@ -259,7 +266,54 @@ func (d *initDoer) Do(ctx context.Context) error {
 	if err != nil {
 		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
 	}
-	d.resp = resp
+
+	res, err := resp.Recv() // get first response, either success or failure
+	if err != nil {
+		if e := d.getLogs(resp); e != nil {
+			d.log.Debugf("Failed to collect logs: %s", e)
+		}
+		return &nonRetriableError{err}
+	}
+
+	switch res.Kind.(type) {
+	case *initproto.InitResponse_InitFailure:
+		if e := d.getLogs(resp); e != nil {
+			d.log.Debugf("Failed to get logs from cluster: %s", e)
+		}
+		return &nonRetriableError{errors.New(res.GetInitFailure().GetError())}
+	case *initproto.InitResponse_InitSuccess:
+		d.resp = res.GetInitSuccess()
+	case nil:
+		d.log.Debugf("Cluster returned nil response type")
+		return &nonRetriableError{errors.New("empty response from cluster")}
+	default:
+		d.log.Debugf("Cluster returned unknown response type")
+		return &nonRetriableError{errors.New("unknown response from cluster")}
+	}
+
+	return nil
+}
+
+func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
+	d.log.Debugf("Attempting to collect cluster logs")
+	for {
+		res, err := resp.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		log := res.GetLog().GetLog()
+		if log == nil {
+			return errors.New("sent empty logs")
+		}
+
+		if err := d.fh.Write(constants.ErrorLog, log, file.OptAppend); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -284,13 +338,13 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, resp *initproto.InitResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
+	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	ownerID := hex.EncodeToString(resp.OwnerId)
+	ownerID := hex.EncodeToString(initResp.GetOwnerId())
 	// i.log.Debugf("Owner id is %s", ownerID)
-	clusterID := hex.EncodeToString(resp.ClusterId)
+	clusterID := hex.EncodeToString(initResp.GetClusterId())
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
@@ -299,7 +353,7 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
