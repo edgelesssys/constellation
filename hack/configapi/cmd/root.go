@@ -60,7 +60,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	if err := enforceRequiredFlags(cmd, "version-file", "cosign-pwd", "private-key"); err != nil {
 		return err
 	}
-	ctx := context.Background()
+	ctx := cmd.Context()
 	cfg := staticupload.Config{
 		Bucket: awsBucket,
 		Region: awsRegion,
