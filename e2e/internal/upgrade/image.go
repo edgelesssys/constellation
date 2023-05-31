@@ -10,6 +10,7 @@ package upgrade
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
