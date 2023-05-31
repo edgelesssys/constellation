@@ -102,12 +102,7 @@ func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 }
 
 func getBytesFromFilePath(path string) ([]byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("opening file: %w", err)
-	}
-
-	content, err := io.ReadAll(file)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
