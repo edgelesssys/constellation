@@ -93,7 +93,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/siderolabs/talos/pkg/machinery v1.4.4
-	github.com/sigstore/cosign/v2 v2.0.2
 	github.com/sigstore/rekor v1.1.1
 	github.com/sigstore/sigstore v1.6.4
 	github.com/spf13/afero v1.9.5
@@ -128,26 +127,10 @@ require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
-	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
-	github.com/digitorus/pkcs7 v0.0.0-20221212123742-001c36b64ec3 // indirect
-	github.com/digitorus/timestamp v0.0.0-20221019182153-ef3b63b79b31 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/s2a-go v0.1.3 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/in-toto/in-toto-golang v0.9.0 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
-	github.com/shibumi/go-pathspec v1.3.0 // indirect
-	github.com/sigstore/timestamp-authority v1.0.0 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/viper v1.15.0 // indirect
-	github.com/subosito/gotenv v1.4.2 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
-	github.com/vbatts/tar-split v0.11.2 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	k8s.io/cli-runtime v0.27.1 // indirect
 )
 

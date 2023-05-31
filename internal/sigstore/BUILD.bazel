@@ -34,7 +34,6 @@ go_test(
     ],
     embed = [":sigstore"],
     deps = [
-        "@com_github_sigstore_cosign_v2//pkg/cosign",
         "@com_github_sigstore_rekor//pkg/generated/models",
         "@com_github_sigstore_rekor//pkg/types/hashedrekord/v0.0.1:v0_0_1",
         "@com_github_stretchr_testify//assert",
