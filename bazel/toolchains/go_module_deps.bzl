@@ -3040,8 +3040,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gophercloud/utils",
-        sum = "h1:vJyXd9+MB5vAKxpOo4z/PDSiPgKmEyJwHIDOdV4Y0KY=",
-        version = "v0.0.0-20230418172808-6eab72e966e1",
+        sum = "h1:6Gvua77nKyAiZQpu0N3AsamGu1L6Mlnhp3tAtDcqwvc=",
+        version = "v0.0.0-20230523080330-de873b9cf00d",
     )
 
     go_repository(
