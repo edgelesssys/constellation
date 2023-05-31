@@ -19,5 +19,8 @@ func SignContent(password, encryptedPrivateKey, content []byte) ([]byte, error) 
 		return nil, err
 	}
 	sig, err := sv.SignMessage(bytes.NewReader(content))
-	return []byte(base64.StdEncoding.EncodeToString(sig)), err
+    if err != nil {
+        return nil, fmt.Errorf("signing message: %w", err)
+    }
+	return []byte(base64.StdEncoding.EncodeToString(sig)), nil
 }
