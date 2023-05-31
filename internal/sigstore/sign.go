@@ -33,7 +33,10 @@ func SignContent(password, encryptedPrivateKey, content []byte) ([]byte, error) 
 		return nil, fmt.Errorf("loading private key: %w", err)
 	}
 	sig, err := sv.SignMessage(bytes.NewReader(content))
-	return []byte(base64.StdEncoding.EncodeToString(sig)), err
+	if err != nil {
+		return nil, fmt.Errorf("signing message: %w", err)
+	}
+	return []byte(base64.StdEncoding.EncodeToString(sig)), nil
 }
 
 func loadPrivateKey(key []byte, pass []byte) (signature.SignerVerifier, error) {

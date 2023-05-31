@@ -56,7 +56,7 @@ func NewRootCmd() *cobra.Command {
 	return uploadCmd
 }
 
-func runCmd(cmd *cobra.Command, args []string) error {
+func runCmd(cmd *cobra.Command, _ []string) error {
 	if err := enforceRequiredFlags(cmd, "version-file", "cosign-pwd", "private-key"); err != nil {
 		return err
 	}
