@@ -80,8 +80,8 @@ multirun(
 multirun(
     name = "build_and_push",
     commands = [
-        "//bazel/devbuild:devbuild",
         "//bazel/release:push",
+        "//bazel/devbuild:devbuild",
     ],
     visibility = ["//visibility:public"],
 )

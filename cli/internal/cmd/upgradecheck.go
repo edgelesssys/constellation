@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
@@ -73,12 +74,14 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 	up := &upgradeCheckCmd{
+		canUpgradeCheck: featureset.CanUpgradeCheck,
 		collect: &versionCollector{
 			writer:         cmd.OutOrStderr(),
 			checker:        checker,
 			verListFetcher: versionListFetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
+			cosign:         sigstore.CosignVerifier{},
 			rekor:          rekor,
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
@@ -113,18 +116,18 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 		return upgradeCheckFlags{}, err
 	}
 	return upgradeCheckFlags{
-		configPath:   configPath,
-		force:        force,
-		writeConfig:  writeConfig,
-		ref:          ref,
-		stream:       stream,
-		cosignPubKey: constants.CosignPublicKey,
+		configPath:  configPath,
+		force:       force,
+		writeConfig: writeConfig,
+		ref:         ref,
+		stream:      stream,
 	}, nil
 }
 
 type upgradeCheckCmd struct {
-	collect collector
-	log     debugLog
+	canUpgradeCheck bool
+	collect         collector
+	log             debugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -138,6 +141,12 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 	u.log.Debugf("Read configuration from %q", flags.configPath)
+
+	if !u.canUpgradeCheck {
+		cmd.PrintErrln("Planning Constellation upgrades automatically is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
+		return errors.New("upgrade check is not supported")
+	}
+
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
@@ -254,6 +263,7 @@ type versionCollector struct {
 	verListFetcher versionListFetcher
 	fileHandler    file.Handler
 	client         *http.Client
+	cosign         cosignVerifier
 	rekor          rekorVerifier
 	flags          upgradeCheckFlags
 	versionsapi    versionFetcher
@@ -263,7 +273,7 @@ type versionCollector struct {
 
 func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error) {
 	// get expected measurements for each image
-	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.rekor, []byte(v.flags.cosignPubKey), csp, attestationVariant, images, v.log)
+	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.cosign, v.rekor, csp, attestationVariant, images, v.log)
 	if err != nil {
 		return nil, fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
@@ -525,7 +535,7 @@ func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (s
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, rekor rekorVerifier, pubK []byte,
+func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, cosign cosignVerifier, rekor rekorVerifier,
 	csp cloudprovider.Provider, attestationVariant variant.Variant, versions []versionsapi.Version, log debugLog,
 ) (map[string]measurements.M, error) {
 	upgrades := make(map[string]measurements.M)
@@ -540,10 +550,9 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 		var fetchedMeasurements measurements.M
 		log.Debugf("Fetching for measurement url: %s", measurementsURL)
 		hash, err := fetchedMeasurements.FetchAndVerify(
-			ctx, client,
+			ctx, client, cosign,
 			measurementsURL,
 			signatureURL,
-			pubK,
 			version,
 			csp,
 			attestationVariant,
@@ -555,7 +564,7 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 			continue
 		}
 
-		if err = verifyWithRekor(ctx, rekor, hash); err != nil {
+		if err = sigstore.VerifyWithRekor(ctx, version, rekor, hash); err != nil {
 			if _, err := fmt.Fprintf(writer, "Warning: Unable to verify '%s' in Rekor.\n", hash); err != nil {
 				return nil, fmt.Errorf("writing to buffer: %w", err)
 			}
@@ -651,12 +660,11 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 }
 
 type upgradeCheckFlags struct {
-	configPath   string
-	force        bool
-	writeConfig  bool
-	ref          string
-	stream       string
-	cosignPubKey string
+	configPath  string
+	force       bool
+	writeConfig bool
+	ref         string
+	stream      string
 }
 
 type upgradeChecker interface {

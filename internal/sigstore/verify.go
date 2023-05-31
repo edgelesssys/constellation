@@ -12,15 +12,21 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	sigsig "github.com/sigstore/sigstore/pkg/signature"
 )
+
+// CosignVerifier checks if the signature of content can be verified
+// using a cosign public key.
+type CosignVerifier struct{}
 
 // VerifySignature checks if the signature of content can be verified
 // using publicKey.
 // signature is expected to be base64 encoded.
 // publicKey is expected to be PEM encoded.
-func VerifySignature(content, signature, publicKey []byte) error {
+func (CosignVerifier) VerifySignature(content, signature, publicKey []byte) error {
 	sigRaw := base64.NewDecoder(base64.StdEncoding, bytes.NewReader(signature))
 
 	pubKeyRaw, err := cryptoutils.UnmarshalPEMToPublicKey(publicKey)
@@ -41,4 +47,15 @@ func VerifySignature(content, signature, publicKey []byte) error {
 	}
 
 	return nil
+}
+
+// CosignPublicKeyForVersion returns the public key for the given version.
+func CosignPublicKeyForVersion(ver versionsapi.Version) ([]byte, error) {
+	if err := ver.Validate(); err != nil {
+		return nil, fmt.Errorf("selecting public key: invalid version %s: %w", ver.ShortPath(), err)
+	}
+	if ver.Ref == versionsapi.ReleaseRef && ver.Stream == "stable" {
+		return []byte(constants.CosignPublicKeyReleases), nil
+	}
+	return []byte(constants.CosignPublicKeyDev), nil
 }

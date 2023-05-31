@@ -60,7 +60,8 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := VerifySignature(tc.content, tc.signature, tc.publicKey)
+			cosign := CosignVerifier{}
+			err := cosign.VerifySignature(tc.content, tc.signature, tc.publicKey)
 			if tc.wantErr {
 				assert.Error(err)
 				return

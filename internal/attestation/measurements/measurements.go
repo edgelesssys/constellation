@@ -38,6 +38,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
+//go:generate measurement-generator
+
 const (
 	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
 	// The value used to extend is a random generated 32 Byte value.
@@ -129,11 +131,31 @@ func (m M) MarshalYAML() (any, error) {
 }
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
-// using client for download. The publicKey is used to verify the measurements.
+// using client for download.
 // The hash of the fetched measurements is returned.
 func (m *M) FetchAndVerify(
-	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
-	publicKey []byte, version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
+	ctx context.Context, client *http.Client, verifier cosignVerifier,
+	measurementsURL, signatureURL *url.URL,
+	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
+) (string, error) {
+	publicKey, err := sigstore.CosignPublicKeyForVersion(version)
+	if err != nil {
+		return "", fmt.Errorf("getting public key: %w", err)
+	}
+	return m.fetchAndVerify(
+		ctx, client, verifier,
+		measurementsURL, signatureURL,
+		publicKey, version, csp, attestationVariant,
+	)
+}
+
+// fetchAndVerify fetches measurement and signature files via provided URLs,
+// using client for download. The publicKey is used to verify the measurements.
+// The hash of the fetched measurements is returned.
+func (m *M) fetchAndVerify(
+	ctx context.Context, client *http.Client, verifier cosignVerifier,
+	measurementsURL, signatureURL *url.URL, publicKey []byte,
+	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
 	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
@@ -143,7 +165,7 @@ func (m *M) FetchAndVerify(
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
-	if err := sigstore.VerifySignature(measurementsRaw, signature, publicKey); err != nil {
+	if err := verifier.VerifySignature(measurementsRaw, signature, publicKey); err != nil {
 		return "", err
 	}
 
@@ -535,4 +557,8 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
 	}
 	return io.ReadAll(resp.Body)
+}
+
+type cosignVerifier interface {
+	VerifySignature(content, signature, publicKey []byte) error
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
@@ -470,8 +471,8 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 
 			m := M{}
 
-			hash, err := m.FetchAndVerify(
-				context.Background(), client,
+			hash, err := m.fetchAndVerify(
+				context.Background(), client, sigstore.CosignVerifier{},
 				measurementsURL, signatureURL,
 				cosignPublicKey,
 				tc.imageVersion,
