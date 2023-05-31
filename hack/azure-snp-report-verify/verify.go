@@ -25,8 +25,6 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-var configAPIExportPath string
-
 // IsolationTEE describes an Azure SNP TEE.
 type IsolationTEE struct {
 	IDKeyDigest   string `json:"x-ms-sevsnpvm-idkeydigest"`
@@ -47,7 +45,7 @@ func (i *IsolationTEE) PrintSVNs() {
 }
 
 func main() {
-	flag.StringVar(&configAPIExportPath, "export-path", "azure-sev-snp-version.json", "Path to the exported config API file.")
+	configAPIExportPath := flag.String("export-path", "azure-sev-snp-version.json", "Path to the exported config API file.")
 	flag.Parse()
 	if len(os.Args) != 2 {
 		fmt.Println("Usage:", os.Args[0], "<maa-jwt>")
@@ -61,11 +59,13 @@ func main() {
 	fmt.Println("Currently reported SVNs:")
 	report.PrintSVNs()
 
-	configAPIVersion := convertToConfigAPIFile(report)
-	if err := exportToJSONFile(configAPIVersion, configAPIExportPath); err != nil {
-		panic(err)
+	if *configAPIExportPath != "" {
+		configAPIVersion := convertToConfigAPIFile(report)
+		if err := exportToJSONFile(configAPIVersion, *configAPIExportPath); err != nil {
+			panic(err)
+		}
+		fmt.Println("Successfully exported config API file to:", configAPIExportPath)
 	}
-	fmt.Println("Successfully exported config API file to:", configAPIExportPath)
 }
 
 func convertToConfigAPIFile(i IsolationTEE) configapi.AzureSEVSNPVersion {
@@ -78,16 +78,11 @@ func convertToConfigAPIFile(i IsolationTEE) configapi.AzureSEVSNPVersion {
 }
 
 func exportToJSONFile(configAPIVersion configapi.AzureSEVSNPVersion, configAPIExportPath string) error {
-	file, err := os.Create(configAPIExportPath)
+	data, err := json.Marshal(configAPIVersion)
 	if err != nil {
-		return fmt.Errorf("create file: %w", err)
+		return err
 	}
-	defer file.Close()
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(configAPIVersion); err != nil {
-		return fmt.Errorf("encode json: %w", err)
-	}
-	return nil
+	return os.WriteFile(configAPIExportPath, data, 0o644)
 }
 
 func getTEEReport(rawToken string) (IsolationTEE, error) {

@@ -10,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -36,11 +35,11 @@ var (
 
 // Execute executes the root command.
 func Execute() error {
-	return NewRootCmd().Execute()
+	return newRootCmd().Execute()
 }
 
-// NewRootCmd creates the root command.
-func NewRootCmd() *cobra.Command {
+// newRootCmd creates the root command.
+func newRootCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
 		Use:   "AWS_ACCESS_KEY_ID=$ID AWS_ACCESS_KEY=$KEY upload -b 2 -t 0 -s 6 -m 93 --cosign-pwd $PWD --private-key $FILE_PATH",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
@@ -88,7 +87,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	if err := sut.UploadAzureSEVSNP(ctx, versions, time.Now()); err != nil {
 		return fmt.Errorf("uploading version: %w", err)
 	}
-	fmt.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", versions)
+	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", versions)
 	return nil
 }
 
@@ -102,12 +101,7 @@ func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 }
 
 func getBytesFromFilePath(path string) ([]byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("opening file: %w", err)
-	}
-
-	content, err := io.ReadAll(file)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}

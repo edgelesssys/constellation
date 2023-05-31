@@ -119,11 +119,11 @@ func (a AttestationVersionRepo) addVersionToList(ctx context.Context, attestatio
 	return put(ctx, a.Client, key, json)
 }
 
-// get is a convenience method to return a DEK from from AWS S3 Storage by key ID.
-func get(ctx context.Context, client *staticupload.Client, keyID string) ([]byte, error) {
+// get is a convenience method.
+func get(ctx context.Context, client *staticupload.Client, path string) ([]byte, error) {
 	getObjectInput := &s3.GetObjectInput{
 		Bucket: &client.BucketID,
-		Key:    &keyID,
+		Key:    &path,
 	}
 	output, err := client.GetObject(ctx, getObjectInput)
 	if err != nil {
@@ -132,11 +132,11 @@ func get(ctx context.Context, client *staticupload.Client, keyID string) ([]byte
 	return io.ReadAll(output.Body)
 }
 
-// put is a convenience method to save a DEK to AWS S3 Storage by key ID.
-func put(ctx context.Context, client *staticupload.Client, keyID string, data []byte) error {
+// put is a convenience method.
+func put(ctx context.Context, client *staticupload.Client, path string, data []byte) error {
 	putObjectInput := &s3.PutObjectInput{
 		Bucket: &client.BucketID,
-		Key:    &keyID,
+		Key:    &path,
 		Body:   bytes.NewReader(data),
 	}
 	_, err := client.Upload(ctx, putObjectInput)
