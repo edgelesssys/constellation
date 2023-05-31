@@ -11,13 +11,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,6 +33,7 @@ var cfg staticupload.Config
 var (
 	cosignPwd      = flag.String("cosign-pwd", "", "Password to decrypt the cosign private key. Required for signing.")
 	privateKeyPath = flag.String("private-key", "", "Path to the private key used for signing. Required for signing.")
+	privateKey     []byte
 )
 
 func TestMain(m *testing.M) {
@@ -54,6 +55,12 @@ func TestMain(m *testing.M) {
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
+	file, _ := os.Open(*privateKeyPath)
+	var err error
+	privateKey, err = io.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
 	os.Exit(m.Run())
 }
 
@@ -66,32 +73,8 @@ var versionValues = configapi.AzureSEVSNPVersion{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), []byte(*privateKeyPath))
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), privateKey)
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
 	require.NoError(t, sut.UploadAzureSEVSNP(ctx, versionValues, d))
-}
-
-func TestListVersions(t *testing.T) {
-	ctx := context.Background()
-
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), []byte(*privateKeyPath))
-	require.NoError(t, err)
-
-	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-
-	res, err := sut.List(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-	require.Equal(t, []string{}, res)
-
-	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	err = sut.UploadAzureSEVSNP(ctx, versionValues, d)
-	require.NoError(t, err)
-	res, err = sut.List(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-	require.Equal(t, []string{"2021-01-01-01-01.json"}, res)
-
-	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
 }

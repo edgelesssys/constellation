@@ -24,11 +24,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/google/uuid"
 )
-
-// DefaultDistributionID is the default CloudFront distribution ID to use.
-const DefaultDistributionID = "E1H77EZTHC3NE4"
 
 // Client is a static file uploader/updater/remover for the CDN / static API.
 // It has the same interface as the S3 uploader.
@@ -38,7 +36,7 @@ type Client struct {
 	uploadClient   uploadClient
 	s3Client       objectStorageClient
 	distributionID string
-	bucketID       string
+	BucketID       string
 
 	cacheInvalidationStrategy    CacheInvalidationStrategy
 	cacheInvalidationWaitTimeout time.Duration
@@ -62,12 +60,11 @@ type Config struct {
 	CacheInvalidationWaitTimeout time.Duration
 }
 
-// Validate checks if all necessary values are set and sets default values otherwise.
-func (c *Config) Validate() error {
+// SetsDefault checks if all necessary values are set and sets default values otherwise.
+func (c *Config) SetsDefault() {
 	if c.DistributionID == "" {
-		c.DistributionID = DefaultDistributionID
+		c.DistributionID = constants.CDNDefaultDistributionID
 	}
-	return nil
 }
 
 // CacheInvalidationStrategy is the strategy to use for invalidating the CDN cache.
@@ -97,13 +94,8 @@ func (e InvalidationError) Unwrap() error {
 }
 
 // New creates a new Client.
-func New(
-	ctx context.Context,
-	config Config,
-) (*Client, error) {
-	if err := config.Validate(); err != nil {
-		return nil, err
-	}
+func New(ctx context.Context, config Config) (*Client, error) {
+	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
 	if err != nil {
 		return nil, err
@@ -120,7 +112,7 @@ func New(
 		distributionID:               config.DistributionID,
 		cacheInvalidationStrategy:    config.CacheInvalidationStrategy,
 		cacheInvalidationWaitTimeout: config.CacheInvalidationWaitTimeout,
-		bucketID:                     config.Bucket,
+		BucketID:                     config.Bucket,
 	}, nil
 }
 
@@ -189,7 +181,6 @@ func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (str
 			},
 		},
 	}
-	fmt.Println("callee", in.InvalidationBatch.CallerReference)
 	invalidation, err := c.cdnClient.CreateInvalidation(ctx, in)
 	if err != nil {
 		return "", InvalidationError{inner: fmt.Errorf("creating invalidation: %w", err)}

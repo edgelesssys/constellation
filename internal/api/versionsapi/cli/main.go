@@ -23,7 +23,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/edgelesssys/constellation/v2/internal/staticupload"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -53,7 +53,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	rootCmd.PersistentFlags().String("region", "eu-central-1", "AWS region of the API S3 bucket")
 	rootCmd.PersistentFlags().String("bucket", "cdn-constellation-backend", "S3 bucket name of the API")
-	rootCmd.PersistentFlags().String("distribution-id", staticupload.DefaultDistributionID, "CloudFront distribution ID of the API")
+	rootCmd.PersistentFlags().String("distribution-id", constants.CDNDefaultDistributionID, "CloudFront distribution ID of the API")
 
 	rootCmd.AddCommand(newAddCmd())
 	rootCmd.AddCommand(newLatestCmd())

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -31,7 +32,6 @@ import (
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -135,11 +135,11 @@ func (m *M) FetchAndVerify(
 	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
 	publicKey []byte, version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
-	measurementsRaw, err := fetcher.FetchFromURL(ctx, client, measurementsURL)
+	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
 	}
-	signature, err := fetcher.FetchFromURL(ctx, client, signatureURL)
+	signature, err := getFromURL(ctx, client, signatureURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
@@ -163,7 +163,7 @@ func (m *M) FetchAndVerify(
 func (m *M) FetchNoVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL,
 	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) error {
-	measurementsRaw, err := fetcher.FetchFromURL(ctx, client, measurementsURL)
+	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return fmt.Errorf("failed to fetch measurements: %w", err)
 	}
@@ -517,4 +517,22 @@ func (c mYamlContent) Swap(i, j int) {
 	// We need to swap both key and value.
 	c[2*i], c[2*j] = c[2*j], c[2*i]
 	c[2*i+1], c[2*j+1] = c[2*j+1], c[2*i+1]
+}
+
+// getFromURL fetches the content from the given URL and returns the content as a byte slice.
+func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
 }

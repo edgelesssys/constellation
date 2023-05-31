@@ -48,26 +48,22 @@ type apiObject interface {
 	URL() (string, error)
 }
 
-// FetchFromURL fetches the content from the given URL and returns the content as a byte slice.
-func FetchFromURL(ctx context.Context, client HTTPClient, sourceURL *url.URL) ([]byte, error) {
+// getFromURL fetches the content from the given URL and returns the content as a byte slice.
+func getFromURL(ctx context.Context, client HTTPClient, sourceURL *url.URL) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return []byte{}, fmt.Errorf("http status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
 	}
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return []byte{}, err
-	}
-	return content, nil
+	return io.ReadAll(resp.Body)
 }
 
 func fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {

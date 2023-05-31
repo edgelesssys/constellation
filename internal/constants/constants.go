@@ -197,6 +197,9 @@ const (
 	CDNMeasurementsFile = "measurements.json"
 	// CDNMeasurementsSignature is name of file containing signature for CDNMeasurementsFile.
 	CDNMeasurementsSignature = "measurements.json.sig"
+	//
+	// CDNDefaultDistributionID is the default CloudFront distribution ID to use.
+	CDNDefaultDistributionID = "E1H77EZTHC3NE4"
 )
 
 // VersionInfo returns the version of a binary.

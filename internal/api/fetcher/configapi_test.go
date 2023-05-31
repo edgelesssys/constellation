@@ -25,7 +25,7 @@ var testCfg = configapi.AzureSEVSNPVersion{
 	Bootloader: 2,
 }
 
-func TestGetVersion(t *testing.T) {
+func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 	testcases := map[string]struct {
 		signature []byte
 		wantErr   bool

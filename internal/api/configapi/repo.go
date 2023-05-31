@@ -6,14 +6,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 package configapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"sort"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
@@ -46,25 +49,25 @@ func (a AttestationVersionRepo) UploadAzureSEVSNP(ctx context.Context, versions 
 	fname := date.Format("2006-01-02-15-04") + ".json"
 
 	filePath := fmt.Sprintf("%s/%s/%s", attestationURLPath, variant.String(), fname)
-	err = a.Put(ctx, filePath, versionBytes)
+	err = put(ctx, a.Client, filePath, versionBytes)
 	if err != nil {
 		return err
 	}
 
-	err = a.signAndUpload(ctx, versionBytes, filePath)
+	err = a.createAndUploadSignature(ctx, versionBytes, filePath)
 	if err != nil {
 		return err
 	}
 	return a.addVersionToList(ctx, variant, fname)
 }
 
-// signAndUpload signs the given content and uploads it to the given filePath with the .sig suffix.
-func (a AttestationVersionRepo) signAndUpload(ctx context.Context, content []byte, filePath string) error {
+// createAndUploadSignature signs the given content and uploads the signature to the given filePath with the .sig suffix.
+func (a AttestationVersionRepo) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
 	signature, err := sigstore.SignContent(a.cosignPwd, a.privKey, content)
 	if err != nil {
 		return fmt.Errorf("sign version file: %w", err)
 	}
-	err = a.Put(ctx, filePath+".sig", signature)
+	err = put(ctx, a.Client, filePath+".sig", signature)
 	if err != nil {
 		return fmt.Errorf("upload signature: %w", err)
 	}
@@ -74,7 +77,7 @@ func (a AttestationVersionRepo) signAndUpload(ctx context.Context, content []byt
 // List returns the list of versions for the given attestation type.
 func (a AttestationVersionRepo) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
 	key := path.Join(attestationURLPath, attestation.String(), "list")
-	bt, err := a.Get(ctx, key)
+	bt, err := get(ctx, a.Client, key)
 	if err != nil {
 		return nil, err
 	}
@@ -92,13 +95,13 @@ func (a AttestationVersionRepo) DeleteList(ctx context.Context, attestation vari
 	if err != nil {
 		return err
 	}
-	return a.Put(ctx, path.Join(attestationURLPath, attestation.String(), "list"), bt)
+	return put(ctx, a.Client, path.Join(attestationURLPath, attestation.String(), "list"), bt)
 }
 
 func (a AttestationVersionRepo) addVersionToList(ctx context.Context, attestation variant.Variant, fname string) error {
 	versions := []string{}
 	key := path.Join(attestationURLPath, attestation.String(), "list")
-	bt, err := a.Get(ctx, key)
+	bt, err := get(ctx, a.Client, key)
 	if err == nil {
 		if err := json.Unmarshal(bt, &versions); err != nil {
 			return err
@@ -113,5 +116,29 @@ func (a AttestationVersionRepo) addVersionToList(ctx context.Context, attestatio
 	if err != nil {
 		return err
 	}
-	return a.Put(ctx, key, json)
+	return put(ctx, a.Client, key, json)
+}
+
+// get is a convenience method to return a DEK from from AWS S3 Storage by key ID.
+func get(ctx context.Context, client *staticupload.Client, keyID string) ([]byte, error) {
+	getObjectInput := &s3.GetObjectInput{
+		Bucket: &client.BucketID,
+		Key:    &keyID,
+	}
+	output, err := client.GetObject(ctx, getObjectInput)
+	if err != nil {
+		return nil, fmt.Errorf("getting object: %w", err)
+	}
+	return io.ReadAll(output.Body)
+}
+
+// put is a convenience method to save a DEK to AWS S3 Storage by key ID.
+func put(ctx context.Context, client *staticupload.Client, keyID string, data []byte) error {
+	putObjectInput := &s3.PutObjectInput{
+		Bucket: &client.BucketID,
+		Key:    &keyID,
+		Body:   bytes.NewReader(data),
+	}
+	_, err := client.Upload(ctx, putObjectInput)
+	return err
 }
