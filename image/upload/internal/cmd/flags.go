@@ -27,6 +27,7 @@ type commonFlags struct {
 	timestamp          time.Time
 	region             string
 	bucket             string
+	distributionID     string
 	out                string
 	logLevel           zapcore.Level
 }
@@ -75,6 +76,10 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 	if err != nil {
 		return commonFlags{}, err
 	}
+	distributionID, err := cmd.Flags().GetString("distribution-id")
+	if err != nil {
+		return commonFlags{}, err
+	}
 	out, err := cmd.Flags().GetString("out")
 	if err != nil {
 		return commonFlags{}, err
@@ -96,6 +101,7 @@ func parseCommonFlags(cmd *cobra.Command) (commonFlags, error) {
 		timestamp:          timestmp,
 		region:             region,
 		bucket:             bucket,
+		distributionID:     distributionID,
 		out:                out,
 		logLevel:           logLevel,
 	}, nil
@@ -201,9 +207,10 @@ func parseGCPFlags(cmd *cobra.Command) (gcpFlags, error) {
 }
 
 type s3Flags struct {
-	region   string
-	bucket   string
-	logLevel zapcore.Level
+	region         string
+	bucket         string
+	distributionID string
+	logLevel       zapcore.Level
 }
 
 func parseS3Flags(cmd *cobra.Command) (s3Flags, error) {
@@ -212,6 +219,10 @@ func parseS3Flags(cmd *cobra.Command) (s3Flags, error) {
 		return s3Flags{}, err
 	}
 	bucket, err := cmd.Flags().GetString("bucket")
+	if err != nil {
+		return s3Flags{}, err
+	}
+	distributionID, err := cmd.Flags().GetString("distribution-id")
 	if err != nil {
 		return s3Flags{}, err
 	}
@@ -225,9 +236,10 @@ func parseS3Flags(cmd *cobra.Command) (s3Flags, error) {
 	}
 
 	return s3Flags{
-		region:   region,
-		bucket:   bucket,
-		logLevel: logLevel,
+		region:         region,
+		bucket:         bucket,
+		distributionID: distributionID,
+		logLevel:       logLevel,
 	}, nil
 }
 

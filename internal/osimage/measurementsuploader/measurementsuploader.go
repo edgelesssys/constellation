@@ -14,7 +14,6 @@ import (
 	"io"
 	"net/url"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -22,11 +21,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
 // Uploader uploads image info to S3.
 type Uploader struct {
-	uploadClient uploadClient
+	uploadClient      uploadClient
+	uploadClientClose func(ctx context.Context) error
 	// bucket is the name of the S3 bucket to use.
 	bucket string
 
@@ -34,19 +35,36 @@ type Uploader struct {
 }
 
 // New creates a new Uploader.
-func New(ctx context.Context, region, bucket string, log *logger.Logger) (*Uploader, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+func New(ctx context.Context, region, bucket, distributionID string, log *logger.Logger) (*Uploader, CloseFunc, error) {
+	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
+		Region:                    region,
+		Bucket:                    bucket,
+		DistributionID:            distributionID,
+		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
+	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	s3client := s3.NewFromConfig(cfg)
-	uploadClient := s3manager.NewUploader(s3client)
 
-	return &Uploader{
-		uploadClient: uploadClient,
-		bucket:       bucket,
-		log:          log,
-	}, nil
+	uploader := &Uploader{
+		uploadClient:      staticUploadClient,
+		uploadClientClose: staticUploadClientClose,
+		bucket:            bucket,
+		log:               log,
+	}
+	uploaderClose := func(ctx context.Context) error {
+		return uploader.Close(ctx)
+	}
+	return uploader, uploaderClose, nil
+}
+
+// Close closes the uploader.
+// It invalidates the CDN cache for all uploaded files.
+func (a *Uploader) Close(ctx context.Context) error {
+	if a.uploadClientClose == nil {
+		return nil
+	}
+	return a.uploadClientClose(ctx)
 }
 
 // Upload uploads the measurements v2 JSON file and its signature to S3.
@@ -97,3 +115,6 @@ func (a *Uploader) Upload(ctx context.Context, rawMeasurement, signature io.Read
 type uploadClient interface {
 	Upload(ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
+
+// CloseFunc is a function that closes the client.
+type CloseFunc func(ctx context.Context) error

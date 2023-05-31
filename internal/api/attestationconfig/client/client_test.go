@@ -74,8 +74,9 @@ var versionValues = attestationconfig.AzureSEVSNPVersion{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	client, err := client.New(ctx, cfg, []byte(*cosignPwd), privateKey)
+	client, clientClose, err := client.New(ctx, cfg, []byte(*cosignPwd), privateKey)
 	require.NoError(t, err)
+	defer func() { _ = clientClose(ctx) }()
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
 	require.NoError(t, client.UploadAzureSEVSNP(ctx, versionValues, d))
 }

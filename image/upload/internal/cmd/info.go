@@ -31,6 +31,7 @@ func NewInfoCmd() *cobra.Command {
 
 	cmd.Flags().String("region", "eu-central-1", "AWS region of the archive S3 bucket")
 	cmd.Flags().String("bucket", "cdn-constellation-backend", "S3 bucket name of the archive")
+	cmd.Flags().String("distribution-id", "E1H77EZTHC3NE4", "CloudFront distribution ID of the API")
 	cmd.Flags().Bool("verbose", false, "Enable verbose output")
 
 	return cmd
@@ -54,10 +55,15 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	uploadC, err := infoupload.New(cmd.Context(), flags.region, flags.bucket, log)
+	uploadC, uploadCClose, err := infoupload.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
+	defer func() {
+		if err := uploadCClose(cmd.Context()); err != nil {
+			log.Errorf("closing upload client: %v", err)
+		}
+	}()
 
 	url, err := uploadC.Upload(cmd.Context(), info)
 	if err != nil {

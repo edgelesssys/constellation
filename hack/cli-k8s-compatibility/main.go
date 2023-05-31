@@ -50,12 +50,12 @@ func main() {
 		cliInfo.Kubernetes = append(cliInfo.Kubernetes, v.ClusterVersion)
 	}
 
-	c, err := client.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, log)
+	c, cclose, err := client.NewClient(ctx, "eu-central-1", "cdn-constellation-backend", "E1H77EZTHC3NE4", false, log)
 	if err != nil {
 		log.Fatalf("creating s3 client: %w", err)
 	}
 	defer func() {
-		if err := c.InvalidateCache(ctx); err != nil {
+		if err := cclose(ctx); err != nil {
 			log.Fatalf("invalidating cache: %w", err)
 		}
 	}()

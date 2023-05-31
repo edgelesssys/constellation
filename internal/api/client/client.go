@@ -35,25 +35,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
-	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"go.uber.org/zap"
 )
 
 // Client is the client for the versions API.
 type Client struct {
-	config                       aws.Config
-	cloudfrontClient             *cloudfront.Client
-	s3Client                     *s3.Client
-	uploadClient                 *s3manager.Uploader
+	uploadClient                 uploadClient
+	s3Client                     s3Client
+	s3ClientClose                func(ctx context.Context) error
 	bucket                       string
-	distributionID               string
 	cacheInvalidationWaitTimeout time.Duration
 
 	dirtyPaths []string // written paths to be invalidated
@@ -66,90 +61,68 @@ type Client struct {
 // This client can be used to fetch objects but cannot write updates.
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
 	log *logger.Logger,
-) (*Client, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+) (*Client, CloseFunc, error) {
+	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
+		Region:                    region,
+		Bucket:                    bucket,
+		DistributionID:            distributionID,
+		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
+	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	s3c := s3.NewFromConfig(cfg)
 
-	return &Client{
-		config:         cfg,
-		s3Client:       s3c,
-		bucket:         bucket,
-		distributionID: distributionID,
-		DryRun:         true,
-		Log:            log,
-	}, nil
+	client := &Client{
+		s3Client:      staticUploadClient,
+		s3ClientClose: staticUploadClientClose,
+		bucket:        bucket,
+		DryRun:        true,
+		Log:           log,
+	}
+	clientClose := func(ctx context.Context) error {
+		return client.Close(ctx)
+	}
+
+	return client, clientClose, nil
 }
 
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
 	log *logger.Logger,
-) (*Client, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+) (*Client, CloseFunc, error) {
+	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
+		Region:                    region,
+		Bucket:                    bucket,
+		DistributionID:            distributionID,
+		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
+	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	cloudfrontC := cloudfront.NewFromConfig(cfg)
-	s3C := s3.NewFromConfig(cfg)
-	uploadC := s3manager.NewUploader(s3C)
-
-	return &Client{
-		config:                       cfg,
-		cloudfrontClient:             cloudfrontC,
-		s3Client:                     s3C,
-		uploadClient:                 uploadC,
+	client := &Client{
+		uploadClient:                 staticUploadClient,
+		s3Client:                     staticUploadClient,
+		s3ClientClose:                staticUploadClientClose,
 		bucket:                       bucket,
-		distributionID:               distributionID,
 		DryRun:                       dryRun,
 		Log:                          log,
 		cacheInvalidationWaitTimeout: 10 * time.Minute,
-	}, nil
+	}
+	clientClose := func(ctx context.Context) error {
+		return client.Close(ctx)
+	}
+
+	return client, clientClose, nil
 }
 
-// InvalidateCache invalidates the CDN cache for the paths that have been written.
-// The function should be deferred after the client has been created.
-func (c *Client) InvalidateCache(ctx context.Context) error {
-	if len(c.dirtyPaths) == 0 {
-		c.Log.Debugf("No dirty paths, skipping cache invalidation")
+// Close closes the client.
+// It invalidates the CDN cache for all uploaded files.
+func (c *Client) Close(ctx context.Context) error {
+	if c.s3ClientClose == nil {
 		return nil
 	}
-
-	if c.DryRun {
-		c.Log.With(zap.String("distributionID", c.distributionID), zap.Strings("dirtyPaths", c.dirtyPaths)).Debugf("DryRun: cloudfront create invalidation")
-		return nil
-	}
-
-	c.Log.Debugf("Paths to invalidate: %v", c.dirtyPaths)
-
-	in := &cloudfront.CreateInvalidationInput{
-		DistributionId: &c.distributionID,
-		InvalidationBatch: &cftypes.InvalidationBatch{
-			CallerReference: ptr(fmt.Sprintf("%d", time.Now().Unix())),
-			Paths: &cftypes.Paths{
-				Items:    c.dirtyPaths,
-				Quantity: ptr(int32(len(c.dirtyPaths))),
-			},
-		},
-	}
-	invalidation, err := c.cloudfrontClient.CreateInvalidation(ctx, in)
-	if err != nil {
-		return fmt.Errorf("creating invalidation: %w", err)
-	}
-
-	c.Log.Debugf("Waiting for invalidation %s to complete", *invalidation.Invalidation.Id)
-	waiter := cloudfront.NewInvalidationCompletedWaiter(c.cloudfrontClient)
-	waitIn := &cloudfront.GetInvalidationInput{
-		DistributionId: &c.distributionID,
-		Id:             invalidation.Invalidation.Id,
-	}
-	if err := waiter.Wait(ctx, waitIn, c.cacheInvalidationWaitTimeout); err != nil {
-		return fmt.Errorf("waiting for invalidation to complete: %w", err)
-	}
-
-	return nil
+	return c.s3ClientClose(ctx)
 }
 
 // DeletePath deletes all objects at a given path from a s3 bucket.
@@ -289,3 +262,22 @@ func (e *NotFoundError) Error() string {
 func (e *NotFoundError) Unwrap() error {
 	return e.err
 }
+
+type s3Client interface {
+	GetObject(
+		ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options),
+	) (*s3.GetObjectOutput, error)
+	ListObjectsV2(
+		ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options),
+	) (*s3.ListObjectsV2Output, error)
+	DeleteObjects(
+		ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options),
+	) (*s3.DeleteObjectsOutput, error)
+}
+
+type uploadClient interface {
+	Upload(ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
+}
+
+// CloseFunc is a function that closes the client.
+type CloseFunc func(ctx context.Context) error

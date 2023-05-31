@@ -31,6 +31,7 @@ func newMeasurementsUploadCmd() *cobra.Command {
 	cmd.Flags().String("signature", "", "Path to signature file to upload")
 	cmd.Flags().String("region", "eu-central-1", "AWS region of the archive S3 bucket")
 	cmd.Flags().String("bucket", "cdn-constellation-backend", "S3 bucket name of the archive")
+	cmd.Flags().String("distribution-id", "E1H77EZTHC3NE4", "CloudFront distribution ID of the API")
 	cmd.Flags().Bool("verbose", false, "Enable verbose output")
 
 	must(cmd.MarkFlagRequired("measurements"))
@@ -53,10 +54,15 @@ func runMeasurementsUpload(cmd *cobra.Command, _ []string) error {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	uploadC, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, log)
+	uploadC, uploadCClose, err := measurementsuploader.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("uploading image info: %w", err)
 	}
+	defer func() {
+		if err := uploadCClose(cmd.Context()); err != nil {
+			log.Errorf("closing upload client: %v", err)
+		}
+	}()
 
 	measurements, err := os.Open(flags.measurementsPath)
 	if err != nil {

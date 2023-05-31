@@ -76,10 +76,15 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unmarshalling version file: %w", err)
 	}
 
-	sut, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), privateKey)
+	sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), privateKey)
 	if err != nil {
 		return fmt.Errorf("creating repo: %w", err)
 	}
+	defer func() {
+		if err := sutClose(ctx); err != nil {
+			fmt.Printf("closing repo: %v\n", err)
+		}
+	}()
 
 	if err := sut.UploadAzureSEVSNP(ctx, versions, time.Now()); err != nil {
 		return fmt.Errorf("uploading version: %w", err)

@@ -27,23 +27,49 @@ import (
 // VersionsClient is a client for the versions API.
 type VersionsClient struct {
 	*apiclient.Client
+	clientClose func(ctx context.Context) error
 }
 
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
 	log *logger.Logger,
-) (*VersionsClient, error) {
-	genericClient, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
-	return &VersionsClient{genericClient}, err
+) (*VersionsClient, CloseFunc, error) {
+	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
+	versionsClient := &VersionsClient{
+		genericClient,
+		genericClientClose,
+	}
+	versionsClientClose := func(ctx context.Context) error {
+		return versionsClient.Close(ctx)
+	}
+	return versionsClient, versionsClientClose, err
 }
 
 // NewReadOnlyClient creates a new read-only client.
 // This client can be used to fetch objects but cannot write updates.
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
 	log *logger.Logger,
-) (*VersionsClient, error) {
-	genericClient, err := apiclient.NewReadOnlyClient(ctx, region, bucket, distributionID, log)
-	return &VersionsClient{genericClient}, err
+) (*VersionsClient, CloseFunc, error) {
+	genericClient, genericClientClose, err := apiclient.NewReadOnlyClient(ctx, region, bucket, distributionID, log)
+	if err != nil {
+		return nil, nil, err
+	}
+	versionsClient := &VersionsClient{
+		genericClient,
+		genericClientClose,
+	}
+	versionsClientClose := func(ctx context.Context) error {
+		return versionsClient.Close(ctx)
+	}
+	return versionsClient, versionsClientClose, err
+}
+
+// Close closes the client.
+func (c *VersionsClient) Close(ctx context.Context) error {
+	if c.clientClose == nil {
+		return nil
+	}
+	return c.clientClose(ctx)
 }
 
 // FetchVersionList fetches the given version list from the versions API.
@@ -228,3 +254,6 @@ func (c *VersionsClient) deleteVersionFromLatest(ctx context.Context, ver versio
 
 	return nil
 }
+
+// CloseFunc is a function that closes the client.
+type CloseFunc func(ctx context.Context) error
