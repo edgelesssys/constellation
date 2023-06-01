@@ -14,6 +14,7 @@ go_library(
     deps = [
         "//internal/api/versionsapi",
         "//internal/api/versionsapi/client",
+        "//internal/constants",
         "//internal/logger",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",

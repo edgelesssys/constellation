@@ -19,6 +19,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 
@@ -97,12 +98,13 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler}
-	return i.initialize(cmd, newDialer, fileHandler, license.NewClient())
+	fetcher := fetcher.NewConfigAPIFetcher()
+	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher fetcher.ConfigAPIFetcher,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -110,7 +112,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	i.log.Debugf("Using flags: %+v", flags)
 	i.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

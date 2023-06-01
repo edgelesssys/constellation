@@ -17,7 +17,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 )
 
 // fetcher fetches versions API resources without authentication.
@@ -44,6 +46,24 @@ type apiObject interface {
 	ValidateRequest() error
 	Validate() error
 	URL() (string, error)
+}
+
+// getFromURL fetches the content from the given URL and returns the content as a byte slice.
+func getFromURL(ctx context.Context, client HTTPClient, sourceURL *url.URL) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
 }
 
 func fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -58,11 +59,11 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewCreator(spinner)
 	c := &createCmd{log: log}
-	return c.create(cmd, creator, fileHandler, spinner)
+	fetcher := fetcher.NewConfigAPIFetcher()
+	return c.create(cmd, creator, fileHandler, spinner, fetcher)
 }
 
-func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf,
-) (retErr error) {
+func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher fetcher.ConfigAPIFetcher) (retErr error) {
 	flags, err := c.parseCreateFlags(cmd)
 	if err != nil {
 		return err
@@ -73,7 +74,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

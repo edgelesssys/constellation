@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -64,12 +65,13 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
-	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, http.DefaultClient)
+	fetcher := fetcher.NewConfigAPIFetcherWithClient(http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
-	fileHandler file.Handler, client *http.Client,
+	fileHandler file.Handler, fetcher fetcher.ConfigAPIFetcher, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
 	if err != nil {
@@ -83,7 +85,8 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 
 	cfm.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.NewWithClient(fileHandler, flags.configPath, client, flags.force)
+
+	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -110,6 +113,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err != nil {
 		return err
 	}
+
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
 		ctx, client, cosign,

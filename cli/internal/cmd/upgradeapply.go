@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -65,16 +66,18 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fetcher := imagefetcher.New()
+	imagefetcher := imagefetcher.New()
+	configFetcher := fetcher.NewConfigAPIFetcher()
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, fetcher: fetcher}
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
-	upgrader cloudUpgrader
-	fetcher  imageFetcher
-	log      debugLog
+	upgrader      cloudUpgrader
+	imageFetcher  imageFetcher
+	configFetcher fetcher.ConfigAPIFetcher
+	log           debugLog
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -82,7 +85,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -102,7 +105,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	if err := u.migrateTerraform(cmd, fileHandler, u.fetcher, conf, flags); err != nil {
+	if err := u.migrateTerraform(cmd, fileHandler, u.imageFetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
 

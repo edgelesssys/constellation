@@ -5,6 +5,7 @@ go_library(
     name = "sigstore",
     srcs = [
         "rekor.go",
+        "sign.go",
         "sigstore.go",
         "verify.go",
     ],
@@ -22,6 +23,7 @@ go_library(
         "@com_github_sigstore_rekor//pkg/verify",
         "@com_github_sigstore_sigstore//pkg/cryptoutils",
         "@com_github_sigstore_sigstore//pkg/signature",
+        "@com_github_theupdateframework_go_tuf//encrypted",
     ],
 )
 
@@ -29,6 +31,7 @@ go_test(
     name = "sigstore_test",
     srcs = [
         "rekor_test.go",
+        "sign_test.go",
         "verify_test.go",
     ],
     embed = [":sigstore"],

@@ -163,7 +163,7 @@ func TestRecover(t *testing.T) {
 			))
 
 			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
-			r := &recoverCmd{log: logger.NewTest(t)}
+			r := &recoverCmd{log: logger.NewTest(t), configFetcher: fakeConfigFetcher{}}
 			err := r.recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
 			if tc.wantErr {
 				assert.Error(err)

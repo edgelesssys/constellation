@@ -24,6 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	cftypes "github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/google/uuid"
 )
 
 // Client is a static file uploader/updater/remover for the CDN / static API.
@@ -34,6 +36,7 @@ type Client struct {
 	uploadClient   uploadClient
 	s3Client       objectStorageClient
 	distributionID string
+	BucketID       string
 
 	cacheInvalidationStrategy    CacheInvalidationStrategy
 	cacheInvalidationWaitTimeout time.Duration
@@ -55,6 +58,13 @@ type Config struct {
 	// CacheInvalidationWaitTimeout is the timeout to wait for the CDN cache to invalidate.
 	// set to 0 to disable waiting for the CDN cache to invalidate.
 	CacheInvalidationWaitTimeout time.Duration
+}
+
+// SetsDefault checks if all necessary values are set and sets default values otherwise.
+func (c *Config) SetsDefault() {
+	if c.DistributionID == "" {
+		c.DistributionID = constants.CDNDefaultDistributionID
+	}
 }
 
 // CacheInvalidationStrategy is the strategy to use for invalidating the CDN cache.
@@ -84,10 +94,8 @@ func (e InvalidationError) Unwrap() error {
 }
 
 // New creates a new Client.
-func New(
-	ctx context.Context,
-	config Config,
-) (*Client, error) {
+func New(ctx context.Context, config Config) (*Client, error) {
+	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
 	if err != nil {
 		return nil, err
@@ -104,6 +112,7 @@ func New(
 		distributionID:               config.DistributionID,
 		cacheInvalidationStrategy:    config.CacheInvalidationStrategy,
 		cacheInvalidationWaitTimeout: config.CacheInvalidationWaitTimeout,
+		BucketID:                     config.Bucket,
 	}, nil
 }
 
@@ -165,7 +174,7 @@ func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (str
 	in := &cloudfront.CreateInvalidationInput{
 		DistributionId: &c.distributionID,
 		InvalidationBatch: &cftypes.InvalidationBatch{
-			CallerReference: ptr(fmt.Sprintf("%d", time.Now().Unix())),
+			CallerReference: ptr(uuid.New().String()),
 			Paths: &cftypes.Paths{
 				Items:    keys,
 				Quantity: ptr(int32(len(keys))),
@@ -208,6 +217,10 @@ type uploadClient interface {
 	) (*s3manager.UploadOutput, error)
 }
 
+type getClient interface {
+	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+}
+
 type deleteClient interface {
 	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput,
 		optFns ...func(*s3.Options),
@@ -229,6 +242,7 @@ type cdnClient interface {
 
 type objectStorageClient interface {
 	deleteClient
+	getClient
 }
 
 // statically assert that Client implements the uploadClient interface.

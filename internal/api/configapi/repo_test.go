@@ -11,38 +11,57 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	awsBucket   = "cdn-constellation-backend"
+	awsRegion   = "eu-central-1"
+	envAwsKeyID = "AWS_ACCESS_KEY_ID"
+	envAwsKey   = "AWS_ACCESS_KEY"
+)
+
+var cfg staticupload.Config
+
 var (
-	awsRegion      = flag.String("aws-region", "us-east-1", "Region to use for AWS tests. Required for AWS KMS test.")
-	awsAccessKeyID = flag.String("aws-access-key-id", "", "ID of the Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsAccessKey   = flag.String("aws-access-key", "", "Access key to use for AWS tests. Required for AWS KMS and storage test.")
-	awsBucket      = flag.String("aws-bucket", "", "Name of the S3 bucket to use for AWS storage test. Required for AWS storage test.")
+	cosignPwd      = flag.String("cosign-pwd", "", "Password to decrypt the cosign private key. Required for signing.")
+	privateKeyPath = flag.String("private-key", "", "Path to the private key used for signing. Required for signing.")
+	privateKey     []byte
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if *awsAccessKey == "" || *awsAccessKeyID == "" || *awsBucket == "" || *awsRegion == "" {
+	if *cosignPwd == "" || *privateKeyPath == "" {
 		flag.Usage()
-		fmt.Println("Required flags not set: --aws-access-key, --aws-access-key-id, --aws-bucket, --aws-region. Skipping tests.")
-		os.Exit(0)
+		fmt.Println("Required flags not set: --cosign-pwd, --private-key. Skipping tests.")
+		os.Exit(1)
+	}
+	if _, present := os.LookupEnv(envAwsKey); !present {
+		fmt.Printf("%s not set. Skipping tests.\n", envAwsKey)
+		os.Exit(1)
+	}
+	if _, present := os.LookupEnv(envAwsKeyID); !present {
+		fmt.Printf("%s not set. Skipping tests.\n", envAwsKeyID)
+		os.Exit(1)
+	}
+	cfg = staticupload.Config{
+		Bucket: awsBucket,
+		Region: awsRegion,
+	}
+	file, _ := os.Open(*privateKeyPath)
+	var err error
+	privateKey, err = io.ReadAll(file)
+	if err != nil {
+		panic(err)
 	}
 	os.Exit(m.Run())
-}
-
-var cfg = uri.AWSS3Config{
-	Bucket:      *awsBucket,
-	AccessKeyID: *awsAccessKeyID,
-	AccessKey:   *awsAccessKey,
-	Region:      *awsRegion,
 }
 
 var versionValues = configapi.AzureSEVSNPVersion{
@@ -54,32 +73,8 @@ var versionValues = configapi.AzureSEVSNPVersion{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
+	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg, []byte(*cosignPwd), privateKey)
 	require.NoError(t, err)
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
 	require.NoError(t, sut.UploadAzureSEVSNP(ctx, versionValues, d))
-}
-
-func TestListVersions(t *testing.T) {
-	ctx := context.Background()
-
-	sut, err := configapi.NewAttestationVersionRepo(ctx, cfg)
-	require.NoError(t, err)
-
-	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-
-	res, err := sut.List(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-	require.Equal(t, []string{}, res)
-
-	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	err = sut.UploadAzureSEVSNP(ctx, versionValues, d)
-	require.NoError(t, err)
-	res, err = sut.List(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
-	require.Equal(t, []string{"2021-01-01-01-01.json"}, res)
-
-	err = sut.DeleteList(ctx, variant.AzureSEVSNP{})
-	require.NoError(t, err)
 }

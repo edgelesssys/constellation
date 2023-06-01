@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -232,7 +233,8 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	cfg, err := config.New(fileHandler, constants.ConfigFilename, true)
+	fetcher := fetcher.NewConfigAPIFetcher()
+	cfg, err := config.New(fileHandler, constants.ConfigFilename, fetcher, true)
 	var cfgErr *config.ValidationError
 	var longMsg string
 	if errors.As(err, &cfgErr) {

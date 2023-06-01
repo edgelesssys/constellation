@@ -13,12 +13,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
@@ -43,6 +45,8 @@ func (i *IsolationTEE) PrintSVNs() {
 }
 
 func main() {
+	configAPIExportPath := flag.String("export-path", "azure-sev-snp-version.json", "Path to the exported config API file.")
+	flag.Parse()
 	if len(os.Args) != 2 {
 		fmt.Println("Usage:", os.Args[0], "<maa-jwt>")
 		return
@@ -54,6 +58,31 @@ func main() {
 	fmt.Println("Successfully validated ID key digest:", report.IDKeyDigest)
 	fmt.Println("Currently reported SVNs:")
 	report.PrintSVNs()
+
+	if *configAPIExportPath != "" {
+		configAPIVersion := convertToConfigAPIFile(report)
+		if err := exportToJSONFile(configAPIVersion, *configAPIExportPath); err != nil {
+			panic(err)
+		}
+		fmt.Println("Successfully exported config API file to:", configAPIExportPath)
+	}
+}
+
+func convertToConfigAPIFile(i IsolationTEE) configapi.AzureSEVSNPVersion {
+	return configapi.AzureSEVSNPVersion{
+		Bootloader: uint8(i.BootloaderSvn),
+		TEE:        uint8(i.TEESvn),
+		SNP:        uint8(i.SNPFwSvn),
+		Microcode:  uint8(i.MicrocodeSvn),
+	}
+}
+
+func exportToJSONFile(configAPIVersion configapi.AzureSEVSNPVersion, configAPIExportPath string) error {
+	data, err := json.Marshal(configAPIVersion)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(configAPIExportPath, data, 0o644)
 }
 
 func getTEEReport(rawToken string) (IsolationTEE, error) {

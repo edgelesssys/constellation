@@ -14,9 +14,10 @@ go_library(
     deps = [
         "//internal/constants",
         "//internal/kms/storage",
-        "//internal/kms/storage/awss3",
-        "//internal/kms/uri",
+        "//internal/sigstore",
+        "//internal/staticupload",
         "//internal/variant",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
     ],
 )
 
@@ -28,8 +29,7 @@ go_test(
     ],
     embed = [":configapi"],
     deps = [
-        "//internal/kms/uri",
-        "//internal/variant",
+        "//internal/staticupload",
         "@com_github_stretchr_testify//require",
         "@in_gopkg_yaml_v3//:yaml_v3",
     ],

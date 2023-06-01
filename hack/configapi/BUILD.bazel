@@ -5,11 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi",
     visibility = ["//visibility:private"],
-    deps = [
-        "//internal/api/configapi",
-        "//internal/kms/uri",
-        "@com_github_spf13_cobra//:cobra",
-    ],
+    deps = ["//hack/configapi/cmd"],
 )
 
 go_binary(
