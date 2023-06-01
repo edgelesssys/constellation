@@ -15,7 +15,9 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var testCfg = configapi.AzureSEVSNPVersion{
@@ -47,10 +49,14 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 					signature: tc.signature,
 				},
 			}
-			fetcher := NewConfigAPIFetcherWithClient(client)
-			res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
+			require := require.New(t)
+			version, err := versionsapi.NewVersionFromShortPath("stream/debug/v9.9.9", versionsapi.VersionKindImage)
+			require.NoError(err)
+			fetcher, err := NewConfigAPIFetcherWithClient(client, version)
+			require.NoError(err)
 
 			assert := assert.New(t)
+			res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

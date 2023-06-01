@@ -50,7 +50,8 @@ func TestSignSignature(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.NoError(VerifySignature(tc.content, signature, publicKey))
+				verifier := CosignVerifier{}
+				assert.NoError(verifier.VerifySignature(tc.content, signature, publicKey))
 
 			}
 		})

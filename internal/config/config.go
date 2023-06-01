@@ -32,6 +32,7 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -396,8 +397,14 @@ func NewWithClient(fileHandler file.Handler, name string, client fetcher.HTTPCli
 	if err != nil {
 		return nil, err
 	}
+
+	version, err := versionsapi.NewVersionFromShortPath(c.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return nil, err
+	}
+
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		if err := azure.FetchAndSetLatestVersionNumbers(client); err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(client, version); err != nil {
 			return c, err
 		}
 	}

@@ -13,7 +13,7 @@ import (
 	"net/url"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
@@ -24,16 +24,20 @@ type ConfigAPIFetcher struct {
 }
 
 // NewConfigAPIFetcher returns a new Fetcher.
-func NewConfigAPIFetcher() *ConfigAPIFetcher {
-	return NewConfigAPIFetcherWithClient(NewHTTPClient())
+func NewConfigAPIFetcher(version versionsapi.Version) (*ConfigAPIFetcher, error) {
+	return NewConfigAPIFetcherWithClient(NewHTTPClient(), version)
 }
 
 // NewConfigAPIFetcherWithClient returns a new Fetcher with custom http client.
-func NewConfigAPIFetcherWithClient(client HTTPClient) *ConfigAPIFetcher {
+func NewConfigAPIFetcherWithClient(client HTTPClient, version versionsapi.Version) (*ConfigAPIFetcher, error) {
+	publicKey, err := sigstore.CosignPublicKeyForVersion(version)
+	if err != nil {
+		return nil, fmt.Errorf("get public key for config: %w", err)
+	}
 	return &ConfigAPIFetcher{
 		fetcher:         newFetcherWith(client),
-		cosignPublicKey: []byte(constants.CosignPublicKey),
-	}
+		cosignPublicKey: publicKey,
+	}, nil
 }
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
@@ -61,7 +65,7 @@ func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, version 
 		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", fetchedVersion.Version, err)
 	}
 
-	err = sigstore.VerifySignature(versionBytes, signature, f.cosignPublicKey)
+	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, f.cosignPublicKey)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", fetchedVersion.Version, err)
 	}
