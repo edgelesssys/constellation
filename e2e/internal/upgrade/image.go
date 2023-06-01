@@ -10,7 +10,6 @@ package upgrade
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -43,7 +42,6 @@ func fetchUpgradeInfo(ctx context.Context, csp cloudprovider.Provider,
 	if err != nil {
 		return upgradeInfo{}, err
 	}
-	log.Printf("REMOVE: Measurements URL: %s\n", measurementsURL)
 
 	fetchedMeasurements := measurements.M{}
 	if err := fetchedMeasurements.FetchNoVerify(
