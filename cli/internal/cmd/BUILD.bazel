@@ -135,6 +135,7 @@ go_test(
         "//cli/internal/terraform",
         "//cli/internal/upgrade",
         "//disk-mapper/recoverproto",
+        "//internal/api/configapi",
         "//internal/api/versionsapi",
         "//internal/atls",
         "//internal/attestation/measurements",

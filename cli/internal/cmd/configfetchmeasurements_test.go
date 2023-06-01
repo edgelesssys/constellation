@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -279,7 +281,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require.NoError(err)
 			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
 
-			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, client)
+			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, fakeConfigFetcher{}, client)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -287,4 +289,29 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			assert.NoError(err)
 		})
 	}
+}
+
+type fakeConfigFetcher struct{}
+
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
+	return configapi.AzureSEVSNPVersionList(
+		[]string{},
+	), nil
+}
+
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionGet, _ versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+	return configapi.AzureSEVSNPVersionGet{
+		AzureSEVSNPVersion: testCfg,
+	}, nil
+}
+
+func (f fakeConfigFetcher) FetchLatestAzureSEVSNPVersion(_ context.Context, _ versionsapi.Version) (configapi.AzureSEVSNPVersion, error) {
+	return testCfg, nil
+}
+
+var testCfg = configapi.AzureSEVSNPVersion{
+	Microcode:  93,
+	TEE:        0,
+	SNP:        6,
+	Bootloader: 2,
 }

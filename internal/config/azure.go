@@ -97,9 +97,8 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(client fetcher.HTTPClient, version versionsapi.Version) error {
-	fetcher, err := fetcher.NewConfigAPIFetcherWithClient(client, version)
-	versions, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher fetcher.ConfigAPIFetcher, version versionsapi.Version) error {
+	versions, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background(), version)
 	if err != nil {
 		return err
 	}

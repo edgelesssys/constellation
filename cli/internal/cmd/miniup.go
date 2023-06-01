@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -44,7 +45,8 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 type miniUpCmd struct {
-	log debugLog
+	log           debugLog
+	configFetcher fetcher.ConfigAPIFetcher
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {
@@ -60,7 +62,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
-	m := &miniUpCmd{log: log}
+	m := &miniUpCmd{log: log, configFetcher: fetcher.NewConfigAPIFetcher()}
 	return m.up(cmd, creator, spinner)
 }
 
@@ -203,7 +205,7 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
 	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}, spinner: spinner}
-	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient()); err != nil {
+	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient(), m.configFetcher); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")

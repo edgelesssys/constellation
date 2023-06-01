@@ -13,7 +13,6 @@ go_library(
     deps = [
         "//internal/api/configapi",
         "//internal/api/versionsapi",
-        "//internal/constants",
         "//internal/sigstore",
     ],
 )

@@ -18,40 +18,45 @@ import (
 )
 
 // ConfigAPIFetcher fetches config API resources without authentication.
-type ConfigAPIFetcher struct {
+type ConfigAPIFetcher interface {
+	FetchAzureSEVSNPVersionList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error)
+	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion configapi.AzureSEVSNPVersionGet, version versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error)
+	FetchLatestAzureSEVSNPVersion(ctx context.Context, version versionsapi.Version) (configapi.AzureSEVSNPVersion, error)
+}
+
+// configAPIFetcher fetches config API resources without authentication.
+type configAPIFetcher struct {
 	*fetcher
-	cosignPublicKey []byte // public key to verify signatures
 }
 
 // NewConfigAPIFetcher returns a new Fetcher.
-func NewConfigAPIFetcher(version versionsapi.Version) (*ConfigAPIFetcher, error) {
-	return NewConfigAPIFetcherWithClient(NewHTTPClient(), version)
+func NewConfigAPIFetcher() ConfigAPIFetcher {
+	return NewConfigAPIFetcherWithClient(NewHTTPClient())
 }
 
 // NewConfigAPIFetcherWithClient returns a new Fetcher with custom http client.
-func NewConfigAPIFetcherWithClient(client HTTPClient, version versionsapi.Version) (*ConfigAPIFetcher, error) {
-	publicKey, err := sigstore.CosignPublicKeyForVersion(version)
-	if err != nil {
-		return nil, fmt.Errorf("get public key for config: %w", err)
+func NewConfigAPIFetcherWithClient(client HTTPClient) ConfigAPIFetcher {
+	return &configAPIFetcher{
+		fetcher: newFetcherWith(client),
 	}
-	return &ConfigAPIFetcher{
-		fetcher:         newFetcherWith(client),
-		cosignPublicKey: publicKey,
-	}, nil
 }
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
-func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
+func (f *configAPIFetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
 	return fetch(ctx, f.httpc, attestation)
 }
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
-func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, version configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
-	urlString, err := version.URL()
+func (f *configAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion configapi.AzureSEVSNPVersionGet, version versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+	cosignPublicKey, err := sigstore.CosignPublicKeyForVersion(version)
 	if err != nil {
-		return version, err
+		return azureVersion, fmt.Errorf("get public key for config: %w", err)
 	}
-	fetchedVersion, err := fetch(ctx, f.httpc, version)
+	urlString, err := azureVersion.URL()
+	if err != nil {
+		return azureVersion, err
+	}
+	fetchedVersion, err := fetch(ctx, f.httpc, azureVersion)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
 	}
@@ -65,11 +70,26 @@ func (f *ConfigAPIFetcher) FetchAzureSEVSNPVersion(ctx context.Context, version 
 		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", fetchedVersion.Version, err)
 	}
 
-	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, f.cosignPublicKey)
+	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, cosignPublicKey)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", fetchedVersion.Version, err)
 	}
 	return fetchedVersion, nil
+}
+
+// FetchLatestAzureSEVSNPVersion returns the latest versions of the given type.
+func (f *configAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context, version versionsapi.Version) (res configapi.AzureSEVSNPVersion, err error) {
+	var versions configapi.AzureSEVSNPVersionList
+	versions, err = f.FetchAzureSEVSNPVersionList(ctx, versions)
+	if err != nil {
+		return res, fmt.Errorf("fetching versions list: %w", err)
+	}
+	get := configapi.AzureSEVSNPVersionGet{Version: versions[0]} // get latest version (as sorted reversely alphanumerically)
+	get, err = f.FetchAzureSEVSNPVersion(ctx, get, version)
+	if err != nil {
+		return res, fmt.Errorf("failed fetching version: %w", err)
+	}
+	return get.AzureSEVSNPVersion, nil
 }
 
 func fetchBytesFromRawURL(ctx context.Context, urlString string, client HTTPClient) ([]byte, error) {
@@ -78,19 +98,4 @@ func fetchBytesFromRawURL(ctx context.Context, urlString string, client HTTPClie
 		return nil, fmt.Errorf("parse version url %s: %w", urlString, err)
 	}
 	return getFromURL(ctx, client, url)
-}
-
-// FetchLatestAzureSEVSNPVersion returns the latest versions of the given type.
-func (f *ConfigAPIFetcher) FetchLatestAzureSEVSNPVersion(ctx context.Context) (res configapi.AzureSEVSNPVersion, err error) {
-	var versions configapi.AzureSEVSNPVersionList
-	versions, err = f.FetchAzureSEVSNPVersionList(ctx, versions)
-	if err != nil {
-		return res, fmt.Errorf("fetching versions list: %w", err)
-	}
-	get := configapi.AzureSEVSNPVersionGet{Version: versions[0]} // get latest version (as sorted reversely alphanumerically)
-	get, err = f.FetchAzureSEVSNPVersion(ctx, get)
-	if err != nil {
-		return res, fmt.Errorf("failed fetching version: %w", err)
-	}
-	return get.AzureSEVSNPVersion, nil
 }

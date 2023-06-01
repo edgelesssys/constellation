@@ -7,11 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
-	"io"
-	"net/http"
 	"reflect"
 	"testing"
 
@@ -25,6 +22,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -245,9 +243,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 	}
-	client := newTestClient(&fakeConfigAPIHandler{
-		signature: []byte("MEUCIQDNn6wiSh9Nz9mtU9RvxvfkH3fNDFGeqopjTIRoBNkyrAIgSsKgdYNQXvPevaLWmmpnj/9WcgrltAQ+KfI+bQfklAo="),
-	})
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
@@ -262,7 +257,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := NewWithClient(fileHandler, constants.ConfigFilename, client, false)
+			c, err := NewWithFetcher(fileHandler, constants.ConfigFilename, fakeConfigFetcher{}, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -883,8 +878,22 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 	return
 }
 
-type fakeConfigAPIHandler struct {
-	signature []byte
+type fakeConfigFetcher struct{}
+
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
+	return configapi.AzureSEVSNPVersionList(
+		[]string{},
+	), nil
+}
+
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionGet, _ versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+	return configapi.AzureSEVSNPVersionGet{
+		AzureSEVSNPVersion: testCfg,
+	}, nil
+}
+
+func (f fakeConfigFetcher) FetchLatestAzureSEVSNPVersion(_ context.Context, _ versionsapi.Version) (configapi.AzureSEVSNPVersion, error) {
+	return testCfg, nil
 }
 
 var testCfg = configapi.AzureSEVSNPVersion{
@@ -892,45 +901,4 @@ var testCfg = configapi.AzureSEVSNPVersion{
 	TEE:        0,
 	SNP:        6,
 	Bootloader: 2,
-}
-
-// RoundTrip resolves the request and returns a dummy response.
-func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/list" {
-		res := &http.Response{}
-		data := []string{"2021-01-01-01-01.json", "2019-01-01-01-02.json"} // return multiple versions to check that latest version is correctly selected
-		bt, err := json.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
-		res.Body = io.NopCloser(bytes.NewReader(bt))
-		res.Header = http.Header{}
-		res.Header.Set("Content-Type", "application/json")
-		res.StatusCode = http.StatusOK
-		return res, nil
-	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json" {
-		res := &http.Response{}
-		bt, err := json.Marshal(testCfg)
-		if err != nil {
-			return nil, err
-		}
-		res.Body = io.NopCloser(bytes.NewReader(bt))
-		res.StatusCode = http.StatusOK
-		return res, nil
-
-	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json.sig" {
-		res := &http.Response{}
-		res.Body = io.NopCloser(bytes.NewReader(f.signature))
-		res.StatusCode = http.StatusOK
-		return res, nil
-
-	}
-	return nil, errors.New("no endpoint found")
-}
-
-// newTestClient returns *http.Client with Transport replaced to avoid making real calls.
-func newTestClient(fn *fakeConfigAPIHandler) *http.Client {
-	return &http.Client{
-		Transport: fn,
-	}
 }

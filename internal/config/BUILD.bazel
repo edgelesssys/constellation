@@ -51,6 +51,7 @@ go_test(
     embed = [":config"],
     deps = [
         "//internal/api/configapi",
+        "//internal/api/versionsapi",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/config/instancetypes",

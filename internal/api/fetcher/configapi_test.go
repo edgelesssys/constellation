@@ -52,11 +52,10 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 			require := require.New(t)
 			version, err := versionsapi.NewVersionFromShortPath("stream/debug/v9.9.9", versionsapi.VersionKindImage)
 			require.NoError(err)
-			fetcher, err := NewConfigAPIFetcherWithClient(client, version)
-			require.NoError(err)
+			fetcher := NewConfigAPIFetcherWithClient(client)
 
 			assert := assert.New(t)
-			res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background())
+			res, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background(), version)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
