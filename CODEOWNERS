@@ -16,6 +16,7 @@
 /e2e @katexochen
 /hack/azure-jump-host @malt3
 /hack/azure-snp-report-verify @derpsteb
+/hack/configapi @elchead
 /hack/bazel-deps-mirror @malt3
 /hack/check-licenses.sh @thomasten
 /hack/clidocgen @thomasten

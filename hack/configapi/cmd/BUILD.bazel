@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "cmd",
@@ -8,7 +9,18 @@ go_library(
     deps = [
         "//internal/api/attestationconfig",
         "//internal/api/attestationconfig/client",
+        "//internal/api/attestationconfig/fetcher",
         "//internal/staticupload",
         "@com_github_spf13_cobra//:cobra",
+    ],
+)
+
+go_test(
+    name = "cmd_test",
+    srcs = ["root_test.go"],
+    embed = [":cmd"],
+    deps = [
+        "//internal/api/attestationconfig",
+        "@com_github_tj_assert//:assert",
     ],
 )

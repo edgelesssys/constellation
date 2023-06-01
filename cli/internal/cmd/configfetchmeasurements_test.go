@@ -299,13 +299,13 @@ func (f fakeConfigFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ conf
 	), nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionGet, _ versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
 	return configapi.AzureSEVSNPVersionGet{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context, _ versionsapi.Version) (configapi.AzureSEVSNPVersionGet, error) {
+func (f fakeConfigFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (configapi.AzureSEVSNPVersionGet, error) {
 	return configapi.AzureSEVSNPVersionGet{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
