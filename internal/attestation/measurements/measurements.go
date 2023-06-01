@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -46,7 +45,7 @@ const (
 	PCRIndexClusterID = tpmutil.Handle(15)
 	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
 	// The value used to extend is derived from Constellation's master key.
-	// TODO: move to stable, non-debug PCR before use.
+	// TODO(daniel-weisse): move to stable, non-debug PCR before use.
 	PCRIndexOwnerID = tpmutil.Handle(16)
 
 	// TDXIndexClusterID is the measurement used to mark the node as initialized.
@@ -431,16 +430,7 @@ func (m Measurement) MarshalYAML() (any, error) {
 func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 	expected, err := hex.DecodeString(eM.Expected)
 	if err != nil {
-		// expected value might be in base64 legacy format
-		// TODO: Remove with v2.4.0
-		hexErr := err
-		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
-		if err != nil {
-			return errors.Join(
-				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
-				fmt.Errorf("not a base64 string: %w", err),
-			)
-		}
+		return fmt.Errorf("decoding measurement: %w", err)
 	}
 
 	if len(expected) != 32 && len(expected) != 48 {

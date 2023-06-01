@@ -278,7 +278,7 @@ type imageFetcher interface {
 func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	// Config migration from v2.7 to v2.8 requires us to skip comparing configs if the cluster is still using the legacy config.
-	// TODO: v2.9 Remove error type check and always run comparison.
+	// TODO(daniel-weisse): v2.9 Remove error type check and always run comparison.
 	if err != nil && !errors.Is(err, kubernetes.ErrLegacyJoinConfig) {
 		return fmt.Errorf("getting cluster measurements: %w", err)
 	}

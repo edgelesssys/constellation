@@ -27,7 +27,6 @@ runs:
     - name: Generate SBOM
       shell: bash
       env:
-        # COSIGN_EXPERIMENTAL: 1 # This breaks verification with HTTP 404
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
@@ -37,7 +36,7 @@ runs:
         syft packages ${{ inputs.containerReference }} -o cyclonedx-json > container-image-predicate.json
         cosign attest ${{ inputs.containerReference }} --key env://COSIGN_PRIVATE_KEY --predicate container-image-predicate.json --type "https://cyclonedx.org/bom" > container-image.att.json
         cosign attach attestation ${{ inputs.containerReference }} --attestation container-image.att.json
-        # TODO: type should be auto-discovered after issue is resolved:
+        # TODO(3u13r): type should be auto-discovered after issue is resolved:
         # https://github.com/sigstore/cosign/issues/2264
         cosign verify-attestation ${{ inputs.containerReference }} --type "https://cyclonedx.org/bom" --key env://COSIGN_PUBLIC_KEY
         grype ${{ inputs.containerReference }} --fail-on high --only-fixed --add-cpes-if-none

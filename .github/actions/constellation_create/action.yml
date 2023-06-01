@@ -242,7 +242,6 @@ runs:
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
         echo "MASTERSECRET=$(pwd)/constellation-mastersecret.json" >> $GITHUB_OUTPUT
 
-    # TODO(nirusu): Temporarily increase kubectl wait timeout here - might be related to all the Cilium / cert-manager issues?
     - name: Wait for nodes to join and become ready
       shell: bash
       env:

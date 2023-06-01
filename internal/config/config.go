@@ -280,8 +280,7 @@ type AttestationConfig struct {
 	//   AWS Nitro TPM attestation.
 	AWSNitroTPM *AWSNitroTPM `yaml:"awsNitroTPM,omitempty" validate:"omitempty,dive"`
 	// description: |
-	//   Azure SEV-SNP attestation.\nSee our docs for more information on configurable values
-	//   TODO(AB#3071): add link after docs are written
+	//   Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification
 	AzureSEVSNP *AzureSEVSNP `yaml:"azureSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   Azure TPM attestation (Trusted Launch).

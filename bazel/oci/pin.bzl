@@ -154,7 +154,7 @@ oci_sum = rule(
 )
 
 def _oci_sum_merge_impl(ctx):
-    # TODO: select list of labels
+    # TODO(malt3): select list of labels
     inputs = ctx.files.sums
     output = ctx.actions.declare_file(ctx.label.name + ".sha256")
     args = [

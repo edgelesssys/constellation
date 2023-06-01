@@ -12,8 +12,9 @@ jobs:
     strategy:
       matrix:
         version: [v26.0.1]
-        # TODO: Once issue is closed upgrade older versions, rebuild, and update versions.go
+        # TODO(katexochen): Once issue is closed upgrade older versions, rebuild, and update versions.go
         # https://github.com/kubernetes/cloud-provider-gcp/issues/451
+        # Alternativly, they start to publish releases themselves and we can remove this workflow (see https://github.com/kubernetes/cloud-provider-gcp/issues/289).
         # version: [v26.0.1, v25.5.0, v24.0.0]
         include:
           - version: v26.0.1

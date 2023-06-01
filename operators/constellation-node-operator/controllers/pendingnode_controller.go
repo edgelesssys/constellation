@@ -134,7 +134,7 @@ func (r *PendingNodeReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{Requeue: true}, nil
 	case updatev1alpha1.NodeGoalLeave:
 		logr.Info("Node was not terminated on time", "pendingNodeGoal", pendingNode.Spec.Goal, "cspNodeState", nodeState)
-		// TODO: decide if other actions should be taken here (e.g. send another request to delete node)
+		// TODO(malt3): decide if other actions should be taken here (e.g. send another request to delete node)
 		return ctrl.Result{RequeueAfter: defaultCheckInterval}, nil
 	}
 

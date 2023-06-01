@@ -18,10 +18,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		// TODO: Remove once https://github.com/sigstore/rekor/issues/1094 resolved
-		goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
-	)
+	goleak.VerifyTestMain(m)
 }
 
 func TestRekorSearchByHash(t *testing.T) {

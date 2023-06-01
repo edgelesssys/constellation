@@ -269,7 +269,7 @@ func (v *OpenStackClusterVariables) String() string {
 	return b.String()
 }
 
-// TODO: Add support for OpenStack IAM variables.
+// TODO(malt3): Add support for OpenStack IAM variables.
 
 // QEMUVariables is user configuration for creating a QEMU cluster with Terraform.
 type QEMUVariables struct {
