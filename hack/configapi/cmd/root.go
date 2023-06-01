@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -40,36 +39,33 @@ func Execute() error {
 
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
-	uploadCmd := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:   "AWS_ACCESS_KEY_ID=$ID AWS_ACCESS_KEY=$KEY upload -b 2 -t 0 -s 6 -m 93 --cosign-pwd $PWD --private-key $FILE_PATH",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
 		Long: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api. Please authenticate with AWS through your preferred method (e.g. environment variables, CLI) to be able to upload to S3.",
 		RunE: runCmd,
 	}
-	uploadCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
+	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
+	rootCmd.PersistentFlags().StringVar(&cosignPwd, "cosign-pwd", "", "Cosign password used to decrpyt the private key.")
+	rootCmd.PersistentFlags().StringVar(&privateKeyPath, "private-key", "", "File path of private key used to sign the payload.")
+	must(enforceRequiredFlags(rootCmd, "version-file", "cosign-pwd", "private-key"))
 
-	uploadCmd.PersistentFlags().StringVar(&cosignPwd, "cosign-pwd", "", "Cosign password used to decrpyt the private key.")
-
-	uploadCmd.PersistentFlags().StringVar(&privateKeyPath, "private-key", "", "File path of private key used to sign the payload.")
-	return uploadCmd
+	return rootCmd
 }
 
 func runCmd(cmd *cobra.Command, _ []string) error {
-	if err := enforceRequiredFlags(cmd, "version-file", "cosign-pwd", "private-key"); err != nil {
-		return err
-	}
 	ctx := cmd.Context()
 	cfg := staticupload.Config{
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	privateKey, err := getBytesFromFilePath(privateKeyPath)
+	privateKey, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return fmt.Errorf("reading private key: %w", err)
 	}
 
-	versionBytes, err := getBytesFromFilePath(versionFilePath)
+	versionBytes, err := os.ReadFile(versionFilePath)
 	if err != nil {
 		return fmt.Errorf("reading version file: %w", err)
 	}
@@ -100,10 +96,8 @@ func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 	return nil
 }
 
-func getBytesFromFilePath(path string) ([]byte, error) {
-	content, err := os.ReadFile(path)
+func must(err error) {
 	if err != nil {
-		return nil, fmt.Errorf("reading file: %w", err)
+		panic(err)
 	}
-	return content, nil
 }
