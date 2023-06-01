@@ -112,7 +112,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
 	// check for existing config
 	if flags.configPath != "" {
-		conf, err := config.New(fileHandler, flags.configPath, flags.force)
+		conf, err := config.New(fileHandler, flags.configPath, m.configFetcher, flags.force)
 		var configValidationErr *config.ValidationError
 		if errors.As(err, &configValidationErr) {
 			cmd.PrintErrln(configValidationErr.LongMessage())

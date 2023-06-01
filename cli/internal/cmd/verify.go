@@ -84,7 +84,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	c.log.Debugf("Using flags: %+v", flags)
 
 	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.NewWithFetcher(fileHandler, flags.configPath, configFetcher, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

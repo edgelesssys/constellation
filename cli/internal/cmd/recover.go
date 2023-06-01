@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
+	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -48,7 +49,8 @@ func NewRecoverCmd() *cobra.Command {
 }
 
 type recoverCmd struct {
-	log debugLog
+	log           debugLog
+	configFetcher fetcher.ConfigAPIFetcher
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
@@ -61,7 +63,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
-	r := &recoverCmd{log: log}
+	r := &recoverCmd{log: log, configFetcher: fetcher.NewConfigAPIFetcher()}
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 
@@ -82,7 +84,7 @@ func (r *recoverCmd) recover(
 	}
 
 	r.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

@@ -38,6 +38,7 @@ go_test(
     tags = ["manual"],
     deps = [
         "//e2e/internal/kubectl",
+        "//internal/api/fetcher",
         "//internal/config",
         "//internal/constants",
         "//internal/file",

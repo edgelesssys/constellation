@@ -85,7 +85,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	conf, err := config.NewWithFetcher(fileHandler, flags.configPath, u.configFetcher, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

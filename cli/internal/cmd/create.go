@@ -74,7 +74,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.NewWithFetcher(fileHandler, flags.configPath, fetcher, flags.force)
+	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

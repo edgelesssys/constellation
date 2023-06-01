@@ -257,7 +257,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := NewWithFetcher(fileHandler, constants.ConfigFilename, fakeConfigFetcher{}, false)
+			c, err := New(fileHandler, constants.ConfigFilename, fakeConfigFetcher{}, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return

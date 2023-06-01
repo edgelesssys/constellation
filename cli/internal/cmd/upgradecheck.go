@@ -91,7 +91,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		log: log,
 	}
 
-	return up.upgradeCheck(cmd, fileHandler, flags)
+	return up.upgradeCheck(cmd, fileHandler, fetcher.NewConfigAPIFetcher(), flags)
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
@@ -131,8 +131,8 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, flags upgradeCheckFlags) error {
-	conf, err := config.New(fileHandler, flags.configPath, flags.force)
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher fetcher.ConfigAPIFetcher, flags upgradeCheckFlags) error {
+	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
