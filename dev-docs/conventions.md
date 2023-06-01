@@ -127,10 +127,10 @@ the `<REPOSITORY>/.vscode/settings.json` repo, so the settings will only affect 
     // You can add preferences like "-v" or "-count=1"
     "go.testFlags": ["-race"],
     // Enable language features for files with build tags.
-    // Attention! This leads to integration test being executed when
-    // running a package test within a package containing integration
+    // Attention! This leads to integration/e2e tests being executed when
+    // running a package test within a package containing integration/e2e
     // tests.
-    "go.buildTags": "integration",
+    "go.buildTags": "integration e2e",
 ```
 
 Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to have uniform formatting in our `.yaml` files.
