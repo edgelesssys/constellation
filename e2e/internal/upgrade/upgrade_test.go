@@ -13,6 +13,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -73,9 +74,9 @@ func TestUpgrade(t *testing.T) {
 
 	// Migrate config if necessary.
 	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--force", "--debug")
-	msg, err := cmd.CombinedOutput()
-	require.NoError(err, string(msg))
-	log.Println(string(msg))
+	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	log.Println(string(stdout))
 
 	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
 
@@ -93,9 +94,9 @@ func TestUpgrade(t *testing.T) {
 	// The string after "Cluster status:" in the output might not be updated yet.
 	// This is only updated after the operator finishes one reconcile loop.
 	cmd = exec.CommandContext(context.Background(), cli, "status")
-	msg, err = cmd.CombinedOutput()
-	require.NoError(err, string(msg))
-	log.Println(string(msg))
+	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	log.Println(string(stdout))
 
 	testMicroservicesEventuallyHaveVersion(t, targetVersions.microservices, *timeout)
 	testNodesEventuallyHaveVersion(t, k, targetVersions, *wantControl+*wantWorker, *timeout)
@@ -285,27 +286,27 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
 func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
 	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check")
-	msg, err := cmd.Output()
-	require.NoError(err, "%s", string(msg))
+	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 
-	require.Contains(string(msg), "The following updates are available with this CLI:")
-	require.Contains(string(msg), "Kubernetes:")
+	require.Contains(string(stdout), "The following updates are available with this CLI:")
+	require.Contains(string(stdout), "Kubernetes:")
 	log.Printf("targetKubernetes: %s\n", targetKubernetes)
 
 	if targetKubernetes == "" {
 		log.Printf("true\n")
-		require.True(containsAny(string(msg), versions.SupportedK8sVersions()))
+		require.True(containsAny(string(stdout), versions.SupportedK8sVersions()))
 	} else {
 		log.Printf("false. targetKubernetes: %s\n", targetKubernetes)
-		require.Contains(string(msg), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
+		require.Contains(string(stdout), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
 	}
 
 	cliVersion, err := semver.New(constants.VersionInfo())
 	require.NoError(err)
-	require.Contains(string(msg), "Services:")
-	require.Contains(string(msg), fmt.Sprintf("--> %s", cliVersion.String()))
+	require.Contains(string(stdout), "Services:")
+	require.Contains(string(stdout), fmt.Sprintf("--> %s", cliVersion.String()))
 
-	log.Println(string(msg))
+	log.Println(string(stdout))
 }
 
 func containsAny(text string, substrs []string) bool {
@@ -320,17 +321,17 @@ func containsAny(text string, substrs []string) bool {
 func runUpgradeApply(require *require.Assertions, cli string) {
 	tfLogFlag := ""
 	cmd := exec.CommandContext(context.Background(), cli, "--help")
-	msg, err := cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
-	if strings.Contains(string(msg), "--tf-log") {
+	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	if strings.Contains(string(stdout), "--tf-log") {
 		tfLogFlag = "--tf-log=DEBUG"
 	}
 
 	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", tfLogFlag)
-	msg, err = cmd.CombinedOutput()
-	require.NoErrorf(err, "%s", string(msg))
-	require.NoError(containsUnexepectedMsg(string(msg)))
-	log.Println(string(msg))
+	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	require.NoError(containsUnexepectedMsg(string(stdout)))
+	log.Println(string(stdout))
 }
 
 // containsUnexepectedMsg checks if the given input contains any unexpected messages.
@@ -401,4 +402,43 @@ type versionContainer struct {
 	imageRef      string
 	kubernetes    semver.Semver
 	microservices string
+}
+
+// runCommandWithSeparateOutputs runs the given command while separating buffers for
+// stdout and stderr.
+func runCommandWithSeparateOutputs(cmd *exec.Cmd) (stdout, stderr []byte, err error) {
+	stdoutIn, err := cmd.StdoutPipe()
+	if err != nil {
+		err = fmt.Errorf("create stdout pipe: %w", err)
+		return
+	}
+	stderrIn, err := cmd.StderrPipe()
+	if err != nil {
+		err = fmt.Errorf("create stderr pipe: %w", err)
+		return
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		err = fmt.Errorf("start command: %w", err)
+		return
+	}
+
+	stdout, err = io.ReadAll(stdoutIn)
+	if err != nil {
+		err = fmt.Errorf("start command: %w", err)
+		return
+	}
+
+	stderr, err = io.ReadAll(stderrIn)
+	if err != nil {
+		err = fmt.Errorf("start command: %w", err)
+		return
+	}
+
+	if err = cmd.Wait(); err != nil {
+		err = fmt.Errorf("wait for command to finish: %w", err)
+	}
+
+	return
 }
