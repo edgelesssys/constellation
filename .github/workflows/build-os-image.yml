@@ -711,6 +711,7 @@ jobs:
   upload-pcrs:
     name: "Sign & upload PCRs"
     needs: [build-settings, calculate-pcrs]
+    if: inputs.stream != 'debug'
     permissions:
       id-token: write
       contents: read
