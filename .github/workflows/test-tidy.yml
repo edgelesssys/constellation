@@ -35,11 +35,6 @@ jobs:
           useCache: "true"
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
-        with:
-          go-version: "1.20.4"
-
       - name: Assume AWS role to upload Bazel dependencies to S3
         if: startsWith(github.head_ref, 'renovate/')
         uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0

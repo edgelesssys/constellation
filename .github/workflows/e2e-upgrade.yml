@@ -115,11 +115,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
-        with:
-          go-version: "1.20.4"
-
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
         with:
