@@ -53,10 +53,15 @@ func runList(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Debugf("Creating versions API client")
-	client, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
+	client, clientClose, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
+	defer func() {
+		if err := clientClose(cmd.Context()); err != nil {
+			log.Errorf("Closing versions API client: %v", err)
+		}
+	}()
 
 	var minorVersions []string
 	if flags.minorVersion != "" {

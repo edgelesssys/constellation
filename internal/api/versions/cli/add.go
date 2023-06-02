@@ -73,13 +73,13 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 
 	log.Debugf("Creating versions API client")
-	client, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
+	client, clientClose, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
 	defer func(retErr *error) {
 		log.Infof("Invalidating cache. This may take some time")
-		if err := client.InvalidateCache(cmd.Context()); err != nil && retErr == nil {
+		if err := clientClose(cmd.Context()); err != nil && retErr == nil {
 			*retErr = fmt.Errorf("invalidating cache: %w", err)
 		}
 	}(&retErr)

@@ -47,10 +47,15 @@ func runAzure(cmd *cobra.Command, _ []string) error {
 	log := logger.New(logger.PlainLog, flags.logLevel)
 	log.Debugf("Parsed flags: %+v", flags)
 
-	archiveC, err := archive.New(cmd.Context(), flags.region, flags.bucket, log)
+	archiveC, archiveCClose, err := archive.New(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := archiveCClose(cmd.Context()); err != nil {
+			log.Errorf("closing archive client: %v", err)
+		}
+	}()
 
 	uploadC, err := azureupload.New(flags.azSubscription, flags.azLocation, flags.azResourceGroup, log)
 	if err != nil {

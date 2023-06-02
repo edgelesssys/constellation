@@ -36,7 +36,7 @@ type Client struct {
 	uploadClient   uploadClient
 	s3Client       objectStorageClient
 	distributionID string
-	BucketID       string
+	bucketID       string
 
 	cacheInvalidationStrategy    CacheInvalidationStrategy
 	cacheInvalidationWaitTimeout time.Duration
@@ -73,9 +73,9 @@ type CacheInvalidationStrategy int
 const (
 	// CacheInvalidateEager invalidates the CDN cache immediately for every key that is uploaded.
 	CacheInvalidateEager CacheInvalidationStrategy = iota
-	// CacheInvalidateBatchOnClose invalidates the CDN cache in batches when the client is closed.
-	// This is useful when uploading many files at once but will fail if Close is not called.
-	CacheInvalidateBatchOnClose
+	// CacheInvalidateBatchOnFlush invalidates the CDN cache in batches when the client is flushed / closed.
+	// This is useful when uploading many files at once but may fail to invalidate the cache if close is not called.
+	CacheInvalidateBatchOnFlush
 )
 
 // InvalidationError is an error that occurs when invalidating the CDN cache.
@@ -94,33 +94,39 @@ func (e InvalidationError) Unwrap() error {
 }
 
 // New creates a new Client.
-func New(ctx context.Context, config Config) (*Client, error) {
+func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
 	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	s3Client := s3.NewFromConfig(cfg)
 	uploadClient := s3manager.NewUploader(s3Client)
 
 	cdnClient := cloudfront.NewFromConfig(cfg)
 
-	return &Client{
+	client := &Client{
 		cdnClient:                    cdnClient,
 		s3Client:                     s3Client,
 		uploadClient:                 uploadClient,
 		distributionID:               config.DistributionID,
 		cacheInvalidationStrategy:    config.CacheInvalidationStrategy,
 		cacheInvalidationWaitTimeout: config.CacheInvalidationWaitTimeout,
-		BucketID:                     config.Bucket,
-	}, nil
+		bucketID:                     config.Bucket,
+	}
+	clientClose := func(ctx context.Context) error {
+		// ensure that all keys are invalidated
+		return client.Flush(ctx)
+	}
+
+	return client, clientClose, nil
 }
 
-// Close closes the client.
+// Flush flushes the client by invalidating the CDN cache for modified keys.
 // It waits for all invalidations to finish.
 // It returns nil on success or an error.
 // The error will be of type InvalidationError if the CDN cache could not be invalidated.
-func (c *Client) Close(ctx context.Context) error {
+func (c *Client) Flush(ctx context.Context) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
@@ -138,7 +144,7 @@ func (c *Client) Close(ctx context.Context) error {
 // invalidate invalidates the CDN cache for the given keys.
 // It either performs the invalidation immediately or adds them to the list of dirty keys.
 func (c *Client) invalidate(ctx context.Context, keys []string) error {
-	if c.cacheInvalidationStrategy == CacheInvalidateBatchOnClose {
+	if c.cacheInvalidationStrategy == CacheInvalidateBatchOnFlush {
 		// save as dirty key for batch invalidation on Close
 		c.mux.Lock()
 		defer c.mux.Unlock()
@@ -218,7 +224,15 @@ type uploadClient interface {
 }
 
 type getClient interface {
-	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	GetObject(
+		ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options),
+	) (*s3.GetObjectOutput, error)
+}
+
+type listClient interface {
+	ListObjectsV2(
+		ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options),
+	) (*s3.ListObjectsV2Output, error)
 }
 
 type deleteClient interface {
@@ -241,8 +255,9 @@ type cdnClient interface {
 }
 
 type objectStorageClient interface {
-	deleteClient
 	getClient
+	listClient
+	deleteClient
 }
 
 // statically assert that Client implements the uploadClient interface.
@@ -254,3 +269,6 @@ var _ objectStorageClient = (*Client)(nil)
 func ptr[T any](t T) *T {
 	return &t
 }
+
+// CloseFunc is a function that closes the client.
+type CloseFunc func(ctx context.Context) error

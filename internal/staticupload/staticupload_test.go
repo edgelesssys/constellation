@@ -59,7 +59,7 @@ func TestUpload(t *testing.T) {
 		},
 		"lazy invalidation": {
 			in:                           newInput(),
-			cacheInvalidationStrategy:    CacheInvalidateBatchOnClose,
+			cacheInvalidationStrategy:    CacheInvalidateBatchOnFlush,
 			cacheInvalidationWaitTimeout: time.Microsecond,
 			wantDirtyKeys:                []string{"test-key"},
 		},
@@ -181,7 +181,7 @@ func TestDeleteObject(t *testing.T) {
 			wantInvalidationIDs:          []string{"test-invalidation-id-1"},
 		},
 		"lazy invalidation": {
-			cacheInvalidationStrategy:    CacheInvalidateBatchOnClose,
+			cacheInvalidationStrategy:    CacheInvalidateBatchOnFlush,
 			cacheInvalidationWaitTimeout: time.Microsecond,
 			wantDirtyKeys:                []string{"test-key"},
 		},
@@ -273,7 +273,7 @@ func TestDeleteObject(t *testing.T) {
 	}
 }
 
-func TestClose(t *testing.T) {
+func TestFlush(t *testing.T) {
 	testCases := map[string]struct {
 		dirtyKeys                    []string
 		invalidationIDs              []string
@@ -389,7 +389,7 @@ func TestClose(t *testing.T) {
 				dirtyKeys:                    tc.dirtyKeys,
 				invalidationIDs:              tc.invalidationIDs,
 			}
-			err := client.Close(context.Background())
+			err := client.Flush(context.Background())
 
 			if tc.wantCacheInvalidationErr {
 				assert.ErrorAs(err, &InvalidationError{})
@@ -450,9 +450,9 @@ func TestConcurrency(_ *testing.T) {
 			},
 		})
 	}
-	closeClient := func() {
+	flushClient := func() {
 		defer wg.Done()
-		_ = client.Close(context.Background())
+		_ = client.Flush(context.Background())
 	}
 
 	for i := 0; i < 100; i++ {
@@ -460,7 +460,7 @@ func TestConcurrency(_ *testing.T) {
 		go upload()
 		go deleteObject()
 		go deleteObjects()
-		go closeClient()
+		go flushClient()
 	}
 
 	wg.Wait()
@@ -557,5 +557,13 @@ func (s *stubObjectStorageClient) GetObject(
 	_ context.Context, _ *s3.GetObjectInput,
 	_ ...func(*s3.Options),
 ) (*s3.GetObjectOutput, error) {
+	return nil, nil
+}
+
+// currently not needed so no-Op.
+func (s *stubObjectStorageClient) ListObjectsV2(
+	_ context.Context, _ *s3.ListObjectsV2Input,
+	_ ...func(*s3.Options),
+) (*s3.ListObjectsV2Output, error) {
 	return nil, nil
 }
