@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -81,7 +80,12 @@ func New(ctx context.Context) (*Cloud, error) {
 
 // List retrieves all instances belonging to the current Constellation.
 func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	uid, err := readInstanceTag(ctx, c.imds, cloud.TagUID)
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return nil, fmt.Errorf("retrieving instance identity: %w", err)
+	}
+
+	uid, err := c.readInstanceTag(ctx, identity.InstanceID, cloud.TagUID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving uid tag: %w", err)
 	}
@@ -100,7 +104,7 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
 
-	instanceRole, err := readInstanceTag(ctx, c.imds, cloud.TagRole)
+	instanceRole, err := c.readInstanceTag(ctx, identity.InstanceID, cloud.TagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
@@ -115,12 +119,22 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 
 // UID returns the UID of the Constellation.
 func (c *Cloud) UID(ctx context.Context) (string, error) {
-	return readInstanceTag(ctx, c.imds, cloud.TagUID)
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance identity: %w", err)
+	}
+
+	return c.readInstanceTag(ctx, identity.InstanceID, cloud.TagUID)
 }
 
 // InitSecretHash returns the InitSecretHash of the current instance.
 func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
-	initSecretHash, err := readInstanceTag(ctx, c.imds, cloud.TagInitSecretHash)
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return nil, fmt.Errorf("retrieving instance identity: %w", err)
+	}
+
+	initSecretHash, err := c.readInstanceTag(ctx, identity.InstanceID, cloud.TagInitSecretHash)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving init secret hash tag: %w", err)
 	}
@@ -129,7 +143,12 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	uid, err := readInstanceTag(ctx, c.imds, cloud.TagUID)
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance identity: %w", err)
+	}
+
+	uid, err := c.readInstanceTag(ctx, identity.InstanceID, cloud.TagUID)
 	if err != nil {
 		return "", fmt.Errorf("retrieving uid tag: %w", err)
 	}
@@ -269,16 +288,19 @@ func (c *Cloud) convertToMetadataInstance(ec2Instances []ec2Types.Instance) ([]m
 	return instances, nil
 }
 
-func readInstanceTag(ctx context.Context, api imdsAPI, tag string) (string, error) {
-	reader, err := api.GetMetadata(ctx, &imds.GetMetadataInput{
-		Path: "/tags/instance/" + tag,
+func (c *Cloud) readInstanceTag(ctx context.Context, instanceID string, tag string) (string, error) {
+	out, err := c.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{instanceID},
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("descibing instances: %w", err)
 	}
-	defer reader.Content.Close()
-	instanceTag, err := io.ReadAll(reader.Content)
-	return string(instanceTag), err
+
+	if len(out.Reservations) != 1 || len(out.Reservations[0].Instances) != 1 {
+		return "", fmt.Errorf("expected 1 instance, got %d", len(out.Reservations[0].Instances))
+	}
+
+	return findTag(out.Reservations[0].Instances[0].Tags, tag)
 }
 
 func findTag(tags []ec2Types.Tag, wantKey string) (string, error) {

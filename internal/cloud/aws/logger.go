@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	logs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"k8s.io/utils/clock"
 )
@@ -26,6 +27,9 @@ import (
 // Log messages are collected and periodically flushed to AWS Cloudwatch Logs.
 type Logger struct {
 	api logAPI
+
+	ec2API  ec2API
+	imdsAPI imdsAPI
 
 	groupName  string
 	streamName string
@@ -50,13 +54,15 @@ func NewLogger(ctx context.Context) (*Logger, error) {
 
 	l := &Logger{
 		api:      client,
+		ec2API:   ec2.NewFromConfig(cfg),
+		imdsAPI:  imds.NewFromConfig(cfg),
 		interval: time.Second,
 		clock:    clock.RealClock{},
 		wg:       sync.WaitGroup{},
 		stopCh:   make(chan struct{}, 1),
 	}
 
-	if err := l.createStream(ctx, imds.New(imds.Options{})); err != nil {
+	if err := l.createStream(ctx); err != nil {
 		return nil, err
 	}
 
@@ -140,18 +146,14 @@ func (l *Logger) flushLoop() {
 }
 
 // createStream creates a new log stream in AWS Cloudwatch Logs.
-func (l *Logger) createStream(ctx context.Context, imds imdsAPI) error {
-	name, err := readInstanceTag(ctx, imds, tagName)
+func (l *Logger) createStream(ctx context.Context) error {
+	name, uid, err := l.getNameAndUID(ctx)
 	if err != nil {
 		return err
 	}
 	l.streamName = name
 
 	// find log group with matching Constellation UID
-	uid, err := readInstanceTag(ctx, imds, cloud.TagUID)
-	if err != nil {
-		return err
-	}
 	describeInput := &logs.DescribeLogGroupsInput{}
 	for res, err := l.api.DescribeLogGroups(ctx, describeInput); ; res, err = l.api.DescribeLogGroups(ctx, describeInput) {
 		if err != nil {
@@ -191,6 +193,31 @@ func (l *Logger) createStream(ctx context.Context, imds imdsAPI) error {
 	}
 
 	return nil
+}
+
+func (l *Logger) getNameAndUID(ctx context.Context) (string, string, error) {
+	identity, err := l.imdsAPI.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return "", "", fmt.Errorf("retrieving instance identity: %w", err)
+	}
+
+	out, err := l.ec2API.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{identity.InstanceID},
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("descibing instances: %w", err)
+	}
+
+	if len(out.Reservations) != 1 || len(out.Reservations[0].Instances) != 1 {
+		return "", "", fmt.Errorf("expected 1 instance, got %d", len(out.Reservations[0].Instances))
+	}
+
+	uid, err := findTag(out.Reservations[0].Instances[0].Tags, cloud.TagUID)
+	if err != nil {
+		return "", "", fmt.Errorf("finding tag %s: %w", cloud.TagUID, err)
+	}
+
+	return identity.InstanceID, uid, err
 }
 
 type logAPI interface {
