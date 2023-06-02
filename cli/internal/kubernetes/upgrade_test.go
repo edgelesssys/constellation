@@ -195,6 +195,27 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return assert.ErrorAs(t, err, &target)
 			},
 		},
+		"outdated k8s version skips k8s upgrade": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.2"
+				conf.KubernetesVersion = "v1.25.8"
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: false,
+			wantErr:    true,
+			assertCorrectError: func(t *testing.T, err error) bool {
+				var upgradeErr *compatibility.InvalidUpgradeError
+				return assert.ErrorAs(t, err, &upgradeErr)
+			},
+		},
 	}
 
 	for name, tc := range testCases {

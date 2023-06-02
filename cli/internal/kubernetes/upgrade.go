@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
@@ -178,12 +179,6 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return fmt.Errorf("parsing version from image short path: %w", err)
 	}
 
-	currentK8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
-	if err != nil {
-		return fmt.Errorf("getting Kubernetes version: %w", err)
-	}
-	versionConfig := versions.VersionConfigs[currentK8sVersion]
-
 	nodeVersion, err := u.checkClusterStatus(ctx)
 	if err != nil {
 		return err
@@ -199,7 +194,18 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return fmt.Errorf("updating image version: %w", err)
 	}
 
-	components, err := u.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
+	// We have to allow users to specify outdated k8s patch versions.
+	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
+	var components *corev1.ConfigMap
+	currentK8sVersion := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
+	if currentK8sVersion == "" {
+		innerErr := fmt.Errorf("unsupported Kubernetes version, supported versions are %s", strings.Join(versions.SupportedK8sVersions(), ", "))
+		err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion, conf.KubernetesVersion, innerErr)
+	} else {
+		versionConfig := versions.VersionConfigs[currentK8sVersion]
+		components, err = u.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
+	}
+
 	switch {
 	case err == nil:
 		err := u.applyComponentsCM(ctx, components)

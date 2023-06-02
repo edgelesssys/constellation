@@ -40,15 +40,35 @@ func SupportedK8sVersions() []string {
 type ValidK8sVersion string
 
 // NewValidK8sVersion validates the given string and produces a new ValidK8sVersion object.
-func NewValidK8sVersion(k8sVersion string) (ValidK8sVersion, error) {
-	if IsSupportedK8sVersion(k8sVersion) {
-		return ValidK8sVersion(k8sVersion), nil
+// Returns an empty string if the given version is invalid.
+// strict controls whether the patch version is checked or not.
+func NewValidK8sVersion(k8sVersion string, strict bool) ValidK8sVersion {
+	var supported bool
+	if strict {
+		supported = isSupportedK8sVersionStrict(k8sVersion)
+	} else {
+		supported = isSupportedK8sVersion(k8sVersion)
 	}
-	return "", fmt.Errorf("invalid k8sVersion supplied: %s", k8sVersion)
+
+	if supported {
+		return ValidK8sVersion(k8sVersion)
+	}
+	return ""
+}
+
+// IsSupportedK8sVersion checks if a given Kubernetes minor version is supported by Constellation.
+// Note: the patch version is not checked!
+func isSupportedK8sVersion(version string) bool {
+	for _, valid := range SupportedK8sVersions() {
+		if semver.MajorMinor(valid) == semver.MajorMinor(version) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsSupportedK8sVersion checks if a given Kubernetes version is supported by Constellation.
-func IsSupportedK8sVersion(version string) bool {
+func isSupportedK8sVersionStrict(version string) bool {
 	for _, valid := range SupportedK8sVersions() {
 		if valid == version {
 			return true
