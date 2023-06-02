@@ -55,7 +55,7 @@ func newRootCmd() *cobra.Command {
 	}
 	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
 	must(enforceRequiredFlags(rootCmd, "version-file"))
-
+	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
 
