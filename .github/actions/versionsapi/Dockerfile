@@ -13,11 +13,11 @@ RUN go mod download
 COPY . .
 
 # Build
-WORKDIR /workspace/internal/api/versionsapi/cli
+WORKDIR /workspace/internal/api/versions/cli
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o versionsapi .
 
 FROM scratch as release
 
-COPY --from=builder /workspace/internal/api/versionsapi/cli/versionsapi .
+COPY --from=builder /workspace/internal/api/versions/cli/versionsapi .
 
 CMD ["/notIntendedToBeExecuted"]
