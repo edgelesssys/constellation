@@ -19,6 +19,7 @@ import (
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/kms/storage"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -26,8 +27,15 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
-// Client manages (modifies) the version information for the attestation variants.
-type Client struct {
+type Client interface {
+	UploadAzureSEVSNP(ctx context.Context, versions attestationconfig.AzureSEVSNPVersion, date time.Time) error
+	List(ctx context.Context, attestation variant.Variant) ([]string, error)
+	DeleteList(ctx context.Context, attestation variant.Variant) error
+	DeleteAzureSEVSNVersion(ctx context.Context, versionStr string) error
+}
+
+// client manages (modifies) the version information for the attestation variants.
+type client struct {
 	s3Client
 	s3ClientClose func(ctx context.Context) error
 	bucketID      string
@@ -36,26 +44,23 @@ type Client struct {
 }
 
 // New returns a new Client.
-func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte) (*Client, CloseFunc, error) {
-	client, clientClose, err := staticupload.New(ctx, cfg)
+func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte) (Client, CloseFunc, error) {
+	staticclient, clientClose, err := staticupload.New(ctx, cfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)
 	}
-	repo := &Client{
-		s3Client:      client,
+	repo := &client{
+		s3Client:      staticclient,
 		s3ClientClose: clientClose,
 		bucketID:      cfg.Bucket,
 		cosignPwd:     cosignPwd,
 		privKey:       privateKey,
 	}
-	repoClose := func(ctx context.Context) error {
-		return repo.Close(ctx)
-	}
-	return repo, repoClose, nil
+	return repo, repo.Close, nil
 }
 
 // Close closes the Client.
-func (a Client) Close(ctx context.Context) error {
+func (a client) Close(ctx context.Context) error {
 	if a.s3ClientClose == nil {
 		return nil
 	}
@@ -63,7 +68,7 @@ func (a Client) Close(ctx context.Context) error {
 }
 
 // UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP.
-func (a Client) UploadAzureSEVSNP(ctx context.Context, versions attestationconfig.AzureSEVSNPVersion, date time.Time) error {
+func (a client) UploadAzureSEVSNP(ctx context.Context, versions attestationconfig.AzureSEVSNPVersion, date time.Time) error {
 	versionBytes, err := json.Marshal(versions)
 	if err != nil {
 		return err
@@ -85,7 +90,7 @@ func (a Client) UploadAzureSEVSNP(ctx context.Context, versions attestationconfi
 }
 
 // createAndUploadSignature signs the given content and uploads the signature to the given filePath with the .sig suffix.
-func (a Client) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
+func (a client) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
 	signature, err := sigstore.SignContent(a.cosignPwd, a.privKey, content)
 	if err != nil {
 		return fmt.Errorf("sign version file: %w", err)
@@ -98,7 +103,7 @@ func (a Client) createAndUploadSignature(ctx context.Context, content []byte, fi
 }
 
 // List returns the list of versions for the given attestation type.
-func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
+func (a client) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
 	key := path.Join(constants.CDNAttestationConfigPrefixV1, attestation.String(), "list")
 	bt, err := get(ctx, a.s3Client, a.bucketID, key)
 	if err != nil {
@@ -112,7 +117,7 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string
 }
 
 // DeleteList empties the list of versions for the given attestation type.
-func (a Client) DeleteList(ctx context.Context, attestation variant.Variant) error {
+func (a client) DeleteList(ctx context.Context, attestation variant.Variant) error {
 	versions := []string{}
 	bt, err := json.Marshal(&versions)
 	if err != nil {
@@ -121,7 +126,44 @@ func (a Client) DeleteList(ctx context.Context, attestation variant.Variant) err
 	return put(ctx, a.s3Client, a.bucketID, path.Join(constants.CDNAttestationConfigPrefixV1, attestation.String(), "list"), bt)
 }
 
-func (a Client) addVersionToList(ctx context.Context, attestation variant.Variant, fname string) error {
+// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
+func (a client) DeleteAzureSEVSNVersion(ctx context.Context, versionStr string) error {
+	versionStr = versionStr + ".json"
+	variant := variant.AzureSEVSNP{}
+	// delete version file
+	filePath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr)
+	err := delete(ctx, a.s3Client, a.bucketID, filePath)
+	if err != nil {
+		return fmt.Errorf("delete version file: %w", err)
+	}
+
+	// delete signature file
+	sigPath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr+".sig")
+	err = delete(ctx, a.s3Client, a.bucketID, sigPath)
+	if err != nil {
+		return fmt.Errorf("delete signature file: %w", err)
+	}
+
+	// delete version from /list
+	versions, err := fetcher.New().FetchAzureSEVSNPVersionList(ctx, attestationconfig.AzureSEVSNPVersionList{})
+	if err != nil {
+		return fmt.Errorf("fetch version list: %w", err)
+	}
+	removedVersions, err := removeVersion(versions, versionStr)
+	if err != nil {
+		return err
+	}
+	versionBt, err := json.Marshal(removedVersions)
+	if err != nil {
+		return fmt.Errorf("marshal updated version list: %w", err)
+	}
+	if err := put(ctx, a.s3Client, a.bucketID, path.Join(constants.CDNAttestationConfigPrefixV1, variant.String(), "list"), versionBt); err != nil {
+		return fmt.Errorf("put updated version list: %w", err)
+	}
+	return nil
+}
+
+func (a client) addVersionToList(ctx context.Context, attestation variant.Variant, fname string) error {
 	versions := []string{}
 	key := path.Join(constants.CDNAttestationConfigPrefixV1, attestation.String(), "list")
 	bt, err := get(ctx, a.s3Client, a.bucketID, key)
@@ -166,6 +208,16 @@ func put(ctx context.Context, client s3Client, bucket, path string, data []byte)
 	return err
 }
 
+// delete is a convenience method.
+func delete(ctx context.Context, client s3Client, bucket, path string) error {
+	deleteObjectInput := &s3.DeleteObjectInput{
+		Bucket: &bucket,
+		Key:    &path,
+	}
+	_, err := client.DeleteObject(ctx, deleteObjectInput)
+	return err
+}
+
 type s3Client interface {
 	GetObject(
 		ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options),
@@ -173,7 +225,20 @@ type s3Client interface {
 	Upload(
 		ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader),
 	) (*s3manager.UploadOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput,
+		optFns ...func(*s3.Options),
+	) (*s3.DeleteObjectOutput, error)
 }
 
 // CloseFunc is a function that closes the client.
 type CloseFunc func(ctx context.Context) error
+
+func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (removedVersions attestationconfig.AzureSEVSNPVersionList, err error) {
+	for i, v := range versions {
+		if v == versionStr {
+			removedVersions = append(versions[:i], versions[i+1:]...)
+			return removedVersions, nil
+		}
+	}
+	return nil, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+}
