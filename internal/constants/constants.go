@@ -193,6 +193,8 @@ const (
 	CDNAPIPrefix = CDNAPIBase + "/v1"
 	// CDNAPIPrefixV2 is the prefix of the Constellation API (v2).
 	CDNAPIPrefixV2 = CDNAPIBase + "/v2"
+	// CDNAttestationConfigPrefixV1 is the prefix of the Constellation AttestationConfig API (v1).
+	CDNAttestationConfigPrefixV1 = CDNAPIPrefix + "/attestation"
 	// CDNMeasurementsFile is name of file containing image measurements.
 	CDNMeasurementsFile = "measurements.json"
 	// CDNMeasurementsSignature is name of file containing signature for CDNMeasurementsFile.

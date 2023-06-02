@@ -11,9 +11,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
+
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -27,16 +28,16 @@ type AzureSEVSNP struct {
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
 	//   Lowest acceptable bootloader version.
-	BootloaderVersion configapi.AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
+	BootloaderVersion AttestationVersion `json:"bootloaderVersion" yaml:"bootloaderVersion"`
 	// description: |
 	//   Lowest acceptable TEE version.
-	TEEVersion configapi.AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
+	TEEVersion AttestationVersion `json:"teeVersion" yaml:"teeVersion"`
 	// description: |
 	//   Lowest acceptable SEV-SNP version.
-	SNPVersion configapi.AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
+	SNPVersion AttestationVersion `json:"snpVersion" yaml:"snpVersion"`
 	// description: |
 	//   Lowest acceptable microcode version.
-	MicrocodeVersion configapi.AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
+	MicrocodeVersion AttestationVersion `json:"microcodeVersion" yaml:"microcodeVersion"`
 	// description: |
 	//   Configuration for validating the firmware signature.
 	FirmwareSignerConfig SNPFirmwareSignerConfig `json:"firmwareSignerConfig" yaml:"firmwareSignerConfig"`
@@ -50,10 +51,10 @@ type AzureSEVSNP struct {
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: configapi.NewLatestPlaceholderVersion(),
-		TEEVersion:        configapi.NewLatestPlaceholderVersion(),
-		SNPVersion:        configapi.NewLatestPlaceholderVersion(),
-		MicrocodeVersion:  configapi.NewLatestPlaceholderVersion(),
+		BootloaderVersion: NewLatestPlaceholderVersion(),
+		TEEVersion:        NewLatestPlaceholderVersion(),
+		SNPVersion:        NewLatestPlaceholderVersion(),
+		MicrocodeVersion:  NewLatestPlaceholderVersion(),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
@@ -97,13 +98,13 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher fetcher.ConfigAPIFetcher, version versionsapi.Version) error {
-	versions, err := fetcher.FetchLatestAzureSEVSNPVersion(context.Background(), version)
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, version versionsapi.Version) error {
+	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background(), version)
 	if err != nil {
 		return err
 	}
 	// set number and keep isLatest flag
-	c.mergeVersionNumbers(versions)
+	c.mergeVersionNumbers(versions.AzureSEVSNPVersion)
 	return nil
 }
 

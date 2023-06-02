@@ -19,7 +19,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/mod/semver"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"

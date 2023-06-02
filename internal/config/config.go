@@ -31,8 +31,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -385,7 +385,7 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 2. For "latest" version values of the attestation variants fetch the version numbers.
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
-func New(fileHandler file.Handler, name string, fetcher fetcher.ConfigAPIFetcher, force bool) (*Config, error) {
+func New(fileHandler file.Handler, name string, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {

@@ -14,7 +14,7 @@ go_library(
         "//cli/internal/helm",
         "//cli/internal/terraform",
         "//cli/internal/upgrade",
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",

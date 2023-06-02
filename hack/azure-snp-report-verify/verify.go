@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/configapi"
+	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 )

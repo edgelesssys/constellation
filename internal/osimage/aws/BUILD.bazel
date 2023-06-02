@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/osimage/aws",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/logger",
         "//internal/osimage",
         "//internal/osimage/secureboot",

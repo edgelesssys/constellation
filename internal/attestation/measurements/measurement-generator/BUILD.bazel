@@ -7,7 +7,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/measurements/measurement-generator",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/api/versionsapi",
+        "//internal/api/versions",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/sigstore",

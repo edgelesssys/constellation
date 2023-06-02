@@ -6,7 +6,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi/cmd",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/api/configapi",
+        "//internal/api/attestationconfig",
+        "//internal/api/attestationconfig/client",
         "//internal/staticupload",
         "@com_github_spf13_cobra//:cobra",
     ],
