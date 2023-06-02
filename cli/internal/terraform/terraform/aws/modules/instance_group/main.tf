@@ -23,7 +23,7 @@ resource "aws_launch_template" "launch_template" {
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
-    instance_metadata_tags      = "enabled"
+    instance_metadata_tags      = "disabled"
     http_put_response_hop_limit = 2
   }
 
