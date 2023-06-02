@@ -577,7 +577,7 @@ func (s *stubKubectl) ListAllNamespaces(_ context.Context) (*corev1.NamespaceLis
 	return s.listAllNamespacesResp, s.listAllNamespacesErr
 }
 
-func (s *stubKubectl) EnforceCoreDNSSpread(ctx context.Context) error {
+func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
 	return s.enforceCoreDNSSpreadErr
 }
 
