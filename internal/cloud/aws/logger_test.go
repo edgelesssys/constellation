@@ -15,8 +15,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	logs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	cloudwatchtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,22 +35,47 @@ func TestCreateStream(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		imds       *stubIMDS
+		imdsAPI    *stubIMDS
+		ec2API     *stubEC2
 		logs       *stubLogs
 		wantGroup  string
 		wantStream string
 		wantErr    bool
 	}{
 		"success new stream minimal": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
@@ -57,15 +85,39 @@ func TestCreateStream(t *testing.T) {
 			wantGroup:  "test-group",
 		},
 		"success one group of many": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{
 							LogGroupName: aws.String("random-group"),
 						},
@@ -76,7 +128,7 @@ func TestCreateStream(t *testing.T) {
 					NextToken: aws.String("next"),
 				},
 				describeRes2: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{
 							LogGroupName: aws.String("another-group"),
 						},
@@ -104,34 +156,82 @@ func TestCreateStream(t *testing.T) {
 			wantGroup:  "test-group",
 		},
 		"success stream exists": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
 				listTags:  map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
-				createErr: &types.ResourceAlreadyExistsException{},
+				createErr: &cloudwatchtypes.ResourceAlreadyExistsException{},
 			},
 			wantStream: "test-instance",
 			wantGroup:  "test-group",
 		},
 		"create stream error": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
@@ -141,14 +241,35 @@ func TestCreateStream(t *testing.T) {
 			wantErr: true,
 		},
 		"missing uid tag": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName: "test-instance",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
@@ -156,15 +277,32 @@ func TestCreateStream(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"missing name tag": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+		"missing identity document": {
+			imdsAPI: &stubIMDS{
+				getInstanceIdentityDocumentErr: assert.AnError,
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{
-					LogGroups: []types.LogGroup{
+					LogGroups: []cloudwatchtypes.LogGroup{
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
@@ -173,10 +311,34 @@ func TestCreateStream(t *testing.T) {
 			wantErr: true,
 		},
 		"describe groups error": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
@@ -186,10 +348,34 @@ func TestCreateStream(t *testing.T) {
 			wantErr: true,
 		},
 		"no matching groups": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					tagName:      "test-instance",
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2types.Reservation{
+						{
+							Instances: []ec2types.Instance{
+								{
+									InstanceId: aws.String("test-instance"),
+									Tags: []ec2types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			logs: &stubLogs{
@@ -204,10 +390,12 @@ func TestCreateStream(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			l := &Logger{
-				api: tc.logs,
+				api:     tc.logs,
+				imdsAPI: tc.imdsAPI,
+				ec2API:  tc.ec2API,
 			}
 
-			err := l.createStream(context.Background(), tc.imds)
+			err := l.createStream(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -326,7 +514,7 @@ type stubLogs struct {
 	listTags         map[string]map[string]string
 	putErr           error
 	logSequenceToken int
-	logs             []types.InputLogEvent
+	logs             []cloudwatchtypes.InputLogEvent
 }
 
 func (s *stubLogs) CreateLogStream(context.Context, *logs.CreateLogStreamInput, ...func(*logs.Options)) (*logs.CreateLogStreamOutput, error) {
@@ -356,7 +544,7 @@ func (s *stubLogs) PutLogEvents(_ context.Context, in *logs.PutLogEventsInput, _
 		return nil, err
 	}
 	if gotSeq != s.logSequenceToken {
-		return nil, &types.InvalidSequenceTokenException{ExpectedSequenceToken: aws.String(strconv.Itoa(s.logSequenceToken))}
+		return nil, &cloudwatchtypes.InvalidSequenceTokenException{ExpectedSequenceToken: aws.String(strconv.Itoa(s.logSequenceToken))}
 	}
 
 	s.logs = append(s.logs, in.LogEvents...)
