@@ -46,12 +46,13 @@ func (i *IsolationTEE) PrintSVNs() {
 
 func main() {
 	configAPIExportPath := flag.String("export-path", "azure-sev-snp-version.json", "Path to the exported config API file.")
+	maaJWT := flag.String("report", "", "MAA JWT report to verify")
 	flag.Parse()
-	if len(os.Args) != 2 {
-		fmt.Println("Usage:", os.Args[0], "<maa-jwt>")
+	if *maaJWT == "" {
+		fmt.Println("Must provide --report")
 		return
 	}
-	report, err := getTEEReport(os.Args[1])
+	report, err := getTEEReport(*maaJWT)
 	if err != nil {
 		panic(err)
 	}

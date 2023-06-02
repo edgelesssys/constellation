@@ -16,15 +16,17 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
+const cosignPublicKey = constants.CosignPublicKeyReleases
+
 // AttestationConfigAPIFetcher fetches config API resources without authentication.
 type AttestationConfigAPIFetcher interface {
-	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionGet, version versionsapi.Version) (attestationconfig.AzureSEVSNPVersionGet, error)
+	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionGet) (attestationconfig.AzureSEVSNPVersionGet, error)
 	FetchAzureSEVSNPVersionList(ctx context.Context, attestation attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error)
-	FetchAzureSEVSNPVersionLatest(ctx context.Context, version versionsapi.Version) (attestationconfig.AzureSEVSNPVersionGet, error)
+	FetchAzureSEVSNPVersionLatest(ctx context.Context) (attestationconfig.AzureSEVSNPVersionGet, error)
 }
 
 // Fetcher fetches AttestationCfg API resources without authentication.
@@ -48,16 +50,12 @@ func (f *Fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation a
 }
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
-func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation attestationconfig.AzureSEVSNPVersionGet, version versionsapi.Version) (attestationconfig.AzureSEVSNPVersionGet, error) {
-	cosignPublicKey, err := sigstore.CosignPublicKeyForVersion(version)
+func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionGet) (attestationconfig.AzureSEVSNPVersionGet, error) {
+	urlString, err := azureVersion.URL()
 	if err != nil {
-		return attestationconfig.AzureSEVSNPVersionGet{}, fmt.Errorf("get public key for config: %w", err)
+		return azureVersion, err
 	}
-	urlString, err := attestation.URL()
-	if err != nil {
-		return attestationconfig.AzureSEVSNPVersionGet{}, err
-	}
-	fetchedVersion, err := fetcher.Fetch(ctx, f.HTTPClient, attestation)
+	fetchedVersion, err := fetcher.Fetch(ctx, f.HTTPClient, azureVersion)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
 	}
@@ -71,7 +69,7 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation attes
 		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", fetchedVersion.Version, err)
 	}
 
-	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, cosignPublicKey)
+	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, []byte(cosignPublicKey))
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", fetchedVersion.Version, err)
 	}
@@ -79,14 +77,14 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, attestation attes
 }
 
 // FetchAzureSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context, version versionsapi.Version) (res attestationconfig.AzureSEVSNPVersionGet, err error) {
+func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res attestationconfig.AzureSEVSNPVersionGet, err error) {
 	var list attestationconfig.AzureSEVSNPVersionList
 	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
 	if err != nil {
 		return res, fmt.Errorf("fetching versions list: %w", err)
 	}
 	get := attestationconfig.AzureSEVSNPVersionGet{Version: list[0]} // get latest version (as sorted reversely alphanumerically)
-	get, err = f.FetchAzureSEVSNPVersion(ctx, get, version)
+	get, err = f.FetchAzureSEVSNPVersion(ctx, get)
 	if err != nil {
 		return res, fmt.Errorf("failed fetching version: %w", err)
 	}

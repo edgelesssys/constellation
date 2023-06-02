@@ -9,7 +9,7 @@ go_library(
     deps = [
         "//internal/api/attestationconfig",
         "//internal/api/fetcher",
-        "//internal/api/versions",
+        "//internal/constants",
         "//internal/sigstore",
     ],
 )
@@ -20,8 +20,6 @@ go_test(
     embed = [":fetcher"],
     deps = [
         "//internal/api/attestationconfig",
-        "//internal/api/versions",
         "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
     ],
 )

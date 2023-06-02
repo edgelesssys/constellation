@@ -15,9 +15,7 @@ import (
 	"testing"
 
 	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var testCfg = configapi.AzureSEVSNPVersionGet{
@@ -36,7 +34,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 		want      configapi.AzureSEVSNPVersionGet
 	}{
 		"get version with valid signature": {
-			signature: []byte("MEUCIQDNn6wiSh9Nz9mtU9RvxvfkH3fNDFGeqopjTIRoBNkyrAIgSsKgdYNQXvPevaLWmmpnj/9WcgrltAQ+KfI+bQfklAo="),
+			signature: []byte("MEQCIBPEbYg89MIQuaGStLhKGLGMKvKFoYCaAniDLwoIwulqAiB+rj7KMaMOMGxmUsjI7KheCXSNM8NzN+tuDw6AywI75A=="), // signed with release key
 			want:      testCfg,
 		},
 		"fail with invalid signature": {
@@ -51,13 +49,10 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 					signature: tc.signature,
 				},
 			}
-			require := require.New(t)
-			version, err := versionsapi.NewVersionFromShortPath("stream/debug/v9.9.9", versionsapi.VersionKindImage)
-			require.NoError(err)
 			fetcher := NewWithClient(client)
+			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 
 			assert := assert.New(t)
-			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background(), version)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

@@ -13,7 +13,6 @@ import (
 
 	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -98,8 +97,8 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, version versionsapi.Version) error {
-	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background(), version)
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigfetcher.AttestationConfigAPIFetcher) error {
+	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 	if err != nil {
 		return err
 	}

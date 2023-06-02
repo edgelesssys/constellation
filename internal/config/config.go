@@ -32,7 +32,6 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
 	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -393,11 +392,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigfetcher
 	}
 
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		version, err := versionsapi.NewVersionFromShortPath(c.Image, versionsapi.VersionKindImage)
-		if err != nil {
-			return nil, err
-		}
-		if err := azure.FetchAndSetLatestVersionNumbers(fetcher, version); err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(fetcher); err != nil {
 			return c, err
 		}
 	}

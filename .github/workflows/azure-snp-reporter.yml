@@ -49,7 +49,10 @@ jobs:
 
   validate-snp-report:
     needs: fetch-snp-report
-    name: "Validate SNP report"
+    name: "Validate SNP report and update Attestation API"
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-22.04
     env:
       SHELL: /bin/bash
@@ -73,4 +76,18 @@ jobs:
 
       - name: Verify report
         shell: bash
-        run: go run ./hack/azure-snp-report-verify/verify.go "$(cat ./maa-report.jwt)"
+        run: go run ./hack/azure-snp-report-verify/verify.go --report "$(cat ./maa-report.jwt)" --export-path azure-snp-version.json
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
+
+      - name: Update Attestation API
+        shell: bash
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        run: |
+          go run ./hack/configapi/main.go --version-file azure-snp-version.json
