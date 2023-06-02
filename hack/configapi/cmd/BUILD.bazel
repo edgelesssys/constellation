@@ -21,6 +21,6 @@ go_test(
     embed = [":cmd"],
     deps = [
         "//internal/api/attestationconfig",
-        "@com_github_tj_assert//:assert",
+        "@com_github_stretchr_testify//assert",
     ],
 )

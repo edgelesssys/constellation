@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var testCfg = attestationconfig.AzureSEVSNPVersion{
