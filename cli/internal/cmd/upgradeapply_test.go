@@ -142,7 +142,7 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: fakeConfigFetcher{}}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: fakeAttestationFetcher{}}
 			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)

@@ -190,7 +190,7 @@ func TestVerify(t *testing.T) {
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
-			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, fakeConfigFetcher{})
+			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, fakeAttestationFetcher{})
 
 			if tc.wantErr {
 				assert.Error(err)
