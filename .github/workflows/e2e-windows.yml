@@ -21,10 +21,25 @@ jobs:
           targetOS: "windows"
           targetArch: "amd64"
           enterpriseCLI: true
-          outputPath: "build/constellation"
+          outputPath: "build/constellation.exe"
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
-          path: "build/constellation/constellation.exe"
+          path: "build/constellation.exe"
           name: "constellation.exe"
+
+  e2e-test:
+    name: E2E Test Windows
+    runs-on: windows-2022
+    needs: build-cli
+    steps:
+      - name: Download CLI artifact
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: "constellation.exe"
+
+      - name: Check CLI version
+        shell: pwsh
+        run: |
+          .\constellation.exe version
