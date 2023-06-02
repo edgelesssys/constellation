@@ -57,7 +57,7 @@ jobs:
       - name: Create IAM configuration
         shell: pwsh
         run: |
-          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindowsRG --servicePrincipal=e2eWindowsSP --generate-config -y
+          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --generate-config -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure
@@ -90,4 +90,4 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          .\constellation.exe delete -y
+          .\constellation.exe iam destroy -y
