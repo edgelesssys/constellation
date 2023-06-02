@@ -22,18 +22,20 @@ import (
 )
 
 const (
-	awsRegion      = "eu-central-1"
-	awsBucket      = "cdn-constellation-backend"
-	invalidDefault = 0
-	envAwsKeyID    = "AWS_ACCESS_KEY_ID"
-	envAwsKey      = "AWS_ACCESS_KEY"
+	awsRegion           = "eu-central-1"
+	awsBucket           = "cdn-constellation-backend"
+	invalidDefault      = 0
+	envAwsKeyID         = "AWS_ACCESS_KEY_ID"
+	envAwsKey           = "AWS_ACCESS_KEY"
+	envCosignPwd        = "COSIGN_PASSWORD"
+	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
 )
 
 var (
 	versionFilePath string
 	// Cosign credentials.
-	cosignPwd      string
-	privateKeyPath string
+	cosignPwd  string
+	privateKey string
 )
 
 // Execute executes the root command.
@@ -44,18 +46,26 @@ func Execute() error {
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "AWS_ACCESS_KEY_ID=$ID AWS_ACCESS_KEY=$KEY upload --version-file $FILE --cosign-pwd $PWD --private-key $FILE_PATH",
+		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY AWS_ACCESS_KEY_ID=$ID AWS_ACCESS_KEY=$KEY upload --version-file $FILE",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
-		Long: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api. Please authenticate with AWS through your preferred method (e.g. environment variables, CLI) to be able to upload to S3.",
-		RunE: runCmd,
+		Long:    fmt.Sprintf("Upload a set of versions specific to the azure-sev-snp attestation variant to the config api. Please authenticate with AWS through your preferred method (e.g. environment variables, CLI) to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.", envCosignPrivateKey, envCosignPwd),
+		PreRunE: envCheck,
+		RunE:    runCmd,
 	}
 	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
-	rootCmd.PersistentFlags().StringVar(&cosignPwd, "cosign-pwd", "", "Cosign password used to decrpyt the private key. We use the release key to sign versions.")
-	rootCmd.PersistentFlags().StringVar(&privateKeyPath, "private-key", "", "File path of private key used to sign the payload. We use the release key to sign versions.")
-	must(enforceRequiredFlags(rootCmd, "version-file", "cosign-pwd", "private-key"))
+	must(enforceRequiredFlags(rootCmd, "version-file"))
 
 	return rootCmd
+}
+
+func envCheck(_ *cobra.Command, _ []string) error {
+	if os.Getenv(envCosignPrivateKey) == "" || os.Getenv(envCosignPwd) == "" {
+		return fmt.Errorf("please set both %s and %s environment variables", envCosignPrivateKey, envCosignPwd)
+	}
+	cosignPwd = os.Getenv(envCosignPwd)
+	privateKey = os.Getenv(envCosignPrivateKey)
+	return nil
 }
 
 func runCmd(cmd *cobra.Command, _ []string) error {
@@ -69,27 +79,22 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("reading version file: %w", err)
 	}
 	var inputVersion attestationconfig.AzureSEVSNPVersion
-	err = json.Unmarshal(versionBytes, &inputVersion)
-	if err != nil {
+	if err = json.Unmarshal(versionBytes, &inputVersion); err != nil {
 		return fmt.Errorf("unmarshalling version file: %w", err)
 	}
 
-	fetcher := fetcher.New()
-	latestAPIVersion, err := fetcher.FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersion, err := fetcher.New().FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
-	isNewer, err := IsInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
+	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
 	if err != nil {
 		return fmt.Errorf("comparing versions: %w", err)
 	}
 	if isNewer {
-		privateKey, err := os.ReadFile(privateKeyPath)
-		if err != nil {
-			return fmt.Errorf("reading private key: %w", err)
-		}
-		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), privateKey)
+		fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey))
 		defer func() {
 			if err := sutClose(ctx); err != nil {
 				fmt.Printf("closing repo: %v\n", err)
@@ -109,8 +114,8 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-// IsInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
-func IsInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersion) (bool, error) {
+// isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
+func isInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersion) (bool, error) {
 	inputValues := reflect.ValueOf(input)
 	latestValues := reflect.ValueOf(latest)
 	fields := reflect.TypeOf(input)

@@ -50,6 +50,9 @@ jobs:
   validate-snp-report:
     needs: fetch-snp-report
     name: "Validate SNP report and update Attestation API"
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-22.04
     env:
       SHELL: /bin/bash
@@ -83,6 +86,8 @@ jobs:
 
       - name: Update Attestation API
         shell: bash
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
-          go run ./hack/configapi/main.go --version-file azure-snp-version.json  --cosign-pwd ${{ secrets.COSIGN_PASSWORD }} --private-key cosign.key
+          go run ./hack/configapi/main.go --version-file azure-snp-version.json

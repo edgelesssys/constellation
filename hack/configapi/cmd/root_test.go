@@ -62,7 +62,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			isNewer, err := IsInputNewerThanLatestAPI(tc.input, tc.latest)
+			isNewer, err := isInputNewerThanLatestAPI(tc.input, tc.latest)
 			assert := assert.New(t)
 			if tc.errMsg != "" {
 				assert.EqualError(err, tc.errMsg)
