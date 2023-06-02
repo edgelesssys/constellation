@@ -21,7 +21,7 @@ def hermetic_cc_deps():
         sha256 = "43a1b398f08109c4f03b9ba2b3914bd43d1fec0425f71b71f802bf3f78cee0c2",
         urls = [
             "https://cdn.confidential.cloud/constellation/cas/sha256/43a1b398f08109c4f03b9ba2b3914bd43d1fec0425f71b71f802bf3f78cee0c2",
-            "https://github.com/uber/hermetic_cc_toolchain/releases/download/v2.0.0-rc1/hermetic_cc_toolchain-v2.0.0-rc1.tar.gz",
+            "https://github.com/uber/hermetic_cc_toolchain/releases/download/v2.0.0/hermetic_cc_toolchain-v2.0.0.tar.gz",
         ],
         type = "tar.gz",
     )
