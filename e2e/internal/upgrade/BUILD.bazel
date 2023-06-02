@@ -29,11 +29,11 @@ go_test(
     # keep
     count = 1,
     data = [
-        "//cli:cli_oss_linux_amd64",
+        "//cli:cli_enterprise_linux_amd64",
     ],
     embed = [":upgrade"],
     env = {
-        "PATH_CLI": "$(location //cli:cli_oss_linux_amd64)",
+        "PATH_CLI": "$(location //cli:cli_enterprise_linux_amd64)",
     },
     # keep
     gotags = ["e2e"],

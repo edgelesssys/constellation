@@ -51,6 +51,15 @@ resource "azurerm_attestation_provider" "attestation_provider" {
   name                = format("constell%s", local.uid)
   resource_group_name = var.resource_group
   location            = var.location
+
+  lifecycle {
+    # Attestation policies will be set automatically upon creation, even if not specified in the resource,
+    # while they aren't being incorporated into the Terraform state correctly.
+    # To prevent them from being set to null when applying an upgrade, ignore the changes until the issue
+    # is resolved by Azure.
+    # Related issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/21998
+    ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64]
+  }
 }
 
 resource "azurerm_application_insights" "insights" {

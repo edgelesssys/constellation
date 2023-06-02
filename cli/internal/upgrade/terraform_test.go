@@ -164,6 +164,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 
 	testCases := map[string]struct {
 		tf             tfClient
+		policyPatcher  stubPolicyPatcher
 		fs             file.Handler
 		outputFileName string
 		wantErr        bool
@@ -171,6 +172,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 		"success": {
 			tf:             &stubTerraformClient{},
 			fs:             fileHandler(),
+			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 		},
 		"create cluster error": {
@@ -178,18 +180,29 @@ func TestApplyTerraformMigrations(t *testing.T) {
 				CreateClusterErr: assert.AnError,
 			},
 			fs:             fileHandler(),
+			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 			wantErr:        true,
+		},
+		"patch error": {
+			tf: &stubTerraformClient{},
+			fs: fileHandler(),
+			policyPatcher: stubPolicyPatcher{
+				patchErr: assert.AnError,
+			},
+			wantErr: true,
 		},
 		"empty file name": {
 			tf:             &stubTerraformClient{},
 			fs:             fileHandler(),
+			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "",
 			wantErr:        true,
 		},
 		"file already exists": {
 			tf:             &stubTerraformClient{},
 			fs:             fileHandler("test.json"),
+			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 			wantErr:        true,
 		},
@@ -310,4 +323,12 @@ func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string, 
 
 func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel, ...string) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{}, u.CreateClusterErr
+}
+
+type stubPolicyPatcher struct {
+	patchErr error
+}
+
+func (p *stubPolicyPatcher) PatchPolicy(context.Context, string) error {
+	return p.patchErr
 }
