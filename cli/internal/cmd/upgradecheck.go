@@ -495,7 +495,7 @@ func (v *versionUpgrade) writeConfig(conf *config.Config, fileHandler file.Handl
 	if v.newServices != "" {
 		conf.MicroserviceVersion = v.newServices
 	}
-	if len(v.newServices) > 0 {
+	if len(v.newKubernetes) > 0 {
 		conf.KubernetesVersion = v.newKubernetes[0]
 	}
 	if len(v.newImages) > 0 {
