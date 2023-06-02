@@ -93,7 +93,7 @@ func (e InvalidationError) Unwrap() error {
 	return e.inner
 }
 
-// New creates a new Client.
+// New creates a new Client. Call CloseFunc when done with operations.
 func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
 	config.SetsDefault()
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(config.Region))
@@ -114,12 +114,7 @@ func New(ctx context.Context, config Config) (*Client, CloseFunc, error) {
 		cacheInvalidationWaitTimeout: config.CacheInvalidationWaitTimeout,
 		bucketID:                     config.Bucket,
 	}
-	clientClose := func(ctx context.Context) error {
-		// ensure that all keys are invalidated
-		return client.Flush(ctx)
-	}
-
-	return client, clientClose, nil
+	return client, client.Flush, nil
 }
 
 // Flush flushes the client by invalidating the CDN cache for modified keys.

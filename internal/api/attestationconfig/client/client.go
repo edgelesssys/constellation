@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
+// Client is the client for the attestationconfig API.
 type Client interface {
 	UploadAzureSEVSNP(ctx context.Context, versions attestationconfig.AzureSEVSNPVersion, date time.Time) error
 	List(ctx context.Context, attestation variant.Variant) ([]string, error)
@@ -41,6 +42,7 @@ type client struct {
 	bucketID      string
 	cosignPwd     []byte // used to decrypt the cosign private key
 	privKey       []byte // used to sign
+	fetcher       fetcher.AttestationConfigAPIFetcher
 }
 
 // New returns a new Client.
@@ -49,12 +51,14 @@ func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []b
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)
 	}
+
 	repo := &client{
 		s3Client:      staticclient,
 		s3ClientClose: clientClose,
 		bucketID:      cfg.Bucket,
 		cosignPwd:     cosignPwd,
 		privKey:       privateKey,
+		fetcher:       fetcher.New(),
 	}
 	return repo, repo.Close, nil
 }
@@ -126,39 +130,51 @@ func (a client) DeleteList(ctx context.Context, attestation variant.Variant) err
 	return put(ctx, a.s3Client, a.bucketID, path.Join(constants.CDNAttestationConfigPrefixV1, attestation.String(), "list"), bt)
 }
 
-// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
-func (a client) DeleteAzureSEVSNVersion(ctx context.Context, versionStr string) error {
+func (a client) deleteAzureSEVSNVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (ops []crudOP, err error) {
 	versionStr = versionStr + ".json"
 	variant := variant.AzureSEVSNP{}
 	// delete version file
 	filePath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr)
-	err := delete(ctx, a.s3Client, a.bucketID, filePath)
-	if err != nil {
-		return fmt.Errorf("delete version file: %w", err)
-	}
+	ops = append(ops, deleteCmd{
+		path: filePath,
+	})
 
 	// delete signature file
 	sigPath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr+".sig")
-	err = delete(ctx, a.s3Client, a.bucketID, sigPath)
-	if err != nil {
-		return fmt.Errorf("delete signature file: %w", err)
-	}
+	ops = append(ops, deleteCmd{
+		path: sigPath,
+	})
 
 	// delete version from /list
-	versions, err := fetcher.New().FetchAzureSEVSNPVersionList(ctx, attestationconfig.AzureSEVSNPVersionList{})
-	if err != nil {
-		return fmt.Errorf("fetch version list: %w", err)
-	}
 	removedVersions, err := removeVersion(versions, versionStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	versionBt, err := json.Marshal(removedVersions)
 	if err != nil {
-		return fmt.Errorf("marshal updated version list: %w", err)
+		return nil, fmt.Errorf("marshal updated version list: %w", err)
 	}
-	if err := put(ctx, a.s3Client, a.bucketID, path.Join(constants.CDNAttestationConfigPrefixV1, variant.String(), "list"), versionBt); err != nil {
-		return fmt.Errorf("put updated version list: %w", err)
+	ops = append(ops, putCmd{
+		data: versionBt,
+		path: path.Join(constants.CDNAttestationConfigPrefixV1, variant.String(), "list"),
+	})
+	return ops, nil
+}
+
+// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
+func (a client) DeleteAzureSEVSNVersion(ctx context.Context, versionStr string) error {
+	versions, err := a.fetcher.FetchAzureSEVSNPVersionList(ctx, attestationconfig.AzureSEVSNPVersionList{})
+	if err != nil {
+		return fmt.Errorf("fetch version list: %w", err)
+	}
+	ops, err := a.deleteAzureSEVSNVersion(versions, versionStr)
+	if err != nil {
+		return err
+	}
+	for _, op := range ops {
+		if err := op.Execute(ctx, a.s3Client, a.bucketID); err != nil {
+			return fmt.Errorf("execute operation %+v: %w", op, err)
+		}
 	}
 	return nil
 }
@@ -241,4 +257,25 @@ func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr
 		}
 	}
 	return nil, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+}
+
+type deleteCmd struct {
+	path string
+}
+
+func (d deleteCmd) Execute(ctx context.Context, c s3Client, bucketID string) error {
+	return delete(ctx, c, bucketID, d.path)
+}
+
+type putCmd struct {
+	data []byte
+	path string
+}
+
+func (p putCmd) Execute(ctx context.Context, c s3Client, bucketID string) error {
+	return put(ctx, c, bucketID, p.path, p.data)
+}
+
+type crudOP interface {
+	Execute(ctx context.Context, c s3Client, bucketID string) error
 }
