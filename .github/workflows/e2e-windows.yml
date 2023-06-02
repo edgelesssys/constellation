@@ -1,6 +1,9 @@
 name: e2e test windows
 
 on:
+  push:
+    branches:
+      - feat/ci/windows-tests
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 6" # At 03:00 on Saturday.
