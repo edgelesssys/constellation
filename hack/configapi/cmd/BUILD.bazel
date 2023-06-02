@@ -3,7 +3,10 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "cmd",
-    srcs = ["root.go"],
+    srcs = [
+        "delete.go",
+        "root.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi/cmd",
     visibility = ["//visibility:public"],
     deps = [
@@ -17,10 +20,15 @@ go_library(
 
 go_test(
     name = "cmd_test",
-    srcs = ["root_test.go"],
+    srcs = [
+        "delete_test.go",
+        "root_test.go",
+    ],
     embed = [":cmd"],
     deps = [
         "//internal/api/attestationconfig",
+        "//internal/variant",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

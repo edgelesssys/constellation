@@ -8,6 +8,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/attestationconfig",
+        "//internal/api/attestationconfig/fetcher",
         "//internal/constants",
         "//internal/kms/storage",
         "//internal/sigstore",
@@ -23,14 +24,14 @@ go_test(
     srcs = ["client_test.go"],
     # keep
     count = 1,
+    embed = [":client"],
     # keep
     gotags = ["e2e"],
     # keep
     tags = ["manual"],
     deps = [
-        ":client",
         "//internal/api/attestationconfig",
-        "//internal/staticupload",
+        "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
 )
