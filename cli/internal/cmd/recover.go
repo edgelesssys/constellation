@@ -50,7 +50,7 @@ func NewRecoverCmd() *cobra.Command {
 
 type recoverCmd struct {
 	log           debugLog
-	configFetcher attestationconfigapi.AttestationConfigAPIFetcher
+	configFetcher attestationconfigapi.Fetcher
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {

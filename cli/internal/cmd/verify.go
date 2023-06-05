@@ -76,7 +76,7 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	return v.verify(cmd, fileHandler, verifyClient, formatter, fetcher)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigapi.AttestationConfigAPIFetcher) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigapi.Fetcher) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)

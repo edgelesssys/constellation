@@ -77,7 +77,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
-	configFetcher attestationconfigapi.AttestationConfigAPIFetcher
+	configFetcher attestationconfigapi.Fetcher
 	log           debugLog
 }
 

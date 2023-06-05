@@ -14,47 +14,47 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
 const cosignPublicKey = constants.CosignPublicKeyReleases
 
-// AttestationConfigAPIFetcher fetches config API resources without authentication.
-type AttestationConfigAPIFetcher interface {
+// Fetcher fetches config API resources without authentication.
+type Fetcher interface {
 	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error)
 	FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error)
 	FetchAzureSEVSNPVersionLatest(ctx context.Context) (AzureSEVSNPVersionAPI, error)
 }
 
-// Fetcher fetches AttestationCfg API resources without authentication.
-type Fetcher struct {
-	fetcher.HTTPClient
+// fetcher fetches AttestationCfg API resources without authentication.
+type fetcher struct {
+	apifetcher.HTTPClient
 }
 
-// NewFetcher returns a new Fetcher.
-func NewFetcher() *Fetcher {
-	return NewFetcherWithClient(fetcher.NewHTTPClient())
+// NewFetcher returns a new apifetcher.
+func NewFetcher() Fetcher {
+	return NewFetcherWithClient(apifetcher.NewHTTPClient())
 }
 
-// NewFetcherWithClient returns a new Fetcher with custom http client.
-func NewFetcherWithClient(client fetcher.HTTPClient) *Fetcher {
-	return &Fetcher{client}
+// NewFetcherWithClient returns a new fetcher with custom http client.
+func NewFetcherWithClient(client apifetcher.HTTPClient) Fetcher {
+	return &fetcher{client}
 }
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
-func (f *Fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
-	return fetcher.Fetch(ctx, f.HTTPClient, attestation)
+func (f *fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
+	return apifetcher.Fetch(ctx, f.HTTPClient, attestation)
 }
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
-func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
+func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
 	urlString, err := azureVersion.URL()
 	if err != nil {
 		return azureVersion, err
 	}
-	fetchedVersion, err := fetcher.Fetch(ctx, f.HTTPClient, azureVersion)
+	fetchedVersion, err := apifetcher.Fetch(ctx, f.HTTPClient, azureVersion)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
 	}
@@ -76,7 +76,7 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion Azur
 }
 
 // FetchAzureSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureSEVSNPVersionAPI, err error) {
+func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureSEVSNPVersionAPI, err error) {
 	var list AzureSEVSNPVersionList
 	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
 	if err != nil {
@@ -90,7 +90,7 @@ func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureS
 	return get, nil
 }
 
-func fetchBytesFromRawURL(ctx context.Context, urlString string, client fetcher.HTTPClient) ([]byte, error) {
+func fetchBytesFromRawURL(ctx context.Context, urlString string, client apifetcher.HTTPClient) ([]byte, error) {
 	url, err := url.Parse(urlString)
 	if err != nil {
 		return nil, fmt.Errorf("parse version url %s: %w", urlString, err)
@@ -99,7 +99,7 @@ func fetchBytesFromRawURL(ctx context.Context, urlString string, client fetcher.
 }
 
 // getFromURL fetches the content from the given URL and returns the content as a byte slice.
-func getFromURL(ctx context.Context, client fetcher.HTTPClient, sourceURL *url.URL) ([]byte, error) {
+func getFromURL(ctx context.Context, client apifetcher.HTTPClient, sourceURL *url.URL) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
 	if err != nil {
 		return nil, err

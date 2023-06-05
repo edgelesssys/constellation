@@ -63,7 +63,7 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	return c.create(cmd, creator, fileHandler, spinner, fetcher)
 }
 
-func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.AttestationConfigAPIFetcher) (retErr error) {
+func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
 	flags, err := c.parseCreateFlags(cmd)
 	if err != nil {
 		return err

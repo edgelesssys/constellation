@@ -132,7 +132,7 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.AttestationConfigAPIFetcher, flags upgradeCheckFlags) error {
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
 	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

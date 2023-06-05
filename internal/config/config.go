@@ -386,7 +386,7 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 2. For "latest" version values of the attestation variants fetch the version numbers.
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
-func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.AttestationConfigAPIFetcher, force bool) (*Config, error) {
+func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fetcher, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
@@ -973,7 +973,7 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigapi.AttestationConfigAPIFetcher) error {
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigapi.Fetcher) error {
 	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 	if err != nil {
 		return err

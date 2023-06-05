@@ -46,7 +46,7 @@ func newMiniUpCmd() *cobra.Command {
 
 type miniUpCmd struct {
 	log           debugLog
-	configFetcher attestationconfigapi.AttestationConfigAPIFetcher
+	configFetcher attestationconfigapi.Fetcher
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {

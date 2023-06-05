@@ -71,7 +71,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
-	fileHandler file.Handler, fetcher attestationconfigapi.AttestationConfigAPIFetcher, client *http.Client,
+	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
 	if err != nil {

@@ -104,7 +104,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.AttestationConfigAPIFetcher,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
