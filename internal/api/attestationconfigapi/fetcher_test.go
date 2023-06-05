@@ -3,7 +3,7 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package fetcher
+package attestationconfigapi
 
 import (
 	"bytes"
@@ -14,12 +14,11 @@ import (
 	"net/http"
 	"testing"
 
-	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/stretchr/testify/assert"
 )
 
-var testCfg = configapi.AzureSEVSNPVersionAPI{
-	AzureSEVSNPVersion: configapi.AzureSEVSNPVersion{
+var testCfg = AzureSEVSNPVersionAPI{
+	AzureSEVSNPVersion: AzureSEVSNPVersion{
 		Microcode:  93,
 		TEE:        0,
 		SNP:        6,
@@ -31,7 +30,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 	testcases := map[string]struct {
 		signature []byte
 		wantErr   bool
-		want      configapi.AzureSEVSNPVersionAPI
+		want      AzureSEVSNPVersionAPI
 	}{
 		"get version with valid signature": {
 			signature: []byte("MEQCIBPEbYg89MIQuaGStLhKGLGMKvKFoYCaAniDLwoIwulqAiB+rj7KMaMOMGxmUsjI7KheCXSNM8NzN+tuDw6AywI75A=="), // signed with release key
@@ -49,7 +48,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 					signature: tc.signature,
 				},
 			}
-			fetcher := NewWithClient(client)
+			fetcher := NewFetcherWithClient(client)
 			res, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 
 			assert := assert.New(t)

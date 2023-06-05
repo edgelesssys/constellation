@@ -16,7 +16,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -293,25 +293,25 @@ func TestConfigFetchMeasurements(t *testing.T) {
 
 type fakeAttestationFetcher struct{}
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error) {
-	return attestationconfig.AzureSEVSNPVersionList(
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
+	return attestationconfigapi.AzureSEVSNPVersionList(
 		[]string{},
 	), nil
 }
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
-	return attestationconfig.AzureSEVSNPVersionAPI{
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	return attestationconfigapi.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfig.AzureSEVSNPVersionAPI, error) {
-	return attestationconfig.AzureSEVSNPVersionAPI{
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	return attestationconfigapi.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-var testCfg = attestationconfig.AzureSEVSNPVersion{
+var testCfg = attestationconfigapi.AzureSEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,

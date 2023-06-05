@@ -18,7 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	versionfetcher "github.com/edgelesssys/constellation/v2/internal/api/versions/fetcher"
@@ -93,7 +93,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		log: log,
 	}
 
-	return up.upgradeCheck(cmd, fileHandler, attestationconfigfetcher.New(), flags)
+	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
@@ -133,7 +133,7 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, flags upgradeCheckFlags) error {
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.AttestationConfigAPIFetcher, flags upgradeCheckFlags) error {
 	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

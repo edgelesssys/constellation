@@ -18,7 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -50,7 +50,7 @@ func NewRecoverCmd() *cobra.Command {
 
 type recoverCmd struct {
 	log           debugLog
-	configFetcher attestationconfigfetcher.AttestationConfigAPIFetcher
+	configFetcher attestationconfigapi.AttestationConfigAPIFetcher
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
@@ -63,7 +63,7 @@ func runRecover(cmd *cobra.Command, _ []string) error {
 	newDialer := func(validator atls.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
-	r := &recoverCmd{log: log, configFetcher: attestationconfigfetcher.New()}
+	r := &recoverCmd{log: log, configFetcher: attestationconfigapi.NewFetcher()}
 	return r.recover(cmd, fileHandler, 5*time.Second, &recoverDoer{log: r.log}, newDialer)
 }
 

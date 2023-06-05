@@ -21,7 +21,7 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
-	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"

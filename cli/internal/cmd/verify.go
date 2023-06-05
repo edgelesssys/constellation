@@ -21,7 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -72,11 +72,11 @@ func runVerify(cmd *cobra.Command, _ []string) error {
 	}
 
 	v := &verifyCmd{log: log}
-	fetcher := attestationconfigfetcher.New()
+	fetcher := attestationconfigapi.NewFetcher()
 	return v.verify(cmd, fileHandler, verifyClient, formatter, fetcher)
 }
 
-func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigfetcher.AttestationConfigAPIFetcher) error {
+func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient, formatter attestationDocFormatter, configFetcher attestationconfigapi.AttestationConfigAPIFetcher) error {
 	flags, err := c.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)

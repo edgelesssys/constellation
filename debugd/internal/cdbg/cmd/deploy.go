@@ -20,7 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -69,7 +69,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(fs)
 	streamer := streamer.New(fs)
 	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
-	constellationConfig, err := config.New(fileHandler, configName, attestationconfigfetcher.New(), force)
+	constellationConfig, err := config.New(fileHandler, configName, attestationconfigapi.NewFetcher(), force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

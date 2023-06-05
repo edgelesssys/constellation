@@ -16,8 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
+	attestationconfig "github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/stretchr/testify/require"
@@ -76,7 +75,7 @@ var versionValues = attestationconfig.AzureSEVSNPVersion{
 
 func TestUploadAzureSEVSNPVersions(t *testing.T) {
 	ctx := context.Background()
-	client, clientClose, err := client.New(ctx, cfg, []byte(*cosignPwd), privateKey, false, logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfig"))
+	client, clientClose, err := attestationconfig.NewClient(ctx, cfg, []byte(*cosignPwd), privateKey, false, logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfig"))
 	require.NoError(t, err)
 	defer func() { _ = clientClose(ctx) }()
 	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)

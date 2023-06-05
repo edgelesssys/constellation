@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package fetcher
+package attestationconfigapi
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -24,9 +23,9 @@ const cosignPublicKey = constants.CosignPublicKeyReleases
 
 // AttestationConfigAPIFetcher fetches config API resources without authentication.
 type AttestationConfigAPIFetcher interface {
-	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error)
-	FetchAzureSEVSNPVersionList(ctx context.Context, attestation attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error)
-	FetchAzureSEVSNPVersionLatest(ctx context.Context) (attestationconfig.AzureSEVSNPVersionAPI, error)
+	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error)
+	FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error)
+	FetchAzureSEVSNPVersionLatest(ctx context.Context) (AzureSEVSNPVersionAPI, error)
 }
 
 // Fetcher fetches AttestationCfg API resources without authentication.
@@ -34,23 +33,23 @@ type Fetcher struct {
 	fetcher.HTTPClient
 }
 
-// New returns a new Fetcher.
-func New() *Fetcher {
-	return NewWithClient(fetcher.NewHTTPClient())
+// NewFetcher returns a new Fetcher.
+func NewFetcher() *Fetcher {
+	return NewFetcherWithClient(fetcher.NewHTTPClient())
 }
 
-// NewWithClient returns a new Fetcher with custom http client.
-func NewWithClient(client fetcher.HTTPClient) *Fetcher {
+// NewFetcherWithClient returns a new Fetcher with custom http client.
+func NewFetcherWithClient(client fetcher.HTTPClient) *Fetcher {
 	return &Fetcher{client}
 }
 
 // FetchAzureSEVSNPVersionList fetches the version list information from the config API.
-func (f *Fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error) {
+func (f *Fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error) {
 	return fetcher.Fetch(ctx, f.HTTPClient, attestation)
 }
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
-func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
+func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error) {
 	urlString, err := azureVersion.URL()
 	if err != nil {
 		return azureVersion, err
@@ -77,13 +76,13 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion atte
 }
 
 // FetchAzureSEVSNPVersionLatest returns the latest versions of the given type.
-func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res attestationconfig.AzureSEVSNPVersionAPI, err error) {
-	var list attestationconfig.AzureSEVSNPVersionList
+func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res AzureSEVSNPVersionAPI, err error) {
+	var list AzureSEVSNPVersionList
 	list, err = f.FetchAzureSEVSNPVersionList(ctx, list)
 	if err != nil {
 		return res, fmt.Errorf("fetching versions list: %w", err)
 	}
-	get := attestationconfig.AzureSEVSNPVersionAPI{Version: list[0]} // get latest version (as sorted reversely alphanumerically)
+	get := AzureSEVSNPVersionAPI{Version: list[0]} // get latest version (as sorted reversely alphanumerically)
 	get, err = f.FetchAzureSEVSNPVersion(ctx, get)
 	if err != nil {
 		return res, fmt.Errorf("failed fetching version: %w", err)

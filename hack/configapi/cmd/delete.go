@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
 )
@@ -47,7 +47,7 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	repo, closefn, err := client.New(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log())
+	repo, closefn, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
