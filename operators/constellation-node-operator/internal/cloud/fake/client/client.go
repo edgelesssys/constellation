@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
 )
 
 const (
@@ -53,7 +54,7 @@ func (c *Client) SetScalingGroupImage(_ context.Context, _, _ string) error {
 
 // GetScalingGroupImage retrieves the image currently used by a scaling group.
 func (c *Client) GetScalingGroupImage(_ context.Context, _ string) (string, error) {
-	return "unsupportedCSP", nil
+	return constants.PlaceholderImageName, nil
 }
 
 // GetScalingGroupName retrieves the name of a scaling group.
@@ -87,5 +88,5 @@ func (c *Client) ListScalingGroups(_ context.Context, _ string) (controlPlaneGro
 
 // AutoscalingCloudProvider returns the cloud-provider name as used by k8s cluster-autoscaler.
 func (c *Client) AutoscalingCloudProvider() string {
-	return "unsupportedCSP"
+	return constants.PlaceholderImageName
 }

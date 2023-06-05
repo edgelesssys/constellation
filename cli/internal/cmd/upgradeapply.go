@@ -45,7 +45,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n"+
 		"WARNING: might delete your resources in case you are using cert-manager in your cluster. Please read the docs.\n"+
 		"WARNING: might unintentionally overwrite measurements in the running cluster.")
-	cmd.Flags().Duration("timeout", 3*time.Minute, "change helm upgrade timeout\n"+
+	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
