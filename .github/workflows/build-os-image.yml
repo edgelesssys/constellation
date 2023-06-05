@@ -717,7 +717,6 @@ jobs:
   upload-pcrs:
     name: "Sign & upload PCRs"
     needs: [build-settings, calculate-pcrs]
-    if: inputs.stream != 'debug'
     permissions:
       id-token: write
       contents: read
@@ -759,6 +758,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Sign measurements
+        if: inputs.stream != 'debug'
         shell: bash
         env:
           COSIGN_PUBLIC_KEY: ${{ inputs.isRelease && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
@@ -778,6 +778,12 @@ jobs:
           uuid=$(rekor-cli search --artifact "${{ github.workspace }}/measurements.json" | tail -n 1)
           sig=$(rekor-cli get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
           cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/measurements.json"
+
+      - name: Create stub signature file
+        if: inputs.stream == 'debug'
+        shell: bash
+        run: |
+          echo "THOSE MEASUREMENTS BELONG TO A DEBUG IMAGE. THOSE ARE NOT SINGED BY ANY KEY." > "${{ github.workspace }}/measurements.json.sig"
 
       - name: Upload measurements
         shell: bash
