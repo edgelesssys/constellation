@@ -37,10 +37,12 @@ replace (
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.44.257
 	github.com/aws/aws-sdk-go-v2/config v1.18.23
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.60
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.1
 	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
+	github.com/bazelbuild/rules_go v0.39.1
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hexops/gotextdiff v1.0.3

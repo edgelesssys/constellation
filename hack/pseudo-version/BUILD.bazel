@@ -1,12 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 load("//bazel/sh:def.bzl", "sh_template")
-
-platforms = [
-    "darwin_amd64",
-    "darwin_arm64",
-    "linux_amd64",
-    "linux_arm64",
-]
+load("//hack/pseudo-version:platforms.bzl", "platforms")
 
 go_library(
     name = "pseudo-version_lib",
@@ -37,18 +31,18 @@ go_binary(
         target = ":pseudo-version",
         visibility = ["//visibility:public"],
     )
-    for platform in platforms
+    for platform in platforms()
 ]
 
 sh_template(
     name = "pseudo_version_tool_freshness",
     data = [
         ":pseudo_version_" + platform
-        for platform in platforms
+        for platform in platforms()
     ],
     substitutions = {
         "@@PSEUDO_VERSION_%s@@" % platform: "$(rootpath :pseudo_version_%s)" % platform
-        for platform in platforms
+        for platform in platforms()
     },
     template = "pseudo_version_tool_freshness.sh.in",
     visibility = ["//visibility:public"],

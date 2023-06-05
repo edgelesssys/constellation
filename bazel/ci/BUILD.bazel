@@ -491,9 +491,6 @@ multirun(
 )
 
 repo_command(
-    name = "update_pseudo_version_hashes",
-    args = [
-        "update",
-    ],
-    command = "//hack/pseudo-version:pseudo_version_tool_freshness",
+    name = "pseudo_version_tool_freshness",
+    command = "//hack/pseudo-version/check",
 )
