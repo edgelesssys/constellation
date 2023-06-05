@@ -32,7 +32,7 @@ Use [`constellation config migrate`](../reference/cli.md#constellation-config-mi
 To learn which versions the current CLI can upgrade to and what's installed in your cluster, run:
 
 ```bash
-# see upgrade path
+# Show possible upgrades
 constellation upgrade check
 
 # prepare configuration for next upgrade step
