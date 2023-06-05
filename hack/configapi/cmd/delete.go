@@ -31,16 +31,16 @@ type deleteCmd struct {
 	closefn           client.CloseFunc
 }
 
-func (d deleteCmd) delete(ctx context.Context, cmd *cobra.Command) error {
+func (d deleteCmd) delete(cmd *cobra.Command) error {
 	defer func() {
 		if d.closefn != nil {
 			if err := d.closefn(ctx); err != nil {
-				fmt.Printf("close client: %s\n", err.Error())
+				cmd.Printf("close client: %s\n", err.Error())
 			}
 		}
 	}()
 	version := cmd.Flag("version").Value.String()
-	return d.attestationclient.DeleteAzureSEVSNVersion(ctx, version)
+	return d.attestationclient.DeleteAzureSEVSNVersion(cmd.Context(), version)
 }
 
 func runDelete(cmd *cobra.Command, _ []string) error {
