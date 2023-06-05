@@ -357,6 +357,7 @@ func TestFlush(t *testing.T) {
 			wantCacheInvalidationErr: true,
 		},
 		"waiting for invalidation times out": {
+			dirtyKeys: []string{"test-key-1"},
 			invalidationIDs: []string{
 				"test-invalidation-id-2",
 				"test-invalidation-id-3",

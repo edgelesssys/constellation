@@ -14,6 +14,7 @@ package staticupload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -130,6 +131,10 @@ func (c *Client) Flush(ctx context.Context) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
+	if len(c.dirtyKeys) == 0 {
+		return nil
+	}
+
 	// invalidate all dirty keys that have not been invalidated yet
 	invalidationID, err := c.invalidateCacheForKeys(ctx, c.dirtyKeys)
 	if err != nil {
@@ -151,6 +156,11 @@ func (c *Client) invalidate(ctx context.Context, keys []string) error {
 		c.dirtyKeys = append(c.dirtyKeys, keys...)
 		return nil
 	}
+
+	if len(keys) == 0 {
+		return nil
+	}
+
 	// eagerly invalidate the CDN cache
 	invalidationID, err := c.invalidateCacheForKeys(ctx, keys)
 	if err != nil {
@@ -169,6 +179,10 @@ func (c *Client) invalidate(ctx context.Context, keys []string) error {
 func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (string, error) {
 	if len(keys) > 3000 {
 		return "", InvalidationError{inner: fmt.Errorf("too many keys to invalidate: %d", len(keys))}
+	}
+
+	if len(keys) == 0 {
+		return "", InvalidationError{inner: errors.New("no keys to invalidate")}
 	}
 
 	for i, key := range keys {
