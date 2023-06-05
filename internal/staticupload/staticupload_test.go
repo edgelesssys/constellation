@@ -365,6 +365,9 @@ func TestFlush(t *testing.T) {
 			cacheInvalidationWaitTimeout: time.Microsecond,
 			wantCacheInvalidationErr:     true,
 		},
+		"no invalidations": {
+			dirtyKeys: []string{},
+		},
 	}
 
 	for name, tc := range testCases {

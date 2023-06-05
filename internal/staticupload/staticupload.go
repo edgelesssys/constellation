@@ -14,7 +14,6 @@ package staticupload
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -179,10 +178,6 @@ func (c *Client) invalidate(ctx context.Context, keys []string) error {
 func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (string, error) {
 	if len(keys) > 3000 {
 		return "", InvalidationError{inner: fmt.Errorf("too many keys to invalidate: %d", len(keys))}
-	}
-
-	if len(keys) == 0 {
-		return "", InvalidationError{inner: errors.New("no keys to invalidate")}
 	}
 
 	for i, key := range keys {
