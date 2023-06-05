@@ -35,7 +35,7 @@ To learn which versions the current CLI can upgrade to and what's installed in y
 # Show possible upgrades
 constellation upgrade check
 
-# prepare configuration for next upgrade step
+# Show possible upgrades and write them to config file
 constellation upgrade check --write-config
 ```
 
