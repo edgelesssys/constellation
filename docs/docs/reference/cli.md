@@ -108,6 +108,7 @@ constellation config fetch-measurements [flags]
 
 ```
   -h, --help                   help for fetch-measurements
+      --insecure               skip the measurement signature verification
   -s, --signature-url string   alternative URL to fetch measurements' signature from
   -u, --url string             alternative URL to fetch measurements from
 ```
