@@ -74,7 +74,7 @@ func New(region, bucketName string, log *logger.Logger) (*Uploader, error) {
 // Upload uploads an OS image to AWS.
 func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
 	blobName := fmt.Sprintf("image-%s-%s-%d.raw", req.Version.Stream, req.Version.Version, req.Timestamp.Unix())
-	imageName := imageName(req.Version, req.Timestamp)
+	imageName := imageName(req.Version, req.AttestationVariant, req.Timestamp)
 	allRegions := []string{u.region}
 	allRegions = append(allRegions, replicationRegions...)
 	// TODO(malt3): make this configurable
@@ -478,11 +478,11 @@ func (u *Uploader) ensureImageDeleted(ctx context.Context, imageName, region str
 	return nil
 }
 
-func imageName(version versionsapi.Version, timestamp time.Time) string {
+func imageName(version versionsapi.Version, attestationVariant string, timestamp time.Time) string {
 	if version.Stream == "stable" {
-		return fmt.Sprintf("constellation-%s", version.Version)
+		return fmt.Sprintf("constellation-%s-%s", version.Version, attestationVariant)
 	}
-	return fmt.Sprintf("constellation-%s-%s-%s", version.Stream, version.Version, timestamp.Format(timestampFormat))
+	return fmt.Sprintf("constellation-%s-%s-%s-%s", version.Stream, version.Version, attestationVariant, timestamp.Format(timestampFormat))
 }
 
 func waitForSnapshotImport(ctx context.Context, ec2C ec2API, importTaskID string) (string, error) {
