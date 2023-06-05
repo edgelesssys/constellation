@@ -6,13 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUploadAzureSEVSNP(t *testing.T) {
@@ -26,19 +24,19 @@ func TestUploadAzureSEVSNP(t *testing.T) {
 	assert := assert.New(t)
 	assert.NoError(err)
 	dateStr := "2023-01-01-01-01.json"
-	assert.Contains(ops, updateCmd{
+	assert.Contains(ops, putCmd{
 		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
 			Version:            dateStr,
 			AzureSEVSNPVersion: version,
 		},
 	})
-	assert.Contains(ops, updateCmd{
+	assert.Contains(ops, putCmd{
 		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
 			Version:   dateStr,
 			Signature: []byte("signature"),
 		},
 	})
-	assert.Contains(ops, updateCmd{
+	assert.Contains(ops, putCmd{
 		apiObject: attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
 	})
 }
@@ -54,18 +52,18 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	assert := assert.New(t)
 	assert.NoError(err)
 	assert.Contains(ops, deleteCmd{
-		path: "constellation/v1/attestation/azure-sev-snp/2021-01-01.json",
+		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
+			Version: "2021-01-01.json",
+		},
 	})
 	assert.Contains(ops, deleteCmd{
-		path: "constellation/v1/attestation/azure-sev-snp/2021-01-01.json.sig",
+		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
+			Version: "2021-01-01.json",
+		},
 	})
 
-	removedVersions := attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"})
-	dt, err := json.Marshal(removedVersions)
-	require.NoError(t, err)
 	assert.Contains(ops, putCmd{
-		path: "constellation/v1/attestation/azure-sev-snp/list",
-		data: dt,
+		apiObject: attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"}),
 	})
 }
 

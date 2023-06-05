@@ -95,11 +95,11 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("comparing versions: %w", err)
 	}
 	if isNewer {
-		fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
 		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
-				fmt.Printf("closing repo: %v\n", err)
+				cmd.Printf("closing repo: %v\n", err)
 			}
 		}()
 		if err != nil {

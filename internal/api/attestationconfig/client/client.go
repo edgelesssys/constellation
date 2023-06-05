@@ -6,16 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"path"
 	"sort"
 	"time"
 
-	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -36,7 +32,7 @@ type Client struct {
 }
 
 // New returns a new Client.
-func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, log *logger.Logger) (*Client, CloseFunc, error) {
+func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []byte, dryRun bool, log *logger.Logger) (*Client, apiclient.CloseFunc, error) {
 	s3Client, clientClose, err := apiclient.NewClient(ctx, cfg.Region, cfg.Bucket, cfg.DistributionID, dryRun, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create s3 storage: %w", err)
@@ -49,21 +45,13 @@ func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []b
 		bucketID:      cfg.Bucket,
 		fetcher:       fetcher.New(),
 	}
-	return repo, repo.Close, nil
+	return repo, clientClose, nil
 }
 
-// Close closes the Client.
-func (a Client) Close(ctx context.Context) error {
-	if a.s3ClientClose == nil {
-		return nil
-	}
-	return a.s3ClientClose(ctx)
-}
-
-func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion, versionNames []string, date time.Time) (res []updateCmd, err error) {
+func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion, versionNames []string, date time.Time) (res []putCmd, err error) {
 	dateStr := date.Format("2006-01-02-15-04") + ".json"
 
-	res = append(res, updateCmd{attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
+	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
 
 	versionBytes, err := json.Marshal(versions)
 	if err != nil {
@@ -73,9 +61,9 @@ func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion,
 	if err != nil {
 		return res, err
 	}
-	res = append(res, updateCmd{signature})
+	res = append(res, putCmd{signature})
 	newVersions := addVersion(versionNames, dateStr)
-	res = append(res, updateCmd{attestationconfig.AzureSEVSNPVersionList(newVersions)})
+	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionList(newVersions)})
 	return
 }
 
@@ -115,12 +103,11 @@ func (a Client) createSignature(content []byte, dateStr string) (res attestation
 
 // createAndUploadSignature signs the given content and uploads the signature to the given filePath with the .sig suffix.
 func (a Client) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
-	signature, err := a.signer.Sign(content)
+	signature, err := a.createSignature(content, filePath)
 	if err != nil {
-		return fmt.Errorf("sign version file: %w", err)
+		return err
 	}
-	err = put(ctx, a.s3Client, a.bucketID, filePath+".sig", signature)
-	if err != nil {
+	if err := apiclient.Update(ctx, a.s3Client, signature); err != nil {
 		return fmt.Errorf("upload signature: %w", err)
 	}
 	return nil
@@ -146,33 +133,26 @@ func (a Client) DeleteList(ctx context.Context, attestation variant.Variant) err
 	return fmt.Errorf("unsupported attestation type: %s", attestation)
 }
 
-func (a Client) deleteAzureSEVSNPVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (ops []crudOP, err error) {
+func (a Client) deleteAzureSEVSNPVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (ops []crudOPNew, err error) {
 	versionStr = versionStr + ".json"
-	variant := variant.AzureSEVSNP{}
-	// delete version file
-	filePath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr)
 	ops = append(ops, deleteCmd{
-		path: filePath,
+		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
+			Version: versionStr,
+		},
 	})
 
-	// delete signature file
-	sigPath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), versionStr+".sig")
 	ops = append(ops, deleteCmd{
-		path: sigPath,
+		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
+			Version: versionStr,
+		},
 	})
 
-	// delete version from /list
 	removedVersions, err := removeVersion(versions, versionStr)
 	if err != nil {
 		return nil, err
 	}
-	versionBt, err := json.Marshal(removedVersions)
-	if err != nil {
-		return nil, fmt.Errorf("marshal updated version list: %w", err)
-	}
 	ops = append(ops, putCmd{
-		data: versionBt,
-		path: path.Join(constants.CDNAttestationConfigPrefixV1, variant.String(), "list"),
+		apiObject: removedVersions,
 	})
 	return ops, nil
 }
@@ -183,12 +163,12 @@ func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string)
 	if err != nil {
 		return fmt.Errorf("fetch version list: %w", err)
 	}
-	ops, err := a.deleteAzureSEVSNPVersion(versions, versionStr) // TODO use the API objects inside cmd?
+	ops, err := a.deleteAzureSEVSNPVersion(versions, versionStr)
 	if err != nil {
 		return err
 	}
 	for _, op := range ops {
-		if err := op.Execute(ctx, a.s3Client, a.bucketID); err != nil {
+		if err := op.Execute(ctx, a.s3Client); err != nil {
 			return fmt.Errorf("execute operation %+v: %w", op, err)
 		}
 	}
@@ -206,21 +186,6 @@ func (a Client) addVersionToList(ctx context.Context, attestation variant.Varian
 	return apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionList(versions))
 }
 
-type s3Client interface {
-	GetObject(
-		ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options),
-	) (*s3.GetObjectOutput, error)
-	Upload(
-		ctx context.Context, input *s3.PutObjectInput, opts ...func(*s3manager.Uploader),
-	) (*s3manager.UploadOutput, error)
-	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput,
-		optFns ...func(*s3.Options),
-	) (*s3.DeleteObjectOutput, error)
-}
-
-// CloseFunc is a function that closes the client.
-type CloseFunc func(ctx context.Context) error
-
 func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (removedVersions attestationconfig.AzureSEVSNPVersionList, err error) {
 	for i, v := range versions {
 		if v == versionStr {
@@ -236,54 +201,23 @@ func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr
 }
 
 type deleteCmd struct {
-	path string
-}
-
-func (d deleteCmd) Execute(ctx context.Context, c s3Client, bucketID string) error {
-	return deleteObj(ctx, c, bucketID, d.path)
-}
-
-// TODO call putCmd and merge below cmd.
-type updateCmd struct {
 	apiObject apiclient.APIObject
 }
 
-func (u updateCmd) Execute(ctx context.Context, c *apiclient.Client) error {
-	return apiclient.Update(ctx, c, u.apiObject)
+func (d deleteCmd) Execute(ctx context.Context, c *apiclient.Client) error {
+	return apiclient.Delete(ctx, c, d.apiObject)
 }
 
 type putCmd struct {
-	data []byte
-	path string
+	apiObject apiclient.APIObject
 }
 
-func (p putCmd) Execute(ctx context.Context, c s3Client, bucketID string) error {
-	return put(ctx, c, bucketID, p.path, p.data)
+func (p putCmd) Execute(ctx context.Context, c *apiclient.Client) error {
+	return apiclient.Update(ctx, c, p.apiObject)
 }
 
-type crudOP interface {
-	Execute(ctx context.Context, c s3Client, bucketID string) error
-}
-
-// deleteObj is a convenience method.
-func deleteObj(ctx context.Context, client s3Client, bucket, path string) error {
-	deleteObjectInput := &s3.DeleteObjectInput{
-		Bucket: &bucket,
-		Key:    &path,
-	}
-	_, err := client.DeleteObject(ctx, deleteObjectInput)
-	return err
-}
-
-// put is a convenience method.
-func put(ctx context.Context, client s3Client, bucket, path string, data []byte) error {
-	putObjectInput := &s3.PutObjectInput{
-		Bucket: &bucket,
-		Key:    &path,
-		Body:   bytes.NewReader(data),
-	}
-	_, err := client.Upload(ctx, putObjectInput)
-	return err
+type crudOPNew interface {
+	Execute(ctx context.Context, c *apiclient.Client) error
 }
 
 func addVersion(versions []string, newVersion string) []string {
