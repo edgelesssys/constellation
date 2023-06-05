@@ -33,6 +33,7 @@ const (
 
 var (
 	versionFilePath string
+	force           bool
 	// Cosign credentials.
 	cosignPwd  string
 	privateKey string
@@ -53,8 +54,9 @@ func newRootCmd() *cobra.Command {
 		PreRunE: envCheck,
 		RunE:    runCmd,
 	}
-	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
-	must(enforcePersistentRequiredFlags(rootCmd, "version-file"))
+	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
+	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
+	must(enforceRequiredFlags(rootCmd, "version-file"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -92,8 +94,12 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("comparing versions: %w", err)
 	}
-	if isNewer {
-		cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+	if isNewer || force {
+		if force {
+			cmd.Println("Forcing upload of new version")
+		} else {
+			cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		}
 		sut, sutClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
@@ -145,15 +151,6 @@ func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVer
 func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 	for _, flag := range flags {
 		if err := cmd.MarkFlagRequired(flag); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func enforcePersistentRequiredFlags(cmd *cobra.Command, flags ...string) error {
-	for _, flag := range flags {
-		if err := cmd.MarkPersistentFlagRequired(flag); err != nil {
 			return err
 		}
 	}

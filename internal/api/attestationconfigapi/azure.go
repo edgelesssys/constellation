@@ -42,7 +42,7 @@ type AzureSEVSNPVersionSignature struct {
 
 // JSONPath returns the path to the JSON file for the request to the config api.
 func (s AzureSEVSNPVersionSignature) JSONPath() string {
-	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), s.Version, ".sig")
+	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), s.Version+".sig")
 }
 
 // URL returns the URL for the request to the config api.
@@ -53,7 +53,7 @@ func (s AzureSEVSNPVersionSignature) URL() (string, error) {
 // ValidateRequest validates the request.
 func (s AzureSEVSNPVersionSignature) ValidateRequest() error {
 	if !strings.HasSuffix(s.Version, ".json") {
-		return fmt.Errorf("version has no .json suffix")
+		return fmt.Errorf("%s version has no .json suffix", s.Version)
 	}
 	return nil
 }
