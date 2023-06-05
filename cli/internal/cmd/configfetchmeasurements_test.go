@@ -290,7 +290,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require.NoError(err)
 			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
 
-			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, fakeAttestationFetcher{}, client)
+			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, stubAttestationFetcher{}, client)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -300,21 +300,21 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	}
 }
 
-type fakeAttestationFetcher struct{}
+type stubAttestationFetcher struct{}
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error) {
 	return attestationconfig.AzureSEVSNPVersionList(
 		[]string{},
 	), nil
 }
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
 	return attestationconfig.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfig.AzureSEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfig.AzureSEVSNPVersionAPI, error) {
 	return attestationconfig.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
