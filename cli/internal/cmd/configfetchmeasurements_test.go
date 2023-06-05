@@ -9,11 +9,11 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
@@ -233,31 +233,39 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		cosign  cosignVerifier
-		rekor   rekorVerifier
-		wantErr bool
+		cosign       cosignVerifier
+		rekor        rekorVerifier
+		insecureFlag bool
+		wantErr      bool
 	}{
 		"success": {
 			cosign: &stubCosignVerifier{},
 			rekor:  singleUUIDVerifier(),
 		},
+		"success without cosign": {
+			insecureFlag: true,
+			cosign: &stubCosignVerifier{
+				verifyError: assert.AnError,
+			},
+			rekor: singleUUIDVerifier(),
+		},
 		"failing search should not result in error": {
 			cosign: &stubCosignVerifier{},
 			rekor: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{},
-				SearchByHashError: errors.New("some error"),
+				SearchByHashError: assert.AnError,
 			},
 		},
 		"failing verify should not result in error": {
 			cosign: &stubCosignVerifier{},
 			rekor: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
-				VerifyEntryError:  errors.New("some error"),
+				VerifyEntryError:  assert.AnError,
 			},
 		},
 		"signature verification failure": {
 			cosign: &stubCosignVerifier{
-				verifyError: errors.New("some error"),
+				verifyError: assert.AnError,
 			},
 			rekor:   singleUUIDVerifier(),
 			wantErr: true,
@@ -272,6 +280,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			cmd := newConfigFetchMeasurementsCmd()
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			require.NoError(cmd.Flags().Set("insecure", strconv.FormatBool(tc.insecureFlag)))
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
