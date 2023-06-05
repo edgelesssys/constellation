@@ -32,11 +32,15 @@ Use [`constellation config migrate`](../reference/cli.md#constellation-config-mi
 To learn which versions the current CLI can upgrade to and what's installed in your cluster, run:
 
 ```bash
+# Show possible upgrades
 constellation upgrade check
+
+# Show possible upgrades and write them to config file
+constellation upgrade check --write-config
 ```
 
 You can either enter the reported target versions into your config manually or run the above command with the `--write-config` flag.
-When using this flag, the `kubernetesVersion`, `image`, and `microserviceVersion` fields are overwritten with the smallest available upgrade.
+When using this flag, the `kubernetesVersion`, `image`, `microserviceVersion` and `attestation` fields are overwritten with the smallest available upgrade.
 
 ## Apply the upgrade
 
@@ -87,3 +91,7 @@ Cluster status: Some node versions are out of date
 
 This output indicates that the cluster is running Kubernetes version `1.25.8`, and all nodes have the appropriate binaries installed.
 23 out of 25 nodes have already upgraded to the targeted image version of `2.6.0`, while two are still in progress.
+
+## Apply further upgrades
+
+After the upgrade is finished, you can run `constellation upgrade check` again to see if there are more upgrades available. If so, repeat the process.
