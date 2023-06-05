@@ -59,7 +59,7 @@ func newIAMCreateCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolP("yes", "y", false, "create the IAM configuration without further confirmation")
-	cmd.PersistentFlags().Bool("generate-config", false, "automatically generate a configuration file and fill in the required fields")
+	cmd.PersistentFlags().Bool("update-config", false, "automatically update the config file with the specific IAM information")
 	cmd.PersistentFlags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config")
 
 	cmd.AddCommand(newIAMCreateAWSCmd())
@@ -222,7 +222,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	if !flags.yesFlag {
 		c.cmd.Printf("The following IAM configuration will be created:\n\n")
 		c.providerCreator.printConfirmValues(c.cmd, flags)
-		if flags.generateConfig {
+		if flags.updateConfig {
 			c.cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", flags.configPath)
 		}
 		ok, err := askToConfirm(c.cmd, "Do you want to create the configuration?")
@@ -252,7 +252,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 		return err
 	}
 
-	if flags.generateConfig {
+	if flags.updateConfig {
 		c.log.Debugf("Writing IAM configuration to %s", flags.configPath)
 		c.providerCreator.writeOutputValuesToConfig(conf, flags, iamFile)
 		// Only overwrite when --generate-config && --kubernetes. Otherwise this string is empty from parseFlagsAndSetupConfig.
@@ -307,10 +307,10 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	}
 
 	flags := iamFlags{
-		configPath:     configPath,
-		yesFlag:        yesFlag,
-		generateConfig: generateConfig,
-		k8sVersion:     resolvedVersion,
+		configPath:   configPath,
+		yesFlag:      yesFlag,
+		updateConfig: generateConfig,
+		k8sVersion:   resolvedVersion,
 	}
 
 	flags, err = c.providerCreator.parseFlagsAndSetupConfig(c.cmd, flags, c.iamConfig)
@@ -326,7 +326,7 @@ func (c *iamCreator) checkWorkingDir(flags iamFlags) error {
 	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
 		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", constants.TerraformIAMWorkingDir)
 	}
-	if flags.generateConfig {
+	if flags.updateConfig {
 		if _, err := c.fileHandler.Stat(flags.configPath); err == nil {
 			return fmt.Errorf("the flag --generate-config is set, but %q already exists. Please either run the command in a different directory, define another config path, or delete or move the existing configuration", flags.configPath)
 		}
@@ -336,13 +336,13 @@ func (c *iamCreator) checkWorkingDir(flags iamFlags) error {
 
 // iamFlags contains the parsed flags of the iam create command, including the parsed flags of the selected cloud provider.
 type iamFlags struct {
-	aws            awsFlags
-	azure          azureFlags
-	gcp            gcpFlags
-	configPath     string
-	yesFlag        bool
-	generateConfig bool
-	k8sVersion     string
+	aws          awsFlags
+	azure        azureFlags
+	gcp          gcpFlags
+	configPath   string
+	yesFlag      bool
+	updateConfig bool
+	k8sVersion   string
 }
 
 // awsFlags contains the parsed flags of the iam create aws command.
