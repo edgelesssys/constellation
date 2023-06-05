@@ -16,6 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	attestationconfigclient "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
@@ -94,7 +96,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	}
 	if isNewer {
 		fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
-		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey))
+		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
 				fmt.Printf("closing repo: %v\n", err)
@@ -155,4 +157,8 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func log() *logger.Logger {
+	return logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfig")
 }

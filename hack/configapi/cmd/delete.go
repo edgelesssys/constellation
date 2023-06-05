@@ -49,7 +49,7 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	repo, closefn, err := client.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey))
+	repo, closefn, err := client.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
