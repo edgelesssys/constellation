@@ -27,6 +27,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 func TestMain(m *testing.M) {
@@ -289,6 +291,19 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = ""
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount,
+		},
+		"outdated k8s patch version is allowed": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Image = ""
+				ver, err := semver.New(versions.SupportedK8sVersions()[0])
+				require.NoError(t, err)
+				ver.Patch = ver.Patch - 1
+				cnf.KubernetesVersion = ver.String()
 				return cnf
 			}(),
 			wantErr:      true,

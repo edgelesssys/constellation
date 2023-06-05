@@ -127,9 +127,11 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion))
+	// config validation does not check k8s patch version since upgrade may accept an outdated patch version.
+	// init only supported up-to-date versions.
+	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion), true)
 	if err != nil {
-		return fmt.Errorf("validating kubernetes version: %w", err)
+		return fmt.Errorf("invalid Kubernetes version: %s", conf.KubernetesVersion)
 	}
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {

@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -91,6 +92,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
 	if err != nil {
+		return err
+	}
+
+	if err := handleInvalidK8sPatchVersion(cmd, conf.KubernetesVersion, flags.yes); err != nil {
 		return err
 	}
 
@@ -267,6 +272,24 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 	default:
 		return nil, nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
 	}
+}
+
+// handleInvalidK8sPatchVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
+func handleInvalidK8sPatchVersion(cmd *cobra.Command, version string, yes bool) error {
+	_, err := versions.NewValidK8sVersion(version, true)
+	valid := err == nil
+
+	if !valid && !yes {
+		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
+		if err != nil {
+			return fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !confirmed {
+			return fmt.Errorf("aborted by user")
+		}
+	}
+
+	return nil
 }
 
 type imageFetcher interface {

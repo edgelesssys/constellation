@@ -247,9 +247,9 @@ func (c *Client) upgradeRelease(
 ) error {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
-	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
+	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
 	if err != nil {
-		return fmt.Errorf("invalid k8s version: %w", err)
+		return fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
 	}
 	loader := NewLoader(conf.GetProvider(), k8sVersion)
 
