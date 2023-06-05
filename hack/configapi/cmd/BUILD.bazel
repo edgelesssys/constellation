@@ -10,7 +10,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/hack/configapi/cmd",
     visibility = ["//visibility:public"],
     deps = [
-        "//internal/api/attestationconfigapi:attestationconfig",
+        "//internal/api/attestationconfigapi",
         "//internal/logger",
         "//internal/staticupload",
         "@com_github_spf13_cobra//:cobra",
@@ -26,7 +26,7 @@ go_test(
     ],
     embed = [":cmd"],
     deps = [
-        "//internal/api/attestationconfigapi:attestationconfig",
+        "//internal/api/attestationconfigapi",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

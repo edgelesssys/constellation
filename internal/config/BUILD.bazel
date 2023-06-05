@@ -17,7 +17,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
-        "//internal/api/attestationconfigapi:attestationconfig",
+        "//internal/api/attestationconfigapi",
         "//internal/api/versionsapi",
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
@@ -49,7 +49,7 @@ go_test(
     data = glob(["testdata/**"]),
     embed = [":config"],
     deps = [
-        "//internal/api/attestationconfigapi:attestationconfig",
+        "//internal/api/attestationconfigapi",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/config/instancetypes",

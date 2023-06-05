@@ -40,7 +40,7 @@ go_test(
     tags = ["manual"],
     deps = [
         "//e2e/internal/kubectl",
-        "//internal/api/attestationconfigapi:attestationconfig",
+        "//internal/api/attestationconfigapi",
         "//internal/config",
         "//internal/constants",
         "//internal/file",

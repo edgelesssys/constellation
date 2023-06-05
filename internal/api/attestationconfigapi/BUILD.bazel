@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
-    name = "attestationconfig",
+    name = "attestationconfigapi",
     srcs = [
         "attestationconfigapi.go",
         "azure.go",
