@@ -15,11 +15,19 @@ on:
         type: string
         description: "Git ref to checkout"
         required: false
+      targetVersion:
+        type: string
+        description: "Target version to test"
+        required: true
   workflow_call:
     inputs:
       ref:
         type: string
         description: "Git ref to checkout"
+        required: true
+      targetVersion:
+        type: string
+        description: "Target version to test"
         required: true
 
 jobs:
@@ -218,18 +226,7 @@ jobs:
         with:
           artifactNameSuffix: ${{ steps.e2e_test.outputs.namePrefix }}
 
-  determine-version:
-    runs-on: ubuntu-22.04
-    outputs:
-      targetVersion: ${{ steps.determine-version.outputs.targetVersion }}
-    steps:
-    - name: Determine version
-      id: determine-version
-      shell: bash
-      run: echo "targetVersion=$(cat version.txt)" | tee -a "$GITHUB_OUTPUT"
-
   e2e-upgrade:
-    needs: determine-version
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -246,7 +243,7 @@ jobs:
     uses: ./.github/workflows/e2e-upgrade.yml
     with:
       fromVersion: ${{ matrix.fromVersion }}
-      toImage: ${{ needs.determine-version.outputs.targetVersion }}
+      toImage: ${{ inputs.targetVersion }}
       cloudProvider: ${{ matrix.cloudProvider }}
       workerNodesCount: 2
       controlNodesCount: 3
