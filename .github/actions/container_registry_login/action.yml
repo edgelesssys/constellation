@@ -1,0 +1,35 @@
+name: Create container registry login credentials file
+description: Delete previously created IAM configuration.
+
+inputs:
+  registry:
+    description: "Container registry to use"
+    required: true
+  username:
+    description: "Username used for authentication."
+    required: true
+  password:
+    description: "Password used for authentication."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Use docker for logging in
+      if: runner.os != 'macOS'
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+
+    - name: Manually create docker config.json
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
+        PASSWORD: ${{ inputs.password }}
+      run: |
+        mkdir -p ~/.docker
+        echo "{\"auths\":{\"${REGISTRY}\":{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}}}"  | tee ~/.docker/config.json

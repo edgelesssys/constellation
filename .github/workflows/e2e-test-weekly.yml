@@ -199,7 +199,7 @@ jobs:
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
-          gcpIAMCreateServiceAccount: " constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+          gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
           gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ matrix.test }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
