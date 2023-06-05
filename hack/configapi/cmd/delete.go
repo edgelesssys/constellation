@@ -36,14 +36,10 @@ type deleteClient interface {
 }
 
 func (d deleteCmd) delete(cmd *cobra.Command) error {
-	defer func() {
-		if d.closeFn != nil {
-			if err := d.closeFn(cmd.Context()); err != nil {
-				fmt.Printf("close client: %s\n", err.Error())
-			}
-		}
-	}()
-	version := cmd.Flag("version").Value.String()
+	version, err := cmd.Flags().GetString("version")
+	if err != nil {
+		return err
+	}
 	return d.attestationClient.DeleteAzureSEVSNPVersion(cmd.Context(), version)
 }
 
@@ -56,9 +52,13 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
+	defer func() {
+		if err := closefn(); err != nil {
+			cmd.Printf("close client: %s\n", err.Error())
+		}
+	}()
 	deleteCmd := deleteCmd{
 		attestationClient: repo,
-		closeFn:           closefn,
 	}
 	return deleteCmd.delete(cmd)
 }
