@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
@@ -48,69 +47,30 @@ func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []b
 	return repo, clientClose, nil
 }
 
-func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion, versionNames []string, date time.Time) (res []putCmd, err error) {
-	dateStr := date.Format("2006-01-02-15-04") + ".json"
-
-	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
-
-	versionBytes, err := json.Marshal(versions)
-	if err != nil {
-		return res, err
-	}
-	signature, err := a.createSignature(versionBytes, dateStr)
-	if err != nil {
-		return res, err
-	}
-	res = append(res, putCmd{signature})
-	newVersions := addVersion(versionNames, dateStr)
-	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionList(newVersions)})
-	return
-}
-
 // UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP.
 func (a Client) UploadAzureSEVSNP(ctx context.Context, version attestationconfig.AzureSEVSNPVersion, date time.Time) error {
-	variant := variant.AzureSEVSNP{}
-
-	dateStr := date.Format("2006-01-02-15-04") + ".json"
-	err := apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: version})
+	versions, err := a.List(ctx, variant.AzureSEVSNP{})
+	if err != nil {
+		return fmt.Errorf("fetch version list: %w", err)
+	}
+	ops, err := a.uploadAzureSEVSNP(version, versions, date)
 	if err != nil {
 		return err
 	}
-
-	versionBytes, err := json.Marshal(version)
-	if err != nil {
-		return err
-	}
-	filePath := fmt.Sprintf("%s/%s/%s", constants.CDNAttestationConfigPrefixV1, variant.String(), dateStr)
-	err = a.createAndUploadSignature(ctx, versionBytes, filePath)
-	if err != nil {
-		return err
-	}
-
-	return a.addVersionToList(ctx, variant, dateStr)
+	return executeAllCmds(ctx, a.s3Client, ops)
 }
 
-func (a Client) createSignature(content []byte, dateStr string) (res attestationconfig.AzureSEVSNPVersionSignature, err error) {
-	signature, err := a.signer.Sign(content)
+// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
+func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string) error {
+	versions, err := a.List(ctx, variant.AzureSEVSNP{})
 	if err != nil {
-		return res, fmt.Errorf("sign version file: %w", err)
+		return fmt.Errorf("fetch version list: %w", err)
 	}
-	return attestationconfig.AzureSEVSNPVersionSignature{
-		Signature: signature,
-		Version:   dateStr,
-	}, nil
-}
-
-// createAndUploadSignature signs the given content and uploads the signature to the given filePath with the .sig suffix.
-func (a Client) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
-	signature, err := a.createSignature(content, filePath)
+	ops, err := a.deleteAzureSEVSNPVersion(versions, versionStr)
 	if err != nil {
 		return err
 	}
-	if err := apiclient.Update(ctx, a.s3Client, signature); err != nil {
-		return fmt.Errorf("upload signature: %w", err)
-	}
-	return nil
+	return executeAllCmds(ctx, a.s3Client, ops)
 }
 
 // List returns the list of versions for the given attestation type.
@@ -125,15 +85,7 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string
 	return nil, fmt.Errorf("unsupported attestation type: %s", attestation)
 }
 
-// DeleteList empties the list of versions for the given attestation type.
-func (a Client) DeleteList(ctx context.Context, attestation variant.Variant) error {
-	if attestation.Equal(variant.AzureSEVSNP{}) {
-		return apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionList{})
-	}
-	return fmt.Errorf("unsupported attestation type: %s", attestation)
-}
-
-func (a Client) deleteAzureSEVSNPVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (ops []crudOPNew, err error) {
+func (a Client) deleteAzureSEVSNPVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {
 	versionStr = versionStr + ".json"
 	ops = append(ops, deleteCmd{
 		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
@@ -157,33 +109,34 @@ func (a Client) deleteAzureSEVSNPVersion(versions attestationconfig.AzureSEVSNPV
 	return ops, nil
 }
 
-// DeleteAzureSEVSNPVersion deletes the given version (without .json suffix) from the API.
-func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string) error {
-	versions, err := a.List(ctx, variant.AzureSEVSNP{})
+func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion, versionNames []string, date time.Time) (res []crudCmd, err error) {
+	dateStr := date.Format("2006-01-02-15-04") + ".json"
+
+	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
+
+	versionBytes, err := json.Marshal(versions)
 	if err != nil {
-		return fmt.Errorf("fetch version list: %w", err)
+		return res, err
 	}
-	ops, err := a.deleteAzureSEVSNPVersion(versions, versionStr)
+	signature, err := a.createSignature(versionBytes, dateStr)
 	if err != nil {
-		return err
+		return res, err
 	}
-	for _, op := range ops {
-		if err := op.Execute(ctx, a.s3Client); err != nil {
-			return fmt.Errorf("execute operation %+v: %w", op, err)
-		}
-	}
-	return nil
+	res = append(res, putCmd{signature})
+	newVersions := addVersion(versionNames, dateStr)
+	res = append(res, putCmd{attestationconfig.AzureSEVSNPVersionList(newVersions)})
+	return
 }
 
-func (a Client) addVersionToList(ctx context.Context, attestation variant.Variant, fname string) error {
-	versions, err := a.List(ctx, attestation)
+func (a Client) createSignature(content []byte, dateStr string) (res attestationconfig.AzureSEVSNPVersionSignature, err error) {
+	signature, err := a.signer.Sign(content)
 	if err != nil {
-		return err
+		return res, fmt.Errorf("sign version file: %w", err)
 	}
-	versions = append(versions, fname)
-	versions = variant.RemoveDuplicate(versions)
-	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
-	return apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionList(versions))
+	return attestationconfig.AzureSEVSNPVersionSignature{
+		Signature: signature,
+		Version:   dateStr,
+	}, nil
 }
 
 func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr string) (removedVersions attestationconfig.AzureSEVSNPVersionList, err error) {
@@ -198,6 +151,10 @@ func removeVersion(versions attestationconfig.AzureSEVSNPVersionList, versionStr
 		}
 	}
 	return nil, fmt.Errorf("version %s not found in list %v", versionStr, versions)
+}
+
+type crudCmd interface {
+	Execute(ctx context.Context, c *apiclient.Client) error
 }
 
 type deleteCmd struct {
@@ -216,8 +173,13 @@ func (p putCmd) Execute(ctx context.Context, c *apiclient.Client) error {
 	return apiclient.Update(ctx, c, p.apiObject)
 }
 
-type crudOPNew interface {
-	Execute(ctx context.Context, c *apiclient.Client) error
+func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCmd) error {
+	for _, cmd := range cmds {
+		if err := cmd.Execute(ctx, client); err != nil {
+			return fmt.Errorf("execute operation %+v: %w", cmd, err)
+		}
+	}
+	return nil
 }
 
 func addVersion(versions []string, newVersion string) []string {
