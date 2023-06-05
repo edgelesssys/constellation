@@ -21,41 +21,44 @@ func newDeleteCmd() *cobra.Command {
 		Short: "delete a specific version from the config api",
 		RunE:  runDelete,
 	}
-	cmd.PersistentFlags().StringP("version", "v", "", "Name of the version to delete (without .json suffix)")
+	cmd.Flags().StringP("version", "v", "", "Name of the version to delete (without .json suffix)")
 	must(enforceRequiredFlags(cmd, "version"))
 	return cmd
 }
 
 type deleteCmd struct {
-	attestationclient client.Client
-	closefn           client.CloseFunc
+	attestationClient deleteClient
+	closeFn           client.CloseFunc
+}
+
+type deleteClient interface {
+	DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string) error
 }
 
 func (d deleteCmd) delete(cmd *cobra.Command) error {
 	defer func() {
-		if d.closefn != nil {
-			if err := d.closefn(ctx); err != nil {
-				cmd.Printf("close client: %s\n", err.Error())
+		if d.closeFn != nil {
+			if err := d.closeFn(cmd.Context()); err != nil {
+				fmt.Printf("close client: %s\n", err.Error())
 			}
 		}
 	}()
 	version := cmd.Flag("version").Value.String()
-	return d.attestationclient.DeleteAzureSEVSNVersion(cmd.Context(), version)
+	return d.attestationClient.DeleteAzureSEVSNPVersion(cmd.Context(), version)
 }
 
 func runDelete(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
 	cfg := staticupload.Config{
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	repo, closefn, err := client.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
+	repo, closefn, err := client.New(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
 	deleteCmd := deleteCmd{
-		attestationclient: repo,
-		closefn:           closefn,
+		attestationClient: repo,
+		closeFn:           closefn,
 	}
-	return deleteCmd.delete(ctx, cmd)
+	return deleteCmd.delete(cmd)
 }

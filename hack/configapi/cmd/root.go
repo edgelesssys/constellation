@@ -56,7 +56,7 @@ func newRootCmd() *cobra.Command {
 		RunE:    runCmd,
 	}
 	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
-	must(enforceRequiredFlags(rootCmd, "version-file"))
+	must(enforcePersistentRequiredFlags(rootCmd, "version-file"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -145,6 +145,15 @@ func isInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersio
 }
 
 func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
+	for _, flag := range flags {
+		if err := cmd.MarkFlagRequired(flag); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func enforcePersistentRequiredFlags(cmd *cobra.Command, flags ...string) error {
 	for _, flag := range flags {
 		if err := cmd.MarkPersistentFlagRequired(flag); err != nil {
 			return err

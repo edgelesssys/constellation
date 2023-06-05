@@ -9,8 +9,9 @@ go_library(
     deps = [
         "//internal/api/attestationconfig",
         "//internal/api/attestationconfig/fetcher",
+        "//internal/api/client",
         "//internal/constants",
-        "//internal/kms/storage",
+        "//internal/logger",
         "//internal/sigstore",
         "//internal/staticupload",
         "//internal/variant",

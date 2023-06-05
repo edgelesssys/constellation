@@ -25,12 +25,12 @@ import (
 //}
 
 func TestDeleteAzureSEVSNPVersions(t *testing.T) {
-	sut := client{
+	sut := Client{
 		bucketID: "bucket",
 	}
 	versions := attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"})
 
-	ops, err := sut.deleteAzureSEVSNVersion(versions, "2021-01-01")
+	ops, err := sut.deleteAzureSEVSNPVersion(versions, "2021-01-01")
 
 	assert := assert.New(t)
 	assert.NoError(err)

@@ -13,8 +13,10 @@ go_library(
         "//internal/api/attestationconfig",
         "//internal/api/attestationconfig/client",
         "//internal/api/attestationconfig/fetcher",
+        "//internal/logger",
         "//internal/staticupload",
         "@com_github_spf13_cobra//:cobra",
+        "@org_uber_go_zap//:zap",
     ],
 )
 
@@ -27,7 +29,6 @@ go_test(
     embed = [":cmd"],
     deps = [
         "//internal/api/attestationconfig",
-        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
