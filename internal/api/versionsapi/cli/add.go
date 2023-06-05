@@ -12,8 +12,7 @@ import (
 	"fmt"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
@@ -73,7 +72,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 
 	log.Debugf("Creating versions API client")
-	client, clientClose, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
+	client, clientClose, err := versionsapi.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryRun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
@@ -105,7 +104,7 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
-func ensureVersion(ctx context.Context, client *verclient.VersionsClient, kind versionsapi.VersionKind, ver versionsapi.Version, gran versionsapi.Granularity,
+func ensureVersion(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, gran versionsapi.Granularity,
 	log *logger.Logger,
 ) error {
 	verListReq := versionsapi.List{
@@ -145,7 +144,7 @@ func ensureVersion(ctx context.Context, client *verclient.VersionsClient, kind v
 	return nil
 }
 
-func updateLatest(ctx context.Context, client *verclient.VersionsClient, kind versionsapi.VersionKind, ver versionsapi.Version, log *logger.Logger) error {
+func updateLatest(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *logger.Logger) error {
 	latest := versionsapi.Latest{
 		Ref:    ver.Ref,
 		Stream: ver.Stream,

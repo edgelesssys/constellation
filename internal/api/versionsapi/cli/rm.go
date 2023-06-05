@@ -25,8 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/smithy-go"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
@@ -102,7 +101,7 @@ func runRemove(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 
 	log.Debugf("Creating versions API client")
-	verclient, verclientClose, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryrun, log)
+	verclient, verclientClose, err := versionsapi.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, flags.dryrun, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
@@ -240,7 +239,7 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 }
 
 type rmImageClients struct {
-	version *verclient.VersionsClient
+	version *versionsapi.Client
 	gcp     *gcpClient
 	aws     *awsClient
 	az      *azureClient

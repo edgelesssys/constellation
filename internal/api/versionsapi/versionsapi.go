@@ -17,4 +17,4 @@ in these helper methods.
 The package also provides helper functions that can be used in context of the versions API,
 e.g. to validate versions.
 */
-package versions
+package versionsapi

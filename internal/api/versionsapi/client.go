@@ -4,10 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-/*
-Package client provides a versions API specific implementation of the general API client.
-*/
-package client
+package versionsapi
 
 import (
 	"context"
@@ -18,13 +15,12 @@ import (
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
-// VersionsClient is a client for the versions API.
-type VersionsClient struct {
+// Client is a client for the versions API.
+type Client struct {
 	*apiclient.Client
 	clientClose func(ctx context.Context) error
 }
@@ -32,9 +28,9 @@ type VersionsClient struct {
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
 	log *logger.Logger,
-) (*VersionsClient, CloseFunc, error) {
+) (*Client, CloseFunc, error) {
 	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
-	versionsClient := &VersionsClient{
+	versionsClient := &Client{
 		genericClient,
 		genericClientClose,
 	}
@@ -48,12 +44,12 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 // This client can be used to fetch objects but cannot write updates.
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
 	log *logger.Logger,
-) (*VersionsClient, CloseFunc, error) {
+) (*Client, CloseFunc, error) {
 	genericClient, genericClientClose, err := apiclient.NewReadOnlyClient(ctx, region, bucket, distributionID, log)
 	if err != nil {
 		return nil, nil, err
 	}
-	versionsClient := &VersionsClient{
+	versionsClient := &Client{
 		genericClient,
 		genericClientClose,
 	}
@@ -64,7 +60,7 @@ func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID strin
 }
 
 // Close closes the client.
-func (c *VersionsClient) Close(ctx context.Context) error {
+func (c *Client) Close(ctx context.Context) error {
 	if c.clientClose == nil {
 		return nil
 	}
@@ -72,49 +68,49 @@ func (c *VersionsClient) Close(ctx context.Context) error {
 }
 
 // FetchVersionList fetches the given version list from the versions API.
-func (c *VersionsClient) FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error) {
+func (c *Client) FetchVersionList(ctx context.Context, list List) (List, error) {
 	return apiclient.Fetch(ctx, c.Client, list)
 }
 
 // UpdateVersionList updates the given version list in the versions API.
-func (c *VersionsClient) UpdateVersionList(ctx context.Context, list versionsapi.List) error {
+func (c *Client) UpdateVersionList(ctx context.Context, list List) error {
 	semver.Sort(list.Versions)
 	return apiclient.Update(ctx, c.Client, list)
 }
 
 // FetchVersionLatest fetches the latest version from the versions API.
-func (c *VersionsClient) FetchVersionLatest(ctx context.Context, latest versionsapi.Latest) (versionsapi.Latest, error) {
+func (c *Client) FetchVersionLatest(ctx context.Context, latest Latest) (Latest, error) {
 	return apiclient.Fetch(ctx, c.Client, latest)
 }
 
 // UpdateVersionLatest updates the latest version in the versions API.
-func (c *VersionsClient) UpdateVersionLatest(ctx context.Context, latest versionsapi.Latest) error {
+func (c *Client) UpdateVersionLatest(ctx context.Context, latest Latest) error {
 	return apiclient.Update(ctx, c.Client, latest)
 }
 
 // FetchImageInfo fetches the given image info from the versions API.
-func (c *VersionsClient) FetchImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) (versionsapi.ImageInfo, error) {
+func (c *Client) FetchImageInfo(ctx context.Context, imageInfo ImageInfo) (ImageInfo, error) {
 	return apiclient.Fetch(ctx, c.Client, imageInfo)
 }
 
 // UpdateImageInfo updates the given image info in the versions API.
-func (c *VersionsClient) UpdateImageInfo(ctx context.Context, imageInfo versionsapi.ImageInfo) error {
+func (c *Client) UpdateImageInfo(ctx context.Context, imageInfo ImageInfo) error {
 	return apiclient.Update(ctx, c.Client, imageInfo)
 }
 
 // FetchCLIInfo fetches the given CLI info from the versions API.
-func (c *VersionsClient) FetchCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) (versionsapi.CLIInfo, error) {
+func (c *Client) FetchCLIInfo(ctx context.Context, cliInfo CLIInfo) (CLIInfo, error) {
 	return apiclient.Fetch(ctx, c.Client, cliInfo)
 }
 
 // UpdateCLIInfo updates the given CLI info in the versions API.
-func (c *VersionsClient) UpdateCLIInfo(ctx context.Context, cliInfo versionsapi.CLIInfo) error {
+func (c *Client) UpdateCLIInfo(ctx context.Context, cliInfo CLIInfo) error {
 	return apiclient.Update(ctx, c.Client, cliInfo)
 }
 
 // DeleteRef deletes the given ref from the versions API.
-func (c *VersionsClient) DeleteRef(ctx context.Context, ref string) error {
-	if err := versionsapi.ValidateRef(ref); err != nil {
+func (c *Client) DeleteRef(ctx context.Context, ref string) error {
+	if err := ValidateRef(ref); err != nil {
 		return fmt.Errorf("validating ref: %w", err)
 	}
 
@@ -132,7 +128,7 @@ func (c *VersionsClient) DeleteRef(ctx context.Context, ref string) error {
 // Notice that the versions API can get into an inconsistent state if the version is the latest
 // version but there is no older version of the same minor version available.
 // Manual update of latest versions is required in this case.
-func (c *VersionsClient) DeleteVersion(ctx context.Context, ver versionsapi.Version) error {
+func (c *Client) DeleteVersion(ctx context.Context, ver Version) error {
 	var retErr error
 
 	c.Client.Log.Debugf("Deleting version %s from minor version list", ver.Version)
@@ -146,22 +142,22 @@ func (c *VersionsClient) DeleteVersion(ctx context.Context, ver versionsapi.Vers
 		retErr = errors.Join(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
-	c.Client.Log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(versionsapi.APIV1), ver.Version)
-	if err := c.Client.DeletePath(ctx, ver.ArtifactPath(versionsapi.APIV1)); err != nil {
+	c.Client.Log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(APIV1), ver.Version)
+	if err := c.Client.DeletePath(ctx, ver.ArtifactPath(APIV1)); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting artifact path: %w", err))
 	}
 
 	return retErr
 }
 
-func (c *VersionsClient) deleteVersionFromMinorVersionList(ctx context.Context, ver versionsapi.Version,
-) (*versionsapi.Latest, error) {
-	minorList := versionsapi.List{
+func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Version,
+) (*Latest, error) {
+	minorList := List{
 		Ref:         ver.Ref,
 		Stream:      ver.Stream,
-		Granularity: versionsapi.GranularityMinor,
-		Base:        ver.WithGranularity(versionsapi.GranularityMinor),
-		Kind:        versionsapi.VersionKindImage,
+		Granularity: GranularityMinor,
+		Base:        ver.WithGranularity(GranularityMinor),
+		Kind:        VersionKindImage,
 	}
 	c.Client.Log.Debugf("Fetching minor version list for version %s", ver.Version)
 	minorList, err := c.FetchVersionList(ctx, minorList)
@@ -188,12 +184,12 @@ func (c *VersionsClient) deleteVersionFromMinorVersionList(ctx context.Context, 
 		}
 	}
 
-	var latest *versionsapi.Latest
+	var latest *Latest
 	if len(minorList.Versions) != 0 {
-		latest = &versionsapi.Latest{
+		latest = &Latest{
 			Ref:     ver.Ref,
 			Stream:  ver.Stream,
-			Kind:    versionsapi.VersionKindImage,
+			Kind:    VersionKindImage,
 			Version: minorList.Versions[len(minorList.Versions)-1],
 		}
 		c.Client.Log.Debugf("Possible latest version replacement %q", latest.Version)
@@ -213,12 +209,12 @@ func (c *VersionsClient) deleteVersionFromMinorVersionList(ctx context.Context, 
 	return latest, nil
 }
 
-func (c *VersionsClient) deleteVersionFromLatest(ctx context.Context, ver versionsapi.Version, possibleNewLatest *versionsapi.Latest,
+func (c *Client) deleteVersionFromLatest(ctx context.Context, ver Version, possibleNewLatest *Latest,
 ) error {
-	latest := versionsapi.Latest{
+	latest := Latest{
 		Ref:    ver.Ref,
 		Stream: ver.Stream,
-		Kind:   versionsapi.VersionKindImage,
+		Kind:   VersionKindImage,
 	}
 	c.Client.Log.Debugf("Fetching latest version from %s", latest.JSONPath())
 	latest, err := c.FetchVersionLatest(ctx, latest)

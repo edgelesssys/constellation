@@ -17,8 +17,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
@@ -53,7 +52,7 @@ func runList(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Debugf("Creating versions API client")
-	client, clientClose, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
+	client, clientClose, err := versionsapi.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
@@ -110,7 +109,7 @@ func runList(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func listMinorVersions(ctx context.Context, client *verclient.VersionsClient, ref string, stream string) ([]string, error) {
+func listMinorVersions(ctx context.Context, client *versionsapi.Client, ref string, stream string) ([]string, error) {
 	list := versionsapi.List{
 		Ref:         ref,
 		Stream:      stream,
@@ -126,7 +125,7 @@ func listMinorVersions(ctx context.Context, client *verclient.VersionsClient, re
 	return list.Versions, nil
 }
 
-func listPatchVersions(ctx context.Context, client *verclient.VersionsClient, ref string, stream string, minorVer []string,
+func listPatchVersions(ctx context.Context, client *versionsapi.Client, ref string, stream string, minorVer []string,
 ) ([]versionsapi.Version, error) {
 	var patchVers []versionsapi.Version
 

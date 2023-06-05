@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package fetcher
+package versionsapi
 
 import (
 	"bytes"
@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"testing"
 
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -27,23 +26,23 @@ func TestMain(m *testing.M) {
 func TestFetchVersionList(t *testing.T) {
 	require := require.New(t)
 
-	majorList := func() *versionsapi.List {
-		return &versionsapi.List{
+	majorList := func() *List {
+		return &List{
 			Ref:         "test-ref",
 			Stream:      "nightly",
-			Granularity: versionsapi.GranularityMajor,
+			Granularity: GranularityMajor,
 			Base:        "v1",
-			Kind:        versionsapi.VersionKindImage,
+			Kind:        VersionKindImage,
 			Versions:    []string{"v1.0", "v1.1", "v1.2"},
 		}
 	}
-	minorList := func() *versionsapi.List {
-		return &versionsapi.List{
+	minorList := func() *List {
+		return &List{
 			Ref:         "test-ref",
 			Stream:      "nightly",
-			Granularity: versionsapi.GranularityMinor,
+			Granularity: GranularityMinor,
 			Base:        "v1.1",
-			Kind:        versionsapi.VersionKindImage,
+			Kind:        VersionKindImage,
 			Versions:    []string{"v1.1.0", "v1.1.1", "v1.1.2"},
 		}
 	}
@@ -57,19 +56,19 @@ func TestFetchVersionList(t *testing.T) {
 	require.NoError(err)
 
 	testCases := map[string]struct {
-		list       versionsapi.List
+		list       List
 		serverPath string
 		serverResp *http.Response
-		wantList   versionsapi.List
+		wantList   List
 		wantErr    bool
 	}{
 		"major list fetched": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "test-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/image.json",
 			serverResp: &http.Response{
@@ -79,12 +78,12 @@ func TestFetchVersionList(t *testing.T) {
 			wantList: *majorList(),
 		},
 		"minor list fetched": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "test-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMinor,
+				Granularity: GranularityMinor,
 				Base:        "v1.1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/minor/v1.1/image.json",
 			serverResp: &http.Response{
@@ -94,32 +93,32 @@ func TestFetchVersionList(t *testing.T) {
 			wantList: *minorList(),
 		},
 		"list does not exist": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "another-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			wantErr: true,
 		},
 		"invalid list requested": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "",
 				Stream:      "unknown",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			wantErr: true,
 		},
 		"unexpected error code": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "test-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/image.json",
 			serverResp: &http.Response{
@@ -129,12 +128,12 @@ func TestFetchVersionList(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid json returned": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "test-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v1",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/image.json",
 			serverResp: &http.Response{
@@ -144,12 +143,12 @@ func TestFetchVersionList(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid list returned": {
-			list: versionsapi.List{
+			list: List{
 				Ref:         "test-ref",
 				Stream:      "nightly",
-				Granularity: versionsapi.GranularityMajor,
+				Granularity: GranularityMajor,
 				Base:        "v2",
-				Kind:        versionsapi.VersionKindImage,
+				Kind:        VersionKindImage,
 			},
 			serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v2/image.json",
 			serverResp: &http.Response{
@@ -160,12 +159,12 @@ func TestFetchVersionList(t *testing.T) {
 		},
 		// TODO(katexochen): Remove or find strategy to implement this check in a generic way
 		// "response does not match request": {
-		// 	list: versionsapi.List{
+		// 	list: List{
 		// 		Ref:         "test-ref",
 		// 		Stream:      "nightly",
-		// 		Granularity: versionsapi.GranularityMajor,
+		// 		Granularity: GranularityMajor,
 		// 		Base:        "v3",
-		// 		Kind:        versionsapi.VersionKindImage,
+		// 		Kind:        VersionKindImage,
 		// 	},
 		// 	serverPath: "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v3/image.json",
 		// 	serverResp: &http.Response{

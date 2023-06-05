@@ -18,7 +18,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/attestationconfigapi:attestationconfig",
-        "//internal/api/versions",
+        "//internal/api/versionsapi",
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",

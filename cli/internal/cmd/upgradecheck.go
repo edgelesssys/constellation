@@ -20,8 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	versionfetcher "github.com/edgelesssys/constellation/v2/internal/api/versions/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -70,7 +69,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	versionListFetcher := versionfetcher.New()
+	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
@@ -80,7 +79,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		collect: &versionCollector{
 			writer:         cmd.OutOrStderr(),
 			checker:        checker,
-			verListFetcher: versionListFetcher,
+			verListFetcher: versionfetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
 			cosign:         sigstore.CosignVerifier{},
@@ -88,7 +87,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
 			log:            log,
-			versionsapi:    versionfetcher.New(),
+			versionsapi:    versionfetcher,
 		},
 		log: log,
 	}

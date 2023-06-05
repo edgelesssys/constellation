@@ -10,8 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
@@ -47,7 +46,7 @@ func runLatest(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Debugf("Creating versions API client")
-	client, clientClose, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
+	client, clientClose, err := versionsapi.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}

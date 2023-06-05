@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package versions
+package versionsapi
 
 var (
 	// APIV1 is the v1 API version.

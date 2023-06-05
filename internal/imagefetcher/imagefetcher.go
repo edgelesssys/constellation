@@ -20,8 +20,7 @@ import (
 	"regexp"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	versionsfetcher "github.com/edgelesssys/constellation/v2/internal/api/versions/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/spf13/afero"
@@ -36,7 +35,7 @@ type Fetcher struct {
 // New returns a new image fetcher.
 func New() *Fetcher {
 	return &Fetcher{
-		fetcher: versionsfetcher.New(),
+		fetcher: versionsapi.NewFetcher(),
 		fs:      &afero.Afero{Fs: afero.NewOsFs()},
 	}
 }
