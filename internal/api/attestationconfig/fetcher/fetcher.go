@@ -54,19 +54,19 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion atte
 	}
 	versionBytes, err := json.Marshal(fetchedVersion)
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("marshal version for verify %s: %w", fetchedVersion.Version, err)
+		return fetchedVersion, fmt.Errorf("marshal version for verify %s: %w", azureVersion.Version, err)
 	}
 
 	signature, err := fetcher.Fetch(ctx, f.HTTPClient, attestationconfig.AzureSEVSNPVersionSignature{
 		Version: azureVersion.Version,
 	})
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", fetchedVersion.Version, err)
+		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", azureVersion.Version, err)
 	}
 
 	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature.Signature, []byte(cosignPublicKey))
 	if err != nil {
-		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", fetchedVersion.Version, err)
+		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", azureVersion.Version, err)
 	}
 	return fetchedVersion, nil
 }

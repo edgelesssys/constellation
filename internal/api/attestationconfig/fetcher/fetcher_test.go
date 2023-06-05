@@ -93,7 +93,14 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 
 	} else if req.URL.Path == "/constellation/v1/attestation/azure-sev-snp/2021-01-01-01-01.json.sig" {
 		res := &http.Response{}
-		res.Body = io.NopCloser(bytes.NewReader(f.signature))
+		obj := configapi.AzureSEVSNPVersionSignature{
+			Signature: f.signature,
+		}
+		bt, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		res.Body = io.NopCloser(bytes.NewReader(bt))
 		res.StatusCode = http.StatusOK
 		return res, nil
 
