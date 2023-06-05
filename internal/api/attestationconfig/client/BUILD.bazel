@@ -10,7 +10,6 @@ go_library(
         "//internal/api/attestationconfig",
         "//internal/api/attestationconfig/fetcher",
         "//internal/api/client",
-        "//internal/constants",
         "//internal/logger",
         "//internal/sigstore",
         "//internal/staticupload",

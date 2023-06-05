@@ -184,7 +184,7 @@ type APIObject interface {
 	JSONPath() string
 }
 
-// Fetch fetches the given apiObject from the public Constellation CDN.
+// Fetch fetches the given apiObject from the public Constellation API.
 func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
