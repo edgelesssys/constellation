@@ -102,7 +102,7 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 	case "aws", "azure", "openstack", "qemu":
 		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
 	case "gcp":
-		return h.installCiliumGCP(ctx, kubectl, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return h.installCiliumGCP(ctx, kubectl, release, in.NodeName, in.NodeIP, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -119,7 +119,7 @@ func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release,
 	return h.install(ctx, release.Chart, release.Values)
 }
 
-func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodeIP, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -156,12 +156,29 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 		return err
 	}
 
+	// On GCP we might want to have a higher MTU since we can use jumbo frames.
+	// Cilium's auto-detection usually handles this.
+	// However, it can get a wrong value when multiple network devices exist (e.g. from Podman).
+	// Thus, we set it manually here from the expected external interface.
+	// Tracking issue: https://github.com/cilium/cilium/issues/14339
+	// This part could be way easier using some tricks (e.g. just hardcode ens3).
+	// But not sure if this will blow up in the future, so let's better ask the operating system instead of doing tricks.
+	hostMTU, err := getHostMTU(nodeIP, h.log)
+	if err != nil {
+		h.log.With(zap.Error(err)).Warnf("Failed to determine MTU from host network interface, falling back to Cilium's auto-detection")
+	} else {
+		h.log.With(zap.Int("mtu", hostMTU)).Infof("Detected host MTU for Cilium")
+	}
+
 	// configure pod network CIDR
 	release.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
 	release.Values["strictModeCIDR"] = subnetworkPodCIDR
 	release.Values["k8sServiceHost"] = host
 	if port != "" {
 		release.Values["k8sServicePort"] = port
+	}
+	if hostMTU != 0 {
+		release.Values["MTU"] = hostMTU
 	}
 
 	return h.install(ctx, release.Chart, release.Values)
@@ -221,4 +238,53 @@ func (i installDoer) Do(ctx context.Context) error {
 	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
 
 	return err
+}
+
+// getHostMTU gets the host network interface and its MTU from a passed node IP.
+func getHostMTU(nodeIP string, log *logger.Logger) (int, error) {
+	parsedNodeIP := net.ParseIP(nodeIP)
+	if parsedNodeIP == nil {
+		return 0, fmt.Errorf("failed to parse node IP from string to IP: %s", nodeIP)
+	}
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return 0, fmt.Errorf("retrieving network interfaces: %w", err)
+	}
+
+	var nodeNetworkInterfaceMTU int
+	var foundNodeNetworkInterface bool
+	for _, i := range ifaces {
+		// Abort if network interface has already been found.
+		if foundNodeNetworkInterface {
+			break
+		}
+
+		addrs, err := i.Addrs()
+		if err != nil {
+			log.With(zap.String("interface", i.Name)).Warnf("Failed to retrieve interface addresses")
+			continue
+		}
+		for _, addr := range addrs {
+			switch v := addr.(type) {
+			case *net.IPNet:
+				if v.Contains(parsedNodeIP) {
+					nodeNetworkInterfaceMTU = i.MTU
+					foundNodeNetworkInterface = true
+					break
+				}
+			case *net.IPAddr:
+				if nodeIP == v.IP.String() {
+					nodeNetworkInterfaceMTU = i.MTU
+					foundNodeNetworkInterface = true
+					break
+				}
+			}
+		}
+	}
+
+	if nodeNetworkInterfaceMTU == 0 {
+		return 0, fmt.Errorf("did not find network interface with node IP: %s", nodeIP)
+	}
+
+	return nodeNetworkInterfaceMTU, nil
 }

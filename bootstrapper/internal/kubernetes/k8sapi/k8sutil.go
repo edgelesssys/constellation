@@ -242,6 +242,7 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 type SetupPodNetworkInput struct {
 	CloudProvider        string
 	NodeName             string
+	NodeIP               string
 	FirstNodePodCIDR     string
 	SubnetworkPodCIDR    string
 	LoadBalancerEndpoint string
