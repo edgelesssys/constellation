@@ -276,10 +276,11 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 
 // handleInvalidK8sPatchVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
 func handleInvalidK8sPatchVersion(cmd *cobra.Command, version string, yes bool) error {
-	valid := versions.NewValidK8sVersion(version, true) == ""
+	_, err := versions.NewValidK8sVersion(version, true)
+	valid := err == nil
 
 	if !valid && !yes {
-		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. Do you want to continue anyway?", version))
+		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}

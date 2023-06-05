@@ -392,7 +392,8 @@ func getPlaceholderEntries(m measurements.M) []uint32 {
 
 // validateK8sVersion does not check the patch version.
 func (c *Config) validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.NewValidK8sVersion(compatibility.EnsurePrefixV(fl.Field().String()), false) != ""
+	_, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(fl.Field().String()), false)
+	return err == nil
 }
 
 // K8sVersionFromMajorMinor takes a semver in format MAJOR.MINOR
