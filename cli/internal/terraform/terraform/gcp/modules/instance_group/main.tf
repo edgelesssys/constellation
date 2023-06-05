@@ -16,7 +16,7 @@ locals {
 resource "google_compute_instance_template" "template" {
   name         = local.name
   machine_type = var.instance_type
-  tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label 
+  tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
   labels       = merge(var.labels, { constellation-role = local.role_dashed })
 
   confidential_instance_config {
@@ -77,6 +77,19 @@ resource "google_compute_instance_template" "template" {
     enable_secure_boot          = true
     enable_vtpm                 = true
     enable_integrity_monitoring = true
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+      labels,
+      disk, # required. update procedure modifies the instance template externally
+      metadata,
+      network_interface,
+      scheduling,
+      service_account,
+      shielded_instance_config,
+    ]
   }
 }
 
