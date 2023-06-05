@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
 
-	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -69,7 +69,7 @@ func runList(cmd *cobra.Command, _ []string) error {
 	} else {
 		log.Debugf("Getting minor versions")
 		minorVersions, err = listMinorVersions(cmd.Context(), client, flags.ref, flags.stream)
-		var errNotFound *apifetcher.NotFoundError
+		var errNotFound *apiclient.NotFoundError
 		if err != nil && errors.As(err, &errNotFound) {
 			log.Infof("No minor versions found for ref %q and stream %q.", flags.ref, flags.stream)
 			return nil
@@ -80,7 +80,7 @@ func runList(cmd *cobra.Command, _ []string) error {
 
 	log.Debugf("Getting patch versions")
 	patchVersions, err := listPatchVersions(cmd.Context(), client, flags.ref, flags.stream, minorVersions)
-	var errNotFound *apifetcher.NotFoundError
+	var errNotFound *apiclient.NotFoundError
 	if err != nil && errors.As(err, &errNotFound) {
 		log.Infof("No patch versions found for ref %q, stream %q and minor versions %v.", flags.ref, flags.stream, minorVersions)
 		return nil

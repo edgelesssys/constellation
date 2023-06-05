@@ -12,7 +12,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/api/versions/cli",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/api/fetcher",
+        "//internal/api/client",
         "//internal/api/versions",
         "//internal/api/versions/client",
         "//internal/constants",
