@@ -489,3 +489,11 @@ multirun(
     jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],
 )
+
+repo_command(
+    name = "update_pseudo_version_hashes",
+    args = [
+        "update",
+    ],
+    command = "//hack/pseudo-version:pseudo_version_tool_freshness",
+)
