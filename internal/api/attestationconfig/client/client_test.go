@@ -8,21 +8,40 @@ package client
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TODO replace with unit testable version
-//func TestUploadAzureSEVSNPVersions(t *testing.T) {
-//	ctx := context.Background()
-//	client, clientClose, err := New(ctx, cfg, []byte(*cosignPwd), privateKey)
-//	require.NoError(t, err)
-//	defer func() { _ = clientClose(ctx) }()
-//	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-//	require.NoError(t, client.UploadAzureSEVSNP(ctx, versionValues, d))
-//}
+func TestUploadAzureSEVSNP(t *testing.T) {
+	sut := Client{
+		bucketID: "bucket",
+		signer:   fakeSigner{},
+	}
+	version := attestationconfig.AzureSEVSNPVersion{}
+	date := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
+	ops, err := sut.uploadAzureSEVSNP(version, []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, date)
+	assert := assert.New(t)
+	assert.NoError(err)
+	dateStr := "2023-01-01-01-01.json"
+	assert.Contains(ops, updateCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
+			Version:            dateStr,
+			AzureSEVSNPVersion: version,
+		},
+	})
+	assert.Contains(ops, updateCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
+			Version:   dateStr,
+			Signature: []byte("signature"),
+		},
+	})
+	assert.Contains(ops, updateCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
+	})
+}
 
 func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	sut := Client{
@@ -48,4 +67,10 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 		path: "constellation/v1/attestation/azure-sev-snp/list",
 		data: dt,
 	})
+}
+
+type fakeSigner struct{}
+
+func (fakeSigner) Sign(_ []byte) ([]byte, error) {
+	return []byte("signature"), nil
 }

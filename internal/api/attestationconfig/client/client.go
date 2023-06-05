@@ -31,8 +31,7 @@ type Client struct {
 	s3Client      *apiclient.Client
 	s3ClientClose func(ctx context.Context) error
 	bucketID      string
-	cosignPwd     []byte // used to decrypt the cosign private key
-	privKey       []byte // used to sign
+	signer        sigstore.Signer
 	fetcher       fetcher.AttestationConfigAPIFetcher
 }
 
@@ -46,9 +45,8 @@ func New(ctx context.Context, cfg staticupload.Config, cosignPwd, privateKey []b
 	repo := &Client{
 		s3Client:      s3Client,
 		s3ClientClose: clientClose,
+		signer:        sigstore.NewSigner(cosignPwd, privateKey),
 		bucketID:      cfg.Bucket,
-		cosignPwd:     cosignPwd,
-		privKey:       privateKey,
 		fetcher:       fetcher.New(),
 	}
 	return repo, repo.Close, nil
@@ -62,17 +60,36 @@ func (a Client) Close(ctx context.Context) error {
 	return a.s3ClientClose(ctx)
 }
 
+func (a Client) uploadAzureSEVSNP(versions attestationconfig.AzureSEVSNPVersion, versionNames []string, date time.Time) (res []updateCmd, err error) {
+	dateStr := date.Format("2006-01-02-15-04") + ".json"
+
+	res = append(res, updateCmd{attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
+
+	versionBytes, err := json.Marshal(versions)
+	if err != nil {
+		return res, err
+	}
+	signature, err := a.createSignature(versionBytes, dateStr)
+	if err != nil {
+		return res, err
+	}
+	res = append(res, updateCmd{signature})
+	newVersions := addVersion(versionNames, dateStr)
+	res = append(res, updateCmd{attestationconfig.AzureSEVSNPVersionList(newVersions)})
+	return
+}
+
 // UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP.
-func (a Client) UploadAzureSEVSNP(ctx context.Context, versions attestationconfig.AzureSEVSNPVersion, date time.Time) error {
+func (a Client) UploadAzureSEVSNP(ctx context.Context, version attestationconfig.AzureSEVSNPVersion, date time.Time) error {
 	variant := variant.AzureSEVSNP{}
 
 	dateStr := date.Format("2006-01-02-15-04") + ".json"
-	err := apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions})
+	err := apiclient.Update(ctx, a.s3Client, attestationconfig.AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: version})
 	if err != nil {
 		return err
 	}
 
-	versionBytes, err := json.Marshal(versions)
+	versionBytes, err := json.Marshal(version)
 	if err != nil {
 		return err
 	}
@@ -81,12 +98,24 @@ func (a Client) UploadAzureSEVSNP(ctx context.Context, versions attestationconfi
 	if err != nil {
 		return err
 	}
+
 	return a.addVersionToList(ctx, variant, dateStr)
+}
+
+func (a Client) createSignature(content []byte, dateStr string) (res attestationconfig.AzureSEVSNPVersionSignature, err error) {
+	signature, err := a.signer.Sign(content)
+	if err != nil {
+		return res, fmt.Errorf("sign version file: %w", err)
+	}
+	return attestationconfig.AzureSEVSNPVersionSignature{
+		Signature: signature,
+		Version:   dateStr,
+	}, nil
 }
 
 // createAndUploadSignature signs the given content and uploads the signature to the given filePath with the .sig suffix.
 func (a Client) createAndUploadSignature(ctx context.Context, content []byte, filePath string) error {
-	signature, err := sigstore.SignContent(a.cosignPwd, a.privKey, content)
+	signature, err := a.signer.Sign(content)
 	if err != nil {
 		return fmt.Errorf("sign version file: %w", err)
 	}
@@ -214,6 +243,15 @@ func (d deleteCmd) Execute(ctx context.Context, c s3Client, bucketID string) err
 	return deleteObj(ctx, c, bucketID, d.path)
 }
 
+// TODO call put and merge below cmd
+type updateCmd struct {
+	apiObject apiclient.APIObject
+}
+
+func (u updateCmd) Execute(ctx context.Context, c *apiclient.Client) error {
+	return apiclient.Update(ctx, c, u.apiObject)
+}
+
 type putCmd struct {
 	data []byte
 	path string
@@ -246,4 +284,11 @@ func put(ctx context.Context, client s3Client, bucket, path string, data []byte)
 	}
 	_, err := client.Upload(ctx, putObjectInput)
 	return err
+}
+
+func addVersion(versions []string, newVersion string) []string {
+	versions = append(versions, newVersion)
+	versions = variant.RemoveDuplicate(versions)
+	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+	return versions
 }

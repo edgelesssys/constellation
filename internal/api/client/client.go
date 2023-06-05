@@ -177,14 +177,15 @@ func ptr[T any](t T) *T {
 	return &t
 }
 
-type apiObject interface {
+// APIObject is an object that is used to perform CRUD operations on the API.
+type APIObject interface {
 	ValidateRequest() error
 	Validate() error
 	JSONPath() string
 }
 
 // Fetch fetches the given apiObject from the public Constellation CDN.
-func Fetch[T apiObject](ctx context.Context, c *Client, obj T) (T, error) {
+func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
@@ -217,7 +218,7 @@ func Fetch[T apiObject](ctx context.Context, c *Client, obj T) (T, error) {
 }
 
 // Update creates/updates the given apiObject in the public Constellation API.
-func Update(ctx context.Context, c *Client, obj apiObject) error {
+func Update(ctx context.Context, c *Client, obj APIObject) error {
 	if err := obj.Validate(); err != nil {
 		return fmt.Errorf("validating %T struct: %w", obj, err)
 	}
@@ -249,7 +250,7 @@ func Update(ctx context.Context, c *Client, obj apiObject) error {
 }
 
 // Delete deletes the given apiObject from the public Constellation API.
-func Delete(ctx context.Context, c *Client, obj apiObject) error {
+func Delete(ctx context.Context, c *Client, obj APIObject) error {
 	if err := obj.ValidateRequest(); err != nil {
 		return fmt.Errorf("validating request for %T: %w", obj, err)
 	}

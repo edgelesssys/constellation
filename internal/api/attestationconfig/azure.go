@@ -34,6 +34,35 @@ type AzureSEVSNPVersion struct {
 	Microcode uint8 `json:"microcode"`
 }
 
+// AzureSEVSNPVersionSignature is the object to perform CRUD operations on the config api.
+type AzureSEVSNPVersionSignature struct {
+	Version   string `json:"-"`
+	Signature []byte `json:"signature"`
+}
+
+// JSONPath returns the path to the JSON file for the request to the config api.
+func (s AzureSEVSNPVersionSignature) JSONPath() string {
+	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), s.Version, ".sig")
+}
+
+// URL returns the URL for the request to the config api.
+func (s AzureSEVSNPVersionSignature) URL() (string, error) {
+	return getURL(s)
+}
+
+// ValidateRequest validates the request.
+func (s AzureSEVSNPVersionSignature) ValidateRequest() error {
+	if !strings.HasSuffix(s.Version, ".json") {
+		return fmt.Errorf("version has no .json suffix")
+	}
+	return nil
+}
+
+// Validate is a No-Op at the moment.
+func (s AzureSEVSNPVersionSignature) Validate() error {
+	return nil
+}
+
 // AzureSEVSNPVersionAPI is the request to get the version information of the specific version in the config api.
 type AzureSEVSNPVersionAPI struct {
 	Version string `json:"-"`
@@ -42,12 +71,7 @@ type AzureSEVSNPVersionAPI struct {
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionAPI) URL() (string, error) {
-	url, err := url.Parse(constants.CDNRepositoryURL)
-	if err != nil {
-		return "", fmt.Errorf("parsing CDN URL: %w", err)
-	}
-	url.Path = i.JSONPath()
-	return url.String(), nil
+	return getURL(i)
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
@@ -73,12 +97,7 @@ type AzureSEVSNPVersionList []string
 
 // URL returns the URL for the request to the config api.
 func (i AzureSEVSNPVersionList) URL() (string, error) {
-	url, err := url.Parse(constants.CDNRepositoryURL)
-	if err != nil {
-		return "", fmt.Errorf("parsing CDN URL: %w", err)
-	}
-	url.Path = i.JSONPath()
-	return url.String(), nil
+	return getURL(i)
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
@@ -97,4 +116,17 @@ func (i AzureSEVSNPVersionList) Validate() error {
 		return fmt.Errorf("no versions found in /list")
 	}
 	return nil
+}
+
+func getURL(obj jsoPather) (string, error) {
+	url, err := url.Parse(constants.CDNRepositoryURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing CDN URL: %w", err)
+	}
+	url.Path = obj.JSONPath()
+	return url.String(), nil
+}
+
+type jsoPather interface {
+	JSONPath() string
 }
