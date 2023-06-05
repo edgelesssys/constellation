@@ -10,9 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
@@ -51,10 +48,6 @@ func (f *Fetcher) FetchAzureSEVSNPVersionList(ctx context.Context, attestation a
 
 // FetchAzureSEVSNPVersion fetches the version information from the config API.
 func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
-	urlString, err := azureVersion.URL()
-	if err != nil {
-		return azureVersion, err
-	}
 	fetchedVersion, err := fetcher.Fetch(ctx, f.HTTPClient, azureVersion)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s: %w", fetchedVersion.Version, err)
@@ -64,12 +57,14 @@ func (f *Fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion atte
 		return fetchedVersion, fmt.Errorf("marshal version for verify %s: %w", fetchedVersion.Version, err)
 	}
 
-	signature, err := fetchBytesFromRawURL(ctx, fmt.Sprintf("%s.sig", urlString), f.HTTPClient)
+	signature, err := fetcher.Fetch(ctx, f.HTTPClient, attestationconfig.AzureSEVSNPVersionSignature{
+		Version: azureVersion.Version,
+	})
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", fetchedVersion.Version, err)
 	}
 
-	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature, []byte(cosignPublicKey))
+	err = sigstore.CosignVerifier{}.VerifySignature(versionBytes, signature.Signature, []byte(cosignPublicKey))
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", fetchedVersion.Version, err)
 	}
@@ -86,33 +81,7 @@ func (f *Fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context) (res attest
 	get := attestationconfig.AzureSEVSNPVersionAPI{Version: list[0]} // get latest version (as sorted reversely alphanumerically)
 	get, err = f.FetchAzureSEVSNPVersion(ctx, get)
 	if err != nil {
-		return res, fmt.Errorf("failed fetching version: %w", err)
+		return res, fmt.Errorf("fetching version: %w", err)
 	}
 	return get, nil
-}
-
-func fetchBytesFromRawURL(ctx context.Context, urlString string, client fetcher.HTTPClient) ([]byte, error) {
-	url, err := url.Parse(urlString)
-	if err != nil {
-		return nil, fmt.Errorf("parse version url %s: %w", urlString, err)
-	}
-	return getFromURL(ctx, client, url)
-}
-
-// getFromURL fetches the content from the given URL and returns the content as a byte slice.
-func getFromURL(ctx context.Context, client fetcher.HTTPClient, sourceURL *url.URL) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status code: %d", resp.StatusCode)
-	}
-	return io.ReadAll(resp.Body)
 }
