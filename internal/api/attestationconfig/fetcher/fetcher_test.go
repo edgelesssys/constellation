@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testCfg = configapi.AzureSEVSNPVersionGet{
+var testCfg = configapi.AzureSEVSNPVersionAPI{
 	AzureSEVSNPVersion: configapi.AzureSEVSNPVersion{
 		Microcode:  93,
 		TEE:        0,
@@ -31,7 +31,7 @@ func TestFetchLatestAzureSEVSNPVersion(t *testing.T) {
 	testcases := map[string]struct {
 		signature []byte
 		wantErr   bool
-		want      configapi.AzureSEVSNPVersionGet
+		want      configapi.AzureSEVSNPVersionAPI
 	}{
 		"get version with valid signature": {
 			signature: []byte("MEQCIBPEbYg89MIQuaGStLhKGLGMKvKFoYCaAniDLwoIwulqAiB+rj7KMaMOMGxmUsjI7KheCXSNM8NzN+tuDw6AywI75A=="), // signed with release key

@@ -16,6 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	attestationconfigclient "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"go.uber.org/zap"
 
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
@@ -54,8 +56,8 @@ func newRootCmd() *cobra.Command {
 		RunE:    runCmd,
 	}
 	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
-	must(enforceRequiredFlags(rootCmd, "version-file"))
-
+	must(enforcePersistentRequiredFlags(rootCmd, "version-file"))
+	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
 
@@ -93,11 +95,11 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("comparing versions: %w", err)
 	}
 	if isNewer {
-		fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
-		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey))
+		cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		sut, sutClose, err := attestationconfigclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
-				fmt.Printf("closing repo: %v\n", err)
+				cmd.Printf("closing repo: %v\n", err)
 			}
 		}()
 		if err != nil {
@@ -144,6 +146,15 @@ func isInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersio
 
 func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 	for _, flag := range flags {
+		if err := cmd.MarkFlagRequired(flag); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func enforcePersistentRequiredFlags(cmd *cobra.Command, flags ...string) error {
+	for _, flag := range flags {
 		if err := cmd.MarkPersistentFlagRequired(flag); err != nil {
 			return err
 		}
@@ -155,4 +166,8 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func log() *logger.Logger {
+	return logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfig")
 }

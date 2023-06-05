@@ -26,6 +26,29 @@ const (
 	sigstorePrivateKeyPemType = "ENCRYPTED SIGSTORE PRIVATE KEY"
 )
 
+// Signer is used to sign the version file. Used for unit testing.
+type Signer interface {
+	Sign(content []byte) (res []byte, err error)
+}
+
+// NewSigner returns a new Signer.
+func NewSigner(cosignPwd, privKey []byte) Signer {
+	return signer{cosignPwd: cosignPwd, privKey: privKey}
+}
+
+type signer struct {
+	cosignPwd []byte // used to decrypt the cosign private key
+	privKey   []byte // used to sign
+}
+
+func (s signer) Sign(content []byte) (signature []byte, err error) {
+	signature, err = SignContent(s.cosignPwd, s.privKey, content)
+	if err != nil {
+		return signature, fmt.Errorf("sign version file: %w", err)
+	}
+	return
+}
+
 // SignContent signs the content with the cosign encrypted private key and corresponding cosign password.
 func SignContent(password, encryptedPrivateKey, content []byte) ([]byte, error) {
 	sv, err := loadPrivateKey(encryptedPrivateKey, password)

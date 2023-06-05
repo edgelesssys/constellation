@@ -1,82 +1,74 @@
-//go:build e2e
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package client_test
+package client
 
 import (
-	"context"
-	"flag"
-	"fmt"
-	"io"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
-	"github.com/edgelesssys/constellation/v2/internal/staticupload"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-const (
-	awsBucket   = "cdn-constellation-backend"
-	awsRegion   = "eu-central-1"
-	envAwsKeyID = "AWS_ACCESS_KEY_ID"
-	envAwsKey   = "AWS_ACCESS_KEY"
-)
-
-var cfg staticupload.Config
-
-var (
-	cosignPwd      = flag.String("cosign-pwd", "", "Password to decrypt the cosign private key. Required for signing.")
-	privateKeyPath = flag.String("private-key", "", "Path to the private key used for signing. Required for signing.")
-	privateKey     []byte
-)
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-	if *cosignPwd == "" || *privateKeyPath == "" {
-		flag.Usage()
-		fmt.Println("Required flags not set: --cosign-pwd, --private-key. Skipping tests.")
-		os.Exit(1)
+func TestUploadAzureSEVSNP(t *testing.T) {
+	sut := Client{
+		bucketID: "bucket",
+		signer:   fakeSigner{},
 	}
-	if _, present := os.LookupEnv(envAwsKey); !present {
-		fmt.Printf("%s not set. Skipping tests.\n", envAwsKey)
-		os.Exit(1)
-	}
-	if _, present := os.LookupEnv(envAwsKeyID); !present {
-		fmt.Printf("%s not set. Skipping tests.\n", envAwsKeyID)
-		os.Exit(1)
-	}
-	cfg = staticupload.Config{
-		Bucket: awsBucket,
-		Region: awsRegion,
-	}
-	file, _ := os.Open(*privateKeyPath)
-	var err error
-	privateKey, err = io.ReadAll(file)
-	if err != nil {
-		panic(err)
-	}
-	os.Exit(m.Run())
+	version := attestationconfig.AzureSEVSNPVersion{}
+	date := time.Date(2023, 1, 1, 1, 1, 1, 1, time.UTC)
+	ops, err := sut.uploadAzureSEVSNP(version, []string{"2021-01-01-01-01.json", "2019-01-01-01-01.json"}, date)
+	assert := assert.New(t)
+	assert.NoError(err)
+	dateStr := "2023-01-01-01-01.json"
+	assert.Contains(ops, putCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
+			Version:            dateStr,
+			AzureSEVSNPVersion: version,
+		},
+	})
+	assert.Contains(ops, putCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
+			Version:   dateStr,
+			Signature: []byte("signature"),
+		},
+	})
+	assert.Contains(ops, putCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
+	})
 }
 
-var versionValues = attestationconfig.AzureSEVSNPVersion{
-	Bootloader: 2,
-	TEE:        0,
-	SNP:        6,
-	Microcode:  93,
+func TestDeleteAzureSEVSNPVersions(t *testing.T) {
+	sut := Client{
+		bucketID: "bucket",
+	}
+	versions := attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"})
+
+	ops, err := sut.deleteAzureSEVSNPVersion(versions, "2021-01-01")
+
+	assert := assert.New(t)
+	assert.NoError(err)
+	assert.Contains(ops, deleteCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionAPI{
+			Version: "2021-01-01.json",
+		},
+	})
+	assert.Contains(ops, deleteCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionSignature{
+			Version: "2021-01-01.json",
+		},
+	})
+
+	assert.Contains(ops, putCmd{
+		apiObject: attestationconfig.AzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"}),
+	})
 }
 
-func TestUploadAzureSEVSNPVersions(t *testing.T) {
-	ctx := context.Background()
-	client, clientClose, err := client.New(ctx, cfg, []byte(*cosignPwd), privateKey)
-	require.NoError(t, err)
-	defer func() { _ = clientClose(ctx) }()
-	d := time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC)
-	require.NoError(t, client.UploadAzureSEVSNP(ctx, versionValues, d))
+type fakeSigner struct{}
+
+func (fakeSigner) Sign(_ []byte) ([]byte, error) {
+	return []byte("signature"), nil
 }

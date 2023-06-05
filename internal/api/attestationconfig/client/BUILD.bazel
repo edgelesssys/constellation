@@ -8,13 +8,13 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/attestationconfig",
+        "//internal/api/attestationconfig/fetcher",
+        "//internal/api/client",
         "//internal/constants",
-        "//internal/kms/storage",
+        "//internal/logger",
         "//internal/sigstore",
         "//internal/staticupload",
         "//internal/variant",
-        "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
-        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
     ],
 )
 
@@ -23,14 +23,13 @@ go_test(
     srcs = ["client_test.go"],
     # keep
     count = 1,
+    embed = [":client"],
     # keep
     gotags = ["e2e"],
     # keep
     tags = ["manual"],
     deps = [
-        ":client",
         "//internal/api/attestationconfig",
-        "//internal/staticupload",
-        "@com_github_stretchr_testify//require",
+        "@com_github_stretchr_testify//assert",
     ],
 )

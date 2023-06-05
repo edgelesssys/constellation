@@ -16,7 +16,7 @@ import (
 	"net/url"
 	"testing"
 
-	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -281,7 +281,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require.NoError(err)
 			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
 
-			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, fakeConfigFetcher{}, client)
+			err = cfm.configFetchMeasurements(cmd, tc.cosign, tc.rekor, fileHandler, fakeAttestationFetcher{}, client)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -291,27 +291,27 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	}
 }
 
-type fakeConfigFetcher struct{}
+type fakeAttestationFetcher struct{}
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
-	return configapi.AzureSEVSNPVersionList(
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfig.AzureSEVSNPVersionList) (attestationconfig.AzureSEVSNPVersionList, error) {
+	return attestationconfig.AzureSEVSNPVersionList(
 		[]string{},
 	), nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionGet) (configapi.AzureSEVSNPVersionGet, error) {
-	return configapi.AzureSEVSNPVersionGet{
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfig.AzureSEVSNPVersionAPI) (attestationconfig.AzureSEVSNPVersionAPI, error) {
+	return attestationconfig.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (configapi.AzureSEVSNPVersionGet, error) {
-	return configapi.AzureSEVSNPVersionGet{
+func (f fakeAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfig.AzureSEVSNPVersionAPI, error) {
+	return attestationconfig.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-var testCfg = configapi.AzureSEVSNPVersion{
+var testCfg = attestationconfig.AzureSEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,

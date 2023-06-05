@@ -43,10 +43,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// Client is the client for the versions API.
+// Client is the a general client for all APIs.
 type Client struct {
-	uploadClient                 uploadClient
-	s3Client                     s3Client
+	s3Client
 	s3ClientClose                func(ctx context.Context) error
 	bucket                       string
 	cacheInvalidationWaitTimeout time.Duration
@@ -101,7 +100,6 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 	}
 
 	client := &Client{
-		uploadClient:                 staticUploadClient,
 		s3Client:                     staticUploadClient,
 		s3ClientClose:                staticUploadClientClose,
 		bucket:                       bucket,
@@ -179,14 +177,15 @@ func ptr[T any](t T) *T {
 	return &t
 }
 
-type apiObject interface {
+// APIObject is an object that is used to perform CRUD operations on the API.
+type APIObject interface {
 	ValidateRequest() error
 	Validate() error
 	JSONPath() string
 }
 
 // Fetch fetches the given apiObject from the public Constellation CDN.
-func Fetch[T apiObject](ctx context.Context, c *Client, obj T) (T, error) {
+func Fetch[T APIObject](ctx context.Context, c *Client, obj T) (T, error) {
 	if err := obj.ValidateRequest(); err != nil {
 		return *new(T), fmt.Errorf("validating request for %T: %w", obj, err)
 	}
@@ -218,8 +217,8 @@ func Fetch[T apiObject](ctx context.Context, c *Client, obj T) (T, error) {
 	return newObj, nil
 }
 
-// Update creates/updates the given apiObject in the public Constellation CDN.
-func Update[T apiObject](ctx context.Context, c *Client, obj T) error {
+// Update creates/updates the given apiObject in the public Constellation API.
+func Update(ctx context.Context, c *Client, obj APIObject) error {
 	if err := obj.Validate(); err != nil {
 		return fmt.Errorf("validating %T struct: %w", obj, err)
 	}
@@ -243,8 +242,27 @@ func Update[T apiObject](ctx context.Context, c *Client, obj T) error {
 	c.dirtyPaths = append(c.dirtyPaths, "/"+obj.JSONPath())
 
 	c.Log.Debugf("Uploading %T to s3: %v", obj, obj.JSONPath())
-	if _, err := c.uploadClient.Upload(ctx, in); err != nil {
+	if _, err := c.Upload(ctx, in); err != nil {
 		return fmt.Errorf("uploading %T: %w", obj, err)
+	}
+
+	return nil
+}
+
+// Delete deletes the given apiObject from the public Constellation API.
+func Delete(ctx context.Context, c *Client, obj APIObject) error {
+	if err := obj.ValidateRequest(); err != nil {
+		return fmt.Errorf("validating request for %T: %w", obj, err)
+	}
+
+	in := &s3.DeleteObjectInput{
+		Bucket: &c.bucket,
+		Key:    ptr(obj.JSONPath()),
+	}
+
+	c.Log.Debugf("Deleting %T from s3: %s", obj, obj.JSONPath())
+	if _, err := c.DeleteObject(ctx, in); err != nil {
+		return fmt.Errorf("deleting s3 object at %s: %w", obj.JSONPath(), err)
 	}
 
 	return nil
@@ -273,6 +291,10 @@ type s3Client interface {
 	DeleteObjects(
 		ctx context.Context, params *s3.DeleteObjectsInput, optFns ...func(*s3.Options),
 	) (*s3.DeleteObjectsOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput,
+		optFns ...func(*s3.Options),
+	) (*s3.DeleteObjectOutput, error)
+	uploadClient
 }
 
 type uploadClient interface {

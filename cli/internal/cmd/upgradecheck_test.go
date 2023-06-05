@@ -271,7 +271,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, fileHandler, fakeConfigFetcher{}, tc.flags)
+			err := checkCmd.upgradeCheck(cmd, fileHandler, fakeAttestationFetcher{}, tc.flags)
 			if tc.wantError {
 				assert.Error(err)
 				return
