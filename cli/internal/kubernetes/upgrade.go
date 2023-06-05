@@ -293,7 +293,8 @@ func (u *Upgrader) checkClusterStatus(ctx context.Context) (updatev1alpha1.NodeV
 	}
 
 	if upgradeInProgress(nodeVersion) {
-		return updatev1alpha1.NodeVersion{}, ErrInProgress
+		u.log.Debugf("Upgrade is in progress but allowing anyway.")
+		// return updatev1alpha1.NodeVersion{}, ErrInProgress
 	}
 
 	return nodeVersion, nil
