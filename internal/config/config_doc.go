@@ -22,6 +22,10 @@ var (
 	AWSNitroTPMDoc             encoder.Doc
 	SNPFirmwareSignerConfigDoc encoder.Doc
 	GCPSEVESDoc                encoder.Doc
+	QEMUVTPMDoc                encoder.Doc
+	QEMUTDXDoc                 encoder.Doc
+	AzureSEVSNPDoc             encoder.Doc
+	AzureTrustedLaunchDoc      encoder.Doc
 )
 
 func init() {
@@ -476,6 +480,12 @@ func init() {
 	SNPFirmwareSignerConfigDoc.Type = "SNPFirmwareSignerConfig"
 	SNPFirmwareSignerConfigDoc.Comments[encoder.LineComment] = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
 	SNPFirmwareSignerConfigDoc.Description = "SNPFirmwareSignerConfig is the configuration for validating the firmware signer."
+	SNPFirmwareSignerConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AzureSEVSNP",
+			FieldName: "firmwareSignerConfig",
+		},
+	}
 	SNPFirmwareSignerConfigDoc.Fields = make([]encoder.Doc, 3)
 	SNPFirmwareSignerConfigDoc.Fields[0].Name = "acceptedKeyDigests"
 	SNPFirmwareSignerConfigDoc.Fields[0].Type = "List"
@@ -508,6 +518,100 @@ func init() {
 	GCPSEVESDoc.Fields[0].Note = ""
 	GCPSEVESDoc.Fields[0].Description = "Expected TPM measurements."
 	GCPSEVESDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	QEMUVTPMDoc.Type = "QEMUVTPM"
+	QEMUVTPMDoc.Comments[encoder.LineComment] = "QEMUVTPM is the configuration for QEMU vTPM attestation."
+	QEMUVTPMDoc.Description = "QEMUVTPM is the configuration for QEMU vTPM attestation."
+	QEMUVTPMDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "qemuVTPM",
+		},
+	}
+	QEMUVTPMDoc.Fields = make([]encoder.Doc, 1)
+	QEMUVTPMDoc.Fields[0].Name = "measurements"
+	QEMUVTPMDoc.Fields[0].Type = "M"
+	QEMUVTPMDoc.Fields[0].Note = ""
+	QEMUVTPMDoc.Fields[0].Description = "Expected TPM measurements."
+	QEMUVTPMDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+
+	QEMUTDXDoc.Type = "QEMUTDX"
+	QEMUTDXDoc.Comments[encoder.LineComment] = "QEMUTDX is the configuration for QEMU TDX attestation."
+	QEMUTDXDoc.Description = "QEMUTDX is the configuration for QEMU TDX attestation."
+	QEMUTDXDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "qemuTDX",
+		},
+	}
+	QEMUTDXDoc.Fields = make([]encoder.Doc, 1)
+	QEMUTDXDoc.Fields[0].Name = "measurements"
+	QEMUTDXDoc.Fields[0].Type = "M"
+	QEMUTDXDoc.Fields[0].Note = ""
+	QEMUTDXDoc.Fields[0].Description = "Expected TDX measurements."
+	QEMUTDXDoc.Fields[0].Comments[encoder.LineComment] = "Expected TDX measurements."
+
+	AzureSEVSNPDoc.Type = "AzureSEVSNP"
+	AzureSEVSNPDoc.Comments[encoder.LineComment] = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
+	AzureSEVSNPDoc.Description = "AzureSEVSNP is the configuration for Azure SEV-SNP attestation."
+	AzureSEVSNPDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "azureSEVSNP",
+		},
+	}
+	AzureSEVSNPDoc.Fields = make([]encoder.Doc, 7)
+	AzureSEVSNPDoc.Fields[0].Name = "measurements"
+	AzureSEVSNPDoc.Fields[0].Type = "M"
+	AzureSEVSNPDoc.Fields[0].Note = ""
+	AzureSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
+	AzureSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+	AzureSEVSNPDoc.Fields[1].Name = "bootloaderVersion"
+	AzureSEVSNPDoc.Fields[1].Type = "AttestationVersion"
+	AzureSEVSNPDoc.Fields[1].Note = ""
+	AzureSEVSNPDoc.Fields[1].Description = "Lowest acceptable bootloader version."
+	AzureSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Lowest acceptable bootloader version."
+	AzureSEVSNPDoc.Fields[2].Name = "teeVersion"
+	AzureSEVSNPDoc.Fields[2].Type = "AttestationVersion"
+	AzureSEVSNPDoc.Fields[2].Note = ""
+	AzureSEVSNPDoc.Fields[2].Description = "Lowest acceptable TEE version."
+	AzureSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "Lowest acceptable TEE version."
+	AzureSEVSNPDoc.Fields[3].Name = "snpVersion"
+	AzureSEVSNPDoc.Fields[3].Type = "AttestationVersion"
+	AzureSEVSNPDoc.Fields[3].Note = ""
+	AzureSEVSNPDoc.Fields[3].Description = "Lowest acceptable SEV-SNP version."
+	AzureSEVSNPDoc.Fields[3].Comments[encoder.LineComment] = "Lowest acceptable SEV-SNP version."
+	AzureSEVSNPDoc.Fields[4].Name = "microcodeVersion"
+	AzureSEVSNPDoc.Fields[4].Type = "AttestationVersion"
+	AzureSEVSNPDoc.Fields[4].Note = ""
+	AzureSEVSNPDoc.Fields[4].Description = "Lowest acceptable microcode version."
+	AzureSEVSNPDoc.Fields[4].Comments[encoder.LineComment] = "Lowest acceptable microcode version."
+	AzureSEVSNPDoc.Fields[5].Name = "firmwareSignerConfig"
+	AzureSEVSNPDoc.Fields[5].Type = "SNPFirmwareSignerConfig"
+	AzureSEVSNPDoc.Fields[5].Note = ""
+	AzureSEVSNPDoc.Fields[5].Description = "Configuration for validating the firmware signature."
+	AzureSEVSNPDoc.Fields[5].Comments[encoder.LineComment] = "Configuration for validating the firmware signature."
+	AzureSEVSNPDoc.Fields[6].Name = "amdRootKey"
+	AzureSEVSNPDoc.Fields[6].Type = "Certificate"
+	AzureSEVSNPDoc.Fields[6].Note = ""
+	AzureSEVSNPDoc.Fields[6].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AzureSEVSNPDoc.Fields[6].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+
+	AzureTrustedLaunchDoc.Type = "AzureTrustedLaunch"
+	AzureTrustedLaunchDoc.Comments[encoder.LineComment] = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
+	AzureTrustedLaunchDoc.Description = "AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation."
+	AzureTrustedLaunchDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "azureTrustedLaunch",
+		},
+	}
+	AzureTrustedLaunchDoc.Fields = make([]encoder.Doc, 1)
+	AzureTrustedLaunchDoc.Fields[0].Name = "measurements"
+	AzureTrustedLaunchDoc.Fields[0].Type = "M"
+	AzureTrustedLaunchDoc.Fields[0].Note = ""
+	AzureTrustedLaunchDoc.Fields[0].Description = "Expected TPM measurements."
+	AzureTrustedLaunchDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
 }
 
 func (_ Config) Doc() *encoder.Doc {
@@ -554,6 +658,22 @@ func (_ GCPSEVES) Doc() *encoder.Doc {
 	return &GCPSEVESDoc
 }
 
+func (_ QEMUVTPM) Doc() *encoder.Doc {
+	return &QEMUVTPMDoc
+}
+
+func (_ QEMUTDX) Doc() *encoder.Doc {
+	return &QEMUTDXDoc
+}
+
+func (_ AzureSEVSNP) Doc() *encoder.Doc {
+	return &AzureSEVSNPDoc
+}
+
+func (_ AzureTrustedLaunch) Doc() *encoder.Doc {
+	return &AzureTrustedLaunchDoc
+}
+
 // GetConfigurationDoc returns documentation for the file ./config_doc.go.
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
@@ -571,6 +691,10 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&AWSNitroTPMDoc,
 			&SNPFirmwareSignerConfigDoc,
 			&GCPSEVESDoc,
+			&QEMUVTPMDoc,
+			&QEMUTDXDoc,
+			&AzureSEVSNPDoc,
+			&AzureTrustedLaunchDoc,
 		},
 	}
 }
