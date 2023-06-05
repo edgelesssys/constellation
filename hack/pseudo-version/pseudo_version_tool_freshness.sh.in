@@ -4,16 +4,6 @@
 
 ###### script header ######
 
-update=false
-if [[ $# -gt 0 ]]; then
-  if [[ $1 == "update" ]]; then
-    update=true
-  else
-    echo "Error: unknown argument $1"
-    exit 1
-  fi
-fi
-
 lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
 
@@ -22,12 +12,6 @@ if ! source "${lib}"; then
   echo "Error: could not find import"
   exit 1
 fi
-
-bucket=cdn-constellation-backend
-
-# tepmorary directory for storing computed hashes
-dir=$(mktemp -d -t constellation-XXXXXXXXXX)
-trap 'rm -rf "${dir}"' EXIT
 
 declare -A pseudo_version_tools
 pseudo_version_tools["darwin_amd64"]="$(realpath @@PSEUDO_VERSION_darwin_amd64@@)"
@@ -51,17 +35,9 @@ for platform in "${platforms[@]}"; do
   # compare hash to saved hash in ${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256
   saved_hash=$(cat "${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256")
   if [[ ${computed_hash} != "${saved_hash}" ]]; then
-    echo "Pseudo-version tool hash for ${platform} does not match saved hash"
+    echo "Error: pseudo-version tool hash for ${platform} does not match saved hash"
     echo "Computed hash: ${computed_hash}"
     echo "Saved hash: ${saved_hash}"
-    if [[ ${update} == true ]]; then
-      echo "Uploading computed hash to S3"
-      aws s3 cp "${pseudo_version_tools[$platform]}" "s3://${bucket}/constellation/cas/sha256/${computed_hash}"
-      echo "Updating saved hash"
-      echo "${computed_hash}" > "${BUILD_WORKSPACE_DIRECTORY}/tools/pseudo_version_${platform}.sha256"
-    else
-      exit 1
-    fi
+    exit 1
   fi
 done
-echo "Pseudo-version tool hashes are up to date"
