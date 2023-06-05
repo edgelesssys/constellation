@@ -56,9 +56,9 @@ func newRootCmd() *cobra.Command {
 		PreRunE: envCheck,
 		RunE:    runCmd,
 	}
-	rootCmd.PersistentFlags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
+	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
 	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
-	must(enforcePersistentRequiredFlags(rootCmd, "version-file"))
+	must(enforceRequiredFlags(rootCmd, "version-file"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -153,15 +153,6 @@ func isInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersio
 func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
 	for _, flag := range flags {
 		if err := cmd.MarkFlagRequired(flag); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func enforcePersistentRequiredFlags(cmd *cobra.Command, flags ...string) error {
-	for _, flag := range flags {
-		if err := cmd.MarkPersistentFlagRequired(flag); err != nil {
 			return err
 		}
 	}
