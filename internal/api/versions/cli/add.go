@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -116,7 +116,7 @@ func ensureVersion(ctx context.Context, client *verclient.VersionsClient, kind v
 		Kind:        kind,
 	}
 	verList, err := client.FetchVersionList(ctx, verListReq)
-	var notFoundErr *apifetcher.NotFoundError
+	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		log.Infof("Version list for %s versions under %q does not exist. Creating new list", gran.String(), ver.Major())
 		verList = verListReq
@@ -152,7 +152,7 @@ func updateLatest(ctx context.Context, client *verclient.VersionsClient, kind ve
 		Kind:   kind,
 	}
 	latest, err := client.FetchVersionLatest(ctx, latest)
-	var notFoundErr *apifetcher.NotFoundError
+	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		log.Debugf("Latest version for ref %q and stream %q not found", ver.Ref, ver.Stream)
 	} else if err != nil {

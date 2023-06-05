@@ -24,7 +24,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/smithy-go"
-	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
+	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	verclient "github.com/edgelesssys/constellation/v2/internal/api/versions/client"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -158,7 +158,7 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 		log.Infof("Listing versions of stream %s", stream)
 
 		minorVersions, err := listMinorVersions(ctx, clients.version, ref, stream)
-		var notFoundErr *apifetcher.NotFoundError
+		var notFoundErr *apiclient.NotFoundError
 		if errors.As(err, &notFoundErr) {
 			log.Debugf("No minor versions found for stream %s", stream)
 			continue
@@ -203,7 +203,7 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 		Version: ver.Version,
 	}
 	imageInfo, err := clients.version.FetchImageInfo(ctx, imageInfo)
-	var notFound *apifetcher.NotFoundError
+	var notFound *apiclient.NotFoundError
 	if errors.As(err, &notFound) {
 		log.Warnf("Image info for %s not found", ver.Version)
 		log.Warnf("Skipping image deletion")

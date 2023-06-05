@@ -18,7 +18,6 @@ import (
 	"golang.org/x/mod/semver"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
-	apifetcher "github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -166,7 +165,7 @@ func (c *VersionsClient) deleteVersionFromMinorVersionList(ctx context.Context, 
 	}
 	c.Client.Log.Debugf("Fetching minor version list for version %s", ver.Version)
 	minorList, err := c.FetchVersionList(ctx, minorList)
-	var notFoundErr *apifetcher.NotFoundError
+	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		c.Client.Log.Warnf("Minor version list for version %s not found", ver.Version)
 		c.Client.Log.Warnf("Skipping update of minor version list")
@@ -223,7 +222,7 @@ func (c *VersionsClient) deleteVersionFromLatest(ctx context.Context, ver versio
 	}
 	c.Client.Log.Debugf("Fetching latest version from %s", latest.JSONPath())
 	latest, err := c.FetchVersionLatest(ctx, latest)
-	var notFoundErr *apifetcher.NotFoundError
+	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		c.Client.Log.Warnf("Latest version for %s not found", latest.JSONPath())
 		return nil
