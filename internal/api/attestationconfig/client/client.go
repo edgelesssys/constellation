@@ -243,7 +243,7 @@ func (d deleteCmd) Execute(ctx context.Context, c s3Client, bucketID string) err
 	return deleteObj(ctx, c, bucketID, d.path)
 }
 
-// TODO call put and merge below cmd
+// TODO call putCmd and merge below cmd.
 type updateCmd struct {
 	apiObject apiclient.APIObject
 }

@@ -28,7 +28,6 @@ func newDeleteCmd() *cobra.Command {
 
 type deleteCmd struct {
 	attestationClient deleteClient
-	closeFn           client.CloseFunc
 }
 
 type deleteClient interface {
@@ -53,7 +52,7 @@ func runDelete(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
 	defer func() {
-		if err := closefn(); err != nil {
+		if err := closefn(cmd.Context()); err != nil {
 			cmd.Printf("close client: %s\n", err.Error())
 		}
 	}()
