@@ -94,7 +94,7 @@ on:
 
 jobs:
   e2e-upgrade:
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, bazel-cached]
     permissions:
       id-token: write
       checks: write
@@ -114,6 +114,20 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.gitRef }}
+
+      - name: Setup tools for self hosted runner
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt update && sudo apt install -y \
+            uuid-runtime \
+            wget
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          rm -f kubectl
+
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
