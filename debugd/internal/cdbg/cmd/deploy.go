@@ -10,10 +10,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -179,11 +180,14 @@ type deployOnEndpointInput struct {
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	in.log.Infof("Deploying on %v", in.debugdEndpoint)
 
-	client, closer, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
+	client, conn, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
 	if err != nil {
 		return fmt.Errorf("creating debugd client: %w", err)
 	}
-	defer closer.Close()
+	defer conn.Close()
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	grpclog.LogStateChanges(ctx, conn, in.log, &wg, func() {})
 
 	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
@@ -196,7 +200,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
-func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, io.Closer, error) {
+func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, *grpc.ClientConn, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
