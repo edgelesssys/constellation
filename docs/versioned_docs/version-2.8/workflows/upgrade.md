@@ -6,6 +6,13 @@ You configure the desired versions in your local Constellation configuration and
 To learn about available versions you use the `upgrade check` command.
 Which versions are available depends on the CLI version you are using.
 
+:::caution
+
+Upgrades for AWS clusters created prior to v2.8 require additional IAM permissions before applying the upgrade.
+Ensure the existing IAM profiles have [all newly required AWS IAM permissions](config.md#creating-an-iam-configuration) for v2.8 or destroy your existing cluster, remove the existing IAM profiles and [recreate the IAM configuration](config.md#creating-an-iam-configuration) with the new permissions.
+
+:::
+
 ## Update the CLI
 
 Each CLI comes with a set of supported microservice and Kubernetes versions.
