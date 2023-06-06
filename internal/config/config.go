@@ -387,18 +387,19 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 2. For "latest" version values of the attestation variants fetch the version numbers.
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
-func New(fileHandler file.Handler, name string, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, force bool) (*Config, error) {
+func New(fileHandler file.Handler, name string, _ attestationconfigfetcher.AttestationConfigAPIFetcher, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
 	}
 
-	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		if err := azure.FetchAndSetLatestVersionNumbers(fetcher); err != nil {
-			return c, err
-		}
-	}
+	// TODO(elchead): activate latest logic for next release AB#3036
+	//if azure := c.Attestation.AzureSEVSNP; azure != nil {
+	//	if err := azure.FetchAndSetLatestVersionNumbers(fetcher); err != nil {
+	//		return c, err
+	//	}
+	//}
 
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
@@ -925,12 +926,19 @@ type AzureSEVSNP struct {
 // DefaultForAzureSEVSNP returns the default configuration for Azure SEV-SNP attestation.
 // Version numbers have placeholder values and the latest available values can be fetched using [AzureSEVSNP.FetchAndSetLatestVersionNumbers].
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
+	// TODO(elchead): activate latest logic for next release AB#3036
+	azureSNPCfg := configapi.AzureSEVSNPVersion{
+		Bootloader: 3,
+		TEE:        0,
+		SNP:        8,
+		Microcode:  115,
+	}
 	return &AzureSEVSNP{
 		Measurements:      measurements.DefaultsFor(cloudprovider.Azure, variant.AzureSEVSNP{}),
-		BootloaderVersion: NewLatestPlaceholderVersion(),
-		TEEVersion:        NewLatestPlaceholderVersion(),
-		SNPVersion:        NewLatestPlaceholderVersion(),
-		MicrocodeVersion:  NewLatestPlaceholderVersion(),
+		BootloaderVersion: AttestationVersion{Value: azureSNPCfg.Bootloader}, // NewLatestPlaceholderVersion(),
+		TEEVersion:        AttestationVersion{Value: azureSNPCfg.TEE},        // NewLatestPlaceholderVersion(),
+		SNPVersion:        AttestationVersion{Value: azureSNPCfg.SNP},        // NewLatestPlaceholderVersion(),
+		MicrocodeVersion:  AttestationVersion{Value: azureSNPCfg.Microcode},  // NewLatestPlaceholderVersion(),
 		FirmwareSignerConfig: SNPFirmwareSignerConfig{
 			AcceptedKeyDigests: idkeydigest.DefaultList(),
 			EnforcementPolicy:  idkeydigest.MAAFallback,
