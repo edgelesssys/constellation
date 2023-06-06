@@ -36,6 +36,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("url", "u", "", "alternative URL to fetch measurements from")
 	cmd.Flags().StringP("signature-url", "s", "", "alternative URL to fetch measurements' signature from")
+	cmd.Flags().Bool("insecure", false, "skip the measurement signature verification")
 
 	return cmd
 }
@@ -43,6 +44,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 type fetchMeasurementsFlags struct {
 	measurementsURL *url.URL
 	signatureURL    *url.URL
+	insecure        bool
 	configPath      string
 	force           bool
 }
@@ -115,25 +117,44 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	}
 
 	var fetchedMeasurements measurements.M
-	hash, err := fetchedMeasurements.FetchAndVerify(
-		ctx, client, cosign,
-		flags.measurementsURL,
-		flags.signatureURL,
-		imageVersion,
-		conf.GetProvider(),
-		conf.GetAttestationConfig().GetVariant(),
-	)
-	if err != nil {
-		return err
+	var hash string
+	if flags.insecure {
+		if err := fetchedMeasurements.FetchNoVerify(
+			ctx,
+			client,
+			flags.measurementsURL,
+			imageVersion,
+			conf.GetProvider(),
+			conf.GetAttestationConfig().GetVariant(),
+		); err != nil {
+			return fmt.Errorf("fetching measurements without verification: %w", err)
+		}
+
+		cfm.log.Debugf("Fetched measurements without verification")
+	} else {
+		hash, err = fetchedMeasurements.FetchAndVerify(
+			ctx,
+			client,
+			cosign,
+			flags.measurementsURL,
+			flags.signatureURL,
+			imageVersion,
+			conf.GetProvider(),
+			conf.GetAttestationConfig().GetVariant(),
+		)
+		if err != nil {
+			return fmt.Errorf("fetching and verifying measurements: %w", err)
+		}
+		cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
+		if err := sigstore.VerifyWithRekor(cmd.Context(), imageVersion, rekor, hash); err != nil {
+			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
+			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
+		}
+
+		cfm.log.Debugf("Verified measurements with Rekor")
 	}
 
-	cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
-	if err := sigstore.VerifyWithRekor(cmd.Context(), imageVersion, rekor, hash); err != nil {
-		cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
-		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
-	}
-
-	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in configuration")
+	cfm.log.Debugf("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
@@ -170,6 +191,12 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	}
 	cfm.log.Debugf("Parsed measurements signature URL as %v", measurementsSignatureURL)
 
+	insecure, err := cmd.Flags().GetBool("insecure")
+	if err != nil {
+		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing insecure argument: %w", err)
+	}
+	cfm.log.Debugf("Insecure flag is %v", insecure)
+
 	config, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
@@ -184,6 +211,7 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
 		signatureURL:    measurementsSignatureURL,
+		insecure:        insecure,
 		configPath:      config,
 		force:           force,
 	}, nil
