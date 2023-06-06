@@ -19,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -26,6 +27,12 @@ import (
 // InitialResources creates the initial resources for the node operator.
 func InitialResources(ctx context.Context, k8sClient client.Client, imageInfo imageInfoGetter, scalingGroupGetter scalingGroupGetter, uid string) error {
 	logr := log.FromContext(ctx)
+
+	if err := cleanupPlaceholders(ctx, k8sClient); err != nil {
+		return fmt.Errorf("cleaning up placeholder node version: %w", err)
+	}
+	logr.Info("cleaned up placeholders")
+
 	controlPlaneGroupIDs, workerGroupIDs, err := scalingGroupGetter.ListScalingGroups(ctx, uid)
 	if err != nil {
 		return fmt.Errorf("listing scaling groups: %w", err)
@@ -136,6 +143,83 @@ func createNodeVersion(ctx context.Context, k8sClient client.Client, imageRefere
 		return err
 	}
 	return nil
+}
+
+// cleanupPlaceholders deletes the existing resources from older operator versions if they are placeholders.
+func cleanupPlaceholders(ctx context.Context, k8sClient client.Client) error {
+	if err := cleanupPlaceholderAutoscalingStrategy(ctx, k8sClient); err != nil {
+		return err
+	}
+	if err := cleanupPlaceholderScalingGroups(ctx, k8sClient); err != nil {
+		return err
+	}
+	return cleanupPlaceholderNodeVersion(ctx, k8sClient)
+}
+
+func cleanupPlaceholderAutoscalingStrategy(ctx context.Context, k8sClient client.Client) error {
+	logr := log.FromContext(ctx)
+	autoscalingStrategy := &updatev1alpha1.AutoscalingStrategy{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: constants.AutoscalingStrategyResourceName}, autoscalingStrategy)
+	if k8sErrors.IsNotFound(err) {
+		logr.Info("no old autoscalingstrategy resource found - skipping cleanup", "name", constants.AutoscalingStrategyResourceName)
+		return nil
+	} else if err != nil {
+		logr.Info("cleaning up old autoscalingstrategy resource", "name", constants.AutoscalingStrategyResourceName, "error", err)
+		return err
+	}
+	if autoscalingStrategy.Spec.AutoscalerExtraArgs["cloud-provider"] != constants.PlaceholderImageName {
+		logr.Info("old autoscalingstrategy resource is not a placeholder - skipping cleanup", "name", constants.AutoscalingStrategyResourceName)
+		return nil
+	}
+	logr.Info("deleting old autoscalingstrategy resource", "name", constants.AutoscalingStrategyResourceName)
+	return k8sClient.Delete(ctx, autoscalingStrategy)
+}
+
+// cleanupPlaceholderScalingGroups deletes the existing scalinggroup resource from older operator versions if they are placeholders.
+func cleanupPlaceholderScalingGroups(ctx context.Context, k8sClient client.Client) error {
+	logr := log.FromContext(ctx)
+	names := []string{constants.PlaceholderControlPlaneScalingGroupName, constants.PlaceholderWorkerScalingGroupName}
+	for _, name := range names {
+		scalingGroup := &updatev1alpha1.ScalingGroup{}
+		err := k8sClient.Get(ctx, types.NamespacedName{Name: name}, scalingGroup)
+		if k8sErrors.IsNotFound(err) {
+			logr.Info("no old scalinggroup resource found - skipping cleanup", "name", name)
+			continue
+		} else if err != nil {
+			logr.Info("cleaning up old scalinggroup resource", "name", name, "error", err)
+			return err
+		}
+		if scalingGroup.Spec.AutoscalerGroupName != name || scalingGroup.Spec.GroupID != name {
+			logr.Info("real scalinggroup resource found - skipping cleanup", "name", name)
+			continue
+		}
+		logr.Info("cleaning up old scalinggroup resource")
+		if err := k8sClient.Delete(ctx, scalingGroup); err != nil {
+			logr.Info("cleaning up old scalinggroup resource", "name", name, "error", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// cleanupPlaceholder deletes the existing nodeversion resource from older operator versions if it was a placeholder.
+func cleanupPlaceholderNodeVersion(ctx context.Context, k8sClient client.Client) error {
+	logr := log.FromContext(ctx)
+	nodeVersion := &updatev1alpha1.NodeVersion{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: mainconstants.NodeVersionResourceName}, nodeVersion)
+	if k8sErrors.IsNotFound(err) {
+		logr.Info("no old nodeversion resource found - skipping cleanup")
+		return nil
+	} else if err != nil {
+		logr.Info("cleaning up old nodeversion resource", "error", err)
+		return err
+	}
+	if nodeVersion.Spec.ImageReference != constants.PlaceholderImageName {
+		logr.Info("real nodeversion resource found - skipping cleanup")
+		return nil
+	}
+	logr.Info("cleaning up old nodeversion resource")
+	return k8sClient.Delete(ctx, nodeVersion)
 }
 
 // findLatestK8sComponentsConfigMap finds most recently created k8s-components configmap in the kube-system namespace.

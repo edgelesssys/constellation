@@ -184,6 +184,7 @@ jobs:
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
         run: |
+          kubectl logs -n kube-system -l "app.kubernetes.io/name=constellation-operator" --tail=-1 > node-operator.logs
           kubectl logs -n kube-system -l "app.kubernetes.io/name=node-maintenance-operator" --tail=-1 > node-maintenance-operator.logs
           kubectl get nodeversions.update.edgeless.systems constellation-version -o yaml > constellation-version.yaml
 
@@ -193,6 +194,7 @@ jobs:
         with:
           name: upgrade-logs
           path: |
+            node-operator.logs
             node-maintenance-operator.logs
             constellation-version.yaml
 
