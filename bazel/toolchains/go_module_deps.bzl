@@ -829,6 +829,14 @@ def go_dependencies():
         sum = "h1:XmPu4mXICgdGnC5dXGjUGbwUD/kUmS0l5Aop3LaevBM=",
         version = "v0.0.0-20230317132445-9c3c1fc0106e",
     )
+    go_repository(
+        name = "com_github_bazelbuild_rules_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/bazelbuild/rules_go",
+        sum = "h1:wkJLUDx59dntWMghuL8++GteoU1To6sRoKJXuyFtmf8=",
+        version = "v0.39.1",
+    )
 
     go_repository(
         name = "com_github_beeker1121_goque",

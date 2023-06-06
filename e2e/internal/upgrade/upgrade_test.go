@@ -17,11 +17,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
 	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -68,6 +70,7 @@ func TestUpgrade(t *testing.T) {
 
 	require.NotEqual(*targetImage, "", "--target-image needs to be specified")
 
+	log.Println("Waiting for nodes and pods to be ready.")
 	testNodesEventuallyAvailable(t, k, *wantControl, *wantWorker)
 	testPodsEventuallyReady(t, k, "kube-system")
 
@@ -75,6 +78,7 @@ func TestUpgrade(t *testing.T) {
 	require.NoError(err)
 
 	// Migrate config if necessary.
+	log.Println("Migrating config if needed.")
 	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--force", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
@@ -138,16 +142,35 @@ func workingDir(workspace string) (string, error) {
 }
 
 // getCLIPath returns the path to the CLI.
-func getCLIPath(cliPath string) (string, error) {
+func getCLIPath(cliPathFlag string) (string, error) {
 	pathCLI := os.Getenv("PATH_CLI")
+	var relCLIPath string
 	switch {
 	case pathCLI != "":
-		return pathCLI, nil
-	case cliPath != "":
-		return cliPath, nil
+		relCLIPath = pathCLI
+	case cliPathFlag != "":
+		relCLIPath = cliPathFlag
 	default:
 		return "", errors.New("neither 'PATH_CLI' nor 'cli' flag set")
 	}
+
+	// try to find the CLI in the working directory
+	// (e.g. when running via `go test` or when specifying a path manually)
+	workdir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("getting working directory: %w", err)
+	}
+
+	absCLIPath := relCLIPath
+	if !filepath.IsAbs(relCLIPath) {
+		absCLIPath = filepath.Join(workdir, relCLIPath)
+	}
+	if _, err := os.Stat(absCLIPath); err == nil {
+		return absCLIPath, nil
+	}
+
+	// fall back to runfiles (e.g. when running via bazel)
+	return runfiles.Rlocation(pathCLI)
 }
 
 // testPodsEventuallyReady checks that:
