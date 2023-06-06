@@ -14,7 +14,9 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
@@ -47,6 +49,7 @@ func newDeployCmd() *cobra.Command {
 	deployCmd.Flags().String("upgrade-agent", "./upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
 	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
 	deployCmd.Flags().Int("verbosity", 0, logger.CmdLineVerbosityDescription)
+	deployCmd.Flags().Duration("endpoint-deploy-timeout", 5*time.Minute, "timeout for deploying the endpoint")
 	return deployCmd
 }
 
@@ -78,10 +81,14 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	return deploy(cmd, fileHandler, constellationConfig, transfer, log)
+	endpointDeployTimeout, err := cmd.Flags().GetDuration("endpoint-deploy-timeout")
+	if err != nil {
+		return err
+	}
+	return deploy(cmd, fileHandler, constellationConfig, transfer, log, endpointDeployTimeout)
 }
 
-func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, transfer fileTransferer, log *logger.Logger) error {
+func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, transfer fileTransferer, log *logger.Logger, endpointDeployTimeout time.Duration) error {
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err
@@ -144,8 +151,16 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 			transfer:       transfer,
 			log:            log,
 		}
-		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
-			return err
+		if err := retry.Do(
+			func() error {
+				ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
+				defer cancelFn()
+				return deployOnEndpoint(ctx, input)
+			},
+			retry.Delay(time.Second),
+			retry.Attempts(3),
+		); err != nil {
+			return fmt.Errorf("retried endpoint deployment: %w", err)
 		}
 	}
 
@@ -164,7 +179,7 @@ type deployOnEndpointInput struct {
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	in.log.Infof("Deploying on %v", in.debugdEndpoint)
 
-	client, closer, err := newDebugdClient(ctx, in.debugdEndpoint)
+	client, closer, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
 	if err != nil {
 		return fmt.Errorf("creating debugd client: %w", err)
 	}
@@ -181,11 +196,13 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
-func newDebugdClient(ctx context.Context, ip string) (pb.DebugdClient, io.Closer, error) {
+func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, io.Closer, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		log.GetClientUnaryInterceptor(),
+		log.GetClientStreamInterceptor(),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)

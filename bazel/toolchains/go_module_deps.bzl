@@ -324,6 +324,14 @@ def go_dependencies():
         sum = "h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=",
         version = "v0.0.0-20230301143203-a9d515a09cc2",
     )
+    go_repository(
+        name = "com_github_avast_retry_go_v4",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/avast/retry-go/v4",
+        sum = "h1:pHLkL7jvCvP317I8Ge+Km2Yhntv3SdkJm7uekkqbKhM=",
+        version = "v4.3.4",
+    )
 
     go_repository(
         name = "com_github_aws_aws_lambda_go",
