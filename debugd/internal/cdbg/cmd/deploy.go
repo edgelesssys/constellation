@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
@@ -50,7 +49,7 @@ func newDeployCmd() *cobra.Command {
 	deployCmd.Flags().String("upgrade-agent", "./upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
 	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
 	deployCmd.Flags().Int("verbosity", 0, logger.CmdLineVerbosityDescription)
-	deployCmd.Flags().Duration("endpoint-deploy-timeout", 5*time.Minute, "timeout for deploying the endpoint")
+	deployCmd.Flags().Duration("endpoint-deploy-timeout", 20*time.Minute, "timeout for deploying the endpoint")
 	return deployCmd
 }
 
@@ -152,16 +151,10 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 			transfer:       transfer,
 			log:            log,
 		}
-		if err := retry.Do(
-			func() error {
-				ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
-				defer cancelFn()
-				return deployOnEndpoint(ctx, input)
-			},
-			retry.Delay(time.Second),
-			retry.Attempts(3),
-		); err != nil {
-			return fmt.Errorf("retried endpoint deployment: %w", err)
+		ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
+		defer cancelFn()
+		if err := deployOnEndpoint(ctx, input); err != nil {
+			return fmt.Errorf("deploying enpoint on %v: %w", ip, err)
 		}
 	}
 

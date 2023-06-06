@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/connectivity"
 )
 
