@@ -31,11 +31,16 @@ ${go} mod download
 
 err=0
 
+ignore_pkgs=(github.com/edgelesssys/go-tdx-qpl github.com/modern-go/reflect2 go.starlark.net/starlark github.com/cespare/xxhash/v2 github.com/klauspost/compress/zstd/internal/xxhash golang.org/x/crypto/chacha20 github.com/google/go-tpm-tools/simulator/internal golang.org/x/sys/unix)
+ignore_flag=""
+for pkg in "${ignore_pkgs[@]}"; do ignore_flag+="--ignore $pkg "; done
+ignore_flag=${ignore_flag% }
+
 PATH="$(dirname "${go}"):${PATH}" \
 GOROOT=$(${go} env GOROOT) \
 GOPATH=$(${go} env GOPATH) \
 GOCACHE=$(${go} env GOCACHE) \
-  ${golicenses} csv ./... | {
+  ${golicenses} report ${ignore_flag} ./... | {
   while read -r line; do
 
     pkg=${line%%,*}
