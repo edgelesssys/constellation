@@ -89,7 +89,8 @@ func deploy(cmd *cobra.Command,
 	constellationConfig *config.Config,
 	transfer fileTransferer,
 	log *logger.Logger,
-	endpointDeployTimeout time.Duration) error {
+	endpointDeployTimeout time.Duration,
+) error {
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err

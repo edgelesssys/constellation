@@ -327,7 +327,7 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 }
 
 func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
-	grpclog.LogStateChanges(ctx, conn, d.log, wg, func() {
+	grpclog.LogStateChangesUntilReady(ctx, conn, d.log, wg, func() {
 		d.connectedOnce = true
 		d.spinner.Stop()
 		d.spinner.Start("Initializing cluster ", false)

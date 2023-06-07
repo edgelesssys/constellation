@@ -24,8 +24,8 @@ func PeerAddrFromContext(ctx context.Context) string {
 	return p.Addr.String()
 }
 
-// LogStateChanges logs the state changes of a gRPC connection.
-func LogStateChanges(ctx context.Context, conn getStater, log debugLog, wg *sync.WaitGroup, isReadyCallback func()) {
+// LogStateChangesUntilReady logs the state changes of a gRPC connection.
+func LogStateChangesUntilReady(ctx context.Context, conn getStater, log debugLog, wg *sync.WaitGroup, isReadyCallback func()) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
