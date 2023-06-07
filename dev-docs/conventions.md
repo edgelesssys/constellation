@@ -132,6 +132,7 @@ the `<REPOSITORY>/.vscode/settings.json` repo, so the settings will only affect 
     // tests.
     "go.buildTags": "integration e2e",
 ```
+For some inexplicable reason, the `"go.lintTool":"golangci-lint",` might be overwritten. In case you don't get all linter suggestions, you might want to check the value of `go.lintTool` in the UI settings and make sure it is also set to `golangci-lint`.
 
 Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to have uniform formatting in our `.yaml` files.
 
