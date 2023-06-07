@@ -141,7 +141,7 @@ This announcement should include a timeframe when the maintenance will start and
 
 Until then we have to implement a custom solution:
 
-To determine which values are selected when `latest` is configured we populate a field `last-seen-on` in each object within the AWS API.
+To determine which values are selected when `latest` is configured we populate a field `first-seen-on` in each object within the AWS API.
 There are only three objects in the API at all times.
 Two objects that represent measurements we have already seen on an EC2 instance.
 One object that represents a newly released firmware that has not been seen on any machine.
@@ -153,13 +153,13 @@ Two independent pipelines are responsible for managing the API:
 
 **Pipeline A:**
 - periodically scan [aws/uefi](https://github.com/aws/uefi) for new releases, build them, precalculate measurements and push new objects to API.
-- `last-seen-on` is set to a placeholder value.
+- `first-seen-on` is set to a placeholder value.
 
 **Pipeline B:**
 - periodically start new AWS EC2 instance and fetch a new SNP report from that machine, including the current measurement `current`.
 - `list` the available measurements in the API and compare them to `current`.
-  - `if list.Contains(current) and last-seen-on == placeholder`: update `last-seen-on` to current date and remove the oldest API object.
-  - `if list.Contains(current) and last-seen-on != placeholder`: do nothing.
+  - `if list.Contains(current) and first-seen-on == placeholder`: update `first-seen-on` to current date and remove the oldest API object.
+  - `if list.Contains(current) and first-seen-on != placeholder`: do nothing.
   - `if !list.Contains(current)`: fail, alerting us of unreleased/unplanned firmware updates.
 
 The pipelines should run ~ daily.
