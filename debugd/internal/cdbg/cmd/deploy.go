@@ -33,6 +33,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const deployToAllEndpointsTimeout = 20 * time.Minute
+
 func newDeployCmd() *cobra.Command {
 	deployCmd := &cobra.Command{
 		Use:   "deploy",
@@ -49,7 +51,6 @@ func newDeployCmd() *cobra.Command {
 	deployCmd.Flags().String("upgrade-agent", "./upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
 	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
 	deployCmd.Flags().Int("verbosity", 0, logger.CmdLineVerbosityDescription)
-	deployCmd.Flags().Duration("endpoint-deploy-timeout", 20*time.Minute, "timeout for deploying the endpoint")
 	return deployCmd
 }
 
@@ -80,15 +81,15 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-
-	endpointDeployTimeout, err := cmd.Flags().GetDuration("endpoint-deploy-timeout")
-	if err != nil {
-		return err
-	}
-	return deploy(cmd, fileHandler, constellationConfig, transfer, log, endpointDeployTimeout)
+	return deploy(cmd, fileHandler, constellationConfig, transfer, log, deployToAllEndpointsTimeout)
 }
 
-func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, transfer fileTransferer, log *logger.Logger, endpointDeployTimeout time.Duration) error {
+func deploy(cmd *cobra.Command,
+	fileHandler file.Handler,
+	constellationConfig *config.Config,
+	transfer fileTransferer,
+	log *logger.Logger,
+	endpointDeployTimeout time.Duration) error {
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err
@@ -154,7 +155,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
 		defer cancelFn()
 		if err := deployOnEndpoint(ctx, input); err != nil {
-			return fmt.Errorf("deploying enpoint on %q: %w", ip, err)
+			return fmt.Errorf("deploying endpoint on %v: %w", ip, err)
 		}
 	}
 
@@ -180,7 +181,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	defer conn.Close()
 	var wg sync.WaitGroup
 	defer wg.Wait()
-	grpclog.LogStateChanges(ctx, conn, in.log, &wg, func() {})
+	grpclog.LogStateChangesUntilReady(ctx, conn, in.log, &wg, func() {})
 
 	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
