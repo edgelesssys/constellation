@@ -3,7 +3,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "grpclog",
-    srcs = ["grplog.go"],
+    srcs = ["grpclog.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/grpc/grpclog",
     visibility = ["//:__subpackages__"],
     deps = [
@@ -14,7 +14,7 @@ go_library(
 
 go_test(
     name = "grpclog_test",
-    srcs = ["grplog_test.go"],
+    srcs = ["grpclog_test.go"],
     embed = [":grpclog"],
     deps = [
         "@com_github_stretchr_testify//assert",
