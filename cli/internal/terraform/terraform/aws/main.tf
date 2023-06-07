@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.67.0"
+      version = "5.1.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -57,8 +57,8 @@ module "public_private_subnet" {
 }
 
 resource "aws_eip" "lb" {
-  vpc  = true
-  tags = local.tags
+  domain = "vpc"
+  tags   = local.tags
 }
 
 resource "aws_lb" "front_end" {

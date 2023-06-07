@@ -2,14 +2,14 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.67.0"
+      version = "5.1.0"
     }
   }
 }
 
 resource "aws_eip" "nat" {
-  vpc  = true
-  tags = var.tags
+  domain = "vpc"
+  tags   = var.tags
 }
 
 resource "aws_subnet" "private" {
