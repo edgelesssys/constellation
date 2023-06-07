@@ -8,6 +8,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -33,7 +34,7 @@ func (v AttestationVersion) MarshalYAML() (any, error) {
 	if v.IsLatest {
 		return "latest", nil
 	}
-	return v.Value, nil
+	return int(v.Value), nil
 }
 
 // UnmarshalYAML implements a custom unmarshaller to resolve "atest" values.
@@ -67,12 +68,16 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 	switch s := rawUnmarshal.(type) {
 	case string:
 		if strings.ToLower(s) == "latest" {
-			v.IsLatest = true
-			v.Value = placeholderVersionValue
-		} else {
-			return fmt.Errorf("invalid version value: %s", s)
+			// TODO(elchead): activate latest logic for next release AB#3036
+			return errors.New("latest is not supported as a version value")
+			// v.IsLatest = true
+			// v.Value = placeholderVersionValue
 		}
+		return fmt.Errorf("invalid version value: %s", s)
 	case int:
+		v.Value = uint8(s)
+	// yaml spec allows "1" as float64, so version number might come as a float:  https://github.com/go-yaml/yaml/issues/430
+	case float64:
 		v.Value = uint8(s)
 	default:
 		return fmt.Errorf("invalid version value type: %s", s)

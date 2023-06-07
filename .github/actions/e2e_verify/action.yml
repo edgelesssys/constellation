@@ -32,51 +32,15 @@ runs:
       with:
         shortname: ${{ inputs.osImage }}
 
-    - name: Get attestation variant
-      id: get-variant
+    - name: Constellation fetch measurements
       shell: bash
       run: |
-        # TODO(AB#3144): Refactor when API is update for attestation variants
-        case ${{ inputs.cloudProvider }} in
-          aws)
-            echo ATTESTATION_VARIANT=awsNitroTPM >> $GITHUB_OUTPUT
-            ;;
-          azure)
-            echo ATTESTATION_VARIANT=azureSEVSNP >> $GITHUB_OUTPUT
-            ;;
-          gcp)
-            echo ATTESTATION_VARIANT=gcpSEVES >> $GITHUB_OUTPUT
-            ;;
-          qemu)
-            echo ATTESTATION_VARIANT=qemuVTPM >> $GITHUB_OUTPUT
-            ;;
-        esac
-
-    - name: Fetch & write measurements
-      shell: bash
-      run: |
-        ref=${{ steps.expand-version.outputs.ref }}
-        stream=${{ steps.expand-version.outputs.stream }}
-        version=${{ steps.expand-version.outputs.version }}
-        verPath="ref/${ref}/stream/${stream}/${version}"
-        MEASUREMENTS=$(curl -fsSL https://cdn.confidential.cloud/constellation/v1/${verPath}/image/csp/${{ inputs.cloudProvider }}/measurements.json | jq '.measurements' -r)
-        for key in $(echo $MEASUREMENTS | jq 'keys[]' -r); do
-            echo Updating $key to $(echo $MEASUREMENTS | jq ".\"$key\"" -r)
-            if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
-            then
-              yq -i ".provider.${{ inputs.cloudProvider }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
-            else
-              yq -i ".attestation.${{ steps.get-variant.outputs.ATTESTATION_VARIANT }}.measurements.[$key] = $(echo $MEASUREMENTS | jq ".\"$key\"")" constellation-conf.yaml
-            fi
-        done
-
-        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
+        if [[ ${{ steps.expand-version.outputs.stream }} == "debug" ]]
         then
-          yq -i '.provider.${{ inputs.cloudProvider }}.measurements |= array_to_map' constellation-conf.yaml
+          constellation config fetch-measurements --insecure
         else
-          yq -i '.attestation.${{ steps.get-variant.outputs.ATTESTATION_VARIANT }}.measurements |= array_to_map' constellation-conf.yaml
+          constellation config fetch-measurements
         fi
-        cat constellation-conf.yaml
 
     - name: Constellation verify
       shell: bash

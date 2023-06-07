@@ -13,4 +13,10 @@ const (
 	ControlPlaneScalingGroupResourceName = "scalinggroup-controlplane"
 	// WorkerScalingGroupResourceName resource name used for WorkerScaling.
 	WorkerScalingGroupResourceName = "scalinggroup-worker"
+	// PlaceholderImageName name of the OS image used if upgrades are not yet supported.
+	PlaceholderImageName = "unsupportedCSP"
+	// PlaceholderControlPlaneScalingGroupName name of the control plane scaling group used if upgrades are not yet supported.
+	PlaceholderControlPlaneScalingGroupName = "control-planes-id"
+	// PlaceholderWorkerScalingGroupName name of the worker scaling group used if upgrades are not yet supported.
+	PlaceholderWorkerScalingGroupName = "workers-id"
 )

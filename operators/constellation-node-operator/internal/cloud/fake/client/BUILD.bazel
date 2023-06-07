@@ -5,5 +5,8 @@ go_library(
     srcs = ["client.go"],
     importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
-    deps = ["//operators/constellation-node-operator/api/v1alpha1"],
+    deps = [
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/constants",
+    ],
 )

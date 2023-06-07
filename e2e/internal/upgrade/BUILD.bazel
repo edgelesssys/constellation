@@ -29,11 +29,11 @@ go_test(
     # keep
     count = 1,
     data = [
-        "//cli:cli_enterprise_linux_amd64",
+        "//cli:cli_enterprise_host",
     ],
     embed = [":upgrade"],
     env = {
-        "PATH_CLI": "$(location //cli:cli_enterprise_linux_amd64)",
+        "PATH_CLI": "$(rlocationpath //cli:cli_enterprise_host)",
     },
     # keep
     gotags = ["e2e"],
@@ -48,6 +48,7 @@ go_test(
         "//internal/versions",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//require",
+        "@io_bazel_rules_go//go/runfiles:go_default_library",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_client_go//kubernetes",

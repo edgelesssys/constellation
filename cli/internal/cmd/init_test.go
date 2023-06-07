@@ -175,7 +175,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
-			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, fakeAttestationFetcher{})
+			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -519,7 +519,7 @@ func TestAttestation(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
-	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, fakeAttestationFetcher{})
+	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")

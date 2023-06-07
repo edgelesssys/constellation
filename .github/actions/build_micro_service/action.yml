@@ -54,7 +54,7 @@ runs:
 
     - name: Log in to the Container registry
       id: docker-login
-      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+      uses: ./.github/actions/container_registry_login
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
