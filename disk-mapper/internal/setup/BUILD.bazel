@@ -5,6 +5,8 @@ go_library(
     name = "setup",
     srcs = [
         "interface.go",
+        "mount_cross.go",
+        "mount_linux.go",
         "setup.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup",

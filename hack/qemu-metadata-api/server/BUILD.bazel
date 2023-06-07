@@ -5,6 +5,9 @@ go_library(
     name = "server",
     srcs = ["server.go"],
     importpath = "github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server",
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//hack/qemu-metadata-api/virtwrapper",

@@ -9,7 +9,7 @@ def go_test(ld = None, count = 3, **kwargs):
 
     It adds the following:
     - Sets test count to 3.
-    - Sets race detector to on by default.
+    - Sets race detector to on by default (except Mac OS)
     - Optionally sets the interpreter path to ld.
 
     Args:
@@ -23,7 +23,16 @@ def go_test(ld = None, count = 3, **kwargs):
     kwargs["args"].append("--test.count={}".format(count))
 
     # enable race detector by default
-    kwargs.setdefault("race", "on")
+    race_value = select({
+        "@platforms//os:macos": "off",
+        "//conditions:default": "on",
+    })
+    pure_value = select({
+        "@platforms//os:macos": "on",
+        "//conditions:default": "off",
+    })
+    kwargs.setdefault("race", race_value)
+    kwargs.setdefault("pure", pure_value)
 
     # set gc_linkopts to set the interpreter path to ld.
     kwargs.setdefault("gc_linkopts", [])

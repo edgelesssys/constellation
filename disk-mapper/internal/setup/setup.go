@@ -44,6 +44,7 @@ const (
 	stateDiskMountPath  = "/var/run/state"
 	cryptsetupOptions   = "cipher=aes-xts-plain64,integrity=hmac-sha256"
 	stateInfoPath       = stateDiskMountPath + "/constellation/node_state.json"
+	msrdonly            = 0x1 // same as syscall.MS_RDONLY
 )
 
 // Manager handles formatting, mapping, mounting and unmounting of state disks.
@@ -95,7 +96,7 @@ func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	}
 
 	// we do not care about cleaning up the mount point on error, since any errors returned here should cause a boot failure
-	if err := s.mounter.Mount(filepath.Join("/dev/mapper/", stateDiskMappedName), stateDiskMountPath, "ext4", syscall.MS_RDONLY, ""); err != nil {
+	if err := s.mounter.Mount(filepath.Join("/dev/mapper/", stateDiskMappedName), stateDiskMountPath, "ext4", msrdonly, ""); err != nil {
 		return err
 	}
 

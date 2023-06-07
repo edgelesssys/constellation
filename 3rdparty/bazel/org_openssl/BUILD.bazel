@@ -18,11 +18,19 @@ cc_test(
         ],
         "//conditions:default": [],
     }),
+    # TODO support OpenSSL on Mac
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     deps = ["@org_openssl//:openssl"],
 )
 
 build_test(
     name = "build_test",
+    # TODO support OpenSSL on Mac
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     targets = [
         "@org_openssl//:openssl",
     ],

@@ -1,6 +1,6 @@
 --- simulator/ms-tpm-20-ref/BUILD.bazel
 +++ simulator/ms-tpm-20-ref/BUILD.bazel
-@@ -0,0 +1,509 @@
+@@ -0,0 +1,512 @@
 +cc_library(
 +    name = "ms_tpm_20_ref",
 +    visibility = ["//visibility:public"],
@@ -230,6 +230,9 @@
 +    deps = [
 +        ":ms_tpm_20_ref_google_samples",
 +        "@org_openssl//:openssl",
++    ],
++    target_compatible_with = [
++        "@platforms//os:linux",
 +    ],
 +)
 +
