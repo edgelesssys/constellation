@@ -82,7 +82,7 @@ We want to allow users to disable enforcement.
 This is because AWS may roll out unanounced/unreleased firmwares.
 Such rollouts should not compromise cluster stability.
 
-Multiple valid values are required since a cluster may have nodes with different launchmeasurements during a firmware rollout.
+Multiple valid values are required since a cluster may have nodes with different launch-measurements during a firmware rollout.
 
 Both values should be appliable through `upgrade apply` to easily react to changing measurements during cluster operation.
 ## In our code
@@ -131,35 +131,67 @@ The old API will still receive updates for at least the next release cycle, duri
 
 ### AWS
 
-AWS provides a way to precalculate launchmeasurements for their firmware in SEV-SNP CVMs.
-Since the launchmeasurement can change at any point in time we need to serve up-to-date measurements through the attestation config API.
+AWS provides a way to precalculate launch-measurements for their firmware in SEV-SNP CVMs.
+Since the launch-measurement can change at any point in time we need to serve up-to-date measurements through the attestation config API.
 This will enable users to (a) check which measurements are currently available and manually select any of them.
-It will also enable users to (b) specify a value `latest` for the launchmeasurement.
+It will also enable users to (b) specify a value `latest` for the launch-measurement.
+
+#### Object structure
+Each object represents parts of a valid attestation config.
+There are at most three versions of the launch-measurements available in one API object.
+Two versions that represent measurements we have already seen on an EC2 instance.
+One version that represents measurements of a newly released firmware that has not been seen on any machine.
+
+To sort the versions within each object we use a key `addedOn`.
+To determine if a measurement has been deployed yet we use a key `firstSeenOn`.
+If `firstSeenOn` is set to a placeholder value the underlying firmware has not been seen yet, but it might be seen by a user (we can't know that).
+
+**/list:**
+```
+[
+  "2023-01-23-14-32",
+  "2023-01-10-14-32"
+]
+```
+
+**/2023-01-23-14-32.json:**
+```
+{
+  "launchMeasurements": [
+    {
+      "firstSeenOn": "-"
+      "value": "v1.3.1",
+    },
+    {
+      "firstSeenOn": "2023-01-14T15:04:05Z07:00"
+      "value": "v1.3",
+    },
+    {
+      "firstSeenOn": "2023-01-01T15:04:05Z07:00"
+      "value": "v1.2",
+    }
+  ]
+}
+```
+
+#### API behavior
+
+We are assuming that AWS will not release a new firmware, without completing the rollout of the currently released version (i.e. there are at most two distinct firmware versions at all times).
+
+A pipeline is responsible for updating the API:
+
+1. periodically scan [aws/uefi](https://github.com/aws/uefi) for new releases, build them and precalculate measurements `new`.
+2. `firstSeenOn` is set to a placeholder value.
+3. start new AWS EC2 instance and fetch a new SNP report from that machine, including the current measurement `current`.
+4. get the `latest` object from the API and compare the included launch-measurements to `current`. Any modifications are done by creating a new object and adding it to the API.
+  - `if !latest.launchMeasurements.Contains(new)`: add `new` with `firstSeenOn` set to `placeholder`. The oldest measurement is removed.
+  - `if latest.launchMeasurements.Latest().firstSeenOn == placeholder && latest.launchMeasurements.Latest().value == current.value`: update `firstSeenOn` to current date, remove the oldest measurement and any older (than `Latest()`) measurements with `firstSeenOn==placeholder`.
+  - `if latest.launchMeasurements.Latest().firstSeenOn != placeholder && latest.launchMeasurements.Latest().value == current.value`: do nothing.
+  - `if !list.Contains(current)`: fail. Alerts us of unreleased/unplanned firmware updates.
+5. If the new object from step 4 is different than `latest`, push it to the API.
+
+The pipelines should run ~ daily.
 
 Ideally AWS will announce firmware changes in the future as part of maintenance announcements.
 This announcement should include a timeframe when the maintenance will start and when all machines will have the new firmware.
-
-Until then we have to implement a custom solution:
-
-To determine which values are selected when `latest` is configured we populate a field `first-seen-on` in each object within the AWS API.
-There are only three objects in the API at all times.
-Two objects that represent measurements we have already seen on an EC2 instance.
-One object that represents a newly released firmware that has not been seen on any machine.
-
-We are assuming that AWS will not release a new firmware, without completing the rollout of the currently released version.
-We are also assuming that AWS will keep it's fleet in a state where at most two distinct firmware versions are present.
-
-Two independent pipelines are responsible for managing the API:
-
-**Pipeline A:**
-- periodically scan [aws/uefi](https://github.com/aws/uefi) for new releases, build them, precalculate measurements and push new objects to API.
-- `first-seen-on` is set to a placeholder value.
-
-**Pipeline B:**
-- periodically start new AWS EC2 instance and fetch a new SNP report from that machine, including the current measurement `current`.
-- `list` the available measurements in the API and compare them to `current`.
-  - `if list.Contains(current) and first-seen-on == placeholder`: update `first-seen-on` to current date and remove the oldest API object.
-  - `if list.Contains(current) and first-seen-on != placeholder`: do nothing.
-  - `if !list.Contains(current)`: fail, alerting us of unreleased/unplanned firmware updates.
-
-The pipelines should run ~ daily.
+If AWS starts doing this, the update logic in step 1-4. will change.
