@@ -24,12 +24,8 @@ func PeerAddrFromContext(ctx context.Context) string {
 	return p.Addr.String()
 }
 
-// WaitFn is a function that waits for a goroutine to finish.
-type WaitFn func()
-
-// LogStateChangesUntilReady logs the state changes of a gRPC connection. IMPORTANT: The caller must call WaitFn() to wait for the goroutine to finish.
-func LogStateChangesUntilReady(ctx context.Context, conn getStater, log debugLog, isReadyCallback func()) WaitFn {
-	var wg sync.WaitGroup
+// LogStateChangesUntilReady logs the state changes of a gRPC connection.
+func LogStateChangesUntilReady(ctx context.Context, conn getStater, log debugLog, wg *sync.WaitGroup, isReadyCallback func()) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -45,7 +41,6 @@ func LogStateChangesUntilReady(ctx context.Context, conn getStater, log debugLog
 			log.Debugf("Connection state ended with %s", state)
 		}
 	}()
-	return wg.Wait
 }
 
 type getStater interface {

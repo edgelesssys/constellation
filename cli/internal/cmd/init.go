@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"sync"
 	"text/tabwriter"
 	"time"
 
@@ -261,9 +262,12 @@ func (d *initDoer) Do(ctx context.Context) error {
 	}
 	defer conn.Close()
 
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	grpcStateLogCtx, grpcStateLogCancel := context.WithCancel(ctx)
 	defer grpcStateLogCancel()
-	d.handleGRPCStateChanges(grpcStateLogCtx, conn)
+	d.handleGRPCStateChanges(grpcStateLogCtx, &wg, conn)
 
 	protoClient := initproto.NewAPIClient(conn)
 	d.log.Debugf("Created protoClient")
@@ -322,13 +326,12 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 	return nil
 }
 
-func (d *initDoer) handleGRPCStateChanges(ctx context.Context, conn *grpc.ClientConn) {
-	waitFn := grpclog.LogStateChangesUntilReady(ctx, conn, d.log, func() {
+func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
+	grpclog.LogStateChangesUntilReady(ctx, conn, d.log, wg, func() {
 		d.connectedOnce = true
 		d.spinner.Stop()
 		d.spinner.Start("Initializing cluster ", false)
 	})
-	defer waitFn()
 }
 
 func (i *initCmd) writeOutput(
