@@ -10,7 +10,7 @@ import (
 	"context"
 	"io"
 
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/osimage"
 )
 

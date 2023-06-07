@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -67,13 +67,13 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
-	fetcher := attestationconfigfetcher.NewWithClient(http.DefaultClient)
+	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient)
 	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
-	fileHandler file.Handler, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, client *http.Client,
+	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
 	if err != nil {

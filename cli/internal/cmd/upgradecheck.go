@@ -18,10 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
-	versionsapi "github.com/edgelesssys/constellation/v2/internal/api/versions"
-	versionfetcher "github.com/edgelesssys/constellation/v2/internal/api/versions/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
@@ -70,7 +69,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	versionListFetcher := versionfetcher.New()
+	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
@@ -80,7 +79,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		collect: &versionCollector{
 			writer:         cmd.OutOrStderr(),
 			checker:        checker,
-			verListFetcher: versionListFetcher,
+			verListFetcher: versionfetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
 			cosign:         sigstore.CosignVerifier{},
@@ -88,12 +87,12 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			flags:          flags,
 			cliVersion:     compatibility.EnsurePrefixV(constants.VersionInfo()),
 			log:            log,
-			versionsapi:    versionfetcher.New(),
+			versionsapi:    versionfetcher,
 		},
 		log: log,
 	}
 
-	return up.upgradeCheck(cmd, fileHandler, attestationconfigfetcher.New(), flags)
+	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
@@ -133,7 +132,7 @@ type upgradeCheckCmd struct {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher, flags upgradeCheckFlags) error {
+func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
 	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {

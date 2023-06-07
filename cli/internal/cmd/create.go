@@ -13,7 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -59,11 +59,11 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewCreator(spinner)
 	c := &createCmd{log: log}
-	fetcher := attestationconfigfetcher.New()
+	fetcher := attestationconfigapi.NewFetcher()
 	return c.create(cmd, creator, fileHandler, spinner, fetcher)
 }
 
-func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigfetcher.AttestationConfigAPIFetcher) (retErr error) {
+func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
 	flags, err := c.parseCreateFlags(cmd)
 	if err != nil {
 		return err

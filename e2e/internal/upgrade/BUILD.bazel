@@ -11,7 +11,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/e2e/internal/upgrade",
     visibility = ["//e2e:__subpackages__"],
     deps = [
-        "//internal/api/versions",
+        "//internal/api/versionsapi",
         "//internal/attestation/measurements",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
@@ -40,7 +40,7 @@ go_test(
     tags = ["manual"],
     deps = [
         "//e2e/internal/kubectl",
-        "//internal/api/attestationconfig/fetcher",
+        "//internal/api/attestationconfigapi",
         "//internal/config",
         "//internal/constants",
         "//internal/file",

@@ -9,11 +9,11 @@ package cmd
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/stretchr/testify/assert"
 )
 
-var testCfg = attestationconfig.AzureSEVSNPVersion{
+var testCfg = attestationconfigapi.AzureSEVSNPVersion{
 	Microcode:  93,
 	TEE:        0,
 	SNP:        6,
@@ -22,13 +22,13 @@ var testCfg = attestationconfig.AzureSEVSNPVersion{
 
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
 	testCases := map[string]struct {
-		latest attestationconfig.AzureSEVSNPVersion
-		input  attestationconfig.AzureSEVSNPVersion
+		latest attestationconfigapi.AzureSEVSNPVersion
+		input  attestationconfigapi.AzureSEVSNPVersion
 		expect bool
 		errMsg string
 	}{
 		"input is older than latest": {
-			input: func(c attestationconfig.AzureSEVSNPVersion) attestationconfig.AzureSEVSNPVersion {
+			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
 				c.Microcode--
 				return c
 			}(testCfg),
@@ -37,7 +37,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Microcode version: 92 is older than latest API version: 93",
 		},
 		"input has greater and smaller version field than latest": {
-			input: func(c attestationconfig.AzureSEVSNPVersion) attestationconfig.AzureSEVSNPVersion {
+			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
 				c.Microcode++
 				c.Bootloader--
 				return c
@@ -47,7 +47,7 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			errMsg: "input Bootloader version: 1 is older than latest API version: 2",
 		},
 		"input is newer than latest": {
-			input: func(c attestationconfig.AzureSEVSNPVersion) attestationconfig.AzureSEVSNPVersion {
+			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
 				c.TEE++
 				return c
 			}(testCfg),

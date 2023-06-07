@@ -33,8 +33,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 
-	configapi "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -387,7 +386,7 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 2. For "latest" version values of the attestation variants fetch the version numbers.
 // 3. Read secrets from environment variables.
 // 4. Validate config. If `--force` is set the version validation will be disabled and any version combination is allowed.
-func New(fileHandler file.Handler, name string, _ attestationconfigfetcher.AttestationConfigAPIFetcher, force bool) (*Config, error) {
+func New(fileHandler file.Handler, name string, _ attestationconfigapi.Fetcher, force bool) (*Config, error) {
 	// Read config file
 	c, err := fromFile(fileHandler, name)
 	if err != nil {
@@ -927,7 +926,7 @@ type AzureSEVSNP struct {
 // Version numbers have placeholder values and the latest available values can be fetched using [AzureSEVSNP.FetchAndSetLatestVersionNumbers].
 func DefaultForAzureSEVSNP() *AzureSEVSNP {
 	// TODO(elchead): activate latest logic for next release AB#3036
-	azureSNPCfg := configapi.AzureSEVSNPVersion{
+	azureSNPCfg := attestationconfigapi.AzureSEVSNPVersion{
 		Bootloader: 3,
 		TEE:        0,
 		SNP:        8,
@@ -982,7 +981,7 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigfetcher.AttestationConfigAPIFetcher) error {
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigapi.Fetcher) error {
 	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
 	if err != nil {
 		return err
@@ -992,7 +991,7 @@ func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigf
 	return nil
 }
 
-func (c *AzureSEVSNP) mergeVersionNumbers(versions configapi.AzureSEVSNPVersion) {
+func (c *AzureSEVSNP) mergeVersionNumbers(versions attestationconfigapi.AzureSEVSNPVersion) {
 	c.BootloaderVersion.Value = versions.Bootloader
 	c.TEEVersion.Value = versions.TEE
 	c.SNPVersion.Value = versions.SNP

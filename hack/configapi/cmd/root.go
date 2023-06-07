@@ -13,9 +13,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfig"
-	attestationconfigapiclient "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/client"
-	attestationconfigapifetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 
@@ -82,12 +80,12 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("reading version file: %w", err)
 	}
-	var inputVersion attestationconfig.AzureSEVSNPVersion
+	var inputVersion attestationconfigapi.AzureSEVSNPVersion
 	if err = json.Unmarshal(versionBytes, &inputVersion); err != nil {
 		return fmt.Errorf("unmarshalling version file: %w", err)
 	}
 
-	latestAPIVersion, err := attestationconfigapifetcher.New().FetchAzureSEVSNPVersionLatest(ctx)
+	latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx)
 	if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
@@ -102,7 +100,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		} else {
 			cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
 		}
-		sut, sutClose, err := attestationconfigapiclient.New(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
+		sut, sutClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
 				cmd.Printf("closing repo: %v\n", err)
@@ -123,7 +121,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 }
 
 // isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
-func isInputNewerThanLatestAPI(input, latest attestationconfig.AzureSEVSNPVersion) (bool, error) {
+func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVersion) (bool, error) {
 	inputValues := reflect.ValueOf(input)
 	latestValues := reflect.ValueOf(latest)
 	fields := reflect.TypeOf(input)
@@ -166,5 +164,5 @@ func must(err error) {
 }
 
 func log() *logger.Logger {
-	return logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfig")
+	return logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 }

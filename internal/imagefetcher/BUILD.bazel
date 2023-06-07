@@ -11,8 +11,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/api/fetcher",
-        "//internal/api/versions",
-        "//internal/api/versions/fetcher",
+        "//internal/api/versionsapi",
         "//internal/cloud/cloudprovider",
         "//internal/variant",
         "@com_github_schollz_progressbar_v3//:progressbar",
@@ -28,7 +27,7 @@ go_test(
     ],
     embed = [":imagefetcher"],
     deps = [
-        "//internal/api/versions",
+        "//internal/api/versionsapi",
         "//internal/cloud/cloudprovider",
         "//internal/file",
         "//internal/variant",

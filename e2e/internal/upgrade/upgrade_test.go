@@ -25,7 +25,7 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/runfiles"
 	"github.com/edgelesssys/constellation/v2/e2e/internal/kubectl"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -254,7 +254,7 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	fetcher := attestationconfigfetcher.New()
+	fetcher := attestationconfigapi.NewFetcher()
 	cfg, err := config.New(fileHandler, constants.ConfigFilename, fetcher, true)
 	var cfgErr *config.ValidationError
 	var longMsg string

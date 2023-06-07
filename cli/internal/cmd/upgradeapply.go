@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
-	attestationconfigfetcher "github.com/edgelesssys/constellation/v2/internal/api/attestationconfig/fetcher"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -68,7 +68,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	imagefetcher := imagefetcher.New()
-	configFetcher := attestationconfigfetcher.New()
+	configFetcher := attestationconfigapi.NewFetcher()
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
@@ -77,7 +77,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
-	configFetcher attestationconfigfetcher.AttestationConfigAPIFetcher
+	configFetcher attestationconfigapi.Fetcher
 	log           debugLog
 }
 
