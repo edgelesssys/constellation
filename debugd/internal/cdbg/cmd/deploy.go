@@ -154,7 +154,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
 		defer cancelFn()
 		if err := deployOnEndpoint(ctx, input); err != nil {
-			return fmt.Errorf("deploying enpoint on %v: %w", ip, err)
+			return fmt.Errorf("deploying enpoint on %q: %w", ip, err)
 		}
 	}
 
