@@ -10,7 +10,6 @@ package grpclog
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,7 @@ func TestLogStateChanges(t *testing.T) {
 	testCases := map[string]struct {
 		name   string
 		conn   getStater
-		assert func(t *testing.T, lg *fakeLog, isReady bool)
+		assert func(t *testing.T, lg *spyLogger, isReady bool)
 	}{
 		"log state changes": {
 			conn: &fakeConn{
@@ -31,11 +30,11 @@ func TestLogStateChanges(t *testing.T) {
 					connectivity.Ready,
 				},
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
-				require.Len(t, lg.msgs, 3)
-				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
-				assert.Equal(t, "Connection state changed to CONNECTING", lg.msgs[1])
-				assert.Equal(t, "Connection ready", lg.msgs[2])
+			assert: func(t *testing.T, spy *spyLogger, isReady bool) {
+				require.Len(t, spy.msgs, 3)
+				assert.Equal(t, "Connection state started as CONNECTING", spy.msgs[0])
+				assert.Equal(t, "Connection state changed to CONNECTING", spy.msgs[1])
+				assert.Equal(t, "Connection ready", spy.msgs[2])
 			},
 		},
 		"WaitForStateChange returns false (e.g. when context is canceled)": {
@@ -46,10 +45,10 @@ func TestLogStateChanges(t *testing.T) {
 				},
 				stopWaitForChange: true,
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
-				require.Len(t, lg.msgs, 2)
-				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
-				assert.Equal(t, "Connection state ended with CONNECTING", lg.msgs[1])
+			assert: func(t *testing.T, spy *spyLogger, isReady bool) {
+				require.Len(t, spy.msgs, 2)
+				assert.Equal(t, "Connection state started as CONNECTING", spy.msgs[0])
+				assert.Equal(t, "Connection state ended with CONNECTING", spy.msgs[1])
 				assert.False(t, isReady)
 			},
 		},
@@ -61,32 +60,31 @@ func TestLogStateChanges(t *testing.T) {
 				},
 				stopWaitForChange: false,
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
-				require.Len(t, lg.msgs, 2)
-				assert.Equal(t, "Connection state started as READY", lg.msgs[0])
-				assert.Equal(t, "Connection ready", lg.msgs[1])
+			assert: func(t *testing.T, spy *spyLogger, isReady bool) {
+				require.Len(t, spy.msgs, 2)
+				assert.Equal(t, "Connection state started as READY", spy.msgs[0])
+				assert.Equal(t, "Connection ready", spy.msgs[1])
 				assert.True(t, isReady)
 			},
 		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := &fakeLog{}
+			logger := &spyLogger{}
 
-			var wg sync.WaitGroup
 			isReady := false
-			LogStateChangesUntilReady(context.Background(), tc.conn, logger, &wg, func() { isReady = true })
-			wg.Wait()
+			waitFn := LogStateChangesUntilReady(context.Background(), tc.conn, logger, func() { isReady = true })
+			waitFn()
 			tc.assert(t, logger, isReady)
 		})
 	}
 }
 
-type fakeLog struct {
+type spyLogger struct {
 	msgs []string
 }
 
-func (f *fakeLog) Debugf(format string, args ...any) {
+func (f *spyLogger) Debugf(format string, args ...any) {
 	f.msgs = append(f.msgs, fmt.Sprintf(format, args...))
 }
 

@@ -13,7 +13,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
@@ -180,9 +179,8 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 		return fmt.Errorf("creating debugd client: %w", err)
 	}
 	defer conn.Close()
-	var wg sync.WaitGroup
-	defer wg.Wait()
-	grpclog.LogStateChangesUntilReady(ctx, conn, in.log, &wg, func() {})
+	waitFn := grpclog.LogStateChangesUntilReady(ctx, conn, in.log, func() {})
+	defer waitFn()
 
 	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
