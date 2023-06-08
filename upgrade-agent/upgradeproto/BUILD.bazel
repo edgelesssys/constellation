@@ -12,6 +12,7 @@ proto_library(
 go_proto_library(
     name = "upgradeproto_go_proto",
     compilers = ["@io_bazel_rules_go//proto:go_grpc"],
+    gc_goopts = ["-trimpath=$(BINDIR)=>."],
     importpath = "github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto",
     proto = ":upgradeproto_proto",
     visibility = ["//visibility:public"],

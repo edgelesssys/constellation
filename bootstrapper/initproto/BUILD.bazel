@@ -12,6 +12,7 @@ proto_library(
 go_proto_library(
     name = "initproto_go_proto",
     compilers = ["@io_bazel_rules_go//proto:go_grpc"],
+    gc_goopts = ["-trimpath=$(BINDIR)=>."],
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto",
     proto = ":initproto_proto",
     visibility = ["//visibility:public"],
