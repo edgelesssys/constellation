@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -314,7 +315,7 @@ func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ att
 	}, nil
 }
 
-func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context, _ time.Time) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
 	return attestationconfigapi.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil

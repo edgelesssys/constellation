@@ -27,6 +27,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -394,7 +395,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	}
 
 	if azure := c.Attestation.AzureSEVSNP; azure != nil {
-		if err := azure.FetchAndSetLatestVersionNumbers(fetcher); err != nil {
+		if err := azure.FetchAndSetLatestVersionNumbers(fetcher, time.Now()); err != nil {
 			return c, err
 		}
 	}
@@ -973,8 +974,8 @@ func (c AzureSEVSNP) EqualTo(old AttestationCfg) (bool, error) {
 }
 
 // FetchAndSetLatestVersionNumbers fetches the latest version numbers from the configapi and sets them.
-func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigapi.Fetcher) error {
-	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background())
+func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(fetcher attestationconfigapi.Fetcher, now time.Time) error {
+	versions, err := fetcher.FetchAzureSEVSNPVersionLatest(context.Background(), now)
 	if err != nil {
 		return err
 	}
