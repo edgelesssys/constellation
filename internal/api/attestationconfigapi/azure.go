@@ -7,9 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package attestationconfigapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -92,27 +94,62 @@ func (i AzureSEVSNPVersionAPI) Validate() error {
 	return nil
 }
 
-// AzureSEVSNPVersionList is the request to list all versions in the config api.
+// AzureSEVSNPVersionList is the request to list all versions in the config api. IMPORTANT: use NewAzureSEVSNPVersionList to create an object.
 type AzureSEVSNPVersionList []string
 
+// NewAzureSEVSNPVersionList ensures that the input is inversely sorted alphanumerically and has no duplicates.
+func NewAzureSEVSNPVersionList(versions []string) AzureSEVSNPVersionList {
+	versions = variant.RemoveDuplicate(versions)
+	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+	return AzureSEVSNPVersionList(versions)
+}
+
+// UnmarshalJSON ensures that the fetched data has the type guarantees.
+func (l *AzureSEVSNPVersionList) UnmarshalJSON(data []byte) error {
+	var raw []string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*l = NewAzureSEVSNPVersionList(raw)
+	return nil
+}
+
+// Remove removes a version from the list.
+func (l *AzureSEVSNPVersionList) Remove(version string) error {
+	beforeVersions := *l
+	var removedVersions AzureSEVSNPVersionList
+	for i, v := range beforeVersions {
+		if v == version {
+			if i == len(beforeVersions)-1 {
+				removedVersions = beforeVersions[:i]
+			} else {
+				removedVersions = append(beforeVersions[:i], beforeVersions[i+1:]...)
+			}
+			*l = removedVersions
+			return nil
+		}
+	}
+	return fmt.Errorf("version %s not found in list %v", version, beforeVersions)
+}
+
 // URL returns the URL for the request to the config api.
-func (i AzureSEVSNPVersionList) URL() (string, error) {
-	return getURL(i)
+func (l *AzureSEVSNPVersionList) URL() (string, error) {
+	return getURL(l)
 }
 
 // JSONPath returns the path to the JSON file for the request to the config api.
-func (i AzureSEVSNPVersionList) JSONPath() string {
+func (l *AzureSEVSNPVersionList) JSONPath() string {
 	return path.Join(attestationURLPath, variant.AzureSEVSNP{}.String(), "list")
 }
 
 // ValidateRequest is a NoOp as there is no input.
-func (i AzureSEVSNPVersionList) ValidateRequest() error {
+func (l *AzureSEVSNPVersionList) ValidateRequest() error {
 	return nil
 }
 
 // Validate validates the response.
-func (i AzureSEVSNPVersionList) Validate() error {
-	if len(i) < 1 {
+func (l *AzureSEVSNPVersionList) Validate() error {
+	if len(*l) < 1 {
 		return fmt.Errorf("no versions found in /list")
 	}
 	return nil
