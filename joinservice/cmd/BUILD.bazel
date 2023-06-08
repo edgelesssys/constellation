@@ -57,10 +57,8 @@ pkg_tar(
 
 oci_image(
     name = "joinservice",
-    architecture = "amd64",
-    base = "@distroless_static",
+    base = "@distroless_static_linux_amd64",
     entrypoint = ["/joinservice"],
-    os = "linux",
     tars = [
         ":layer",
     ],

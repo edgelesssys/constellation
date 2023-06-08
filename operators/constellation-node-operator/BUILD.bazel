@@ -58,10 +58,8 @@ pkg_tar(
 
 oci_image(
     name = "node_operator",
-    architecture = "amd64",
-    base = "@distroless_static",
+    base = "@distroless_static_linux_amd64",
     entrypoint = ["/node-operator"],
-    os = "linux",
     tars = [
         ":layer",
     ],
