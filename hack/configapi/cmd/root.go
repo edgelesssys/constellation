@@ -56,6 +56,7 @@ func newRootCmd() *cobra.Command {
 	}
 	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
 	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
+	rootCmd.Flags().StringP("upload-date", "d", "", "force to upload version regardless of comparison to latest API value.")
 	must(enforceRequiredFlags(rootCmd, "version-file"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -85,21 +86,43 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unmarshalling version file: %w", err)
 	}
 
-	latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx)
+	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
-		return fmt.Errorf("fetching latest version: %w", err)
+		return fmt.Errorf("getting upload date: %w", err)
+	}
+	var uploadDate time.Time
+	if dateStr != "" {
+		uploadDate, err = time.Parse("2006-01-01-01-01", dateStr)
+		if err != nil {
+			return fmt.Errorf("parsing date: %w", err)
+		}
+	} else {
+		uploadDate = time.Now()
 	}
 
-	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
-	if err != nil {
-		return fmt.Errorf("comparing versions: %w", err)
-	}
-	if isNewer || force {
-		if force {
-			cmd.Println("Forcing upload of new version")
-		} else {
-			cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+	doUpload := false
+	if !force {
+		latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, time.Now())
+		if err != nil {
+			return fmt.Errorf("fetching latest version: %w", err)
 		}
+
+		isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
+		if err != nil {
+			return fmt.Errorf("comparing versions: %w", err)
+		}
+		if isNewer {
+			cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		} else {
+			cmd.Printf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		}
+		doUpload = isNewer
+	} else {
+		doUpload = true
+		cmd.Println("Forcing upload of new version")
+	}
+
+	if doUpload {
 		sut, sutClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
 		defer func() {
 			if err := sutClose(ctx); err != nil {
@@ -110,12 +133,10 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("creating repo: %w", err)
 		}
 
-		if err := sut.UploadAzureSEVSNP(ctx, inputVersion, time.Now()); err != nil {
+		if err := sut.UploadAzureSEVSNP(ctx, inputVersion, uploadDate); err != nil {
 			return fmt.Errorf("uploading version: %w", err)
 		}
 		cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
-	} else {
-		cmd.Printf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
 	}
 	return nil
 }
