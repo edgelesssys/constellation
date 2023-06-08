@@ -98,8 +98,8 @@ func (f *fetcher) FetchAzureSEVSNPVersionLatest(ctx context.Context, now time.Ti
 	return
 }
 
-// assumes that list is sorted reversely alphanumerically.
 func getLatestVersionOlderThanMinimumAge(list AzureSEVSNPVersionList, now time.Time, minimumAgeVersion time.Duration) (AzureSEVSNPVersionAPI, error) {
+	SortAzureSEVSNPVersionList(list)
 	for _, v := range list {
 		dateStr := strings.TrimSuffix(v, ".json")
 		versionDate, err := time.Parse("2006-01-01-01-01", dateStr)

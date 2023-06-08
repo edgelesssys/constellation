@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"time"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -181,6 +180,6 @@ func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCm
 func addVersion(versions []string, newVersion string) []string {
 	versions = append(versions, newVersion)
 	versions = variant.RemoveDuplicate(versions)
-	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+	SortAzureSEVSNPVersionList(versions)
 	return versions
 }
