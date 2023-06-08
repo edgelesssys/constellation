@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -84,9 +85,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	return deploy(cmd, fileHandler, constellationConfig, transfer, log, deployToAllEndpointsTimeout)
 }
 
-func deploy(cmd *cobra.Command,
-	fileHandler file.Handler,
-	constellationConfig *config.Config,
+func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config,
 	transfer fileTransferer,
 	log *logger.Logger,
 	endpointDeployTimeout time.Duration,
@@ -180,9 +179,6 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 		return fmt.Errorf("creating debugd client: %w", err)
 	}
 	defer conn.Close()
-	var wg sync.WaitGroup
-	defer wg.Wait()
-	grpclog.LogStateChangesUntilReady(ctx, conn, in.log, &wg, func() {})
 
 	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
@@ -195,7 +191,8 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
-func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, *grpc.ClientConn, error) {
+// newDebugdClient creates a new gRPC client for the debugd service and logs the connection state changes.
+func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, io.Closer, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
@@ -206,6 +203,9 @@ func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.Deb
 	if err != nil {
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	grpclog.LogStateChangesUntilReady(ctx, conn, log, &wg, func() {})
 
 	return pb.NewDebugdClient(conn), conn, nil
 }

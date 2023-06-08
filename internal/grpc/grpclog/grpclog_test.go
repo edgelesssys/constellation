@@ -22,38 +22,24 @@ func TestLogStateChanges(t *testing.T) {
 	testCases := map[string]struct {
 		name   string
 		conn   getStater
-		assert func(t *testing.T, lg *fakeLog, isReady bool)
+		assert func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool)
 	}{
-		"log state changes": {
+		"state: connecting, ready": {
 			conn: &fakeConn{
 				states: []connectivity.State{
 					connectivity.Connecting,
 					connectivity.Ready,
+					connectivity.Ready,
 				},
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
+			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 3)
 				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
 				assert.Equal(t, "Connection state changed to CONNECTING", lg.msgs[1])
 				assert.Equal(t, "Connection ready", lg.msgs[2])
 			},
 		},
-		"WaitForStateChange returns false (e.g. when context is canceled)": {
-			conn: &fakeConn{
-				states: []connectivity.State{
-					connectivity.Connecting,
-					connectivity.Idle,
-				},
-				stopWaitForChange: true,
-			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
-				require.Len(t, lg.msgs, 2)
-				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
-				assert.Equal(t, "Connection state ended with CONNECTING", lg.msgs[1])
-				assert.False(t, isReady)
-			},
-		},
-		"initial connection state is Ready": {
+		"state: ready": {
 			conn: &fakeConn{
 				states: []connectivity.State{
 					connectivity.Ready,
@@ -61,11 +47,26 @@ func TestLogStateChanges(t *testing.T) {
 				},
 				stopWaitForChange: false,
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReady bool) {
+			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalledCallback bool) {
 				require.Len(t, lg.msgs, 2)
 				assert.Equal(t, "Connection state started as READY", lg.msgs[0])
 				assert.Equal(t, "Connection ready", lg.msgs[1])
-				assert.True(t, isReady)
+				assert.True(t, isReadyCallbackCalledCallback)
+			},
+		},
+		"no WaitForStateChange (e.g. when context is canceled)": {
+			conn: &fakeConn{
+				states: []connectivity.State{
+					connectivity.Connecting,
+					connectivity.Idle,
+				},
+				stopWaitForChange: true,
+			},
+			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool) {
+				require.Len(t, lg.msgs, 2)
+				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
+				assert.Equal(t, "Connection state ended with CONNECTING", lg.msgs[1])
+				assert.False(t, isReadyCallbackCalled)
 			},
 		},
 	}
@@ -74,10 +75,10 @@ func TestLogStateChanges(t *testing.T) {
 			logger := &fakeLog{}
 
 			var wg sync.WaitGroup
-			isReady := false
-			LogStateChangesUntilReady(context.Background(), tc.conn, logger, &wg, func() { isReady = true })
+			isReadyCallbackCalled := false
+			LogStateChangesUntilReady(context.Background(), tc.conn, logger, &wg, func() { isReadyCallbackCalled = true })
 			wg.Wait()
-			tc.assert(t, logger, isReady)
+			tc.assert(t, logger, isReadyCallbackCalled)
 		})
 	}
 }
