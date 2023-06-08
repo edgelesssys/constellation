@@ -896,7 +896,7 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 type stubAttestationFetcher struct{}
 
 func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
-	return configapi.NewAzureSEVSNPVersionList(
+	return configapi.AzureSEVSNPVersionList(
 		[]string{},
 	), nil
 }

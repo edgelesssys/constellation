@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -71,7 +72,7 @@ func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string)
 // List returns the list of versions for the given attestation type.
 func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
 	if attestation.Equal(variant.AzureSEVSNP{}) {
-		versions, err := apiclient.Fetch(ctx, a.s3Client, NewAzureSEVSNPVersionList([]string{}))
+		versions, err := apiclient.Fetch(ctx, a.s3Client, AzureSEVSNPVersionList{})
 		if err != nil {
 			return nil, err
 		}
@@ -94,12 +95,12 @@ func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versio
 		},
 	})
 
-	err = versions.Remove(versionStr)
+	removedVersions, err := removeVersion(versions, versionStr)
 	if err != nil {
 		return nil, err
 	}
 	ops = append(ops, putCmd{
-		apiObject: versions,
+		apiObject: removedVersions,
 	})
 	return ops, nil
 }
@@ -118,9 +119,8 @@ func (a Client) uploadAzureSEVSNP(versions AzureSEVSNPVersion, versionNames []st
 		return res, err
 	}
 	res = append(res, putCmd{signature})
-
-	newVersions := append(versionNames, dateStr)
-	res = append(res, putCmd{NewAzureSEVSNPVersionList(newVersions)})
+	newVersions := addVersion(versionNames, dateStr)
+	res = append(res, putCmd{AzureSEVSNPVersionList(newVersions)})
 	return
 }
 
@@ -133,6 +133,20 @@ func (a Client) createSignature(content []byte, dateStr string) (res AzureSEVSNP
 		Signature: signature,
 		Version:   dateStr,
 	}, nil
+}
+
+func removeVersion(versions AzureSEVSNPVersionList, versionStr string) (removedVersions AzureSEVSNPVersionList, err error) {
+	for i, v := range versions {
+		if v == versionStr {
+			if i == len(versions)-1 {
+				removedVersions = versions[:i]
+			} else {
+				removedVersions = append(versions[:i], versions[i+1:]...)
+			}
+			return removedVersions, nil
+		}
+	}
+	return nil, fmt.Errorf("version %s not found in list %v", versionStr, versions)
 }
 
 type crudCmd interface {
@@ -162,4 +176,11 @@ func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCm
 		}
 	}
 	return nil
+}
+
+func addVersion(versions []string, newVersion string) []string {
+	versions = append(versions, newVersion)
+	versions = variant.RemoveDuplicate(versions)
+	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+	return versions
 }

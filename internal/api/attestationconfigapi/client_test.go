@@ -36,7 +36,7 @@ func TestUploadAzureSEVSNP(t *testing.T) {
 		},
 	})
 	assert.Contains(ops, putCmd{
-		apiObject: NewAzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
+		apiObject: AzureSEVSNPVersionList([]string{"2023-01-01-01-01.json", "2021-01-01-01-01.json", "2019-01-01-01-01.json"}),
 	})
 }
 
@@ -44,7 +44,7 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	sut := Client{
 		bucketID: "bucket",
 	}
-	versions := NewAzureSEVSNPVersionList([]string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"})
+	versions := AzureSEVSNPVersionList([]string{"2023-01-01.json", "2021-01-01.json", "2019-01-01.json"})
 
 	ops, err := sut.deleteAzureSEVSNPVersion(versions, "2021-01-01")
 
@@ -62,7 +62,7 @@ func TestDeleteAzureSEVSNPVersions(t *testing.T) {
 	})
 
 	assert.Contains(ops, putCmd{
-		apiObject: NewAzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"}),
+		apiObject: AzureSEVSNPVersionList([]string{"2023-01-01.json", "2019-01-01.json"}),
 	})
 }
 
