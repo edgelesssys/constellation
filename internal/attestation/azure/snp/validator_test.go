@@ -218,10 +218,6 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 				AcceptedKeyDigests: tc.idkeydigests,
 				EnforcementPolicy:  tc.enforceIDKeyDigest,
 			}
-			cfg.BootloaderVersion = config.AttestationVersion{Value: 2}
-			cfg.TEEVersion = config.AttestationVersion{Value: 0}
-			cfg.MicrocodeVersion = config.AttestationVersion{Value: 93}
-			cfg.SNPVersion = config.AttestationVersion{Value: 6}
 
 			validator := &Validator{
 				hclValidator: &instanceInfo,
@@ -353,12 +349,6 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 		},
 	}
 	cfg := config.DefaultForAzureSEVSNP()
-
-	cfg.BootloaderVersion = config.AttestationVersion{Value: 2}
-	cfg.TEEVersion = config.AttestationVersion{Value: 0}
-	cfg.MicrocodeVersion = config.AttestationVersion{Value: 93}
-	cfg.SNPVersion = config.AttestationVersion{Value: 6}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
