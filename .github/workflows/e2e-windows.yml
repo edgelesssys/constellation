@@ -84,8 +84,8 @@ jobs:
           $allNodesReady = $false
 
           while (-not $allNodesReady -and $retryCount -lt $maxRetries) {
-              $retryCount++
-              Write-Host "Retry $retryCount: Checking node status..."
+              ${retryCount}++
+              Write-Host "Retry ${retryCount}: Checking node status..."
 
               $nodesOutput = & kubectl get nodes
 
