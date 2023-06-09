@@ -110,5 +110,5 @@ func getLatestVersionOlderThanMinimumAge(list AzureSEVSNPVersionList, now time.T
 			return AzureSEVSNPVersionAPI{Version: v}, nil
 		}
 	}
-	return AzureSEVSNPVersionAPI{}, fmt.Errorf("no version older than %s found", minimumAgeVersion)
+	return AzureSEVSNPVersionAPI{}, fmt.Errorf("no valid version fulfilling minimum age found")
 }

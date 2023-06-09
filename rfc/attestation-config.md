@@ -129,6 +129,9 @@ While this API should stay compatible with old release, extensive changes to our
 In this case a new API version will be used to retrieve the config in the updated format, e.g. `/constellation/v2/attestation/<ATTESTATION_VARIANT>/`.
 The old API will still receive updates for at least the next release cycle, during this time this API version will also return a deprecation warning when requesting `list`.
 
+### Azure SEV-SNP
+IMPORTANT: Since the current version fetches from the Azure SEV-SNP report are not guaranteed to be globally rolled out at the time of the report, we introduce a minimum age (2 weeks) of the version to consider it a valid latest version.
+This validation is only enforced on the fetcher side! This means that the HTTP endpoints contain all versions, even those that do not yet have the minimum age.
 ### AWS
 
 AWS provides a way to precalculate launch-measurements for their firmware in SEV-SNP CVMs.
