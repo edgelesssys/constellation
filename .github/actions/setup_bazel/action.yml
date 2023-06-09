@@ -69,10 +69,22 @@ runs:
 
     - name: Configure Bazel (readonly)
       shell: bash
-      if: inputs.useCache == 'readonly'
+      env:
+        WORKSPACE: ${{ github.workspace }}
       run: |
         echo "::group::Configure Bazel (readonly)"
         echo "build --remote_upload_local_results=false" >> "${WORKSPACE}/.bazeloverwriterc"
+        echo "::endgroup::"
+
+    - name: Disable disk cache on GitHub Actions runners
+      shell: bash
+      env:
+        WORKSPACE: ${{ github.workspace }}
+      if: startsWith(runner.name , 'GitHub Actions')
+      run: |
+        echo "::group::Configure Bazel (disk cache)"
+        echo "build --disk_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
+        echo "build --repository_cache=" >> "${WORKSPACE}/.bazeloverwriterc"
         echo "::endgroup::"
 
     - name: Check bazel version

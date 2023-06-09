@@ -18,7 +18,7 @@ runs:
       run: |
         kubectl apply -f ns.yml
         kubectl apply -f lb.yml
-        go test -timeout=3h ../../../e2e/internal/lb/lb_test.go -v
+        bazel run //e2e/internal/lb:lb_test
 
     - name: Delete deployment
       if: always()
