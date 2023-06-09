@@ -74,6 +74,51 @@ jobs:
         run: |
           .\constellation.exe init --debug
 
+      - name: Liveness probe
+        shell: pwsh
+        run: |
+          $retryIntervalSeconds = 30
+          $maxRetries = 50
+
+          $retryCount = 0
+          $allNodesReady = $false
+
+          while (-not $allNodesReady -and $retryCount -lt $maxRetries) {
+              $retryCount++
+              Write-Host "Retry $retryCount: Checking node status..."
+
+              $nodesOutput = & kubectl get nodes
+
+              $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
+
+              $allNodesReady = $true
+
+              foreach ($line in $lines) {
+                  $columns = $line -split '\s+' | Where-Object { $_ -ne '' }
+
+                  $nodeName = $columns[0]
+                  $status = $columns[1]
+
+                  if ($status -ne "Ready") {
+                      Write-Host "Node $nodeName is not ready!"
+                      $allNodesReady = $false
+                  }
+              }
+
+              if (-not $allNodesReady) {
+                  Write-Host "Retrying in $retryIntervalSeconds seconds..."
+                  Start-Sleep -Seconds $retryIntervalSeconds
+              }
+          }
+
+          if ($allNodesReady) {
+              Write-Host "All nodes are ready!"
+          }
+          else {
+              Write-Host "Node status check failed after $maxRetries retries."
+              EXIT 1
+          }
+
       - name: Terminate cluster
         if: always()
         shell: pwsh
