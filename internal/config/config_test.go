@@ -211,7 +211,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.Location = "westus"
 				c.Provider.Azure.ResourceGroup = "test"
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
 				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
@@ -221,6 +220,26 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				constants.EnvVarAzureClientSecretValue: "some-secret",
 			},
 			wantClientSecretValue: "some-secret",
+		},
+		"fail when deprecated field Provider.Azure.AppClientID is set": {
+			confToWrite: func() *Config { // valid config with all, but clientSecretValue
+				c := Default()
+				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
+				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
+
+				c.Image = "v" + constants.VersionInfo()
+				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
+				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
+				c.Provider.Azure.Location = "westus"
+				c.Provider.Azure.ResourceGroup = "test"
+				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+
+				return c
+			}(),
+			envToSet: map[string]string{
+				constants.EnvVarAzureClientSecretValue: "some-secret",
+			},
+			wantErr: true,
 		},
 		"set env overwrites": {
 			confToWrite: func() *Config {
@@ -233,7 +252,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ResourceGroup = "test"
 				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
 				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
@@ -297,6 +315,16 @@ func TestValidate(t *testing.T) {
 			wantErr:      true,
 			wantErrCount: defaultErrCount,
 		},
+		"appClientID is deprecated and not valid anymore": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Image = ""
+				cnf.Provider.Azure.AppClientID = "some-id"
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 1,
+		},
 		"outdated k8s patch version is allowed": {
 			cnf: func() *Config {
 				cnf := Default()
@@ -352,7 +380,6 @@ func TestValidate(t *testing.T) {
 				az.Location = "test-location"
 				az.UserAssignedIdentity = "test-identity"
 				az.ResourceGroup = "test-resource-group"
-				az.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 				az.ClientSecretValue = "test-client-secret"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az

@@ -145,8 +145,8 @@ type AzureConfig struct {
 	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
-	//    Application client ID of the Active Directory app registration.
-	AppClientID string `yaml:"appClientID,omitempty" validate:"omitempty,uuid"`
+	//  DEPRECATED:  Application client ID of the Active Directory app registration.
+	AppClientID string `yaml:"appClientID,omitempty" validate:"omitempty,deprecated,deprecatedAppClientID"`
 	// description: |
 	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
 	ClientSecretValue string `yaml:"clientSecretValue,omitempty" validate:"omitempty"`
@@ -706,6 +706,12 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	if err := validate.RegisterValidation("deprecated", warnDeprecated); err != nil {
+		return err
+	}
+	if err := validate.RegisterValidation("deprecatedAppClientID", deprecatedAppClientID); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("deprecatedAppClientID", trans, registerDeprecatedAppClientIDError, translateDeprecatedAppClientIDError); err != nil {
 		return err
 	}
 
