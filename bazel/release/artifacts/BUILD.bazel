@@ -1,0 +1,74 @@
+load("//bazel/go:go_test.bzl", "go_test")
+load("//bazel/go:platform.bzl", "platform_binary")
+
+CLI_PLATFORMS = [
+    "darwin_amd64",
+    "darwin_arm64",
+    "linux_amd64",
+    "linux_arm64",
+    "windows_amd64",
+]
+
+[
+    platform_binary(
+        name = "container_sums_%s" % platform,
+        platform = "@io_bazel_rules_go//go/toolchain:" + platform,
+        target_file = "//bazel/release:container_sums",
+    )
+    for platform in CLI_PLATFORMS
+]
+
+[
+    platform_binary(
+        name = "cli_transitioned_to_%s" % platform,
+        platform = "@io_bazel_rules_go//go/toolchain:" + platform,
+        target_file = "//cli:cli_enterprise_linux_amd64",
+    )
+    for platform in CLI_PLATFORMS
+]
+
+platform_container_sums_paths = {
+    name: value
+    for name, value in [
+        (
+            "container_sums_%s" % platform,
+            "$(rlocationpath :container_sums_%s)" % platform,
+        )
+        for platform in CLI_PLATFORMS
+    ]
+}
+
+platform_container_sums = [
+    ":container_sums_%s" % platform
+    for platform in CLI_PLATFORMS
+]
+
+platform_clis_paths = {
+    name: value
+    for name, value in [
+        (
+            "cli_transitioned_to_%s" % platform,
+            "$(rlocationpath :cli_transitioned_to_%s)" % platform,
+        )
+        for platform in CLI_PLATFORMS
+    ]
+}
+
+platform_clis = [
+    ":cli_transitioned_to_%s" % platform
+    for platform in CLI_PLATFORMS
+]
+
+go_test(
+    name = "artifacts_test",
+    srcs = ["artifacts_test.go"],
+    # keep
+    count = 1,
+    # keep
+    data = platform_container_sums + platform_clis,
+    # keep
+    env = platform_container_sums_paths | platform_clis_paths,
+    # keep
+    x_defs = {"runsUnder": "bazel"},
+    deps = ["@io_bazel_rules_go//go/runfiles:go_default_library"],
+)
