@@ -21,4 +21,4 @@ jobs:
       - name: Check freshness
         shell: bash
         run: |
-            bazel run //bazel/ci:pseudo_version_tool_freshness
+          bazel run //bazel/ci:pseudo_version_tool_freshness
