@@ -37,6 +37,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 	cmd.Flags().StringP("url", "u", "", "alternative URL to fetch measurements from")
 	cmd.Flags().StringP("signature-url", "s", "", "alternative URL to fetch measurements' signature from")
 	cmd.Flags().Bool("insecure", false, "skip the measurement signature verification")
+	must(cmd.Flags().MarkHidden("insecure"))
 
 	return cmd
 }
