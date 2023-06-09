@@ -221,26 +221,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			},
 			wantClientSecretValue: "some-secret",
 		},
-		"fail when deprecated field Provider.Azure.AppClientID is set": {
-			confToWrite: func() *Config { // valid config with all, but clientSecretValue
-				c := Default()
-				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-
-				c.Image = "v" + constants.VersionInfo()
-				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
-				c.Provider.Azure.Location = "westus"
-				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-
-				return c
-			}(),
-			envToSet: map[string]string{
-				constants.EnvVarAzureClientSecretValue: "some-secret",
-			},
-			wantErr: true,
-		},
 		"set env overwrites": {
 			confToWrite: func() *Config {
 				c := Default()
