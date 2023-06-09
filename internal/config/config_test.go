@@ -276,7 +276,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 32 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 33 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
 	const gcpErrCount = 6
 
@@ -499,11 +499,11 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	{ // AWS
 		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
-		for k := range conf.Attestation.AWSNitroTPM.Measurements {
-			delete(conf.Attestation.AWSNitroTPM.Measurements, k)
+		for k := range conf.Attestation.AWSSEVSNP.Measurements {
+			delete(conf.Attestation.AWSSEVSNP.Measurements, k)
 		}
 		conf.UpdateMeasurements(newMeasurements)
-		assert.Equal(newMeasurements, conf.Attestation.AWSNitroTPM.Measurements)
+		assert.Equal(newMeasurements, conf.Attestation.AWSSEVSNP.Measurements)
 	}
 	{ // Azure
 		conf := Default()

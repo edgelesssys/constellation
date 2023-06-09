@@ -107,8 +107,8 @@ runs:
           constellation-conf.yaml
 
         yq eval -i \
-          "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-central-1\" |
-            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-central-1c\" |
+          "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-west-1\" |
+            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-west-1c\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
@@ -141,6 +141,10 @@ runs:
         else
           yq eval -i \
             "(.attestation | select(. | has(\"awsNitroTPM\")).awsNitroTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            constellation-conf.yaml
+
+          yq eval -i \
+            "(.attestation | select(. | has(\"awsSEVSNP\")).awsSEVSNP.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
             constellation-conf.yaml
 
           yq eval -i \

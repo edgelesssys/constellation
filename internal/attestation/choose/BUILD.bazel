@@ -9,14 +9,15 @@ go_library(
     deps = [
         "//internal/atls",
         "//internal/attestation",
-        "//internal/attestation/aws",
+        "//internal/attestation/aws/nitrotpm",
+        "//internal/attestation/aws/snp",
         "//internal/attestation/azure/snp",
         "//internal/attestation/azure/trustedlaunch",
         "//internal/attestation/gcp",
         "//internal/attestation/qemu",
         "//internal/attestation/tdx",
+        "//internal/attestation/variant",
         "//internal/config",
-        "//internal/variant",
     ],
 )
 
@@ -26,8 +27,8 @@ go_test(
     embed = [":choose"],
     deps = [
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/config",
-        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

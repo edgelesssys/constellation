@@ -7,8 +7,8 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/internal/atls",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/attestation/variant",
         "//internal/crypto",
-        "//internal/variant",
     ],
 )
 
@@ -17,7 +17,7 @@ go_test(
     srcs = ["atls_test.go"],
     embed = [":atls"],
     deps = [
-        "//internal/variant",
+        "//internal/attestation/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_uber_go_goleak//:goleak",

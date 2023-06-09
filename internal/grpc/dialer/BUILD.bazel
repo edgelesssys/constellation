@@ -20,9 +20,9 @@ go_test(
     embed = [":dialer"],
     deps = [
         "//internal/atls",
+        "//internal/attestation/variant",
         "//internal/grpc/atlscredentials",
         "//internal/grpc/testdialer",
-        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_golang_google_grpc//:go_default_library",

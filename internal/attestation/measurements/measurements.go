@@ -27,14 +27,14 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 //go:generate measurement-generator
@@ -466,6 +466,9 @@ func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Var
 	switch {
 	case provider == cloudprovider.AWS && attestationVariant == variant.AWSNitroTPM{}:
 		return aws_AWSNitroTPM.Copy()
+
+	case provider == cloudprovider.AWS && attestationVariant == variant.AWSSEVSNP{}:
+		return aws_AWSSEVSNP.Copy()
 
 	case provider == cloudprovider.Azure && attestationVariant == variant.AzureSEVSNP{}:
 		return azure_AzureSEVSNP.Copy()

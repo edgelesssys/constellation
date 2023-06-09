@@ -25,9 +25,9 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -249,6 +249,8 @@ func attestationVariantFromGoIdentifier(identifier string) (variant.Variant, err
 	switch identifier {
 	case "Dummy":
 		return variant.Dummy{}, nil
+	case "AWSSEVSNP":
+		return variant.AWSSEVSNP{}, nil
 	case "AWSNitroTPM":
 		return variant.AWSNitroTPM{}, nil
 	case "GCPSEVES":

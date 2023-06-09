@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/atls",
+        "//internal/attestation/variant",
         "//internal/cloud/aws",
         "//internal/cloud/azure",
         "//internal/cloud/cloudprovider",
@@ -20,7 +21,6 @@ go_library(
         "//internal/file",
         "//internal/grpc/atlscredentials",
         "//internal/logger",
-        "//internal/variant",
         "//internal/watcher",
         "//joinservice/internal/kms",
         "//joinservice/internal/kubeadm",

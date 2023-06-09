@@ -237,6 +237,7 @@ module "instance_group_control_plane" {
   security_groups      = [aws_security_group.security_group.id]
   subnetwork           = module.public_private_subnet.private_subnet_id
   iam_instance_profile = var.iam_instance_profile_control_plane
+  enable_snp           = var.enable_snp
   tags = merge(
     local.tags,
     { Name = local.name },
@@ -261,6 +262,7 @@ module "instance_group_worker_nodes" {
   target_group_arns    = []
   security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_worker_nodes
+  enable_snp           = var.enable_snp
   tags = merge(
     local.tags,
     { Name = local.name },

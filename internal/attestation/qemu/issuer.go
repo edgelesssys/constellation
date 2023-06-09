@@ -11,8 +11,8 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 

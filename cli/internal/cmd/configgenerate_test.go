@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -216,7 +216,11 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 			variant.AzureSEVSNP{},
 			config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
 		},
-
+		{
+			cloudprovider.AWS,
+			variant.AWSSEVSNP{},
+			config.AttestationConfig{AWSSEVSNP: defaultAttestation.AWSSEVSNP},
+		},
 		{
 			cloudprovider.AWS,
 			variant.AWSNitroTPM{},
@@ -227,7 +231,6 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 			variant.GCPSEVES{},
 			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
 		},
-
 		{
 			cloudprovider.QEMU,
 			variant.QEMUVTPM{},

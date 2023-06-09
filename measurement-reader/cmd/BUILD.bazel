@@ -7,9 +7,9 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/measurement-reader/cmd",
     visibility = ["//visibility:private"],
     deps = [
+        "//internal/attestation/variant",
         "//internal/constants",
         "//internal/logger",
-        "//internal/variant",
         "//measurement-reader/internal/sorted",
         "//measurement-reader/internal/tdx",
         "//measurement-reader/internal/tpm",

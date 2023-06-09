@@ -14,11 +14,11 @@ go_library(
     deps = [
         "//internal/api/client",
         "//internal/api/fetcher",
+        "//internal/attestation/variant",
         "//internal/constants",
         "//internal/logger",
         "//internal/sigstore",
         "//internal/staticupload",
-        "//internal/variant",
     ],
 )
 

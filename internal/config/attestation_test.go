@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -26,6 +26,9 @@ func TestUnmarshalAttestationConfig(t *testing.T) {
 	testCases := map[string]struct {
 		cfg AttestationCfg
 	}{
+		"AWSSEVSNP": {
+			cfg: &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.PlaceHolderMeasurement(48)},
+		},
 		"AWSNitroTPM": {
 			cfg: &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 		},

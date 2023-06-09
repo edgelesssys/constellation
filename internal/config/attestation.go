@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 )
 
 // AttestationCfg is the common interface for passing attestation configs.
@@ -33,6 +33,8 @@ func UnmarshalAttestationConfig(data []byte, attestVariant variant.Variant) (Att
 	switch attestVariant {
 	case variant.AWSNitroTPM{}:
 		return unmarshalTypedConfig[*AWSNitroTPM](data)
+	case variant.AWSSEVSNP{}:
+		return unmarshalTypedConfig[*AWSSEVSNP](data)
 	case variant.AzureSEVSNP{}:
 		return unmarshalTypedConfig[*AzureSEVSNP](data)
 	case variant.AzureTrustedLaunch{}:

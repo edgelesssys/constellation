@@ -8,8 +8,8 @@ go_library(
     deps = [
         "//internal/attestation/idkeydigest",
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/config",
         "//internal/file",
-        "//internal/variant",
     ],
 )

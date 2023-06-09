@@ -1,0 +1,72 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "nitrotpm",
+    srcs = [
+        "issuer.go",
+        "nitrotpm.go",
+        "validator.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/attestation/aws/nitrotpm",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/attestation",
+        "//internal/attestation/variant",
+        "//internal/attestation/vtpm",
+        "//internal/config",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
+        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+    ],
+)
+
+go_test(
+    name = "nitro_test",
+    srcs = [
+        "issuer_test.go",
+        "validator_test.go",
+    ],
+    embed = [":nitrotpm"],
+    # keep
+    gotags = select({
+        "//bazel/settings:tpm_simulator_enabled": [],
+        "//conditions:default": ["disable_tpm_simulator"],
+    }),
+    deps = [
+        "//internal/attestation/simulator",
+        "//internal/attestation/vtpm",
+        "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
+        "@com_github_aws_smithy_go//middleware",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
+
+go_test(
+    name = "nitrotpm_test",
+    srcs = [
+        "issuer_test.go",
+        "validator_test.go",
+    ],
+    embed = [":nitrotpm"],
+    deps = [
+        "//internal/attestation/simulator",
+        "//internal/attestation/vtpm",
+        "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
+        "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
+        "@com_github_aws_smithy_go//middleware",
+        "@com_github_google_go_tpm_tools//client",
+        "@com_github_google_go_tpm_tools//proto/attest",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

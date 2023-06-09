@@ -203,7 +203,7 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         namePrefix: ${{ steps.create-prefix.outputs.prefix }}
-        awsZone: eu-central-1c
+        awsZone: eu-west-1c
         azureRegion: northeurope
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: europe-west3-b

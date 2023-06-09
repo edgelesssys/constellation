@@ -44,6 +44,11 @@ resource "aws_launch_template" "launch_template" {
       image_id,        # required. update procedure modifies the image id externally
     ]
   }
+
+  # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#cpu-options
+  cpu_options {
+    amd_sev_snp = var.enable_snp ? "enabled" : "disabled"
+  }
 }
 
 resource "aws_autoscaling_group" "autoscaling_group" {

@@ -12,8 +12,8 @@ go_library(
     deps = [
         "//internal/attestation",
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/config",
-        "//internal/variant",
         "@com_github_edgelesssys_go_tdx_qpl//tdx",
         "@com_github_edgelesssys_go_tdx_qpl//verification",
         "@com_github_edgelesssys_go_tdx_qpl//verification/types",

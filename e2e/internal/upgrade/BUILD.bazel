@@ -13,11 +13,11 @@ go_library(
     deps = [
         "//internal/api/versionsapi",
         "//internal/attestation/measurements",
+        "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/imagefetcher",
         "//internal/logger",
-        "//internal/variant",
         "@sh_helm_helm_v3//pkg/action",
         "@sh_helm_helm_v3//pkg/cli",
     ],

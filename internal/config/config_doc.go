@@ -19,6 +19,7 @@ var (
 	OpenStackConfigDoc         encoder.Doc
 	QEMUConfigDoc              encoder.Doc
 	AttestationConfigDoc       encoder.Doc
+	AWSSEVSNPDoc               encoder.Doc
 	AWSNitroTPMDoc             encoder.Doc
 	SNPFirmwareSignerConfigDoc encoder.Doc
 	GCPSEVESDoc                encoder.Doc
@@ -429,37 +430,63 @@ func init() {
 			FieldName: "attestation",
 		},
 	}
-	AttestationConfigDoc.Fields = make([]encoder.Doc, 6)
-	AttestationConfigDoc.Fields[0].Name = "awsNitroTPM"
-	AttestationConfigDoc.Fields[0].Type = "AWSNitroTPM"
+	AttestationConfigDoc.Fields = make([]encoder.Doc, 7)
+	AttestationConfigDoc.Fields[0].Name = "awsSEVSNP"
+	AttestationConfigDoc.Fields[0].Type = "AWSSEVSNP"
 	AttestationConfigDoc.Fields[0].Note = ""
-	AttestationConfigDoc.Fields[0].Description = "AWS Nitro TPM attestation."
-	AttestationConfigDoc.Fields[0].Comments[encoder.LineComment] = "AWS Nitro TPM attestation."
-	AttestationConfigDoc.Fields[1].Name = "azureSEVSNP"
-	AttestationConfigDoc.Fields[1].Type = "AzureSEVSNP"
+	AttestationConfigDoc.Fields[0].Description = "AWS SEV-SNP attestation. WARNING: NOT PRODUCTION READY, TESTING ONLY, NO MEANINGFUL ATTESTATION."
+	AttestationConfigDoc.Fields[0].Comments[encoder.LineComment] = "AWS SEV-SNP attestation. WARNING: NOT PRODUCTION READY, TESTING ONLY, NO MEANINGFUL ATTESTATION."
+	AttestationConfigDoc.Fields[1].Name = "awsNitroTPM"
+	AttestationConfigDoc.Fields[1].Type = "AWSNitroTPM"
 	AttestationConfigDoc.Fields[1].Note = ""
-	AttestationConfigDoc.Fields[1].Description = "Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification"
-	AttestationConfigDoc.Fields[1].Comments[encoder.LineComment] = "Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification"
-	AttestationConfigDoc.Fields[2].Name = "azureTrustedLaunch"
-	AttestationConfigDoc.Fields[2].Type = "AzureTrustedLaunch"
+	AttestationConfigDoc.Fields[1].Description = "AWS Nitro TPM attestation."
+	AttestationConfigDoc.Fields[1].Comments[encoder.LineComment] = "AWS Nitro TPM attestation."
+	AttestationConfigDoc.Fields[2].Name = "azureSEVSNP"
+	AttestationConfigDoc.Fields[2].Type = "AzureSEVSNP"
 	AttestationConfigDoc.Fields[2].Note = ""
-	AttestationConfigDoc.Fields[2].Description = "Azure TPM attestation (Trusted Launch)."
-	AttestationConfigDoc.Fields[2].Comments[encoder.LineComment] = "Azure TPM attestation (Trusted Launch)."
-	AttestationConfigDoc.Fields[3].Name = "gcpSEVES"
-	AttestationConfigDoc.Fields[3].Type = "GCPSEVES"
+	AttestationConfigDoc.Fields[2].Description = "Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification"
+	AttestationConfigDoc.Fields[2].Comments[encoder.LineComment] = "Azure SEV-SNP attestation.\nFor details see: https://docs.edgeless.systems/constellation/architecture/attestation#cvm-verification"
+	AttestationConfigDoc.Fields[3].Name = "azureTrustedLaunch"
+	AttestationConfigDoc.Fields[3].Type = "AzureTrustedLaunch"
 	AttestationConfigDoc.Fields[3].Note = ""
-	AttestationConfigDoc.Fields[3].Description = "GCP SEV-ES attestation."
-	AttestationConfigDoc.Fields[3].Comments[encoder.LineComment] = "GCP SEV-ES attestation."
-	AttestationConfigDoc.Fields[4].Name = "qemuTDX"
-	AttestationConfigDoc.Fields[4].Type = "QEMUTDX"
+	AttestationConfigDoc.Fields[3].Description = "Azure TPM attestation (Trusted Launch)."
+	AttestationConfigDoc.Fields[3].Comments[encoder.LineComment] = "Azure TPM attestation (Trusted Launch)."
+	AttestationConfigDoc.Fields[4].Name = "gcpSEVES"
+	AttestationConfigDoc.Fields[4].Type = "GCPSEVES"
 	AttestationConfigDoc.Fields[4].Note = ""
-	AttestationConfigDoc.Fields[4].Description = "QEMU tdx attestation."
-	AttestationConfigDoc.Fields[4].Comments[encoder.LineComment] = "QEMU tdx attestation."
-	AttestationConfigDoc.Fields[5].Name = "qemuVTPM"
-	AttestationConfigDoc.Fields[5].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[4].Description = "GCP SEV-ES attestation."
+	AttestationConfigDoc.Fields[4].Comments[encoder.LineComment] = "GCP SEV-ES attestation."
+	AttestationConfigDoc.Fields[5].Name = "qemuTDX"
+	AttestationConfigDoc.Fields[5].Type = "QEMUTDX"
 	AttestationConfigDoc.Fields[5].Note = ""
-	AttestationConfigDoc.Fields[5].Description = "QEMU vTPM attestation."
-	AttestationConfigDoc.Fields[5].Comments[encoder.LineComment] = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[5].Description = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[5].Comments[encoder.LineComment] = "QEMU tdx attestation."
+	AttestationConfigDoc.Fields[6].Name = "qemuVTPM"
+	AttestationConfigDoc.Fields[6].Type = "QEMUVTPM"
+	AttestationConfigDoc.Fields[6].Note = ""
+	AttestationConfigDoc.Fields[6].Description = "QEMU vTPM attestation."
+	AttestationConfigDoc.Fields[6].Comments[encoder.LineComment] = "QEMU vTPM attestation."
+
+	AWSSEVSNPDoc.Type = "AWSSEVSNP"
+	AWSSEVSNPDoc.Comments[encoder.LineComment] = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
+	AWSSEVSNPDoc.Description = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
+	AWSSEVSNPDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "AttestationConfig",
+			FieldName: "awsSEVSNP",
+		},
+	}
+	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 2)
+	AWSSEVSNPDoc.Fields[0].Name = "measurements"
+	AWSSEVSNPDoc.Fields[0].Type = "M"
+	AWSSEVSNPDoc.Fields[0].Note = ""
+	AWSSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
+	AWSSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
+	AWSSEVSNPDoc.Fields[1].Name = "launchMeasurement"
+	AWSSEVSNPDoc.Fields[1].Type = "Measurement"
+	AWSSEVSNPDoc.Fields[1].Note = ""
+	AWSSEVSNPDoc.Fields[1].Description = "Expected launch measurement in SNP report."
+	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Expected launch measurement in SNP report."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
@@ -646,6 +673,10 @@ func (_ AttestationConfig) Doc() *encoder.Doc {
 	return &AttestationConfigDoc
 }
 
+func (_ AWSSEVSNP) Doc() *encoder.Doc {
+	return &AWSSEVSNPDoc
+}
+
 func (_ AWSNitroTPM) Doc() *encoder.Doc {
 	return &AWSNitroTPMDoc
 }
@@ -688,6 +719,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
 			&AttestationConfigDoc,
+			&AWSSEVSNPDoc,
 			&AWSNitroTPMDoc,
 			&SNPFirmwareSignerConfigDoc,
 			&GCPSEVESDoc,

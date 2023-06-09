@@ -40,12 +40,12 @@ go_test(
     deps = [
         "//bootstrapper/initproto",
         "//internal/atls",
+        "//internal/attestation/variant",
         "//internal/crypto/testvector",
         "//internal/file",
         "//internal/kms/setup",
         "//internal/kms/uri",
         "//internal/logger",
-        "//internal/variant",
         "//internal/versions/components",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

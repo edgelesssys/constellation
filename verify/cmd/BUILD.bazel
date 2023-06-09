@@ -9,9 +9,9 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/attestation/choose",
+        "//internal/attestation/variant",
         "//internal/constants",
         "//internal/logger",
-        "//internal/variant",
         "//verify/server",
         "@org_uber_go_zap//:zap",
     ],

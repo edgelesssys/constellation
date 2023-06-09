@@ -21,11 +21,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
-	"github.com/edgelesssys/constellation/v2/internal/variant"
 )
 
 // Creator creates cloud resources.
@@ -143,6 +143,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  opts.Config.IsDebugCluster(),
+		EnableSNP:              opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {

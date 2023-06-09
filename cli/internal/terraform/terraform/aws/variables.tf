@@ -69,3 +69,9 @@ variable "debug" {
   default     = false
   description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
 }
+
+variable "enable_snp" {
+  type        = bool
+  default     = true
+  description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
+}

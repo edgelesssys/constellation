@@ -28,11 +28,11 @@ go_test(
     deps = [
         "//disk-mapper/recoverproto",
         "//internal/atls",
+        "//internal/attestation/variant",
         "//internal/grpc/dialer",
         "//internal/grpc/testdialer",
         "//internal/kms/kms",
         "//internal/logger",
-        "//internal/variant",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@org_uber_go_goleak//:goleak",
