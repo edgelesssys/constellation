@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//hack/pseudo-version:platforms.bzl", "platforms")
+
+go_library(
+    name = "check_lib",
+    srcs = ["check.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/pseudo-version/check",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_aws_aws_sdk_go//aws",
+        "@com_github_aws_aws_sdk_go//aws/awserr",
+        "@com_github_aws_aws_sdk_go//aws/session",
+        "@com_github_aws_aws_sdk_go//service/s3",
+        "@com_github_aws_aws_sdk_go//service/s3/s3manager",
+        "@io_bazel_rules_go//go/runfiles:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "check",
+    data = [
+        "//hack/pseudo-version:pseudo_version_" + platform
+        for platform in platforms()
+    ],
+    embed = [":check_lib"],
+    visibility = ["//visibility:public"],
+)
