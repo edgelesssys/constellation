@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"time"
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
@@ -43,7 +42,7 @@ func NewClient(ctx context.Context, cfg staticupload.Config, cosignPwd, privateK
 	return repo, clientClose, nil
 }
 
-// UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP.
+// UploadAzureSEVSNP uploads the latest version numbers of the Azure SEVSNP. Then version name is the UTC timestamp of the date. The /list entry stores the version name + .json suffix.
 func (a Client) UploadAzureSEVSNP(ctx context.Context, version AzureSEVSNPVersion, date time.Time) error {
 	versions, err := a.List(ctx, variant.AzureSEVSNP{})
 	if err != nil {
@@ -181,6 +180,6 @@ func executeAllCmds(ctx context.Context, client *apiclient.Client, cmds []crudCm
 func addVersion(versions []string, newVersion string) []string {
 	versions = append(versions, newVersion)
 	versions = variant.RemoveDuplicate(versions)
-	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
+	SortAzureSEVSNPVersionList(versions)
 	return versions
 }

@@ -18,6 +18,11 @@ import (
 	sigsig "github.com/sigstore/sigstore/pkg/signature"
 )
 
+// Verifier checks if the signature of content can be verified.
+type Verifier interface {
+	VerifySignature(content, signature, publicKey []byte) error
+}
+
 // CosignVerifier checks if the signature of content can be verified
 // using a cosign public key.
 type CosignVerifier struct{}

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -108,6 +109,11 @@ func (i AzureSEVSNPVersionList) JSONPath() string {
 // ValidateRequest is a NoOp as there is no input.
 func (i AzureSEVSNPVersionList) ValidateRequest() error {
 	return nil
+}
+
+// SortAzureSEVSNPVersionList sorts the list of versions in reverse order.
+func SortAzureSEVSNPVersionList(versions AzureSEVSNPVersionList) {
+	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
 }
 
 // Validate validates the response.

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -41,21 +42,20 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-// TODO(elchead): activate latest logic for next release AB#3036
-// func TestDefaultConfigWritesLatestVersion(t *testing.T) {
-//	conf := Default()
-//	bt, err := yaml.Marshal(conf)
-//	require := require.New(t)
-//	require.NoError(err)
+func TestDefaultConfigWritesLatestVersion(t *testing.T) {
+	conf := Default()
+	bt, err := yaml.Marshal(conf)
+	require := require.New(t)
+	require.NoError(err)
 
-//	var mp configMap
-//	require.NoError(yaml.Unmarshal(bt, &mp))
-//	assert := assert.New(t)
-//	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
-//	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
-//	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
-//	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
-//}
+	var mp configMap
+	require.NoError(yaml.Unmarshal(bt, &mp))
+	assert := assert.New(t)
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
+	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+}
 
 func TestReadConfigFile(t *testing.T) {
 	testCases := map[string]struct {
@@ -64,41 +64,29 @@ func TestReadConfigFile(t *testing.T) {
 		wantResult *Config
 		wantErr    bool
 	}{
-		// TODO(elchead): activate latest logic for next release AB#3036
-		//"mix of Latest and uint as version value": {
-		//	config: func() configMap {
-		//		conf := Default()
-		//		m := getConfigAsMap(conf, t)
-		//		m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
-		//		m.setAzureSEVSNPVersion("teeVersion", 2)
-		//		m.setAzureSEVSNPVersion("bootloaderVersion", 1)
-		//		return m
-		//	}(),
-
-		//	configName: constants.ConfigFilename,
-		//	wantResult: func() *Config {
-		//		conf := Default()
-		//		conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
-		//			Value:    1,
-		//			IsLatest: false,
-		//		}
-		//		conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
-		//			Value:    2,
-		//			IsLatest: false,
-		//		}
-		//		return conf
-		//	}(),
-		//},
-		// TODO(elchead): activate latest logic for next release AB#3036
-		"refuse invalid latest value": {
+		"mix of Latest and uint as version value": {
 			config: func() configMap {
 				conf := Default()
 				m := getConfigAsMap(conf, t)
-				m.setAzureSEVSNPVersion("microcodeVersion", "latest")
+				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
+				m.setAzureSEVSNPVersion("teeVersion", 2)
+				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
 				return m
 			}(),
+
 			configName: constants.ConfigFilename,
-			wantErr:    true,
+			wantResult: func() *Config {
+				conf := Default()
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
+					Value:    1,
+					IsLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
+					Value:    2,
+					IsLatest: false,
+				}
+				return conf
+			}(),
 		},
 		"refuse invalid version value": {
 			config: func() configMap {
@@ -271,7 +259,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(fileHandler, constants.ConfigFilename, fakeConfigFetcher{}, false)
+			c, err := New(fileHandler, constants.ConfigFilename, stubAttestationFetcher{}, false)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -889,9 +877,9 @@ func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) 
 	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
 }
 
-//func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {
-//	return c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType]
-//}
+func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {
+	return c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType]
+}
 
 // getConfigAsMap returns a map of the config.
 func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
@@ -905,21 +893,21 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 	return
 }
 
-type fakeConfigFetcher struct{}
+type stubAttestationFetcher struct{}
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ configapi.AzureSEVSNPVersionList) (configapi.AzureSEVSNPVersionList, error) {
 	return configapi.AzureSEVSNPVersionList(
 		[]string{},
 	), nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionAPI) (configapi.AzureSEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ configapi.AzureSEVSNPVersionAPI) (configapi.AzureSEVSNPVersionAPI, error) {
 	return configapi.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
 }
 
-func (f fakeConfigFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context) (configapi.AzureSEVSNPVersionAPI, error) {
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context, _ time.Time) (configapi.AzureSEVSNPVersionAPI, error) {
 	return configapi.AzureSEVSNPVersionAPI{
 		AzureSEVSNPVersion: testCfg,
 	}, nil
