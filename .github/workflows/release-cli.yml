@@ -277,6 +277,8 @@ jobs:
             --source-uri github.com/edgelesssys/constellation
 
   release:
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     needs:
       - build-cli
