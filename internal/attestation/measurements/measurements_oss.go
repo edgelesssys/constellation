@@ -20,8 +20,13 @@ var (
 		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 	}
 
-	// TODO (derpsteb): Set correct measurements.
 	aws_AWSSEVSNP = M{
+		4:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		8:                         WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		9:                         PlaceHolderMeasurement(PCRMeasurementLength),
+		11:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
+		12:                        PlaceHolderMeasurement(PCRMeasurementLength),
+		13:                        WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 		uint32(PCRIndexClusterID): WithAllBytes(0x00, Enforce, PCRMeasurementLength),
 	}
 

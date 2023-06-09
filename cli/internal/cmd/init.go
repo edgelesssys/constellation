@@ -123,7 +123,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 
 	if conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
-		i.log.Warnf("WARNING: SNP based attestation is still under active development. Please do not use in production.")
+		cmd.PrintErrln("WARNING: SNP based attestation is still under active development. Please do not use in production.")
 	}
 
 	i.log.Debugf("Checking cluster ID file")

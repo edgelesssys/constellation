@@ -9,9 +9,8 @@ package snp
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
@@ -22,13 +21,13 @@ import (
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
-// Issuer for AWS TPM attestation.
+// Issuer for AWS SNP attestation.
 type Issuer struct {
 	variant.AWSSEVSNP
 	*vtpm.Issuer
 }
 
-// NewIssuer creates a new OpenVTPM based issuer for AWS.
+// NewIssuer creates a SEV-SNP based issuer for AWS.
 func NewIssuer(log attestation.Logger) *Issuer {
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
@@ -44,8 +43,7 @@ func NewIssuer(log attestation.Logger) *Issuer {
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
-		log.Fatalf("error creating RSA Endorsement key!")
-		return nil, err
+		return nil, fmt.Errorf("error creating RSA Endorsement key: %w", err)
 	}
 
 	return tpmAk, nil
@@ -54,10 +52,10 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 // getInstanceInfo returns information about the current instance using the aws Metadata SDK.
 // The returned bytes will be written into the attestation document.
 func getInstanceInfo(client awsMetaData) func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
-	return func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
-		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(context.Background(), &imds.GetInstanceIdentityDocumentInput{})
+	return func(ctx context.Context, _ io.ReadWriteCloser, _ []byte) ([]byte, error) {
+		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 		if err != nil {
-			return nil, errors.New("unable to fetch instance identity document")
+			return nil, fmt.Errorf("fetching instance identity document: %w", err)
 		}
 		return json.Marshal(ec2InstanceIdentityOutput.InstanceIdentityDocument)
 	}

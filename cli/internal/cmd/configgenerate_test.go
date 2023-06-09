@@ -216,7 +216,6 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 			variant.AzureSEVSNP{},
 			config.AttestationConfig{AzureSEVSNP: defaultAttestation.AzureSEVSNP},
 		},
-
 		{
 			cloudprovider.AWS,
 			variant.AWSSEVSNP{},
@@ -232,7 +231,6 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 			variant.GCPSEVES{},
 			config.AttestationConfig{GCPSEVES: defaultAttestation.GCPSEVES},
 		},
-
 		{
 			cloudprovider.QEMU,
 			variant.QEMUVTPM{},

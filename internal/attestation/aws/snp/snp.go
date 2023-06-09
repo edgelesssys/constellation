@@ -6,13 +6,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 /*
 --------- WARNING! ---------
+
 THIS PACKAGE DOES CURRENTLY NOT IMPLEMENT ANY SNP ATTESTATION.
 It exists to implement required interfaces while implementing other parts of the AWS SNP attestation variant within Constellation.
+
 ----------------------------
 
 # SNP
 
-Attestation based on TPM and SEV-SNP attestation.
+Attestation based on TPMs and AMD SEV-SNP.
 The TPM is used to generate runtime measurements and sign them with an attestation key.
 The TPM currently runs outside the confidential context. This is a limitation imposed by the AWS implementation.
 
@@ -40,15 +42,11 @@ This section explains abbreviations used in SNP implementation.
 
   - AMD Signing Key (ASK)
 
-  - Versioned Loaded Endorsement Key (VCEK)
+  - Versioned Chip Endorsement Key (VCEK)
 
+  - Versioned Loaded Endorsement Key (VLEK)
     For more information see [SNP WhitePaper]
 
-  - Host (Hardware?) Compatibility Layer (HCL)
-
-    No public information. Azure compute API has a field `isHostCompatibilityLayerVm`, with only a [single sentence of documentation].
-
 [SNP WhitePaper]: https://www.amd.com/system/files/TechDocs/SEV-SNP-strengthening-vm-isolation-with-integrity-protection-and-more.pdf
-[single sentence of documentation]: https://learn.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
 */
 package snp
