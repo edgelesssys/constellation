@@ -421,8 +421,8 @@ func New(fileHandler file.Handler, name string, _ attestationconfigapi.Fetcher, 
 	if c.Provider.Azure != nil &&
 		(c.Provider.Azure.AppClientID != "" || c.Provider.Azure.ClientSecretValue != "") {
 		// Deprecation warning for old auth method
-		fmt.Fprintf(os.Stderr, "WARNING: Using a service principal for authentication is deprecated and will be removed in an upcoming version.")
-		fmt.Fprintf(os.Stderr, "         Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.")
+		fmt.Fprintf(os.Stderr, "WARNING: Using a service principal for authentication is deprecated and will be removed in an upcoming version.\n")
+		fmt.Fprintf(os.Stderr, "         Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/config-migration.\n")
 	}
 
 	return c, c.Validate(force)
