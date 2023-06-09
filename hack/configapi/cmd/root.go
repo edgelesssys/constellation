@@ -56,7 +56,7 @@ func newRootCmd() *cobra.Command {
 	}
 	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
 	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
-	rootCmd.Flags().StringP("upload-date", "d", "", "force to upload version regardless of comparison to latest API value.")
+	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name. Setting it implies --force.")
 	must(enforceRequiredFlags(rootCmd, "version-file"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
@@ -98,6 +98,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		}
 	} else {
 		uploadDate = time.Now()
+		force = true
 	}
 
 	doUpload := false
@@ -111,11 +112,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("comparing versions: %w", err)
 		}
-		if isNewer {
-			cmd.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
-		} else {
-			cmd.Printf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
-		}
+		cmd.Print(versionComparisonInformation(isNewer, inputVersion, latestAPIVersion.AzureSEVSNPVersion))
 		doUpload = isNewer
 	} else {
 		doUpload = true
@@ -139,6 +136,13 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 		cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 	}
 	return nil
+}
+
+func versionComparisonInformation(isNewer bool, inputVersion attestationconfigapi.AzureSEVSNPVersion, latestAPIVersion attestationconfigapi.AzureSEVSNPVersion) string {
+	if isNewer {
+		return fmt.Sprintf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+	}
+	return fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
 }
 
 // isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
