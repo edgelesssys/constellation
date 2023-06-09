@@ -254,7 +254,7 @@ const sidebars = {
         {
           type: 'doc',
           label: 'Configuration migrations',
-          id: 'reference/config-migration',
+          id: 'reference/migration',
         },
         {
           type: 'doc',
