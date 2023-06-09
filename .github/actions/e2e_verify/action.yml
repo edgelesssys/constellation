@@ -12,20 +12,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Clear current measurements
-      shell: bash
-      run: |
-        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
-        then
-          yq -i 'del(.provider.${{ inputs.cloudProvider }}.measurements)' constellation-conf.yaml
-        else
-          yq -i 'del(.attestation.awsNitroTPM.measurements)' constellation-conf.yaml
-          yq -i 'del(.attestation.azureSEVSNP.measurements)' constellation-conf.yaml
-          yq -i 'del(.attestation.azureTrustedLaunch.measurements)' constellation-conf.yaml
-          yq -i 'del(.attestation.gcpSEVES.measurements)' constellation-conf.yaml
-          yq -i 'del(.attestation.qemuVTPM.measurements)' constellation-conf.yaml
-        fi
-
     - name: Expand version path
       id: expand-version
       uses: ./.github/actions/shortname
