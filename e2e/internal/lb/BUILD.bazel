@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "lb",
+    srcs = ["lb.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/e2e/internal/lb",
+    visibility = ["//e2e:__subpackages__"],
+)
+
+go_test(
+    name = "lb_test",
+    timeout = "eternal",  # 1 hour
+    srcs = ["lb_test.go"],
+    # keep
+    count = 1,
+    embed = [":lb"],
+    # keep
+    gotags = ["e2e"],
+    tags = ["manual"],
+    deps = [
+        "//e2e/internal/kubectl",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
+    ],
+)

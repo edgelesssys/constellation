@@ -1,4 +1,4 @@
-//go:build e2elb
+//go:build e2e
 
 /*
 Copyright (c) Edgeless Systems GmbH
@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // End-to-end tests for our cloud load balancer functionality.
-package test
+package lb
 
 import (
 	"bufio"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	coreV1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -38,44 +38,6 @@ const (
 	timeout       = time.Minute * 15
 	interval      = time.Second * 5
 )
-
-func gatherDebugInfo(t *testing.T, k *kubernetes.Clientset) {
-	// Do not gather additional information on success
-	if !t.Failed() {
-		return
-	}
-
-	t.Log("Gathering additional debug information.")
-
-	pods, err := k.CoreV1().Pods(namespaceName).List(context.Background(), v1.ListOptions{
-		LabelSelector: "app=whoami",
-	})
-	if err != nil {
-		t.Logf("listing pods: %v", err)
-		return
-	}
-
-	for idx := range pods.Items {
-		pod := pods.Items[idx]
-		req := k.CoreV1().Pods(namespaceName).GetLogs(pod.Name, &coreV1.PodLogOptions{
-			LimitBytes: func() *int64 { i := int64(1024 * 1024); return &i }(),
-		})
-		logs, err := req.Stream(context.Background())
-		if err != nil {
-			t.Logf("fetching logs: %v", err)
-			return
-		}
-		defer logs.Close()
-
-		buf := new(bytes.Buffer)
-		_, err = io.Copy(buf, logs)
-		if err != nil {
-			t.Logf("copying logs: %v", err)
-			return
-		}
-		t.Logf("Logs of pod '%s':\n%s\n\n", pod.Name, buf)
-	}
-}
 
 func TestLoadBalancer(t *testing.T) {
 	assert := assert.New(t)
@@ -108,7 +70,7 @@ func TestLoadBalancer(t *testing.T) {
 
 	t.Log("Change port of service to 8044")
 	svc.Spec.Ports[0].Port = newPort
-	svc, err = k.CoreV1().Services(namespaceName).Update(context.Background(), svc, v1.UpdateOptions{})
+	svc, err = k.CoreV1().Services(namespaceName).Update(context.Background(), svc, metaV1.UpdateOptions{})
 	require.NoError(err)
 	assert.Equal(newPort, svc.Spec.Ports[0].Port)
 
@@ -121,6 +83,44 @@ func TestLoadBalancer(t *testing.T) {
 		allHostnames = testEndpointAvailable(t, newURL, allHostnames, i)
 	}
 	assert.True(hasNUniqueStrings(allHostnames, numPods))
+}
+
+func gatherDebugInfo(t *testing.T, k *kubernetes.Clientset) {
+	// Do not gather additional information on success
+	if !t.Failed() {
+		return
+	}
+
+	t.Log("Gathering additional debug information.")
+
+	pods, err := k.CoreV1().Pods(namespaceName).List(context.Background(), metaV1.ListOptions{
+		LabelSelector: "app=whoami",
+	})
+	if err != nil {
+		t.Logf("listing pods: %v", err)
+		return
+	}
+
+	for idx := range pods.Items {
+		pod := pods.Items[idx]
+		req := k.CoreV1().Pods(namespaceName).GetLogs(pod.Name, &coreV1.PodLogOptions{
+			LimitBytes: func() *int64 { i := int64(1024 * 1024); return &i }(),
+		})
+		logs, err := req.Stream(context.Background())
+		if err != nil {
+			t.Logf("fetching logs: %v", err)
+			return
+		}
+		defer logs.Close()
+
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, logs)
+		if err != nil {
+			t.Logf("copying logs: %v", err)
+			return
+		}
+		t.Logf("Logs of pod '%s':\n%s\n\n", pod.Name, buf)
+	}
 }
 
 func getIPOrHostname(t *testing.T, svc *coreV1.Service) string {
@@ -183,7 +183,7 @@ func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *c
 
 	require.Eventually(t, func() bool {
 		var err error
-		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, v1.GetOptions{})
+		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, metaV1.GetOptions{})
 		if err != nil {
 			t.Log("Getting service failed: ", err.Error())
 			return false
