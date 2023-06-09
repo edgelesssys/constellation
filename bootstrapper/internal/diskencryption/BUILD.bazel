@@ -9,6 +9,9 @@ go_library(
         "diskencryption_cross.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption",
+    target_compatible_with = [
+        "@platforms//os:linux",
+    ],
     visibility = ["//bootstrapper:__subpackages__"],
     deps = select({
         "@io_bazel_rules_go//go/platform:android": [

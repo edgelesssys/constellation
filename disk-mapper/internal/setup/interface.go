@@ -9,7 +9,6 @@ package setup
 import (
 	"io/fs"
 	"os"
-	"syscall"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
@@ -48,16 +47,6 @@ type RecoveryDoer interface {
 
 // DiskMounter uses the syscall package to mount disks.
 type DiskMounter struct{}
-
-// Mount performs a mount syscall.
-func (m DiskMounter) Mount(source string, target string, fstype string, flags uintptr, data string) error {
-	return syscall.Mount(source, target, fstype, flags, data)
-}
-
-// Unmount performs an unmount syscall.
-func (m DiskMounter) Unmount(target string, flags int) error {
-	return syscall.Unmount(target, flags)
-}
 
 // MkdirAll uses os.MkdirAll to create the directory.
 func (m DiskMounter) MkdirAll(path string, perm fs.FileMode) error {
