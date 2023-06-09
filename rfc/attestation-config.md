@@ -59,6 +59,32 @@ attestation:
     bootloaderVersion: latest
 ```
 
+### AWS SEV-SNP
+
+```yaml
+attestation:
+  # AWS SEV-SNP attestation.
+  awsSEVSNP:
+    # Expected TPM measurements.
+    measurements:
+      15:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+    # Expected launch measurement in SNP report.
+    launchMeasurement:
+      # LaunchMeasurement enforcement policy. One of {'equal', 'warnOnly'}
+      enforcementPolicy: equal
+      validValues:
+        - "c2c84b9364fc9f0f54b04534768c860c6e0e386ad98b96e8b98eca46ac8971d05c531ba48373f054c880cfd1f4a0a84e"
+```
+
+We want to allow users to disable enforcement.
+This is because AWS may roll out unanounced/unreleased firmwares.
+Such rollouts should not compromise cluster stability.
+
+Multiple valid values are required since a cluster may have nodes with different launch-measurements during a firmware rollout.
+
+Both values should be appliable through `upgrade apply` to easily react to changing measurements during cluster operation.
 ## In our code
 
 `/internal/config/` holds default values that will be written to the config file.
@@ -102,3 +128,70 @@ The following HTTP endpoint is available:
 While this API should stay compatible with old release, extensive changes to our code may require breaking changes to the format of the attestation config files.
 In this case a new API version will be used to retrieve the config in the updated format, e.g. `/constellation/v2/attestation/<ATTESTATION_VARIANT>/`.
 The old API will still receive updates for at least the next release cycle, during this time this API version will also return a deprecation warning when requesting `list`.
+
+### AWS
+
+AWS provides a way to precalculate launch-measurements for their firmware in SEV-SNP CVMs.
+Since the launch-measurement can change at any point in time we need to serve up-to-date measurements through the attestation config API.
+This will enable users to (a) check which measurements are currently available and manually select any of them.
+It will also enable users to (b) specify a value `latest` for the launch-measurement.
+
+#### Object structure
+Each object represents parts of a valid attestation config.
+There are at most three versions of the launch-measurements available in one API object.
+Two versions that represent measurements we have already seen on an EC2 instance.
+One version that represents measurements of a newly released firmware that has not been seen on any machine.
+
+To sort the versions within each object we use a key `addedOn`.
+To determine if a measurement has been deployed yet we use a key `firstSeenOn`.
+If `firstSeenOn` is set to a placeholder value the underlying firmware has not been seen yet, but it might be seen by a user (we can't know that).
+
+**/list:**
+```
+[
+  "2023-01-23-14-32",
+  "2023-01-10-14-32"
+]
+```
+
+**/2023-01-23-14-32.json:**
+```
+{
+  "launchMeasurements": [
+    {
+      "firstSeenOn": "-"
+      "value": "v1.3.1",
+    },
+    {
+      "firstSeenOn": "2023-01-14T15:04:05Z07:00"
+      "value": "v1.3",
+    },
+    {
+      "firstSeenOn": "2023-01-01T15:04:05Z07:00"
+      "value": "v1.2",
+    }
+  ]
+}
+```
+
+#### API behavior
+
+We are assuming that AWS will not release a new firmware, without completing the rollout of the currently released version (i.e. there are at most two distinct firmware versions at all times).
+
+A pipeline is responsible for updating the API:
+
+1. periodically scan [aws/uefi](https://github.com/aws/uefi) for new releases, build them and precalculate measurements `new`.
+2. `firstSeenOn` is set to a placeholder value.
+3. start new AWS EC2 instance and fetch a new SNP report from that machine, including the current measurement `current`.
+4. get the `latest` object from the API and compare the included launch-measurements to `current`. Any modifications are done by creating a new object and adding it to the API.
+  - `if !latest.launchMeasurements.Contains(new)`: add `new` with `firstSeenOn` set to `placeholder`. The oldest measurement is removed.
+  - `if latest.launchMeasurements.Latest().firstSeenOn == placeholder && latest.launchMeasurements.Latest().value == current.value`: update `firstSeenOn` to current date, remove the oldest measurement and any older (than `Latest()`) measurements with `firstSeenOn==placeholder`.
+  - `if latest.launchMeasurements.Latest().firstSeenOn != placeholder && latest.launchMeasurements.Latest().value == current.value`: do nothing.
+  - `if !list.Contains(current)`: fail. Alerts us of unreleased/unplanned firmware updates.
+5. If the new object from step 4 is different than `latest`, push it to the API.
+
+The pipelines should run ~ daily.
+
+Ideally AWS will announce firmware changes in the future as part of maintenance announcements.
+This announcement should include a timeframe when the maintenance will start and when all machines will have the new firmware.
+If AWS starts doing this, the update logic in step 1-4. will change.
