@@ -34,9 +34,14 @@ var (
 
 // Cryptsetup manages the encrypted state mapper device.
 type Cryptsetup struct {
-	fs         afero.Fs
-	device     cryptdevice
+	fs afero.Fs
+	// device     cryptdevice
 	initByName initByName
+}
+
+type OpenCryptsetup struct {
+	*Cryptsetup
+	device cryptdevice
 }
 
 // New creates a new Cryptsetup.
@@ -50,35 +55,31 @@ func New() *Cryptsetup {
 }
 
 // Open opens the cryptdevice.
-func (c *Cryptsetup) Open() error {
+func (c *Cryptsetup) Open() (*OpenCryptsetup, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device != nil {
-		return errDeviceAlreadyOpen
-	}
 	var err error
-	c.device, err = c.initByName(stateMapperDevice)
+	device, err := c.initByName(stateMapperDevice)
 	if err != nil {
-		return fmt.Errorf("initializing crypt device for mapped device %q: %w", stateMapperDevice, err)
+		return nil, fmt.Errorf("initializing crypt device for mapped device %q: %w", stateMapperDevice, err)
 	}
-	return nil
+	return &OpenCryptsetup{c, device}, nil
 }
 
 // Close closes the cryptdevice.
-func (c *Cryptsetup) Close() error {
+func (c *OpenCryptsetup) Close() error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
-	if c.device == nil {
-		return errDeviceNotOpen
-	}
+	//if c.device == nil {
+	//	return errDeviceNotOpen
+	//}
 	c.device.Free()
-	c.device = nil
+	c.device = nil // How to prevent close from being called twice? Return closeFn in constructor which suggests defer closeFn() pattern?
+
 	return nil
 }
 
-// UUID gets the device's UUID.
-// Only works after calling Open().
-func (c *Cryptsetup) UUID() (string, error) {
+func (c *OpenCryptsetup) UUID() (string, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
 	if c.device == nil {
@@ -93,7 +94,7 @@ func (c *Cryptsetup) UUID() (string, error) {
 
 // UpdatePassphrase switches the initial random passphrase of the mapped crypt device to a permanent passphrase.
 // Only works after calling Open().
-func (c *Cryptsetup) UpdatePassphrase(passphrase string) error {
+func (c *OpenCryptsetup) UpdatePassphrase(passphrase string) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
 	if c.device == nil {
