@@ -19,7 +19,6 @@ All config relevant definitions, parsing and validation functions should go here
 package config
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -358,7 +357,7 @@ func Default() *Config {
 		// AWS uses aws-nitro-tpm as attestation variant
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)},
+			AWSSEVSNP:          DefaultForAWSSEVSNP(),
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
@@ -791,6 +790,18 @@ type AWSSEVSNP struct {
 	// description: |
 	//   Expected launch measurement in SNP report.
 	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+	// description: |
+	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
+	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+}
+
+// DefaultForAWSSEVSNP provides a valid default configuration for AWS SEV-SNP attestation.
+func DefaultForAWSSEVSNP() *AWSSEVSNP {
+	return &AWSSEVSNP{
+		Measurements:      measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}),
+		LaunchMeasurement: measurements.PlaceHolderMeasurement(48),
+		AMDRootKey:        mustParsePEM(constants.AMDRootKey),
+	}
 }
 
 // GetVariant returns aws-sev-snp as the variant.
