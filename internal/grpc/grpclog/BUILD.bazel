@@ -1,9 +1,24 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "grpclog",
-    srcs = ["grplog.go"],
+    srcs = ["grpclog.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/grpc/grpclog",
     visibility = ["//:__subpackages__"],
-    deps = ["@org_golang_google_grpc//peer"],
+    deps = [
+        "@org_golang_google_grpc//connectivity",
+        "@org_golang_google_grpc//peer",
+    ],
+)
+
+go_test(
+    name = "grpclog_test",
+    srcs = ["grpclog_test.go"],
+    embed = [":grpclog"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//connectivity",
+    ],
 )
