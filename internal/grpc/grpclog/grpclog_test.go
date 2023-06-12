@@ -37,6 +37,7 @@ func TestLogStateChanges(t *testing.T) {
 				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
 				assert.Equal(t, "Connection state changed to CONNECTING", lg.msgs[1])
 				assert.Equal(t, "Connection ready", lg.msgs[2])
+				assert.True(t, isReadyCallbackCalled)
 			},
 		},
 		"state: ready": {
@@ -47,11 +48,11 @@ func TestLogStateChanges(t *testing.T) {
 				},
 				stopWaitForChange: false,
 			},
-			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalledCallback bool) {
+			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 2)
 				assert.Equal(t, "Connection state started as READY", lg.msgs[0])
 				assert.Equal(t, "Connection ready", lg.msgs[1])
-				assert.True(t, isReadyCallbackCalledCallback)
+				assert.True(t, isReadyCallbackCalled)
 			},
 		},
 		"no WaitForStateChange (e.g. when context is canceled)": {

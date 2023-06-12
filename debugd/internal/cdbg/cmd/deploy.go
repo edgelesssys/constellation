@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -34,7 +33,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const deployToAllEndpointsTimeout = 20 * time.Minute
+const deployEndpointTimeout = 20 * time.Minute
 
 func newDeployCmd() *cobra.Command {
 	deployCmd := &cobra.Command{
@@ -82,13 +81,12 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return deploy(cmd, fileHandler, constellationConfig, transfer, log, deployToAllEndpointsTimeout)
+	return deploy(cmd, fileHandler, constellationConfig, transfer, log)
 }
 
 func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config,
 	transfer fileTransferer,
 	log *logger.Logger,
-	endpointDeployTimeout time.Duration,
 ) error {
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
@@ -152,10 +150,8 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 			transfer:       transfer,
 			log:            log,
 		}
-		ctx, cancelFn := context.WithTimeout(cmd.Context(), endpointDeployTimeout)
-		defer cancelFn()
-		if err := deployOnEndpoint(ctx, input); err != nil {
-			return fmt.Errorf("deploying to endpoint %v: %w", ip, err)
+		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
+			return fmt.Errorf("deploying endpoint on %q: %w", ip, err)
 		}
 	}
 
@@ -172,13 +168,16 @@ type deployOnEndpointInput struct {
 
 // deployOnEndpoint deploys a custom built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
+	ctx, cancel := context.WithTimeout(ctx, deployEndpointTimeout)
+	defer cancel()
 	in.log.Infof("Deploying on %v", in.debugdEndpoint)
 
-	client, conn, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
+	client, closeAndWaitFn, err := newDebugdClient(ctx, in.debugdEndpoint, in.log)
 	if err != nil {
 		return fmt.Errorf("creating debugd client: %w", err)
 	}
-	defer conn.Close()
+
+	defer closeAndWaitFn()
 
 	if err := setInfo(ctx, in.log, client, in.infos); err != nil {
 		return fmt.Errorf("sending info: %w", err)
@@ -191,8 +190,10 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
+type closeAndWait func()
+
 // newDebugdClient creates a new gRPC client for the debugd service and logs the connection state changes.
-func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, io.Closer, error) {
+func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.DebugdClient, closeAndWait, error) {
 	conn, err := grpc.DialContext(
 		ctx,
 		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
@@ -204,10 +205,12 @@ func newDebugdClient(ctx context.Context, ip string, log *logger.Logger) (pb.Deb
 		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
 	var wg sync.WaitGroup
-	defer wg.Wait()
 	grpclog.LogStateChangesUntilReady(ctx, conn, log, &wg, func() {})
-
-	return pb.NewDebugdClient(conn), conn, nil
+	closeAndWait := func() {
+		conn.Close()
+		wg.Wait()
+	}
+	return pb.NewDebugdClient(conn), closeAndWait, nil
 }
 
 func setInfo(ctx context.Context, log *logger.Logger, client pb.DebugdClient, infos map[string]string) error {
