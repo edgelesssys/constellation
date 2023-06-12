@@ -8,8 +8,8 @@ def oci_deps():
         strip_prefix = "rules_oci-1.0.0",
         type = "tar.gz",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/d7b0760ba28554b71941ea0bbfd0a9f089bf250fd4448f9c116e1cb7a63b3933",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/db57efd706f01eb3ce771468366baa1614b5b25f4cce99757e2b8d942155b8ec",
             "https://github.com/bazel-contrib/rules_oci/releases/download/v1.0.0/rules_oci-v1.0.0.tar.gz",
         ],
-        sha256 = "d7b0760ba28554b71941ea0bbfd0a9f089bf250fd4448f9c116e1cb7a63b3933",
+        sha256 = "db57efd706f01eb3ce771468366baa1614b5b25f4cce99757e2b8d942155b8ec",
     )
