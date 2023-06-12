@@ -13,6 +13,7 @@ def containers():
             "name": "joinservice",
             "oci": "//joinservice/cmd:joinservice",
             "repotag_file": "//bazel/release:joinservice_tag.txt",
+            "repository_file": "//bazel/release:joinservice_reponame",
             "used_by": ["helm"],
         },
         {
@@ -21,6 +22,7 @@ def containers():
             "name": "keyservice",
             "oci": "//keyservice/cmd:keyservice",
             "repotag_file": "//bazel/release:keyservice_tag.txt",
+            "repository_file": "//bazel/release:keyservice_reponame",
             "used_by": ["helm"],
         },
         {
@@ -29,6 +31,7 @@ def containers():
             "name": "verificationservice",
             "oci": "//verify/cmd:verificationservice",
             "repotag_file": "//bazel/release:verificationservice_tag.txt",
+            "repository_file": "//bazel/release:verificationservice_reponame",
             "used_by": ["helm"],
         },
         {
@@ -37,6 +40,7 @@ def containers():
             "name": "nodeoperator",
             "oci": "//operators/constellation-node-operator:node_operator",
             "repotag_file": "//bazel/release:nodeoperator_tag.txt",
+            "repository_file": "//bazel/release:nodeoperator_reponame",
             "used_by": ["helm"],
         },
         {
@@ -45,6 +49,7 @@ def containers():
             "name": "qemumetadata",
             "oci": "//hack/qemu-metadata-api:qemumetadata",
             "repotag_file": "//bazel/release:qemumetadata_tag.txt",
+            "repository_file": "//bazel/release:qemumetadata_reponame",
             "used_by": ["config"],
         },
         {
@@ -53,6 +58,7 @@ def containers():
             "name": "libvirt",
             "oci": "//cli/internal/libvirt:constellation_libvirt",
             "repotag_file": "//bazel/release:libvirt_tag.txt",
+            "repository_file": "//bazel/release:libvirt_reponame",
             "used_by": ["config"],
         },
     ]
