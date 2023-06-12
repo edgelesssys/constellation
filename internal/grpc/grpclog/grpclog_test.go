@@ -22,17 +22,17 @@ func TestLogStateChanges(t *testing.T) {
 	testCases := map[string]struct {
 		name   string
 		conn   getStater
-		assert func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool)
+		assert func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool)
 	}{
 		"state: connecting, ready": {
-			conn: &fakeConn{
+			conn: &stubConn{
 				states: []connectivity.State{
 					connectivity.Connecting,
 					connectivity.Ready,
 					connectivity.Ready,
 				},
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool) {
+			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 3)
 				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
 				assert.Equal(t, "Connection state changed to CONNECTING", lg.msgs[1])
@@ -40,14 +40,14 @@ func TestLogStateChanges(t *testing.T) {
 			},
 		},
 		"state: ready": {
-			conn: &fakeConn{
+			conn: &stubConn{
 				states: []connectivity.State{
 					connectivity.Ready,
 					connectivity.Idle,
 				},
 				stopWaitForChange: false,
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalledCallback bool) {
+			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalledCallback bool) {
 				require.Len(t, lg.msgs, 2)
 				assert.Equal(t, "Connection state started as READY", lg.msgs[0])
 				assert.Equal(t, "Connection ready", lg.msgs[1])
@@ -55,14 +55,14 @@ func TestLogStateChanges(t *testing.T) {
 			},
 		},
 		"no WaitForStateChange (e.g. when context is canceled)": {
-			conn: &fakeConn{
+			conn: &stubConn{
 				states: []connectivity.State{
 					connectivity.Connecting,
 					connectivity.Idle,
 				},
 				stopWaitForChange: true,
 			},
-			assert: func(t *testing.T, lg *fakeLog, isReadyCallbackCalled bool) {
+			assert: func(t *testing.T, lg *spyLog, isReadyCallbackCalled bool) {
 				require.Len(t, lg.msgs, 2)
 				assert.Equal(t, "Connection state started as CONNECTING", lg.msgs[0])
 				assert.Equal(t, "Connection state ended with CONNECTING", lg.msgs[1])
@@ -72,7 +72,7 @@ func TestLogStateChanges(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			logger := &fakeLog{}
+			logger := &spyLog{}
 
 			var wg sync.WaitGroup
 			isReadyCallbackCalled := false
@@ -83,21 +83,21 @@ func TestLogStateChanges(t *testing.T) {
 	}
 }
 
-type fakeLog struct {
+type spyLog struct {
 	msgs []string
 }
 
-func (f *fakeLog) Debugf(format string, args ...any) {
+func (f *spyLog) Debugf(format string, args ...any) {
 	f.msgs = append(f.msgs, fmt.Sprintf(format, args...))
 }
 
-type fakeConn struct {
+type stubConn struct {
 	states            []connectivity.State
 	idx               int
 	stopWaitForChange bool
 }
 
-func (f *fakeConn) GetState() connectivity.State {
+func (f *stubConn) GetState() connectivity.State {
 	if f.idx > len(f.states)-1 {
 		return f.states[len(f.states)-1]
 	}
@@ -106,7 +106,7 @@ func (f *fakeConn) GetState() connectivity.State {
 	return res
 }
 
-func (f *fakeConn) WaitForStateChange(context.Context, connectivity.State) bool {
+func (f *stubConn) WaitForStateChange(context.Context, connectivity.State) bool {
 	if f.stopWaitForChange {
 		return false
 	}
