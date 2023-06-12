@@ -27,7 +27,6 @@ AZURE_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-
 GCP_FIXED_KERNEL_RPMS := kernel-6.1.18-200.fc37.x86_64.rpm kernel-core-6.1.18-200.fc37.x86_64.rpm kernel-modules-6.1.18-200.fc37.x86_64.rpm
 PREBUILD_RPMS_SYSTEMD := $(addprefix prebuilt/rpms/systemd/,$(SYSTEMD_FIXED_RPMS))
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/rpms/azure/,$(AZURE_FIXED_KERNEL_RPMS))
-PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 
 .PHONY: all clean inject-bins $(csps) $(variants)
 
@@ -47,14 +46,6 @@ prebuilt/rpms/systemd/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/systemd/251.11/2.fc37/x86_64/$*.rpm
-
-# Currently, Azure and GCP use the same fixed kernels.
-# They will likely derive soon again, but for now we can just copy the file from Azure to save traffic.
-prebuilt/rpms/gcp/%.rpm: prebuilt/rpms/azure/%.rpm
-	@echo "Downloading $*"
-	@mkdir -p $(@D)
-	# @curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
-	cp prebuilt/rpms/azure/$*.rpm prebuilt/rpms/gcp/$*.rpm
 
 prebuilt/rpms/azure/%.rpm:
 	@echo "Downloading $*"
@@ -85,7 +76,7 @@ mkosi.output.%/fedora~38/image.raw: inject-bins inject-certs
 	rm -rf .csp/
 	@echo "Image is ready: $@"
 
-inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE) $(PREBUILT_RPMS_GCP)
+inject-bins: $(PREBUILD_RPMS_SYSTEMD) $(PREBUILT_RPMS_AZURE)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
