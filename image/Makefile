@@ -31,7 +31,7 @@ PREBUILT_RPMS_GCP := $(addprefix prebuilt/rpms/gcp/,$(GCP_FIXED_KERNEL_RPMS))
 
 .PHONY: all clean inject-bins $(csps) $(variants)
 
-.NOTPARALLEL: mkosi.output.%/fedora~37/image.raw clean-%
+.NOTPARALLEL: mkosi.output.%/fedora~38/image.raw clean-%
 
 all: $(csps)
 
@@ -41,7 +41,7 @@ gcp: gcp_gcp-sev-es gcp_gcp-sev-snp
 openstack: openstack_qemu-vtpm
 qemu: qemu_qemu-vtpm
 
-$(variants): %: mkosi.output.%/fedora~37/image.raw
+$(variants): %: mkosi.output.%/fedora~38/image.raw
 
 prebuilt/rpms/systemd/%.rpm:
 	@echo "Downloading $*"
@@ -61,7 +61,7 @@ prebuilt/rpms/azure/%.rpm:
 	@mkdir -p $(@D)
 	@curl -fsSL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/6.1.18/200.fc37/x86_64/$*.rpm
 
-mkosi.output.%/fedora~37/image.raw: inject-bins inject-certs
+mkosi.output.%/fedora~38/image.raw: inject-bins inject-certs
 	rm -rf .csp/
 	mkdir -p .csp/
 	$(eval csp := $(firstword $(subst _, ,$*)))
