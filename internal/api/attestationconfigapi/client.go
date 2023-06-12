@@ -18,6 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 )
 
+// VersionFormat is the format of the version name in the S3 bucket.
+const VersionFormat = "2006-01-02-15-04"
+
 // Client manages (modifies) the version information for the attestation variants.
 type Client struct {
 	s3Client      *apiclient.Client
@@ -105,7 +108,7 @@ func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versio
 }
 
 func (a Client) uploadAzureSEVSNP(versions AzureSEVSNPVersion, versionNames []string, date time.Time) (res []crudCmd, err error) {
-	dateStr := date.Format("2006-01-02-15-04") + ".json"
+	dateStr := date.Format(VersionFormat) + ".json"
 
 	res = append(res, putCmd{AzureSEVSNPVersionAPI{Version: dateStr, AzureSEVSNPVersion: versions}})
 
