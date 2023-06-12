@@ -47,7 +47,6 @@ func TestVerify(t *testing.T) {
 		formatter        *stubAttDocFormatter
 		nodeEndpointFlag string
 		configFlag       string
-		ownerIDFlag      string
 		clusterIDFlag    string
 		idFile           *clusterid.File
 		wantEndpoint     string
@@ -172,9 +171,6 @@ func TestVerify(t *testing.T) {
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-			if tc.ownerIDFlag != "" {
-				require.NoError(cmd.Flags().Set("owner-id", tc.ownerIDFlag))
-			}
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))
 			}
@@ -183,21 +179,25 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 			if tc.idFile != nil {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
 			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, stubAttestationFetcher{})
-
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 				assert.Contains(out.String(), "OK")
 				assert.Equal(tc.wantEndpoint, tc.protoClient.endpoint)
+
+				var validationErr *config.ValidationError
+				if errors.As(err, &validationErr) {
+					t.Log(validationErr.LongMessage())
+				}
 			}
 		})
 	}
