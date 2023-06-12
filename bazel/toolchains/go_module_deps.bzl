@@ -2777,8 +2777,8 @@ def go_dependencies():
             "//3rdparty/bazel/com_github_google_go_tpm_tools:include.patch",
         ],
         replace = "github.com/daniel-weisse/go-tpm-tools",
-        sum = "h1:cJp8NluCBP5idNdtfo2nauPeepn94/jIaeSqTTac9zc=",
-        version = "v0.0.0-20230105122812-f7474d459dfc",
+        sum = "h1:Bnylu573ScI7bvpzeZX0S3NP7D4C3vB1i+IcRzoQTfk=",
+        version = "v0.0.0-20230612131025-c1ddd5ded590",
     )
     go_repository(
         name = "com_github_google_go_tspi",
