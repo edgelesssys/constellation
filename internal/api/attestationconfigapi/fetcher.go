@@ -102,7 +102,7 @@ func getLatestVersionOlderThanMinimumAge(list AzureSEVSNPVersionList, now time.T
 	SortAzureSEVSNPVersionList(list)
 	for _, v := range list {
 		dateStr := strings.TrimSuffix(v, ".json")
-		versionDate, err := time.Parse("2006-01-01-01-01", dateStr)
+		versionDate, err := time.Parse(VersionFormat, dateStr)
 		if err != nil {
 			return AzureSEVSNPVersionAPI{}, fmt.Errorf("parsing version date %s: %w", dateStr, err)
 		}
