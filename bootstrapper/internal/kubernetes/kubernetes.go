@@ -125,7 +125,8 @@ func (k *KubeWrapper) InitCluster(
 
 	// Step 2: configure kubeadm init config
 	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
-		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP ||
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.AWS
 	initConfig := k.configProvider.InitConfiguration(ccmSupported, versionString)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetClusterName(clusterName)

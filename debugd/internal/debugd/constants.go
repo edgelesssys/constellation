@@ -12,7 +12,7 @@ import "time"
 const (
 	DebugdMetadataFlag              = "constellation-debugd"
 	GRPCTimeout                     = 5 * time.Minute
-	DiscoverDebugdInterval          = 30 * time.Second
+	DiscoverDebugdInterval          = 10 * time.Second
 	DownloadRetryBackoff            = 1 * time.Minute
 	BinaryAccessMode                = 0o755 // -rwxr-xr-x
 	BootstrapperDeployFilename      = "/run/state/bin/bootstrapper"

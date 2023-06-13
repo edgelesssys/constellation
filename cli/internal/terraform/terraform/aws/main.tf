@@ -243,8 +243,8 @@ module "instance_group_control_plane" {
     { Name = local.name },
     { constellation-role = "control-plane" },
     { constellation-uid = local.uid },
-    { KubernetesCluster = "Constellation-${local.uid}" },
-    { constellation-init-secret-hash = local.initSecretHash }
+    { constellation-init-secret-hash = local.initSecretHash },
+    { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
 }
 
@@ -268,7 +268,7 @@ module "instance_group_worker_nodes" {
     { Name = local.name },
     { constellation-role = "worker" },
     { constellation-uid = local.uid },
-    { KubernetesCluster = "Constellation-${local.uid}" },
-    { constellation-init-secret-hash = local.initSecretHash }
+    { constellation-init-secret-hash = local.initSecretHash },
+    { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
 }

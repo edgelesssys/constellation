@@ -544,6 +544,7 @@ type stubKubectl struct {
 	waitForCRDsErr                   error
 	listAllNamespacesErr             error
 	annotateNodeErr                  error
+	enforceCoreDNSSpreadErr          error
 
 	listAllNamespacesResp *corev1.NamespaceList
 }
@@ -574,6 +575,10 @@ func (s *stubKubectl) WaitForCRDs(_ context.Context, _ []string) error {
 
 func (s *stubKubectl) ListAllNamespaces(_ context.Context) (*corev1.NamespaceList, error) {
 	return s.listAllNamespacesResp, s.listAllNamespacesErr
+}
+
+func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
+	return s.enforceCoreDNSSpreadErr
 }
 
 type stubHelmClient struct {
