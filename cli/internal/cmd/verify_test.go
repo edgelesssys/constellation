@@ -193,11 +193,6 @@ func TestVerify(t *testing.T) {
 				assert.NoError(err)
 				assert.Contains(out.String(), "OK")
 				assert.Equal(tc.wantEndpoint, tc.protoClient.endpoint)
-
-				var validationErr *config.ValidationError
-				if errors.As(err, &validationErr) {
-					t.Log(validationErr.LongMessage())
-				}
 			}
 		})
 	}

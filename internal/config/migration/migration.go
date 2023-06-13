@@ -67,8 +67,6 @@ type AzureConfig struct {
 	Location             string                 `yaml:"location" validate:"required"`
 	ResourceGroup        string                 `yaml:"resourceGroup" validate:"required"`
 	UserAssignedIdentity string                 `yaml:"userAssignedIdentity" validate:"required"`
-	AppClientID          string                 `yaml:"appClientID" validate:"uuid"`
-	ClientSecretValue    string                 `yaml:"clientSecretValue" validate:"required"`
 	InstanceType         string                 `yaml:"instanceType" validate:"azure_instance_type"`
 	StateDiskType        string                 `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	DeployCSIDriver      *bool                  `yaml:"deployCSIDriver" validate:"required"`

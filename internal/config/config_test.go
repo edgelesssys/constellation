@@ -858,6 +858,42 @@ func TestConfigVersionCompatibility(t *testing.T) {
 	}
 }
 
+func TestIsAppClientIDError(t *testing.T) {
+	testCases := map[string]struct {
+		err      error
+		expected bool
+	}{
+		"yaml.Error with appClientID error": {
+			err: &yaml.TypeError{
+				Errors: []string{
+					"invalid value for appClientID",
+					"another error",
+				},
+			},
+			expected: true,
+		},
+		"yaml.Error without appClientID error": {
+			err: &yaml.TypeError{
+				Errors: []string{
+					"invalid value for something else",
+					"another error",
+				},
+			},
+			expected: false,
+		},
+		"other error": {
+			err:      errors.New("appClientID but other error type"),
+			expected: false,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.expected, isAppClientIDError(tc.err))
+		})
+	}
+}
+
 // configMap is used to un-/marshal the config as an unstructured map.
 type configMap map[string]interface{}
 
