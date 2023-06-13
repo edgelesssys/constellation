@@ -1,12 +1,11 @@
-# Creating a dev-cluster
+# Creating a Debug cluster
+
+A debug cluster allows quicker iteration cycles during development by being able to upload new bootstrapper binaries through the `cdbg` tool.
+Before cluster creation you need to configure the cluster as debug.
 
 After building (see [here](./build-develop-deploy.md#build)), you can find all CLIs and binaries in the `build` directory.
 
 The cluster creation mostly follows the [official docs instructions](https://docs.edgeless.systems/constellation/getting-started/first-steps), but varies slightly in the following steps:
-
-## Config
-
-### Debug cluster
 
 `./constellation config generate <CSP>`
 by default uses the referenced nightly image.

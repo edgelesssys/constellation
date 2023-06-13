@@ -78,6 +78,8 @@ E.g. AWS:
 aws login
 ```
 
+For more details, see [here](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials).
+
 ## Build
 
 Build the binaries always in a separate directory:
