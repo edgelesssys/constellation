@@ -655,7 +655,7 @@ jobs:
                 .measurements.6.warnOnly = true |
                 .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
                 .measurements.7.warnOnly = true |
-                .measurements.7.expected = "b1e9b305325c51b93da58cbf7f92512d8eebfa01143e4d8844e40e062e9b6cd5" |
+                .measurements.7.expected = "a1d193dbfc3da1a5e93fe7b1384427fb78feeffcb06675a0cf840ec99406f237" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
                 .measurements.11.warnOnly = false |
