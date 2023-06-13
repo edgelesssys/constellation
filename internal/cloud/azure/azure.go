@@ -147,8 +147,6 @@ func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServic
 		Location:                    creds.Location,
 		UseManagedIdentityExtension: useManagedIdentityExtension,
 		UserAssignedIdentityID:      uamiClientID,
-		AADClientID:                 creds.AppClientID,
-		AADClientSecret:             creds.ClientSecretValue,
 	}
 
 	return json.Marshal(config)
@@ -429,8 +427,6 @@ type cloudConfig struct {
 	VMType                      string `json:"vmType,omitempty"`
 	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension,omitempty"`
 	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty"`
-	AADClientID                 string `json:"aadClientId,omitempty"`
-	AADClientSecret             string `json:"aadClientSecret,omitempty"`
 }
 
 // convertToInstanceMetadata converts a armcomputev2.VirtualMachineScaleSetVM to a metadata.InstanceMetadata.

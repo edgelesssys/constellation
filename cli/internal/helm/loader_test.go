@@ -366,8 +366,6 @@ func prepareAzureValues(values map[string]any) error {
 		return errors.New("missing 'autoscaler' key")
 	}
 	autoscalerVals["Azure"] = map[string]any{
-		"clientID":       "AppClientID",
-		"clientSecret":   "ClientSecretValue",
 		"resourceGroup":  "resourceGroup",
 		"subscriptionID": "subscriptionID",
 		"tenantID":       "TenantID",

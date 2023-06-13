@@ -16,11 +16,7 @@ The following terraform output values are available (with their corresponding ke
 
 - `subscription_id` (subscription)
 - `tenant_id` (tenant)
-- `region` (location)
-- `base_resource_group_name` (resourceGroup)
-- `application_id` (appClientID)
 - `uami_id` (userAssignedIdentity)
-- `application_client_secret_value` (clientSecretValue) - **Sensitive Value**
 
 You can either get the profile names from the Terraform output and manually add them to your Constellation configuration file according to our [Documentation](https://docs.edgeless.systems/constellation/getting-started/first-steps).
 Or you can do this with a `yq` command:
@@ -29,8 +25,6 @@ Or you can do this with a `yq` command:
 yq -i "
   .provider.azure.subscription = $(terraform output subscription_id) |
   .provider.azure.tenant = $(terraform output tenant_id) |
-  .provider.azure.location = $(terraform output region) |
-  .provider.azure.resourceGroup = $(terraform output base_resource_group_name) |
   .provider.azure.userAssignedIdentity = $(terraform output uami_id) |
   " path/to/constellation-conf.yaml
 ```
