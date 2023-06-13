@@ -517,7 +517,6 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 
 		creds := azureshared.ApplicationCredentials{
 			TenantID:            config.Provider.Azure.TenantID,
-			ClientSecretValue:   config.Provider.Azure.ClientSecretValue,
 			Location:            config.Provider.Azure.Location,
 			PreferredAuthMethod: authMethod,
 			UamiResourceID:      config.Provider.Azure.UserAssignedIdentity,

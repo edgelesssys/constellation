@@ -227,7 +227,6 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 			Location:             cfgV2.Provider.Azure.Location,
 			ResourceGroup:        cfgV2.Provider.Azure.ResourceGroup,
 			UserAssignedIdentity: cfgV2.Provider.Azure.UserAssignedIdentity,
-			ClientSecretValue:    cfgV2.Provider.Azure.ClientSecretValue,
 			InstanceType:         cfgV2.Provider.Azure.InstanceType,
 			StateDiskType:        cfgV2.Provider.Azure.StateDiskType,
 			DeployCSIDriver:      cfgV2.Provider.Azure.DeployCSIDriver,

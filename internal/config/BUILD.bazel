@@ -34,6 +34,7 @@ go_library(
         "@com_github_go_playground_validator_v10//:validator",
         "@com_github_go_playground_validator_v10//translations/en",
         "@com_github_siderolabs_talos_pkg_machinery//config/encoder",
+        "@in_gopkg_yaml_v3//:yaml_v3",
         "@org_golang_x_mod//semver",
     ],
 )

@@ -107,7 +107,7 @@ func TestReadConfigFile(t *testing.T) {
 				return m
 			}(),
 			configName:    constants.ConfigFilename,
-			wantedErrType: AppClientIDError{},
+			wantedErrType: UnsupportedAppRegistrationError{},
 		},
 	}
 	for name, tc := range testCases {
@@ -211,32 +211,11 @@ func TestFromFile(t *testing.T) {
 
 func TestNewWithDefaultOptions(t *testing.T) {
 	testCases := map[string]struct {
-		confToWrite           *Config
-		envToSet              map[string]string
-		wantErr               bool
-		wantClientSecretValue string
+		confToWrite *Config
+		envToSet    map[string]string
+		wantErrType error
 	}{
-		"set env works": {
-			confToWrite: func() *Config { // valid config with all, but clientSecretValue
-				c := Default()
-				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				c.Image = "v" + constants.VersionInfo()
-				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
-				c.Provider.Azure.Location = "westus"
-				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
-				}
-				return c
-			}(),
-			envToSet: map[string]string{
-				constants.EnvVarAzureClientSecretValue: "some-secret",
-			},
-			wantClientSecretValue: "some-secret",
-		},
-		"set env overwrites": {
+		"setting unsupported CONSTELL_AZURE_CLIENT_SECRET_VALUE fails": {
 			confToWrite: func() *Config {
 				c := Default()
 				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
@@ -245,7 +224,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
 				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
@@ -255,7 +233,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			envToSet: map[string]string{
 				constants.EnvVarAzureClientSecretValue: "some-secret",
 			},
-			wantClientSecretValue: "some-secret",
+			wantErrType: UnsupportedAppRegistrationError{},
 		},
 	}
 	for name, tc := range testCases {
@@ -272,9 +250,9 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(fileHandler, constants.ConfigFilename, stubAttestationFetcher{}, false)
-			if tc.wantErr {
-				assert.Error(err)
+			_, err = New(fileHandler, constants.ConfigFilename, stubAttestationFetcher{}, false)
+			if tc.wantErrType != nil {
+				assert.ErrorIs(err, tc.wantErrType)
 				return
 			}
 
@@ -283,7 +261,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			if errors.As(err, &validationErr) {
 				t.Log(validationErr.LongMessage())
 			}
-			assert.Equal(c.Provider.Azure.ClientSecretValue, tc.wantClientSecretValue)
 		})
 	}
 }
@@ -365,7 +342,6 @@ func TestValidate(t *testing.T) {
 				az.Location = "test-location"
 				az.UserAssignedIdentity = "test-identity"
 				az.ResourceGroup = "test-resource-group"
-				az.ClientSecretValue = "test-client-secret"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az
 				cnf.Attestation.AzureSEVSNP.Measurements = measurements.M{

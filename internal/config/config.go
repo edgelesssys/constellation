@@ -146,9 +146,6 @@ type AzureConfig struct {
 	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
-	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
-	ClientSecretValue string `yaml:"clientSecretValue,omitempty" validate:"omitempty"`
-	// description: |
 	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
 	// description: |
@@ -380,7 +377,7 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		if isAppClientIDError(err) {
-			return nil, AppClientIDError{}
+			return nil, UnsupportedAppRegistrationError{}
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
@@ -399,11 +396,11 @@ func isAppClientIDError(err error) bool {
 	return false
 }
 
-// AppClientIDError is returned when the config file contains the deprecated appClientID field.
-type AppClientIDError struct{}
+// UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations.
+type UnsupportedAppRegistrationError struct{}
 
-func (e AppClientIDError) Error() string {
-	return "appClientID is no longer supported. instead use UAMI. please remove it from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions"
+func (e UnsupportedAppRegistrationError) Error() string {
+	return "Azure app registrations are no longer supported. migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nplease remove it from your config and from the Kubernetes secret in your running cluster. ensure that the UAMI has all required permissions."
 }
 
 // New creates a new config by:
@@ -427,7 +424,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
-		c.Provider.Azure.ClientSecretValue = clientSecretValue
+		return nil, fmt.Errorf("unsupported environment variable: %s : %w", constants.EnvVarAzureClientSecretValue, UnsupportedAppRegistrationError{})
 	}
 
 	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
