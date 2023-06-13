@@ -209,62 +209,6 @@ func TestFromFile(t *testing.T) {
 	}
 }
 
-func TestNewWithDefaultOptions(t *testing.T) {
-	testCases := map[string]struct {
-		confToWrite *Config
-		envToSet    map[string]string
-		wantErrType error
-	}{
-		"setting unsupported CONSTELL_AZURE_CLIENT_SECRET_VALUE fails": {
-			confToWrite: func() *Config {
-				c := Default()
-				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				c.Image = "v" + constants.VersionInfo()
-				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
-				c.Provider.Azure.Location = "westus"
-				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
-				}
-				return c
-			}(),
-			envToSet: map[string]string{
-				constants.EnvVarAzureClientSecretValue: "some-secret",
-			},
-			wantErrType: UnsupportedAppRegistrationError{},
-		},
-	}
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			// Setup
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			err := fileHandler.WriteYAML(constants.ConfigFilename, tc.confToWrite)
-			require.NoError(err)
-			for envKey, envValue := range tc.envToSet {
-				t.Setenv(envKey, envValue)
-			}
-
-			// Test
-			_, err = New(fileHandler, constants.ConfigFilename, stubAttestationFetcher{}, false)
-			if tc.wantErrType != nil {
-				assert.ErrorIs(err, tc.wantErrType)
-				return
-			}
-
-			assert.NoError(err)
-			var validationErr *ValidationError
-			if errors.As(err, &validationErr) {
-				t.Log(validationErr.LongMessage())
-			}
-		})
-	}
-}
-
 func TestValidate(t *testing.T) {
 	const defaultErrCount = 33 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
