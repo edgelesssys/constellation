@@ -27,13 +27,11 @@ Prerequisites:
 
 ### Mac
 
-```sh
-brew install bash
-```
-
-to fix unsupported shell options used in some build script.
-
-To troubleshoot potential problems with bazel on ARM architecture when running it for the first time, it might help to purge and retry:
+* To fix unsupported shell options used in some build script:
+  ´´´sh
+  brew install bash
+  ´´´
+* To troubleshoot potential problems with bazel on ARM architecture when running it for the first time, it might help to purge and retry:
 
 ```sh
 bazel clean --expunge

@@ -1,7 +1,6 @@
 # Creating a Debug cluster
 
 A debug cluster allows quicker iteration cycles during development by being able to upload new bootstrapper binaries through the `cdbg` tool.
-Before cluster creation you need to configure the cluster as debug.
 
 After building (see [here](./build-develop-deploy.md#build)), you can find all CLIs and binaries in the `build` directory.
 
@@ -17,6 +16,7 @@ bazel run //internal/api/versionsapi/cli -- latest --ref main --stream debug
 
 to fetch the latest version and insert in the `image`` field of the config file.
 
+Before cluster creation you need to configure the cluster as debug.
 Set `debugCluster: true` in the config:
 
 ´´´sh
