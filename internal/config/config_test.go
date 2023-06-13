@@ -59,10 +59,11 @@ func TestDefaultConfigWritesLatestVersion(t *testing.T) {
 
 func TestReadConfigFile(t *testing.T) {
 	testCases := map[string]struct {
-		config     configMap
-		configName string
-		wantResult *Config
-		wantErr    bool
+		config        configMap
+		configName    string
+		wantResult    *Config
+		wantErr       bool
+		wantedErrType error
 	}{
 		"mix of Latest and uint as version value": {
 			config: func() configMap {
@@ -98,6 +99,16 @@ func TestReadConfigFile(t *testing.T) {
 			configName: constants.ConfigFilename,
 			wantErr:    true,
 		},
+		"error on entering app client id": {
+			config: func() configMap {
+				conf := Default()
+				m := getConfigAsMap(conf, t)
+				m.setAzureProvider("appClientID", "3ea4bdc1-1cc1-4237-ae78-0831eff3491e")
+				return m
+			}(),
+			configName:    constants.ConfigFilename,
+			wantedErrType: AppClientIDError{},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -109,12 +120,16 @@ func TestReadConfigFile(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
 			}
 			result, err := fromFile(fileHandler, tc.configName)
+			if tc.wantedErrType != nil {
+				assert.ErrorIs(err, tc.wantedErrType)
+				return
+			}
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.wantResult, result)
+				return
 			}
+			assert.NoError(err)
+			assert.Equal(tc.wantResult, result)
 		})
 	}
 }
@@ -294,16 +309,6 @@ func TestValidate(t *testing.T) {
 			}(),
 			wantErr:      true,
 			wantErrCount: defaultErrCount,
-		},
-		"appClientID is deprecated and not valid anymore": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.Image = ""
-				cnf.Provider.Azure.AppClientID = "some-id"
-				return cnf
-			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount + 1,
 		},
 		"outdated k8s patch version is allowed": {
 			cnf: func() *Config {
@@ -882,6 +887,10 @@ type configMap map[string]interface{}
 
 func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {
 	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
+}
+
+func (c configMap) setAzureProvider(azureProviderField string, value interface{}) {
+	c["provider"].(configMap)["azure"].(configMap)[azureProviderField] = value
 }
 
 func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {

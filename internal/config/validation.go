@@ -528,24 +528,3 @@ func warnDeprecated(fl validator.FieldLevel) bool {
 	)
 	return true
 }
-
-func deprecatedAppClientID(_ validator.FieldLevel) bool {
-	// TODO also print? or just translate error?
-	fmt.Fprintf(
-		os.Stderr,
-		"ERROR: Please remove the app client ID from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions.\n",
-	)
-	return false
-}
-
-func registerDeprecatedAppClientIDError(ut ut.Translator) error {
-	return ut.Add("deprecatedAppClientID", "{0}", true)
-}
-
-// TODO how does user get info to remove secret info without validation?
-func translateDeprecatedAppClientIDError(ut ut.Translator, _ validator.FieldError) string {
-	msg := "app client id is no longer supported. please remove the app client ID from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions."
-	t, _ := ut.T("deprecatedAppClientID", msg)
-
-	return t
-}
