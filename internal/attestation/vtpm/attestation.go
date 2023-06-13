@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -230,9 +229,6 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 		}
 	}()
 
-	if err := os.WriteFile("/tmp/constellation-attdoc.bin", attDocRaw, 0o644); err != nil {
-		return nil, fmt.Errorf("writing attestation document to /tmp/constellation-attdoc.bin: %w", err)
-	}
 	var attDoc AttestationDocument
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, fmt.Errorf("unmarshaling TPM attestation document: %w", err)

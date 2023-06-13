@@ -41,7 +41,7 @@ type Validator struct {
 func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 	v := &Validator{
 		ark:       (*x509.Certificate)(&cfg.AMDRootKey),
-		kdsClient: kdsClient{},
+		kdsClient: kdsClient{http.DefaultClient},
 	}
 
 	v.Validator = vtpm.NewValidator(
@@ -67,7 +67,6 @@ func getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte)
 
 // validateSNPReport validates the report by checking if it has a valid VLEK signature.
 // The certificate chain ARK -> ASK -> VLEK is also validated.
-// No CRLs are checked.
 func (v *Validator) validateSNPReport(attestation vtpm.AttestationDocument, _ *attest.MachineState) error {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
@@ -119,17 +118,23 @@ func getVLEK(certs []byte) (vlek *x509.Certificate, err error) {
 	return
 }
 
-type kdsClient struct{}
+type kdsClient struct {
+	*http.Client
+}
 
 // GetASK requests the current certificate chain from the AMD KDS API and returns the ASK.
+// There is no information on how to handle CRLs in the official AMD docs.
+// Once github.com/google/go-sev-guest adds support to check CRLs for VLEK-based certificate chains
+// we can check CRLs here.
 func (k kdsClient) GetASK(ctx context.Context) (*x509.Certificate, error) {
-	// Hardcoding "Milan" (the CPU generation) might break in the future. But this is too far down the road to invest time right now.
+	// If there are multiple CPU generations (and with that different API paths to call) in the future,
+	// we can select the correct path to call based on the information contained in the SNP report.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://kdsintf.amd.com/vlek/v1/Milan/cert_chain", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := k.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting ASK: %w", err)
 	}

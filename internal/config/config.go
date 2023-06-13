@@ -787,9 +787,10 @@ type AWSSEVSNP struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically.
 	// description: |
 	//   Expected launch measurement in SNP report. Not in use right now.
-	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+	// LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
@@ -798,9 +799,9 @@ type AWSSEVSNP struct {
 // DefaultForAWSSEVSNP provides a valid default configuration for AWS SEV-SNP attestation.
 func DefaultForAWSSEVSNP() *AWSSEVSNP {
 	return &AWSSEVSNP{
-		Measurements:      measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}),
-		LaunchMeasurement: measurements.PlaceHolderMeasurement(48),
-		AMDRootKey:        mustParsePEM(constants.AMDRootKey),
+		Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}),
+		// LaunchMeasurement: measurements.PlaceHolderMeasurement(48),
+		AMDRootKey: mustParsePEM(constants.AMDRootKey),
 	}
 }
 
@@ -825,12 +826,13 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
-		return false, nil
-	}
-	if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
-		return false, nil
-	}
+	// TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically.
+	// if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
+	// 	return false, nil
+	// }
+	// if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
+	// 	return false, nil
+	// }
 
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }
