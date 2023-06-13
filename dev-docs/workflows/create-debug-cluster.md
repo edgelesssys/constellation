@@ -17,7 +17,11 @@ bazel run //internal/api/versionsapi/cli -- latest --ref main --stream debug
 
 to fetch the latest version and insert in the `image`` field of the config file.
 
-Set `debug: true` in the config.
+Set `debugCluster: true` in the config:
+
+´´´sh
+yq eval -i '.debugCluster=true' constellation-conf.yaml
+´´´
 
 Create the cluster and deploy the debug images:
 `./constellation create ...`
