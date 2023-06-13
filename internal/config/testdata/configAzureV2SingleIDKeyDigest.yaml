@@ -10,8 +10,6 @@ provider:
     location: "West Europe"
     resourceGroup: "resourceGroup"
     userAssignedIdentity: /subscriptions/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/resourceGroups/resourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ConstellationUAMI
-    appClientID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-    clientSecretValue: "aaaaaaaaaaaaaaaaaaaa"
     stateDiskType: Premium_LRS
     confidentialVM: true
     instanceType: Standard_DC4as_v5
