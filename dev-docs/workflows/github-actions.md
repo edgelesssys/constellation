@@ -84,4 +84,4 @@ In addition, you need to create a Service Account which Constellation itself is 
 
 ### Authorizing Azure
 
-see [here](https://docs.edgeless.systems/constellation/workflows/config#creating-iam-credentials)
+See [here](https://docs.edgeless.systems/constellation/workflows/config#creating-iam-credentials).
