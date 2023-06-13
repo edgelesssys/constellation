@@ -424,7 +424,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
-		fmt.Printf("WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, UnsupportedAppRegistrationError{}.Error())
+		fmt.Fprintf(os.Stderr, "WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, UnsupportedAppRegistrationError{}.Error())
 	}
 
 	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
