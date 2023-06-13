@@ -266,6 +266,7 @@ jobs:
     with:
       ref: "refs/tags/${{ inputs.version }}"
       pushContainers: true
+      key: 'release'
 
   e2e-tests:
     name: Run E2E tests
