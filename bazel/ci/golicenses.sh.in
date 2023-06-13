@@ -27,20 +27,12 @@ not_allowed() {
   err=1
 }
 
-${go} mod download
-
-err=0
-
-#ignore_pkgs=(github.com/edgelesssys/go-tdx-qpl github.com/modern-go/reflect2 go.starlark.net/starlark github.com/cespare/xxhash/v2 github.com/klauspost/compress/zstd/internal/xxhash golang.org/x/crypto/chacha20 github.com/google/go-tpm-tools/simulator/internal golang.org/x/sys/unix)
-#ignore_flag=""
-#for pkg in "${ignore_pkgs[@]}"; do ignore_flag+="--ignore $pkg "; done
-#ignore_flag=${ignore_flag% }
-
-PATH="$(dirname "${go}"):${PATH}" \
-GOROOT=$(${go} env GOROOT) \
-GOPATH=$(${go} env GOPATH) \
-GOCACHE=$(${go} env GOCACHE) \
-  ${golicenses} report ./...  2>&1 | grep -Eo "W[0-9]{4}" >/dev/null | {
+license_report() {
+  PATH="$(dirname "${go}"):${PATH}" \
+  GOROOT=$(${go} env GOROOT) \
+  GOPATH=$(${go} env GOPATH) \
+  GOCACHE=$(${go} env GOCACHE) \
+  ${golicenses} report ./... | {
   while read -r line; do
 
     pkg=${line%%,*}
@@ -94,3 +86,15 @@ GOCACHE=$(${go} env GOCACHE) \
   done
   exit "${err}"
 }
+}
+
+
+${go} mod download
+
+err=0
+
+if test -v silent; then
+  license_report 2>/dev/null
+else
+  license_report
+fi
