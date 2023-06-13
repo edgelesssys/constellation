@@ -39,15 +39,16 @@ excludeDirs=(
   "build"
 )
 
-echo "The following Terraform modules are excluded and won't be tidied:"
-for exclude in "${excludeDirs[@]}"; do
-  for i in "${!terraformModules[@]}"; do
-    if [[ ${terraformModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
-      echo "  ${terraformModules[i]}"
-      unset 'terraformModules[i]'
-    fi
+check() {
+  echo "The following Terraform modules are excluded and won't be tidied:"
+  for exclude in "${excludeDirs[@]}"; do
+    for i in "${!terraformModules[@]}"; do
+      if [[ ${terraformModules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}"* ]]; then
+        echo "  ${terraformModules[i]}"
+        unset 'terraformModules[i]'
+      fi
+    done
   done
-done
 
 case ${mode} in
 "check")
@@ -93,4 +94,12 @@ case ${mode} in
   echo "Error: unknown mode \"${mode}\""
   exit 1
   ;;
-esac
+  esac
+}
+
+
+if test -v silent; then
+  check > /dev/null
+else
+  check
+fi

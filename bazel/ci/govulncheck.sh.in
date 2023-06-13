@@ -24,7 +24,8 @@ submodules=$(${go} list -f '{{.Dir}}' -m)
 
 PATH=$(dirname "${go}"):${PATH}
 
-err=0
+check() {
+  err=0
 
 echo "Scanning Go vulnerability DB for knwon vulnerabilities in modules:"
 for mod in ${submodules}; do
@@ -39,3 +40,11 @@ for mod in ${submodules}; do
 done
 
 exit "${err}"
+
+}
+
+if test -v silent; then
+  check > /dev/null
+else
+  check
+fi

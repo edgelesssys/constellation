@@ -27,7 +27,8 @@ excludeMods=(
   "hack/tools"
 )
 
-echo "The following Go modules are excluded and won't be linted with golangci-lint:"
+check() {
+  echo "The following Go modules are excluded and won't be linted with golangci-lint:"
 for exclude in "${excludeMods[@]}"; do
   for i in "${!modules[@]}"; do
     if [[ ${modules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
@@ -46,3 +47,11 @@ for mod in "${modules[@]}"; do
 done
 
 exit "${statuscode}"
+}
+
+
+if test -v silent; then
+  check > /dev/null
+else
+  check
+fi
