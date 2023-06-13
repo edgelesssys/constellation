@@ -9,16 +9,20 @@ package snp
 import (
 	"context"
 	"crypto"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/google/go-sev-guest/abi"
+	"github.com/google/go-sev-guest/verify"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm/tpm2"
 )
@@ -27,24 +31,30 @@ import (
 type Validator struct {
 	variant.AWSSEVSNP
 	*vtpm.Validator
-	getDescribeClient func(context.Context, string) (awsMetadataAPI, error)
+	// amd root key
+	ark *x509.Certificate
+	// kdsClient is used to query the AMD KDS API.
+	kdsClient askGetter
 }
 
 // NewValidator create a new Validator structure and returns it.
 func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
-	v := &Validator{}
+	v := &Validator{
+		ark:       (*x509.Certificate)(&cfg.AMDRootKey),
+		kdsClient: kdsClient{},
+	}
+
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
 		getTrustedKey,
-		v.tpmEnabled,
+		v.validateSNPReport,
 		log,
 	)
-	v.getDescribeClient = getEC2Client
 	return v
 }
 
 // getTrustedKeys return the public area of the provides attestation key.
-// Normally, here the trust of this key should be verified, but currently AWS does not provide this feature.
+// Normally, the key should be verified here, but currently AWS does not provide means to do so.
 func getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
 	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
@@ -55,47 +65,95 @@ func getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocument, _ []byte)
 	return pubArea.Key()
 }
 
-// tpmEnabled verifies if the virtual machine has the tpm2.0 feature enabled.
-func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument, _ *attest.MachineState) error {
-	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
-	// 1. Get the vm's ami (from IdentiTyDocument.imageId)
-	// 2. Check the value of key "TpmSupport": {"Value": "v2.0"}"
-	ctx := context.Background()
+// validateSNPReport validates the report by checking if it has a valid VLEK signature.
+// The certificate chain ARK -> ASK -> VLEK is also validated.
+// No CRLs are checked.
+func (v *Validator) validateSNPReport(attestation vtpm.AttestationDocument, _ *attest.MachineState) error {
+	var info instanceInfo
+	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
+		return fmt.Errorf("unmarshalling instance info: %w", err)
+	}
 
-	idDocument := imds.InstanceIdentityDocument{}
-	err := json.Unmarshal(attestation.InstanceInfo, &idDocument)
+	vlek, err := getVLEK(info.Certs)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing certificates: %w", err)
 	}
 
-	imageID := idDocument.ImageID
-
-	client, err := v.getDescribeClient(ctx, idDocument.Region)
+	ask, err := v.kdsClient.GetASK(context.Background())
 	if err != nil {
-		return err
-	}
-	// Currently, there seems to be a problem with retrieving image attributes directly.
-	// Alternatively, parse it from the general output.
-	imageOutput, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageID}})
-	if err != nil {
-		return err
+		return fmt.Errorf("getting ASK: %w", err)
 	}
 
-	if imageOutput.Images[0].TpmSupport == "v2.0" {
-		return nil
+	if err := ask.CheckSignatureFrom(v.ark); err != nil {
+		return fmt.Errorf("verifying ASK signature: %w", err)
+	}
+	if err := vlek.CheckSignatureFrom(ask); err != nil {
+		return fmt.Errorf("verifying VLEK signature: %w", err)
 	}
 
-	return fmt.Errorf("iam image %s does not support TPM v2.0", imageID)
+	if err := verify.SnpReportSignature(info.Report, vlek); err != nil {
+		return fmt.Errorf("verifying snp report signature: %w", err)
+	}
+
+	return nil
 }
 
-func getEC2Client(ctx context.Context, region string) (awsMetadataAPI, error) {
-	client, err := awsConfig.LoadDefaultConfig(ctx, awsConfig.WithRegion(region))
-	if err != nil {
-		return nil, err
+// getVLEK parses the certificate table included in an extended SNP report
+// and returns the VLEK certificate.
+func getVLEK(certs []byte) (vlek *x509.Certificate, err error) {
+	certTable := abi.CertTable{}
+	if err = certTable.Unmarshal(certs); err != nil {
+		return nil, fmt.Errorf("unmarshalling SNP certificate table: %v", err)
 	}
-	return ec2.NewFromConfig(client), nil
+
+	vlekRaw, err := certTable.GetByGUIDString(abi.VlekGUID)
+	if err != nil {
+		return nil, fmt.Errorf("getting VLEK certificate: %v", err)
+	}
+
+	vlek, err = x509.ParseCertificate(vlekRaw)
+	if err != nil {
+		return nil, fmt.Errorf("parsing certificate: %w", err)
+	}
+
+	return
 }
 
-type awsMetadataAPI interface {
-	DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
+type kdsClient struct{}
+
+// GetASK requests the current certificate chain from the AMD KDS API and returns the ASK.
+func (k kdsClient) GetASK(ctx context.Context) (*x509.Certificate, error) {
+	// Hardcoding "Milan" (the CPU generation) might break in the future. But this is too far down the road to invest time right now.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://kdsintf.amd.com/vlek/v1/Milan/cert_chain", nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("requesting ASK: %w", err)
+	}
+	defer resp.Body.Close()
+
+	pemChain, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+
+	// certificate chain starts with ASK. We hardcode the ARK, so ignore that.
+	decodedASK, _ := pem.Decode(pemChain)
+	if decodedASK == nil {
+		return nil, errors.New("no PEM data found")
+	}
+
+	ask, err := x509.ParseCertificate(decodedASK.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ASK: %w", err)
+	}
+
+	return ask, nil
+}
+
+type askGetter interface {
+	GetASK(ctx context.Context) (*x509.Certificate, error)
 }

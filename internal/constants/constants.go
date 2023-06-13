@@ -220,7 +220,7 @@ b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 `
 
 	//
-	// AMD SEV-SNP
+	// AMD SEV-SNP.
 	//
 
 	// AMDRootKey is the root certificate for signatures from the AMD SEV-SNP PKI.

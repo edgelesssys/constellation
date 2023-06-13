@@ -33,6 +33,8 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
+	// We need to extend this PR and merge it to go back to upstream: https://github.com/google/go-sev-guest/pull/47
+	github.com/google/go-sev-guest => github.com/derpsteb/go-sev-guest v0.0.0-20230612061930-77cc6c19fa1a
 	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299
 	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230612131025-c1ddd5ded590
 )
@@ -229,7 +231,7 @@ require (
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.14.1-0.20230409045903-ed5c185df419 // indirect
-	github.com/google/go-sev-guest v0.6.1 // indirect
+	github.com/google/go-sev-guest v0.6.1
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect

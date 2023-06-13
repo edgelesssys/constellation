@@ -472,7 +472,7 @@ func init() {
 			FieldName: "awsSEVSNP",
 		},
 	}
-	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 2)
+	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 3)
 	AWSSEVSNPDoc.Fields[0].Name = "measurements"
 	AWSSEVSNPDoc.Fields[0].Type = "M"
 	AWSSEVSNPDoc.Fields[0].Note = ""
@@ -481,8 +481,13 @@ func init() {
 	AWSSEVSNPDoc.Fields[1].Name = "launchMeasurement"
 	AWSSEVSNPDoc.Fields[1].Type = "Measurement"
 	AWSSEVSNPDoc.Fields[1].Note = ""
-	AWSSEVSNPDoc.Fields[1].Description = "Expected launch measurement in SNP report."
-	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Expected launch measurement in SNP report."
+	AWSSEVSNPDoc.Fields[1].Description = "Expected launch measurement in SNP report. Not in use right now."
+	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Expected launch measurement in SNP report. Not in use right now."
+	AWSSEVSNPDoc.Fields[2].Name = "amdRootKey"
+	AWSSEVSNPDoc.Fields[2].Type = "Certificate"
+	AWSSEVSNPDoc.Fields[2].Note = ""
+	AWSSEVSNPDoc.Fields[2].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AWSSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."

@@ -13,8 +13,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
+	"github.com/google/go-sev-guest/proto/sevsnp"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
@@ -440,6 +442,60 @@ func TestGetSelectedMeasurements(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.Len(pcrs, len(tc.pcrSelection.PCRs))
+		})
+	}
+}
+
+// TestUnmarshal verifies that an actual attestation document can be unmarshalled.
+func TestUnmarshal(t *testing.T) {
+	testCases := map[string]struct {
+		path string
+	}{
+		"aws": {
+			path: "testdata/attdoc-aws.txt",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			attestationRaw, err := os.ReadFile(tc.path)
+			require.NoError(err)
+
+			attestation := &AttestationDocument{}
+			err = json.Unmarshal(attestationRaw, attestation)
+			assert.NoError(err)
+		})
+	}
+}
+
+// TestMarshalUnmarshal verifies that the AttestationDocument can be marshalled and unmarshalled.
+func TestMarshalUnmarshal(t *testing.T) {
+	testCases := map[string]struct {
+		obj AttestationDocument
+	}{
+		"snp tee": {
+			obj: AttestationDocument{&attest.Attestation{TeeAttestation: &attest.Attestation_SevSnpAttestation{SevSnpAttestation: &sevsnp.Attestation{Report: &sevsnp.Report{Version: 1}}}}, nil, nil},
+		},
+		"no tee": {
+			obj: AttestationDocument{&attest.Attestation{}, nil, nil},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			data, err := json.Marshal(&tc.obj)
+			assert.NoError(err)
+			assert.NotNil(data)
+
+			attestation := &AttestationDocument{}
+			err = json.Unmarshal(data, attestation)
+			assert.NoError(err)
+			assert.NotNil(attestation)
+			assert.Equal(tc.obj, *attestation)
 		})
 	}
 }

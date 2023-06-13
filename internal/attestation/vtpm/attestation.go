@@ -13,12 +13,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	tpmServer "github.com/google/go-tpm-tools/server"
 	"github.com/google/go-tpm/tpm2"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -74,6 +76,51 @@ type AttestationDocument struct {
 	InstanceInfo []byte
 	// arbitrary data, quoted by the TPM.
 	UserData []byte
+}
+
+type auxAttestationDocument struct {
+	// Attestation contains the TPM event log, PCR values and quotes, and public key of the key used to sign the attestation.
+	Attestation json.RawMessage
+	// InstanceInfo is used to verify the provided public key.
+	InstanceInfo []byte
+	// arbitrary data, quoted by the TPM.
+	UserData []byte
+}
+
+// MarshalJSON is needed as the proto definition of attest.Attestation uses protobuf's oneof feature.
+// That feature is not handled correctly by encoding/json.
+func (a AttestationDocument) MarshalJSON() ([]byte, error) {
+	attestation, err := protojson.Marshal(a.Attestation)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling attestation: %w", err)
+	}
+
+	aux := auxAttestationDocument{
+		Attestation:  attestation,
+		InstanceInfo: a.InstanceInfo,
+		UserData:     a.UserData,
+	}
+	return json.Marshal(aux)
+}
+
+// UnmarshalJSON is needed as the proto definition of attest.Attestation uses protobuf's oneof feature.
+// That feature is not handled correctly by encoding/json.
+func (a *AttestationDocument) UnmarshalJSON(b []byte) error {
+	aux := auxAttestationDocument{}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return fmt.Errorf("unmarshaling AttestationDocument: %w", err)
+	}
+
+	attestation := &attest.Attestation{}
+	if err := protojson.Unmarshal(aux.Attestation, attestation); err != nil {
+		return fmt.Errorf("unmarshaling attestation: %w", err)
+	}
+
+	a.Attestation = attestation
+	a.InstanceInfo = aux.InstanceInfo
+	a.UserData = aux.UserData
+
+	return nil
 }
 
 // Issuer handles issuing of TPM based attestation documents.
@@ -183,6 +230,9 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 		}
 	}()
 
+	if err := os.WriteFile("/tmp/constellation-attdoc.bin", attDocRaw, 0o644); err != nil {
+		return nil, fmt.Errorf("writing attestation document to /tmp/constellation-attdoc.bin: %w", err)
+	}
 	var attDoc AttestationDocument
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, fmt.Errorf("unmarshaling TPM attestation document: %w", err)

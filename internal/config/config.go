@@ -788,7 +788,7 @@ type AWSSEVSNP struct {
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
 	// description: |
-	//   Expected launch measurement in SNP report.
+	//   Expected launch measurement in SNP report. Not in use right now.
 	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
