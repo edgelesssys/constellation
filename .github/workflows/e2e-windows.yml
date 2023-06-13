@@ -73,6 +73,7 @@ jobs:
         shell: pwsh
         run: |
           .\constellation.exe init --debug
+          $env:KUBECONFIG = '$PWD\constellation-admin.conf'
 
       - name: Liveness probe
         shell: pwsh
