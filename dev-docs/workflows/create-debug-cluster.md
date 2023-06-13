@@ -24,13 +24,20 @@ yq eval -i '.debugCluster=true' constellation-conf.yaml
 ´´´
 
 Create the cluster and deploy the debug images:
-`./constellation create ...`
 
-`./cdbg deploy`
+´´´sh
+./constellation create ...
+´´´
+
+´´´sh
+./cdbg deploy
+´´´
 
 Finally run:
 
-`./constellation init`
+´´´sh
+./constellation init
+´´´
 
 ### OSS version?
 <!-- not sure -->
