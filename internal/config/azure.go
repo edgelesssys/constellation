@@ -81,16 +81,16 @@ func (c *AzureSEVSNP) FetchAndSetLatestVersionNumbers(ctx context.Context, fetch
 }
 
 func (c *AzureSEVSNP) mergeWithLatestVersion(latest attestationconfigapi.AzureSEVSNPVersion) {
-	if c.BootloaderVersion.IsLatest {
+	if c.BootloaderVersion.WantLatest {
 		c.BootloaderVersion.Value = latest.Bootloader
 	}
-	if c.TEEVersion.IsLatest {
+	if c.TEEVersion.WantLatest {
 		c.TEEVersion.Value = latest.TEE
 	}
-	if c.SNPVersion.IsLatest {
+	if c.SNPVersion.WantLatest {
 		c.SNPVersion.Value = latest.SNP
 	}
-	if c.MicrocodeVersion.IsLatest {
+	if c.MicrocodeVersion.WantLatest {
 		c.MicrocodeVersion.Value = latest.Microcode
 	}
 }

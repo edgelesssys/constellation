@@ -80,20 +80,20 @@ func TestNew(t *testing.T) {
 				conf := Default()
 				modifyConfigForAzureToPassValidate(conf)
 				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion{
-					Value:    testCfg.Microcode,
-					IsLatest: true,
+					Value:      testCfg.Microcode,
+					WantLatest: true,
 				}
 				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
-					Value:    2,
-					IsLatest: false,
+					Value:      2,
+					WantLatest: false,
 				}
 				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
-					Value:    1,
-					IsLatest: false,
+					Value:      1,
+					WantLatest: false,
 				}
 				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion{
-					Value:    testCfg.SNP,
-					IsLatest: true,
+					Value:      testCfg.SNP,
+					WantLatest: true,
 				}
 				return conf
 			}(),
@@ -122,11 +122,11 @@ func TestNew(t *testing.T) {
 func modifyConfigForAzureToPassValidate(c *Config) {
 	c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
 	c.Image = "v" + constants.VersionInfo()
-	c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-	c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
+	c.Provider.Azure.SubscriptionID = "11111111-1111-1111-1111-111111111111"
+	c.Provider.Azure.TenantID = "11111111-1111-1111-1111-111111111111"
 	c.Provider.Azure.Location = "westus"
 	c.Provider.Azure.ResourceGroup = "test"
-	c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+	c.Provider.Azure.UserAssignedIdentity = "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 	c.Attestation.AzureSEVSNP.Measurements = measurements.M{
 		0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 	}
@@ -257,16 +257,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			confToWrite: func() *Config { // valid config with all, but clientSecretValue
 				c := Default()
 				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				c.Image = "v" + constants.VersionInfo()
-				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
-				c.Provider.Azure.Location = "westus"
-				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
-				}
+				modifyConfigForAzureToPassValidate(c)
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -277,18 +268,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 		"set env overwrites": {
 			confToWrite: func() *Config {
 				c := Default()
-				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				c.Image = "v" + constants.VersionInfo()
-				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
-				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
-				c.Provider.Azure.Location = "westus"
-				c.Provider.Azure.ResourceGroup = "test"
-				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
-				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
-				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Attestation.AzureSEVSNP.Measurements = measurements.M{
-					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
-				}
+				modifyConfigForAzureToPassValidate(c)
 				return c
 			}(),
 			envToSet: map[string]string{
