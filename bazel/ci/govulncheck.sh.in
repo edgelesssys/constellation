@@ -43,7 +43,7 @@ check() {
 
 }
 
-if test -v silent; then
+if test -v SILENT; then
   check > /dev/null
 else
   check
