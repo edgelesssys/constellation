@@ -1,16 +1,26 @@
 # syntax=docker/dockerfile:1.5-labs
-FROM fedora:37
+FROM fedora:38 as base
 
 ARG TARGETOS
 ARG TARGETARCH
-ARG BAZEL_VERSION=6.1.2
-ARG BAZELISK_VERSION=v1.16.0
-ARG BAZELISK_SHA256=168851e70cf5f95c0e215e7f3aaca5132ffc3c8dd8f585a4157b0be2b53cfe32
+ARG BAZEL_VERSION=6.2.1
+ARG BAZELISK_VERSION=v1.17.0
+ARG BAZELISK_SHA256_LINUX_AMD64=61699e22abb2a26304edfa1376f65ad24191f94a4ffed68a58d42b6fee01e124
+ARG BAZELISK_SHA256_LINUX_ARM64=a836972b8a7c34970fb9ecc44768ece172f184c5f7e2972c80033fcdcf8c1870
+ARG BAZELISK_URL=https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/bazelisk-${TARGETOS}-${TARGETARCH}
 
-ADD --checksum=sha256:${BAZELISK_SHA256} \
-    https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/bazelisk-${TARGETOS}-${TARGETARCH} \
-    /usr/local/bin/bazelisk
+FROM base AS base-amd64
+ADD --checksum=sha256:${BAZELISK_SHA256_LINUX_AMD64} \
+	${BAZELISK_URL} \
+	/usr/local/bin/bazelisk
 
+FROM base AS base-arm64
+ADD --checksum=sha256:${BAZELISK_SHA256_LINUX_ARM64} \
+	${BAZELISK_URL} \
+	/usr/local/bin/bazelisk
+
+
+FROM base-${TARGETARCH} as bazel
 RUN chmod +x /usr/local/bin/bazelisk && \
 	ln -s /usr/local/bin/bazelisk /usr/local/bin/bazel && \
 	dnf install -y \
@@ -31,6 +41,6 @@ USER builder
 WORKDIR /workspace
 
 RUN git config --global --add safe.directory /workspace && \
-    USE_BAZEL_VERSION=${BAZEL_VERSION} bazel version
+	USE_BAZEL_VERSION=${BAZEL_VERSION} bazel version
 
 ENTRYPOINT [ "/usr/local/bin/bazel" ]
