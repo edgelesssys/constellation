@@ -1,4 +1,11 @@
-<!--# Process conventions-->
+# Writing to customers: style policy
+
+Whenever we write text facing the customer (e.g docs, warnings, errors), we follow the [Microsoft Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/).
+Some significant rules are these:
+
+* [Avoid please](https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/p/please)
+* [Be brief](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice#be-brief)
+* [Avoid we](https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/w/we)
 
 # Go code conventions
 

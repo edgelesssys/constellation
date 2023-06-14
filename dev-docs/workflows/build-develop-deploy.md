@@ -105,7 +105,7 @@ We recommend to set up your IDE to conform with our conventions (see [here](./de
 
 ### Testing
 
-See [here](./testing.md)
+See [here](./testing.md) on how to run tests and how we write tests.
 
 ### Contributing a PR
 
