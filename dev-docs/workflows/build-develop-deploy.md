@@ -62,8 +62,7 @@ Get a GitHub token with access to the registry and authenticate through `docker`
 Optionally, you can customize the default registry target:
 
 ```sh
-cat .bazeloverwriterc
-build --container_prefix=ghcr.io/USERNAME/constellation
+echo "build --container_prefix=ghcr.io/USERNAME/constellation" >> .bazeloverwriterc
 ```
 
 ### Authenticate with your cloud provider
@@ -94,13 +93,13 @@ bazel run //:devbuild --cli_edition=oss --container_prefix=ghcr.io/USERNAME/cons
 
 ### Specialized Bazel build targets
 
-see [bazel](./bazel.md#build)
+See [bazel](./bazel.md#build).
 
 ## Develop & Contribute
 
 ### VS Code setup
 
-We recommend to set up your IDE to conform with our conventions (see [here](../conventions.md/#recommended-vs-code-settings)). You might also consider to set up Bazel in the IDE (see [here](./bazel.md#vs-code-integration)).
+We recommend to set up your IDE to conform with our conventions (see [here](../conventions.md#recommended-vs-code-settings)). You might also consider to set up Bazel in the IDE (see [here](./bazel.md#vs-code-integration)).
 
 ### Testing
 
@@ -108,13 +107,13 @@ See [here](./testing.md)
 
 ### Pre-Opening a PR
 
-Before opening a PR, please run the tests and
+Before opening a PR, please run the tests and regenerate all files:
 
-```sh
+´´´sh
 bazel run //:generate && bazel run //:tidy
 bazel run //:check
-```
-
+bazel test //...
+´´´
 These checks are performed in the CI pipeline.
 
 Please note that some errors thrown in `check` by `golicenses_check` are ignored (for more see [golicenses.sh.in](../../bazel/ci/golicenses.sh.in)).
