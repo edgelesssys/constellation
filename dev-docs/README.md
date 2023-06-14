@@ -3,10 +3,6 @@
 
 To get started building and running constellation: [local-development](./workflows/build-develop-deploy.md)
 
-## `workflows`
+* `workflows`: Information on processes and tools
 
-information on processes and tools
-
-## `how-to`
-
-instructions for special deployments
+* `howto`: Instructions for special deployments
