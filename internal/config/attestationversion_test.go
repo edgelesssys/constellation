@@ -22,16 +22,16 @@ func TestVersionMarshalYAML(t *testing.T) {
 		{
 			name: "isLatest resolves to latest",
 			sut: AttestationVersion{
-				Value:    1,
-				IsLatest: true,
+				Value:      1,
+				WantLatest: true,
 			},
 			want: "latest\n",
 		},
 		{
 			name: "value 5 resolves to 5",
 			sut: AttestationVersion{
-				Value:    5,
-				IsLatest: false,
+				Value:      5,
+				WantLatest: false,
 			},
 			want: "5\n",
 		},

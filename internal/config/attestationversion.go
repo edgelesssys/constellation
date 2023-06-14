@@ -17,20 +17,20 @@ const placeholderVersionValue = 0
 // NewLatestPlaceholderVersion returns the latest version with a placeholder version value.
 func NewLatestPlaceholderVersion() AttestationVersion {
 	return AttestationVersion{
-		Value:    placeholderVersionValue,
-		IsLatest: true,
+		Value:      placeholderVersionValue,
+		WantLatest: true,
 	}
 }
 
 // AttestationVersion is a type that represents a version of a SNP.
 type AttestationVersion struct {
-	Value    uint8
-	IsLatest bool
+	Value      uint8
+	WantLatest bool
 }
 
 // MarshalYAML implements a custom marshaller to resolve "latest" values.
 func (v AttestationVersion) MarshalYAML() (any, error) {
-	if v.IsLatest {
+	if v.WantLatest {
 		return "latest", nil
 	}
 	return v.Value, nil
@@ -48,7 +48,7 @@ func (v *AttestationVersion) UnmarshalYAML(unmarshal func(any) error) error {
 
 // MarshalJSON implements a custom marshaller to resolve "latest" values.
 func (v AttestationVersion) MarshalJSON() ([]byte, error) {
-	if v.IsLatest {
+	if v.WantLatest {
 		return json.Marshal("latest")
 	}
 	return json.Marshal(v.Value)
@@ -67,7 +67,7 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 	switch s := rawUnmarshal.(type) {
 	case string:
 		if strings.ToLower(s) == "latest" {
-			v.IsLatest = true
+			v.WantLatest = true
 			v.Value = placeholderVersionValue
 		} else {
 			return fmt.Errorf("invalid version value: %s", s)
