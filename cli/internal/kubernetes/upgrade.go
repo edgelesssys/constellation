@@ -33,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,10 +86,22 @@ type Upgrader struct {
 	outWriter        io.Writer
 	tfUpgrader       *upgrade.TerraformUpgrader
 	log              debugLog
+	upgradeID        string
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgrader, error) {
+// If checkOnly is true, the upgrader will only create the resources necessary for upgrade checking. (i.e. no Terraform client)
+// Not creating the Terraform client in the check-case makes sense as the initialization of the Terraform client copies the
+// executable to the upgrade directory, which is not necessary for the check-only case.
+func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, checkOnly bool) (*Upgrader, error) {
+	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+	u := &Upgrader{
+		imageFetcher: imagefetcher.New(),
+		outWriter:    outWriter,
+		log:          log,
+		upgradeID:    upgradeID,
+	}
+
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -98,56 +111,54 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog) (*Upgra
 	if err != nil {
 		return nil, fmt.Errorf("setting up kubernetes client: %w", err)
 	}
+	u.stableInterface = &stableClient{client: kubeClient}
 
 	// use unstructured client to avoid importing the operator packages
 	unstructuredClient, err := dynamic.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
+	u.dynamicInterface = &NodeVersionClient{client: unstructuredClient}
 
 	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
+	u.helmClient = helmClient
 
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir))
-	if err != nil {
-		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	if !checkOnly {
+		tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+		if err != nil {
+			return nil, fmt.Errorf("setting up terraform client: %w", err)
+		}
+
+		tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
+		if err != nil {
+			return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
+		}
+		u.tfUpgrader = tfUpgrader
 	}
 
-	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
-	if err != nil {
-		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
-	}
-
-	return &Upgrader{
-		stableInterface:  &stableClient{client: kubeClient},
-		dynamicInterface: &NodeVersionClient{client: unstructuredClient},
-		helmClient:       helmClient,
-		imageFetcher:     imagefetcher.New(),
-		outWriter:        outWriter,
-		tfUpgrader:       tfUpgrader,
-		log:              log,
-	}, nil
+	return u, nil
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
 func (u *Upgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
-	return u.tfUpgrader.CheckTerraformMigrations(fileHandler)
+	return u.tfUpgrader.CheckTerraformMigrations(fileHandler, u.upgradeID)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
 func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
-	return u.tfUpgrader.CleanUpTerraformMigrations(fileHandler)
+	return u.tfUpgrader.CleanUpTerraformMigrations(fileHandler, u.upgradeID)
 }
 
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
 func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
-	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts)
+	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
 // ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
@@ -155,12 +166,12 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
 func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error {
-	return u.tfUpgrader.ApplyTerraformMigrations(ctx, fileHandler, opts)
+	return u.tfUpgrader.ApplyTerraformMigrations(ctx, fileHandler, opts, u.upgradeID)
 }
 
 // UpgradeHelmServices upgrade helm services.
 func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
-	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
+	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive, u.upgradeID)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -526,7 +537,7 @@ func joinConfigMigration(existingConf *corev1.ConfigMap, attestVariant variant.V
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, upgradeID string) error
 }
 
 type debugLog interface {

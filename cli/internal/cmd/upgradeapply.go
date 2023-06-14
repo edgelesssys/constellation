@@ -62,7 +62,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, false)
 	if err != nil {
 		return err
 	}

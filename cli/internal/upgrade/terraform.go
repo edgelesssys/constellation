@@ -54,11 +54,11 @@ type TerraformUpgradeOptions struct {
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
-func (u *TerraformUpgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
+func (u *TerraformUpgrader) CheckTerraformMigrations(fileHandler file.Handler, upgradeID string) error {
 	var existingFiles []string
 	filesToCheck := []string{
 		constants.TerraformMigrationOutputFile,
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
 	}
 
 	for _, f := range filesToCheck {
@@ -90,11 +90,12 @@ func checkFileExists(fileHandler file.Handler, existingFiles *[]string, filename
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
-func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions) (bool, error) {
+func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) (bool, error) {
 	err := u.tf.PrepareUpgradeWorkspace(
 		filepath.Join("terraform", strings.ToLower(opts.CSP.String())),
 		constants.TerraformWorkingDir,
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
 		opts.Vars,
 	)
 	if err != nil {
@@ -117,10 +118,10 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
-func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
+func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler, upgradeID string) error {
 	cleanupFiles := []string{
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
 	}
 
 	for _, f := range cleanupFiles {
@@ -136,7 +137,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler)
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts TerraformUpgradeOptions) error {
+func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts TerraformUpgradeOptions, upgradeID string) error {
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
@@ -161,11 +162,11 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 		return fmt.Errorf("removing old terraform directory: %w", err)
 	}
 
-	if err := fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
+	if err := fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
 		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
-	if err := fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir)); err != nil {
+	if err := fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
 		return fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 
@@ -178,7 +179,7 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 
 // a tfClient performs the Terraform interactions in an upgrade.
 type tfClient interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir string, vars terraform.Variables) error
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)

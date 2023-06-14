@@ -40,18 +40,22 @@ func TestCheckTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		upgradeID string
 		workspace file.Handler
 		wantErr   bool
 	}{
 		"success": {
+			upgradeID: "1234",
 			workspace: workspace(nil),
 		},
 		"migration output file already exists": {
+			upgradeID: "1234",
 			workspace: workspace([]string{constants.TerraformMigrationOutputFile}),
 			wantErr:   true,
 		},
 		"terraform backup dir already exists": {
-			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir)}),
+			upgradeID: "1234",
+			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir)}),
 			wantErr:   true,
 		},
 	}
@@ -59,7 +63,7 @@ func TestCheckTerraformMigrations(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			u := upgrader()
-			err := u.CheckTerraformMigrations(tc.workspace)
+			err := u.CheckTerraformMigrations(tc.workspace, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -79,20 +83,24 @@ func TestPlanTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		tf      tfClient
-		want    bool
-		wantErr bool
+		upgradeID string
+		tf        tfClient
+		want      bool
+		wantErr   bool
 	}{
 		"success no diff": {
-			tf: &stubTerraformClient{},
+			upgradeID: "1234",
+			tf:        &stubTerraformClient{},
 		},
 		"success diff": {
+			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				hasDiff: true,
 			},
 			want: true,
 		},
 		"prepare workspace error": {
+			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				prepareWorkspaceErr: assert.AnError,
 			},
@@ -105,11 +113,13 @@ func TestPlanTerraformMigrations(t *testing.T) {
 			wantErr: true,
 		},
 		"show plan error no diff": {
+			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				showErr: assert.AnError,
 			},
 		},
 		"show plan error diff": {
+			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				showErr: assert.AnError,
 				hasDiff: true,
@@ -130,7 +140,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 				Vars:     &terraform.QEMUVariables{},
 			}
 
-			diff, err := u.PlanTerraformMigrations(context.Background(), opts)
+			diff, err := u.PlanTerraformMigrations(context.Background(), opts, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -149,11 +159,11 @@ func TestApplyTerraformMigrations(t *testing.T) {
 		return u
 	}
 
-	fileHandler := func(existingFiles ...string) file.Handler {
+	fileHandler := func(upgradeID string, existingFiles ...string) file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
 		require.NoError(t,
 			fh.Write(
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir, "someFile"),
+				filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir, "someFile"),
 				[]byte("some content"),
 			))
 		for _, f := range existingFiles {
@@ -163,6 +173,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		upgradeID      string
 		tf             tfClient
 		policyPatcher  stubPolicyPatcher
 		fs             file.Handler
@@ -170,38 +181,43 @@ func TestApplyTerraformMigrations(t *testing.T) {
 		wantErr        bool
 	}{
 		"success": {
+			upgradeID:      "1234",
 			tf:             &stubTerraformClient{},
-			fs:             fileHandler(),
+			fs:             fileHandler("1234"),
 			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 		},
 		"create cluster error": {
+			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				CreateClusterErr: assert.AnError,
 			},
-			fs:             fileHandler(),
+			fs:             fileHandler("1234"),
 			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 			wantErr:        true,
 		},
 		"patch error": {
-			tf: &stubTerraformClient{},
-			fs: fileHandler(),
+			upgradeID: "1234",
+			tf:        &stubTerraformClient{},
+			fs:        fileHandler("1234"),
 			policyPatcher: stubPolicyPatcher{
 				patchErr: assert.AnError,
 			},
 			wantErr: true,
 		},
 		"empty file name": {
+			upgradeID:      "1234",
 			tf:             &stubTerraformClient{},
-			fs:             fileHandler(),
+			fs:             fileHandler("1234"),
 			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "",
 			wantErr:        true,
 		},
 		"file already exists": {
+			upgradeID:      "1234",
 			tf:             &stubTerraformClient{},
-			fs:             fileHandler("test.json"),
+			fs:             fileHandler("1234", "test.json"),
 			policyPatcher:  stubPolicyPatcher{},
 			outputFileName: "test.json",
 			wantErr:        true,
@@ -221,7 +237,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 				OutputFile: tc.outputFileName,
 			}
 
-			err := u.ApplyTerraformMigrations(context.Background(), tc.fs, opts)
+			err := u.ApplyTerraformMigrations(context.Background(), tc.fs, opts, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -249,33 +265,38 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		upgradeID string
 		workspace file.Handler
 		wantFiles []string
 		wantErr   bool
 	}{
 		"no files": {
+			upgradeID: "1234",
 			workspace: workspace(nil),
 			wantFiles: []string{},
 		},
 		"clean backup dir": {
+			upgradeID: "1234",
 			workspace: workspace([]string{
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
 			}),
 			wantFiles: []string{},
 		},
 		"clean working dir": {
+			upgradeID: "1234",
 			workspace: workspace([]string{
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeWorkingDir),
+				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeWorkingDir),
 			}),
 			wantFiles: []string{},
 		},
 		"clean backup dir leave other files": {
+			upgradeID: "1234",
 			workspace: workspace([]string{
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
-				filepath.Join(constants.UpgradeDir, "someFile"),
+				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
+				filepath.Join(constants.UpgradeDir, "1234", "someFile"),
 			}),
 			wantFiles: []string{
-				filepath.Join(constants.UpgradeDir, "someFile"),
+				filepath.Join(constants.UpgradeDir, "1234", "someFile"),
 			},
 		},
 	}
@@ -285,7 +306,7 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 			require := require.New(t)
 
 			u := upgrader()
-			err := u.CleanUpTerraformMigrations(tc.workspace)
+			err := u.CleanUpTerraformMigrations(tc.workspace, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 				return
@@ -309,7 +330,7 @@ type stubTerraformClient struct {
 	CreateClusterErr    error
 }
 
-func (u *stubTerraformClient) PrepareUpgradeWorkspace(string, string, string, terraform.Variables) error {
+func (u *stubTerraformClient) PrepareUpgradeWorkspace(string, string, string, string, terraform.Variables) error {
 	return u.prepareWorkspaceErr
 }
 
