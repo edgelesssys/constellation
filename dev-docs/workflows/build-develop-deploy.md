@@ -28,9 +28,11 @@ Prerequisites:
 ### Mac
 
 * To fix unsupported shell options used in some build script:
-  ´´´sh
+
+  ```sh
   brew install bash
-  ´´´
+  ```
+
 * To troubleshoot potential problems with bazel on ARM architecture when running it for the first time, it might help to purge and retry:
 
 ```sh
@@ -111,11 +113,12 @@ See [here](./testing.md)
 
 Before opening a PR, please run the tests and regenerate all files:
 
-´´´sh
+```sh
 bazel run //:generate && bazel run //:tidy
 bazel run //:check
 bazel test //...
-´´´
+```
+
 These checks are performed in the CI pipeline.
 
 Please note that some errors thrown in `check` by `golicenses_check` are ignored (for more see [golicenses.sh.in](../../bazel/ci/golicenses.sh.in)).

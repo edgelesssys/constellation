@@ -14,30 +14,30 @@ To replace them with the latest debug image, run
 bazel run //internal/api/versionsapi/cli -- latest --ref main --stream debug
 ```
 
-to fetch the latest version and insert in the `image`` field of the config file.
+to fetch the latest version and insert in the `image` field of the config file.
 
 Before cluster creation you need to configure the cluster as debug.
 Set `debugCluster: true` in the config:
 
-´´´sh
+```sh
 yq eval -i '.debugCluster=true' constellation-conf.yaml
-´´´
+```
 
 Create the cluster and deploy the debug images:
 
-´´´sh
+```sh
 ./constellation create ...
-´´´
+```
 
-´´´sh
+```sh
 ./cdbg deploy
-´´´
+```
 
 Finally run:
 
-´´´sh
+```sh
 ./constellation init
-´´´
+```
 
 ### OSS version?
 <!-- not sure -->
