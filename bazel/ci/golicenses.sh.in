@@ -92,7 +92,7 @@ ${go} mod download
 
 err=0
 
-if test -v silent; then
+if test -v SILENT; then
   license_report 2> /dev/null
 else
   license_report
