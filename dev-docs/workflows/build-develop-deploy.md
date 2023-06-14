@@ -99,13 +99,15 @@ See [bazel](./bazel.md#build).
 
 ### VS Code setup
 
-We recommend to set up your IDE to conform with our conventions (see [here](../conventions.md#recommended-vs-code-settings)). You might also consider to set up Bazel in the IDE (see [here](./bazel.md#vs-code-integration)).
+We recommend to set up your IDE to conform with our conventions (see [here](./dev-setup.md)).
 
 ### Testing
 
 See [here](./testing.md)
 
-### Pre-Opening a PR
+### Contributing a PR
+
+#### Pre-Opening a PR
 
 Before opening a PR, please run the tests and regenerate all files:
 
@@ -118,10 +120,9 @@ These checks are performed in the CI pipeline.
 
 Please note that some errors thrown in `check` by `golicenses_check` are ignored (for more see [golicenses.sh.in](../../bazel/ci/golicenses.sh.in)).
 
-### PR-Guidelines
+#### PR-Guidelines
 
-Please read the [PR conventions](https://github.com/edgelesssys/constellation/blob/main/dev-docs/conventions.md#pr-conventions).
-Furthermore, the PR titles are used for the changelog, so please stick to the naming convention.
+See [here](./pull-request.md).
 
 ## Deploy
 

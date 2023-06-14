@@ -1,4 +1,6 @@
-# First steps
+# Contributing
+
+## First steps
 
 Thank you for getting involved! Before you start, please familiarize yourself with the [documentation](https://docs.edgeless.systems/constellation).
 
@@ -12,7 +14,27 @@ If you want to support our development:
 
 Constellation is licensed under the [AGPLv3](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
 
-# Developer docs
+## Reporting issues and bugs, asking questions
+
+This project uses the GitHub issue tracker. Please check the existing issues before submitting to avoid duplicates.
+
+To report a security issue, contact <security@edgeless.systems>.
+
+Your bug report should cover the following points:
+
+* A quick summary and/or background of the issue
+* Steps to reproduce (be specific, e.g., provide sample code)
+* What you expected would happen
+* What actually happens
+* Further notes:
+  * Thoughts on possible causes
+  * Tested workarounds or fixes
+
+## Contributing a Pull request
+
+See [here](./dev-docs/workflows/pull-request.md).
+
+## Developer docs
 
 We have some documentation, guidelines and conventions that you can go through to familiarize yourself with the project and get started hacking on it.
 
