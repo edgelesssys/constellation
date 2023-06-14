@@ -33,9 +33,12 @@ bazel build //cli:cli_oss_darwin_arm64 # cross compile CLI for mac arm64
 ### Pre-PR checks
 
 * `bazel test //...` - run all tests
-* `bazel run //:tidy` - tidy, format and generate
-* `bazel run //:check` - execute checks and linters
 * `bazel run //:generate` - execute code generation
+* `bazel run //:tidy` - tidy, format and generate
+* `bazel run //:check` - execute checks and linters. To reduce verbosity of non-critical output, you can set `SILENT=1 bazel run //:check`
+
+Note that its important to run `generate` before `check`. These checks are performed in the CI pipeline.
+Also note that some errors shown in `check` (non-silent mode) by `golicenses_check` are ignored (for more see [golicenses.sh.in](../../bazel/ci/golicenses.sh.in)).
 
 ### Query
 

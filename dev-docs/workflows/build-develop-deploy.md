@@ -111,17 +111,7 @@ See [here](./testing.md) on how to run tests and how we write tests.
 
 #### Pre-Opening a PR
 
-Before opening a PR, please run the tests and regenerate all files:
-
-```sh
-bazel run //:generate && bazel run //:tidy
-bazel run //:check
-bazel test //...
-```
-
-These checks are performed in the CI pipeline.
-
-Please note that some errors thrown in `check` by `golicenses_check` are ignored (for more see [golicenses.sh.in](../../bazel/ci/golicenses.sh.in)).
+Before opening a PR, please run [these Bazel targets](./bazel.md#pre-pr-checks)
 
 #### PR-Guidelines
 
