@@ -54,6 +54,7 @@ type Client interface {
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
+	EnforceCoreDNSSpread(ctx context.Context) error
 }
 
 type componentsInstaller interface {

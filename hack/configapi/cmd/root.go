@@ -92,7 +92,7 @@ func runCmd(cmd *cobra.Command, _ []string) error {
 	}
 	var uploadDate time.Time
 	if dateStr != "" {
-		uploadDate, err = time.Parse("2006-01-01-01-01", dateStr)
+		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
 		if err != nil {
 			return fmt.Errorf("parsing date: %w", err)
 		}

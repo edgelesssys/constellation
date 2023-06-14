@@ -9,8 +9,6 @@ package aws
 import (
 	"context"
 	"errors"
-	"io"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -29,11 +27,9 @@ import (
 )
 
 func TestSelf(t *testing.T) {
-	someErr := errors.New("failed")
-
 	testCases := map[string]struct {
 		imds     *stubIMDS
-		ec2      *stubEC2
+		ec2API   *stubEC2
 		wantSelf metadata.InstanceMetadata
 		wantErr  bool
 	}{
@@ -46,8 +42,24 @@ func TestSelf(t *testing.T) {
 						PrivateIP:        "192.0.2.1",
 					},
 				},
-				tags: map[string]string{
-					cloud.TagRole: "controlplane",
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("controlplane"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
@@ -66,9 +78,28 @@ func TestSelf(t *testing.T) {
 						PrivateIP:        "192.0.2.1",
 					},
 				},
-				tags: map[string]string{
-					cloud.TagRole:           "worker",
-					cloud.TagInitSecretHash: "initSecretHash",
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("worker"),
+										},
+										{
+											Key:   aws.String(cloud.TagInitSecretHash),
+											Value: aws.String("initSecretHash"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
@@ -80,15 +111,34 @@ func TestSelf(t *testing.T) {
 		},
 		"get instance document error": {
 			imds: &stubIMDS{
-				getInstanceIdentityDocumentErr: someErr,
-				tags: map[string]string{
-					tagName:       "test-instance",
-					cloud.TagRole: "controlplane",
+				getInstanceIdentityDocumentErr: assert.AnError,
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("controlplane"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			wantErr: true,
 		},
-		"get metadata error": {
+		"get instance error": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
@@ -97,7 +147,9 @@ func TestSelf(t *testing.T) {
 						PrivateIP:        "192.0.2.1",
 					},
 				},
-				getMetadataErr: someErr,
+			},
+			ec2API: &stubEC2{
+				describeInstancesErr: assert.AnError,
 			},
 			wantErr: true,
 		},
@@ -110,8 +162,24 @@ func TestSelf(t *testing.T) {
 						PrivateIP:        "192.0.2.1",
 					},
 				},
-				tags: map[string]string{
-					tagName: "test-instance",
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("test-instance"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			wantErr: true,
@@ -121,7 +189,10 @@ func TestSelf(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Cloud{imds: tc.imds, ec2: &stubEC2{}}
+			m := &Cloud{
+				imds: tc.imds,
+				ec2:  tc.ec2API,
+			}
 
 			self, err := m.Self(context.Background())
 			if tc.wantErr {
@@ -192,18 +263,45 @@ func TestList(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		imds     *stubIMDS
+		imdsAPI  *stubIMDS
 		ec2      *stubEC2
 		wantList []metadata.InstanceMetadata
 		wantErr  bool
 	}{
 		"success single page": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "id-1",
+					},
 				},
 			},
 			ec2: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("id-1"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("name-1"),
+										},
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("controlplane"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 				describeInstancesResp1: successfulResp,
 			},
 			wantList: []metadata.InstanceMetadata{
@@ -222,12 +320,39 @@ func TestList(t *testing.T) {
 			},
 		},
 		"success multiple pages": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "id-1",
+					},
 				},
 			},
 			ec2: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("id-1"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("name-1"),
+										},
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("controlplane"),
+										},
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 				describeInstancesResp1: &ec2.DescribeInstancesOutput{
 					Reservations: []ec2Types.Reservation{
 						{
@@ -283,16 +408,45 @@ func TestList(t *testing.T) {
 			},
 		},
 		"fail to get UID": {
-			imds: &stubIMDS{},
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "id-1",
+					},
+				},
+			},
 			ec2: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("id-1"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(tagName),
+											Value: aws.String("name-1"),
+										},
+										{
+											Key:   aws.String(cloud.TagRole),
+											Value: aws.String("controlplane"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 				describeInstancesResp1: successfulResp,
 			},
 			wantErr: true,
 		},
 		"describe instances fails": {
-			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+			imdsAPI: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "id-1",
+					},
 				},
 			},
 			ec2: &stubEC2{
@@ -305,7 +459,10 @@ func TestList(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Cloud{ec2: tc.ec2, imds: tc.imds}
+			m := &Cloud{
+				imds: tc.imdsAPI,
+				ec2:  tc.ec2,
+			}
 
 			list, err := m.List(context.Background())
 			if tc.wantErr {
@@ -325,6 +482,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 
 	testCases := map[string]struct {
 		imds         *stubIMDS
+		ec2API       *stubEC2
 		loadbalancer *stubLoadbalancer
 		resourceapi  *stubResourceGroupTagging
 		wantAddr     string
@@ -332,8 +490,29 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 	}{
 		"success retrieving loadbalancer endpoint": {
 			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			loadbalancer: &stubLoadbalancer{
@@ -366,8 +545,29 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		},
 		"too many ARNs": {
 			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			loadbalancer: &stubLoadbalancer{
@@ -403,8 +603,29 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		},
 		"too many ARNs (paged)": {
 			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			loadbalancer: &stubLoadbalancer{
@@ -445,8 +666,29 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		},
 		"loadbalancer has no availability zones": {
 			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			loadbalancer: &stubLoadbalancer{
@@ -471,8 +713,29 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		},
 		"failure to get resources by tag": {
 			imds: &stubIMDS{
-				tags: map[string]string{
-					cloud.TagUID: "uid",
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			loadbalancer: &stubLoadbalancer{
@@ -504,6 +767,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 			assert := assert.New(t)
 			m := &Cloud{
 				imds:              tc.imds,
+				ec2:               tc.ec2API,
 				loadbalancer:      tc.loadbalancer,
 				resourceapiClient: tc.resourceapi,
 			}
@@ -696,37 +960,25 @@ func TestConvertToMetadataInstance(t *testing.T) {
 }
 
 type stubIMDS struct {
-	getInstanceIdentityDocumentErr error
-	getMetadataErr                 error
 	instanceDocumentResp           *imds.GetInstanceIdentityDocumentOutput
-	tags                           map[string]string
+	getInstanceIdentityDocumentErr error
 }
 
 func (s *stubIMDS) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
 	return s.instanceDocumentResp, s.getInstanceIdentityDocumentErr
 }
 
-func (s *stubIMDS) GetMetadata(_ context.Context, in *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
-	tag, ok := s.tags[strings.TrimPrefix(in.Path, "/tags/instance/")]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	return &imds.GetMetadataOutput{
-		Content: io.NopCloser(
-			strings.NewReader(
-				tag,
-			),
-		),
-	}, s.getMetadataErr
-}
-
 type stubEC2 struct {
 	describeInstancesErr   error
+	selfInstance           *ec2.DescribeInstancesOutput
 	describeInstancesResp1 *ec2.DescribeInstancesOutput
 	describeInstancesResp2 *ec2.DescribeInstancesOutput
 }
 
 func (s *stubEC2) DescribeInstances(_ context.Context, in *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
+	if len(in.InstanceIds) == 1 {
+		return s.selfInstance, s.describeInstancesErr
+	}
 	if in.NextToken == nil {
 		return s.describeInstancesResp1, s.describeInstancesErr
 	}

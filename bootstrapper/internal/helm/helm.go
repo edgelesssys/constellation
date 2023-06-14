@@ -98,11 +98,33 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
 
+	timeoutS := int64(10)
+	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
+	tolerations := []corev1.Toleration{
+		{
+			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+			Value:  "true",
+			Effect: corev1.TaintEffectNoSchedule,
+		},
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          corev1.TolerationOpExists,
+			Effect:            corev1.TaintEffectNoExecute,
+			TolerationSeconds: &timeoutS,
+		},
+	}
+	if err := kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
+		return fmt.Errorf("failed to add tolerations to coredns deployment: %w", err)
+	}
+	if err := kubectl.EnforceCoreDNSSpread(ctx); err != nil {
+		return fmt.Errorf("failed to enforce CoreDNS spread: %w", err)
+	}
+
 	switch in.CloudProvider {
 	case "aws", "azure", "openstack", "qemu":
 		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
 	case "gcp":
-		return h.installCiliumGCP(ctx, kubectl, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return h.installCiliumGCP(ctx, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -119,35 +141,10 @@ func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release,
 	return h.install(ctx, release.Chart, release.Values)
 }
 
-func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
-		return err
-	}
-
-	timeoutS := int64(10)
-	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	tolerations := []corev1.Toleration{
-		{
-			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
-			Value:  "true",
-			Effect: corev1.TaintEffectNoSchedule,
-		},
-		{
-			Key:               "node.kubernetes.io/unreachable",
-			Operator:          corev1.TolerationOpExists,
-			Effect:            corev1.TaintEffectNoExecute,
-			TolerationSeconds: &timeoutS,
-		},
-	}
-	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
-		return err
-	}
-	selectors := map[string]string{
-		"node-role.kubernetes.io/control-plane": "",
-	}
-	if err = kubectl.AddNodeSelectorsToDeployment(ctx, selectors, "coredns", "kube-system"); err != nil {
 		return err
 	}
 

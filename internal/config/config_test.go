@@ -7,9 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -20,6 +22,7 @@ import (
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -54,7 +57,7 @@ func TestDefaultConfigWritesLatestVersion(t *testing.T) {
 	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
 }
 
-func TestReadConfigFile(t *testing.T) {
+func TestNew(t *testing.T) {
 	testCases := map[string]struct {
 		config        configMap
 		configName    string
@@ -62,9 +65,10 @@ func TestReadConfigFile(t *testing.T) {
 		wantErr       bool
 		wantedErrType error
 	}{
-		"mix of Latest and uint as version value": {
+		"Azure SEV-SNP: mix of Latest and uint as version value in file correctly sets latest versions values": {
 			config: func() configMap {
-				conf := Default()
+				conf := Default() // default configures latest version
+				modifyConfigForAzureToPassValidate(conf)
 				m := getConfigAsMap(conf, t)
 				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
 				m.setAzureSEVSNPVersion("teeVersion", 2)
@@ -75,17 +79,68 @@ func TestReadConfigFile(t *testing.T) {
 			configName: constants.ConfigFilename,
 			wantResult: func() *Config {
 				conf := Default()
-				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
-					Value:    1,
-					IsLatest: false,
+				modifyConfigForAzureToPassValidate(conf)
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion{
+					Value:      testCfg.Microcode,
+					WantLatest: true,
 				}
 				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
-					Value:    2,
-					IsLatest: false,
+					Value:      2,
+					WantLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
+					Value:      1,
+					WantLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion{
+					Value:      testCfg.SNP,
+					WantLatest: true,
 				}
 				return conf
 			}(),
 		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			if tc.config != nil {
+				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
+			}
+			result, err := New(fileHandler, tc.configName, stubAttestationFetcher{}, false)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantResult, result)
+		})
+	}
+}
+
+func modifyConfigForAzureToPassValidate(c *Config) {
+	c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
+	c.Image = "v" + constants.VersionInfo()
+	c.Provider.Azure.SubscriptionID = "11111111-1111-1111-1111-111111111111"
+	c.Provider.Azure.TenantID = "11111111-1111-1111-1111-111111111111"
+	c.Provider.Azure.Location = "westus"
+	c.Provider.Azure.ResourceGroup = "test"
+	c.Provider.Azure.UserAssignedIdentity = "/subscriptions/11111111-1111-1111-1111-111111111111/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+	c.Attestation.AzureSEVSNP.Measurements = measurements.M{
+		0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
+	}
+}
+
+func TestReadConfigFile(t *testing.T) {
+	testCases := map[string]struct {
+		config        configMap
+		configName    string
+		wantResult    *Config
+		wantErr       bool
+		wantedErrType error
+	}{
 		"refuse invalid version value": {
 			config: func() configMap {
 				conf := Default()
@@ -860,4 +915,31 @@ func getConfigAsMap(conf *Config, t *testing.T) (res configMap) {
 		t.Fatal(err)
 	}
 	return
+}
+
+type stubAttestationFetcher struct{}
+
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionList(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionList) (attestationconfigapi.AzureSEVSNPVersionList, error) {
+	return attestationconfigapi.AzureSEVSNPVersionList(
+		[]string{},
+	), nil
+}
+
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersion(_ context.Context, _ attestationconfigapi.AzureSEVSNPVersionAPI) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	return attestationconfigapi.AzureSEVSNPVersionAPI{
+		AzureSEVSNPVersion: testCfg,
+	}, nil
+}
+
+func (f stubAttestationFetcher) FetchAzureSEVSNPVersionLatest(_ context.Context, _ time.Time) (attestationconfigapi.AzureSEVSNPVersionAPI, error) {
+	return attestationconfigapi.AzureSEVSNPVersionAPI{
+		AzureSEVSNPVersion: testCfg,
+	}, nil
+}
+
+var testCfg = attestationconfigapi.AzureSEVSNPVersion{
+	Microcode:  93,
+	TEE:        0,
+	SNP:        6,
+	Bootloader: 2,
 }

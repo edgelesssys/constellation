@@ -54,12 +54,13 @@ func (s *Scheduler) Start(ctx context.Context, wg *sync.WaitGroup) {
 			ips, err := s.fetcher.DiscoverDebugdIPs(ctx)
 			if err != nil {
 				s.log.With(zap.Error(err)).Warnf("Discovering debugd IPs failed")
-				continue
 			}
-			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
-			s.download(ctx, ips)
-			if s.deploymentDone && s.infoDone {
-				return
+			if err == nil {
+				s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
+				s.download(ctx, ips)
+				if s.deploymentDone && s.infoDone {
+					return
+				}
 			}
 
 			select {

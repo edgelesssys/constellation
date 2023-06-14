@@ -164,6 +164,48 @@ func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []
 		}
 		return nil
 	})
+	return err
+}
+
+// EnforceCoreDNSSpread adds a pod anti-affinity to the coredns deployment to ensure that
+// coredns pods are spread across nodes.
+func (k *Kubectl) EnforceCoreDNSSpread(ctx context.Context) error {
+	deployments := k.AppsV1().Deployments("kube-system")
+	// retry resource update if an error occurs
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, err := deployments.Get(ctx, "coredns", metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get Deployment to add toleration: %w", err)
+		}
+
+		if result.Spec.Template.Spec.Affinity == nil {
+			result.Spec.Template.Spec.Affinity = &corev1.Affinity{}
+		}
+		if result.Spec.Template.Spec.Affinity.PodAntiAffinity == nil {
+			result.Spec.Template.Spec.Affinity.PodAntiAffinity = &corev1.PodAntiAffinity{}
+		}
+		result.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []corev1.WeightedPodAffinityTerm{}
+		if result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+			result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = []corev1.PodAffinityTerm{}
+		}
+
+		result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(result.Spec.Template.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution,
+			corev1.PodAffinityTerm{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "k8s-app",
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   []string{"kube-dns"},
+						},
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			})
+
+		_, err = deployments.Update(ctx, result, metav1.UpdateOptions{})
+		return err
+	})
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcodec "k8s.io/client-go/tools/clientcmd/api/latest"
@@ -46,6 +45,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	grpcRetry "github.com/edgelesssys/constellation/v2/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/license"
@@ -327,23 +327,11 @@ func (d *initDoer) getLogs(resp initproto.API_InitClient) error {
 }
 
 func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGroup, conn *grpc.ClientConn) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		state := conn.GetState()
-		d.log.Debugf("Connection state started as %s", state)
-		for ; state != connectivity.Ready && conn.WaitForStateChange(ctx, state); state = conn.GetState() {
-			d.log.Debugf("Connection state changed to %s", state)
-		}
-		if state == connectivity.Ready {
-			d.log.Debugf("Connection ready")
-			d.connectedOnce = true
-			d.spinner.Stop()
-			d.spinner.Start("Initializing cluster ", false)
-		} else {
-			d.log.Debugf("Connection state ended with %s", state)
-		}
-	}()
+	grpclog.LogStateChangesUntilReady(ctx, conn, d.log, wg, func() {
+		d.connectedOnce = true
+		d.spinner.Stop()
+		d.spinner.Start("Initializing cluster ", false)
+	})
 }
 
 func (i *initCmd) writeOutput(
