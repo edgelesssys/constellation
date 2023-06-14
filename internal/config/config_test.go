@@ -59,10 +59,11 @@ func TestDefaultConfigWritesLatestVersion(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	testCases := map[string]struct {
-		config     configMap
-		configName string
-		wantResult *Config
-		wantErr    bool
+		config        configMap
+		configName    string
+		wantResult    *Config
+		wantErr       bool
+		wantedErrType error
 	}{
 		"Azure SEV-SNP: mix of Latest and uint as version value in file correctly sets latest versions values": {
 			config: func() configMap {
@@ -150,6 +151,16 @@ func TestReadConfigFile(t *testing.T) {
 			configName: constants.ConfigFilename,
 			wantErr:    true,
 		},
+		"error on entering app client id": {
+			config: func() configMap {
+				conf := Default()
+				m := getConfigAsMap(conf, t)
+				m.setAzureProvider("appClientID", "3ea4bdc1-1cc1-4237-ae78-0831eff3491e")
+				return m
+			}(),
+			configName:    constants.ConfigFilename,
+			wantedErrType: UnsupportedAppRegistrationError{},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -161,12 +172,16 @@ func TestReadConfigFile(t *testing.T) {
 				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
 			}
 			result, err := fromFile(fileHandler, tc.configName)
+			if tc.wantedErrType != nil {
+				assert.ErrorIs(err, tc.wantedErrType)
+				return
+			}
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.wantResult, result)
+				return
 			}
+			assert.NoError(err)
+			assert.Equal(tc.wantResult, result)
 		})
 	}
 }
@@ -242,67 +257,6 @@ func TestFromFile(t *testing.T) {
 				require.NoError(err)
 				assert.Equal(tc.wantResult, result)
 			}
-		})
-	}
-}
-
-func TestNewWithDefaultOptions(t *testing.T) {
-	testCases := map[string]struct {
-		confToWrite           *Config
-		envToSet              map[string]string
-		wantErr               bool
-		wantClientSecretValue string
-	}{
-		"set env works": {
-			confToWrite: func() *Config { // valid config with all, but clientSecretValue
-				c := Default()
-				c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				modifyConfigForAzureToPassValidate(c)
-				return c
-			}(),
-			envToSet: map[string]string{
-				constants.EnvVarAzureClientSecretValue: "some-secret",
-			},
-			wantClientSecretValue: "some-secret",
-		},
-		"set env overwrites": {
-			confToWrite: func() *Config {
-				c := Default()
-				modifyConfigForAzureToPassValidate(c)
-				return c
-			}(),
-			envToSet: map[string]string{
-				constants.EnvVarAzureClientSecretValue: "some-secret",
-			},
-			wantClientSecretValue: "some-secret",
-		},
-	}
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			// Setup
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			err := fileHandler.WriteYAML(constants.ConfigFilename, tc.confToWrite)
-			require.NoError(err)
-			for envKey, envValue := range tc.envToSet {
-				t.Setenv(envKey, envValue)
-			}
-
-			// Test
-			c, err := New(fileHandler, constants.ConfigFilename, stubAttestationFetcher{}, false)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			var validationErr *ValidationError
-			if errors.As(err, &validationErr) {
-				t.Log(validationErr.LongMessage())
-			}
-			assert.Equal(c.Provider.Azure.ClientSecretValue, tc.wantClientSecretValue)
 		})
 	}
 }
@@ -384,8 +338,6 @@ func TestValidate(t *testing.T) {
 				az.Location = "test-location"
 				az.UserAssignedIdentity = "test-identity"
 				az.ResourceGroup = "test-resource-group"
-				az.AppClientID = "01234567-0123-0123-0123-0123456789ab"
-				az.ClientSecretValue = "test-client-secret"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az
 				cnf.Attestation.AzureSEVSNP.Measurements = measurements.M{
@@ -902,11 +854,51 @@ func TestConfigVersionCompatibility(t *testing.T) {
 	}
 }
 
+func TestIsAppClientIDError(t *testing.T) {
+	testCases := map[string]struct {
+		err      error
+		expected bool
+	}{
+		"yaml.Error with appClientID error": {
+			err: &yaml.TypeError{
+				Errors: []string{
+					"invalid value for appClientID",
+					"another error",
+				},
+			},
+			expected: true,
+		},
+		"yaml.Error without appClientID error": {
+			err: &yaml.TypeError{
+				Errors: []string{
+					"invalid value for something else",
+					"another error",
+				},
+			},
+			expected: false,
+		},
+		"other error": {
+			err:      errors.New("appClientID but other error type"),
+			expected: false,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.expected, isAppClientIDError(tc.err))
+		})
+	}
+}
+
 // configMap is used to un-/marshal the config as an unstructured map.
 type configMap map[string]interface{}
 
 func (c configMap) setAzureSEVSNPVersion(versionType string, value interface{}) {
 	c["attestation"].(configMap)["azureSEVSNP"].(configMap)[versionType] = value
+}
+
+func (c configMap) setAzureProvider(azureProviderField string, value interface{}) {
+	c["provider"].(configMap)["azure"].(configMap)[azureProviderField] = value
 }
 
 func (c configMap) getAzureSEVSNPVersion(versionType string) interface{} {

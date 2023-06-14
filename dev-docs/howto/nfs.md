@@ -17,7 +17,7 @@ constellation create --name nfs -c 1 -w 3
 We need block storage form somewhere. We will use the official Azure CSI for that. We need to create the azure config secret again with the expected fields. Replace "XXX" with the corresponding value from the secret `azureconfig`.
 
 ```bash
-kubectl create secret generic -n kube-system --from-literal=cloud-config='{"cloud":"AzurePublicCloud","useInstanceMetadata":true,"vmType":"vmss","tenantId":"XXX","subscriptionId":"XXX","resourceGroup":"XXX","location":"XXX", "aadClientId":"XXX","aadClientSecret":"XXX"}' azure-config
+kubectl create secret generic -n kube-system --from-literal=cloud-config='{"cloud":"AzurePublicCloud","useInstanceMetadata":true,"vmType":"vmss","tenantId":"XXX","subscriptionId":"XXX","resourceGroup":"XXX","location":"XXX"}' azure-config
 
 helm repo add azuredisk-csi-driver https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts
 helm repo update azuredisk-csi-driver

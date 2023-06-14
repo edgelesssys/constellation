@@ -95,8 +95,6 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"${{ inputs.azureUserAssignedIdentity }}\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
-            (.provider | select(. | has(\"azure\")).azure.appClientID) = \"${{ inputs.azureClientID }}\" |
-            (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\"" \
           constellation-conf.yaml
 
         yq eval -i \

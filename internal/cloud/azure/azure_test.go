@@ -102,8 +102,6 @@ func TestGetCCMConfig(t *testing.T) {
 				UserAssignedIdentityID:      uamiClientID,
 				VMType:                      "vmss",
 				Location:                    "westeurope",
-				AADClientID:                 "client-id",
-				AADClientSecret:             "client-secret",
 			},
 		},
 		"no app registration": {
@@ -210,8 +208,6 @@ func TestGetCCMConfig(t *testing.T) {
 				UseInstanceMetadata: true,
 				VMType:              "vmss",
 				Location:            "westeurope",
-				AADClientID:         "client-id",
-				AADClientSecret:     "client-secret",
 			},
 		},
 		"load balancer list error": {

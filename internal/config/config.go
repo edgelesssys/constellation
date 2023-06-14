@@ -33,6 +33,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
@@ -144,12 +145,6 @@ type AzureConfig struct {
 	// description: |
 	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
-	// description: |
-	//    Application client ID of the Active Directory app registration.
-	AppClientID string `yaml:"appClientID,omitempty" validate:"omitempty,uuid"`
-	// description: |
-	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
-	ClientSecretValue string `yaml:"clientSecretValue,omitempty" validate:"omitempty"`
 	// description: |
 	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
@@ -381,9 +376,31 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
+		if isAppClientIDError(err) {
+			return nil, UnsupportedAppRegistrationError{}
+		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
 	return &conf, nil
+}
+
+func isAppClientIDError(err error) bool {
+	var yamlErr *yaml.TypeError
+	if errors.As(err, &yamlErr) {
+		for _, e := range yamlErr.Errors {
+			if strings.Contains(e, "appClientID") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations.
+type UnsupportedAppRegistrationError struct{}
+
+func (e UnsupportedAppRegistrationError) Error() string {
+	return "Azure app registrations are not supported since v2.9. migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nplease remove it from your config and from the Kubernetes secret in your running cluster. ensure that the UAMI has all required permissions."
 }
 
 // New creates a new config by:
@@ -407,7 +424,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
-		c.Provider.Azure.ClientSecretValue = clientSecretValue
+		fmt.Fprintf(os.Stderr, "WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, UnsupportedAppRegistrationError{}.Error())
 	}
 
 	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
@@ -419,14 +436,6 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	// In case the field is not set in an old config we prefill it with the default value.
 	if c.MicroserviceVersion == "" {
 		c.MicroserviceVersion = Default().MicroserviceVersion
-	}
-
-	// TODO(3u13r): Remove this deprecation warning and enforce assigned managed identity after the v2.8.0 but before the v2.9.0 release.
-	if c.Provider.Azure != nil &&
-		(c.Provider.Azure.AppClientID != "" || c.Provider.Azure.ClientSecretValue != "") {
-		// Deprecation warning for old auth method
-		fmt.Fprintf(os.Stderr, "WARNING: Using a service principal for authentication is deprecated and will be removed in an upcoming version.\n")
-		fmt.Fprintf(os.Stderr, "         Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\n")
 	}
 
 	return c, c.Validate(force)

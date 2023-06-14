@@ -91,16 +91,13 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
 Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+
 * `westus`
 * `eastus`
 * `northeurope`
 * `westeurope`
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
-
-:::tip
-Since `clientSecretValue` is a sensitive value, you can leave it empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
-:::
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
@@ -129,6 +126,7 @@ constellation iam create aws --zone=eu-central-1a --prefix=constellTest
 This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
 
 Constellation OS images are currently replicated to the following regions:
+
 * `eu-central-1`
 * `eu-west-1`
 * `eu-west-3`
@@ -178,22 +176,6 @@ The following describes the configuration fields and how you obtain the required
   The user-assigned identity is used by instances of the cluster to access other cloud resources.
   For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
 
-* **appClientID**: [Create a new app registration in Azure](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false).
-
-  Set `Supported account types` to `Accounts in this organizational directory only` and leave the `Redirect URI` empty.
-
-  Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
-
-  In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
-
-* **clientSecretValue**: In the previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
-
-  Set the configuration value to the secret value.
-
-  :::tip
-  Since this is a sensitive value, alternatively you can leave `clientSecretValue` empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
-  :::
-
 </tabItem>
 
 <tabItem value="gcp" label="GCP">
@@ -212,11 +194,11 @@ The following describes the configuration fields and how you obtain the required
 
 * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
 
-  - `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
-  - `Compute Network Admin (roles/compute.networkAdmin)`
-  - `Compute Security Admin (roles/compute.securityAdmin)`
-  - `Compute Storage Admin (roles/compute.storageAdmin)`
-  - `Service Account User (roles/iam.serviceAccountUser)`
+  * `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
+  * `Compute Network Admin (roles/compute.networkAdmin)`
+  * `Compute Security Admin (roles/compute.securityAdmin)`
+  * `Compute Storage Admin (roles/compute.storageAdmin)`
+  * `Service Account User (roles/iam.serviceAccountUser)`
 
   Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
@@ -265,6 +247,7 @@ Now that you've configured your CSP, you can [create your cluster](./create.md).
 You can keep a created IAM configuration and reuse it for new clusters. Alternatively, you can also delete it if you don't want to use it anymore.
 
 Delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create` (the directory that contains [`constellation-iam-terraform`](../reference/terraform.md) as a subdirectory):
+
 ```bash
 constellation iam destroy
 ```

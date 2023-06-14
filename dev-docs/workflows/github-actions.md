@@ -18,17 +18,18 @@ gh workflow run e2e-test-manual.yml \
 Here are some examples for test suites you might want to run. Values for `sonobuoyTestSuiteCmd`:
 
 * `--mode quick`
-    * Runs a set of tests that are known to be quick to execute! (<1 min)
+  * Runs a set of tests that are known to be quick to execute! (<1 min)
 * `--e2e-focus "Services should be able to create a functioning NodePort service"`
-    * Runs a specific test
+  * Runs a specific test
 * `--mode certified-conformance`
-    * For K8s conformance certification test suite
+  * For K8s conformance certification test suite
 
 Check [Sonobuoy docs](https://sonobuoy.io/docs/latest/e2eplugin/) for more examples.
 
 When using `--mode` be aware that `--e2e-focus` and `e2e-skip` will be overwritten. [Check in the source code](https://github.com/vmware-tanzu/sonobuoy/blob/e709787426316423a4821927b1749d5bcc90cb8c/cmd/sonobuoy/app/modes.go#L130) what the different modes do.
 
 ## Local Development
+
 Using [***act***](https://github.com/nektos/act) you can run GitHub actions locally.
 
 **These instructions are for internal use.**
@@ -83,25 +84,4 @@ In addition, you need to create a Service Account which Constellation itself is 
 
 ### Authorizing Azure
 
-Create a new service principal:
-
-```bash
-az ad sp create-for-rbac --name "github-actions-e2e-tests" --role contributor --scopes /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435 --sdk-auth
-az role assignment create --role "User Access Administrator" --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435 --assignee <SERVICE_PRINCIPAL_CLIENT_ID>
-```
-
-Next, add API permissions to Managed Identity:
-
-* Not possible through portal; requires PowerShell
-* <https://techcommunity.microsoft.com/t5/integrations-on-azure-blog/grant-graph-api-permission-to-managed-identity-object/ba-p/2792127>
-* `$GraphAppId` in this article is for Microsoft Graph. Azure AD Graph is `00000002-0000-0000-c000-000000000000`
-* Note that changing permissions can take between few seconds to several hours
-
-Afterward, you need to define a few secrets either as Github Action Secrets or in a secrets file for *act* as described before.
-
-The following secrets need to be defined:
-
-* `AZURE_E2E_CREDENTIALS`: The output of `az ad sp ...`
-* `AZURE_E2E_CLIENT_SECRET`: The client secret value for the registered app on Azure (which is defined as `appClientID`).
-
-For information on how to achieve this, refer to the [First steps](https://docs.edgeless.systems/constellation/getting-started/first-steps) in the documentation for Constellation.
+See [here](https://docs.edgeless.systems/constellation/workflows/config#creating-iam-credentials).

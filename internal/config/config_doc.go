@@ -11,22 +11,23 @@ import (
 )
 
 var (
-	ConfigDoc                  encoder.Doc
-	ProviderConfigDoc          encoder.Doc
-	AWSConfigDoc               encoder.Doc
-	AzureConfigDoc             encoder.Doc
-	GCPConfigDoc               encoder.Doc
-	OpenStackConfigDoc         encoder.Doc
-	QEMUConfigDoc              encoder.Doc
-	AttestationConfigDoc       encoder.Doc
-	AWSSEVSNPDoc               encoder.Doc
-	AWSNitroTPMDoc             encoder.Doc
-	SNPFirmwareSignerConfigDoc encoder.Doc
-	GCPSEVESDoc                encoder.Doc
-	QEMUVTPMDoc                encoder.Doc
-	QEMUTDXDoc                 encoder.Doc
-	AzureSEVSNPDoc             encoder.Doc
-	AzureTrustedLaunchDoc      encoder.Doc
+	ConfigDoc                          encoder.Doc
+	ProviderConfigDoc                  encoder.Doc
+	AWSConfigDoc                       encoder.Doc
+	AzureConfigDoc                     encoder.Doc
+	GCPConfigDoc                       encoder.Doc
+	OpenStackConfigDoc                 encoder.Doc
+	QEMUConfigDoc                      encoder.Doc
+	AttestationConfigDoc               encoder.Doc
+	UnsupportedAppRegistrationErrorDoc encoder.Doc
+	AWSSEVSNPDoc                       encoder.Doc
+	AWSNitroTPMDoc                     encoder.Doc
+	SNPFirmwareSignerConfigDoc         encoder.Doc
+	GCPSEVESDoc                        encoder.Doc
+	QEMUVTPMDoc                        encoder.Doc
+	QEMUTDXDoc                         encoder.Doc
+	AzureSEVSNPDoc                     encoder.Doc
+	AzureTrustedLaunchDoc              encoder.Doc
 )
 
 func init() {
@@ -166,7 +167,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 11)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 9)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -192,36 +193,26 @@ func init() {
 	AzureConfigDoc.Fields[4].Note = ""
 	AzureConfigDoc.Fields[4].Description = "Authorize spawned VMs to access Azure API."
 	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API."
-	AzureConfigDoc.Fields[5].Name = "appClientID"
+	AzureConfigDoc.Fields[5].Name = "instanceType"
 	AzureConfigDoc.Fields[5].Type = "string"
 	AzureConfigDoc.Fields[5].Note = ""
-	AzureConfigDoc.Fields[5].Description = "Application client ID of the Active Directory app registration."
-	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Application client ID of the Active Directory app registration."
-	AzureConfigDoc.Fields[6].Name = "clientSecretValue"
+	AzureConfigDoc.Fields[5].Description = "VM instance type to use for Constellation nodes."
+	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "VM instance type to use for Constellation nodes."
+	AzureConfigDoc.Fields[6].Name = "stateDiskType"
 	AzureConfigDoc.Fields[6].Type = "string"
 	AzureConfigDoc.Fields[6].Note = ""
-	AzureConfigDoc.Fields[6].Description = "Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable."
-	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable."
-	AzureConfigDoc.Fields[7].Name = "instanceType"
-	AzureConfigDoc.Fields[7].Type = "string"
+	AzureConfigDoc.Fields[6].Description = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
+	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
+	AzureConfigDoc.Fields[7].Name = "deployCSIDriver"
+	AzureConfigDoc.Fields[7].Type = "bool"
 	AzureConfigDoc.Fields[7].Note = ""
-	AzureConfigDoc.Fields[7].Description = "VM instance type to use for Constellation nodes."
-	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "VM instance type to use for Constellation nodes."
-	AzureConfigDoc.Fields[8].Name = "stateDiskType"
-	AzureConfigDoc.Fields[8].Type = "string"
+	AzureConfigDoc.Fields[7].Description = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	AzureConfigDoc.Fields[8].Name = "secureBoot"
+	AzureConfigDoc.Fields[8].Type = "bool"
 	AzureConfigDoc.Fields[8].Note = ""
-	AzureConfigDoc.Fields[8].Description = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
-	AzureConfigDoc.Fields[8].Comments[encoder.LineComment] = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
-	AzureConfigDoc.Fields[9].Name = "deployCSIDriver"
-	AzureConfigDoc.Fields[9].Type = "bool"
-	AzureConfigDoc.Fields[9].Note = ""
-	AzureConfigDoc.Fields[9].Description = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	AzureConfigDoc.Fields[9].Comments[encoder.LineComment] = "Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
-	AzureConfigDoc.Fields[10].Name = "secureBoot"
-	AzureConfigDoc.Fields[10].Type = "bool"
-	AzureConfigDoc.Fields[10].Note = ""
-	AzureConfigDoc.Fields[10].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
-	AzureConfigDoc.Fields[10].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[8].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[8].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -467,6 +458,11 @@ func init() {
 	AttestationConfigDoc.Fields[6].Description = "QEMU vTPM attestation."
 	AttestationConfigDoc.Fields[6].Comments[encoder.LineComment] = "QEMU vTPM attestation."
 
+	UnsupportedAppRegistrationErrorDoc.Type = "UnsupportedAppRegistrationError"
+	UnsupportedAppRegistrationErrorDoc.Comments[encoder.LineComment] = "UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations."
+	UnsupportedAppRegistrationErrorDoc.Description = "UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations."
+	UnsupportedAppRegistrationErrorDoc.Fields = make([]encoder.Doc, 0)
+
 	AWSSEVSNPDoc.Type = "AWSSEVSNP"
 	AWSSEVSNPDoc.Comments[encoder.LineComment] = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
 	AWSSEVSNPDoc.Description = "AWSSEVSNP is the configuration for AWS SEV-SNP attestation."
@@ -673,6 +669,10 @@ func (_ AttestationConfig) Doc() *encoder.Doc {
 	return &AttestationConfigDoc
 }
 
+func (_ UnsupportedAppRegistrationError) Doc() *encoder.Doc {
+	return &UnsupportedAppRegistrationErrorDoc
+}
+
 func (_ AWSSEVSNP) Doc() *encoder.Doc {
 	return &AWSSEVSNPDoc
 }
@@ -719,6 +719,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&OpenStackConfigDoc,
 			&QEMUConfigDoc,
 			&AttestationConfigDoc,
+			&UnsupportedAppRegistrationErrorDoc,
 			&AWSSEVSNPDoc,
 			&AWSNitroTPMDoc,
 			&SNPFirmwareSignerConfigDoc,

@@ -602,8 +602,6 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.Location = "test-location"
 		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
-		conf.Provider.Azure.AppClientID = "01234567-0123-0123-0123-0123456789ab"
-		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
 		conf.Attestation.AzureSEVSNP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
 		conf.Attestation.AzureSEVSNP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
 		conf.Attestation.AzureSEVSNP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
