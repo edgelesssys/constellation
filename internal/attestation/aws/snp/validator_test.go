@@ -183,7 +183,7 @@ func TestValidateSNPReport(t *testing.T) {
 			require.NoError(err)
 
 			v := awsValidator{}
-			err = v.validate(vtpm.AttestationDocument{InstanceInfo: info}, tc.client, ark, bytes.Repeat([]byte{0x00}, 64))
+			err = v.validate(context.Background(), vtpm.AttestationDocument{InstanceInfo: info}, tc.client, ark, bytes.Repeat([]byte{0x00}, 64))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -239,6 +239,6 @@ func (s stubClient) Do(*http.Request) (*http.Response, error) {
 
 type stubawsValidator struct{}
 
-func (stubawsValidator) validate(vtpm.AttestationDocument, askGetter, *x509.Certificate, []byte) error {
+func (stubawsValidator) validate(context.Context, vtpm.AttestationDocument, askGetter, *x509.Certificate, []byte) error {
 	return nil
 }

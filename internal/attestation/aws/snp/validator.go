@@ -30,13 +30,15 @@ import (
 
 // Validator for AWS TPM attestation.
 type Validator struct {
+	// Embed variant to identify the Validator using varaint.OID().
 	variant.AWSSEVSNP
+	// Embed validator to implement Validate method for aTLS handshake.
 	*vtpm.Validator
-	// AMD root key.
+	// AMD root key. Root of trust for the ASK used during report validation.
 	ark *x509.Certificate
-	// kdsClient is required for testing.
+	// kdsClient gets an ASK from somewhere. kdsClient is required for testing.
 	kdsClient askGetter
-	// reportValidator is required for testing.
+	// reportValidator validates a SNP report. reportValidator is required for testing.
 	reportValidator snpReportValidator
 }
 
@@ -50,18 +52,16 @@ func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 	v.Validator = vtpm.NewValidator(
 		cfg.Measurements,
 		v.getTrustedKey,
-		returnNil,
+		func(vtpm.AttestationDocument, *attest.MachineState) error { return nil },
 		log,
 	)
 	return v
 }
 
-func returnNil(vtpm.AttestationDocument, *attest.MachineState) error { return nil }
-
 // getTrustedKeys return the public area of the provides attestation key.
 // Normally, the key should be verified here, but currently AWS does not provide means to do so.
-func (v *Validator) getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocument, userData []byte) (crypto.PublicKey, error) {
-	if err := v.reportValidator.validate(attDoc, v.kdsClient, v.ark, userData); err != nil {
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, userData []byte) (crypto.PublicKey, error) {
+	if err := v.reportValidator.validate(ctx, attDoc, v.kdsClient, v.ark, userData); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
@@ -75,15 +75,16 @@ func (v *Validator) getTrustedKey(_ context.Context, attDoc vtpm.AttestationDocu
 
 // Validate a given SNP report.
 type snpReportValidator interface {
-	validate(attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error
+	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error
 }
 
+// Validation logic for the AWS SNP implementation.
 type awsValidator struct{}
 
 // validate the report by checking if it has a valid VLEK signature.
 // The certificate chain ARK -> ASK -> VLEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (awsValidator) validate(attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error {
+func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
 		return fmt.Errorf("unmarshalling instance info: %w", err)
@@ -94,7 +95,7 @@ func (awsValidator) validate(attestation vtpm.AttestationDocument, kdsClient ask
 		return fmt.Errorf("parsing certificates: %w", err)
 	}
 
-	ask, err := kdsClient.getASK(context.Background())
+	ask, err := kdsClient.getASK(ctx)
 	if err != nil {
 		return fmt.Errorf("getting ASK: %w", err)
 	}
@@ -143,6 +144,7 @@ func getVLEK(certs []byte) (vlek *x509.Certificate, err error) {
 	return
 }
 
+// Query the AMD key distribution service for an AMD signing key.
 type kdsClient struct {
 	httpClient
 }
@@ -188,7 +190,7 @@ func (k kdsClient) getASK(ctx context.Context) (*x509.Certificate, error) {
 	return ask, nil
 }
 
-// Query the AMD key distribution service for an AMD signing key.
+// askGetter gets an ASK from somewhere.
 type askGetter interface {
 	getASK(ctx context.Context) (*x509.Certificate, error)
 }
