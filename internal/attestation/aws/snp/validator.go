@@ -56,7 +56,7 @@ func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 	return v
 }
 
-func returnNil(attestation vtpm.AttestationDocument, state *attest.MachineState) error { return nil }
+func returnNil(vtpm.AttestationDocument, *attest.MachineState) error { return nil }
 
 // getTrustedKeys return the public area of the provides attestation key.
 // Normally, the key should be verified here, but currently AWS does not provide means to do so.

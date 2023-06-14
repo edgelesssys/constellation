@@ -13,7 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -231,14 +231,14 @@ type stubClient struct {
 	ask []byte
 }
 
-func (s stubClient) Do(req *http.Request) (*http.Response, error) {
+func (s stubClient) Do(*http.Request) (*http.Response, error) {
 	return &http.Response{
-		Body: ioutil.NopCloser(bytes.NewReader(s.ask)),
+		Body: io.NopCloser(bytes.NewReader(s.ask)),
 	}, nil
 }
 
 type stubawsValidator struct{}
 
-func (stubawsValidator) validate(attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error {
+func (stubawsValidator) validate(vtpm.AttestationDocument, askGetter, *x509.Certificate, []byte) error {
 	return nil
 }

@@ -52,7 +52,7 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 // getInstanceInfo generates an extended SNP report, i.e. the report and any loaded certificates.
 // Report generation is triggered by sending ioctl syscalls to the SNP guest device, the AMD PSP generates the report.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(ctx context.Context, rwc io.ReadWriteCloser, userData []byte) ([]byte, error) {
+func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, userData []byte) ([]byte, error) {
 	device, err := sevclient.OpenDevice()
 	if err != nil {
 		return nil, fmt.Errorf("opening sev device: %w", err)
