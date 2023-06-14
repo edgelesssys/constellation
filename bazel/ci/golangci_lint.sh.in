@@ -29,26 +29,26 @@ excludeMods=(
 
 check() {
   echo "The following Go modules are excluded and won't be linted with golangci-lint:"
-for exclude in "${excludeMods[@]}"; do
-  for i in "${!modules[@]}"; do
-    if [[ ${modules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
-      echo "  ${modules[i]}"
-      unset 'modules[i]'
-    fi
+  for exclude in "${excludeMods[@]}"; do
+    for i in "${!modules[@]}"; do
+      if [[ ${modules[i]} == "${BUILD_WORKSPACE_DIRECTORY}/${exclude}" ]]; then
+        echo "  ${modules[i]}"
+        unset 'modules[i]'
+      fi
+    done
   done
-done
 
-statuscode=0
+  statuscode=0
 
-echo "Linting the following Go modules with golangci-lint:"
-for mod in "${modules[@]}"; do
-  echo "  ${mod}"
-  PATH="$(dirname "${go}"):${PATH}" GOROOT=$(${go} env GOROOT) GOPATH=$(${go} env GOPATH) GOCACHE=$(${go} env GOCACHE) CGO_ENABLED=0 ${golangcilint} run --timeout=15m "${mod}/..." || statuscode=$?
-done
+  echo "Linting the following Go modules with golangci-lint:"
+  for mod in "${modules[@]}"; do
+    echo "  ${mod}"
+    PATH="$(dirname "${go}"):${PATH}" GOROOT=$(${go} env GOROOT) GOPATH=$(${go} env GOPATH) GOCACHE=$(${go} env GOCACHE) CGO_ENABLED=0 ${golangcilint} run --timeout=15m "${mod}/..." >&2
+    statuscode=$?
+  done
 
-exit "${statuscode}"
+  exit "${statuscode}"
 }
-
 
 if test -v silent; then
   check > /dev/null

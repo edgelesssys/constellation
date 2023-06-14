@@ -50,53 +50,52 @@ check() {
     done
   done
 
-case ${mode} in
-"check")
-  echo "Checking validity and format of the following Terraform modules:"
-  for script in "${terraformModules[@]}"; do
-    echo "  ${script}"
-  done
-  echo "This may take a minute..."
-  for module in "${terraformModules[@]}"; do
-    ${terraform} -chdir="${module}" init > /dev/null
-    ${terraform} -chdir="${module}" fmt -check -recursive > /dev/null
-    ${terraform} -chdir="${module}" validate > /dev/null
-    rm -rf "${module}/.terraform"
-  done
-  ;;
+  case ${mode} in
+  "check")
+    echo "Checking validity and format of the following Terraform modules:"
+    for script in "${terraformModules[@]}"; do
+      echo "  ${script}"
+    done
+    echo "This may take a minute..."
+    for module in "${terraformModules[@]}"; do
+      ${terraform} -chdir="${module}" init > /dev/null
+      ${terraform} -chdir="${module}" fmt -check -recursive > /dev/null
+      ${terraform} -chdir="${module}" validate > /dev/null
+      rm -rf "${module}/.terraform"
+    done
+    ;;
 
-"format")
-  echo "Formatting the following Terraform modules:"
-  for module in "${terraformModules[@]}"; do
-    echo "  ${module}"
-    ${terraform} -chdir="${module}" fmt -recursive > /dev/null
-  done
-  ;;
+  "format")
+    echo "Formatting the following Terraform modules:"
+    for module in "${terraformModules[@]}"; do
+      echo "  ${module}"
+      ${terraform} -chdir="${module}" fmt -recursive > /dev/null
+    done
+    ;;
 
-"generate")
-  echo "Formatting and generating lock files for the following Terraform modules:"
-  for script in "${terraformModules[@]}"; do
-    echo "  ${script}"
-  done
-  echo "This may take 5-10 min..."
-  for module in "${terraformModules[@]}"; do
-    ${terraform} -chdir="${module}" init > /dev/null
-    ${terraform} -chdir="${module}" providers lock -platform=linux_arm64 > /dev/null
-    ${terraform} -chdir="${module}" providers lock -platform=linux_amd64 > /dev/null
-    ${terraform} -chdir="${module}" providers lock -platform=darwin_arm64 > /dev/null
-    ${terraform} -chdir="${module}" providers lock -platform=darwin_amd64 > /dev/null
-    ${terraform} -chdir="${module}" providers lock -platform=windows_amd64 > /dev/null
-    rm -rf "${module}/.terraform"
-  done
-  ;;
+  "generate")
+    echo "Formatting and generating lock files for the following Terraform modules:"
+    for script in "${terraformModules[@]}"; do
+      echo "  ${script}"
+    done
+    echo "This may take 5-10 min..."
+    for module in "${terraformModules[@]}"; do
+      ${terraform} -chdir="${module}" init > /dev/null
+      ${terraform} -chdir="${module}" providers lock -platform=linux_arm64 > /dev/null
+      ${terraform} -chdir="${module}" providers lock -platform=linux_amd64 > /dev/null
+      ${terraform} -chdir="${module}" providers lock -platform=darwin_arm64 > /dev/null
+      ${terraform} -chdir="${module}" providers lock -platform=darwin_amd64 > /dev/null
+      ${terraform} -chdir="${module}" providers lock -platform=windows_amd64 > /dev/null
+      rm -rf "${module}/.terraform"
+    done
+    ;;
 
-*)
-  echo "Error: unknown mode \"${mode}\""
-  exit 1
-  ;;
+  *)
+    echo "Error: unknown mode \"${mode}\""
+    exit 1
+    ;;
   esac
 }
-
 
 if test -v silent; then
   check > /dev/null
