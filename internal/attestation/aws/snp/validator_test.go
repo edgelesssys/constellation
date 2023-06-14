@@ -76,6 +76,7 @@ d4uQB+fggMtK0qPRthpFtc2SqVCTvHnhxyXqo7GpXMsssgLgKNwaFPe2+Ld5OwPR
 )
 
 func TestGetTrustedKey(t *testing.T) {
+	validator := &Validator{ark: nil, kdsClient: nil, reportValidator: stubawsValidator{}}
 	testCases := map[string]struct {
 		akPub   []byte
 		info    []byte
@@ -96,7 +97,7 @@ func TestGetTrustedKey(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			out, err := getTrustedKey(
+			out, err := validator.getTrustedKey(
 				context.Background(),
 				vtpm.AttestationDocument{
 					Attestation: &attest.Attestation{
@@ -158,18 +159,18 @@ func TestValidateSNPReport(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := map[string]struct {
-		validator *Validator
-		report    string
-		wantErr   bool
+		client  kdsClient
+		report  string
+		wantErr bool
 	}{
 		"success": {
-			validator: &Validator{ark: ark, kdsClient: kdsClient{stubClient{ask: []byte(askPEM)}}},
-			report:    reportValid,
+			client: kdsClient{stubClient{ask: []byte(askPEM)}},
+			report: reportValid,
 		},
 		"fail": {
-			validator: &Validator{ark: ark, kdsClient: kdsClient{stubClient{ask: []byte(askPEM)}}},
-			report:    reportInvalid,
-			wantErr:   true,
+			client:  kdsClient{stubClient{ask: []byte(askPEM)}},
+			report:  reportInvalid,
+			wantErr: true,
 		},
 	}
 
@@ -181,7 +182,8 @@ func TestValidateSNPReport(t *testing.T) {
 			info, err := loadInstanceInfo(tc.report, certTableValid)
 			require.NoError(err)
 
-			err = tc.validator.validateSNPReport(vtpm.AttestationDocument{InstanceInfo: info}, nil)
+			v := awsValidator{}
+			err = v.validate(vtpm.AttestationDocument{InstanceInfo: info}, tc.client, ark, bytes.Repeat([]byte{0x00}, 64))
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -233,4 +235,10 @@ func (s stubClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body: ioutil.NopCloser(bytes.NewReader(s.ask)),
 	}, nil
+}
+
+type stubawsValidator struct{}
+
+func (stubawsValidator) validate(attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error {
+	return nil
 }
