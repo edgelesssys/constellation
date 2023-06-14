@@ -472,22 +472,17 @@ func init() {
 			FieldName: "awsSEVSNP",
 		},
 	}
-	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 3)
+	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 2)
 	AWSSEVSNPDoc.Fields[0].Name = "measurements"
 	AWSSEVSNPDoc.Fields[0].Type = "M"
 	AWSSEVSNPDoc.Fields[0].Note = ""
 	AWSSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
 	AWSSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
-	AWSSEVSNPDoc.Fields[1].Name = "launchMeasurement"
-	AWSSEVSNPDoc.Fields[1].Type = "Measurement"
+	AWSSEVSNPDoc.Fields[1].Name = "amdRootKey"
+	AWSSEVSNPDoc.Fields[1].Type = "Certificate"
 	AWSSEVSNPDoc.Fields[1].Note = ""
-	AWSSEVSNPDoc.Fields[1].Description = "Expected launch measurement in SNP report. Not in use right now."
-	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Expected launch measurement in SNP report. Not in use right now."
-	AWSSEVSNPDoc.Fields[2].Name = "amdRootKey"
-	AWSSEVSNPDoc.Fields[2].Type = "Certificate"
-	AWSSEVSNPDoc.Fields[2].Note = ""
-	AWSSEVSNPDoc.Fields[2].Description = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
-	AWSSEVSNPDoc.Fields[2].Comments[encoder.LineComment] = "AMD Root Key certificate used to verify the SEV-SNP certificate chain."
+	AWSSEVSNPDoc.Fields[1].Description = "TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically.\ndescription: |\n  Expected launch measurement in SNP report. Not in use right now.\nLaunchMeasurement measurements.Measurement `json:\"launchMeasurement\" yaml:\"launchMeasurement\" validate:\"required\"`\ndescription: |\n  AMD Root Key certificate used to verify the SEV-SNP certificate chain.\n"
+	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
