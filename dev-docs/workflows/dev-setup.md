@@ -31,28 +31,15 @@ Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudi
 
 ## Recommended Plugins
 
-* ANSI Colors (iliazeus.vscode-ansi) [for parsing raw serial boot logs with colors]
-* Bazel (BazelBuild.vscode-bazel)
-* GitHub Actions (github.vscode-github-actions)
-* GitHub Pull Requests and Issues (GitHub.vscode-pull-request-github)
-* GitLens (eamodio.gitlens)
-* Go (golang.go)
-* HashiCorp Terraform (hashicorp.terraform)
-* Kubernetes (ms-kubernetes-tools.vscode-kubernetes-tools)
-* Live Share (ms-vsliveshare.vsliveshare)
-* ShellCheck (timonwong.shellcheck)
-* vscode-proto3 (zxh404.vscode-proto3)
-* YAML (redhat.vscode-yaml)
+* Bazel (BazelBuild.vscode-bazel): Bazel syntax highlighting and more
+* Go (golang.go): Go language support for VS Code
+* HashiCorp Terraform (hashicorp.terraform): Syntax highlighting for Terraform files
+* ShellCheck (timonwong.shellcheck): Shell script linter
+* vscode-proto3 (zxh404.vscode-proto3): Protobuf language support
 * Code Spell Checker (streetsidesoftware.code-spell-checker): Highlights potential spelling mistakes
-
-* Docker (ms-azuretools.vscode-docker): for syntax highlighting
-* Helm Intellisense: (Tim-Koehler.helm-intellisense) syntax highlighting and intellisense for writing helm charts. Also ensure you dont reference non existent values in your charts
-
-* Markdown All in One (yzhang.markdown-all-in-one)
-* Markdown Preview Mermaid Support (bierner.markdown-mermaid): mermaid support for markdown in vs code
-* markdownlint (DavidAnson.vscode-markdownlint): Linter for markdown
-* albymor.increment-selection
-* quicktype.quicktype
+* Helm Intellisense: (Tim-Koehler.helm-intellisense): Syntax highlighting and more for Helm charts
+* YAML (redhat.vscode-yaml): YAML language support. (Does not work with Helm charts)
+* markdownlint (DavidAnson.vscode-markdownlint): Markdown linter
 
 ## Bazel support
 

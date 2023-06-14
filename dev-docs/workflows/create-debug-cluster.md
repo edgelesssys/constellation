@@ -38,9 +38,3 @@ Finally run:
 ```sh
 ./constellation init
 ```
-
-### OSS version?
-<!-- not sure -->
-```sh
-./constellation config fetch-measurements --insecure`
-```
