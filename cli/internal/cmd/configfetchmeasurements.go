@@ -161,6 +161,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return err
 	}
 	cfm.log.Debugf("Configuration written to %s", flags.configPath)
+	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }
 
