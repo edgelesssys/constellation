@@ -18,7 +18,7 @@ runs:
     - name: Install sonobuoy
       shell: bash
       env:
-        SONOBUOY_VER: "0.56.16"
+        SONOBUOY_VER: "0.56.17"
       run: |
         HOSTOS="$(go env GOOS)"
         HOSTARCH="$(go env GOARCH)"
