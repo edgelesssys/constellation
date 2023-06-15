@@ -21,7 +21,9 @@ You should discuss larger changes and feature requests with the maintainers. Ple
 
 ## Conventions
 
-Our changelog is generated from PR titles, so please stick to the naming convention. Which PR is listed in which category is determined by labels, see the [release.yml](/.github/release.yml).
+### Title
+
+Our changelog is generated from PR titles, so please stick to the naming convention.
 
 The PR title should be structured in one of the following ways:
 
@@ -46,3 +48,12 @@ In case the scope of your PR is too wide, use the alternative format.
 ```
 
 and `<Title>` starts with a capital letter.
+
+### Labels
+
+The labels are used for changelog generation (targeted at constellation users), so select the label with this purpose in mind.
+To exclude the PR from changelog only use these labels:
+
+* `no changelog` / `dependencies`
+
+ The changelog generation is described [here](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes). This is our configuration [release.yml](/.github/release.yml).

@@ -26,5 +26,7 @@ Feel free to edit, complete or extend this list while the PR is open.
 <!-- Remove items that do not apply. For completed items, change [ ] to [x], or check after submitting. -->
 
 - [ ] Update [docs](https://github.com/edgelesssys/constellation/tree/main/docs)
+<!-- more information in dev-docs/workflows/pull-request.md -->
 - [ ] Add labels (e.g., for changelog category)
+- [ ] Is PR title adequate for changelog?
 - [ ] Link to Milestone
