@@ -1,10 +1,9 @@
-/.github @katexochen
 /3rdparty/gcp-guest-agent @malt3
 /bazel @malt3
 /bazel/ci @katexochen
 /bazel/sh @katexochen
+/bazel/container @katexochen
 /bootstrapper @3u13r
-/cli @katexochen
 /cli/internal/helm @derpsteb
 /cli/internal/libvirt @daniel-weisse
 /cli/internal/terraform @daniel-weisse
@@ -13,7 +12,6 @@
 /debugd @malt3
 /disk-mapper @daniel-weisse
 /docs @thomasten
-/e2e @katexochen
 /hack/azure-jump-host @malt3
 /hack/azure-snp-report-verify @derpsteb
 /hack/configapi @elchead
@@ -29,14 +27,11 @@
 /internal/atls @thomasten
 /internal/attestation @daniel-weisse
 /internal/config @derpsteb
-/internal/cloud/openstack @katexochen
 /internal/crypto @thomasten
 /internal/license @thomasten
 /internal/logger @daniel-weisse
 /internal/oid @thomasten
-/internal/retry @katexochen
 /internal/sigstore @malt3
-/internal/versions @katexochen
 /internal/api/versionsapi @katexochen
 /joinservice @daniel-weisse
 /keyservice @daniel-weisse
