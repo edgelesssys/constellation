@@ -23,6 +23,12 @@ Set `debugCluster: true` in the config:
 yq eval -i '.debugCluster=true' constellation-conf.yaml
 ```
 
+Fetch measurements for the debug image:
+
+```sh
+./constellation config fetch-measurements --insecure
+```
+
 Create the cluster and deploy the debug images:
 
 ```sh

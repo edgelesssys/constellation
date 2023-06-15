@@ -81,10 +81,11 @@ For more details, see [here](https://docs.edgeless.systems/constellation/getting
 
 ## Build
 
-Build the binaries always in a separate directory:
+Build the binaries always in a separate directory. Since you can only have one IAM + cluster configuration in one directory, it is recommended to create a sub-directory for each cloud provider. This way you can easily deploy your dev-build on each of the providers by switching to their sub-directory:
 
 ```sh
 mkdir build && cd build
+# ( mkdir (aws|gcp|azure) && cd (aws|gcp|azure) )
 # build required binaries for a dev build
 # and symlink them into the current directory
 # also push the built container images
