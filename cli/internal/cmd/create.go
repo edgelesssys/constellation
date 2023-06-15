@@ -91,6 +91,11 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		printedAWarning = true
 	}
 
+	if conf.IsDebugImage() && !conf.IsDebugCluster() {
+		cmd.PrintErrln("WARNING: A debug image is used but debugCluster is false.")
+		printedAWarning = true
+	}
+
 	if conf.IsDebugCluster() {
 		cmd.PrintErrln("WARNING: Creating a debug cluster. This cluster is not secure and should only be used for debugging purposes.")
 		cmd.PrintErrln("DO NOT USE THIS CLUSTER IN PRODUCTION.")

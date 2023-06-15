@@ -542,6 +542,11 @@ func (c *Config) IsReleaseImage() bool {
 	return strings.HasPrefix(c.Image, "v")
 }
 
+// IsDebugImage checks whether image name looks like a debug image.
+func (c *Config) IsDebugImage() bool {
+	return strings.Contains(c.Image, "debug")
+}
+
 // GetProvider returns the configured cloud provider.
 func (c *Config) GetProvider() cloudprovider.Provider {
 	if c.Provider.AWS != nil {
