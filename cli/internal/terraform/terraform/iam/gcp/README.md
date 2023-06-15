@@ -7,12 +7,13 @@ You can create the configuration with the following commands:
 ```sh
 mkdir constellation_gcp_iam
 cd constellation_gcp_iam
-curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/terraform/gcp/iam/{main.tf,output.tf,variables.tf,.terraform.lock.hcl}
+curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/cli/internal/terraform/terraform/iam/gcp/{main.tf,outputs.tf,variables.tf,.terraform.lock.hcl}
 terraform init
 terraform apply
 ```
 
 The following terraform output values are available (with their corresponding keys in the Constellation configuration file):
+
 - `sa_key` - **Sensitive Value**
 - `region` (region)
 - `zone` (zone)
@@ -21,6 +22,7 @@ The following terraform output values are available (with their corresponding ke
 You can either get the values from the Terraform output and manually add them to your Constellation configuration file according to our [Documentation](https://docs.edgeless.systems/constellation/getting-started/first-steps). (If you add the values manually, you need to base64-decode the `sa_key` value and place it in a JSON file, then specify the path to this file in the Constellation configuration file for the `serviceAccountKeyPath` key.)
 
 Or you can setup the constellation configuration file automaticcaly with the following commands:
+
 ```sh
 terraform output sa_key | sed "s/\"//g" | base64 --decode | tee gcpServiceAccountKey.json
 yq -i "

@@ -19,6 +19,17 @@ resource "google_service_account" "service_account" {
   description  = "Service account used inside Constellation"
 }
 
+// service_account creation is eventually consistent so add a delay to ensure it is created before the next step: https://registry.terraform.io/providers/hashicorp/google/4.69.1/docs/resources/google_service_account.html
+resource "null_resource" "delay" {
+  provisioner "local-exec" {
+    command = "sleep 15"
+  }
+  triggers = {
+    "before" = "${null_resource.before.id}"
+  }
+}
+
+
 resource "google_project_iam_member" "instance_admin_role" {
   project = var.project_id
   role    = "roles/compute.instanceAdmin.v1"
