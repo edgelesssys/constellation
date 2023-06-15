@@ -88,10 +88,11 @@ mkdir build && cd build
 # build required binaries for a dev build
 # and symlink them into the current directory
 # also push the built container images
-# After the first run, set the pushed imaged to public.
 bazel run //:devbuild --cli_edition=oss --container_prefix=ghcr.io/USERNAME/constellation
 ./constellation ...
 ```
+
+IMPORTANT: New images are private by default. To set it to public see [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
 
 ### Specialized Bazel build targets
 
