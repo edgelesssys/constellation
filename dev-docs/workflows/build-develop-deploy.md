@@ -41,22 +41,6 @@ bazel clean --expunge
 
 ## Settings
 
-### Set build version
-
-There exists an `oss` and an `enterprise` version for licensing reasons.
-
-`enterprise`: recommended, complete feature set but some features are not licensed under Open-Source
-
-`oss`: default when building from the OSS repo, but non OSS-licensed features are missing (e.g. verify boot measurements). The [official docs](https://docs.edgeless.systems/constellation/) are written to be compatible with `oss`.
-<!-- are we sure about doc support? -->
-
-For convenience, we can set `enterprise` as the default build version:
-
-```
-cat .bazeloverwriterc
-build --cli_edition=enterprise
-```
-
 ### Authenticate with the GitHub registry
 
 Get a GitHub token with access to the registry and authenticate through `docker` (see [here](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)).
@@ -81,6 +65,8 @@ For more details, see [here](https://docs.edgeless.systems/constellation/getting
 
 ## Build
 
+>IMPORTANT: The OSS version is not identical with the official release. Notably, when executing `constellation create` you will need to set the image version and measurements yourself.
+
 Build the binaries always in a separate directory. Since you can only have one IAM + cluster configuration in one directory, it is recommended to create a sub-directory for each cloud provider. This way you can easily deploy your dev-build on each of the providers by switching to their sub-directory:
 
 ```sh
@@ -93,7 +79,7 @@ bazel run //:devbuild --cli_edition=oss --container_prefix=ghcr.io/USERNAME/cons
 ./constellation ...
 ```
 
-IMPORTANT: New images are private by default. To set it to public see [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
+>IMPORTANT: New images are private by default. To set it to public see [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
 
 ### Specialized Bazel build targets
 
