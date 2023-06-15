@@ -334,7 +334,7 @@ jobs:
 
       - name: Collect hashes
         id: collect-hashes
-        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37
+        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
         run: |
           {
             echo "image-raw-${{ matrix.csp }}-${{ matrix.attestation_variant }}-sha256=$(sha256sum image.raw | head -c 64)"
@@ -351,27 +351,27 @@ jobs:
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.raw
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.raw
 
       - name: Upload individual OS parts as artifacts
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: parts-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.cmdline
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.efi
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.esp.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.root-x86-64.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.root-x86-64-verity.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.vmlinuz
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.cmdline
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.efi
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.esp.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.root-x86-64.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.root-x86-64-verity.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.vmlinuz
 
       - name: Upload manifest as artifact
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: manifest-${{ matrix.csp }}-${{ matrix.attestation_variant }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.changelog
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.manifest
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.changelog
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.manifest
 
   upload-os-image:
     name: "Upload OS image to CSP"
@@ -399,10 +399,10 @@ jobs:
           - csp: openstack
             attestation_variant: qemu-vtpm
     env:
-      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image.raw
-      JSON_OUTPUT: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37/image-upload.json
-      AZURE_IMAGE_PATH: mkosi.output.azure_${{ matrix.attestation_variant }}/fedora~37/image.vhd
-      GCP_IMAGE_PATH: mkosi.output.gcp_${{ matrix.attestation_variant }}/fedora~37/image.tar.gz
+      RAW_IMAGE_PATH: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image.raw
+      JSON_OUTPUT: mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38/image-upload.json
+      AZURE_IMAGE_PATH: mkosi.output.azure_${{ matrix.attestation_variant }}/fedora~38/image.vhd
+      GCP_IMAGE_PATH: mkosi.output.gcp_${{ matrix.attestation_variant }}/fedora~38/image.tar.gz
       SHORTNAME: ${{ needs.build-settings.outputs.imageNameShort }}
       ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
     steps:
@@ -415,7 +415,7 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: image-${{ matrix.csp }}-${{ matrix.attestation_variant }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~37
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}_${{ matrix.attestation_variant }}/fedora~38
 
       - name: Install tools
         shell: bash
@@ -655,7 +655,7 @@ jobs:
                 .measurements.6.warnOnly = true |
                 .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
                 .measurements.7.warnOnly = true |
-                .measurements.7.expected = "b1e9b305325c51b93da58cbf7f92512d8eebfa01143e4d8844e40e062e9b6cd5" |
+                .measurements.7.expected = "a1d193dbfc3da1a5e93fe7b1384427fb78feeffcb06675a0cf840ec99406f237" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
                 .measurements.11.warnOnly = false |

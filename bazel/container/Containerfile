@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.5-labs
-FROM fedora:37
+FROM fedora:38
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -12,20 +12,20 @@ ADD --checksum=sha256:${BAZELISK_SHA256} \
     /usr/local/bin/bazelisk
 
 RUN chmod +x /usr/local/bin/bazelisk && \
-	ln -s /usr/local/bin/bazelisk /usr/local/bin/bazel && \
-	dnf install -y \
-	git \
-	diffutils \
-	libxcrypt-compat \
-	python3 \
-	&& \
-	dnf clean all && \
-	groupadd --gid 1000 builder && \
-	useradd -rm -d /home/builder -s /bin/bash -g root -u 1000 --gid builder builder && \
-	mkdir -p /home/builder/.cache && \
-	mkdir -p /workspace && \
-	chown -R builder:builder /home/builder/.cache /workspace && \
-	git config --global --add safe.directory /workspace
+    ln -s /usr/local/bin/bazelisk /usr/local/bin/bazel && \
+    dnf install -y \
+    git \
+    diffutils \
+    libxcrypt-compat \
+    python3 \
+    && \
+    dnf clean all && \
+    groupadd --gid 1000 builder && \
+    useradd -rm -d /home/builder -s /bin/bash -g root -u 1000 --gid builder builder && \
+    mkdir -p /home/builder/.cache && \
+    mkdir -p /workspace && \
+    chown -R builder:builder /home/builder/.cache /workspace && \
+    git config --global --add safe.directory /workspace
 
 USER builder
 WORKDIR /workspace

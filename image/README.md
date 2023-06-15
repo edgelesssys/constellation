@@ -113,7 +113,7 @@ After that, you can build the image with:
 sudo make EXTRA_SEARCH_PATHS="${SYSTEMD_BIN}" -j $(nproc)
 ```
 
-Raw images will be placed in `mkosi.output.<CSP>/fedora~37/image.raw`.
+Raw images will be placed in `mkosi.output.<CSP>/fedora~38/image.raw`.
 
 ## Prepare Secure Boot
 
@@ -125,7 +125,7 @@ For QEMU and Azure, you can pre-generate the NVRAM variables for secure boot. Th
 <summary><a id="qemu-secure-boot">libvirt / QEMU / KVM</a></summary>
 
 ```sh
-secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~37/image.raw
+secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~38/image.raw
 ```
 
 </details>
@@ -147,10 +147,10 @@ export AZURE_REGION=northeurope
 export AZURE_REPLICATION_REGIONS=
 export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
-export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.raw
-export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.vhd
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~38/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~38/image.vhd
 export AZURE_VMGS_FILENAME=${AZURE_SECURITY_TYPE}.vmgs
-export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~37/image-upload.json
+export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~38/image-upload.json
 export BLOBS_DIR=${PWD}/blobs
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 upload/upload_azure.sh --disk-name "${AZURE_DISK_NAME}-setup-secure-boot" ""
@@ -191,7 +191,7 @@ Warning! Never set `--version` to a value that is already used for a release ima
 ```sh
 # Warning! Never set `--version` to a value that is already used for a release image.
 # Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- aws --verbose --raw-image mkosi.output.aws/fedora~37/image.raw --variant ""  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
+bazel run //image/upload -- aws --verbose --raw-image mkosi.output.aws/fedora~38/image.raw --variant ""  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -207,8 +207,8 @@ bazel run //image/upload -- aws --verbose --raw-image mkosi.output.aws/fedora~37
     - `pki_prod` is used for release images
 
 ```sh
-export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.raw
-export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.tar.gz
+export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~38/image.raw
+export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~38/image.tar.gz
 upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
 # Warning! Never set `--version` to a value that is already used for a release image.
 # Instead, use a `ref` that corresponds to your branch name.
@@ -230,8 +230,8 @@ Note:
 - Optional (if Secure Boot should be enabled) [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
 
 ```sh
-export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.raw
-export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.vhd
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~38/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~38/image.vhd
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 # Warning! Never set `--version` to a value that is already used for a release image.
 # Instead, use a `ref` that corresponds to your branch name.
@@ -254,7 +254,7 @@ Note:
 ```sh
 # Warning! Never set `--version` to a value that is already used for a release image.
 # Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- openstack --verbose --raw-image mkosi.output.openstack/fedora~37/image.raw --variant "sev"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
+bazel run //image/upload -- openstack --verbose --raw-image mkosi.output.openstack/fedora~38/image.raw --variant "sev"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>
@@ -268,7 +268,7 @@ bazel run //image/upload -- openstack --verbose --raw-image mkosi.output.opensta
 ```sh
 # Warning! Never set `--version` to a value that is already used for a release image.
 # Instead, use a `ref` that corresponds to your branch name.
-bazel run //image/upload -- qemu --verbose --raw-image mkosi.output.qemu/fedora~37/image.raw --variant "default"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
+bazel run //image/upload -- qemu --verbose --raw-image mkosi.output.qemu/fedora~38/image.raw --variant "default"  --version ref/foo/stream/nightly/v2.7.0-pre-asdf
 ```
 
 </details>

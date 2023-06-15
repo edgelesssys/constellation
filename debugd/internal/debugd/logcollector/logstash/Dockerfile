@@ -1,11 +1,11 @@
-FROM fedora:37@sha256:ab2fd8de428f5dbdb147d43135902a776a6c64d2243fd7ac99629df3b47c9256 AS build
+FROM fedora:38@sha256:a29e3f593f5eb60a0a52d34bdc0147da22c97381d3667c5588dbe02ca35e1514 AS build
 
 ARG LOGSTASH_VER=8.6.1
 
 RUN curl -fsSLO https://artifacts.opensearch.org/logstash/logstash-oss-with-opensearch-output-plugin-$LOGSTASH_VER-linux-x64.tar.gz
 RUN tar -zxvf logstash-oss-with-opensearch-output-plugin-$LOGSTASH_VER-linux-x64.tar.gz
 
-FROM fedora:37@sha256:ab2fd8de428f5dbdb147d43135902a776a6c64d2243fd7ac99629df3b47c9256 AS release
+FROM fedora:38@sha256:a29e3f593f5eb60a0a52d34bdc0147da22c97381d3667c5588dbe02ca35e1514 AS release
 
 COPY --from=build logstash-* /usr/share/logstash
 
