@@ -58,7 +58,7 @@ func getGCEInstanceInfo(client gcpMetadataClient) func(context.Context, io.ReadW
 			return nil, errors.New("unable to fetch instance name")
 		}
 
-		return json.Marshal(attest.GCEInstanceInfo{
+		return json.Marshal(&attest.GCEInstanceInfo{
 			Zone:         zone,
 			ProjectId:    projectID,
 			InstanceName: instanceName,

@@ -91,7 +91,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		wantErr      bool
 	}{
 		"success": {
-			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
+			instanceInfo: mustMarshal(&attest.GCEInstanceInfo{}, require.New(t)),
 			getClient: prepareFakeClient(&computepb.ShieldedInstanceIdentity{
 				SigningKey: &computepb.ShieldedInstanceIdentityEntry{
 					EkPub: proto.String(testPubK),
@@ -109,12 +109,12 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			wantErr: true,
 		},
 		"empty signing key": {
-			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
+			instanceInfo: mustMarshal(&attest.GCEInstanceInfo{}, require.New(t)),
 			getClient:    prepareFakeClient(&computepb.ShieldedInstanceIdentity{}, nil, nil),
 			wantErr:      true,
 		},
 		"new client error": {
-			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
+			instanceInfo: mustMarshal(&attest.GCEInstanceInfo{}, require.New(t)),
 			getClient: prepareFakeClient(&computepb.ShieldedInstanceIdentity{
 				SigningKey: &computepb.ShieldedInstanceIdentityEntry{
 					EkPub: proto.String(testPubK),
@@ -123,7 +123,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			wantErr: true,
 		},
 		"GetShieldedInstanceIdentity error": {
-			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
+			instanceInfo: mustMarshal(&attest.GCEInstanceInfo{}, require.New(t)),
 			getClient: prepareFakeClient(&computepb.ShieldedInstanceIdentity{
 				SigningKey: &computepb.ShieldedInstanceIdentityEntry{
 					EkPub: proto.String(testPubK),
@@ -132,7 +132,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			wantErr: true,
 		},
 		"Decode error": {
-			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
+			instanceInfo: mustMarshal(&attest.GCEInstanceInfo{}, require.New(t)),
 			getClient: prepareFakeClient(&computepb.ShieldedInstanceIdentity{
 				SigningKey: &computepb.ShieldedInstanceIdentityEntry{
 					EkPub: proto.String("Not a public key"),
@@ -164,7 +164,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 	}
 }
 
-func mustMarshal(in any, require *require.Assertions) []byte {
+func mustMarshal(in *attest.GCEInstanceInfo, require *require.Assertions) []byte {
 	out, err := json.Marshal(in)
 	require.NoError(err)
 	return out
