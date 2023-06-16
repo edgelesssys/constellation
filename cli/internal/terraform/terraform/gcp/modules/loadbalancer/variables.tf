@@ -13,9 +13,9 @@ variable "backend_port_name" {
   description = "Name of backend port. The same name should appear in the instance groups referenced by this service."
 }
 
-variable "backend_instance_group" {
-  type        = string
-  description = "The URL of the instance group resource from which the load balancer will direct traffic."
+variable "backend_instance_groups" {
+  type        = list(string)
+  description = "The URLs of the instance group resources from which the load balancer will direct traffic."
 }
 
 variable "ip_address" {

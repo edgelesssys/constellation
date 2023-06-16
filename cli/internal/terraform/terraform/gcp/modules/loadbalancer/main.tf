@@ -41,9 +41,12 @@ resource "google_compute_backend_service" "backend" {
   port_name             = var.backend_port_name
   timeout_sec           = 240
 
-  backend {
-    group          = var.backend_instance_group
-    balancing_mode = "UTILIZATION"
+  dynamic "backend" {
+    for_each = var.backend_instance_groups
+    content {
+      group          = backend.value
+      balancing_mode = "UTILIZATION"
+    }
   }
 }
 

@@ -1,6 +1,11 @@
-variable "name" {
+variable "base_name" {
   type        = string
   description = "Base name of the instance group."
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
 }
 
 variable "role" {
@@ -83,4 +88,9 @@ variable "debug" {
 variable "alias_ip_range_name" {
   type        = string
   description = "Name of the alias IP range to use."
+}
+
+variable "zone" {
+  type        = string
+  description = "Zone to deploy the instance group in."
 }
