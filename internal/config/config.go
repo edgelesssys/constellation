@@ -36,6 +36,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -544,7 +545,11 @@ func (c *Config) IsReleaseImage() bool {
 
 // IsDebugImage checks whether image name looks like a debug image.
 func (c *Config) IsDebugImage() bool {
-	return strings.Contains(c.Image, "debug")
+	v, err := versionsapi.NewVersionFromShortPath(c.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return false
+	}
+	return v.Stream == "debug"
 }
 
 // GetProvider returns the configured cloud provider.
