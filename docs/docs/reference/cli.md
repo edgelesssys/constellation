@@ -9,6 +9,7 @@ Usage:
 ```
 constellation [command]
 ```
+
 Commands:
 
 * [config](#constellation-config): Work with the Constellation configuration file
@@ -424,7 +425,7 @@ constellation upgrade check [flags]
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
+      --force           disable version compatibility, upgrade in progress, valid upgrade checks - might result in corrupted clusters
       --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
 ```
 
@@ -753,4 +754,3 @@ constellation status [flags]
       --force           disable version compatibility checks - might result in corrupted clusters
       --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
 ```
-
