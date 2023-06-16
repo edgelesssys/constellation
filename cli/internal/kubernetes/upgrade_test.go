@@ -464,7 +464,7 @@ func TestUpdateImage(t *testing.T) {
 				},
 			}
 
-			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion)
+			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion, false)
 
 			if tc.wantErr {
 				assert.Error(err)

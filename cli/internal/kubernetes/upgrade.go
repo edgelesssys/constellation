@@ -186,23 +186,14 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 
 	upgradeErrs := []error{}
 	upgradeErr := &compatibility.InvalidUpgradeError{}
-	currentImageVersion := nodeVersion.Spec.ImageVersion
 
-	// check update image
-	if !force {
-		if upgradeInProgress(nodeVersion) {
-			return ErrInProgress
-		}
-		if err := compatibility.IsValidUpgrade(currentImageVersion, imageVersion.Version); err != nil {
-			switch {
-			case errors.As(err, &upgradeErr):
-				upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
-			case err != nil:
-				return fmt.Errorf("updating image version: %w", err)
-			}
-		}
+	err = u.updateImage(&nodeVersion, imageReference, imageVersion.Version, force)
+	switch {
+	case errors.As(err, &upgradeErr):
+		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
+	case err != nil:
+		return fmt.Errorf("updating image version: %w", err)
 	}
-	_ = u.updateImage(&nodeVersion, imageReference, imageVersion.Version)
 
 	// We have to allow users to specify outdated k8s patch versions.
 	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
@@ -376,7 +367,16 @@ func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVer
 }
 
 // updateImage upgrades the cluster to the given measurements and image.
-func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImageReference, newImageVersion string) error {
+func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImageReference, newImageVersion string, force bool) error {
+	currentImageVersion := nodeVersion.Spec.ImageVersion
+	if !force {
+		if upgradeInProgress(*nodeVersion) {
+			return ErrInProgress
+		}
+		if err := compatibility.IsValidUpgrade(currentImageVersion, newImageVersion); err != nil {
+			return fmt.Errorf("validating image update: %w", err)
+		}
+	}
 	u.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, newImageVersion)
 	nodeVersion.Spec.ImageReference = newImageReference
 	nodeVersion.Spec.ImageVersion = newImageVersion
