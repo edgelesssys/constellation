@@ -9,6 +9,9 @@ package terraform
 import (
 	"fmt"
 	"strings"
+
+	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 // Variables is a struct that holds all variables that are passed to Terraform.
@@ -98,40 +101,40 @@ func (v *AWSIAMVariables) String() string {
 
 // GCPClusterVariables is user configuration for creating resources with Terraform on GCP.
 type GCPClusterVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
-
+	// Name of the cluster.
+	Name string `hcl:"name" cty:"name"`
 	// Project is the ID of the GCP project to use.
-	Project string
+	Project string `hcl:"project" cty:"project"`
 	// Region is the GCP region to use.
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// Zone is the GCP zone to use.
-	Zone string
-	// CredentialsFile is the path to the GCP credentials file.
-	CredentialsFile string
-	// InstanceType is the GCP instance type to use.
-	InstanceType string
-	// StateDiskType is the GCP disk type to use for the state disk.
-	StateDiskType string
+	Zone string `hcl:"zone" cty:"zone"`
 	// ImageID is the ID of the GCP image to use.
-	ImageID string
+	ImageID string `hcl:"image_id" cty:"image_id"`
 	// Debug is true if debug mode is enabled.
-	Debug bool
+	Debug bool `hcl:"debug" cty:"debug"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]GCPNodeGroup `hcl:"node_groups" cty:"node_groups"`
+}
+
+// GCPNodeGroup is a node group to create on GCP.
+type GCPNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
+	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
+	// InitialCount is the initial number of nodes to create in the node group.
+	InitialCount int    `hcl:"initial_count" cty:"initial_count"`
+	Zone         string `hcl:"zone" cty:"zone"`
+	InstanceType string `hcl:"instance_type" cty:"instance_type"`
+	DiskType     string `hcl:"disk_type" cty:"disk_type"`
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *GCPClusterVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "project = %q", v.Project)
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "instance_type = %q", v.InstanceType)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "image_id = %q", v.ImageID)
-	writeLinef(b, "debug = %t", v.Debug)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // GCPIAMVariables is user configuration for creating the IAM confioguration with Terraform on GCP.
