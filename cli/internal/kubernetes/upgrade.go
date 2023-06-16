@@ -165,7 +165,7 @@ func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Confi
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
 // The versions set in the config are validated against the versions running in the cluster.
-func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) error {
+func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error {
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
@@ -179,20 +179,30 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config) 
 		return fmt.Errorf("parsing version from image short path: %w", err)
 	}
 
-	nodeVersion, err := u.checkClusterStatus(ctx)
+	nodeVersion, err := u.getClusterStatus(ctx)
 	if err != nil {
 		return err
 	}
 
 	upgradeErrs := []error{}
 	upgradeErr := &compatibility.InvalidUpgradeError{}
-	err = u.updateImage(&nodeVersion, imageReference, imageVersion.Version)
-	switch {
-	case errors.As(err, &upgradeErr):
-		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
-	case err != nil:
-		return fmt.Errorf("updating image version: %w", err)
+	currentImageVersion := nodeVersion.Spec.ImageVersion
+
+	// check update image
+	if !force {
+		if upgradeInProgress(nodeVersion) {
+			return ErrInProgress
+		}
+		if err := compatibility.IsValidUpgrade(currentImageVersion, imageVersion.Version); err != nil {
+			switch {
+			case errors.As(err, &upgradeErr):
+				upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))
+			case err != nil:
+				return fmt.Errorf("updating image version: %w", err)
+			}
+		}
 	}
+	_ = u.updateImage(&nodeVersion, imageReference, imageVersion.Version)
 
 	// We have to allow users to specify outdated k8s patch versions.
 	// Therefore, this code has to skip k8s updates if a user configures an outdated (i.e. invalid) k8s version.
@@ -356,14 +366,10 @@ func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alp
 	return updatedNodeVersion, nil
 }
 
-func (u *Upgrader) checkClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
+func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
 	nodeVersion, err := GetConstellationVersion(ctx, u.dynamicInterface)
 	if err != nil {
 		return updatev1alpha1.NodeVersion{}, fmt.Errorf("retrieving current image: %w", err)
-	}
-
-	if upgradeInProgress(nodeVersion) {
-		return updatev1alpha1.NodeVersion{}, ErrInProgress
 	}
 
 	return nodeVersion, nil
@@ -371,12 +377,6 @@ func (u *Upgrader) checkClusterStatus(ctx context.Context) (updatev1alpha1.NodeV
 
 // updateImage upgrades the cluster to the given measurements and image.
 func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImageReference, newImageVersion string) error {
-	currentImageVersion := nodeVersion.Spec.ImageVersion
-
-	if err := compatibility.IsValidUpgrade(currentImageVersion, newImageVersion); err != nil {
-		return err
-	}
-
 	u.log.Debugf("Updating local copy of nodeVersion image version from %s to %s", nodeVersion.Spec.ImageVersion, newImageVersion)
 	nodeVersion.Spec.ImageReference = newImageReference
 	nodeVersion.Spec.ImageVersion = newImageVersion

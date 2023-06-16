@@ -164,7 +164,7 @@ type stubUpgrader struct {
 	cleanTerraformErr error
 }
 
-func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config) error {
+func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {
 	return u.nodeVersionErr
 }
 

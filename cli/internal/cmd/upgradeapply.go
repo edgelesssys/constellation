@@ -124,7 +124,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 			return fmt.Errorf("upgrading services: %w", err)
 		}
 
-		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
+		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
 		switch {
 		case errors.Is(err, kubernetes.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
@@ -399,7 +399,7 @@ type upgradeApplyFlags struct {
 }
 
 type cloudUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config) error
+	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
