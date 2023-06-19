@@ -283,6 +283,5 @@ nvram = "/usr/share/OVMF/constellation_vars.production.fd"
 firmware = "/usr/share/OVMF/OVMF_CODE.fd"
 `
 	got := vars.String()
-	t.Logf("got:\n%s", got)
 	assert.Equal(t, want, got)
 }

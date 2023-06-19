@@ -172,6 +172,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 
 	if hasDiff {
 		// If there are any Terraform migrations to apply, ask for confirmation
+		fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
 		if !flags.yes {
 			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 			if err != nil {
