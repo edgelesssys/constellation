@@ -106,7 +106,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
-		fmt.Errorf("parsing force bool: %w", err)
+		return upgradeCheckFlags{}, fmt.Errorf("parsing force bool: %w", err)
 	}
 	writeConfig, err := cmd.Flags().GetBool("write-config")
 	if err != nil {
