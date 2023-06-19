@@ -45,7 +45,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// UpgradeCmdKind is the kind of the upgrade command. (check, apply)
+// UpgradeCmdKind is the kind of the upgrade command (check, apply).
 type UpgradeCmdKind int
 
 const (
