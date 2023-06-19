@@ -9,6 +9,8 @@ For quick reference, check [Top 10 tips for Microsoft style and voice](https://l
 
 Adhere to the style and best practices described in [Effective Go](https://golang.org/doc/effective_go.html). Read [Common Review Comments](https://github.com/golang/go/wiki/CodeReviewComments) for further information.
 
+This project also aims to follow the [Go Proverbs](https://go-proverbs.github.io/).
+
 ## Linting
 
 This projects uses [golangci-lint](https://golangci-lint.run/) for linting.
