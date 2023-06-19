@@ -30,9 +30,9 @@ Your bug report should cover the following points:
   * Thoughts on possible causes
   * Tested workarounds or fixes
 
-## Contributing a Pull request
+## Contributing a pull request
 
-See [here](./dev-docs/workflows/pull-request.md).
+See the [pull request workflow](./dev-docs/workflows/pull-request.md).
 
 ## Developer docs
 
