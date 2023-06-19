@@ -16,7 +16,8 @@ make cdbg
 ```
 
 ## debugd & cdbg usage
-Before continuing, remeber to [set up](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials) your cloud credentials for the CLI to work.
+
+Before continuing, remember to [set up](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials) your cloud credentials for the CLI to work.
 
 With `cdbg` and `yq` installed in your path:
 
