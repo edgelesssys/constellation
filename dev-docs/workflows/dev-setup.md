@@ -29,7 +29,7 @@ For some inexplicable reason, the `"go.lintTool":"golangci-lint",` might be over
 
 Additionally, we use the [Redhat YAML formatter](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) to have uniform formatting in our `.yaml` files.
 
-## Recommended Plugins
+## Recommended extensions
 
 * Bazel (BazelBuild.vscode-bazel): Bazel syntax highlighting and more
 * Go (golang.go): Go language support for VS Code
