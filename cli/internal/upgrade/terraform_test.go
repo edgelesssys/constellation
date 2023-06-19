@@ -289,14 +289,23 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 			}),
 			wantFiles: []string{},
 		},
-		"clean backup dir leave other files": {
+		"clean all": {
 			upgradeID: "1234",
 			workspace: workspace([]string{
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
-				filepath.Join(constants.UpgradeDir, "1234", "someFile"),
+				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeWorkingDir),
+				filepath.Join(constants.UpgradeDir, "1234", "abc"),
+			}),
+			wantFiles: []string{},
+		},
+		"leave other files": {
+			upgradeID: "1234",
+			workspace: workspace([]string{
+				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
+				filepath.Join(constants.UpgradeDir, "other"),
 			}),
 			wantFiles: []string{
-				filepath.Join(constants.UpgradeDir, "1234", "someFile"),
+				filepath.Join(constants.UpgradeDir, "other"),
 			},
 		},
 	}

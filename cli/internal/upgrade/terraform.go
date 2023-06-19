@@ -120,8 +120,7 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 // aborted by the user.
 func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler, upgradeID string) error {
 	cleanupFiles := []string{
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(constants.UpgradeDir, upgradeID),
 	}
 
 	for _, f := range cleanupFiles {
