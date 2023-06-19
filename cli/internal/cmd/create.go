@@ -91,7 +91,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		printedAWarning = true
 	}
 
-	if conf.IsDebugImage() && !conf.IsDebugCluster() {
+	if conf.IsNamedLikeDebugImage() && !conf.IsDebugCluster() {
 		cmd.PrintErrln("WARNING: A debug image is used but debugCluster is false.")
 		printedAWarning = true
 	}

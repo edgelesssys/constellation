@@ -543,8 +543,8 @@ func (c *Config) IsReleaseImage() bool {
 	return strings.HasPrefix(c.Image, "v")
 }
 
-// IsDebugImage checks whether image name looks like a debug image.
-func (c *Config) IsDebugImage() bool {
+// IsNamedLikeDebugImage checks whether image name looks like a debug image.
+func (c *Config) IsNamedLikeDebugImage() bool {
 	v, err := versionsapi.NewVersionFromShortPath(c.Image, versionsapi.VersionKindImage)
 	if err != nil {
 		return false

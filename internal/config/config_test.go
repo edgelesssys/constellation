@@ -867,7 +867,7 @@ func TestIsDebugImage(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			c := &Config{Image: tc.image}
-			assert.Equal(t, tc.expected, c.IsDebugImage())
+			assert.Equal(t, tc.expected, c.IsNamedLikeDebugImage())
 		})
 	}
 }
