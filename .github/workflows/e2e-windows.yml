@@ -73,12 +73,11 @@ jobs:
         shell: pwsh
         run: |
           .\constellation.exe init --debug
-          echo "$PWD\constellation-admin.conf"
-          setx KUBECONFIG "$PWD\constellation-admin.conf"
 
       - name: Liveness probe
         shell: pwsh
         run: |
+          setx KUBECONFIG "$PWD\constellation-admin.conf"
           $retryIntervalSeconds = 30
           $maxRetries = 50
 
