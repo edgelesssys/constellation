@@ -16,9 +16,9 @@ Constellation is licensed under the [AGPLv3](LICENSE). When contributing, you al
 
 ## Reporting issues and bugs, asking questions
 
-This project uses the GitHub issue tracker. Please check the existing issues before submitting to avoid duplicates.
+This project uses the GitHub issue tracker. Check the existing issues before submitting to avoid duplicates.
 
-To report a security issue, contact <security@edgeless.systems>.
+Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to <security@edgeless.systems>.
 
 Your bug report should cover the following points:
 
