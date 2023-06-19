@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package client provides a client for the versions API.
+Package client provides a general client to be used in for the several APIs.
 
 The client needs to be authenticated with AWS. It should be used in internal
 development and CI tools for administrative tasks. For just fetching information
@@ -56,37 +56,8 @@ type Client struct {
 	Log *logger.Logger
 }
 
-// NewReadOnlyClient creates a new read-only client.
-// This client can be used to fetch objects but cannot write updates.
-func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
-	log *logger.Logger,
-) (*Client, CloseFunc, error) {
-	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
-		Region:                    region,
-		Bucket:                    bucket,
-		DistributionID:            distributionID,
-		CacheInvalidationStrategy: staticupload.CacheInvalidateBatchOnFlush,
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	client := &Client{
-		s3Client:      staticUploadClient,
-		s3ClientClose: staticUploadClientClose,
-		bucket:        bucket,
-		DryRun:        true,
-		Log:           log,
-	}
-	clientClose := func(ctx context.Context) error {
-		return client.Close(ctx)
-	}
-
-	return client, clientClose, nil
-}
-
 // NewClient creates a new client for the versions API.
-func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
+func NewClient(ctx context.Context, region, bucket, distributionID string, readOnly bool,
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
 	staticUploadClient, staticUploadClientClose, err := staticupload.New(ctx, staticupload.Config{
@@ -103,7 +74,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 		s3Client:                     staticUploadClient,
 		s3ClientClose:                staticUploadClientClose,
 		bucket:                       bucket,
-		DryRun:                       dryRun,
+		DryRun:                       readOnly,
 		Log:                          log,
 		cacheInvalidationWaitTimeout: 10 * time.Minute,
 	}

@@ -26,10 +26,13 @@ type Client struct {
 }
 
 // NewClient creates a new client for the versions API.
-func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
+func NewClient(ctx context.Context, region, bucket, distributionID string, readOnly bool,
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
-	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, dryRun, log)
+	genericClient, genericClientClose, err := apiclient.NewClient(ctx, region, bucket, distributionID, readOnly, log)
+	if err != nil {
+		return nil, nil, err
+	}
 	versionsClient := &Client{
 		genericClient,
 		genericClientClose,
@@ -45,18 +48,7 @@ func NewClient(ctx context.Context, region, bucket, distributionID string, dryRu
 func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
 	log *logger.Logger,
 ) (*Client, CloseFunc, error) {
-	genericClient, genericClientClose, err := apiclient.NewReadOnlyClient(ctx, region, bucket, distributionID, log)
-	if err != nil {
-		return nil, nil, err
-	}
-	versionsClient := &Client{
-		genericClient,
-		genericClientClose,
-	}
-	versionsClientClose := func(ctx context.Context) error {
-		return versionsClient.Close(ctx)
-	}
-	return versionsClient, versionsClientClose, err
+	return NewClient(ctx, region, bucket, distributionID, true, log)
 }
 
 // Close closes the client.
