@@ -92,8 +92,9 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker: checker,
-		log:     log,
+		checker:      checker,
+		imagefetcher: imagefetcher.New(),
+		log:          log,
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -144,6 +145,7 @@ type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
 	checker         upgradeChecker
+	imagefetcher    imageFetcher
 	log             debugLog
 }
 
@@ -206,7 +208,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, imagefetcher.New())
+	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
