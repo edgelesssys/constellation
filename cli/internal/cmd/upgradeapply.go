@@ -149,7 +149,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
+	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -200,7 +200,8 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	return nil
 }
 
-func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
+// parseTerraformUpgradeVars parses the variables required to execute the Terraform script with.
+func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
 	// Fetch variables to execute Terraform script with
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()

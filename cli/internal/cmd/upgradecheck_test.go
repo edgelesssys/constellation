@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -338,6 +339,7 @@ func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ 
 type stubUpgradeChecker struct {
 	image      string
 	k8sVersion string
+	tfDiff     bool
 	err        error
 }
 
@@ -347,6 +349,18 @@ func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
 
 func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string, error) {
 	return u.k8sVersion, u.err
+}
+
+func (u stubUpgradeChecker) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
+	return u.tfDiff, u.err
+}
+
+func (u stubUpgradeChecker) CheckTerraformMigrations(fileHandler file.Handler) error {
+	return u.err
+}
+
+func (u stubUpgradeChecker) CleanUpTerraformMigrations(fileHandler file.Handler) error {
+	return u.err
 }
 
 func TestNewCLIVersions(t *testing.T) {

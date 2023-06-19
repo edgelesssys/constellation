@@ -18,6 +18,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/fetcher"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -28,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	conSemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -89,7 +92,8 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		log: log,
+		checker: checker,
+		log:     log,
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -98,36 +102,48 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return upgradeCheckFlags{}, err
+		return upgradeCheckFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
-		return upgradeCheckFlags{}, err
+		fmt.Errorf("parsing force bool: %w", err)
 	}
 	writeConfig, err := cmd.Flags().GetBool("write-config")
 	if err != nil {
-		return upgradeCheckFlags{}, err
+		return upgradeCheckFlags{}, fmt.Errorf("parsing write-config bool: %w", err)
 	}
 	ref, err := cmd.Flags().GetString("ref")
 	if err != nil {
-		return upgradeCheckFlags{}, err
+		return upgradeCheckFlags{}, fmt.Errorf("parsing ref string: %w", err)
 	}
 	stream, err := cmd.Flags().GetString("stream")
 	if err != nil {
-		return upgradeCheckFlags{}, err
+		return upgradeCheckFlags{}, fmt.Errorf("parsing stream string: %w", err)
 	}
+
+	logLevelString, err := cmd.Flags().GetString("tf-log")
+	if err != nil {
+		return upgradeCheckFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
+	}
+	logLevel, err := terraform.ParseLogLevel(logLevelString)
+	if err != nil {
+		return upgradeCheckFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
+	}
+
 	return upgradeCheckFlags{
-		configPath:  configPath,
-		force:       force,
-		writeConfig: writeConfig,
-		ref:         ref,
-		stream:      stream,
+		configPath:        configPath,
+		force:             force,
+		writeConfig:       writeConfig,
+		ref:               ref,
+		stream:            stream,
+		terraformLogLevel: logLevel,
 	}, nil
 }
 
 type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
+	checker         upgradeChecker
 	log             debugLog
 }
 
@@ -182,6 +198,39 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, attestationVariant, supported.image)
 	if err != nil {
 		return err
+	}
+
+	u.log.Debugf("Planning Terraform migrations")
+
+	if err := u.checker.CheckTerraformMigrations(fileHandler); err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
+
+	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, imagefetcher.New())
+	if err != nil {
+		return fmt.Errorf("parsing upgrade variables: %w", err)
+	}
+	u.log.Debugf("Using migration targets:\n%v", targets)
+	u.log.Debugf("Using Terraform variables:\n%v", vars)
+
+	opts := upgrade.TerraformUpgradeOptions{
+		LogLevel:   flags.terraformLogLevel,
+		CSP:        conf.GetProvider(),
+		Vars:       vars,
+		Targets:    targets,
+		OutputFile: constants.TerraformMigrationOutputFile,
+	}
+
+	cmd.Println("The following Teraform migrations are available with this CLI:")
+
+	// Check if there are any Terraform migrations
+	hasDiff, err := u.checker.PlanTerraformMigrations(cmd.Context(), opts)
+	if err != nil {
+		return fmt.Errorf("planning terraform migrations: %w", err)
+	}
+
+	if !hasDiff {
+		cmd.Println("  No Terraform migrations are available.")
 	}
 
 	upgrade := versionUpgrade{
@@ -661,16 +710,20 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 }
 
 type upgradeCheckFlags struct {
-	configPath  string
-	force       bool
-	writeConfig bool
-	ref         string
-	stream      string
+	configPath        string
+	force             bool
+	writeConfig       bool
+	ref               string
+	stream            string
+	terraformLogLevel terraform.LogLevel
 }
 
 type upgradeChecker interface {
 	CurrentImage(ctx context.Context) (string, error)
 	CurrentKubernetesVersion(ctx context.Context) (string, error)
+	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
+	CheckTerraformMigrations(fileHandler file.Handler) error
+	CleanUpTerraformMigrations(fileHandler file.Handler) error
 }
 
 type versionListFetcher interface {
