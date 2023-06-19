@@ -166,20 +166,30 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.GCPClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.GCPNodeGroup{
+			"control_plane_default": {
+				Role:            "ControlPlane",
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.ControlPlaneCount,
+				Zone:            opts.Config.Provider.GCP.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.GCP.StateDiskType,
+			},
+			"worker_default": {
+				Role:            "Worker",
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.WorkerCount,
+				Zone:            opts.Config.Provider.GCP.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.GCP.StateDiskType,
+			},
 		},
-		Project:         opts.Config.Provider.GCP.Project,
-		Region:          opts.Config.Provider.GCP.Region,
-		Zone:            opts.Config.Provider.GCP.Zone,
-		CredentialsFile: opts.Config.Provider.GCP.ServiceAccountKeyPath,
-		InstanceType:    opts.InsType,
-		StateDiskType:   opts.Config.Provider.GCP.StateDiskType,
-		ImageID:         opts.image,
-		Debug:           opts.Config.IsDebugCluster(),
+		Project: opts.Config.Provider.GCP.Project,
+		Region:  opts.Config.Provider.GCP.Region,
+		Zone:    opts.Config.Provider.GCP.Zone,
+		ImageID: opts.image,
+		Debug:   opts.Config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {

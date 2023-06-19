@@ -4,20 +4,42 @@ terraform {
       source  = "hashicorp/google"
       version = "4.69.1"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "3.5.1"
+    }
   }
 }
 
 locals {
+  # migration: allow the old node group names to work since they were created without the uid
+  # and without multiple node groups in mind
+  # node_group: worker_default => name == "<base>-1-worker"
+  # node_group: control_plane_default => name:  "<base>-control-plane"
+  # new names:
+  # node_group: foo, role: Worker => name == "<base>-worker-<uid>"
+  # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
   role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
-  name            = "${var.name}-${local.role_dashed}"
+  group_uid       = random_id.uid.hex
+  maybe_uid       = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
+  maybe_one       = var.node_group_name == "worker_default" ? "-1" : ""
+  name            = "${var.base_name}${local.maybe_one}-${local.role_dashed}${local.maybe_uid}"
   state_disk_name = "state-disk"
+}
+
+resource "random_id" "uid" {
+  byte_length = 4
 }
 
 resource "google_compute_instance_template" "template" {
   name         = local.name
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
-  labels       = merge(var.labels, { constellation-role = local.role_dashed })
+  labels = merge(var.labels, {
+    constellation-role       = local.role_dashed,
+    constellation-node-group = var.node_group_name,
+  })
 
   confidential_instance_config {
     enable_confidential_compute = true
@@ -98,6 +120,7 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
   name               = local.name
   description        = "Instance group manager for Constellation"
   base_instance_name = local.name
+  zone               = var.zone
   target_size        = var.instance_count
 
   dynamic "stateful_disk" {

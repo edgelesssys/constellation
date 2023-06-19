@@ -4,20 +4,16 @@ variable "name" {
   description = "Base name of the cluster."
 }
 
-variable "control_plane_count" {
-  type        = number
-  description = "The number of control plane nodes to deploy."
-}
-
-variable "worker_count" {
-  type        = number
-  description = "The number of worker nodes to deploy."
-}
-
-variable "state_disk_size" {
-  type        = number
-  default     = 30
-  description = "The size of the state disk in GB."
+variable "node_groups" {
+  type = map(object({
+    role          = string
+    zone          = string
+    instance_type = string
+    disk_size     = number
+    disk_type     = string
+    initial_count = number
+  }))
+  description = "A map of node group names to node group configurations."
 }
 
 variable "project" {
@@ -33,17 +29,6 @@ variable "region" {
 variable "zone" {
   type        = string
   description = "The GCP zone to deploy the cluster in."
-}
-
-variable "instance_type" {
-  type        = string
-  description = "The GCP instance type to deploy."
-}
-
-variable "state_disk_type" {
-  type        = string
-  default     = "pd-ssd"
-  description = "The type of the state disk."
 }
 
 variable "image_id" {
