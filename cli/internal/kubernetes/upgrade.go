@@ -45,6 +45,16 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// UpgradeCmdKind is the kind of the upgrade command. (check, apply)
+type UpgradeCmdKind int
+
+const (
+	// UpgradeCmdKindCheck corresponds to the upgrade check command.
+	UpgradeCmdKindCheck UpgradeCmdKind = iota
+	// UpgradeCmdKindApply corresponds to the upgrade apply command.
+	UpgradeCmdKindApply
+)
+
 // ErrInProgress signals that an upgrade is in progress inside the cluster.
 var ErrInProgress = errors.New("upgrade in progress")
 
@@ -90,11 +100,12 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-// If checkOnly is true, the upgrader will only create the resources necessary for upgrade checking. (i.e. no Terraform client)
-// Not creating the Terraform client in the check-case makes sense as the initialization of the Terraform client copies the
-// executable to the upgrade directory, which is not necessary for the check-only case.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, checkOnly bool) (*Upgrader, error) {
+func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
 	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+	if upgradeCmdKind == UpgradeCmdKindCheck {
+		upgradeID += "-check"
+	}
+	
 	u := &Upgrader{
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
@@ -126,18 +137,16 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, checkOn
 	}
 	u.helmClient = helmClient
 
-	if !checkOnly {
-		tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
-		if err != nil {
-			return nil, fmt.Errorf("setting up terraform client: %w", err)
-		}
-
-		tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
-		if err != nil {
-			return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
-		}
-		u.tfUpgrader = tfUpgrader
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
+
+	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
+	}
+	u.tfUpgrader = tfUpgrader
 
 	return u, nil
 }
