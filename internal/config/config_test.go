@@ -854,6 +854,24 @@ func TestConfigVersionCompatibility(t *testing.T) {
 	}
 }
 
+func TestIsDebugImage(t *testing.T) {
+	cases := map[string]struct {
+		image    string
+		expected bool
+	}{
+		"debug image":   {"ref/test/stream/debug/v2.9.0-pre.0.20230613084544-eeea7b1f56f4", true},
+		"release image": {"v2.8.0", false},
+		"empty image":   {"", false},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			c := &Config{Image: tc.image}
+			assert.Equal(t, tc.expected, c.IsNamedLikeDebugImage())
+		})
+	}
+}
+
 func TestIsAppClientIDError(t *testing.T) {
 	testCases := map[string]struct {
 		err      error
