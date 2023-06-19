@@ -228,6 +228,11 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
+	defer func() {
+		if err := u.checker.CleanUpTerraformMigrations(fileHandler); err != nil {
+			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
+		}
+	}()
 
 	if !hasDiff {
 		cmd.Println("  No Terraform migrations are available.")
