@@ -105,7 +105,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgrade
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		upgradeID += "-check"
 	}
-	
+
 	u := &Upgrader{
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
