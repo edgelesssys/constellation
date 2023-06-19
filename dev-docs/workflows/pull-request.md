@@ -17,7 +17,7 @@ For pull requests, we employ the following workflow:
 
 You should discuss larger changes and feature requests with the maintainers. Please open an issue describing your plans.
 
-[Run CI e2e tests](/.github/docs/README.md)
+[Run CI e2e tests](github-actions.md)
 
 ## Conventions
 
@@ -39,7 +39,7 @@ Where the `<module>` is
 * `ci` for things that are CI related
 
 and `<title>` is all lower case (except proper names, including acronyms).
-Ticket numbers shouldn't be part of the title.
+Ticket numbers shouldn’t be part of the title.
 
 In case the scope of your PR is too wide, use the alternative format.
 

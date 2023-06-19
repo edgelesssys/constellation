@@ -20,8 +20,4 @@ ctest -j `nproc`
 
 You can limit the execution of tests to specific targets with e.g. `ctest -R integration-node-operator`.
 
-Some of the tests rely on libvirt and won't work if you don't have a virtualization capable CPU. You can find instructions on setting up libvirt in our [QEMU README](qemu.md).
-
-## Writing tests
-
-Check [this repository](https://github.com/edgelesssys/testing) for how we write tests.
+Some of the tests rely on libvirt and won’t work if you don’t have a virtualization capable CPU. You can find instructions on setting up libvirt in our [QEMU README](qemu.md).

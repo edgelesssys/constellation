@@ -49,4 +49,4 @@ Normally renovate will handle the upgrading of Kubernetes dependencies.
 
 - Conduct e2e tests
   - [Run the sonobuoy test suite against your branch](https://sonobuoy.io/)
-  - [Run CI e2e tests](/.github/docs/README.md)
+  - [Run CI e2e tests](github-actions.md)

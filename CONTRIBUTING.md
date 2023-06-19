@@ -41,7 +41,7 @@ We have some documentation, guidelines and conventions that you can go through t
 Here are some useful links inside `dev-docs`:
 
 * Building, testing, deploying: [local development](/dev-docs/workflows/build-develop-deploy.md)
-* [Code conventions](/dev-docs/conventions.md#code-conventions)
-* [Process conventions](/dev-docs/conventions.md#process-conventions)
+* [General conventions](/dev-docs/conventions.md)
+* [PR conventions](/dev-docs/workflows/pull-request.md#conventions)
 * [Repository layout](/dev-docs/layout.md#repository-layout)
 * [Upgrading Kubernetes](/dev-docs/workflows/upgrade-kubernetes.md)

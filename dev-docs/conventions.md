@@ -1,11 +1,7 @@
 # Writing to customers: style policy
 
-Whenever we write text facing the customer (e.g docs, warnings, errors), we follow the [Microsoft Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/).
-Some significant rules are these:
-
-* [Avoid please](https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/p/please)
-* [Be brief](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice#be-brief)
-* [Avoid we](https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/w/we)
+Whenever you write text facing the customer (e.g, docs, warnings, errors), follow the [Microsoft Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/).
+For quick reference, check [Top 10 tips for Microsoft style and voice](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice).
 
 # Go code conventions
 
@@ -23,7 +19,7 @@ It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mv
 
 ## Logging
 
-We use a [custom subset](/internal/logger/) of [zap](https://pkg.go.dev/go.uber.org/zap) to provide logging for Constellation's services and components.
+We use a [custom subset](/internal/logger/) of [zap](https://pkg.go.dev/go.uber.org/zap) to provide logging for Constellation’s services and components.
 Usage instructions can be found in the package documentation.
 
 Certain components may further specify a subset of the logger for their use. For example, the CLI has a debug-only logger, restricting the use of the logger to only `Debugf()`.
