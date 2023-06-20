@@ -159,8 +159,8 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler fil
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error {
-	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, force bool) error {
+	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive, force)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -204,7 +204,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 		err = compatibility.NewInvalidUpgradeError(nodeVersion.Spec.KubernetesClusterVersion, conf.KubernetesVersion, innerErr)
 	} else {
 		versionConfig := versions.VersionConfigs[currentK8sVersion]
-		components, err = u.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents)
+		components, err = u.updateK8s(&nodeVersion, versionConfig.ClusterVersion, versionConfig.KubernetesComponents, force)
 	}
 
 	switch {
@@ -384,14 +384,15 @@ func (u *Upgrader) updateImage(nodeVersion *updatev1alpha1.NodeVersion, newImage
 	return nil
 }
 
-func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components) (*corev1.ConfigMap, error) {
+func (u *Upgrader) updateK8s(nodeVersion *updatev1alpha1.NodeVersion, newClusterVersion string, components components.Components, force bool) (*corev1.ConfigMap, error) {
 	configMap, err := internalk8s.ConstructK8sComponentsCM(components, newClusterVersion)
 	if err != nil {
 		return nil, fmt.Errorf("constructing k8s-components ConfigMap: %w", err)
 	}
-
-	if err := compatibility.IsValidUpgrade(nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion); err != nil {
-		return nil, err
+	if !force {
+		if err := compatibility.IsValidUpgrade(nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion); err != nil {
+			return nil, err
+		}
 	}
 
 	u.log.Debugf("Updating local copy of nodeVersion Kubernetes version from %s to %s", nodeVersion.Spec.KubernetesClusterVersion, newClusterVersion)
@@ -526,7 +527,7 @@ func joinConfigMigration(existingConf *corev1.ConfigMap, attestVariant variant.V
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool) error
 }
 
 type debugLog interface {
