@@ -261,3 +261,13 @@ module "scale_set_group" {
     module.loadbalancer_backend_control_plane.backendpool_id
   ]
 }
+
+moved {
+  from = module.scale_set_control_plane
+  to   = module.scale_set_group["control_plane_default"]
+}
+
+moved {
+  from = module.scale_set_worker
+  to   = module.scale_set_group["worker_default"]
+}
