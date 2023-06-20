@@ -18,7 +18,7 @@ jobs:
         sudo python3 -m pip install sev-snp-measure==0.0.5
 
     - name: Install Nix
-      uses: cachix/install-nix-action@29bd9290ef037a3ecbdafe83cbd2185e9dd0fa0a # tag=v20
+      uses: cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac # v22
 
     - name: Download Firmware release
       id: download-firmware
