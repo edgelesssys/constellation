@@ -368,19 +368,19 @@ func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
 	return u.image, u.err
 }
 
-func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string, error) {
+func (u stubUpgradeChecker) CurrentKubernetesVersion(context.Context) (string, error) {
 	return u.k8sVersion, u.err
 }
 
-func (u stubUpgradeChecker) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
+func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
 	return u.tfDiff, u.err
 }
 
-func (u stubUpgradeChecker) CheckTerraformMigrations(_ file.Handler) error {
+func (u stubUpgradeChecker) CheckTerraformMigrations(file.Handler) error {
 	return u.err
 }
 
-func (u stubUpgradeChecker) CleanUpTerraformMigrations(_ file.Handler) error {
+func (u stubUpgradeChecker) CleanUpTerraformMigrations(file.Handler) error {
 	return u.err
 }
 
