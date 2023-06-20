@@ -506,6 +506,26 @@ func TestList(t *testing.T) {
 			},
 		},
 	}
+	otherZoneInstance := &computepb.Instance{
+		Name: proto.String("otherZoneInstance"),
+		Zone: proto.String("someZone-east1-a"),
+		Labels: map[string]string{
+			cloud.TagUID:  "1234",
+			cloud.TagRole: role.ControlPlane.String(),
+		},
+		NetworkInterfaces: []*computepb.NetworkInterface{
+			{
+				Name:      proto.String("nic0"),
+				NetworkIP: proto.String("192.0.2.1"),
+				AliasIpRanges: []*computepb.AliasIpRange{
+					{
+						IpCidrRange: proto.String("198.51.100.0/24"),
+					},
+				},
+				Subnetwork: proto.String("projects/someProject/regions/someRegion/subnetworks/someSubnetwork"),
+			},
+		},
+	}
 	goodSubnet := &computepb.Subnetwork{
 		SecondaryIpRanges: []*computepb.SubnetworkSecondaryRange{
 			{
@@ -516,8 +536,9 @@ func TestList(t *testing.T) {
 
 	testCases := map[string]struct {
 		imds          stubIMDS
-		instanceAPI   stubInstanceAPI
+		instanceAPI   instanceAPI
 		subnetAPI     stubSubnetAPI
+		zoneAPI       stubZoneAPI
 		wantErr       bool
 		wantInstances []metadata.InstanceMetadata
 	}{
@@ -527,7 +548,7 @@ func TestList(t *testing.T) {
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instance: goodInstance,
 				iterator: &stubInstanceIterator{
 					instances: []*computepb.Instance{
@@ -538,7 +559,67 @@ func TestList(t *testing.T) {
 			subnetAPI: stubSubnetAPI{
 				subnet: goodSubnet,
 			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{
+							Name: proto.String("someZone-west3-b"),
+						},
+					},
+				},
+			},
 			wantInstances: []metadata.InstanceMetadata{
+				{
+					Name:             "someInstance",
+					Role:             role.ControlPlane,
+					ProviderID:       "gce://someProject/someZone-west3-b/someInstance",
+					VPCIP:            "192.0.2.0",
+					AliasIPRanges:    []string{"198.51.100.0/24"},
+					SecondaryIPRange: "198.51.100.0/24",
+				},
+			},
+		},
+		"multi-zone": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: &fakeInstanceAPI{
+				instance: goodInstance,
+				iterators: map[string]*stubInstanceIterator{
+					"someZone-east1-a": {
+						instances: []*computepb.Instance{
+							otherZoneInstance,
+						},
+					},
+					"someZone-west3-b": {
+						instances: []*computepb.Instance{
+							goodInstance,
+						},
+					},
+				},
+			},
+			subnetAPI: stubSubnetAPI{
+				subnet: goodSubnet,
+			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{Name: proto.String("someZone-east1-a")},
+						{Name: proto.String("someZone-west3-b")},
+					},
+				},
+			},
+			wantInstances: []metadata.InstanceMetadata{
+				{
+					Name:             "otherZoneInstance",
+					Role:             role.ControlPlane,
+					ProviderID:       "gce://someProject/someZone-east1-a/otherZoneInstance",
+					VPCIP:            "192.0.2.1",
+					AliasIPRanges:    []string{"198.51.100.0/24"},
+					SecondaryIPRange: "198.51.100.0/24",
+				},
 				{
 					Name:             "someInstance",
 					Role:             role.ControlPlane,
@@ -555,7 +636,7 @@ func TestList(t *testing.T) {
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instance: goodInstance,
 				iterator: &stubInstanceIterator{
 					instances: []*computepb.Instance{
@@ -586,6 +667,15 @@ func TestList(t *testing.T) {
 			subnetAPI: stubSubnetAPI{
 				subnet: goodSubnet,
 			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{
+							Name: proto.String("someZone-west3-b"),
+						},
+					},
+				},
+			},
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:             "someInstance",
@@ -609,7 +699,7 @@ func TestList(t *testing.T) {
 			imds: stubIMDS{
 				projectIDErr: someErr,
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instance: goodInstance,
 				iterator: &stubInstanceIterator{
 					instances: []*computepb.Instance{
@@ -628,7 +718,7 @@ func TestList(t *testing.T) {
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instance: goodInstance,
 				iterator: &stubInstanceIterator{
 					err: someErr,
@@ -636,6 +726,15 @@ func TestList(t *testing.T) {
 			},
 			subnetAPI: stubSubnetAPI{
 				subnet: goodSubnet,
+			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{
+							Name: proto.String("someZone-west3-b"),
+						},
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -645,7 +744,7 @@ func TestList(t *testing.T) {
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instanceErr: someErr,
 				iterator: &stubInstanceIterator{
 					instances: []*computepb.Instance{
@@ -656,6 +755,15 @@ func TestList(t *testing.T) {
 			subnetAPI: stubSubnetAPI{
 				subnet: goodSubnet,
 			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{
+							Name: proto.String("someZone-west3-b"),
+						},
+					},
+				},
+			},
 			wantErr: true,
 		},
 		"get subnet error": {
@@ -664,7 +772,7 @@ func TestList(t *testing.T) {
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
-			instanceAPI: stubInstanceAPI{
+			instanceAPI: &stubInstanceAPI{
 				instance: goodInstance,
 				iterator: &stubInstanceIterator{
 					instances: []*computepb.Instance{
@@ -674,6 +782,15 @@ func TestList(t *testing.T) {
 			},
 			subnetAPI: stubSubnetAPI{
 				subnetErr: someErr,
+			},
+			zoneAPI: stubZoneAPI{
+				iterator: &stubZoneIterator{
+					zones: []*computepb.Zone{
+						{
+							Name: proto.String("someZone-west3-b"),
+						},
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -686,8 +803,9 @@ func TestList(t *testing.T) {
 
 			cloud := &Cloud{
 				imds:        &tc.imds,
-				instanceAPI: &tc.instanceAPI,
+				instanceAPI: tc.instanceAPI,
 				subnetAPI:   &tc.subnetAPI,
+				zoneAPI:     &tc.zoneAPI,
 			}
 
 			instances, err := cloud.List(context.Background())
@@ -697,6 +815,112 @@ func TestList(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.ElementsMatch(tc.wantInstances, instances)
+		})
+	}
+}
+
+func TestRegion(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		imds       stubIMDS
+		wantRegion string
+		wantErr    bool
+	}{
+		"success": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someregion-west3-b",
+				instanceName: "someInstance",
+			},
+			wantRegion: "someregion-west3",
+		},
+		"get zone error": {
+			imds: stubIMDS{
+				zoneErr: someErr,
+			},
+			wantErr: true,
+		},
+		"invalid zone format": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "invalid",
+				instanceName: "someInstance",
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cloud := &Cloud{
+				imds: &tc.imds,
+			}
+
+			assert.Empty(cloud.regionCache)
+
+			gotRegion, err := cloud.region()
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantRegion, gotRegion)
+			assert.Equal(tc.wantRegion, cloud.regionCache)
+		})
+	}
+}
+
+func TestZones(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		zoneAPI   stubZoneAPI
+		wantZones []string
+		wantErr   bool
+	}{
+		"success": {
+			zoneAPI: stubZoneAPI{
+				&stubZoneIterator{
+					zones: []*computepb.Zone{
+						{Name: proto.String("someregion-west3-b")},
+						{},  // missing name (should be ignored)
+						nil, // nil (should be ignored)
+					},
+				},
+			},
+			wantZones: []string{"someregion-west3-b"},
+		},
+		"get zones error": {
+			zoneAPI: stubZoneAPI{
+				&stubZoneIterator{
+					err: someErr,
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cloud := &Cloud{
+				zoneAPI: &tc.zoneAPI,
+			}
+
+			assert.Empty(cloud.zoneCache)
+
+			gotZones, err := cloud.zones(context.Background(), "someProject", "someregion-west3")
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantZones, gotZones)
+			assert.Equal(tc.wantZones, cloud.zoneCache["someregion-west3"].zones)
 		})
 	}
 }
@@ -1035,6 +1259,27 @@ func (s *stubInstanceAPI) List(
 
 func (s *stubInstanceAPI) Close() error { return nil }
 
+type fakeInstanceAPI struct {
+	instance    *computepb.Instance
+	instanceErr error
+	// iterators is a map of zone to instance iterator.
+	iterators map[string]*stubInstanceIterator
+}
+
+func (s *fakeInstanceAPI) Get(
+	_ context.Context, _ *computepb.GetInstanceRequest, _ ...gax.CallOption,
+) (*computepb.Instance, error) {
+	return s.instance, s.instanceErr
+}
+
+func (s *fakeInstanceAPI) List(
+	_ context.Context, req *computepb.ListInstancesRequest, _ ...gax.CallOption,
+) instanceIterator {
+	return s.iterators[req.GetZone()]
+}
+
+func (s *fakeInstanceAPI) Close() error { return nil }
+
 type stubInstanceIterator struct {
 	ctr       int
 	instances []*computepb.Instance
@@ -1063,3 +1308,30 @@ func (s *stubSubnetAPI) Get(
 	return s.subnet, s.subnetErr
 }
 func (s *stubSubnetAPI) Close() error { return nil }
+
+type stubZoneAPI struct {
+	iterator *stubZoneIterator
+}
+
+func (s *stubZoneAPI) List(_ context.Context,
+	_ *computepb.ListZonesRequest, _ ...gax.CallOption,
+) zoneIterator {
+	return s.iterator
+}
+
+type stubZoneIterator struct {
+	ctr   int
+	zones []*computepb.Zone
+	err   error
+}
+
+func (s *stubZoneIterator) Next() (*computepb.Zone, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	if s.ctr >= len(s.zones) {
+		return nil, iterator.Done
+	}
+	s.ctr++
+	return s.zones[s.ctr-1], nil
+}

@@ -22,6 +22,10 @@ type instanceIterator interface {
 	Next() (*computepb.Instance, error)
 }
 
+type zoneIterator interface {
+	Next() (*computepb.Zone, error)
+}
+
 type globalForwardingRulesClient struct {
 	*compute.GlobalForwardingRulesClient
 }
@@ -62,4 +66,16 @@ func (c *instanceClient) List(ctx context.Context, req *computepb.ListInstancesR
 	_ ...gax.CallOption,
 ) instanceIterator {
 	return c.InstancesClient.List(ctx, req)
+}
+
+type zoneClient struct {
+	*compute.ZonesClient
+}
+
+func (c *zoneClient) Close() error {
+	return c.ZonesClient.Close()
+}
+
+func (c *zoneClient) List(ctx context.Context, req *computepb.ListZonesRequest, opts ...gax.CallOption) zoneIterator {
+	return c.ZonesClient.List(ctx, req, opts...)
 }

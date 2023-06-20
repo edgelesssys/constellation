@@ -40,3 +40,7 @@ type subnetAPI interface {
 	Get(ctx context.Context, req *computepb.GetSubnetworkRequest, opts ...gax.CallOption) (*computepb.Subnetwork, error)
 	Close() error
 }
+
+type zoneAPI interface {
+	List(ctx context.Context, req *computepb.ListZonesRequest, opts ...gax.CallOption) zoneIterator
+}
