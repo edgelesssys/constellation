@@ -8,6 +8,8 @@ package snp
 
 import (
 	"context"
+	"crypto/sha512"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -52,14 +54,26 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 // getInstanceInfo generates an extended SNP report, i.e. the report and any loaded certificates.
 // Report generation is triggered by sending ioctl syscalls to the SNP guest device, the AMD PSP generates the report.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(_ context.Context, _ io.ReadWriteCloser, userData []byte) ([]byte, error) {
+func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byte, error) {
+	tpmAk, err := client.AttestationKeyRSA(tpm)
+	if err != nil {
+		return nil, fmt.Errorf("error creating RSA Endorsement key: %w", err)
+	}
+
+	encoded, err := x509.MarshalPKIXPublicKey(tpmAk.PublicKey())
+	if err != nil {
+		return nil, fmt.Errorf("marshalling public key: %w", err)
+	}
+
+	akDigest := sha512.Sum512(encoded)
+
 	device, err := sevclient.OpenDevice()
 	if err != nil {
 		return nil, fmt.Errorf("opening sev device: %w", err)
 	}
 	defer device.Close()
 
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, [64]byte(userData), 0)
+	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, akDigest, 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting extended report: %w", err)
 	}

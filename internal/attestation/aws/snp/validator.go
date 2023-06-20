@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -60,8 +61,13 @@ func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 
 // getTrustedKeys return the public area of the provides attestation key.
 // Normally, the key should be verified here, but currently AWS does not provide means to do so.
-func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, userData []byte) (crypto.PublicKey, error) {
-	if err := v.reportValidator.validate(ctx, attDoc, v.kdsClient, v.ark, userData); err != nil {
+func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
+	akDigest, err := sha512sum(attDoc.Attestation.GetAkPub())
+	if err != nil {
+		return nil, fmt.Errorf("calculating hash of attestation key: %w", err)
+	}
+
+	if err := v.reportValidator.validate(ctx, attDoc, v.kdsClient, v.ark, akDigest); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
 	}
 	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
@@ -73,9 +79,19 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	return pubArea.Key()
 }
 
+// sha512sum PEM-encodes a public key and calculates the SHA512 hash of the encoded key.
+func sha512sum(key crypto.PublicKey) ([64]byte, error) {
+	pub, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return [64]byte{}, fmt.Errorf("marshalling public key: %w", err)
+	}
+
+	return sha512.Sum512(pub), nil
+}
+
 // Validate a given SNP report.
 type snpReportValidator interface {
-	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error
+	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, ak [64]byte) error
 }
 
 // Validation logic for the AWS SNP implementation.
@@ -84,7 +100,7 @@ type awsValidator struct{}
 // validate the report by checking if it has a valid VLEK signature.
 // The certificate chain ARK -> ASK -> VLEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, userData []byte) error {
+func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) error {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
 		return fmt.Errorf("unmarshalling instance info: %w", err)
@@ -116,8 +132,8 @@ func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDo
 		return fmt.Errorf("unmarshalling SNP report: %w", err)
 	}
 
-	if !bytes.Equal(report.GetReportData(), userData) {
-		return errors.New("userData from SNP report does not match this connection's userData")
+	if !bytes.Equal(report.GetReportData(), akDigest[:]) {
+		return errors.New("SNP report and attestation statement contain mismatching attestation keys")
 	}
 
 	return nil
