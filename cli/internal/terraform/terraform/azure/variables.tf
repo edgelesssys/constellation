@@ -8,12 +8,8 @@ variable "node_groups" {
     role         =  string
     instance_count = number
     instance_type = string
-    confidential_vm = bool
-    secure_boot = bool
-    user_assigned_identity = string
     disk_size     = number
     disk_type     = string
-    resource_group = string
     location     = string
   }))
   description = "A map of node group names to node group configurations."
@@ -34,4 +30,25 @@ variable "debug" {
   type        = bool
   default     = false
   description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
+}
+
+variable "confidential_vm" {
+  type        = bool
+  default     = true
+  description = "Whether to deploy the cluster nodes as confidential VMs."
+}
+
+variable "secure_boot" {
+  type        = bool
+  default     = false
+  description = "Whether to deploy the cluster nodes with secure boot."
+}
+
+variable "resource_group" {
+  type        = string
+  description = "The name of the Azure resource group to create the Constellation cluster in."
+}
+variable "user_assigned_identity" {
+  type        = string
+  description = "The name of the user assigned identity to attache to the nodes of the cluster."
 }

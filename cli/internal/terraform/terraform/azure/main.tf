@@ -247,12 +247,12 @@ module "scale_set_group" {
   instance_count  = each.value.instance_count
   state_disk_size = each.value.disk_size
   state_disk_type = each.value.disk_type
-  resource_group  = each.value.resource_group
   location        = each.value.location
   instance_type   = each.value.instance_type
-  confidential_vm = each.value.confidential_vm
-  secure_boot     = each.value.secure_boot
-  user_assigned_identity    = each.value.user_assigned_identity
+  confidential_vm = var.confidential_vm
+  secure_boot     = var.secure_boot
+  resource_group  = var.resource_group
+  user_assigned_identity    = var.user_assigned_identity
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
