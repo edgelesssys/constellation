@@ -103,7 +103,10 @@ type Upgrader struct {
 func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
 	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
 	if upgradeCmdKind == UpgradeCmdKindCheck {
-		upgradeID += "-check"
+		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
+		// Terraform state. The directory is deleted after the check is finished.
+		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
+		upgradeID += "-tmp"
 	}
 
 	u := &Upgrader{
