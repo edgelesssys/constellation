@@ -197,12 +197,6 @@ resource "aws_iam_role_policy_attachment" "attach_worker_node_policy" {
   policy_arn = aws_iam_policy.worker_node_policy.arn
 }
 
-// TODO(msanft): incorporate this into the custom worker node policy
-resource "aws_iam_role_policy_attachment" "attach_worker_node_csi_policy" {
-  role       = aws_iam_role.worker_node_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-}
-
 // Add all permissions here, which are needed by the bootstrapper
 resource "aws_iam_policy" "constellation_bootstrapper_policy" {
   name   = "${var.name_prefix}_constellation_bootstrapper_policy"
@@ -232,11 +226,13 @@ resource "aws_iam_role_policy_attachment" "attach_bootstrapper_policy_control_pl
   policy_arn = aws_iam_policy.constellation_bootstrapper_policy.arn
 }
 
+// TODO(msanft): incorporate this into the custom worker node policy
 resource "aws_iam_role_policy_attachment" "csi_driver_policy_worker" {
   role       = aws_iam_role.worker_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+// TODO(msanft): incorporate this into the custom worker node policy
 resource "aws_iam_role_policy_attachment" "csi_driver_policy_control_plane" {
   role       = aws_iam_role.control_plane_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
