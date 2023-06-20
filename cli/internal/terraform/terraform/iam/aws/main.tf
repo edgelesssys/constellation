@@ -232,7 +232,7 @@ resource "aws_iam_role_policy_attachment" "csi_driver_policy_worker" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
-// TODO(msanft): incorporate this into the custom worker node policy
+// TODO(msanft): incorporate this into the custom control-plane node policy
 resource "aws_iam_role_policy_attachment" "csi_driver_policy_control_plane" {
   role       = aws_iam_role.control_plane_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
