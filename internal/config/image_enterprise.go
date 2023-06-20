@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image to use.
-	defaultImage = "ref/main/stream/nightly/v2.9.0-pre.0.20230615153759-684cae470699"
+	defaultImage = "ref/renovate-peter-evans-create-pull-request-5-x/stream/nightly/v2.9.0-pre.0.20230620091048-4ed24021cc38"
 )
