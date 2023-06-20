@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -224,33 +225,52 @@ func TestUpgradeCheck(t *testing.T) {
 		Version: "v2.5.0",
 		Kind:    versionsapi.VersionKindImage,
 	}
+	collector := stubVersionCollector{
+		supportedServicesVersions: "v2.5.0",
+		supportedImages:           []versionsapi.Version{v2_3},
+		supportedImageVersions: map[string]measurements.M{
+			"v2.3.0": measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{}),
+		},
+		supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
+		currentServicesVersions: "v2.4.0",
+		currentImageVersion:     "v2.4.0",
+		currentK8sVersion:       "v1.24.5",
+		currentCLIVersion:       "v2.4.0",
+		images:                  []versionsapi.Version{v2_5},
+		newCLIVersionsList:      []string{"v2.5.0", "v2.6.0"},
+	}
+
 	testCases := map[string]struct {
-		collector  stubVersionCollector
-		flags      upgradeCheckFlags
-		csp        cloudprovider.Provider
-		cliVersion string
-		wantError  bool
+		collector    stubVersionCollector
+		flags        upgradeCheckFlags
+		csp          cloudprovider.Provider
+		checker      stubUpgradeChecker
+		imagefetcher stubImageFetcher
+		cliVersion   string
+		wantError    bool
 	}{
 		"upgrades gcp": {
-			collector: stubVersionCollector{
-				supportedServicesVersions: "v2.5.0",
-				supportedImages:           []versionsapi.Version{v2_3},
-				supportedImageVersions: map[string]measurements.M{
-					"v2.3.0": measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{}),
-				},
-				supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
-				currentServicesVersions: "v2.4.0",
-				currentImageVersion:     "v2.4.0",
-				currentK8sVersion:       "v1.24.5",
-				currentCLIVersion:       "v2.4.0",
-				images:                  []versionsapi.Version{v2_5},
-				newCLIVersionsList:      []string{"v2.5.0", "v2.6.0"},
-			},
+			collector:    collector,
+			checker:      stubUpgradeChecker{},
+			imagefetcher: stubImageFetcher{},
 			flags: upgradeCheckFlags{
 				configPath: constants.ConfigFilename,
 			},
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
+		},
+		"terraform err": {
+			collector: collector,
+			checker: stubUpgradeChecker{
+				err: assert.AnError,
+			},
+			imagefetcher: stubImageFetcher{},
+			flags: upgradeCheckFlags{
+				configPath: constants.ConfigFilename,
+			},
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
+			wantError:  true,
 		},
 	}
 
@@ -266,6 +286,8 @@ func TestUpgradeCheck(t *testing.T) {
 			checkCmd := upgradeCheckCmd{
 				canUpgradeCheck: true,
 				collect:         &tc.collector,
+				checker:         tc.checker,
+				imagefetcher:    tc.imagefetcher,
 				log:             logger.NewTest(t),
 			}
 
@@ -338,6 +360,7 @@ func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ 
 type stubUpgradeChecker struct {
 	image      string
 	k8sVersion string
+	tfDiff     bool
 	err        error
 }
 
@@ -345,8 +368,20 @@ func (u stubUpgradeChecker) CurrentImage(context.Context) (string, error) {
 	return u.image, u.err
 }
 
-func (u stubUpgradeChecker) CurrentKubernetesVersion(_ context.Context) (string, error) {
+func (u stubUpgradeChecker) CurrentKubernetesVersion(context.Context) (string, error) {
 	return u.k8sVersion, u.err
+}
+
+func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (bool, error) {
+	return u.tfDiff, u.err
+}
+
+func (u stubUpgradeChecker) CheckTerraformMigrations(file.Handler) error {
+	return u.err
+}
+
+func (u stubUpgradeChecker) CleanUpTerraformMigrations(file.Handler) error {
+	return u.err
 }
 
 func TestNewCLIVersions(t *testing.T) {
