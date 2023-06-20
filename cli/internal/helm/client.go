@@ -85,6 +85,10 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 
 	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
 	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
+	if currentVersion == newVersion {
+		return NoUpgradeRequiredError{}
+	}
+
 	if !force {
 		if err := compatibility.IsValidUpgrade(currentVersion, newVersion); err != nil {
 			return err
@@ -99,6 +103,13 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
 
 	return nil
+}
+
+// NoUpgradeRequiredError is returned if the current version is the same as the target version.
+type NoUpgradeRequiredError struct{}
+
+func (e NoUpgradeRequiredError) Error() string {
+	return "no upgrade required since current version is the same as the target version"
 }
 
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
@@ -126,9 +137,12 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		}
 
 		err = c.shouldUpgrade(info.releaseName, upgradeVersion, force)
+		noUpgradeRequired := &NoUpgradeRequiredError{}
 		switch {
 		case errors.As(err, &invalidUpgrade):
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
+		case errors.As(err, &noUpgradeRequired):
+			return fmt.Errorf("skipping %s upgrade: %w", info.releaseName, noUpgradeRequired)
 		case err != nil:
 			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
 		case err == nil:

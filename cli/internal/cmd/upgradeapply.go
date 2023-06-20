@@ -117,9 +117,12 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		err = u.handleServiceUpgrade(cmd, conf, flags)
 		upgradeErr := &compatibility.InvalidUpgradeError{}
+		noUpgradeRequiredError := &helm.NoUpgradeRequiredError{}
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
+		case errors.As(err, &noUpgradeRequiredError):
+			cmd.PrintErrln(noUpgradeRequiredError)
 		case err != nil:
 			return fmt.Errorf("upgrading services: %w", err)
 		}
