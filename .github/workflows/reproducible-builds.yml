@@ -1,0 +1,99 @@
+# Build Constellation CLI and check for reproducible builds
+name: Reproducible Builds
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 06 * * 1" # Every Monday at 6:45am
+
+jobs:
+  build-binaries:
+    strategy:
+        fail-fast: false
+        matrix:
+          target:
+            - "cli_enterprise_darwin_amd64"
+            - "cli_enterprise_darwin_arm64"
+            - "cli_enterprise_linux_amd64"
+            - "cli_enterprise_linux_arm64"
+            - "cli_enterprise_windows_amd64"
+          runner: ["ubuntu-22.04", "macos-13"]
+    env:
+        bazel_target: "//cli:${{ matrix.target }}"
+        binary: "${{ matrix.target }}-${{ matrix.runner }}"
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Setup bazel
+        uses: ./.github/actions/setup_bazel
+        with:
+          useCache: "logs"
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+
+      - name: Install current Bash on macOS
+        if: runner.os == 'macOS'
+        run: brew install bash
+
+      - name: Build
+        shell: bash
+        run: bazel build "${bazel_target}"
+
+      - name: Copy
+        shell: bash
+        run: cp "$(bazel cquery --output=files "${bazel_target}")" "${binary}"
+
+      - name: Collect hash (linux)
+        shell: bash
+        if: runner.os == 'Linux'
+        run: sha256sum "${binary}" | tee "${binary}.sha256"
+
+      - name: Collect hash (macOS)
+        shell: bash
+        if: runner.os == 'macOS'
+        run: shasum -a 256 "${binary}" | tee "${binary}.sha256"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: "binaries-${{ matrix.target }}"
+          path: "${{ env.binary }}"
+
+      - name: Upload hash artifact
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: "sha256sums"
+          path: "${{ env.binary }}.sha256"
+
+  compare:
+    needs: build-binaries
+    strategy:
+        fail-fast: false
+        matrix:
+            target:
+            - "cli_enterprise_darwin_amd64"
+            - "cli_enterprise_darwin_arm64"
+            - "cli_enterprise_linux_amd64"
+            - "cli_enterprise_linux_arm64"
+            - "cli_enterprise_windows_amd64"
+    runs-on: ubuntu-22.04
+    steps:
+        - name: Download binaries
+          uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+          with:
+            name: "binaries-${{ matrix.target }}"
+
+        - name: Hash
+          shell: bash
+          if: runner.os == 'Linux'
+          run: sha256sum cli_enterprise*
+
+        - name: Compare binaries
+          shell: bash
+          run: |
+            # shellcheck disable=SC2207,SC2116
+            list=($(echo "cli_enterprise*"))
+            diff -s --to-file="${list[0]}" "${list[@]:1}" | tee "${GITHUB_STEP_SUMMARY}"
