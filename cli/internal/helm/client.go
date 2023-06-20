@@ -142,7 +142,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		case errors.As(err, &invalidUpgrade):
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
 		case errors.As(err, &noUpgradeRequired):
-			return fmt.Errorf("skipping %s upgrade: %w", info.releaseName, noUpgradeRequired)
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
 		case err != nil:
 			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
 		case err == nil:
