@@ -265,45 +265,45 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		upgradeID string
-		workspace file.Handler
-		wantFiles []string
-		wantErr   bool
+		upgradeID      string
+		workspaceFiles []string
+		wantFiles      []string
+		wantErr        bool
 	}{
 		"no files": {
-			upgradeID: "1234",
-			workspace: workspace(nil),
-			wantFiles: []string{},
+			upgradeID:      "1234",
+			workspaceFiles: nil,
+			wantFiles:      []string{},
 		},
 		"clean backup dir": {
 			upgradeID: "1234",
-			workspace: workspace([]string{
+			workspaceFiles: []string{
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
-			}),
+			},
 			wantFiles: []string{},
 		},
 		"clean working dir": {
 			upgradeID: "1234",
-			workspace: workspace([]string{
+			workspaceFiles: []string{
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeWorkingDir),
-			}),
+			},
 			wantFiles: []string{},
 		},
 		"clean all": {
 			upgradeID: "1234",
-			workspace: workspace([]string{
+			workspaceFiles: []string{
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeWorkingDir),
 				filepath.Join(constants.UpgradeDir, "1234", "abc"),
-			}),
+			},
 			wantFiles: []string{},
 		},
 		"leave other files": {
 			upgradeID: "1234",
-			workspace: workspace([]string{
+			workspaceFiles: []string{
 				filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir),
 				filepath.Join(constants.UpgradeDir, "other"),
-			}),
+			},
 			wantFiles: []string{
 				filepath.Join(constants.UpgradeDir, "other"),
 			},
@@ -314,8 +314,10 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
+			workspace := workspace(tc.workspaceFiles)
 			u := upgrader()
-			err := u.CleanUpTerraformMigrations(tc.workspace, tc.upgradeID)
+
+			err := u.CleanUpTerraformMigrations(workspace, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 				return
@@ -323,9 +325,16 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 
 			require.NoError(err)
 
-			for _, f := range tc.wantFiles {
-				_, err := tc.workspace.Stat(f)
-				require.NoError(err, "file %s should exist", f)
+			for _, haveFile := range tc.workspaceFiles {
+				for _, wantFile := range tc.wantFiles {
+					if haveFile == wantFile {
+						_, err := workspace.Stat(wantFile)
+						require.NoError(err, "file %s should exist", wantFile)
+					} else {
+						_, err := workspace.Stat(haveFile)
+						require.Error(err, "file %s should not exist", haveFile)
+					}
+				}
 			}
 		})
 	}
