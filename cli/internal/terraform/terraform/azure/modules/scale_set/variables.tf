@@ -1,7 +1,17 @@
-variable "name" {
+variable "base_name" {
   type        = string
-  default     = "constell"
-  description = "Base name of the cluster."
+  description = "Base name of the instance group."
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
+}
+
+
+variable "zones" {
+  type        = list(string)
+  description = "List of availability zones."
 }
 
 variable "instance_count" {

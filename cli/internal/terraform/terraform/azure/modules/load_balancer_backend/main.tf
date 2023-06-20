@@ -7,9 +7,16 @@ terraform {
   }
 }
 
+module "unique_name" {
+  source = "../../../shared/modules/unique_group_name"
+  base_name = var.base_name
+  node_group_name = var.node_group_name
+  role    = var.role
+}
+
 resource "azurerm_lb_backend_address_pool" "backend_pool" {
   loadbalancer_id = var.loadbalancer_id
-  name            = var.name
+  name            = module.unique_name.name
 }
 
 resource "azurerm_lb_probe" "health_probes" {

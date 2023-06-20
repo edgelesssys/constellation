@@ -1,7 +1,17 @@
-variable "name" {
+variable "base_name" {
   type        = string
   default     = "constell"
   description = "Base name of the cluster."
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "Name of the node group."
+}
+
+variable "role" {
+  type        = string
+  description = "The role of the group (ControlPlane|Worker)."
 }
 
 variable "loadbalancer_id" {

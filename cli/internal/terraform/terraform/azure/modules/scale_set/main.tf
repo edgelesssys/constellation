@@ -11,6 +11,25 @@ terraform {
   }
 }
 
+
+locals {
+  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
+  tags = merge(
+    local.tags,
+    { constellation-role = local.role_dashed },
+    { constellation-node-group = var.node_group_name },
+    { constellation-node-group-role = var.role },
+    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
+  )
+}
+
+module "unique_name" {
+  source = "../../../shared/modules/unique_group_name"
+  role    = var.role
+  base_name = var.base_name
+}
+
 resource "random_password" "password" {
   length      = 16
   min_lower   = 1
@@ -20,7 +39,7 @@ resource "random_password" "password" {
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
-  name                            = var.name
+  name = module.unique_name.name
   resource_group_name             = var.resource_group
   location                        = var.location
   sku                             = var.instance_type
@@ -34,7 +53,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
   source_image_id                 = var.image_id
-  tags                            = var.tags
+  tags                            = local.tags
+  zones                          = var.zones
+  // TODO add
+  #zone_balance = var.zone_balance
 
   identity {
     type         = "UserAssigned"

@@ -33,6 +33,17 @@ locals {
   ports_debugd          = "4000"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
+
+
+  node_groups_by_role = {
+    for name, node_group in var.node_groups : node_group.role => name...
+  }
+  control_plane_instance_groups = [
+    for control_plane in local.node_groups_by_role["ControlPlane"] : module.instance_group[control_plane].instance_group
+  ]
+  worker_instance_groups = [
+    for control_plane in local.node_groups_by_role["Worker"] : module.instance_group[control_plane].instance_group
+  ]
 }
 
 resource "random_id" "uid" {
@@ -121,8 +132,10 @@ resource "azurerm_lb" "loadbalancer" {
 
 module "loadbalancer_backend_control_plane" {
   source = "./modules/load_balancer_backend"
-
-  name            = "${local.name}-control-plane"
+  for_each = local.control_plane_instance_groups
+  role = "ControlPlane"
+  base_name = local.name
+  node_group_name            = each.key
   loadbalancer_id = azurerm_lb.loadbalancer.id
   ports = flatten([
     {
@@ -166,8 +179,10 @@ module "loadbalancer_backend_control_plane" {
 
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
-
-  name            = "${local.name}-worker"
+  for_each = local.worker_instance_groups
+  role = "Worker"
+  base_name = local.name
+  node_group_name            = each.key
   loadbalancer_id = azurerm_lb.loadbalancer.id
   ports           = []
 }
@@ -221,58 +236,28 @@ resource "azurerm_network_security_group" "security_group" {
   }
 }
 
-module "scale_set_control_plane" {
-  source = "./modules/scale_set"
 
-  name            = "${local.name}-control-plane"
-  instance_count  = var.control_plane_count
-  state_disk_size = var.state_disk_size
-  state_disk_type = var.state_disk_type
-  resource_group  = var.resource_group
-  location        = var.location
-  instance_type   = var.instance_type
-  confidential_vm = var.confidential_vm
-  secure_boot     = var.secure_boot
-  tags = merge(
-    local.tags,
-    { constellation-role = "control-plane" },
-    { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
-  )
+module "scale_set_group" {
+  source = "./modules/scale_set"
+  for_each            = var.node_groups
+  base_name           = local.name
+  node_group_name = each.key
+  zones = each.value.zones
+
+  instance_count  = each.value.instance_count
+  state_disk_size = each.value.disk_size
+  state_disk_type = each.value.disk_type
+  resource_group  = each.value.resource_group
+  location        = each.value.location
+  instance_type   = each.value.instance_type
+  confidential_vm = each.value.confidential_vm
+  secure_boot     = each.value.secure_boot
+  user_assigned_identity    = each.value.user_assigned_identity
   image_id                  = var.image_id
-  user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
   backend_address_pool_ids = [
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_control_plane.backendpool_id
-  ]
-}
-
-module "scale_set_worker" {
-  source = "./modules/scale_set"
-
-  name            = "${local.name}-worker"
-  instance_count  = var.worker_count
-  state_disk_size = var.state_disk_size
-  state_disk_type = var.state_disk_type
-  resource_group  = var.resource_group
-  location        = var.location
-  instance_type   = var.instance_type
-  confidential_vm = var.confidential_vm
-  secure_boot     = var.secure_boot
-  tags = merge(
-    local.tags,
-    { constellation-role = "worker" },
-    { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
-  )
-  image_id                  = var.image_id
-  user_assigned_identity    = var.user_assigned_identity
-  network_security_group_id = azurerm_network_security_group.security_group.id
-  subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_worker.backendpool_id,
   ]
 }
