@@ -98,7 +98,7 @@ func sha512sum(key crypto.PublicKey) ([64]byte, error) {
 
 // Validate a given SNP report.
 type snpReportValidator interface {
-	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, ak [64]byte) *ValidationError
+	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, ak [64]byte) error
 }
 
 // Validation logic for the AWS SNP implementation.
@@ -107,7 +107,7 @@ type awsValidator struct{}
 // validate the report by checking if it has a valid VLEK signature.
 // The certificate chain ARK -> ASK -> VLEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) *ValidationError {
+func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) error {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
 		return NewValidationError(fmt.Errorf("unmarshalling instance info: %w", err))

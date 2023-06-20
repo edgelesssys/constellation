@@ -312,6 +312,6 @@ func (s stubClient) Do(*http.Request) (*http.Response, error) {
 
 type stubawsValidator struct{}
 
-func (stubawsValidator) validate(context.Context, vtpm.AttestationDocument, askGetter, *x509.Certificate, [64]byte) *ValidationError {
+func (stubawsValidator) validate(context.Context, vtpm.AttestationDocument, askGetter, *x509.Certificate, [64]byte) error {
 	return nil
 }
