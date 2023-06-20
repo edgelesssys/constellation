@@ -82,19 +82,28 @@ d4uQB+fggMtK0qPRthpFtc2SqVCTvHnhxyXqo7GpXMsssgLgKNwaFPe2+Ld5OwPR
 func TestGetTrustedKey(t *testing.T) {
 	validator := &Validator{ark: nil, kdsClient: nil, reportValidator: stubawsValidator{}}
 	testCases := map[string]struct {
-		akPub   []byte
-		info    []byte
-		wantErr bool
+		akPub              []byte
+		info               []byte
+		wantErr            bool
+		assertCorrectError func(error)
 	}{
 		"null byte docs": {
 			akPub:   []byte{0x00, 0x00, 0x00, 0x00},
 			info:    []byte{0x00, 0x00, 0x00, 0x00},
 			wantErr: true,
+			assertCorrectError: func(err error) {
+				target := &DecodeError{}
+				assert.ErrorAs(t, err, &target)
+			},
 		},
 		"nil": {
 			akPub:   nil,
 			info:    nil,
 			wantErr: true,
+			assertCorrectError: func(err error) {
+				target := &DecodeError{}
+				assert.ErrorAs(t, err, &target)
+			},
 		},
 	}
 
@@ -114,6 +123,7 @@ func TestGetTrustedKey(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(err)
+				tc.assertCorrectError(err)
 			} else {
 				assert.NoError(err)
 			}
@@ -302,6 +312,6 @@ func (s stubClient) Do(*http.Request) (*http.Response, error) {
 
 type stubawsValidator struct{}
 
-func (stubawsValidator) validate(context.Context, vtpm.AttestationDocument, askGetter, *x509.Certificate, [64]byte) error {
+func (stubawsValidator) validate(context.Context, vtpm.AttestationDocument, askGetter, *x509.Certificate, [64]byte) *ValidationError {
 	return nil
 }

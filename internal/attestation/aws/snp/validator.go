@@ -46,8 +46,9 @@ type Validator struct {
 // NewValidator create a new Validator structure and returns it.
 func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 	v := &Validator{
-		ark:       (*x509.Certificate)(&cfg.AMDRootKey),
-		kdsClient: kdsClient{http.DefaultClient},
+		ark:             (*x509.Certificate)(&cfg.AMDRootKey),
+		kdsClient:       kdsClient{http.DefaultClient},
+		reportValidator: awsValidator{},
 	}
 
 	v.Validator = vtpm.NewValidator(
@@ -62,18 +63,24 @@ func NewValidator(cfg *config.AWSSEVSNP, log attestation.Logger) *Validator {
 // getTrustedKeys return the public area of the provides attestation key.
 // Normally, the key should be verified here, but currently AWS does not provide means to do so.
 func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDocument, _ []byte) (crypto.PublicKey, error) {
-	akDigest, err := sha512sum(attDoc.Attestation.GetAkPub())
+	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
+	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
+	if err != nil {
+		return nil, NewDecodeError(err)
+	}
+
+	pubKey, err := pubArea.Key()
+	if err != nil {
+		return nil, fmt.Errorf("getting public key: %w", err)
+	}
+
+	akDigest, err := sha512sum(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("calculating hash of attestation key: %w", err)
 	}
 
 	if err := v.reportValidator.validate(ctx, attDoc, v.kdsClient, v.ark, akDigest); err != nil {
 		return nil, fmt.Errorf("validating SNP report: %w", err)
-	}
-	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
-	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
-	if err != nil {
-		return nil, err
 	}
 
 	return pubArea.Key()
@@ -91,7 +98,7 @@ func sha512sum(key crypto.PublicKey) ([64]byte, error) {
 
 // Validate a given SNP report.
 type snpReportValidator interface {
-	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, ak [64]byte) error
+	validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, ak [64]byte) *ValidationError
 }
 
 // Validation logic for the AWS SNP implementation.
@@ -100,40 +107,40 @@ type awsValidator struct{}
 // validate the report by checking if it has a valid VLEK signature.
 // The certificate chain ARK -> ASK -> VLEK is also validated.
 // Checks that the report's userData matches the connection's userData.
-func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) error {
+func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) *ValidationError {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
-		return fmt.Errorf("unmarshalling instance info: %w", err)
+		return NewValidationError(fmt.Errorf("unmarshalling instance info: %w", err))
 	}
 
 	vlek, err := getVLEK(info.Certs)
 	if err != nil {
-		return fmt.Errorf("parsing certificates: %w", err)
+		return NewValidationError(fmt.Errorf("parsing certificates from certtable %x: %w", info.Certs, err))
 	}
 
 	ask, err := kdsClient.getASK(ctx)
 	if err != nil {
-		return fmt.Errorf("getting ASK: %w", err)
+		return NewValidationError(fmt.Errorf("getting ASK: %w", err))
 	}
 
 	if err := ask.CheckSignatureFrom(ark); err != nil {
-		return fmt.Errorf("verifying ASK signature: %w", err)
+		return NewValidationError(fmt.Errorf("verifying ASK signature: %w", err))
 	}
 	if err := vlek.CheckSignatureFrom(ask); err != nil {
-		return fmt.Errorf("verifying VLEK signature: %w", err)
+		return NewValidationError(fmt.Errorf("verifying VLEK signature: %w", err))
 	}
 
 	if err := verify.SnpReportSignature(info.Report, vlek); err != nil {
-		return fmt.Errorf("verifying snp report signature: %w", err)
+		return NewValidationError(fmt.Errorf("verifying snp report signature: %w", err))
 	}
 
 	report, err := abi.ReportToProto(info.Report)
 	if err != nil {
-		return fmt.Errorf("unmarshalling SNP report: %w", err)
+		return NewValidationError(fmt.Errorf("unmarshalling SNP report: %w", err))
 	}
 
 	if !bytes.Equal(report.GetReportData(), akDigest[:]) {
-		return errors.New("SNP report and attestation statement contain mismatching attestation keys")
+		return NewValidationError(errors.New("SNP report and attestation statement contain mismatching attestation keys"))
 	}
 
 	return nil
