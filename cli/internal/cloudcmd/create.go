@@ -212,24 +212,33 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts Create
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.AzureNodeGroup{
+			"control_plane_default": {
+				Role:          "ControlPlane",
+				InstanceCount: opts.ControlPlaneCount,
+				InstanceType:  opts.InsType,
+				DiskSizeGB:    opts.Config.StateDiskSizeGB,
+				DiskType:      opts.Config.Provider.Azure.StateDiskType,
+				Location:      opts.Config.Provider.Azure.Location,
+			},
+			"worker_default": {
+				Role:          "Worker",
+				InstanceCount: opts.WorkerCount,
+				InstanceType:  opts.InsType,
+				DiskSizeGB:    opts.Config.StateDiskSizeGB,
+				DiskType:      opts.Config.Provider.Azure.StateDiskType,
+				Location:      opts.Config.Provider.Azure.Location,
+			},
 		},
-		Location:             opts.Config.Provider.Azure.Location,
-		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
-		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
-		InstanceType:         opts.InsType,
-		StateDiskType:        opts.Config.Provider.Azure.StateDiskType,
 		ImageID:              opts.image,
-		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
 		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
 		Debug:                opts.Config.IsDebugCluster(),
+		ConfidentialVM:       opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
+		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
+		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
 	}
-
-	vars.ConfidentialVM = opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})
 
 	vars = normalizeAzureURIs(vars)
 

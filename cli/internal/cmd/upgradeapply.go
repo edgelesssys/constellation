@@ -243,16 +243,32 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
 
 		vars := &terraform.AzureClusterVariables{
-			CommonVariables:      commonVariables,
-			Location:             conf.Provider.Azure.Location,
+			Name:                 conf.Name,
 			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
 			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
-			InstanceType:         conf.Provider.Azure.InstanceType,
-			StateDiskType:        conf.Provider.Azure.StateDiskType,
 			ImageID:              imageRef,
-			SecureBoot:           *conf.Provider.Azure.SecureBoot,
-			CreateMAA:            conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
-			Debug:                conf.IsDebugCluster(),
+			NodeGroups: map[string]terraform.AzureNodeGroup{
+				"control_plane_default": {
+					Role:          "ControlPlane",
+					InstanceCount: 1, // TODO
+					InstanceType:  conf.Provider.Azure.InstanceType,
+					DiskSizeGB:    conf.StateDiskSizeGB,
+					DiskType:      conf.Provider.Azure.StateDiskType,
+					Location:      conf.Provider.Azure.Location,
+				},
+				"worker_default": {
+					Role:          "Worker",
+					InstanceCount: 1, // TODO
+					InstanceType:  conf.Provider.Azure.InstanceType,
+					DiskSizeGB:    conf.StateDiskSizeGB,
+					DiskType:      conf.Provider.Azure.StateDiskType,
+					Location:      conf.Provider.Azure.Location,
+				},
+			},
+
+			SecureBoot: *conf.Provider.Azure.SecureBoot,
+			CreateMAA:  conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+			Debug:      conf.IsDebugCluster(),
 		}
 		return targets, vars, nil
 	case cloudprovider.GCP:
