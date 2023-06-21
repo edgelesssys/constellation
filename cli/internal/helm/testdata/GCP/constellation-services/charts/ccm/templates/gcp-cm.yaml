@@ -4,4 +4,4 @@ metadata:
   name: gceconf
   namespace: testNamespace
 data:
-  gce.conf: "[global]\nproject-id = 42424242424242\nuse-metadata-server = true\nnode-tags = constellation-242424242424\n"
+  gce.conf: "[global]\nproject-id = 42424242424242\nuse-metadata-server = true\nnode-tags = constellation-242424242424\nregional = true\n"

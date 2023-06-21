@@ -5,5 +5,5 @@ metadata:
   name: gceconf
   namespace: {{ .Release.Namespace }}
 data:
-  gce.conf: "[global]\nproject-id = {{.Values.GCP.projectID }}\nuse-metadata-server = true\nnode-tags = constellation-{{ .Values.GCP.uid }}\n"
+  gce.conf: "[global]\nproject-id = {{.Values.GCP.projectID }}\nuse-metadata-server = true\nnode-tags = constellation-{{ .Values.GCP.uid }}\nregional = true\n"
 {{- end -}}
