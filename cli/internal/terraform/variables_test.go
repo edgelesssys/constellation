@@ -157,6 +157,7 @@ func TestAzureClusterVariables(t *testing.T) {
 		ConfidentialVM:       true,
 		SecureBoot:           false,
 		CreateMAA:            true,
+		MAAPolicy:            "some-policy",
 		Debug:                true,
 	}
 
@@ -174,6 +175,7 @@ image_id = "image-0123456789abcdef"
 confidential_vm = true
 secure_boot = false
 create_maa = true
+maa_policy = "some-policy"
 debug = true
 `
 	got := vars.String()
