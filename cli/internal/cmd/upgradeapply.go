@@ -62,7 +62,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, kubernetes.UpgradeCmdKindApply)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := u.parseUpgradeVars(cmd, conf, fetcher)
+	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -175,6 +175,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 
 	if hasDiff {
 		// If there are any Terraform migrations to apply, ask for confirmation
+		fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
 		if !flags.yes {
 			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 			if err != nil {
@@ -203,7 +204,8 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	return nil
 }
 
-func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
+// parseTerraformUpgradeVars parses the variables required to execute the Terraform script with.
+func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
 	// Fetch variables to execute Terraform script with
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
@@ -234,6 +236,7 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 			Debug:                  conf.IsDebugCluster(),
+			// TODO (AB#3235): decide how to handle EnableSNP during upgrades.
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
@@ -261,15 +264,28 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 		targets := []string{}
 
 		vars := &terraform.GCPClusterVariables{
-			CommonVariables: commonVariables,
-			Project:         conf.Provider.GCP.Project,
-			Region:          conf.Provider.GCP.Region,
-			Zone:            conf.Provider.GCP.Zone,
-			CredentialsFile: conf.Provider.GCP.ServiceAccountKeyPath,
-			InstanceType:    conf.Provider.GCP.InstanceType,
-			StateDiskType:   conf.Provider.GCP.StateDiskType,
-			ImageID:         imageRef,
-			Debug:           conf.IsDebugCluster(),
+			Name: conf.Name,
+			NodeGroups: map[string]terraform.GCPNodeGroup{
+				"control_plane_default": {
+					Role:            "ControlPlane",
+					StateDiskSizeGB: conf.StateDiskSizeGB,
+					Zone:            conf.Provider.GCP.Zone,
+					InstanceType:    conf.Provider.GCP.InstanceType,
+					DiskType:        conf.Provider.GCP.StateDiskType,
+				},
+				"worker_default": {
+					Role:            "Worker",
+					StateDiskSizeGB: conf.StateDiskSizeGB,
+					Zone:            conf.Provider.GCP.Zone,
+					InstanceType:    conf.Provider.GCP.InstanceType,
+					DiskType:        conf.Provider.GCP.StateDiskType,
+				},
+			},
+			Project: conf.Provider.GCP.Project,
+			Region:  conf.Provider.GCP.Region,
+			Zone:    conf.Provider.GCP.Zone,
+			ImageID: imageRef,
+			Debug:   conf.IsDebugCluster(),
 		}
 		return targets, vars, nil
 	default:

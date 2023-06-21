@@ -115,7 +115,7 @@ func (e NoUpgradeRequiredError) Error() string {
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, force bool) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	invalidUpgrade := &compatibility.InvalidUpgradeError{}
@@ -154,11 +154,11 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		return errors.Join(upgradeErrs...)
 	}
 
-	crds, err := c.backupCRDs(ctx)
+	crds, err := c.backupCRDs(ctx, upgradeID)
 	if err != nil {
 		return fmt.Errorf("creating CRD backup: %w", err)
 	}
-	if err := c.backupCRs(ctx, crds); err != nil {
+	if err := c.backupCRs(ctx, crds, upgradeID); err != nil {
 		return fmt.Errorf("creating CR backup: %w", err)
 	}
 

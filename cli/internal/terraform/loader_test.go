@@ -133,6 +133,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 		provider            cloudprovider.Provider
 		oldWorkingDir       string
 		newWorkingDir       string
+		backupDir           string
 		oldWorkspaceFiles   []string
 		newWorkspaceFiles   []string
 		expectedFiles       []string
@@ -144,6 +145,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			provider:          cloudprovider.AWS,
 			oldWorkingDir:     "old",
 			newWorkingDir:     "new",
+			backupDir:         "backup",
 			oldWorkspaceFiles: []string{"terraform.tfstate"},
 			expectedFiles: []string{
 				"main.tf",
@@ -158,6 +160,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			provider:          cloudprovider.AWS,
 			oldWorkingDir:     "old",
 			newWorkingDir:     "new",
+			backupDir:         "backup",
 			oldWorkspaceFiles: []string{},
 			expectedFiles:     []string{},
 			wantErr:           true,
@@ -167,6 +170,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			provider:          cloudprovider.AWS,
 			oldWorkingDir:     "old",
 			newWorkingDir:     "new",
+			backupDir:         "backup",
 			oldWorkspaceFiles: []string{"terraform.tfstate"},
 			newWorkspaceFiles: []string{"main.tf"},
 			wantErr:           true,
@@ -185,7 +189,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			createFiles(t, file, tc.oldWorkspaceFiles, tc.oldWorkingDir)
 			createFiles(t, file, tc.newWorkspaceFiles, tc.newWorkingDir)
 
-			err := prepareUpgradeWorkspace(path, file, tc.oldWorkingDir, tc.newWorkingDir)
+			err := prepareUpgradeWorkspace(path, file, tc.oldWorkingDir, tc.newWorkingDir, tc.backupDir)
 
 			if tc.wantErr {
 				require.Error(err)
@@ -194,7 +198,7 @@ func TestPrepareUpgradeWorkspace(t *testing.T) {
 			}
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.newWorkingDir, tc.expectedFiles)
 			checkFiles(t, file, func(err error) { assert.NoError(err) },
-				filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+				tc.backupDir,
 				tc.oldWorkspaceFiles,
 			)
 		})

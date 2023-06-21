@@ -19,7 +19,6 @@ All config relevant definitions, parsing and validation functions should go here
 package config
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -36,6 +35,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -357,7 +357,7 @@ func Default() *Config {
 		// AWS uses aws-nitro-tpm as attestation variant
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)},
+			AWSSEVSNP:          DefaultForAWSSEVSNP(),
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
@@ -540,6 +540,15 @@ func (c *Config) IsDebugCluster() bool {
 // IsReleaseImage checks whether image name looks like a release image.
 func (c *Config) IsReleaseImage() bool {
 	return strings.HasPrefix(c.Image, "v")
+}
+
+// IsNamedLikeDebugImage checks whether image name looks like a debug image.
+func (c *Config) IsNamedLikeDebugImage() bool {
+	v, err := versionsapi.NewVersionFromShortPath(c.Image, versionsapi.VersionKindImage)
+	if err != nil {
+		return false
+	}
+	return v.Stream == "debug"
 }
 
 // GetProvider returns the configured cloud provider.
@@ -778,9 +787,22 @@ type AWSSEVSNP struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically.
 	// description: |
-	//   Expected launch measurement in SNP report.
-	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+	//   Expected launch measurement in SNP report. Not in use right now.
+	// LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+	// description: |
+	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
+	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+}
+
+// DefaultForAWSSEVSNP provides a valid default configuration for AWS SEV-SNP attestation.
+func DefaultForAWSSEVSNP() *AWSSEVSNP {
+	return &AWSSEVSNP{
+		Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}),
+		// LaunchMeasurement: measurements.PlaceHolderMeasurement(48),
+		AMDRootKey: mustParsePEM(constants.AMDRootKey),
+	}
 }
 
 // GetVariant returns aws-sev-snp as the variant.
@@ -804,12 +826,13 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
-		return false, nil
-	}
-	if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
-		return false, nil
-	}
+	// TODO (derpsteb): reenable launchMeasurement once we have a way to generate the expected value dynamically.
+	// if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
+	// 	return false, nil
+	// }
+	// if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
+	// 	return false, nil
+	// }
 
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }

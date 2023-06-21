@@ -23,6 +23,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -38,6 +40,8 @@ import (
 const (
 	// tagUsage is a label key used to indicate the use of the resource.
 	tagUsage = "constellation-use"
+	// maxCacheAgeInvariantResource is the maximum age of cached metadata for invariant resources.
+	maxCacheAgeInvariantResource = 24 * time.Hour // 1 day
 )
 
 var (
@@ -52,8 +56,18 @@ type Cloud struct {
 	imds                       imdsAPI
 	instanceAPI                instanceAPI
 	subnetAPI                  subnetAPI
+	zoneAPI                    zoneAPI
 
 	closers []func() error
+
+	// cached metadata
+	cacheMux        sync.Mutex
+	regionCache     string
+	regionCacheTime time.Time
+	zoneCache       map[string]struct {
+		zones         []string
+		zoneCacheTime time.Time
+	}
 }
 
 // New creates and initializes Cloud.
@@ -85,12 +99,19 @@ func New(ctx context.Context) (cloud *Cloud, err error) {
 	}
 	closers = append(closers, subnetAPI.Close)
 
+	zoneAPI, err := compute.NewZonesRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	closers = append(closers, zoneAPI.Close)
+
 	return &Cloud{
 		imds:                       imds.NewClient(nil),
 		instanceAPI:                &instanceClient{insAPI},
 		globalForwardingRulesAPI:   &globalForwardingRulesClient{globalForwardingRulesAPI},
 		regionalForwardingRulesAPI: &regionalForwardingRulesClient{regionalForwardingRulesAPI},
 		subnetAPI:                  subnetAPI,
+		zoneAPI:                    &zoneClient{zoneAPI},
 		closers:                    closers,
 	}, nil
 }
@@ -192,6 +213,7 @@ func (c *Cloud) getRegionalForwardingRule(ctx context.Context, project, uid, reg
 }
 
 // List retrieves all instances belonging to the current constellation.
+// On GCP, this is done by listing all instances in a region by requesting all instances in each zone.
 func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	project, zone, instanceName, err := c.retrieveInstanceInfo()
 	if err != nil {
@@ -202,8 +224,32 @@ func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 		return nil, err
 	}
 
+	region, err := c.region()
+	if err != nil {
+		return nil, fmt.Errorf("getting region: %w", err)
+	}
+
+	zones, err := c.zones(ctx, project, region)
+	if err != nil {
+		return nil, fmt.Errorf("getting zones: %w", err)
+	}
+
+	var instances []metadata.InstanceMetadata
+	for _, zone := range zones {
+		zoneInstances, err := c.listInZone(ctx, project, zone, uid)
+		if err != nil {
+			return nil, fmt.Errorf("listing instances in zone %s: %w", zone, err)
+		}
+		instances = append(instances, zoneInstances...)
+	}
+	return instances, nil
+}
+
+// listInZone retrieves all instances belonging to the current constellation in a given zone.
+func (c *Cloud) listInZone(ctx context.Context, project, zone, uid string) ([]metadata.InstanceMetadata, error) {
 	var instances []metadata.InstanceMetadata
 	var resp *computepb.Instance
+	var err error
 	iter := c.instanceAPI.List(ctx, &computepb.ListInstancesRequest{
 		Filter:  proto.String(fmt.Sprintf("labels.%s:%s", cloud.TagUID, uid)),
 		Project: project,
@@ -399,6 +445,70 @@ func (c *Cloud) initSecretHash(ctx context.Context, project, zone, instanceName 
 	return "", errors.New("retrieving compute instance: received instance with no init secret hash label")
 }
 
+// region retrieves the region that this instance is located in.
+func (c *Cloud) region() (string, error) {
+	c.cacheMux.Lock()
+	defer c.cacheMux.Unlock()
+	// try to retrieve from cache first
+	if c.regionCache != "" &&
+		time.Since(c.regionCacheTime) < maxCacheAgeInvariantResource {
+		return c.regionCache, nil
+	}
+	zone, err := c.imds.Zone()
+	if err != nil {
+		return "", fmt.Errorf("retrieving zone from imds: %w", err)
+	}
+	region, err := regionFromZone(zone)
+	if err != nil {
+		return "", fmt.Errorf("retrieving region from zone: %w", err)
+	}
+	c.regionCache = region
+	c.regionCacheTime = time.Now()
+	return region, nil
+}
+
+// zones retrieves all zones that are within a region.
+func (c *Cloud) zones(ctx context.Context, project, region string) ([]string, error) {
+	c.cacheMux.Lock()
+	defer c.cacheMux.Unlock()
+	// try to retrieve from cache first
+	if cachedZones, ok := c.zoneCache[region]; ok &&
+		time.Since(cachedZones.zoneCacheTime) < maxCacheAgeInvariantResource {
+		return cachedZones.zones, nil
+	}
+	req := &computepb.ListZonesRequest{
+		Project: project,
+		Filter:  proto.String(fmt.Sprintf("name = \"%s*\"", region)),
+	}
+	zonesIter := c.zoneAPI.List(ctx, req)
+	var zones []string
+	var resp *computepb.Zone
+	var err error
+	for resp, err = zonesIter.Next(); err == nil; resp, err = zonesIter.Next() {
+		if resp == nil || resp.Name == nil {
+			continue
+		}
+		zones = append(zones, *resp.Name)
+	}
+	if err != nil && err != iterator.Done {
+		return nil, fmt.Errorf("listing zones: %w", err)
+	}
+	if c.zoneCache == nil {
+		c.zoneCache = make(map[string]struct {
+			zones         []string
+			zoneCacheTime time.Time
+		})
+	}
+	c.zoneCache[region] = struct {
+		zones         []string
+		zoneCacheTime time.Time
+	}{
+		zones:         zones,
+		zoneCacheTime: time.Now(),
+	}
+	return zones, nil
+}
+
 // convertToInstanceMetadata converts a *computepb.Instance to a metadata.InstanceMetadata.
 func convertToInstanceMetadata(in *computepb.Instance, project string, zone string) (metadata.InstanceMetadata, error) {
 	if in.Name == nil {
@@ -434,4 +544,12 @@ func convertToInstanceMetadata(in *computepb.Instance, project string, zone stri
 		VPCIP:         vpcIP,
 		AliasIPRanges: ips,
 	}, nil
+}
+
+func regionFromZone(zone string) (string, error) {
+	zoneParts := strings.Split(zone, "-")
+	if len(zoneParts) != 3 {
+		return "", fmt.Errorf("invalid zone format: %s", zone)
+	}
+	return fmt.Sprintf("%s-%s", zoneParts[0], zoneParts[1]), nil
 }

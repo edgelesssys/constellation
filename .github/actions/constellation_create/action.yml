@@ -233,6 +233,7 @@ runs:
           --info logcollect.github.ref-name="${{ github.ref_name }}" \
           --info logcollect.github.sha="${{ github.sha }}" \
           --info logcollect.github.runner-os="${{ runner.os }}" \
+          --verbosity=-1 \
           --force
         echo "::endgroup::"
 

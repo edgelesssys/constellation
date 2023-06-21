@@ -143,7 +143,9 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  opts.Config.IsDebugCluster(),
-		EnableSNP:              opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
+		// We always want to use SNP machines. If the users decides to use NitroTPM attestation,
+		// they will at least have runtime encryption.
+		EnableSNP: true,
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
@@ -166,20 +168,30 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.GCPClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.GCPNodeGroup{
+			"control_plane_default": {
+				Role:            "ControlPlane",
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.ControlPlaneCount,
+				Zone:            opts.Config.Provider.GCP.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.GCP.StateDiskType,
+			},
+			"worker_default": {
+				Role:            "Worker",
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.WorkerCount,
+				Zone:            opts.Config.Provider.GCP.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.GCP.StateDiskType,
+			},
 		},
-		Project:         opts.Config.Provider.GCP.Project,
-		Region:          opts.Config.Provider.GCP.Region,
-		Zone:            opts.Config.Provider.GCP.Zone,
-		CredentialsFile: opts.Config.Provider.GCP.ServiceAccountKeyPath,
-		InstanceType:    opts.InsType,
-		StateDiskType:   opts.Config.Provider.GCP.StateDiskType,
-		ImageID:         opts.image,
-		Debug:           opts.Config.IsDebugCluster(),
+		Project: opts.Config.Provider.GCP.Project,
+		Region:  opts.Config.Provider.GCP.Region,
+		Zone:    opts.Config.Provider.GCP.Zone,
+		ImageID: opts.image,
+		Debug:   opts.Config.IsDebugCluster(),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {

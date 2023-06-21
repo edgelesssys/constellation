@@ -44,6 +44,20 @@ locals {
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
   kube_env              = "AUTOSCALER_ENV_VARS: kube_reserved=cpu=1060m,memory=1019Mi,ephemeral-storage=41Gi;node_labels=;os=linux;os_distribution=cos;evictionHard="
+  control_plane_named_ports = flatten([
+    { name = "kubernetes", port = local.ports_kubernetes },
+    { name = "bootstrapper", port = local.ports_bootstrapper },
+    { name = "verify", port = local.ports_verify },
+    { name = "konnectivity", port = local.ports_konnectivity },
+    { name = "recovery", port = local.ports_recovery },
+    var.debug ? [{ name = "debugd", port = local.ports_debugd }] : [],
+  ])
+  node_groups_by_role = {
+    for name, node_group in var.node_groups : node_group.role => name...
+  }
+  control_plane_instance_groups = [
+    for control_plane in local.node_groups_by_role["ControlPlane"] : module.instance_group[control_plane].instance_group
+  ]
 }
 
 resource "random_id" "uid" {
@@ -134,48 +148,26 @@ resource "google_compute_firewall" "firewall_internal_pods" {
   allow { protocol = "icmp" }
 }
 
-module "instance_group_control_plane" {
-  source              = "./modules/instance_group"
-  name                = local.name
-  role                = "ControlPlane"
-  uid                 = local.uid
-  instance_type       = var.instance_type
-  instance_count      = var.control_plane_count
-  image_id            = var.image_id
-  disk_size           = var.state_disk_size
-  disk_type           = var.state_disk_type
-  network             = google_compute_network.vpc_network.id
-  subnetwork          = google_compute_subnetwork.vpc_subnetwork.id
-  alias_ip_range_name = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
-  kube_env            = local.kube_env
-  debug               = var.debug
-  named_ports = flatten([
-    { name = "kubernetes", port = local.ports_kubernetes },
-    { name = "bootstrapper", port = local.ports_bootstrapper },
-    { name = "verify", port = local.ports_verify },
-    { name = "konnectivity", port = local.ports_konnectivity },
-    { name = "recovery", port = local.ports_recovery },
-    var.debug ? [{ name = "debugd", port = local.ports_debugd }] : [],
-  ])
-  labels           = local.labels
-  init_secret_hash = local.initSecretHash
-}
 
-module "instance_group_worker" {
+module "instance_group" {
   source              = "./modules/instance_group"
-  name                = "${local.name}-1"
-  role                = "Worker"
+  for_each            = var.node_groups
+  base_name           = local.name
+  node_group_name     = each.key
+  role                = each.value.role
+  zone                = each.value.zone
   uid                 = local.uid
-  instance_type       = var.instance_type
-  instance_count      = var.worker_count
+  instance_type       = each.value.instance_type
+  instance_count      = each.value.initial_count
   image_id            = var.image_id
-  disk_size           = var.state_disk_size
-  disk_type           = var.state_disk_type
+  disk_size           = each.value.disk_size
+  disk_type           = each.value.disk_type
   network             = google_compute_network.vpc_network.id
   subnetwork          = google_compute_subnetwork.vpc_subnetwork.id
   alias_ip_range_name = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
   kube_env            = local.kube_env
   debug               = var.debug
+  named_ports         = each.value.role == "ControlPlane" ? local.control_plane_named_ports : []
   labels              = local.labels
   init_secret_hash    = local.initSecretHash
 }
@@ -185,68 +177,78 @@ resource "google_compute_global_address" "loadbalancer_ip" {
 }
 
 module "loadbalancer_kube" {
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "HTTPS"
-  backend_port_name      = "kubernetes"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_kubernetes
-  frontend_labels        = merge(local.labels, { constellation-use = "kubernetes" })
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "HTTPS"
+  backend_port_name       = "kubernetes"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_kubernetes
+  frontend_labels         = merge(local.labels, { constellation-use = "kubernetes" })
 }
 
 module "loadbalancer_boot" {
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "TCP"
-  backend_port_name      = "bootstrapper"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_bootstrapper
-  frontend_labels        = merge(local.labels, { constellation-use = "bootstrapper" })
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "bootstrapper"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_bootstrapper
+  frontend_labels         = merge(local.labels, { constellation-use = "bootstrapper" })
 }
 
 module "loadbalancer_verify" {
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "TCP"
-  backend_port_name      = "verify"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_verify
-  frontend_labels        = merge(local.labels, { constellation-use = "verify" })
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "verify"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_verify
+  frontend_labels         = merge(local.labels, { constellation-use = "verify" })
 }
 
 module "loadbalancer_konnectivity" {
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "TCP"
-  backend_port_name      = "konnectivity"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_konnectivity
-  frontend_labels        = merge(local.labels, { constellation-use = "konnectivity" })
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "konnectivity"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_konnectivity
+  frontend_labels         = merge(local.labels, { constellation-use = "konnectivity" })
 }
 
 module "loadbalancer_recovery" {
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "TCP"
-  backend_port_name      = "recovery"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_recovery
-  frontend_labels        = merge(local.labels, { constellation-use = "recovery" })
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "recovery"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_recovery
+  frontend_labels         = merge(local.labels, { constellation-use = "recovery" })
 }
 
 module "loadbalancer_debugd" {
-  count                  = var.debug ? 1 : 0 // only deploy debugd in debug mode
-  source                 = "./modules/loadbalancer"
-  name                   = local.name
-  health_check           = "TCP"
-  backend_port_name      = "debugd"
-  backend_instance_group = module.instance_group_control_plane.instance_group
-  ip_address             = google_compute_global_address.loadbalancer_ip.self_link
-  port                   = local.ports_debugd
-  frontend_labels        = merge(local.labels, { constellation-use = "debugd" })
+  count                   = var.debug ? 1 : 0 // only deploy debugd in debug mode
+  source                  = "./modules/loadbalancer"
+  name                    = local.name
+  health_check            = "TCP"
+  backend_port_name       = "debugd"
+  backend_instance_groups = local.control_plane_instance_groups
+  ip_address              = google_compute_global_address.loadbalancer_ip.self_link
+  port                    = local.ports_debugd
+  frontend_labels         = merge(local.labels, { constellation-use = "debugd" })
+}
+
+moved {
+  from = module.instance_group_control_plane
+  to   = module.instance_group["control_plane_default"]
+}
+
+moved {
+  from = module.instance_group_worker
+  to   = module.instance_group["worker_default"]
 }

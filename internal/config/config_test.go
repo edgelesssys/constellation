@@ -483,11 +483,11 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	{ // AWS
 		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
-		for k := range conf.Attestation.AWSSEVSNP.Measurements {
-			delete(conf.Attestation.AWSSEVSNP.Measurements, k)
+		for k := range conf.Attestation.AWSNitroTPM.Measurements {
+			delete(conf.Attestation.AWSNitroTPM.Measurements, k)
 		}
 		conf.UpdateMeasurements(newMeasurements)
-		assert.Equal(newMeasurements, conf.Attestation.AWSSEVSNP.Measurements)
+		assert.Equal(newMeasurements, conf.Attestation.AWSNitroTPM.Measurements)
 	}
 	{ // Azure
 		conf := Default()
@@ -850,6 +850,24 @@ func TestConfigVersionCompatibility(t *testing.T) {
 
 			assert.NoError(err)
 			assert.Equal(tc.expectedConfig, config)
+		})
+	}
+}
+
+func TestIsDebugImage(t *testing.T) {
+	cases := map[string]struct {
+		image    string
+		expected bool
+	}{
+		"debug image":   {"ref/test/stream/debug/v2.9.0-pre.0.20230613084544-eeea7b1f56f4", true},
+		"release image": {"v2.8.0", false},
+		"empty image":   {"", false},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			c := &Config{Image: tc.image}
+			assert.Equal(t, tc.expected, c.IsNamedLikeDebugImage())
 		})
 	}
 }

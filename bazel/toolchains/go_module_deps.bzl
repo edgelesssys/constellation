@@ -97,6 +97,14 @@ def go_dependencies():
         sum = "h1:rFw4nCn9iMW+Vajsk51NtYIcwSTkXr+JGrMd36kTDJw=",
         version = "v0.0.0-20180502004556-fa1af6a1f4f5",
     )
+    go_repository(
+        name = "com_github_agext_levenshtein",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/agext/levenshtein",
+        sum = "h1:QmvMAjj2aEICytGiWzmxoE0x2KZvE0fvmqMOfy2tjT8=",
+        version = "v1.2.1",
+    )
 
     go_repository(
         name = "com_github_alcortesm_tgz",
@@ -248,6 +256,14 @@ def go_dependencies():
         importpath = "github.com/aphistic/sweet",
         sum = "h1:I4z+fAUqvKfvZV/CHi5dV0QuwbmIvYYFDjG0Ss5QpAs=",
         version = "v0.2.0",
+    )
+    go_repository(
+        name = "com_github_apparentlymart_go_dump",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/apparentlymart/go-dump",
+        sum = "h1:ZSTrOEhiM5J5RFxEaFvMZVEAM1KvT1YzbEOwB2EAGjA=",
+        version = "v0.0.0-20180507223929-23540a00eaa3",
     )
 
     go_repository(
@@ -2753,8 +2769,9 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/google/go-sev-guest",
-        sum = "h1:NajHkAaLqN9/aW7bCFSUplUMtDgk2+HcN7jC2btFtk0=",
-        version = "v0.6.1",
+        replace = "github.com/derpsteb/go-sev-guest",
+        sum = "h1:rqEp/ttS4sPC6dNwdiX0A9smWyyPxGqa/0sqJhXDzTg=",
+        version = "v0.0.0-20230612061930-77cc6c19fa1a",
     )
     go_repository(
         name = "com_github_google_go_tpm",
@@ -3311,6 +3328,14 @@ def go_dependencies():
         importpath = "github.com/hashicorp/hcl",
         sum = "h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=",
         version = "v1.0.0",
+    )
+    go_repository(
+        name = "com_github_hashicorp_hcl_v2",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/hashicorp/hcl/v2",
+        sum = "h1:z1XvSUyXd1HP10U4lrLg5e0JMVz6CPaJvAgxM0KNZVY=",
+        version = "v2.17.0",
     )
 
     go_repository(

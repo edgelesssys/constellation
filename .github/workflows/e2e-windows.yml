@@ -1,0 +1,138 @@
+name: e2e test windows
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 6" # At 03:00 on Saturday.
+
+jobs:
+  build-cli:
+    name: Build Windows CLI
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Build CLI
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: "windows"
+          targetArch: "amd64"
+          enterpriseCLI: true
+          outputPath: "build/constellation.exe"
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          path: "build/constellation.exe"
+          name: "constellation.exe"
+
+  e2e-test:
+    name: E2E Test Windows
+    runs-on: windows-2022
+    needs: build-cli
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Download CLI artifact
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: "constellation.exe"
+
+      - name: Check CLI version
+        shell: pwsh
+        run: |
+          .\constellation.exe version
+
+      - name: Login to Azure (IAM service principal)
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+
+      - name: Create IAM configuration
+        shell: pwsh
+        run: |
+          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --generate-config --debug -y
+
+      - name: Login to Azure (Cluster service principal)
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+
+      - name: Create cluster
+        shell: pwsh
+        run: |
+          .\constellation.exe create --control-plane-nodes 1 --worker-nodes 2 --debug -y
+
+      - name: Initialize cluster
+        shell: pwsh
+        run: |
+          .\constellation.exe init --debug
+
+      - name: Liveness probe
+        shell: pwsh
+        run: |
+          $retryIntervalSeconds = 30
+          $maxRetries = 50
+
+          $retryCount = 0
+          $allNodesReady = $false
+
+          while (-not $allNodesReady -and $retryCount -lt $maxRetries) {
+              ${retryCount}++
+              Write-Host "Retry ${retryCount}: Checking node status..."
+
+              $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
+
+              $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
+
+              $allNodesReady = $true
+
+              foreach ($line in $lines) {
+                  $columns = $line -split '\s+' | Where-Object { $_ -ne '' }
+
+                  $nodeName = $columns[0]
+                  $status = $columns[1]
+
+                  if ($status -ne "Ready") {
+                      Write-Host "Node $nodeName is not ready!"
+                      $allNodesReady = $false
+                  }
+              }
+
+              if (-not $allNodesReady) {
+                  Write-Host "Retrying in $retryIntervalSeconds seconds..."
+                  Start-Sleep -Seconds $retryIntervalSeconds
+              }
+          }
+
+          if ($allNodesReady) {
+              Write-Host "All nodes are ready!"
+          }
+          else {
+              Write-Host "Node status check failed after $maxRetries retries."
+              EXIT 1
+          }
+
+      - name: Terminate cluster
+        if: always()
+        shell: pwsh
+        run: |
+          .\constellation.exe terminate --debug -y
+
+      - name: Login to Azure (IAM service principal)
+        if: always()
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+
+      - name: Delete IAM configuration
+        if: always()
+        shell: pwsh
+        run: |
+          .\constellation.exe iam destroy --debug -y

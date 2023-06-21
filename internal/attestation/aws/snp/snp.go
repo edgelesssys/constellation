@@ -36,6 +36,10 @@ Thus, the hypervisor is still included in the trusted computing base.
 
 This section explains abbreviations used in SNP implementation.
 
+  - Platform Security Processor (PSP)
+
+  - Certificate Revocation List (CRL)
+
   - Attestation Key (AK)
 
   - AMD Root Key (ARK)

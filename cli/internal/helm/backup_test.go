@@ -24,16 +24,19 @@ import (
 
 func TestBackupCRDs(t *testing.T) {
 	testCases := map[string]struct {
+		upgradeID    string
 		crd          string
 		expectedFile string
 		getCRDsError error
 		wantError    bool
 	}{
 		"success": {
+			upgradeID:    "1234",
 			crd:          "apiVersion: \nkind: \nmetadata:\n  name: foobar\n  creationTimestamp: null\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
 			expectedFile: "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: foobar\n  creationTimestamp: null\nspec:\n  group: \"\"\n  names:\n    kind: \"somename\"\n    plural: \"somenames\"\n  scope: \"\"\n  versions: null\nstatus:\n  acceptedNames:\n    kind: \"\"\n    plural: \"\"\n  conditions: null\n  storedVersions: null\n",
 		},
 		"api request fails": {
+			upgradeID:    "1234",
 			getCRDsError: errors.New("api error"),
 			wantError:    true,
 		},
@@ -55,14 +58,14 @@ func TestBackupCRDs(t *testing.T) {
 				log:     stubLog{},
 			}
 
-			_, err = client.backupCRDs(context.Background())
+			_, err = client.backupCRDs(context.Background(), tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
 
-			data, err := afero.ReadFile(memFs, filepath.Join(crdBackupFolder, crd.Name+".yaml"))
+			data, err := afero.ReadFile(memFs, filepath.Join(client.crdBackupFolder(tc.upgradeID), crd.Name+".yaml"))
 			require.NoError(err)
 			assert.YAMLEq(tc.expectedFile, string(data))
 		})
@@ -71,6 +74,7 @@ func TestBackupCRDs(t *testing.T) {
 
 func TestBackupCRs(t *testing.T) {
 	testCases := map[string]struct {
+		upgradeID    string
 		crd          apiextensionsv1.CustomResourceDefinition
 		resource     unstructured.Unstructured
 		expectedFile string
@@ -78,6 +82,7 @@ func TestBackupCRs(t *testing.T) {
 		wantError    bool
 	}{
 		"success": {
+			upgradeID: "1234",
 			crd: apiextensionsv1.CustomResourceDefinition{
 				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Names: apiextensionsv1.CustomResourceDefinitionNames{
@@ -95,6 +100,7 @@ func TestBackupCRs(t *testing.T) {
 			expectedFile: "metadata:\n  name: foobar\n",
 		},
 		"api request fails": {
+			upgradeID: "1234",
 			crd: apiextensionsv1.CustomResourceDefinition{
 				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Names: apiextensionsv1.CustomResourceDefinitionNames{
@@ -126,14 +132,14 @@ func TestBackupCRs(t *testing.T) {
 				log:     stubLog{},
 			}
 
-			err := client.backupCRs(context.Background(), []apiextensionsv1.CustomResourceDefinition{tc.crd})
+			err := client.backupCRs(context.Background(), []apiextensionsv1.CustomResourceDefinition{tc.crd}, tc.upgradeID)
 			if tc.wantError {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
 
-			data, err := afero.ReadFile(memFs, filepath.Join(backupFolder, tc.crd.Spec.Group, tc.crd.Spec.Versions[0].Name, tc.resource.GetNamespace(), tc.resource.GetKind(), tc.resource.GetName()+".yaml"))
+			data, err := afero.ReadFile(memFs, filepath.Join(client.backupFolder(tc.upgradeID), tc.crd.Spec.Group, tc.crd.Spec.Versions[0].Name, tc.resource.GetNamespace(), tc.resource.GetKind(), tc.resource.GetName()+".yaml"))
 			require.NoError(err)
 			assert.YAMLEq(tc.expectedFile, string(data))
 		})
