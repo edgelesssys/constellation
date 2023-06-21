@@ -9,6 +9,7 @@ package terraform
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -150,16 +151,16 @@ func TestAzureClusterVariables(t *testing.T) {
 				InstanceType:  "Standard_D2s_v3",
 				DiskType:      "StandardSSD_LRS",
 				DiskSizeGB:    100,
-				Zones:         "eu-central-1",
 			},
 		},
-		ConfidentialVM:       true,
+		ConfidentialVM:       to.Ptr(true),
 		SecureBoot:           false,
 		ResourceGroup:        "my-resource-group",
 		UserAssignedIdentity: "my-user-assigned-identity",
 		ImageID:              "image-0123456789abcdef",
 		CreateMAA:            true,
 		Debug:                true,
+		Location:             "eu-central-1",
 	}
 
 	// test that the variables are correctly rendered
@@ -168,6 +169,7 @@ image_id               = "image-0123456789abcdef"
 create_maa             = true
 debug                  = true
 resource_group         = "my-resource-group"
+location               = "eu-central-1"
 user_assigned_identity = "my-user-assigned-identity"
 confidential_vm        = true
 secure_boot            = false
@@ -177,8 +179,8 @@ node_groups = {
     disk_type      = "StandardSSD_LRS"
     instance_count = 1
     instance_type  = "Standard_D2s_v3"
-    location       = "eu-central-1"
     role           = "ControlPlane"
+    zones          = null
   }
 }
 `

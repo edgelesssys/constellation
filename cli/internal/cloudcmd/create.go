@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -235,7 +236,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		ImageID:              opts.image,
 		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
 		Debug:                opts.Config.IsDebugCluster(),
-		ConfidentialVM:       opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+		ConfidentialVM:       to.Ptr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
 		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,

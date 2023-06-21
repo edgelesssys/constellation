@@ -12,7 +12,7 @@ terraform {
 }
 
 locals {
-  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
+  role_dashed = var.role == "ControlPlane" ? "control-plane" : "worker"
   tags = merge(
     var.tags,
     { constellation-role = local.role_dashed },
@@ -25,10 +25,10 @@ locals {
   # new names:
   # node_group: foo, role: Worker => name == "<base>-worker-<uid>"
   # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
-  group_uid       = random_id.uid.hex
-  maybe_uid       = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
-  maybe_one       = var.node_group_name == "worker_default" ? "-1" : ""
-  name = "${var.base_name}${local.maybe_one}-${local.role_dashed}${local.maybe_uid}"
+  group_uid = random_id.uid.hex
+  maybe_uid = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
+  #maybe_one = var.node_group_name == "worker_default" ? "-1" : "" # TODO adding "-1" forces replaces of resource on upgrade
+  name = "${var.base_name}-${local.role_dashed}${local.maybe_uid}"
 }
 
 resource "random_id" "uid" {
@@ -43,7 +43,7 @@ resource "random_password" "password" {
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
-  name = local.name
+  name                            = local.name
   resource_group_name             = var.resource_group
   location                        = var.location
   sku                             = var.instance_type
@@ -58,7 +58,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   secure_boot_enabled             = var.secure_boot
   source_image_id                 = var.image_id
   tags                            = local.tags
-  zones = var.zones
+  zones                           = var.zones
   // TODO add
   identity {
     type         = "UserAssigned"

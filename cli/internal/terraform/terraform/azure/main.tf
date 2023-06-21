@@ -223,25 +223,25 @@ resource "azurerm_network_security_group" "security_group" {
 
 // add role as label, old name is base_name-dashed_role
 module "scale_set_group" {
-  source = "./modules/scale_set"
-  for_each            = var.node_groups
-  base_name           = local.name
+  source          = "./modules/scale_set"
+  for_each        = var.node_groups
+  base_name       = local.name
   node_group_name = each.key
-  role = each.value.role
-  zones = each.value.zones
+  role            = each.value.role
+  zones           = each.value.zones
   tags = merge(
     local.tags,
     { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" })
+  { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" })
 
-  instance_count  = each.value.instance_count
-  state_disk_size = each.value.disk_size
-  state_disk_type = each.value.disk_type
-  location        = var.location
-  instance_type   = each.value.instance_type
-  confidential_vm = var.confidential_vm
-  secure_boot     = var.secure_boot
-  resource_group  = var.resource_group
+  instance_count            = each.value.instance_count
+  state_disk_size           = each.value.disk_size
+  state_disk_type           = each.value.disk_type
+  location                  = var.location
+  instance_type             = each.value.instance_type
+  confidential_vm           = var.confidential_vm
+  secure_boot               = var.secure_boot
+  resource_group            = var.resource_group
   user_assigned_identity    = var.user_assigned_identity
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
@@ -249,7 +249,7 @@ module "scale_set_group" {
   backend_address_pool_ids = each.value.role == "ControlPlane" ? [
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_control_plane.backendpool_id
-  ] : [
+    ] : [
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_worker.backendpool_id
   ]

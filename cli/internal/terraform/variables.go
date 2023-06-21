@@ -177,7 +177,7 @@ type AzureClusterVariables struct {
 	// UserAssignedIdentity is the name of the Azure user-assigned identity to use.
 	UserAssignedIdentity string `hcl:"user_assigned_identity" cty:"user_assigned_identity"`
 	// ConfidentialVM sets the VM to be confidential.
-	ConfidentialVM bool `hcl:"confidential_vm" cty:"confidential_vm"`
+	ConfidentialVM *bool `hcl:"confidential_vm" cty:"confidential_vm"`
 	// SecureBoot sets the VM to use secure boot.
 	SecureBoot bool `hcl:"secure_boot" cty:"secure_boot"`
 	// NodeGroups is a map of node groups to create.

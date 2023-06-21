@@ -25,7 +25,7 @@ variable "tags" {
 variable "zones" {
   type        = list(string)
   description = "List of availability zones."
-  default = null
+  default     = null
 }
 
 variable "instance_count" {

@@ -266,9 +266,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 					// Location:      conf.Provider.Azure.Location,
 				},
 			},
-			Location:       conf.Provider.Azure.Location,
-			ConfidentialVM: true, // TODO optional?
-
+			Location:   conf.Provider.Azure.Location,
 			SecureBoot: *conf.Provider.Azure.SecureBoot,
 			CreateMAA:  conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
 			Debug:      conf.IsDebugCluster(),
