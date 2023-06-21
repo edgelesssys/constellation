@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
@@ -267,9 +268,9 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 				},
 			},
 			Location:   conf.Provider.Azure.Location,
-			SecureBoot: *conf.Provider.Azure.SecureBoot,
-			CreateMAA:  conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
-			Debug:      conf.IsDebugCluster(),
+			SecureBoot: conf.Provider.Azure.SecureBoot,
+			CreateMAA:  to.Ptr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+			Debug:      to.Ptr(conf.IsDebugCluster()),
 		}
 		return targets, vars, nil
 	case cloudprovider.GCP:

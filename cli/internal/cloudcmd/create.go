@@ -234,10 +234,10 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		},
 		Location:             opts.Config.Provider.Azure.Location,
 		ImageID:              opts.image,
-		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
-		Debug:                opts.Config.IsDebugCluster(),
+		CreateMAA:            to.Ptr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		Debug:                to.Ptr(opts.Config.IsDebugCluster()),
 		ConfidentialVM:       to.Ptr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
+		SecureBoot:           opts.Config.Provider.Azure.SecureBoot,
 		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
 	}
@@ -254,7 +254,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		return clusterid.File{}, err
 	}
 
-	if vars.CreateMAA {
+	if vars.CreateMAA != nil && *vars.CreateMAA {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
 		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
 			return clusterid.File{}, err

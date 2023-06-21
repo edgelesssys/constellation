@@ -167,9 +167,9 @@ type AzureClusterVariables struct {
 	// ImageID is the ID of the Azure image to use.
 	ImageID string `hcl:"image_id" cty:"image_id"`
 	// CreateMAA sets whether a Microsoft Azure attestation provider should be created.
-	CreateMAA bool `hcl:"create_maa" cty:"create_maa"`
+	CreateMAA *bool `hcl:"create_maa" cty:"create_maa"`
 	// Debug is true if debug mode is enabled.
-	Debug bool `hcl:"debug" cty:"debug"`
+	Debug *bool `hcl:"debug" cty:"debug"`
 	// ResourceGroup is the name of the Azure resource group to use.
 	ResourceGroup string `hcl:"resource_group" cty:"resource_group"`
 	// Location is the Azure location to use.
@@ -179,7 +179,7 @@ type AzureClusterVariables struct {
 	// ConfidentialVM sets the VM to be confidential.
 	ConfidentialVM *bool `hcl:"confidential_vm" cty:"confidential_vm"`
 	// SecureBoot sets the VM to use secure boot.
-	SecureBoot bool `hcl:"secure_boot" cty:"secure_boot"`
+	SecureBoot *bool `hcl:"secure_boot" cty:"secure_boot"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }

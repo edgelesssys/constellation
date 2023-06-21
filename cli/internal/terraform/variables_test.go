@@ -154,12 +154,11 @@ func TestAzureClusterVariables(t *testing.T) {
 			},
 		},
 		ConfidentialVM:       to.Ptr(true),
-		SecureBoot:           false,
 		ResourceGroup:        "my-resource-group",
 		UserAssignedIdentity: "my-user-assigned-identity",
 		ImageID:              "image-0123456789abcdef",
-		CreateMAA:            true,
-		Debug:                true,
+		CreateMAA:            to.Ptr(true),
+		Debug:                to.Ptr(true),
 		Location:             "eu-central-1",
 	}
 
@@ -172,7 +171,6 @@ resource_group         = "my-resource-group"
 location               = "eu-central-1"
 user_assigned_identity = "my-user-assigned-identity"
 confidential_vm        = true
-secure_boot            = false
 node_groups = {
   control_plane_default = {
     disk_size      = 100
