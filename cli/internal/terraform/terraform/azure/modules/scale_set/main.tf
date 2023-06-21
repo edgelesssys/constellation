@@ -11,6 +11,29 @@ terraform {
   }
 }
 
+locals {
+  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
+  tags = merge(
+    var.tags,
+    { constellation-role = local.role_dashed },
+    { constellation-node-group = var.node_group_name },
+  )
+  # migration: allow the old node group names to work since they were created without the uid
+  # and without multiple node groups in mind
+  # node_group: worker_default => name == "<base>-1-worker"
+  # node_group: control_plane_default => name:  "<base>-control-plane"
+  # new names:
+  # node_group: foo, role: Worker => name == "<base>-worker-<uid>"
+  # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
+  group_uid       = random_id.uid.hex
+  maybe_uid       = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
+  maybe_one       = var.node_group_name == "worker_default" ? "-1" : ""
+  name = "${var.base_name}${local.maybe_one}-${local.role_dashed}${local.maybe_uid}"
+}
+
+resource "random_id" "uid" {
+  byte_length = 4
+}
 resource "random_password" "password" {
   length      = 16
   min_lower   = 1
@@ -20,7 +43,7 @@ resource "random_password" "password" {
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
-  name                            = var.name
+  name = local.name
   resource_group_name             = var.resource_group
   location                        = var.location
   sku                             = var.instance_type
@@ -34,8 +57,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
   source_image_id                 = var.image_id
-  tags                            = var.tags
-
+  tags                            = local.tags
+  zones = var.zones
+  // TODO add
   identity {
     type         = "UserAssigned"
     identity_ids = [var.user_assigned_identity]
