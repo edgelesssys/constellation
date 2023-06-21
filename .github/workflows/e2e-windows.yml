@@ -77,7 +77,6 @@ jobs:
       - name: Liveness probe
         shell: pwsh
         run: |
-          setx KUBECONFIG "$PWD\constellation-admin.conf"
           $retryIntervalSeconds = 30
           $maxRetries = 50
 
@@ -88,7 +87,7 @@ jobs:
               ${retryCount}++
               Write-Host "Retry ${retryCount}: Checking node status..."
 
-              $nodesOutput = & kubectl get nodes
+              $nodesOutput = & kubectl get nodes --kubeconfig "$PWD\constellation-admin.conf"
 
               $lines = $nodesOutput -split "`r?`n" | Select-Object -Skip 1
 
