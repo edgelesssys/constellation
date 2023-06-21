@@ -8,41 +8,41 @@ package snp
 
 import "fmt"
 
-// DecodeError is used to signal an error during decoding of a public key.
+// decodeError is used to signal an error during decoding of a public key.
 // It only wrapps an error.
-type DecodeError struct {
+type decodeError struct {
 	inner error
 }
 
-// NewDecodeError an error in a DecodeError.
-func NewDecodeError(err error) *DecodeError {
-	return &DecodeError{inner: err}
+// newDecodeError an error in a DecodeError.
+func newDecodeError(err error) *decodeError {
+	return &decodeError{inner: err}
 }
 
-func (e *DecodeError) Error() string {
+func (e *decodeError) Error() string {
 	return fmt.Sprintf("error decoding public key: %v", e.inner)
 }
 
-func (e *DecodeError) Unwrap() error {
+func (e *decodeError) Unwrap() error {
 	return e.inner
 }
 
-// ValidationError is used to signal an invalid SNP report.
+// validationError is used to signal an invalid SNP report.
 // It only wrapps an error.
 // Used during testing to error conditions more precisely.
-type ValidationError struct {
+type validationError struct {
 	inner error
 }
 
-// NewValidationError wraps an error in a ValidationError.
-func NewValidationError(err error) *ValidationError {
-	return &ValidationError{inner: err}
+// newValidationError wraps an error in a ValidationError.
+func newValidationError(err error) *validationError {
+	return &validationError{inner: err}
 }
 
-func (e *ValidationError) Error() string {
+func (e *validationError) Error() string {
 	return e.inner.Error()
 }
 
-func (e *ValidationError) Unwrap() error {
+func (e *validationError) Unwrap() error {
 	return e.inner
 }

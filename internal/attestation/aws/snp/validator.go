@@ -66,7 +66,7 @@ func (v *Validator) getTrustedKey(ctx context.Context, attDoc vtpm.AttestationDo
 	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
 	pubArea, err := tpm2.DecodePublic(attDoc.Attestation.AkPub)
 	if err != nil {
-		return nil, NewDecodeError(err)
+		return nil, newDecodeError(err)
 	}
 
 	pubKey, err := pubArea.Key()
@@ -110,37 +110,37 @@ type awsValidator struct{}
 func (awsValidator) validate(ctx context.Context, attestation vtpm.AttestationDocument, kdsClient askGetter, ark *x509.Certificate, akDigest [64]byte) error {
 	var info instanceInfo
 	if err := json.Unmarshal(attestation.InstanceInfo, &info); err != nil {
-		return NewValidationError(fmt.Errorf("unmarshalling instance info: %w", err))
+		return newValidationError(fmt.Errorf("unmarshalling instance info: %w", err))
 	}
 
 	vlek, err := getVLEK(info.Certs)
 	if err != nil {
-		return NewValidationError(fmt.Errorf("parsing certificates from certtable %x: %w", info.Certs, err))
+		return newValidationError(fmt.Errorf("parsing certificates from certtable %x: %w", info.Certs, err))
 	}
 
 	ask, err := kdsClient.getASK(ctx)
 	if err != nil {
-		return NewValidationError(fmt.Errorf("getting ASK: %w", err))
+		return newValidationError(fmt.Errorf("getting ASK: %w", err))
 	}
 
 	if err := ask.CheckSignatureFrom(ark); err != nil {
-		return NewValidationError(fmt.Errorf("verifying ASK signature: %w", err))
+		return newValidationError(fmt.Errorf("verifying ASK signature: %w", err))
 	}
 	if err := vlek.CheckSignatureFrom(ask); err != nil {
-		return NewValidationError(fmt.Errorf("verifying VLEK signature: %w", err))
+		return newValidationError(fmt.Errorf("verifying VLEK signature: %w", err))
 	}
 
 	if err := verify.SnpReportSignature(info.Report, vlek); err != nil {
-		return NewValidationError(fmt.Errorf("verifying snp report signature: %w", err))
+		return newValidationError(fmt.Errorf("verifying snp report signature: %w", err))
 	}
 
 	report, err := abi.ReportToProto(info.Report)
 	if err != nil {
-		return NewValidationError(fmt.Errorf("unmarshalling SNP report: %w", err))
+		return newValidationError(fmt.Errorf("unmarshalling SNP report: %w", err))
 	}
 
 	if !bytes.Equal(report.GetReportData(), akDigest[:]) {
-		return NewValidationError(errors.New("SNP report and attestation statement contain mismatching attestation keys"))
+		return newValidationError(errors.New("SNP report and attestation statement contain mismatching attestation keys"))
 	}
 
 	return nil

@@ -92,7 +92,7 @@ func TestGetTrustedKey(t *testing.T) {
 			info:    []byte{0x00, 0x00, 0x00, 0x00},
 			wantErr: true,
 			assertCorrectError: func(err error) {
-				target := &DecodeError{}
+				target := &decodeError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -101,7 +101,7 @@ func TestGetTrustedKey(t *testing.T) {
 			info:    nil,
 			wantErr: true,
 			assertCorrectError: func(err error) {
-				target := &DecodeError{}
+				target := &decodeError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
