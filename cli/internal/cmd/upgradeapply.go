@@ -117,18 +117,21 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		err = u.handleServiceUpgrade(cmd, conf, flags)
 		upgradeErr := &compatibility.InvalidUpgradeError{}
+		noUpgradeRequiredError := &helm.NoUpgradeRequiredError{}
 		switch {
-		case errors.As(err, &upgradeErr):
+		case errors.As(err, upgradeErr):
+			cmd.PrintErrln(err)
+		case errors.As(err, noUpgradeRequiredError):
 			cmd.PrintErrln(err)
 		case err != nil:
 			return fmt.Errorf("upgrading services: %w", err)
 		}
 
-		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf)
+		err = u.upgrader.UpgradeNodeVersion(cmd.Context(), conf, flags.force)
 		switch {
 		case errors.Is(err, kubernetes.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-		case errors.As(err, &upgradeErr):
+		case errors.As(err, upgradeErr):
 			cmd.PrintErrln(err)
 		case err != nil:
 			return fmt.Errorf("upgrading NodeVersion: %w", err)
@@ -348,7 +351,7 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 }
 
 func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, flags upgradeApplyFlags) error {
-	err := u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive)
+	err := u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.DenyDestructive, flags.force)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -361,7 +364,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 				return nil
 			}
 		}
-		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive)
+		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, flags.upgradeTimeout, helm.AllowDestructive, flags.force)
 	}
 
 	return err
@@ -415,8 +418,8 @@ type upgradeApplyFlags struct {
 }
 
 type cloudUpgrader interface {
-	UpgradeNodeVersion(ctx context.Context, conf *config.Config) error
-	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool) error
+	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
+	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, force bool) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)

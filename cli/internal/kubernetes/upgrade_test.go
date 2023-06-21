@@ -41,6 +41,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		badImageVersion       string
 		currentClusterVersion string
 		conf                  *config.Config
+		force                 bool
 		getErr                error
 		wantErr               bool
 		wantUpdate            bool
@@ -139,6 +140,23 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return assert.ErrorIs(t, err, ErrInProgress)
 			},
 		},
+		"success with force and upgrade in progress": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			conditions: []metav1.Condition{{
+				Type:   updatev1alpha1.ConditionOutdated,
+				Status: metav1.ConditionTrue,
+			}},
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable:                &stubStableClient{},
+			force:                 true,
+			wantUpdate:            true,
+		},
 		"get error": {
 			conf: func() *config.Config {
 				conf := config.Default()
@@ -172,6 +190,24 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				upgradeErr := &compatibility.InvalidUpgradeError{}
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
+		},
+		"success with force and image too new": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.4.2"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			newImageReference:     "path/to/image:v1.4.2",
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: true,
+			force:      true,
 		},
 		"apply returns bad object": {
 			conf: func() *config.Config {
@@ -253,7 +289,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				outWriter:        io.Discard,
 			}
 
-			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf)
+			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force)
 
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
@@ -428,7 +464,7 @@ func TestUpdateImage(t *testing.T) {
 				},
 			}
 
-			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion)
+			err := upgrader.updateImage(&nodeVersion, tc.newImageReference, tc.newImageVersion, false)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -486,7 +522,7 @@ func TestUpdateK8s(t *testing.T) {
 				},
 			}
 
-			_, err := upgrader.updateK8s(&nodeVersion, tc.newClusterVersion, components.Components{})
+			_, err := upgrader.updateK8s(&nodeVersion, tc.newClusterVersion, components.Components{}, false)
 
 			if tc.wantErr {
 				assert.Error(err)

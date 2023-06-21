@@ -75,7 +75,7 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
-func (c *Client) shouldUpgrade(releaseName, newVersion string) error {
+func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error {
 	currentVersion, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting version for %s: %w", releaseName, err)
@@ -85,8 +85,14 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string) error {
 
 	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
 	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
-	if err := compatibility.IsValidUpgrade(currentVersion, newVersion); err != nil {
-		return err
+	if currentVersion == newVersion {
+		return NoUpgradeRequiredError{}
+	}
+
+	if !force {
+		if err := compatibility.IsValidUpgrade(currentVersion, newVersion); err != nil {
+			return err
+		}
 	}
 	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
 	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
@@ -99,10 +105,17 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string) error {
 	return nil
 }
 
+// NoUpgradeRequiredError is returned if the current version is the same as the target version.
+type NoUpgradeRequiredError struct{}
+
+func (e NoUpgradeRequiredError) Error() string {
+	return "no upgrade required since current version is the same as the target version"
+}
+
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, upgradeID string) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	invalidUpgrade := &compatibility.InvalidUpgradeError{}
@@ -123,9 +136,12 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 			upgradeVersion = chart.Metadata.Version
 		}
 
-		err = c.shouldUpgrade(info.releaseName, upgradeVersion)
+		err = c.shouldUpgrade(info.releaseName, upgradeVersion, force)
+		noUpgradeRequired := &NoUpgradeRequiredError{}
 		switch {
 		case errors.As(err, &invalidUpgrade):
+			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
+		case errors.As(err, &noUpgradeRequired):
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
 		case err != nil:
 			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
