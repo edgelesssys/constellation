@@ -38,12 +38,8 @@ locals {
   node_groups_by_role = {
     for name, node_group in var.node_groups : node_group.role => name...
   }
-  control_plane_instance_groups = [
-    for control_plane in local.node_groups_by_role["ControlPlane"] : module.instance_group[control_plane].instance_group
-  ]
-  worker_instance_groups = [
-    for control_plane in local.node_groups_by_role["Worker"] : module.instance_group[control_plane].instance_group
-  ]
+  control_plane_node_groups = local.node_groups_by_role["ControlPlane"]
+  worker_node_groups = local.node_groups_by_role["Worker"]
 }
 
 resource "random_id" "uid" {
@@ -132,7 +128,7 @@ resource "azurerm_lb" "loadbalancer" {
 
 module "loadbalancer_backend_control_plane" {
   source = "./modules/load_balancer_backend"
-  for_each = local.control_plane_instance_groups
+  for_each = local.control_plane_node_groups
   role = "ControlPlane"
   base_name = local.name
   node_group_name            = each.key
@@ -179,7 +175,7 @@ module "loadbalancer_backend_control_plane" {
 
 module "loadbalancer_backend_worker" {
   source = "./modules/load_balancer_backend"
-  for_each = local.worker_instance_groups
+  for_each = local.worker_node_groups
   role = "Worker"
   base_name = local.name
   node_group_name            = each.key
@@ -242,12 +238,17 @@ module "scale_set_group" {
   for_each            = var.node_groups
   base_name           = local.name
   node_group_name = each.key
+  role = each.value.role
   zones = each.value.zones
+  tags = merge(
+    local.tags,
+    { constellation-init-secret-hash = local.initSecretHash },
+    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" })
 
   instance_count  = each.value.instance_count
   state_disk_size = each.value.disk_size
   state_disk_type = each.value.disk_type
-  location        = each.value.location
+  location        = var.location
   instance_type   = each.value.instance_type
   confidential_vm = var.confidential_vm
   secure_boot     = var.secure_boot
@@ -256,9 +257,16 @@ module "scale_set_group" {
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_control_plane.backendpool_id
+backend_address_pool_ids = [
+    each.value.role == "ControlPlane" ?
+    [
+      azurerm_lb_backend_address_pool.all.id,
+      module.loadbalancer_backend_control_plane.backendpool_id
+    ] :
+    [
+      azurerm_lb_backend_address_pool.all.id,
+      module.loadbalancer_backend_worker.backendpool_id
+    ]
   ]
 }
 

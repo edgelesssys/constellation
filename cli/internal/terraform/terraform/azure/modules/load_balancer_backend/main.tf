@@ -7,16 +7,27 @@ terraform {
   }
 }
 
-module "unique_name" {
-  source = "../../../shared/modules/unique_group_name"
-  base_name = var.base_name
-  node_group_name = var.node_group_name
-  role    = var.role
+locals {
+  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
+  # migration: allow the old node group names to work since they were created without the uid
+  # and without multiple node groups in mind
+  # node_group: worker_default => name == "<base>-1-worker"
+  # node_group: control_plane_default => name:  "<base>-control-plane"
+  # new names:
+  # node_group: foo, role: Worker => name == "<base>-worker-<uid>"
+  # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
+  group_uid       = random_id.uid.hex
+  maybe_uid       = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
+  maybe_one       = var.node_group_name == "worker_default" ? "-1" : ""
+  name = "${var.base_name}${local.maybe_one}-${local.role_dashed}${local.maybe_uid}"
 }
 
+resource "random_id" "uid" {
+  byte_length = 4
+}
 resource "azurerm_lb_backend_address_pool" "backend_pool" {
   loadbalancer_id = var.loadbalancer_id
-  name            = module.unique_name.name
+  name            = local.name
 }
 
 resource "azurerm_lb_probe" "health_probes" {

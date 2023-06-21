@@ -10,9 +10,13 @@ variable "node_groups" {
     instance_type = string
     disk_size     = number
     disk_type     = string
-    location     = string
   }))
   description = "A map of node group names to node group configurations."
+}
+
+variable "location" {
+  type        = string
+  description = "The Azure location to deploy the cluster in."
 }
 
 variable "image_id" {

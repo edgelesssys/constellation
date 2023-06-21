@@ -8,6 +8,19 @@ variable "node_group_name" {
   description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
 }
 
+variable "role" {
+  type        = string
+  description = "The role of the instance group."
+  validation {
+    condition     = contains(["ControlPlane", "Worker"], var.role)
+    error_message = "The role has to be 'ControlPlane' or 'Worker'."
+  }
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Cluster tag."
+}
 
 variable "zones" {
   type        = list(string)
@@ -69,11 +82,6 @@ variable "backend_address_pool_ids" {
 variable "subnet_id" {
   type        = string
   description = "The ID of the subnet to use for the scale set."
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "The tags to add to the scale set."
 }
 
 variable "confidential_vm" {
