@@ -5,7 +5,7 @@ description: |
   when run on v* tag.
 inputs:
   targetOS:
-    description: "Build CLI for this OS. [linux, darwin]"
+    description: "Build CLI for this OS. [linux, darwin, windows]"
     required: true
     default: "linux"
   targetArch:
