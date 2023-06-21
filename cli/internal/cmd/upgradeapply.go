@@ -232,6 +232,7 @@ func (u *upgradeApplyCmd) parseUpgradeVars(cmd *cobra.Command, conf *config.Conf
 			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 			Debug:                  conf.IsDebugCluster(),
+			// TODO (AB#3235): decide how to handle EnableSNP during upgrades.
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
