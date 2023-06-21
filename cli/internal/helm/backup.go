@@ -17,17 +17,13 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var (
-	backupFolder    = filepath.Join(constants.UpgradeDir, "backups") + string(filepath.Separator)
-	crdBackupFolder = filepath.Join(backupFolder, "crds") + string(filepath.Separator)
-)
-
-func (c *Client) backupCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	crds, err := c.kubectl.GetCRDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting CRDs: %w", err)
 	}
 
+	crdBackupFolder := c.crdBackupFolder(upgradeID)
 	if err := c.fs.MkdirAll(crdBackupFolder); err != nil {
 		return nil, fmt.Errorf("creating backup dir: %w", err)
 	}
@@ -54,7 +50,7 @@ func (c *Client) backupCRDs(ctx context.Context) ([]apiextensionsv1.CustomResour
 	return crds, nil
 }
 
-func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition) error {
+func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeID string) error {
 	for _, crd := range crds {
 		for _, version := range crd.Spec.Versions {
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
@@ -63,6 +59,7 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 				return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)
 			}
 
+			backupFolder := c.backupFolder(upgradeID)
 			for _, cr := range crs {
 				targetFolder := filepath.Join(backupFolder, gvr.Group, gvr.Version, cr.GetNamespace(), cr.GetKind())
 				if err := c.fs.MkdirAll(targetFolder); err != nil {
@@ -82,4 +79,12 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 		c.log.Debugf("Created backups for resource type: %s", crd.Name)
 	}
 	return nil
+}
+
+func (c *Client) backupFolder(upgradeID string) string {
+	return filepath.Join(constants.UpgradeDir, upgradeID, "backups") + string(filepath.Separator)
+}
+
+func (c *Client) crdBackupFolder(upgradeID string) string {
+	return filepath.Join(c.backupFolder(upgradeID), "crds") + string(filepath.Separator)
 }

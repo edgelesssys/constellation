@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 )
@@ -36,11 +35,11 @@ func prepareWorkspace(rootDir string, fileHandler file.Handler, workingDir strin
 
 // prepareUpgradeWorkspace takes the Terraform state file from the old workspace and the
 // embedded Terraform files and writes them into the new workspace.
-func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, oldWorkingDir, newWorkingDir string) error {
+func prepareUpgradeWorkspace(rootDir string, fileHandler file.Handler, oldWorkingDir, newWorkingDir, backupDir string) error {
 	// backup old workspace
 	if err := fileHandler.CopyDir(
 		oldWorkingDir,
-		filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir),
+		backupDir,
 	); err != nil {
 		return fmt.Errorf("backing up old workspace: %w", err)
 	}
