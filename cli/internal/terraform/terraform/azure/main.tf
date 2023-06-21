@@ -232,7 +232,8 @@ module "scale_set_group" {
   tags = merge(
     local.tags,
     { constellation-init-secret-hash = local.initSecretHash },
-  { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" })
+    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
+  )
 
   instance_count            = each.value.instance_count
   state_disk_size           = each.value.disk_size

@@ -70,8 +70,6 @@ go_library(
         "terraform/openstack/outputs.tf",
         "terraform/openstack/variables.tf",
         "terraform/qemu/modules/instance_group/tdx_domain.xsl",
-        "terraform/azure/modules/unique_group_name/terraform.tfstate",
-        "terraform/.DS_Store",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/terraform",
     visibility = ["//cli:__subpackages__"],
