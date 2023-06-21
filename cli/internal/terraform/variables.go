@@ -183,6 +183,8 @@ type AzureClusterVariables struct {
 	SecureBoot bool
 	// CreateMAA sets whether a Microsoft Azure attestation provider should be created.
 	CreateMAA bool
+	// MAAPolicy sets the base64-encoded policy for the Microsoft Azure attestation provider.
+	MAAPolicy string
 	// Debug is true if debug mode is enabled.
 	Debug bool
 }
@@ -200,6 +202,7 @@ func (v *AzureClusterVariables) String() string {
 	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
 	writeLinef(b, "secure_boot = %t", v.SecureBoot)
 	writeLinef(b, "create_maa = %t", v.CreateMAA)
+	writeLinef(b, "maa_policy = %q", v.MAAPolicy)
 	writeLinef(b, "debug = %t", v.Debug)
 
 	return b.String()

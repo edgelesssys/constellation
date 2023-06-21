@@ -10,7 +10,6 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/upgrade",
     visibility = ["//cli:__subpackages__"],
     deps = [
-        "//cli/internal/cloudcmd",
         "//cli/internal/clusterid",
         "//cli/internal/terraform",
         "//internal/cloud/cloudprovider",

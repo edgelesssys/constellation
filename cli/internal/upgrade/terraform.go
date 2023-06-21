@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -25,17 +24,15 @@ import (
 // NewTerraformUpgrader returns a new TerraformUpgrader.
 func NewTerraformUpgrader(tfClient tfClient, outWriter io.Writer) (*TerraformUpgrader, error) {
 	return &TerraformUpgrader{
-		tf:            tfClient,
-		policyPatcher: cloudcmd.NewAzurePolicyPatcher(),
-		outWriter:     outWriter,
+		tf:        tfClient,
+		outWriter: outWriter,
 	}, nil
 }
 
 // TerraformUpgrader is responsible for performing Terraform migrations on cluster upgrades.
 type TerraformUpgrader struct {
-	tf            tfClient
-	policyPatcher policyPatcher
-	outWriter     io.Writer
+	tf        tfClient
+	outWriter io.Writer
 }
 
 // TerraformUpgradeOptions are the options used for the Terraform upgrade.
@@ -132,7 +129,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler,
 	return nil
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
@@ -140,13 +137,6 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
-	}
-
-	// AttestationURL is only set for Azure.
-	if tfOutput.AttestationURL != "" {
-		if err := u.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
-			return fmt.Errorf("patching policies: %w", err)
-		}
 	}
 
 	outputFileContents := clusterid.File{

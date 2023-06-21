@@ -69,6 +69,11 @@ variable "create_maa" {
   description = "Whether to create a Microsoft Azure attestation provider."
 }
 
+variable "maa_policy" {
+  type        = string
+  description = "Base64-encoded Attestation policy for the Microsoft Azure attestation provider."
+}
+
 variable "debug" {
   type        = bool
   default     = false

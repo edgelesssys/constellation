@@ -48,9 +48,10 @@ resource "random_password" "initSecret" {
 resource "azurerm_attestation_provider" "attestation_provider" {
   count = var.create_maa ? 1 : 0
   # name must be between 3 and 24 characters in length and use numbers and lower-case letters only.
-  name                = format("constell%s", local.uid)
-  resource_group_name = var.resource_group
-  location            = var.location
+  name                   = format("constell%s", local.uid)
+  resource_group_name    = var.resource_group
+  location               = var.location
+  azure_vm_policy_base64 = var.maa_policy
 
   lifecycle {
     # Attestation policies will be set automatically upon creation, even if not specified in the resource,
@@ -58,7 +59,7 @@ resource "azurerm_attestation_provider" "attestation_provider" {
     # To prevent them from being set to null when applying an upgrade, ignore the changes until the issue
     # is resolved by Azure.
     # Related issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/21998
-    ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64]
+    ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64, azure_vm_policy_base64, sev_snp_policy_base64]
   }
 }
 

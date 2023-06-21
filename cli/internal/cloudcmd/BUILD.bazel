@@ -4,11 +4,11 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "cloudcmd",
     srcs = [
+        "attestationpolicy.go",
         "clients.go",
         "cloudcmd.go",
         "create.go",
         "iam.go",
-        "patch.go",
         "rollback.go",
         "terminate.go",
         "validators.go",
@@ -29,9 +29,6 @@ go_library(
         "//internal/config",
         "//internal/constants",
         "//internal/imagefetcher",
-        "@com_github_azure_azure_sdk_for_go//profiles/latest/attestation/attestation",
-        "@com_github_azure_azure_sdk_for_go_sdk_azcore//policy",
-        "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
         "@com_github_hashicorp_terraform_json//:terraform-json",
         "@com_github_spf13_cobra//:cobra",
     ],
@@ -40,10 +37,10 @@ go_library(
 go_test(
     name = "cloudcmd_test",
     srcs = [
+        "attestationpolicy_test.go",
         "clients_test.go",
         "create_test.go",
         "iam_test.go",
-        "patch_test.go",
         "rollback_test.go",
         "terminate_test.go",
         "validators_test.go",
