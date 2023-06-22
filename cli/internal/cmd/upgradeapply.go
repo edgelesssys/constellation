@@ -237,7 +237,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
-		targets := []string{} // TODO {"azurerm_attestation_provider.attestation_provider"}
+		targets := []string{"azurerm_attestation_provider.attestation_provider", "module.scale_set_group", "module.scale_set_control_plane", "module.scale_set_worker"}
 
 		// Azure Terraform provider is very strict about it's casing
 		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
