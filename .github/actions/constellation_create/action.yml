@@ -291,7 +291,7 @@ runs:
             ./.github/actions/constellation_create/gcp-logs.sh
             ;;
           aws)
-            ./.github/actions/constellation_create/aws-logs.sh eu-central-1
+            ./.github/actions/constellation_create/aws-logs.sh eu-west-1
             ;;
         esac
         echo "::endgroup::"
