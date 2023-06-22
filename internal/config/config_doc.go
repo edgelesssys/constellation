@@ -472,17 +472,12 @@ func init() {
 			FieldName: "awsSEVSNP",
 		},
 	}
-	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 2)
+	AWSSEVSNPDoc.Fields = make([]encoder.Doc, 1)
 	AWSSEVSNPDoc.Fields[0].Name = "measurements"
 	AWSSEVSNPDoc.Fields[0].Type = "M"
 	AWSSEVSNPDoc.Fields[0].Note = ""
 	AWSSEVSNPDoc.Fields[0].Description = "Expected TPM measurements."
 	AWSSEVSNPDoc.Fields[0].Comments[encoder.LineComment] = "Expected TPM measurements."
-	AWSSEVSNPDoc.Fields[1].Name = "launchMeasurement"
-	AWSSEVSNPDoc.Fields[1].Type = "Measurement"
-	AWSSEVSNPDoc.Fields[1].Note = ""
-	AWSSEVSNPDoc.Fields[1].Description = "Expected launch measurement in SNP report."
-	AWSSEVSNPDoc.Fields[1].Comments[encoder.LineComment] = "Expected launch measurement in SNP report."
 
 	AWSNitroTPMDoc.Type = "AWSNitroTPM"
 	AWSNitroTPMDoc.Comments[encoder.LineComment] = "AWSNitroTPM is the configuration for AWS Nitro TPM attestation."
