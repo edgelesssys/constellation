@@ -35,7 +35,6 @@ type Creator struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
 	newRawDownloader   func() rawDownloader
-	policyPatcher      policyPatcher
 }
 
 // NewCreator creates a new creator.
@@ -52,7 +51,6 @@ func NewCreator(out io.Writer) *Creator {
 		newRawDownloader: func() rawDownloader {
 			return imagefetcher.NewDownloader()
 		},
-		policyPatcher: NewAzurePolicyPatcher(),
 	}
 }
 
@@ -228,6 +226,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		ImageID:              opts.image,
 		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
 		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+		MAAPolicy:            NewAzureMaaAttestationPolicy().Encode(),
 		Debug:                opts.Config.IsDebugCluster(),
 	}
 
@@ -245,13 +244,6 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		return clusterid.File{}, err
 	}
 
-	if vars.CreateMAA {
-		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
-			return clusterid.File{}, err
-		}
-	}
-
 	return clusterid.File{
 		CloudProvider:  cloudprovider.Azure,
 		IP:             tfOutput.IP,
@@ -259,11 +251,6 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		UID:            tfOutput.UID,
 		AttestationURL: tfOutput.AttestationURL,
 	}, nil
-}
-
-// policyPatcher interacts with the CSP (currently only applies for Azure) to update the attestation policy.
-type policyPatcher interface {
-	Patch(ctx context.Context, attestationURL string) error
 }
 
 // The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.

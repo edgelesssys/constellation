@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
@@ -257,6 +258,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			ImageID:              imageRef,
 			SecureBoot:           *conf.Provider.Azure.SecureBoot,
 			CreateMAA:            conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
+			MAAPolicy:            cloudcmd.NewAzureMaaAttestationPolicy().Encode(),
 			Debug:                conf.IsDebugCluster(),
 		}
 		return targets, vars, nil

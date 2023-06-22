@@ -46,7 +46,6 @@ require (
 	cloud.google.com/go/logging v1.7.0
 	cloud.google.com/go/secretmanager v1.10.1
 	cloud.google.com/go/storage v1.30.1
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.12.0
@@ -127,6 +126,7 @@ require (
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
