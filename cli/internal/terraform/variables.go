@@ -162,47 +162,45 @@ func (v *GCPIAMVariables) String() string {
 
 // AzureClusterVariables is user configuration for creating a cluster with Terraform on Azure.
 type AzureClusterVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
-
-	// ResourceGroup is the name of the Azure resource group to use.
-	ResourceGroup string
-	// Location is the Azure location to use.
-	Location string
-	// UserAssignedIdentity is the name of the Azure user-assigned identity to use.
-	UserAssignedIdentity string
-	// InstanceType is the Azure instance type to use.
-	InstanceType string
-	// StateDiskType is the Azure disk type to use for the state disk.
-	StateDiskType string
+	// Name of the cluster.
+	Name string `hcl:"name" cty:"name"`
 	// ImageID is the ID of the Azure image to use.
-	ImageID string
-	// ConfidentialVM sets the VM to be confidential.
-	ConfidentialVM bool
-	// SecureBoot sets the VM to use secure boot.
-	SecureBoot bool
+	ImageID string `hcl:"image_id" cty:"image_id"`
 	// CreateMAA sets whether a Microsoft Azure attestation provider should be created.
-	CreateMAA bool
+	CreateMAA *bool `hcl:"create_maa" cty:"create_maa"`
 	// Debug is true if debug mode is enabled.
-	Debug bool
+	Debug *bool `hcl:"debug" cty:"debug"`
+	// ResourceGroup is the name of the Azure resource group to use.
+	ResourceGroup string `hcl:"resource_group" cty:"resource_group"`
+	// Location is the Azure location to use.
+	Location string `hcl:"location" cty:"location"`
+	// UserAssignedIdentity is the name of the Azure user-assigned identity to use.
+	UserAssignedIdentity string `hcl:"user_assigned_identity" cty:"user_assigned_identity"`
+	// ConfidentialVM sets the VM to be confidential.
+	ConfidentialVM *bool `hcl:"confidential_vm" cty:"confidential_vm"`
+	// SecureBoot sets the VM to use secure boot.
+	SecureBoot *bool `hcl:"secure_boot" cty:"secure_boot"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *AzureClusterVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "resource_group = %q", v.ResourceGroup)
-	writeLinef(b, "location = %q", v.Location)
-	writeLinef(b, "user_assigned_identity = %q", v.UserAssignedIdentity)
-	writeLinef(b, "instance_type = %q", v.InstanceType)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "image_id = %q", v.ImageID)
-	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
-	writeLinef(b, "secure_boot = %t", v.SecureBoot)
-	writeLinef(b, "create_maa = %t", v.CreateMAA)
-	writeLinef(b, "debug = %t", v.Debug)
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
+}
 
-	return b.String()
+// AzureNodeGroup is a node group to create on Azure.
+type AzureNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// InstanceCount is optional for upgrades.
+	InstanceCount *int      `hcl:"instance_count" cty:"instance_count"`
+	InstanceType  string    `hcl:"instance_type" cty:"instance_type"`
+	DiskSizeGB    int       `hcl:"disk_size" cty:"disk_size"`
+	DiskType      string    `hcl:"disk_type" cty:"disk_type"`
+	Zones         *[]string `hcl:"zones" cty:"zones"`
 }
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.

@@ -1,7 +1,31 @@
-variable "name" {
+variable "base_name" {
   type        = string
-  default     = "constell"
-  description = "Base name of the cluster."
+  description = "Base name of the instance group."
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
+}
+
+variable "role" {
+  type        = string
+  description = "The role of the instance group."
+  validation {
+    condition     = contains(["control-plane", "worker"], var.role)
+    error_message = "The role has to be 'control-plane' or 'worker'."
+  }
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags to include in the scale_set."
+}
+
+variable "zones" {
+  type        = list(string)
+  description = "List of availability zones."
+  default     = null
 }
 
 variable "instance_count" {
@@ -59,11 +83,6 @@ variable "backend_address_pool_ids" {
 variable "subnet_id" {
   type        = string
   description = "The ID of the subnet to use for the scale set."
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "The tags to add to the scale set."
 }
 
 variable "confidential_vm" {

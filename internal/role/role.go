@@ -25,6 +25,18 @@ const (
 	Worker
 )
 
+// TFString returns the role as a string for Terraform.
+func (r Role) TFString() string {
+	switch r {
+	case ControlPlane:
+		return "control-plane"
+	case Worker:
+		return "worker"
+	default:
+		return "unknown"
+	}
+}
+
 // MarshalJSON marshals the Role to JSON string.
 func (r Role) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.String())

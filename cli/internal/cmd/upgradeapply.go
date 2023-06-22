@@ -156,6 +156,10 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
+	if len(targets) == 0 {
+		u.log.Debugf("No targets specified. Skipping Terraform migration")
+		return nil
+	}
 	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
@@ -240,7 +244,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
-		targets := []string{"azurerm_attestation_provider.attestation_provider"}
+		targets := []string{"azurerm_attestation_provider.attestation_provider", "module.scale_set_group", "module.scale_set_control_plane", "module.scale_set_worker"}
 
 		// Azure Terraform provider is very strict about it's casing
 		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
@@ -248,16 +252,28 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
 
 		vars := &terraform.AzureClusterVariables{
-			CommonVariables:      commonVariables,
-			Location:             conf.Provider.Azure.Location,
+			Name:                 conf.Name,
 			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
 			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
-			InstanceType:         conf.Provider.Azure.InstanceType,
-			StateDiskType:        conf.Provider.Azure.StateDiskType,
 			ImageID:              imageRef,
-			SecureBoot:           *conf.Provider.Azure.SecureBoot,
-			CreateMAA:            conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
-			Debug:                conf.IsDebugCluster(),
+			NodeGroups: map[string]terraform.AzureNodeGroup{
+				"control_plane_default": {
+					Role:         "control-plane",
+					InstanceType: conf.Provider.Azure.InstanceType,
+					DiskSizeGB:   conf.StateDiskSizeGB,
+					DiskType:     conf.Provider.Azure.StateDiskType,
+				},
+				"worker_default": {
+					Role:         "worker",
+					InstanceType: conf.Provider.Azure.InstanceType,
+					DiskSizeGB:   conf.StateDiskSizeGB,
+					DiskType:     conf.Provider.Azure.StateDiskType,
+				},
+			},
+			Location:   conf.Provider.Azure.Location,
+			SecureBoot: conf.Provider.Azure.SecureBoot,
+			CreateMAA:  toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+			Debug:      toPtr(conf.IsDebugCluster()),
 		}
 		return targets, vars, nil
 	case cloudprovider.GCP:
@@ -426,4 +442,8 @@ type cloudUpgrader interface {
 	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

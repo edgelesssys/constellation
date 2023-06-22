@@ -9,6 +9,7 @@ package terraform
 import (
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -142,39 +143,44 @@ service_account_id = "my-service-account"
 
 func TestAzureClusterVariables(t *testing.T) {
 	vars := AzureClusterVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
+		Name: "cluster-name",
+		NodeGroups: map[string]AzureNodeGroup{
+			"control_plane_default": {
+				Role:          "ControlPlane",
+				InstanceCount: to.Ptr(1),
+				InstanceType:  "Standard_D2s_v3",
+				DiskType:      "StandardSSD_LRS",
+				DiskSizeGB:    100,
+			},
 		},
+		ConfidentialVM:       to.Ptr(true),
 		ResourceGroup:        "my-resource-group",
-		Location:             "eu-central-1",
 		UserAssignedIdentity: "my-user-assigned-identity",
-		InstanceType:         "Standard_D2s_v3",
-		StateDiskType:        "StandardSSD_LRS",
 		ImageID:              "image-0123456789abcdef",
-		ConfidentialVM:       true,
-		SecureBoot:           false,
-		CreateMAA:            true,
-		Debug:                true,
+		CreateMAA:            to.Ptr(true),
+		Debug:                to.Ptr(true),
+		Location:             "eu-central-1",
 	}
 
 	// test that the variables are correctly rendered
-	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-resource_group = "my-resource-group"
-location = "eu-central-1"
+	want := `name                   = "cluster-name"
+image_id               = "image-0123456789abcdef"
+create_maa             = true
+debug                  = true
+resource_group         = "my-resource-group"
+location               = "eu-central-1"
 user_assigned_identity = "my-user-assigned-identity"
-instance_type = "Standard_D2s_v3"
-state_disk_type = "StandardSSD_LRS"
-image_id = "image-0123456789abcdef"
-confidential_vm = true
-secure_boot = false
-create_maa = true
-debug = true
+confidential_vm        = true
+node_groups = {
+  control_plane_default = {
+    disk_size      = 100
+    disk_type      = "StandardSSD_LRS"
+    instance_count = 1
+    instance_type  = "Standard_D2s_v3"
+    role           = "ControlPlane"
+    zones          = null
+  }
+}
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

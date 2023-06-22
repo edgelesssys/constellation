@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 // Creator creates cloud resources.
@@ -214,24 +215,34 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts Create
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.AzureNodeGroup{
+			"control_plane_default": {
+				Role:          role.ControlPlane.TFString(),
+				InstanceCount: toPtr(opts.ControlPlaneCount),
+				InstanceType:  opts.InsType,
+				DiskSizeGB:    opts.Config.StateDiskSizeGB,
+				DiskType:      opts.Config.Provider.Azure.StateDiskType,
+				Zones:         nil, // TODO(elchead): support zones AB#3225
+			},
+			"worker_default": {
+				Role:          role.Worker.TFString(),
+				InstanceCount: toPtr(opts.WorkerCount),
+				InstanceType:  opts.InsType,
+				DiskSizeGB:    opts.Config.StateDiskSizeGB,
+				DiskType:      opts.Config.Provider.Azure.StateDiskType,
+				Zones:         nil,
+			},
 		},
 		Location:             opts.Config.Provider.Azure.Location,
-		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
-		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
-		InstanceType:         opts.InsType,
-		StateDiskType:        opts.Config.Provider.Azure.StateDiskType,
 		ImageID:              opts.image,
-		SecureBoot:           *opts.Config.Provider.Azure.SecureBoot,
-		CreateMAA:            opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{}),
-		Debug:                opts.Config.IsDebugCluster(),
+		CreateMAA:            toPtr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		Debug:                toPtr(opts.Config.IsDebugCluster()),
+		ConfidentialVM:       toPtr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		SecureBoot:           opts.Config.Provider.Azure.SecureBoot,
+		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
+		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
 	}
-
-	vars.ConfidentialVM = opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})
 
 	vars = normalizeAzureURIs(vars)
 
@@ -245,7 +256,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		return clusterid.File{}, err
 	}
 
-	if vars.CreateMAA {
+	if vars.CreateMAA != nil && *vars.CreateMAA {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
 		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
 			return clusterid.File{}, err
@@ -441,4 +452,8 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		IP:            tfOutput.IP,
 		UID:           tfOutput.UID,
 	}, nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

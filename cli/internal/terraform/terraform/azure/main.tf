@@ -221,58 +221,46 @@ resource "azurerm_network_security_group" "security_group" {
   }
 }
 
-module "scale_set_control_plane" {
-  source = "./modules/scale_set"
-
-  name            = "${local.name}-control-plane"
-  instance_count  = var.control_plane_count
-  state_disk_size = var.state_disk_size
-  state_disk_type = var.state_disk_type
-  resource_group  = var.resource_group
-  location        = var.location
-  instance_type   = var.instance_type
-  confidential_vm = var.confidential_vm
-  secure_boot     = var.secure_boot
+module "scale_set_group" {
+  source          = "./modules/scale_set"
+  for_each        = var.node_groups
+  base_name       = local.name
+  node_group_name = each.key
+  role            = each.value.role
+  zones           = each.value.zones
   tags = merge(
     local.tags,
-    { constellation-role = "control-plane" },
     { constellation-init-secret-hash = local.initSecretHash },
     { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
   )
-  image_id                  = var.image_id
+
+  instance_count            = each.value.instance_count
+  state_disk_size           = each.value.disk_size
+  state_disk_type           = each.value.disk_type
+  location                  = var.location
+  instance_type             = each.value.instance_type
+  confidential_vm           = var.confidential_vm
+  secure_boot               = var.secure_boot
+  resource_group            = var.resource_group
   user_assigned_identity    = var.user_assigned_identity
+  image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = [
+  backend_address_pool_ids = each.value.role == "control-plane" ? [
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_control_plane.backendpool_id
+    ] : [
+    azurerm_lb_backend_address_pool.all.id,
+    module.loadbalancer_backend_worker.backendpool_id
   ]
 }
 
-module "scale_set_worker" {
-  source = "./modules/scale_set"
+moved {
+  from = module.scale_set_control_plane
+  to   = module.scale_set_group["control_plane_default"]
+}
 
-  name            = "${local.name}-worker"
-  instance_count  = var.worker_count
-  state_disk_size = var.state_disk_size
-  state_disk_type = var.state_disk_type
-  resource_group  = var.resource_group
-  location        = var.location
-  instance_type   = var.instance_type
-  confidential_vm = var.confidential_vm
-  secure_boot     = var.secure_boot
-  tags = merge(
-    local.tags,
-    { constellation-role = "worker" },
-    { constellation-init-secret-hash = local.initSecretHash },
-    { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
-  )
-  image_id                  = var.image_id
-  user_assigned_identity    = var.user_assigned_identity
-  network_security_group_id = azurerm_network_security_group.security_group.id
-  subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = [
-    azurerm_lb_backend_address_pool.all.id,
-    module.loadbalancer_backend_worker.backendpool_id,
-  ]
+moved {
+  from = module.scale_set_worker
+  to   = module.scale_set_group["worker_default"]
 }

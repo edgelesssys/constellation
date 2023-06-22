@@ -11,6 +11,19 @@ terraform {
   }
 }
 
+locals {
+  tags = merge(
+    var.tags,
+    { constellation-role = var.role },
+    { constellation-node-group = var.node_group_name },
+  )
+  group_uid = random_id.uid.hex
+  name      = "${var.base_name}-${var.role}${local.group_uid}"
+}
+
+resource "random_id" "uid" {
+  byte_length = 4
+}
 resource "random_password" "password" {
   length      = 16
   min_lower   = 1
@@ -20,7 +33,7 @@ resource "random_password" "password" {
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
-  name                            = var.name
+  name                            = local.name
   resource_group_name             = var.resource_group
   location                        = var.location
   sku                             = var.instance_type
@@ -34,8 +47,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   upgrade_mode                    = "Manual"
   secure_boot_enabled             = var.secure_boot
   source_image_id                 = var.image_id
-  tags                            = var.tags
-
+  tags                            = local.tags
+  zones                           = var.zones
   identity {
     type         = "UserAssigned"
     identity_ids = [var.user_assigned_identity]
@@ -81,6 +94,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
 
   lifecycle {
     ignore_changes = [
+      name,            # required. Allow legacy scale sets to keep their old names
       instances,       # required. autoscaling modifies the instance count externally
       source_image_id, # required. update procedure modifies the image id externally
     ]
