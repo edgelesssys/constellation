@@ -78,8 +78,8 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	return h.install(ctx, release.Chart, mergedVals)
 }
 
-// InstallCertManager installs the cert-manager chart.
-func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
+// InstallChart installs a helm chart without extra setup.
+func (h *Client) InstallChart(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	h.Timeout = 10 * time.Minute
 	if err := h.setWaitMode(release.WaitMode); err != nil {

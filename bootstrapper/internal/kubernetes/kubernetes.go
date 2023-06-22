@@ -236,10 +236,26 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
-	// cert-manager is necessary for our operator deployments.
+	// cert-manager provides CRDs used by other deployments,
+	// so it should be installed as early as possible, but after our microservices.
 	log.Infof("Installing cert-manager")
-	if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
+	}
+
+	// CSI snapshot-controller requires CRDs from cert-manager. It must be installed after it.
+	// CSI snapshot support should also only be deployed on clouds where we can deploy CSI drivers,
+	// and the deployment was not disabled by the user.
+	if helmReleases.SnapshotCRDs != nil && helmReleases.SnapshotController != nil {
+		log.Infof("Installing CSI snapshot CRDs")
+		if err = k.helmClient.InstallChart(ctx, *helmReleases.SnapshotCRDs); err != nil {
+			return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
+		}
+
+		log.Infof("Installing CSI snapshot-controller")
+		if err = k.helmClient.InstallChart(ctx, *helmReleases.SnapshotController); err != nil {
+			return nil, fmt.Errorf("installing CSI snapshot-controller: %w", err)
+		}
 	}
 
 	operatorVals, err := k.setupOperatorVals(ctx)
@@ -247,6 +263,8 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up operator vals: %w", err)
 	}
 
+	// Constellation operators require CRDs from cert-manager.
+	// They must be installed after it.
 	log.Infof("Installing operators")
 	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
