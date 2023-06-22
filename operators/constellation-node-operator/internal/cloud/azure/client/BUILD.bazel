@@ -19,6 +19,7 @@ go_library(
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "//operators/constellation-node-operator/internal/poller",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",
@@ -44,6 +45,7 @@ go_test(
     embed = [":client"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "//operators/constellation-node-operator/internal/poller",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//:azcore",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//runtime",

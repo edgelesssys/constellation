@@ -13,6 +13,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -79,34 +81,63 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
-func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error) {
+	results := []cspapi.ScalingGroup{}
 	pager := c.scaleSetsAPI.NewListPager(c.config.ResourceGroup, nil)
 
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("paging scale sets: %w", err)
+			return nil, fmt.Errorf("paging scale sets: %w", err)
 		}
 		for _, scaleSet := range page.Value {
 			if scaleSet == nil || scaleSet.ID == nil {
 				continue
 			}
-			if scaleSet.Tags == nil || scaleSet.Tags["constellation-uid"] == nil || *scaleSet.Tags["constellation-uid"] != uid {
+			if scaleSet.Tags == nil ||
+				scaleSet.Tags["constellation-uid"] == nil ||
+				*scaleSet.Tags["constellation-uid"] != uid ||
+				scaleSet.Tags["constellation-role"] == nil {
 				continue
 			}
 
+			role := updatev1alpha1.NodeRoleFromString(*scaleSet.Tags["constellation-role"])
+
+			name, err := c.GetScalingGroupName(*scaleSet.ID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("getting scaling group name: %w", err)
+				return nil, fmt.Errorf("getting scaling group name: %w", err)
 			}
-			switch *scaleSet.Tags["constellation-role"] {
-			case "control-plane", "controlplane":
-				controlPlaneGroupIDs = append(controlPlaneGroupIDs, *scaleSet.ID)
-			case "worker":
-				workerGroupIDs = append(workerGroupIDs, *scaleSet.ID)
+
+			var nodeGroupName string
+			if scaleSet.Tags["constellation-node-group"] != nil {
+				nodeGroupName = *scaleSet.Tags["constellation-node-group"]
 			}
+			// fallback for legacy clusters
+			// TODO(malt3): remove this fallback once we can assume all clusters have the correct labels
+			if nodeGroupName == "" {
+				switch role {
+				case updatev1alpha1.ControlPlaneRole:
+					nodeGroupName = "control_plane_default"
+				case updatev1alpha1.WorkerRole:
+					nodeGroupName = "worker_default"
+				}
+			}
+
+			autoscalerGroupName, err := c.GetAutoscalingGroupName(*scaleSet.ID)
+			if err != nil {
+				return nil, fmt.Errorf("getting autoscaling group name: %w", err)
+			}
+
+			results = append(results, cspapi.ScalingGroup{
+				Name:                 name,
+				NodeGroupName:        nodeGroupName,
+				GroupID:              *scaleSet.ID,
+				AutoscalingGroupName: autoscalerGroupName,
+				Role:                 role,
+			})
 		}
 	}
-	return controlPlaneGroupIDs, workerGroupIDs, nil
+	return results, nil
 }
 
 func imageReferenceFromImage(img string) *armcompute.ImageReference {
