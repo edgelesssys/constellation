@@ -19,7 +19,7 @@ variable "role" {
 
 variable "tags" {
   type        = map(string)
-  description = "Cluster tag."
+  description = "Tags to include in the scale_set."
 }
 
 variable "zones" {

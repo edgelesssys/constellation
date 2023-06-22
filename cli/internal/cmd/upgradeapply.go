@@ -158,10 +158,10 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel: flags.terraformLogLevel,
-		CSP:      conf.GetProvider(),
-		Vars:     vars,
-		// Targets:    targets,
+		LogLevel:   flags.terraformLogLevel,
+		CSP:        conf.GetProvider(),
+		Vars:       vars,
+		Targets:    targets,
 		OutputFile: constants.TerraformMigrationOutputFile,
 	}
 
@@ -237,7 +237,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
-		targets := []string{"azurerm_attestation_provider.attestation_provider"}
+		targets := []string{} // TODO {"azurerm_attestation_provider.attestation_provider"}
 
 		// Azure Terraform provider is very strict about it's casing
 		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
@@ -251,20 +251,16 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			ImageID:              imageRef,
 			NodeGroups: map[string]terraform.AzureNodeGroup{
 				"control_plane_default": {
-					Role:          "ControlPlane",
-					InstanceCount: 1, // TODO
-					InstanceType:  conf.Provider.Azure.InstanceType,
-					DiskSizeGB:    conf.StateDiskSizeGB,
-					DiskType:      conf.Provider.Azure.StateDiskType,
-					// Location:      conf.Provider.Azure.Location,
+					Role:         "ControlPlane",
+					InstanceType: conf.Provider.Azure.InstanceType,
+					DiskSizeGB:   conf.StateDiskSizeGB,
+					DiskType:     conf.Provider.Azure.StateDiskType,
 				},
 				"worker_default": {
-					Role:          "Worker",
-					InstanceCount: 1, // TODO
-					InstanceType:  conf.Provider.Azure.InstanceType,
-					DiskSizeGB:    conf.StateDiskSizeGB,
-					DiskType:      conf.Provider.Azure.StateDiskType,
-					// Location:      conf.Provider.Azure.Location,
+					Role:         "Worker",
+					InstanceType: conf.Provider.Azure.InstanceType,
+					DiskSizeGB:   conf.StateDiskSizeGB,
+					DiskType:     conf.Provider.Azure.StateDiskType,
 				},
 			},
 			Location:   conf.Provider.Azure.Location,
