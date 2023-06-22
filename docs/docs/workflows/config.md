@@ -64,6 +64,18 @@ By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to crea
 
 By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines with a minimum of 4 vCPUs (`xlarge` or larger). Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
 
+Constellation also support AMD SEV-SNP machines. The list of AWS instance types that support SEV-SNP can be found in the [AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html). Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
+
+To enable AMD SEV-SNP in your cluster you will have to select the `awsSEVSNP` attestation config. You can also use the `--attestation` flag of the [config generate](../reference/cli.md#constellation-config-generate) command.
+
+:::Caution
+Due to a bug in AWS' SNP implementation, SNP report generation may fail in unforeseeable circumstances.
+Therefore, even if you select attestation type `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
+Nonetheless, memory encryption is enabled.
+AWS is currently investigating the issue.
+SNP-based attestation will be enabled as soon as a fix is verified.
+:::
+
 </tabItem>
 </tabs>
 
@@ -135,7 +147,7 @@ Constellation OS images are currently replicated to the following regions:
 
 If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
-You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+You can find a list of all [regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
@@ -217,11 +229,11 @@ The following describes the configuration fields and how you obtain the required
 
   If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
-  You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+  You can find a list of all [regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
 * **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
 
-  Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
+  Learn more about [availability zones in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
 
 * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
