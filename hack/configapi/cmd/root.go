@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	awsRegion           = "eu-central-1"
-	awsBucket           = "cdn-constellation-backend"
 	invalidDefault      = 0
 	envAwsKeyID         = "AWS_ACCESS_KEY_ID"
 	envAwsKey           = "AWS_ACCESS_KEY"
@@ -32,6 +30,8 @@ const (
 )
 
 var (
+	awsBucket       string
+	awsRegion       string
 	versionFilePath string
 	force           bool
 	// Cosign credentials.
@@ -55,6 +55,8 @@ func newRootCmd() *cobra.Command {
 		RunE:    runCmd,
 	}
 	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
+	rootCmd.Flags().StringVar(&awsBucket, "bucket", "cdn-constellation-backend", "Bucket to upload files to.")
+	rootCmd.Flags().StringVar(&awsRegion, "region", "eu-central-1", "Bucket to upload files to.")
 	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
 	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name. Setting it implies --force.")
 	must(enforceRequiredFlags(rootCmd, "version-file"))
