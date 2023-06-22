@@ -54,6 +54,12 @@ jobs:
         ref: main
         path: sev-snp-measure
 
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # tag=v3.5.2
+      with:
+        repository: edgelesssys/sev-snp-measure-go.git
+        ref: main
+        path: sev-snp-measure-go
+
     - name: Run sev-snp-measure
       shell: bash
       run: |
@@ -69,3 +75,21 @@ jobs:
         done
 
         jq < measurements.json
+        popd || exit 1
+
+    - name: Test equivalence sevsnpmeasure & sev-snp-measure
+      shell: bash
+      run: |
+        pushd sev-snp-measure-go/e2e || exit 1
+        go test --expected-values ../../sev-snp-measure/measurements.json --ovmf ${{ steps.build-uefi.outputs.ovmfPath }}
+        popd || exit 1
+
+    - name: Generate API objects
+      shell: bash
+      run: |
+        pushd sev-snp-measure-go/sevsnpmeasure || exit 1
+        go build .
+
+        ./sevsnpmeasure parse-metadata ${{ steps.build-uefi.outputs.ovmfPath }} -o metadata.json
+
+        jq < metadata.json
