@@ -6,7 +6,7 @@ variable "name" {
 variable "node_groups" {
   type = map(object({
     role           = string
-    instance_count = number
+    instance_count = optional(number)
     instance_type  = string
     disk_size      = number
     disk_type      = string

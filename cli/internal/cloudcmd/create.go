@@ -217,7 +217,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		NodeGroups: map[string]terraform.AzureNodeGroup{
 			"control_plane_default": {
 				Role:          "ControlPlane",
-				InstanceCount: opts.ControlPlaneCount,
+				InstanceCount: to.Ptr(opts.ControlPlaneCount),
 				InstanceType:  opts.InsType,
 				DiskSizeGB:    opts.Config.StateDiskSizeGB,
 				DiskType:      opts.Config.Provider.Azure.StateDiskType,
@@ -225,7 +225,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 			},
 			"worker_default": {
 				Role:          "Worker",
-				InstanceCount: opts.WorkerCount,
+				InstanceCount: to.Ptr(opts.WorkerCount),
 				InstanceType:  opts.InsType,
 				DiskSizeGB:    opts.Config.StateDiskSizeGB,
 				DiskType:      opts.Config.Provider.Azure.StateDiskType,

@@ -194,8 +194,9 @@ func (v *AzureClusterVariables) String() string {
 // AzureNodeGroup is a node group to create on Azure.
 type AzureNodeGroup struct {
 	// Role is the role of the node group.
-	Role          string   `hcl:"role" cty:"role"`
-	InstanceCount int      `hcl:"instance_count" cty:"instance_count"`
+	Role string `hcl:"role" cty:"role"`
+	// InstanceCount is optional for upgrades.
+	InstanceCount *int     `hcl:"instance_count" cty:"instance_count"`
 	InstanceType  string   `hcl:"instance_type" cty:"instance_type"`
 	DiskSizeGB    int      `hcl:"disk_size" cty:"disk_size"`
 	DiskType      string   `hcl:"disk_type" cty:"disk_type"`

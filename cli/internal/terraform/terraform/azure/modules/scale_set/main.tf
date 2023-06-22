@@ -27,7 +27,7 @@ locals {
   # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
   group_uid = random_id.uid.hex
   maybe_uid = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
-  name = "${var.base_name}-${local.role_dashed}${local.maybe_uid}"
+  name      = "${var.base_name}-${local.role_dashed}${local.maybe_uid}"
 }
 
 resource "random_id" "uid" {

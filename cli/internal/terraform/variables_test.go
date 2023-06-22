@@ -147,7 +147,7 @@ func TestAzureClusterVariables(t *testing.T) {
 		NodeGroups: map[string]AzureNodeGroup{
 			"control_plane_default": {
 				Role:          "ControlPlane",
-				InstanceCount: 1,
+				InstanceCount: to.Ptr(1),
 				InstanceType:  "Standard_D2s_v3",
 				DiskType:      "StandardSSD_LRS",
 				DiskSizeGB:    100,
