@@ -483,11 +483,11 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	{ // AWS
 		conf := Default()
 		conf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
-		for k := range conf.Attestation.AWSNitroTPM.Measurements {
-			delete(conf.Attestation.AWSNitroTPM.Measurements, k)
+		for k := range conf.Attestation.AWSSEVSNP.Measurements {
+			delete(conf.Attestation.AWSSEVSNP.Measurements, k)
 		}
 		conf.UpdateMeasurements(newMeasurements)
-		assert.Equal(newMeasurements, conf.Attestation.AWSNitroTPM.Measurements)
+		assert.Equal(newMeasurements, conf.Attestation.AWSSEVSNP.Measurements)
 	}
 	{ // Azure
 		conf := Default()

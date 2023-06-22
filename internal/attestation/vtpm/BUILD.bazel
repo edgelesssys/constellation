@@ -17,7 +17,6 @@ go_library(
         "@com_github_google_go_tpm_tools//proto/attest",
         "@com_github_google_go_tpm_tools//proto/tpm",
         "@com_github_google_go_tpm_tools//server",
-        "@org_golang_google_protobuf//encoding/protojson",
     ],
 )
 
@@ -27,7 +26,6 @@ go_test(
         "attestation_test.go",
         "vtpm_test.go",
     ],
-    data = glob(["testdata/**"]),
     embed = [":vtpm"],
     # keep
     gotags = select({
@@ -39,7 +37,6 @@ go_test(
         "//internal/attestation/measurements",
         "//internal/attestation/simulator",
         "//internal/logger",
-        "@com_github_google_go_sev_guest//proto/sevsnp",
         "@com_github_google_go_tpm//tpm2",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_google_go_tpm_tools//proto/attest",

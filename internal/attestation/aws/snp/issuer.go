@@ -8,17 +8,15 @@ package snp
 
 import (
 	"context"
-	"crypto/sha512"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 
-	sevclient "github.com/google/go-sev-guest/client"
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
@@ -35,7 +33,7 @@ func NewIssuer(log attestation.Logger) *Issuer {
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			getAttestationKey,
-			getInstanceInfo,
+			getInstanceInfo(imds.New(imds.Options{})),
 			log,
 		),
 	}
@@ -51,44 +49,18 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	return tpmAk, nil
 }
 
-// getInstanceInfo generates an extended SNP report, i.e. the report and any loaded certificates.
-// Report generation is triggered by sending ioctl syscalls to the SNP guest device, the AMD PSP generates the report.
+// getInstanceInfo returns information about the current instance using the aws Metadata SDK.
 // The returned bytes will be written into the attestation document.
-func getInstanceInfo(_ context.Context, tpm io.ReadWriteCloser, _ []byte) ([]byte, error) {
-	tpmAk, err := client.AttestationKeyRSA(tpm)
-	if err != nil {
-		return nil, fmt.Errorf("error creating RSA Endorsement key: %w", err)
+func getInstanceInfo(client awsMetaData) func(context.Context, io.ReadWriteCloser, []byte) ([]byte, error) {
+	return func(ctx context.Context, _ io.ReadWriteCloser, _ []byte) ([]byte, error) {
+		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+		if err != nil {
+			return nil, fmt.Errorf("fetching instance identity document: %w", err)
+		}
+		return json.Marshal(ec2InstanceIdentityOutput.InstanceIdentityDocument)
 	}
-
-	encoded, err := x509.MarshalPKIXPublicKey(tpmAk.PublicKey())
-	if err != nil {
-		return nil, fmt.Errorf("marshalling public key: %w", err)
-	}
-
-	akDigest := sha512.Sum512(encoded)
-
-	device, err := sevclient.OpenDevice()
-	if err != nil {
-		return nil, fmt.Errorf("opening sev device: %w", err)
-	}
-	defer device.Close()
-
-	report, certs, err := sevclient.GetRawExtendedReportAtVmpl(device, akDigest, 0)
-	if err != nil {
-		return nil, fmt.Errorf("getting extended report: %w", err)
-	}
-
-	raw, err := json.Marshal(instanceInfo{Report: report, Certs: certs})
-	if err != nil {
-		return nil, fmt.Errorf("marshalling instance info: %w", err)
-	}
-
-	return raw, nil
 }
 
-type instanceInfo struct {
-	// Report contains the marshalled AMD SEV-SNP Report.
-	Report []byte
-	// Certs contains the PEM encoded VLEK and ASK certificates, queried from the AMD PSP of the issuing party.
-	Certs []byte
+type awsMetaData interface {
+	GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
 }

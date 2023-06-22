@@ -143,9 +143,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  opts.Config.IsDebugCluster(),
-		// We always want to use SNP machines. If the users decides to use NitroTPM attestation,
-		// they will at least have runtime encryption.
-		EnableSNP: true,
+		EnableSNP:              opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
