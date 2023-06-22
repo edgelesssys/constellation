@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/spf13/afero"
@@ -33,17 +34,16 @@ func TestMain(m *testing.M) {
 
 func TestPrepareCluster(t *testing.T) {
 	qemuVars := &QEMUVariables{
-		CommonVariables: CommonVariables{
-			Name:               "name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    11,
+		Name: "name",
+		NodeGroups: map[string]QEMUNodeGroup{
+			"control-plane": {
+				Role:       role.ControlPlane.TFString(),
+				DiskSize:   30,
+				CPUCount:   1,
+				MemorySize: 1024,
+				Machine:    "q35",
+			},
 		},
-		CPUCount:         1,
-		MemorySizeMiB:    1024,
-		ImagePath:        "path",
-		ImageFormat:      "format",
-		MetadataAPIImage: "api",
 	}
 
 	testCases := map[string]struct {
@@ -248,14 +248,16 @@ func TestCreateCluster(t *testing.T) {
 		return &workingState
 	}
 	qemuVars := &QEMUVariables{
-		CommonVariables: CommonVariables{
-			Name:               "name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    11,
+		Name: "name",
+		NodeGroups: map[string]QEMUNodeGroup{
+			"control-plane": {
+				Role:       role.ControlPlane.TFString(),
+				DiskSize:   11,
+				CPUCount:   1,
+				MemorySize: 1024,
+				Machine:    "q35",
+			},
 		},
-		CPUCount:         1,
-		MemorySizeMiB:    1024,
 		ImagePath:        "path",
 		ImageFormat:      "format",
 		MetadataAPIImage: "api",

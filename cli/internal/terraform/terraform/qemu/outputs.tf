@@ -1,5 +1,5 @@
 output "ip" {
-  value = module.control_plane.instance_ips[0]
+  value = module.node_group["control_plane_default"].instance_ips[0]
 }
 
 output "uid" {

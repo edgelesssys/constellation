@@ -277,71 +277,68 @@ func (v *OpenStackClusterVariables) String() string {
 
 // QEMUVariables is user configuration for creating a QEMU cluster with Terraform.
 type QEMUVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
-
+	// Name is the name to use for the cluster.
+	Name string `hcl:"name" cty:"name"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]QEMUNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// LibvirtURI is the libvirt connection URI.
-	LibvirtURI string
+	LibvirtURI string `hcl:"libvirt_uri" cty:"libvirt_uri"`
 	// LibvirtSocketPath is the path to the libvirt socket in case of unix socket.
-	LibvirtSocketPath string
+	LibvirtSocketPath string `hcl:"libvirt_socket_path" cty:"libvirt_socket_path"`
 	// BootMode is the boot mode to use.
 	// Can be either "uefi" or "direct-linux-boot".
-	BootMode string
-	// CPUCount is the number of CPUs to allocate to each node.
-	CPUCount int
-	// MemorySizeMiB is the amount of memory to allocate to each node, in MiB.
-	MemorySizeMiB int
-	// IPRangeStart is the first IP address in the IP range to allocate to the cluster.
-	ImagePath string
+	BootMode string `hcl:"constellation_boot_mode" cty:"constellation_boot_mode"`
+	// ImagePath is the path to the image to use for the nodes.
+	ImagePath string `hcl:"constellation_os_image" cty:"constellation_os_image"`
 	// ImageFormat is the format of the image from ImagePath.
-	ImageFormat string
+	ImageFormat string `hcl:"image_format" cty:"image_format"`
 	// MetadataAPIImage is the container image to use for the metadata API.
-	MetadataAPIImage string
+	MetadataAPIImage string `hcl:"metadata_api_image" cty:"metadata_api_image"`
 	// MetadataLibvirtURI is the libvirt connection URI used by the metadata container.
 	// In case of unix socket, this should be "qemu:///system".
 	// Other wise it should be the same as LibvirtURI.
-	MetadataLibvirtURI string
+	MetadataLibvirtURI string `hcl:"metadata_libvirt_uri" cty:"metadata_libvirt_uri"`
 	// NVRAM is the path to the NVRAM template.
-	NVRAM string
+	NVRAM string `hcl:"nvram" cty:"nvram"`
 	// Firmware is the path to the firmware.
-	Firmware string
+	Firmware *string `hcl:"firmware" cty:"firmware"`
 	// BzImagePath is the path to the bzImage (kernel).
-	BzImagePath string
+	BzImagePath *string `hcl:"constellation_kernel" cty:"constellation_kernel"`
 	// InitrdPath is the path to the initrd.
-	InitrdPath string
+	InitrdPath *string `hcl:"constellation_initrd" cty:"constellation_initrd"`
 	// KernelCmdline is the kernel command line.
-	KernelCmdline string
+	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *QEMUVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "libvirt_uri = %q", v.LibvirtURI)
-	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
-	writeLinef(b, "constellation_os_image = %q", v.ImagePath)
-	writeLinef(b, "image_format = %q", v.ImageFormat)
-	writeLinef(b, "constellation_boot_mode = %q", v.BootMode)
-	writeLinef(b, "constellation_kernel = %q", v.BzImagePath)
-	writeLinef(b, "constellation_initrd = %q", v.InitrdPath)
-	writeLinef(b, "constellation_cmdline = %q", v.KernelCmdline)
-	writeLinef(b, "vcpus = %d", v.CPUCount)
-	writeLinef(b, "memory = %d", v.MemorySizeMiB)
-	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
-	writeLinef(b, "metadata_libvirt_uri = %q", v.MetadataLibvirtURI)
-	switch v.NVRAM {
+	// copy v object
+	vCopy := *v
+	switch vCopy.NVRAM {
 	case "production":
-		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.production.fd\"\n")
+		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.production.fd"
 	case "testing":
-		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.testing.fd\"\n")
-	default:
-		writeLinef(b, "nvram = %q", v.NVRAM)
+		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.testing.fd"
 	}
-	if v.Firmware != "" {
-		writeLinef(b, "firmware = %q", v.Firmware)
-	}
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(vCopy, f.Body())
+	return string(f.Bytes())
+}
 
-	return b.String()
+// QEMUNodeGroup is a node group for a QEMU cluster.
+type QEMUNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// InstanceCount is the number of instances to create.
+	InstanceCount int `hcl:"instance_count" cty:"instance_count"`
+	// DiskSize is the size of the disk to allocate to each node, in GiB.
+	DiskSize int `hcl:"disk_size" cty:"disk_size"`
+	// CPUCount is the number of CPUs to allocate to each node.
+	CPUCount int `hcl:"vcpus" cty:"vcpus"`
+	// MemorySize is the amount of memory to allocate to each node, in MiB.
+	MemorySize int `hcl:"memory" cty:"memory"`
+	// Machine is the type of machine to use.  use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'
+	Machine string `hcl:"machine" cty:"machine"`
 }
 
 func writeLinef(builder *strings.Builder, format string, a ...any) {

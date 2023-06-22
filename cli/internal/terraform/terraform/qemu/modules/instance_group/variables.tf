@@ -84,8 +84,12 @@ variable "nvram" {
   type        = string
   description = "path to UEFI NVRAM template file. Used for secure boot."
 }
-
-variable "name" {
+variable "base_name" {
   type        = string
   description = "name prefix of the cluster VMs"
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "name of the node group"
 }

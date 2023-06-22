@@ -6,10 +6,9 @@ terraform {
     }
   }
 }
-
 resource "libvirt_domain" "instance_group" {
-  name     = "${var.name}-${var.role}-${count.index}"
   count    = var.amount
+  name     = "${var.base_name}-${var.role}-${count.index}"
   memory   = var.memory
   vcpu     = var.vcpus
   machine  = var.machine
@@ -56,20 +55,29 @@ resource "libvirt_domain" "instance_group" {
 }
 
 resource "libvirt_volume" "boot_volume" {
-  name           = "constellation-${var.role}-${count.index}-boot"
   count          = var.amount
+  name           = "constellation-${var.role}-${count.index}-boot"
   pool           = var.pool
   base_volume_id = var.boot_volume_id
+  lifecycle {
+    ignore_changes = [
+      name, # required. Allow legacy scale sets to keep their old names
+    ]
+  }
 }
 
 resource "libvirt_volume" "state_volume" {
-  name   = "constellation-${var.role}-${count.index}-state"
   count  = var.amount
+  name   = "constellation-${var.role}-${count.index}-state"
   pool   = var.pool
   size   = local.state_disk_size_byte
   format = "qcow2"
+  lifecycle {
+    ignore_changes = [
+      name, # required. Allow legacy scale sets to keep their old names
+    ]
+  }
 }
-
 locals {
   state_disk_size_byte = 1073741824 * var.state_disk_size
   ip_range_start       = 100
