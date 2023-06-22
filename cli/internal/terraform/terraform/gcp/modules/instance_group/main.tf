@@ -13,18 +13,8 @@ terraform {
 }
 
 locals {
-  # migration: allow the old node group names to work since they were created without the uid
-  # and without multiple node groups in mind
-  # node_group: worker_default => name == "<base>-1-worker"
-  # node_group: control_plane_default => name:  "<base>-control-plane"
-  # new names:
-  # node_group: foo, role: Worker => name == "<base>-worker-<uid>"
-  # node_group: bar, role: ControlPlane => name == "<base>-control-plane-<uid>"
-  role_dashed     = var.role == "ControlPlane" ? "control-plane" : "worker"
   group_uid       = random_id.uid.hex
-  maybe_uid       = (var.node_group_name == "control_plane_default" || var.node_group_name == "worker_default") ? "" : "-${local.group_uid}"
-  maybe_one       = var.node_group_name == "worker_default" ? "-1" : ""
-  name            = "${var.base_name}${local.maybe_one}-${local.role_dashed}${local.maybe_uid}"
+  name            = "${var.base_name}-${var.role}-${local.group_uid}"
   state_disk_name = "state-disk"
 }
 
@@ -37,7 +27,7 @@ resource "google_compute_instance_template" "template" {
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label
   labels = merge(var.labels, {
-    constellation-role       = local.role_dashed,
+    constellation-role       = var.role,
     constellation-node-group = var.node_group_name,
   })
 
@@ -103,6 +93,7 @@ resource "google_compute_instance_template" "template" {
 
   lifecycle {
     ignore_changes = [
+      name, # required. legacy instance templates used different naming scheme
       tags,
       labels,
       disk, # required. update procedure modifies the instance template externally
@@ -124,7 +115,7 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
   target_size        = var.instance_count
 
   dynamic "stateful_disk" {
-    for_each = var.role == "ControlPlane" ? [1] : []
+    for_each = var.role == "control-plane" ? [1] : []
     content {
       device_name = local.state_disk_name
       delete_rule = "ON_PERMANENT_INSTANCE_DELETION"
@@ -132,7 +123,7 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
   }
 
   dynamic "stateful_internal_ip" {
-    for_each = var.role == "ControlPlane" ? [1] : []
+    for_each = var.role == "control-plane" ? [1] : []
     content {
       interface_name = "nic0"
       delete_rule    = "ON_PERMANENT_INSTANCE_DELETION"
@@ -153,8 +144,10 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
 
   lifecycle {
     ignore_changes = [
-      target_size, # required. autoscaling modifies the instance count externally
-      version,     # required. update procedure modifies the instance template externally
+      name,               # required. legacy instance templates used different naming scheme
+      base_instance_name, # required. legacy instance templates used different naming scheme
+      target_size,        # required. autoscaling modifies the instance count externally
+      version,            # required. update procedure modifies the instance template externally
     ]
   }
 }

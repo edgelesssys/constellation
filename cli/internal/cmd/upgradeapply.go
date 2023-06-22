@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -282,14 +283,14 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			Name: conf.Name,
 			NodeGroups: map[string]terraform.GCPNodeGroup{
 				"control_plane_default": {
-					Role:            "ControlPlane",
+					Role:            role.ControlPlane.TFString(),
 					StateDiskSizeGB: conf.StateDiskSizeGB,
 					Zone:            conf.Provider.GCP.Zone,
 					InstanceType:    conf.Provider.GCP.InstanceType,
 					DiskType:        conf.Provider.GCP.StateDiskType,
 				},
 				"worker_default": {
-					Role:            "Worker",
+					Role:            role.Worker.TFString(),
 					StateDiskSizeGB: conf.StateDiskSizeGB,
 					Zone:            conf.Provider.GCP.Zone,
 					InstanceType:    conf.Provider.GCP.InstanceType,
