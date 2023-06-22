@@ -18,7 +18,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -27,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 // Creator creates cloud resources.
@@ -216,16 +216,16 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		Name: opts.Config.Name,
 		NodeGroups: map[string]terraform.AzureNodeGroup{
 			"control_plane_default": {
-				Role:          "control-plane",
-				InstanceCount: to.Ptr(opts.ControlPlaneCount),
+				Role:          role.ControlPlane.TFString(),
+				InstanceCount: toPtr(opts.ControlPlaneCount),
 				InstanceType:  opts.InsType,
 				DiskSizeGB:    opts.Config.StateDiskSizeGB,
 				DiskType:      opts.Config.Provider.Azure.StateDiskType,
 				Zones:         nil, // TODO(elchead): support zones AB#3225
 			},
 			"worker_default": {
-				Role:          "worker",
-				InstanceCount: to.Ptr(opts.WorkerCount),
+				Role:          role.Worker.TFString(),
+				InstanceCount: toPtr(opts.WorkerCount),
 				InstanceType:  opts.InsType,
 				DiskSizeGB:    opts.Config.StateDiskSizeGB,
 				DiskType:      opts.Config.Provider.Azure.StateDiskType,
@@ -234,9 +234,9 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		},
 		Location:             opts.Config.Provider.Azure.Location,
 		ImageID:              opts.image,
-		CreateMAA:            to.Ptr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-		Debug:                to.Ptr(opts.Config.IsDebugCluster()),
-		ConfidentialVM:       to.Ptr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		CreateMAA:            toPtr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+		Debug:                toPtr(opts.Config.IsDebugCluster()),
+		ConfidentialVM:       toPtr(opts.Config.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 		SecureBoot:           opts.Config.Provider.Azure.SecureBoot,
 		UserAssignedIdentity: opts.Config.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        opts.Config.Provider.Azure.ResourceGroup,
@@ -450,4 +450,8 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		IP:            tfOutput.IP,
 		UID:           tfOutput.UID,
 	}, nil
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

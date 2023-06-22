@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
@@ -269,8 +268,8 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			},
 			Location:   conf.Provider.Azure.Location,
 			SecureBoot: conf.Provider.Azure.SecureBoot,
-			CreateMAA:  to.Ptr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-			Debug:      to.Ptr(conf.IsDebugCluster()),
+			CreateMAA:  toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+			Debug:      toPtr(conf.IsDebugCluster()),
 		}
 		return targets, vars, nil
 	case cloudprovider.GCP:
@@ -439,4 +438,8 @@ type cloudUpgrader interface {
 	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
