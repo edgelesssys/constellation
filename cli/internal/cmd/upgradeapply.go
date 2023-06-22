@@ -255,13 +255,13 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			ImageID:              imageRef,
 			NodeGroups: map[string]terraform.AzureNodeGroup{
 				"control_plane_default": {
-					Role:         "ControlPlane",
+					Role:         "control-plane",
 					InstanceType: conf.Provider.Azure.InstanceType,
 					DiskSizeGB:   conf.StateDiskSizeGB,
 					DiskType:     conf.Provider.Azure.StateDiskType,
 				},
 				"worker_default": {
-					Role:         "Worker",
+					Role:         "worker",
 					InstanceType: conf.Provider.Azure.InstanceType,
 					DiskSizeGB:   conf.StateDiskSizeGB,
 					DiskType:     conf.Provider.Azure.StateDiskType,

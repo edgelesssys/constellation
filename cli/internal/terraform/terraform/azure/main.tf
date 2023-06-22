@@ -247,7 +247,7 @@ module "scale_set_group" {
   image_id                  = var.image_id
   network_security_group_id = azurerm_network_security_group.security_group.id
   subnet_id                 = azurerm_subnet.node_subnet.id
-  backend_address_pool_ids = each.value.role == "ControlPlane" ? [
+  backend_address_pool_ids = each.value.role == "control-plane" ? [
     azurerm_lb_backend_address_pool.all.id,
     module.loadbalancer_backend_control_plane.backendpool_id
     ] : [
