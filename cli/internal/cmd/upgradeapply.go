@@ -240,7 +240,6 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 			Debug:                  conf.IsDebugCluster(),
-			// TODO (AB#3235): decide how to handle EnableSNP during upgrades.
 		}
 		return targets, vars, nil
 	case cloudprovider.Azure:
