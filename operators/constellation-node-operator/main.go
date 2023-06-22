@@ -25,11 +25,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/externalcontrollers"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	awsclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client"
 	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
 	cloudfake "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/fake/client"
 	gcpclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/gcp/client"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
@@ -143,8 +146,21 @@ func main() {
 	}
 	defer etcdClient.Close()
 
+	uid := os.Getenv(constellationUID)
+
+	extScalingGroupReconciler := externalcontrollers.NewExternalScalingGroupReconciler(
+		uid,
+		cspClient,
+		k8sClient,
+	)
+
+	exec := executor.New(extScalingGroupReconciler, executor.Config{})
+
+	stopAndWaitForExecutor := exec.Start(context.Background())
+	defer stopAndWaitForExecutor()
+
 	imageInfo := deploy.NewImageInfo()
-	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
+	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, uid); err != nil {
 		setupLog.Error(err, "Unable to deploy initial resources")
 		os.Exit(1)
 	}
@@ -187,6 +203,15 @@ func main() {
 
 	//+kubebuilder:scaffold:builder
 
+	if err = controllers.NewNodeJoinWatcher(
+		exec.Trigger,
+		mgr.GetClient(),
+		mgr.GetScheme(),
+	).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Unable to create controller", "controller", "NodeJoinWatcher")
+		os.Exit(1)
+	}
+
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "Unable to set up health check")
 		os.Exit(1)
@@ -223,7 +248,7 @@ type cspAPI interface {
 	// GetAutoscalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 	GetAutoscalingGroupName(scalingGroupID string) (string, error)
 	// ListScalingGroups retrieves a list of scaling groups for the cluster.
-	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)
+	ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error)
 	// AutoscalingCloudProvider returns the cloud-provider name as used by k8s cluster-autoscaler.
 	AutoscalingCloudProvider() string
 }
