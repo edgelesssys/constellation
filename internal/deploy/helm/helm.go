@@ -20,6 +20,8 @@ type Releases struct {
 	CertManager           Release
 	Operators             Release
 	ConstellationServices Release
+	SnapshotCRDs          *Release
+	SnapshotController    *Release
 }
 
 // MergeMaps returns a new map that is the merger of it's inputs.

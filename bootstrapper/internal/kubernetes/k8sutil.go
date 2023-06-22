@@ -31,7 +31,7 @@ type clusterUtil interface {
 // Naming is inspired by Helm.
 type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
-	InstallCertManager(ctx context.Context, release helm.Release) error
+	InstallChart(ctx context.Context, release helm.Release) error
 	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
 	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
 }

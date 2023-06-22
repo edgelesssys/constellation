@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snapshot-validation-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: snapshot-validation
+spec:
+  replicas: {{ .Values.snapshotWebhook.replicas }}
+  selector:
+    matchLabels:
+      app: snapshot-validation
+  template:
+    metadata:
+      labels:
+        app: snapshot-validation
+    spec:
+      serviceAccountName: snapshot-webhook
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      containers:
+        - name: snapshot-validation
+          image: {{ .Values.snapshotWebhook.webhook.image.repository }}:{{ .Values.snapshotWebhook.webhook.image.tag }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - '--tls-cert-file=/etc/snapshot-validation-webhook/certs/tls.crt'
+            - '--tls-private-key-file=/etc/snapshot-validation-webhook/certs/tls.key'
+          ports:
+          - containerPort: 443
+          volumeMounts:
+            - name: snapshot-validation-webhook-certs
+              mountPath: /etc/snapshot-validation-webhook/certs
+              readOnly: true
+      volumes:
+        - name: snapshot-validation-webhook-certs
+          secret:
+            secretName: webhook-server-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: snapshot-validation-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: snapshot-validation
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 443
