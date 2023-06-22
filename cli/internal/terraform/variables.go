@@ -196,11 +196,11 @@ type AzureNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
 	// InstanceCount is optional for upgrades.
-	InstanceCount *int     `hcl:"instance_count" cty:"instance_count"`
-	InstanceType  string   `hcl:"instance_type" cty:"instance_type"`
-	DiskSizeGB    int      `hcl:"disk_size" cty:"disk_size"`
-	DiskType      string   `hcl:"disk_type" cty:"disk_type"`
-	Zones         []string `hcl:"zones" cty:"zones"`
+	InstanceCount *int      `hcl:"instance_count" cty:"instance_count"`
+	InstanceType  string    `hcl:"instance_type" cty:"instance_type"`
+	DiskSizeGB    int       `hcl:"disk_size" cty:"disk_size"`
+	DiskType      string    `hcl:"disk_type" cty:"disk_type"`
+	Zones         *[]string `hcl:"zones" cty:"zones"`
 }
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.

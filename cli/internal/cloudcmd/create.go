@@ -221,7 +221,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 				InstanceType:  opts.InsType,
 				DiskSizeGB:    opts.Config.StateDiskSizeGB,
 				DiskType:      opts.Config.Provider.Azure.StateDiskType,
-				Zones:         nil, // opts.Config.Provider.Azure.Location,
+				Zones:         nil, // TODO(elchead): support zones AB#3225
 			},
 			"worker_default": {
 				Role:          "worker",
