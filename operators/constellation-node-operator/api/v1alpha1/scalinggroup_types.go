@@ -7,6 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,6 +16,8 @@ const (
 	// ConditionOutdated is used to signal outdated scaling groups.
 	ConditionOutdated = "Outdated"
 
+	// UnknownRole is used to signal unknown scaling group roles.
+	UnknownRole NodeRole = ""
 	// WorkerRole is used to signal worker scaling groups.
 	WorkerRole NodeRole = "Worker"
 	// ControlPlaneRole is used to signal control plane scaling groups.
@@ -43,6 +47,18 @@ type ScalingGroupSpec struct {
 // NodeRole is the role of a node.
 // +kubebuilder:validation:Enum=Worker;ControlPlane
 type NodeRole string
+
+// NodeRoleFromString returns the NodeRole for the given string.
+func NodeRoleFromString(s string) NodeRole {
+	switch strings.ToLower(s) {
+	case "controlplane", "control-plane":
+		return ControlPlaneRole
+	case "worker":
+		return WorkerRole
+	default:
+		return UnknownRole
+	}
+}
 
 // ScalingGroupStatus defines the observed state of ScalingGroup.
 type ScalingGroupStatus struct {
