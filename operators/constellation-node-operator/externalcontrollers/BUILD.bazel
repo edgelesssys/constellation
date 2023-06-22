@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "externalcontrollers",
+    srcs = [
+        "externalcontrollers.go",
+        "scalinggroup_controller.go",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/externalcontrollers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//internal/constants",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
+        "//operators/constellation-node-operator/internal/executor",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//util/retry",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+    ],
+)
+
+go_test(
+    name = "externalcontrollers_test",
+    srcs = ["scalinggroup_controller_test.go"],
+    embed = [":externalcontrollers"],
+    deps = [
+        "//internal/constants",
+        "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
+        "//operators/constellation-node-operator/internal/constants",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_k8s_apimachinery//pkg/api/errors",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/types",
+        "@io_k8s_sigs_controller_runtime//pkg/client",
+    ],
+)
