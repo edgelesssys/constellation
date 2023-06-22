@@ -51,7 +51,7 @@ const (
 )
 
 var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
-	cloudprovider.AWS:       {AWSNitroTPM{}, AWSSEVSNP{}},
+	cloudprovider.AWS:       {AWSSEVSNP{}, AWSNitroTPM{}},
 	cloudprovider.Azure:     {AzureSEVSNP{}, AzureTrustedLaunch{}},
 	cloudprovider.GCP:       {GCPSEVES{}},
 	cloudprovider.QEMU:      {QEMUVTPM{}},
