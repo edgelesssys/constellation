@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: snapshot-webhook-serving-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames:
+  - 'snapshot-validation-service.{{ .Release.Namespace }}.svc'
+  - 'snapshot-validation-service.{{ .Release.Namespace }}.svc.{{ .Values.kubernetesClusterDomain }}'
+  issuerRef:
+    kind: Issuer
+    name: snapshot-webhook-selfsigned-issuer
+  secretName: webhook-server-cert

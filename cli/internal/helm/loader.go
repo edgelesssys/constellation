@@ -51,6 +51,8 @@ var (
 	certManagerInfo            = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
+	snapshotCRDsInfo           = chartInfo{releaseName: "snapshot-crd", chartName: "crds", path: "charts/csi-snapshotter/crds"}
+	snapshotControllerInfo     = chartInfo{releaseName: "snapshot-controller", chartName: "snapshot-controller", path: "charts/csi-snapshotter/snapshot-controller"}
 )
 
 // ChartLoader loads embedded helm charts.
@@ -127,6 +129,19 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 	}
 
 	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
+
+	if config.DeployCSIDriver() {
+		snapshotCRDs, err := i.loadRelease(snapshotCRDsInfo)
+		if err != nil {
+			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
+		}
+		snapshotController, err := i.loadRelease(snapshotControllerInfo)
+		if err != nil {
+			return nil, fmt.Errorf("loading snapshot controller: %w", err)
+		}
+		releases.SnapshotCRDs = &snapshotCRDs
+		releases.SnapshotController = &snapshotController
+	}
 
 	rel, err := json.Marshal(releases)
 	if err != nil {
