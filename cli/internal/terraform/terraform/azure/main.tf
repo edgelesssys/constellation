@@ -221,7 +221,6 @@ resource "azurerm_network_security_group" "security_group" {
   }
 }
 
-// add role as label, old name is base_name-dashed_role
 module "scale_set_group" {
   source          = "./modules/scale_set"
   for_each        = var.node_groups
