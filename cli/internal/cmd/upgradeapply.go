@@ -154,6 +154,10 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
+	if len(targets) == 0 {
+		u.log.Debugf("No Targets specified, skipping Terraform migration")
+		return nil
+	}
 	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
