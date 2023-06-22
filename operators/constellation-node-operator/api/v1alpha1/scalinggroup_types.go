@@ -28,6 +28,8 @@ type ScalingGroupSpec struct {
 	GroupID string `json:"groupId,omitempty"`
 	// AutoscalerGroupName is name that is expected by the autoscaler.
 	AutoscalerGroupName string `json:"autoscalerGroupName,omitempty"`
+	// NodeGroupName is the human friendly name of the node group as defined in the Constellation configuration.
+	NodeGroupName string `json:"nodeGroupName,omitempty"`
 	// Autoscaling specifies wether the scaling group should automatically scale using the cluster-autoscaler.
 	Autoscaling bool `json:"autoscaling,omitempty"`
 	// Min is the minimum number of nodes in the scaling group (used by cluster-autoscaler).

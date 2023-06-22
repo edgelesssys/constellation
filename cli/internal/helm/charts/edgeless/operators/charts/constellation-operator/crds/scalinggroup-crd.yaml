@@ -54,6 +54,10 @@ spec:
                   (used by cluster-autoscaler).
                 format: int32
                 type: integer
+              nodeGroupName:
+                description: NodeGroupName is the human friendly name of the node group
+                 as defined in the Constellation configuration.
+                type: string
               nodeImage:
                 description: NodeImage is the name of the NodeImage resource.
                 type: string
