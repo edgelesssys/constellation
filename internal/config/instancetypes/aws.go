@@ -49,3 +49,11 @@ var AWSSupportedInstanceFamilies = []string{
 	"X2iezn",
 	"z1d",
 }
+
+// AWSSNPSupportedInstanceFamilies is derived from:
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html
+var AWSSNPSupportedInstanceFamilies = []string{
+	"C6a",
+	"M6a",
+	"R6a",
+}
