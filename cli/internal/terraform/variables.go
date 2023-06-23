@@ -44,42 +44,46 @@ func (v *CommonVariables) String() string {
 
 // AWSClusterVariables is user configuration for creating a cluster with Terraform on AWS.
 type AWSClusterVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
+	// Name of the cluster.
+	Name string `hcl:"name" cty:"name"`
 	// Region is the AWS region to use.
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// Zone is the AWS zone to use in the given region.
-	Zone string
+	Zone string `hcl:"zone" cty:"zone"`
 	// AMIImageID is the ID of the AMI image to use.
-	AMIImageID string
-	// InstanceType is the type of the EC2 instance to use.
-	InstanceType string
-	// StateDiskType is the EBS disk type to use for the state disk.
-	StateDiskType string
+	AMIImageID string `hcl:"ami" cty:"ami"`
 	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
-	IAMProfileControlPlane string
+	IAMProfileControlPlane string `hcl:"iam_instance_profile_control_plane" cty:"iam_instance_profile_control_plane"`
 	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
-	IAMProfileWorkerNodes string
+	IAMProfileWorkerNodes string `hcl:"iam_instance_profile_worker_nodes" cty:"iam_instance_profile_worker_nodes"`
 	// Debug is true if debug mode is enabled.
-	Debug bool
+	Debug bool `hcl:"debug" cty:"debug"`
 	// EnableSNP controls enablement of the EC2 cpu-option "AmdSevSnp".
-	EnableSNP bool
+	EnableSNP bool `hcl:"enable_snp" cty:"enable_snp"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
+}
+
+// AWSNodeGroup is a node group to create on AWS.
+type AWSNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
+	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
+	// InitialCount is the initial number of nodes to create in the node group.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// Zone is the AWS availability-zone to use in the given region.
+	Zone string `hcl:"zone" cty:"zone"`
+	// InstanceType is the type of the EC2 instance to use.
+	InstanceType string `hcl:"instance_type" cty:"instance_type"`
+	// DiskType is the EBS disk type to use for the state disk.
+	DiskType string `hcl:"disk_type" cty:"disk_type"`
 }
 
 func (v *AWSClusterVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "ami = %q", v.AMIImageID)
-	writeLinef(b, "instance_type = %q", v.InstanceType)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
-	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
-	writeLinef(b, "debug = %t", v.Debug)
-	writeLinef(b, "enable_snp = %t", v.EnableSNP)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // AWSIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.

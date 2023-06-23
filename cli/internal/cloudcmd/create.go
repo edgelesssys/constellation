@@ -130,16 +130,27 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AWSClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.AWSNodeGroup{
+			"control_plane_default": {
+				Role:            role.ControlPlane.TFString(),
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.ControlPlaneCount,
+				Zone:            opts.Config.Provider.AWS.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.AWS.StateDiskType,
+			},
+			"worker_default": {
+				Role:            role.Worker.TFString(),
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.WorkerCount,
+				Zone:            opts.Config.Provider.AWS.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.AWS.StateDiskType,
+			},
 		},
-		StateDiskType:          opts.Config.Provider.AWS.StateDiskType,
 		Region:                 opts.Config.Provider.AWS.Region,
 		Zone:                   opts.Config.Provider.AWS.Zone,
-		InstanceType:           opts.InsType,
 		AMIImageID:             opts.image,
 		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,

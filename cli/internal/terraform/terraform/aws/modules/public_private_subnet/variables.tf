@@ -10,7 +10,12 @@ variable "vpc_id" {
 
 variable "zone" {
   type        = string
-  description = "Availability zone."
+  description = "Main availability zone. Only used for legacy reasons."
+}
+
+variable "zones" {
+  type        = list(string)
+  description = "Availability zones."
 }
 
 variable "cidr_vpc_subnet_nodes" {

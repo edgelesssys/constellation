@@ -1,6 +1,11 @@
-variable "name" {
+variable "base_name" {
   type        = string
   description = "Base name of the instance group."
+}
+
+variable "node_group_name" {
+  type        = string
+  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
 }
 
 variable "role" {
@@ -71,4 +76,9 @@ variable "enable_snp" {
   type        = bool
   default     = true
   description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
+}
+
+variable "zone" {
+  type        = string
+  description = "Zone to deploy the instance group in."
 }

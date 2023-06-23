@@ -214,21 +214,28 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		return nil, fmt.Errorf("fetching image reference: %w", err)
 	}
 
-	commonVariables := terraform.CommonVariables{
-		Name:            conf.Name,
-		StateDiskSizeGB: conf.StateDiskSizeGB,
-		// Ignore node count as their values are only being respected for creation
-		// See here: https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#ignore_changes
-	}
-
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
 		vars := &terraform.AWSClusterVariables{
-			CommonVariables:        commonVariables,
-			StateDiskType:          conf.Provider.AWS.StateDiskType,
+			Name: conf.Name,
+			NodeGroups: map[string]terraform.AWSNodeGroup{
+				"control_plane_default": {
+					Role:            role.ControlPlane.TFString(),
+					StateDiskSizeGB: conf.StateDiskSizeGB,
+					Zone:            conf.Provider.AWS.Zone,
+					InstanceType:    conf.Provider.AWS.InstanceType,
+					DiskType:        conf.Provider.AWS.StateDiskType,
+				},
+				"worker_default": {
+					Role:            role.Worker.TFString(),
+					StateDiskSizeGB: conf.StateDiskSizeGB,
+					Zone:            conf.Provider.AWS.Zone,
+					InstanceType:    conf.Provider.AWS.InstanceType,
+					DiskType:        conf.Provider.AWS.StateDiskType,
+				},
+			},
 			Region:                 conf.Provider.AWS.Region,
 			Zone:                   conf.Provider.AWS.Zone,
-			InstanceType:           conf.Provider.AWS.InstanceType,
 			AMIImageID:             imageRef,
 			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
 			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
