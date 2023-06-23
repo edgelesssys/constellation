@@ -19,7 +19,6 @@ All config relevant definitions, parsing and validation functions should go here
 package config
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -276,7 +275,7 @@ type QEMUConfig struct {
 // if not required.
 type AttestationConfig struct {
 	// description: |
-	//   AWS SEV-SNP attestation. WARNING: NOT PRODUCTION READY, TESTING ONLY, NO MEANINGFUL ATTESTATION.
+	//   AWS SEV-SNP attestation. WARNING: Attestation temporarily relies on AWS nitroTPM. Please see https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.
 	AWSSEVSNP *AWSSEVSNP `yaml:"awsSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   AWS Nitro TPM attestation.
@@ -358,7 +357,7 @@ func Default() *Config {
 		// AWS uses aws-nitro-tpm as attestation variant
 		// AWS will have aws-sev-snp as attestation variant
 		Attestation: AttestationConfig{
-			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{}), LaunchMeasurement: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)},
+			AWSSEVSNP:          &AWSSEVSNP{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSSEVSNP{})},
 			AWSNitroTPM:        &AWSNitroTPM{Measurements: measurements.DefaultsFor(cloudprovider.AWS, variant.AWSNitroTPM{})},
 			AzureSEVSNP:        DefaultForAzureSEVSNP(),
 			AzureTrustedLaunch: &AzureTrustedLaunch{Measurements: measurements.DefaultsFor(cloudprovider.Azure, variant.AzureTrustedLaunch{})},
@@ -788,9 +787,10 @@ type AWSSEVSNP struct {
 	// description: |
 	//   Expected TPM measurements.
 	Measurements measurements.M `json:"measurements" yaml:"measurements" validate:"required,no_placeholders"`
+	// TODO (derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
 	// description: |
 	//   Expected launch measurement in SNP report.
-	LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
+	// LaunchMeasurement measurements.Measurement `json:"launchMeasurement" yaml:"launchMeasurement" validate:"required"`
 }
 
 // GetVariant returns aws-sev-snp as the variant.
@@ -814,12 +814,13 @@ func (c AWSSEVSNP) EqualTo(other AttestationCfg) (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("cannot compare %T with %T", c, other)
 	}
-	if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
-		return false, nil
-	}
-	if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
-		return false, nil
-	}
+	// TODO (derpsteb): reenable launchMeasurement once SNP is fixed on AWS.
+	// if !bytes.Equal(c.LaunchMeasurement.Expected, otherCfg.LaunchMeasurement.Expected) {
+	// 	return false, nil
+	// }
+	// if c.LaunchMeasurement.ValidationOpt != otherCfg.LaunchMeasurement.ValidationOpt {
+	// 	return false, nil
+	// }
 
 	return c.Measurements.EqualTo(otherCfg.Measurements), nil
 }

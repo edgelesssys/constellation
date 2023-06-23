@@ -62,7 +62,22 @@ By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to crea
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines with a minimum of 4 vCPUs (`xlarge` or larger). Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
+By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
+Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
+If you are using the default attestation variant `awsSEVSNP`, you can use the instance types described in [AWS's AMD SEV-SNP docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
+Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
+
+If you are using the attestation variant `awsNitroTPM`, you can choose any of the [nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
+
+The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
+
+:::caution
+Due to a bug in AWS's SNP implementation, SNP report generation currently fails in unforeseeable circumstances.
+Therefore, even if you select attestation type `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
+Nonetheless, runtime encryption is enabled.
+AWS is currently investigating the issue.
+SNP-based attestation will be enabled as soon as a fix is verified.
+:::
 
 </tabItem>
 </tabs>
@@ -120,10 +135,10 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
-constellation iam create aws --zone=eu-central-1a --prefix=constellTest
+constellation iam create aws --zone=us-east-2a --prefix=constellTest
 ```
 
-This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
+This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created.
 
 Constellation OS images are currently replicated to the following regions:
 
