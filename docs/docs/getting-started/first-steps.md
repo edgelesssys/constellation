@@ -60,7 +60,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
      * `eu-west-1`
      * `us-east-2`
 
-    You can find a list of regions that support AMD SEV-SNP in [AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
+    You can find a list of regions that support AMD SEV-SNP in [AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
 
     NitroTPM machines are available in all regions.
     Constellation OS images are currently replicated to the following regions:
@@ -72,7 +72,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
-    You can find a list of all [regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+    You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
 
     </tabItem>
