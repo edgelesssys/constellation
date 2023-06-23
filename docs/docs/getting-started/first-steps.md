@@ -55,14 +55,14 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
-    Depending on the attestation type you select during config generation different regions are available:
-    AMD SEV-SNP machines (attestation type set to `awsSEVSNP`) are currently available in the following regions:
+    Depending on the attestation variant selected on config generation, different regions are available.
+    AMD SEV-SNP machines (requires the default attestation variant `awsSEVSNP`) are currently available in the following regions:
      * `eu-west-1`
      * `us-east-2`
 
     You can find a list of regions that support AMD SEV-SNP in [AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
 
-    NitroTPM machines are available in all regions.
+    NitroTPM machines (requires the attestation variant `awsNitroTPM`) are available in all regions.
     Constellation OS images are currently replicated to the following regions:
      * `eu-central-1`
      * `eu-west-1`
@@ -73,7 +73,6 @@ If you encounter any problem with the following steps, make sure to use the [lat
     If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
     You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
-
 
     </tabItem>
     </tabs>

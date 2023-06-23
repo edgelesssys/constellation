@@ -64,10 +64,10 @@ By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to crea
 
 By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
 Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
-If you are using the default attestation type `awsSEVSNP` you can use the instance types described in [AWS's AMD SEV-SNP docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
+If you are using the default attestation variant `awsSEVSNP`, you can use the instance types described in [AWS's AMD SEV-SNP docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
 Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
 
-If you are using the attestation type `awsNitroTPM` you can choose from a larger pool of node types as mentioned in this [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
+If you are using the attestation variant `awsNitroTPM`, you can choose any of the [nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
 
 The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
 
