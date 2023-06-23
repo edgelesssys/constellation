@@ -56,7 +56,7 @@ locals {
     for name, node_group in var.node_groups : node_group.role => name...
   }
   control_plane_instance_groups = [
-    for control_plane in local.node_groups_by_role["ControlPlane"] : module.instance_group[control_plane].instance_group
+    for control_plane in local.node_groups_by_role["control-plane"] : module.instance_group[control_plane].instance_group
   ]
 }
 
@@ -167,7 +167,7 @@ module "instance_group" {
   alias_ip_range_name = google_compute_subnetwork.vpc_subnetwork.secondary_ip_range[0].range_name
   kube_env            = local.kube_env
   debug               = var.debug
-  named_ports         = each.value.role == "ControlPlane" ? local.control_plane_named_ports : []
+  named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
   labels              = local.labels
   init_secret_hash    = local.initSecretHash
 }

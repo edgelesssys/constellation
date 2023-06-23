@@ -75,7 +75,7 @@ func TestGCPClusterVariables(t *testing.T) {
 		Debug:   true,
 		NodeGroups: map[string]GCPNodeGroup{
 			"control_plane_default": {
-				Role:            "ControlPlane",
+				Role:            "control-plane",
 				StateDiskSizeGB: 30,
 				InitialCount:    1,
 				Zone:            "eu-central-1a",
@@ -83,7 +83,7 @@ func TestGCPClusterVariables(t *testing.T) {
 				DiskType:        "pd-ssd",
 			},
 			"worker_default": {
-				Role:            "Worker",
+				Role:            "worker",
 				StateDiskSizeGB: 10,
 				InitialCount:    1,
 				Zone:            "eu-central-1b",
@@ -106,7 +106,7 @@ node_groups = {
     disk_type     = "pd-ssd"
     initial_count = 1
     instance_type = "n2d-standard-4"
-    role          = "ControlPlane"
+    role          = "control-plane"
     zone          = "eu-central-1a"
   }
   worker_default = {
@@ -114,7 +114,7 @@ node_groups = {
     disk_type     = "pd-ssd"
     initial_count = 1
     instance_type = "n2d-standard-8"
-    role          = "Worker"
+    role          = "worker"
     zone          = "eu-central-1b"
   }
 }

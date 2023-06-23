@@ -5,7 +5,11 @@ variable "name" {
 
 variable "role" {
   type        = string
-  description = "The role of the instance group. Has to be 'ControlPlane' or 'Worker'."
+  description = "The role of the instance group."
+  validation {
+    condition     = contains(["control-plane", "worker"], var.role)
+    error_message = "The role has to be 'control-plane' or 'worker'."
+  }
 }
 
 variable "uid" {

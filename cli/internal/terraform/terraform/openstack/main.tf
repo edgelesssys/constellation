@@ -161,7 +161,7 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
 module "instance_group_control_plane" {
   source                     = "./modules/instance_group"
   name                       = local.name
-  role                       = "ControlPlane"
+  role                       = "control-plane"
   instance_count             = var.control_plane_count
   image_id                   = openstack_images_image_v2.constellation_os_image.image_id
   flavor_id                  = var.flavor_id
@@ -182,7 +182,7 @@ module "instance_group_control_plane" {
 module "instance_group_worker" {
   source                     = "./modules/instance_group"
   name                       = local.name
-  role                       = "Worker"
+  role                       = "worker"
   instance_count             = var.worker_count
   image_id                   = openstack_images_image_v2.constellation_os_image.image_id
   flavor_id                  = var.flavor_id

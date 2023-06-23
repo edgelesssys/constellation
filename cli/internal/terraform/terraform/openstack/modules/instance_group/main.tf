@@ -8,9 +8,8 @@ terraform {
 }
 
 locals {
-  role_dashed = var.role == "ControlPlane" ? "control-plane" : "worker"
-  name        = "${var.name}-${local.role_dashed}"
-  tags        = distinct(sort(concat(var.tags, ["constellation-role-${local.role_dashed}"])))
+  name = "${var.name}-${var.role}"
+  tags = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"])))
 }
 
 # TODO(malt3): get this API enabled in the test environment
@@ -49,7 +48,7 @@ resource "openstack_compute_instance_v2" "instance_group_member" {
     delete_on_termination = true
   }
   metadata = {
-    constellation-role             = local.role_dashed
+    constellation-role             = var.role
     constellation-uid              = var.uid
     constellation-init-secret-hash = var.init_secret_hash
     openstack-auth-url             = var.identity_internal_url

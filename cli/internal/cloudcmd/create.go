@@ -170,7 +170,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts Create
 		Name: opts.Config.Name,
 		NodeGroups: map[string]terraform.GCPNodeGroup{
 			"control_plane_default": {
-				Role:            "ControlPlane",
+				Role:            role.ControlPlane.TFString(),
 				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
 				InitialCount:    opts.ControlPlaneCount,
 				Zone:            opts.Config.Provider.GCP.Zone,
@@ -178,7 +178,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts Create
 				DiskType:        opts.Config.Provider.GCP.StateDiskType,
 			},
 			"worker_default": {
-				Role:            "Worker",
+				Role:            role.Worker.TFString(),
 				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
 				InitialCount:    opts.WorkerCount,
 				Zone:            opts.Config.Provider.GCP.Zone,

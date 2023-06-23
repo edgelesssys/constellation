@@ -14,6 +14,10 @@ variable "node_groups" {
     initial_count = number
   }))
   description = "A map of node group names to node group configurations."
+  validation {
+    condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
+    error_message = "The role has to be 'control-plane' or 'worker'."
+  }
 }
 
 variable "project" {

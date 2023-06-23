@@ -12,8 +12,8 @@ variable "role" {
   type        = string
   description = "The role of the instance group."
   validation {
-    condition     = contains(["ControlPlane", "Worker"], var.role)
-    error_message = "The role has to be 'ControlPlane' or 'Worker'."
+    condition     = contains(["control-plane", "worker"], var.role)
+    error_message = "The role has to be 'control-plane' or 'worker'."
   }
 }
 
