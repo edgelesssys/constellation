@@ -1,5 +1,5 @@
 output "ip" {
-  value = aws_eip.lb.public_ip
+  value = aws_eip.lb[var.zone].public_ip
 }
 
 output "uid" {

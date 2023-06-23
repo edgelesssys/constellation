@@ -27,6 +27,25 @@ locals {
   ports_verify       = "30081"
   ports_recovery     = "9999"
   ports_debugd       = "4000"
+  target_group_arns = {
+    control-plane : flatten([
+      module.load_balancer_target_bootstrapper.target_group_arn,
+      module.load_balancer_target_kubernetes.target_group_arn,
+      module.load_balancer_target_verify.target_group_arn,
+      module.load_balancer_target_recovery.target_group_arn,
+      module.load_balancer_target_konnectivity.target_group_arn,
+      var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
+    ])
+    worker : []
+  }
+  iam_instance_profile = {
+    control-plane : var.iam_instance_profile_control_plane
+    worker : var.iam_instance_profile_worker_nodes
+  }
+  # zones are all availability zones that are used by the node groups
+  zones = distinct(sort([
+    for node_group in var.node_groups : node_group.zone
+  ]))
 
   tags = { constellation-uid = local.uid }
 }
@@ -50,15 +69,17 @@ module "public_private_subnet" {
   source                   = "./modules/public_private_subnet"
   name                     = local.name
   vpc_id                   = aws_vpc.vpc.id
-  cidr_vpc_subnet_nodes    = "192.168.178.0/24"
-  cidr_vpc_subnet_internet = "192.168.0.0/24"
+  cidr_vpc_subnet_nodes    = "192.168.176.0/20"
+  cidr_vpc_subnet_internet = "192.168.0.0/20"
   zone                     = var.zone
+  zones                    = local.zones
   tags                     = local.tags
 }
 
 resource "aws_eip" "lb" {
-  domain = "vpc"
-  tags   = local.tags
+  for_each = toset(module.public_private_subnet.all_zones)
+  domain   = "vpc"
+  tags     = local.tags
 }
 
 resource "aws_lb" "front_end" {
@@ -67,9 +88,12 @@ resource "aws_lb" "front_end" {
   load_balancer_type = "network"
   tags               = local.tags
 
-  subnet_mapping {
-    subnet_id     = module.public_private_subnet.public_subnet_id
-    allocation_id = aws_eip.lb.id
+  dynamic "subnet_mapping" {
+    for_each = toset(module.public_private_subnet.all_zones)
+    content {
+      subnet_id     = module.public_private_subnet.public_subnet_id[subnet_mapping.key]
+      allocation_id = aws_eip.lb[subnet_mapping.key].id
+    }
   }
   enable_cross_zone_load_balancing = true
 }
@@ -216,59 +240,42 @@ module "load_balancer_target_konnectivity" {
   healthcheck_protocol = "TCP"
 }
 
-module "instance_group_control_plane" {
-  source          = "./modules/instance_group"
-  name            = local.name
-  role            = "control-plane"
-  uid             = local.uid
-  instance_type   = var.instance_type
-  instance_count  = var.control_plane_count
-  image_id        = var.ami
-  state_disk_type = var.state_disk_type
-  state_disk_size = var.state_disk_size
-  target_group_arns = flatten([
-    module.load_balancer_target_bootstrapper.target_group_arn,
-    module.load_balancer_target_kubernetes.target_group_arn,
-    module.load_balancer_target_verify.target_group_arn,
-    module.load_balancer_target_recovery.target_group_arn,
-    module.load_balancer_target_konnectivity.target_group_arn,
-    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
-  ])
+module "instance_group" {
+  source               = "./modules/instance_group"
+  for_each             = var.node_groups
+  base_name            = local.name
+  node_group_name      = each.key
+  role                 = each.value.role
+  zone                 = each.value.zone
+  uid                  = local.uid
+  instance_type        = each.value.instance_type
+  instance_count       = each.value.instance_count
+  image_id             = var.ami
+  state_disk_type      = each.value.disk_type
+  state_disk_size      = each.value.disk_size
+  target_group_arns    = local.target_group_arns[each.value.role]
   security_groups      = [aws_security_group.security_group.id]
-  subnetwork           = module.public_private_subnet.private_subnet_id
-  iam_instance_profile = var.iam_instance_profile_control_plane
+  subnetwork           = module.public_private_subnet.private_subnet_id[each.value.zone]
+  iam_instance_profile = local.iam_instance_profile[each.value.role]
   enable_snp           = var.enable_snp
   tags = merge(
     local.tags,
     { Name = local.name },
-    { constellation-role = "control-plane" },
+    { constellation-role = each.value.role },
     { constellation-uid = local.uid },
     { constellation-init-secret-hash = local.initSecretHash },
     { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
 }
 
-module "instance_group_worker_nodes" {
-  source               = "./modules/instance_group"
-  name                 = local.name
-  role                 = "worker"
-  uid                  = local.uid
-  instance_type        = var.instance_type
-  instance_count       = var.worker_count
-  image_id             = var.ami
-  state_disk_type      = var.state_disk_type
-  state_disk_size      = var.state_disk_size
-  subnetwork           = module.public_private_subnet.private_subnet_id
-  target_group_arns    = []
-  security_groups      = [aws_security_group.security_group.id]
-  iam_instance_profile = var.iam_instance_profile_worker_nodes
-  enable_snp           = var.enable_snp
-  tags = merge(
-    local.tags,
-    { Name = local.name },
-    { constellation-role = "worker" },
-    { constellation-uid = local.uid },
-    { constellation-init-secret-hash = local.initSecretHash },
-    { "kubernetes.io/cluster/${local.name}" = "owned" }
-  )
+// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
+moved {
+  from = module.instance_group_control_plane
+  to   = module.instance_group["control_plane_default"]
+}
+
+// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
+moved {
+  from = module.instance_group_worker_nodes
+  to   = module.instance_group["worker_default"]
 }

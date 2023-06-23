@@ -16,17 +16,28 @@ import (
 
 func TestAWSClusterVariables(t *testing.T) {
 	vars := AWSClusterVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
+		Name: "cluster-name",
+		NodeGroups: map[string]AWSNodeGroup{
+			"control_plane_default": {
+				Role:            role.ControlPlane.TFString(),
+				StateDiskSizeGB: 30,
+				InitialCount:    1,
+				Zone:            "eu-central-1b",
+				InstanceType:    "x1.foo",
+				DiskType:        "foodisk",
+			},
+			"worker_default": {
+				Role:            role.Worker.TFString(),
+				StateDiskSizeGB: 30,
+				InitialCount:    2,
+				Zone:            "eu-central-1c",
+				InstanceType:    "x1.bar",
+				DiskType:        "bardisk",
+			},
 		},
 		Region:                 "eu-central-1",
 		Zone:                   "eu-central-1a",
 		AMIImageID:             "ami-0123456789abcdef",
-		InstanceType:           "x1.foo",
-		StateDiskType:          "bardisk",
 		IAMProfileControlPlane: "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane",
 		IAMProfileWorkerNodes:  "arn:aws:iam::123456789012:instance-profile/cluster-name-worker",
 		Debug:                  true,
@@ -34,19 +45,32 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-region = "eu-central-1"
-zone = "eu-central-1a"
-ami = "ami-0123456789abcdef"
-instance_type = "x1.foo"
-state_disk_type = "bardisk"
+	want := `name                               = "cluster-name"
+region                             = "eu-central-1"
+zone                               = "eu-central-1a"
+ami                                = "ami-0123456789abcdef"
 iam_instance_profile_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
-iam_instance_profile_worker_nodes = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug = true
-enable_snp = true
+iam_instance_profile_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
+debug                              = true
+enable_snp                         = true
+node_groups = {
+  control_plane_default = {
+    disk_size     = 30
+    disk_type     = "foodisk"
+    initial_count = 1
+    instance_type = "x1.foo"
+    role          = "control-plane"
+    zone          = "eu-central-1b"
+  }
+  worker_default = {
+    disk_size     = 30
+    disk_type     = "bardisk"
+    initial_count = 2
+    instance_type = "x1.bar"
+    role          = "worker"
+    zone          = "eu-central-1c"
+  }
+}
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

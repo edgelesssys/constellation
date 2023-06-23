@@ -1,10 +1,25 @@
 variable "name" {
   type        = string
-  default     = "constell"
   description = "Name of your Constellation"
   validation {
     condition     = length(var.name) < 10
     error_message = "The name of the Constellation must be shorter than 10 characters"
+  }
+}
+
+variable "node_groups" {
+  type = map(object({
+    role           = string
+    instance_count = optional(number)
+    instance_type  = string
+    disk_size      = number
+    disk_type      = string
+    zone           = string
+  }))
+  description = "A map of node group names to node group configurations."
+  validation {
+    condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
+    error_message = "The role has to be 'control-plane' or 'worker'."
   }
 }
 
@@ -16,33 +31,6 @@ variable "iam_instance_profile_worker_nodes" {
 variable "iam_instance_profile_control_plane" {
   type        = string
   description = "Name of the IAM instance profile for control plane nodes"
-}
-
-variable "instance_type" {
-  type        = string
-  description = "Instance type for worker nodes"
-}
-
-variable "state_disk_type" {
-  type        = string
-  default     = "gp2"
-  description = "EBS disk type for the state disk of the nodes"
-}
-
-variable "state_disk_size" {
-  type        = number
-  default     = 30
-  description = "Disk size for the state disk of the nodes [GB]"
-}
-
-variable "control_plane_count" {
-  type        = number
-  description = "Number of control plane nodes"
-}
-
-variable "worker_count" {
-  type        = number
-  description = "Number of worker nodes"
 }
 
 variable "ami" {
