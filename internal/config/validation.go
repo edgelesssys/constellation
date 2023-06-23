@@ -220,11 +220,13 @@ func (c *Config) translateAWSInstanceTypeError(ut ut.Translator, fe validator.Fi
 	var t string
 
 	attestVariant := c.GetAttestationConfig().GetVariant()
+
+	instances := instancetypes.AWSSNPSupportedInstanceFamilies
 	if attestVariant.Equal(variant.AWSNitroTPM{}) {
-		t, _ = ut.T("aws_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AWSSupportedInstanceFamilies))
-	} else {
-		t, _ = ut.T("aws_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AWSSNPSupportedInstanceFamilies))
+		instances = instancetypes.AWSSupportedInstanceFamilies
 	}
+
+	t, _ = ut.T("aws_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
@@ -249,11 +251,13 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 	var t string
 
 	attestVariant := c.GetAttestationConfig().GetVariant()
+
+	instances := instancetypes.AzureCVMInstanceTypes
 	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
-	} else {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
+		instances = instancetypes.AzureTrustedLaunchInstanceTypes
 	}
+
+	t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
@@ -358,23 +362,17 @@ func isSupportedAWSInstanceType(userInput string, acceptNonCVM bool) bool {
 		return false
 	}
 
+	instances := instancetypes.AWSSNPSupportedInstanceFamilies
 	if acceptNonCVM {
-		// Now check if the user input is a supported family
-		// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
-		for _, supportedFamily := range instancetypes.AWSSupportedInstanceFamilies {
-			supportedFamilyLowercase := strings.ToLower(supportedFamily)
-			if userDefinedFamily == supportedFamilyLowercase {
-				return true
-			}
-		}
-	} else {
-		// Now check if the user input is a supported family
-		// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
-		for _, supportedFamily := range instancetypes.AWSSNPSupportedInstanceFamilies {
-			supportedFamilyLowercase := strings.ToLower(supportedFamily)
-			if userDefinedFamily == supportedFamilyLowercase {
-				return true
-			}
+		instances = instancetypes.AWSSupportedInstanceFamilies
+	}
+
+	// Now check if the user input is a supported family
+	// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
+	for _, supportedFamily := range instances {
+		supportedFamilyLowercase := strings.ToLower(supportedFamily)
+		if userDefinedFamily == supportedFamilyLowercase {
+			return true
 		}
 	}
 

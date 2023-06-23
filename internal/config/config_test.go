@@ -676,9 +676,9 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 		},
 		"aws CVMs but CVMs disabled": {
 			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"c6a.xlarge", "r6a.xlarge"},
+			instanceTypes:  []string{"m6a.xlarge", "c6a.xlarge", "r6a.xlarge"},
 			nonCVMsAllowed: true,
-			expectedResult: false,
+			expectedResult: true,
 		},
 		"aws nitroTPM VMs with CVMs enabled": {
 			provider:       cloudprovider.AWS,
