@@ -8,8 +8,14 @@ terraform {
 }
 
 locals {
-  name = "${var.name}-${var.role}"
-  tags = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"])))
+  tags      = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"], ["constellation-node-group-${var.node_group_name}"])))
+  group_uid = random_id.uid.hex
+  #name = "${var.name}-${var.role}"
+  name = "${var.name}-${var.role}-${local.group_uid}"
+}
+
+resource "random_id" "uid" {
+  byte_length = 4
 }
 
 # TODO(malt3): get this API enabled in the test environment

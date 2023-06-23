@@ -225,52 +225,48 @@ func (v *AzureIAMVariables) String() string {
 
 // OpenStackClusterVariables is user configuration for creating a cluster with Terraform on OpenStack.
 type OpenStackClusterVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
-
+	// Name of the cluster.
+	Name string `hcl:"name" cty:"name"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]OpenStackNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
-	Cloud string
-	// AvailabilityZone is the OpenStack availability zone to use.
-	AvailabilityZone string
+	Cloud *string `hcl:"cloud" cty:"cloud"`
 	// Flavor is the ID of the OpenStack flavor (machine type) to use.
-	FlavorID string
+	FlavorID string `hcl:"flavor_id" cty:"flavor_id"`
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
-	FloatingIPPoolID string
-	// StateDiskType is the OpenStack disk type to use for the state disk.
-	StateDiskType string
+	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
 	// ImageURL is the URL of the OpenStack image to use.
-	ImageURL string
+	ImageURL string `hcl:"image_url" cty:"image_url"`
 	// DirectDownload decides whether to download the image directly from the URL to OpenStack or to upload it from the local machine.
-	DirectDownload bool
+	DirectDownload bool `hcl:"direct_download" cty:"direct_download"`
 	// OpenstackUserDomainName is the OpenStack user domain name to use.
-	OpenstackUserDomainName string
+	OpenstackUserDomainName string `hcl:"openstack_user_domain_name" cty:"openstack_user_domain_name"`
 	// OpenstackUsername is the OpenStack user name to use.
-	OpenstackUsername string
+	OpenstackUsername string `hcl:"openstack_username" cty:"openstack_username"`
 	// OpenstackPassword is the OpenStack password to use.
-	OpenstackPassword string
+	OpenstackPassword string `hcl:"openstack_password" cty:"openstack_password"`
 	// Debug is true if debug mode is enabled.
-	Debug bool
+	Debug bool `hcl:"debug" cty:"debug"`
+}
+
+type OpenStackNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// InstanceCount is the number of instances to create.
+	InstanceCount int `hcl:"instance_count" cty:"instance_count"`
+	// Zone is the OpenStack availability zone to use.
+	Zone string `hcl:"zone" cty:"zone"`
+	// StateDiskType is the OpenStack disk type to use for the state disk.
+	StateDiskType string `hcl:"state_disk_type" cty:"state_disk_type"`
+	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
+	StateDiskSizeGB int `hcl:"state_disk_size" cty:"state_disk_size"`
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *OpenStackClusterVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	if v.Cloud != "" {
-		writeLinef(b, "cloud = %q", v.Cloud)
-	}
-	writeLinef(b, "availability_zone = %q", v.AvailabilityZone)
-	writeLinef(b, "flavor_id = %q", v.FlavorID)
-	writeLinef(b, "floating_ip_pool_id = %q", v.FloatingIPPoolID)
-	writeLinef(b, "image_url = %q", v.ImageURL)
-	writeLinef(b, "direct_download = %t", v.DirectDownload)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "openstack_user_domain_name = %q", v.OpenstackUserDomainName)
-	writeLinef(b, "openstack_username = %q", v.OpenstackUsername)
-	writeLinef(b, "openstack_password = %q", v.OpenstackPassword)
-	writeLinef(b, "debug = %t", v.Debug)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // TODO(malt3): Add support for OpenStack IAM variables.

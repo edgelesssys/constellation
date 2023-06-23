@@ -158,40 +158,22 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
   }
 }
 
-module "instance_group_control_plane" {
-  source                     = "./modules/instance_group"
-  name                       = local.name
-  role                       = "control-plane"
-  instance_count             = var.control_plane_count
-  image_id                   = openstack_images_image_v2.constellation_os_image.image_id
-  flavor_id                  = var.flavor_id
-  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
-  tags                       = local.tags
-  uid                        = local.uid
-  disk_size                  = var.state_disk_size
-  state_disk_type            = var.state_disk_type
-  availability_zone          = var.availability_zone
-  network_id                 = openstack_networking_network_v2.vpc_network.id
-  init_secret_hash           = local.initSecretHash
-  identity_internal_url      = local.identity_internal_url
-  openstack_username         = var.openstack_username
-  openstack_password         = var.openstack_password
-  openstack_user_domain_name = var.openstack_user_domain_name
-}
+module "instance_group" {
 
-module "instance_group_worker" {
   source                     = "./modules/instance_group"
-  name                       = local.name
-  role                       = "worker"
-  instance_count             = var.worker_count
+  for_each                   = var.node_groups
+  name                       = local.name // TODO base_name
+  node_group_name            = each.key
+  role                       = each.value.role
+  instance_count             = each.value.instance_count
+  disk_size                  = each.value.state_disk_size
+  state_disk_type            = each.value.state_disk_type
+  availability_zone          = each.value.zone
   image_id                   = openstack_images_image_v2.constellation_os_image.image_id
   flavor_id                  = var.flavor_id
+  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
   uid                        = local.uid
-  security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
-  disk_size                  = var.state_disk_size
-  state_disk_type            = var.state_disk_type
-  availability_zone          = var.availability_zone
   network_id                 = openstack_networking_network_v2.vpc_network.id
   init_secret_hash           = local.initSecretHash
   identity_internal_url      = local.identity_internal_url
@@ -209,15 +191,24 @@ resource "openstack_networking_floatingip_v2" "public_ip" {
 
 resource "openstack_compute_floatingip_associate_v2" "public_ip_associate" {
   floating_ip = openstack_networking_floatingip_v2.public_ip.address
-  instance_id = module.instance_group_control_plane.instance_ids.0
+  instance_id = module.instance_group["control_plane_default"].instance_ids.0
   depends_on = [
     openstack_networking_router_v2.vpc_router,
     openstack_networking_router_interface_v2.vpc_router_interface,
   ]
 }
 
-# TODO(malt3): get LoadBalancer API enabled in the test environment
+moved {
+  from = module.instance_group_control_plane
+  to   = module.instance_group["control_plane_default"]
+}
 
+moved {
+  from = module.instance_group_worker
+  to   = module.instance_group["worker_default"]
+}
+
+# TODO(malt3): get LoadBalancer API enabled in the test environment
 # resource "openstack_lb_loadbalancer_v2" "loadbalancer" {
 #   name          = local.name
 #   description   = "Constellation load balancer"
