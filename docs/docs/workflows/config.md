@@ -62,16 +62,19 @@ By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to crea
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines with a minimum of 4 vCPUs (`xlarge` or larger). Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
+By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster.
+Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
+If you are using the default attestation type `awsSEVSNP` you can use the instance types described in [AWS' AMD SEV-SNP docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
+Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
 
-Constellation also support AMD SEV-SNP machines. The list of AWS instance types that support SEV-SNP can be found in the [AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html). Please mind the region restrictions mentioned in the [Getting started](../getting-started/first-steps.md#create-a-cluster) section.
+If you are using the attestation type `awsNitroTPM` you can choose from a larger pool of node types as mentioned in this [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html).
 
-To enable AMD SEV-SNP in your cluster you will have to select the `awsSEVSNP` attestation config. You can also use the `--attestation` flag of the [config generate](../reference/cli.md#constellation-config-generate) command.
+The Constellation CLI can also print the supported instance types with: `constellation config instance-types`.
 
-:::Caution
-Due to a bug in AWS' SNP implementation, SNP report generation may fail in unforeseeable circumstances.
+:::caution
+Due to a bug in AWS' SNP implementation, SNP report generation currently fails in unforeseeable circumstances.
 Therefore, even if you select attestation type `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
-Nonetheless, memory encryption is enabled.
+Nonetheless, runtime encryption is enabled.
 AWS is currently investigating the issue.
 SNP-based attestation will be enabled as soon as a fix is verified.
 :::
@@ -132,10 +135,10 @@ Paste the output into the corresponding fields of the `constellation-conf.yaml` 
 You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session with a user that has the [required permissions for IAM creation](../getting-started/install.md#set-up-cloud-credentials).
 
 ```bash
-constellation iam create aws --zone=eu-central-1a --prefix=constellTest
+constellation iam create aws --zone=us-east-2a --prefix=constellTest
 ```
 
-This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
+This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created.
 
 Constellation OS images are currently replicated to the following regions:
 

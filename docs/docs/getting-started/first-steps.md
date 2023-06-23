@@ -50,11 +50,19 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <tabItem value="aws" label="AWS">
 
     ```bash
-    constellation iam create aws --zone=eu-central-1a --prefix=constellTest --generate-config
+    constellation iam create aws --zone=us-east-2a --prefix=constellTest --generate-config
     ```
 
-    This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+    This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
+    Depending on the attestation type you select during config generation different regions are available:
+    AMD SEV-SNP machines (attestation type set to `awsSEVSNP`) are currently available in the following regions:
+     * `eu-west-1`
+     * `us-east-2`
+
+    You can find a list of regions that support AMD SEV-SNP in [AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
+
+    NitroTPM machines are available in all regions.
     Constellation OS images are currently replicated to the following regions:
      * `eu-central-1`
      * `eu-west-1`
@@ -66,11 +74,6 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     You can find a list of all [regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
-    If you want to use AMD SEV-SNP machines you will have to use on of the following regions:
-     * `eu-west-1`
-     * `us-east-2`
-
-    You can find a list of regions that support AMD SEV-SNP in [AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html).
 
     </tabItem>
     </tabs>
