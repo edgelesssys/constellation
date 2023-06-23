@@ -3,7 +3,7 @@ description: Setup Bazel for CI builds and tests
 
 inputs:
   useCache:
-    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, and 'false' to disable."
+    description: "Cache Bazel artifacts. Use 'true' to enable with rw, 'readonly' to download, 'log' to disable cache but upload logs, and 'false' to disable."
     default: "false"
     required: true
   buildBuddyApiKey:
@@ -17,11 +17,11 @@ runs:
       shell: bash
       run: |
         echo "::group::Check inputs"
-        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "false" ]]; then
+        if [[ "${{ inputs.useCache }}" != "true" && "${{ inputs.useCache }}" != "readonly" && "${{ inputs.useCache }}" != "logs" && "${{ inputs.useCache }}" != "false" ]]; then
           echo "Invalid value for 'useCache' input: '${{ inputs.useCache }}'. Must be 'true', 'readonly', or 'false'."
           exit 1
         fi
-        if [[ "${{ inputs.useCache }}" == "true" || "${{ inputs.useCache }}" == "readonly" ]] && [[ -z "${{ inputs.buildBuddyApiKey }}" ]]; then
+        if [[ "${{ inputs.useCache }}" == "true" || "${{ inputs.useCache }}" == "readonly" || "${{ inputs.useCache }}" == "logs" ]] && [[ -z "${{ inputs.buildBuddyApiKey }}" ]]; then
           echo "BuildBuddy API key is required when cache is enabled."
           exit 1
         fi
@@ -69,11 +69,28 @@ runs:
 
     - name: Configure Bazel (readonly)
       shell: bash
+      if: inputs.useCache == 'readonly'
       env:
         WORKSPACE: ${{ github.workspace }}
       run: |
         echo "::group::Configure Bazel (readonly)"
         echo "build --remote_upload_local_results=false" >> "${WORKSPACE}/.bazeloverwriterc"
+        echo "::endgroup::"
+
+    - name: Configure Bazel (logs)
+      shell: bash
+      if: inputs.useCache == 'logs'
+      env:
+        BUILDBUDDY_ORG_API_KEY: ${{ inputs.buildBuddyApiKey }}
+        WORKSPACE: ${{ github.workspace }}
+      run: |
+        echo "::group::Configure Bazel"
+        cat <<EOF >> "${WORKSPACE}/.bazeloverwriterc"
+        build --bes_results_url=https://app.buildbuddy.io/invocation/
+        build --bes_backend=grpcs://remote.buildbuddy.io
+        build --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_ORG_API_KEY}
+        build --nolegacy_important_outputs
+        EOF
         echo "::endgroup::"
 
     - name: Disable disk cache on GitHub Actions runners
