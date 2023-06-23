@@ -1,0 +1,11 @@
+image: "docker.io/opensearchproject/logstash-oss-with-opensearch-output-plugin:8.6.1@sha256:dc060b364d600858fca6b86f9217bdd0c28ecbc5c1a0636538dd6d946422a421"
+logstashConfig:
+  logstash.yml: |
+    # explicitly add host as per https://github.com/elastic/helm-charts/blob/2fd64d0af65f14df7aa01da591919460dabac4b3/logstash/values.yaml#L7
+    http.host: 0.0.0.0
+    {{ .LogstashYaml }}
+  log4j2.properties: |
+    {{ .Log4jProperties }}
+logstashPipeline:
+  pipeline.conf: |
+    {{ .PipelineConf }}

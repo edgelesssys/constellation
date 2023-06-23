@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package logcollector
+package logcollection
 
 import (
 	"context"
@@ -20,29 +20,20 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awssecretmanager "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 )
 
-// Credentials contains the credentials for an OpenSearch instance.
-type credentials struct {
+// Credentials contains the Credentials for an OpenSearch instance.
+type Credentials struct {
 	Username string
 	Password string
 }
 
-// credentialGetter is a wrapper around the cloud provider specific credential getters.
-type credentialGetter struct {
-	openseachCredsGetter
-}
-
-type openseachCredsGetter interface {
-	GetOpensearchCredentials(ctx context.Context) (credentials, error)
-	io.Closer
-}
-
-// NewCloudCredentialGetter returns a new CloudCredentialGetter for the given cloud provider.
-func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provider, infoMap *info.Map) (*credentialGetter, error) {
+// NewCloudCredentialGetter returns a new credentialGetter for the given cloud provider.
+// qemuPassword is the password for the qemu user on the QEMU cloud provider. If another CSP is used,
+// it can be ignored.
+func NewCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provider, qemuPassword string) (*credentialGetter, error) {
 	switch provider {
 	case cloudprovider.GCP:
 		getter, err := newGCPCloudCredentialGetter(ctx)
@@ -63,7 +54,7 @@ func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provid
 		}
 		return &credentialGetter{getter}, nil
 	case cloudprovider.QEMU:
-		getter, err := newQemuCloudCredentialGetter(infoMap)
+		getter, err := newQemuCloudCredentialGetter(qemuPassword)
 		if err != nil {
 			return nil, fmt.Errorf("creating QEMU cloud credential getter: %w", err)
 		}
@@ -71,6 +62,16 @@ func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provid
 	default:
 		return nil, fmt.Errorf("cloud provider not supported")
 	}
+}
+
+// credentialGetter is a wrapper around the cloud provider specific credential getters.
+type credentialGetter struct {
+	openseachCredsGetter
+}
+
+type openseachCredsGetter interface {
+	GetOpensearchCredentials(ctx context.Context) (Credentials, error)
+	io.Closer
 }
 
 type gcpCloudCredentialGetter struct {
@@ -85,27 +86,27 @@ func newGCPCloudCredentialGetter(ctx context.Context) (*gcpCloudCredentialGetter
 	return &gcpCloudCredentialGetter{secretsAPI: client}, nil
 }
 
-func (g *gcpCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
+func (g *gcpCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (Credentials, error) {
 	const secretName = "projects/796962942582/secrets/e2e-logs-OpenSearch-password/versions/1"
 	const username = "cluster-instance-gcp"
 
 	req := &gcpsecretmanagerpb.AccessSecretVersionRequest{Name: secretName}
 	resp, err := g.secretsAPI.AccessSecretVersion(ctx, req)
 	if err != nil {
-		return credentials{}, fmt.Errorf("accessing secret version: %w", err)
+		return Credentials{}, fmt.Errorf("accessing secret version: %w", err)
 	}
 
 	if resp.Payload == nil || len(resp.Payload.Data) == 0 {
-		return credentials{}, errors.New("response payload is empty")
+		return Credentials{}, errors.New("response payload is empty")
 	}
 
 	crc32c := crc32.MakeTable(crc32.Castagnoli)
 	checksum := int64(crc32.Checksum(resp.Payload.Data, crc32c))
 	if checksum != *resp.Payload.DataCrc32C {
-		return credentials{}, errors.New("data corruption of secret detected")
+		return Credentials{}, errors.New("data corruption of secret detected")
 	}
 
-	return credentials{
+	return Credentials{
 		Username: username,
 		Password: string(resp.Payload.Data),
 	}, nil
@@ -142,21 +143,21 @@ func newAzureCloudCredentialGetter() (*azureCloudCredentialGetter, error) {
 	return &azureCloudCredentialGetter{secretsAPI: client}, nil
 }
 
-func (a *azureCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
+func (a *azureCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (Credentials, error) {
 	const secretName = "opensearch-password"
 	const username = "cluster-instance-azure"
 	const version = "" // An empty string version gets the latest version of the secret.
 
 	resp, err := a.secretsAPI.GetSecret(ctx, secretName, version, nil)
 	if err != nil {
-		return credentials{}, fmt.Errorf("getting secret: %w", err)
+		return Credentials{}, fmt.Errorf("getting secret: %w", err)
 	}
 
 	if resp.Value == nil {
-		return credentials{}, errors.New("response value is empty")
+		return Credentials{}, errors.New("response value is empty")
 	}
 
-	return credentials{
+	return Credentials{
 		Username: username,
 		Password: *resp.Value,
 	}, nil
@@ -188,24 +189,24 @@ func newAWSCloudCredentialGetter(ctx context.Context) (*awsCloudCredentialGetter
 	return &awsCloudCredentialGetter{secretmanager: client}, nil
 }
 
-func (a *awsCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
+func (a *awsCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (Credentials, error) {
 	const username = "cluster-instance-aws"
 	secertName := "opensearch-password"
 
 	req := &awssecretmanager.GetSecretValueInput{SecretId: &secertName}
 	resp, err := a.secretmanager.GetSecretValue(ctx, req)
 	if err != nil {
-		return credentials{}, fmt.Errorf("getting secret value: %w", err)
+		return Credentials{}, fmt.Errorf("getting secret value: %w", err)
 	}
 
 	if resp.SecretString == nil {
-		return credentials{}, errors.New("response secret string is empty")
+		return Credentials{}, errors.New("response secret string is empty")
 	}
 
 	password := strings.TrimPrefix(*resp.SecretString, "{\"password\":\"")
 	password = strings.TrimSuffix(password, "\"}")
 
-	return credentials{
+	return Credentials{
 		Username: username,
 		Password: password,
 	}, nil
@@ -222,29 +223,21 @@ type awsSecretManagerAPI interface {
 }
 
 type qemuCloudCredentialGetter struct {
-	creds credentials
+	creds Credentials
 }
 
-func newQemuCloudCredentialGetter(infoMap *info.Map) (*qemuCloudCredentialGetter, error) {
+func newQemuCloudCredentialGetter(password string) (*qemuCloudCredentialGetter, error) {
 	const username = "cluster-instance-qemu"
 
-	password, ok, err := infoMap.Get("qemu.opensearch-pw")
-	if err != nil {
-		return nil, fmt.Errorf("getting qemu.opensearch-pw from info: %w", err)
-	}
-	if !ok {
-		return nil, errors.New("qemu.opensearch-pw not found in info")
-	}
-
 	return &qemuCloudCredentialGetter{
-		creds: credentials{
+		creds: Credentials{
 			Username: username,
 			Password: password,
 		},
 	}, nil
 }
 
-func (q *qemuCloudCredentialGetter) GetOpensearchCredentials(_ context.Context) (credentials, error) {
+func (q *qemuCloudCredentialGetter) GetOpensearchCredentials(_ context.Context) (Credentials, error) {
 	return q.creds, nil
 }
 

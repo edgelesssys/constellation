@@ -12,21 +12,15 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"strings"
 	"sync"
-	"text/template"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/logcollection"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-)
-
-const (
-	openSearchHost = "https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com:443"
 )
 
 // NewStartTrigger returns a trigger func can be registered with an infos instance.
@@ -35,7 +29,7 @@ const (
 //
 // This requires podman to be installed.
 func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprovider.Provider,
-	metadata providerMetadata, logger *logger.Logger,
+	meta providerMetadata, logger *logger.Logger,
 ) func(*info.Map) {
 	return func(infoMap *info.Map) {
 		wg.Add(1)
@@ -60,23 +54,28 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			cerdsGetter, err := newCloudCredentialGetter(ctx, provider, infoMap)
+			qemuPassword := ""
+			if provider == cloudprovider.QEMU {
+				qemuPassword, ok, err = infoMap.Get("qemu.opensearch-pw")
+				if err != nil {
+					logger.Errorf("getting qemu.opensearch-pw from info: %w", err)
+					return
+				}
+				if !ok {
+					logger.Errorf("qemu.opensearch-pw not found in info")
+					return
+				}
+			}
+			credsGetter, err := logcollection.NewCloudCredentialGetter(ctx, provider, qemuPassword)
 			if err != nil {
 				logger.Errorf("Creating cloud credential getter: %v", err)
 				return
 			}
 
 			logger.Infof("Getting credentials")
-			creds, err := cerdsGetter.GetOpensearchCredentials(ctx)
+			creds, err := credsGetter.GetOpensearchCredentials(ctx)
 			if err != nil {
 				logger.Errorf("Getting opensearch credentials: %v", err)
-				return
-			}
-
-			logger.Infof("Getting logstash pipeline template")
-			tmpl, err := getTemplate(ctx, logger)
-			if err != nil {
-				logger.Errorf("Getting logstash pipeline template: %v", err)
 				return
 			}
 
@@ -85,16 +84,38 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				logger.Errorf("Getting copy of map from info: %v", err)
 				return
 			}
-			infoMapM = filterInfoMap(infoMapM)
-			setCloudMetadata(ctx, infoMapM, provider, metadata)
 
 			logger.Infof("Writing logstash pipeline")
-			pipelineConf := logstashConfInput{
-				Host:        openSearchHost,
-				InfoMap:     infoMapM,
-				Credentials: creds,
+			ls, err := logcollection.NewLogstash()
+			if err != nil {
+				logger.Errorf("Creating logstash: %v", err)
+				return
 			}
-			if err := writeLogstashPipelineConf(tmpl, pipelineConf); err != nil {
+
+			self := metadata.InstanceMetadata{}
+			self, err = meta.Self(ctx)
+			if err != nil {
+				logger.Errorf("Getting self metadata: %v", err)
+			}
+
+			uid := ""
+			uid, err = meta.UID(ctx)
+			if err != nil {
+				logger.Errorf("Getting UID: %v", err)
+			}
+
+			tmplInput := logcollection.NewLogstashPipelineConfInput(
+				creds,
+				infoMapM,
+				logcollection.LogMetadata{
+					Provider: provider.String(),
+					Name:     self.Name,
+					Role:     self.Role,
+					VPCIP:    self.VPCIP,
+					UID:      uid,
+				},
+			)
+			if err := ls.WritePipelineConf(tmplInput, "pipeline.conf"); err != nil {
 				logger.Errorf("Writing logstash pipeline: %v", err)
 				return
 			}
@@ -105,51 +126,6 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			}
 		}()
 	}
-}
-
-func getTemplate(ctx context.Context, logger *logger.Logger) (*template.Template, error) {
-	createContainerArgs := []string{
-		"create",
-		"--name=template",
-		versions.LogstashImage,
-	}
-	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
-	logger.Infof("Creating logstash template container")
-	if out, err := createContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("creating logstash template container: %w\n%s", err, out)
-	}
-
-	if err := os.MkdirAll("/run/logstash", 0o777); err != nil {
-		return nil, fmt.Errorf("creating logstash template dir: %w", err)
-	}
-
-	copyFromArgs := []string{
-		"cp",
-		"template:/usr/share/constellogs/templates/",
-		"/run/logstash/",
-	}
-	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
-	logger.Infof("Copying logstash templates")
-	if out, err := copyFromCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("copying logstash templates: %w\n%s", err, out)
-	}
-
-	removeContainerArgs := []string{
-		"rm",
-		"template",
-	}
-	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
-	logger.Infof("Removing logstash template container")
-	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("removing logstash template container: %w\n%s", err, out)
-	}
-
-	tmpl, err := template.ParseFiles("/run/logstash/templates/pipeline.conf")
-	if err != nil {
-		return nil, fmt.Errorf("parsing logstash template: %w", err)
-	}
-
-	return tmpl, nil
 }
 
 func startPod(ctx context.Context, logger *logger.Logger) error {
@@ -209,66 +185,6 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 	}
 
 	return nil
-}
-
-type logstashConfInput struct {
-	Host        string
-	InfoMap     map[string]string
-	Credentials credentials
-}
-
-func writeLogstashPipelineConf(templ *template.Template, in logstashConfInput) error {
-	if err := os.MkdirAll("/run/logstash/pipeline", 0o777); err != nil {
-		return fmt.Errorf("creating logstash config dir: %w", err)
-	}
-
-	file, err := os.OpenFile("/run/logstash/pipeline/pipeline.conf", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
-	if err != nil {
-		return fmt.Errorf("opening logstash config file: %w", err)
-	}
-	defer file.Close()
-
-	if err := templ.Execute(file, in); err != nil {
-		return fmt.Errorf("executing logstash pipeline template: %w", err)
-	}
-
-	return nil
-}
-
-func filterInfoMap(in map[string]string) map[string]string {
-	out := make(map[string]string)
-
-	for k, v := range in {
-		if strings.HasPrefix(k, "logcollect.") {
-			out[strings.TrimPrefix(k, "logcollect.")] = v
-		}
-	}
-
-	delete(out, "logcollect")
-
-	return out
-}
-
-func setCloudMetadata(ctx context.Context, m map[string]string, provider cloudprovider.Provider, metadata providerMetadata) {
-	m["provider"] = provider.String()
-
-	self, err := metadata.Self(ctx)
-	if err != nil {
-		m["name"] = "unknown"
-		m["role"] = "unknown"
-		m["vpcip"] = "unknown"
-	} else {
-		m["name"] = self.Name
-		m["role"] = self.Role.String()
-		m["vpcip"] = self.VPCIP
-	}
-
-	uid, err := metadata.UID(ctx)
-	if err != nil {
-		m["uid"] = "unknown"
-	} else {
-		m["uid"] = uid
-	}
 }
 
 func newCmdLogger(logger *logger.Logger) io.Writer {

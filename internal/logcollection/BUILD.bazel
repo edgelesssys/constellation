@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "logcollection",
+    srcs = [
+        "credentials.go",
+        "logcollection.go",
+        "logstash.go",
+    ],
+    embedsrcs = [
+        "logstash/Makefile",
+        "logstash/config/log4j2.properties",
+        "logstash/config/logstash.yaml",
+        "logstash/config/pipelines.yaml",
+        "logstash/templates/pipeline.conf.template",
+        "logstash/templates/values.yml.template",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/logcollection",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/role",
+        "@com_github_aws_aws_sdk_go_v2_config//:config",
+        "@com_github_aws_aws_sdk_go_v2_service_secretsmanager//:secretsmanager",
+        "@com_github_azure_azure_sdk_for_go_sdk_azidentity//:azidentity",
+        "@com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets//:azsecrets",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_google_cloud_go_secretmanager//apiv1",
+        "@com_google_cloud_go_secretmanager//apiv1/secretmanagerpb",
+    ],
+)
+
+go_test(
+    name = "logcollection_test",
+    srcs = ["credentials_test.go"],
+    embed = [":logcollection"],
+    deps = [
+        "@com_github_aws_aws_sdk_go_v2_service_secretsmanager//:secretsmanager",
+        "@com_github_azure_azure_sdk_for_go_sdk_keyvault_azsecrets//:azsecrets",
+        "@com_github_googleapis_gax_go_v2//:gax-go",
+        "@com_github_stretchr_testify//assert",
+        "@com_google_cloud_go_secretmanager//apiv1/secretmanagerpb",
+    ],
+)

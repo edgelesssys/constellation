@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package logcollector
+package logcollection
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func TestGetOpensearchCredentialsGCP(t *testing.T) {
 
 	testCases := map[string]struct {
 		gcpAPI    gcpSecretManagerAPI
-		wantCreds credentials
+		wantCreds Credentials
 		wantErr   bool
 	}{
 		"gcp success": {
@@ -38,7 +38,7 @@ func TestGetOpensearchCredentialsGCP(t *testing.T) {
 					},
 				},
 			},
-			wantCreds: credentials{
+			wantCreds: Credentials{
 				Username: "cluster-instance-gcp",
 				Password: "e2e-logs-OpenSearch-password",
 			},
@@ -97,7 +97,7 @@ func (s stubGCPSecretManagerAPI) Close() error {
 func TestGetOpensearchCredentialsAzure(t *testing.T) {
 	testCases := map[string]struct {
 		azureAPI  azureSecretsAPI
-		wantCreds credentials
+		wantCreds Credentials
 		wantErr   bool
 	}{
 		"azure success": {
@@ -108,7 +108,7 @@ func TestGetOpensearchCredentialsAzure(t *testing.T) {
 					},
 				},
 			},
-			wantCreds: credentials{
+			wantCreds: Credentials{
 				Username: "cluster-instance-azure",
 				Password: "test-password",
 			},
@@ -156,7 +156,7 @@ func (s stubAzureSecretsAPI) Close() error {
 func TestGetOpensearchCredentialsAWS(t *testing.T) {
 	testCases := map[string]struct {
 		awsAPI    awsSecretManagerAPI
-		wantCreds credentials
+		wantCreds Credentials
 		wantErr   bool
 	}{
 		"aws success": {
@@ -165,7 +165,7 @@ func TestGetOpensearchCredentialsAWS(t *testing.T) {
 					SecretString: ptr("test-password"),
 				},
 			},
-			wantCreds: credentials{
+			wantCreds: Credentials{
 				Username: "cluster-instance-aws",
 				Password: "test-password",
 			},
