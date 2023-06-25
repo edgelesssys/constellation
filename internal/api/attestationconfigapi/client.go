@@ -71,7 +71,7 @@ func (a Client) DeleteAzureSEVSNPVersion(ctx context.Context, versionStr string)
 	return executeAllCmds(ctx, a.s3Client, ops)
 }
 
-// List returns the list of versions for the given attestation type.
+// List returns the list of versions for the given attestation variant.
 func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string, error) {
 	if attestation.Equal(variant.AzureSEVSNP{}) {
 		versions, err := apiclient.Fetch(ctx, a.s3Client, AzureSEVSNPVersionList{})
@@ -80,7 +80,7 @@ func (a Client) List(ctx context.Context, attestation variant.Variant) ([]string
 		}
 		return versions, nil
 	}
-	return nil, fmt.Errorf("unsupported attestation type: %s", attestation)
+	return nil, fmt.Errorf("unsupported attestation variant: %s", attestation)
 }
 
 func (a Client) deleteAzureSEVSNPVersion(versions AzureSEVSNPVersionList, versionStr string) (ops []crudCmd, err error) {

@@ -73,7 +73,7 @@ The Constellation CLI can also print the supported instance types with: `constel
 
 :::caution
 Due to a bug in AWS's SNP implementation, SNP report generation currently fails in unforeseeable circumstances.
-Therefore, even if you select attestation type `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
+Therefore, even if you select attestation variant `awsSEVSNP`, Constellation still uses NitroTPM-based attestation.
 Nonetheless, runtime encryption is enabled.
 AWS is currently investigating the issue.
 SNP-based attestation will be enabled as soon as a fix is verified.

@@ -193,7 +193,7 @@ func TestNoValidProviderAttestationCombination(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			_, err := createConfigWithAttestationType(test.provider, "", test.attestation)
+			_, err := createConfigWithAttestationVariant(test.provider, "", test.attestation)
 			assert.Error(err)
 		})
 	}
@@ -244,7 +244,7 @@ func TestValidProviderAttestationCombination(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Provider:%s,Attestation:%s", test.provider, test.attestation), func(t *testing.T) {
-			sut, err := createConfigWithAttestationType(test.provider, "", test.attestation)
+			sut, err := createConfigWithAttestationVariant(test.provider, "", test.attestation)
 			assert := assert.New(t)
 			assert.NoError(err)
 			assert.Equal(test.expected, sut.Attestation)
