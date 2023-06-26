@@ -400,7 +400,7 @@ func isAppClientIDError(err error) bool {
 type UnsupportedAppRegistrationError struct{}
 
 func (e UnsupportedAppRegistrationError) Error() string {
-	return "Azure app registrations are not supported since v2.9. migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nplease remove it from your config and from the Kubernetes secret in your running cluster. ensure that the UAMI has all required permissions."
+	return "Azure app registrations are not supported since v2.9. Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nPlease remove it from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions."
 }
 
 // New creates a new config by:
