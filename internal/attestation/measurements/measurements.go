@@ -186,7 +186,7 @@ func (m *M) FetchNoVerify(ctx context.Context, client *http.Client, measurements
 ) error {
 	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
-		return fmt.Errorf("failed to fetch measurements: %w", err)
+		return fmt.Errorf("failed to fetch measurements from %s: %w", measurementsURL.String(), err)
 	}
 
 	var measurements ImageMeasurementsV2

@@ -138,23 +138,7 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: assert.AnError},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting the cloud node manager": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: assert.AnError},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting the cluster autoscaler": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: assert.AnError},
+			helmClient:       stubHelmClient{installChartError: assert.AnError},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -162,14 +146,6 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when reading kubeconfig": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting up konnectivity": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: assert.AnError},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -582,24 +558,14 @@ func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
 type stubHelmClient struct {
 	ciliumError       error
 	installChartError error
-	operatorsError    error
-	servicesError     error
 }
 
 func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ helm.Release, _ k8sapi.SetupPodNetworkInput) error {
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallChart(_ context.Context, _ helm.Release) error {
+func (s *stubHelmClient) InstallChart(_ context.Context, _ helm.Release, _ map[string]any) error {
 	return s.installChartError
-}
-
-func (s *stubHelmClient) InstallOperators(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.operatorsError
-}
-
-func (s *stubHelmClient) InstallConstellationServices(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.servicesError
 }
 
 type stubKubeAPIWaiter struct {

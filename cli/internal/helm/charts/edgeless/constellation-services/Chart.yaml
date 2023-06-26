@@ -57,21 +57,6 @@ dependencies:
     version: 0.0.0
     tags:
       - GCP
-  - name: gcp-compute-persistent-disk-csi-driver
-    version: 1.0.1
-    condition: gcp.deployCSIDriver
-    tags:
-      - GCP
-  - name: azuredisk-csi-driver
-    version: 1.0.1
-    condition: azure.deployCSIDriver
-    tags:
-      - Azure
-  - name: aws-csi-driver
-    version: 1.0.0
-    condition: aws.deployCSIDriver
-    tags:
-      - AWS
   - name: yawol-config
     version: 0.0.0
     condition: openstack.deployYawolLoadBalancer
@@ -80,15 +65,5 @@ dependencies:
   - name: yawol-controller
     version: 0.0.0
     condition: openstack.deployYawolLoadBalancer
-    tags:
-      - OpenStack
-  - name: cinder-config
-    version: 1.0.0
-    condition: openstack.deployCSIDriver
-    tags:
-      - OpenStack
-  - name: cinder-csi-plugin
-    version: 1.0.0
-    condition: openstack.deployCSIDriver
     tags:
       - OpenStack
