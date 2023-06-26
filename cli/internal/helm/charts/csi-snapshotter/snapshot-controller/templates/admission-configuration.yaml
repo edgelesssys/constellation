@@ -1,0 +1,23 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "validation-webhook.snapshot.storage.k8s.io"
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/snapshot-validation-serving-cert
+webhooks:
+- name: "validation-webhook.snapshot.storage.k8s.io"
+  rules:
+  - apiGroups:   ["snapshot.storage.k8s.io"]
+    apiVersions: ["v1"]
+    operations:  ["CREATE", "UPDATE"]
+    resources:   ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
+    scope:       "*"
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: "snapshot-validation-service"
+      path: "/volumesnapshot"
+  admissionReviewVersions: ["v1"]
+  sideEffects: None
+  failurePolicy: Fail # We recommend switching to Fail only after successful installation of the webhook server and webhook.
+  timeoutSeconds: 15 # This will affect the latency and performance. Finetune this value based on your application's tolerance.
