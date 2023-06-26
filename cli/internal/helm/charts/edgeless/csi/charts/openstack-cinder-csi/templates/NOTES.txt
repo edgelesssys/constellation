@@ -1,0 +1,1 @@
+Use the following storageClass encrypted-rwo and integrity-encrypted-rwo only for RWO volumes.

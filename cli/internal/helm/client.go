@@ -269,29 +269,20 @@ func (c *Client) upgradeRelease(
 	switch chart.Metadata.Name {
 	case ciliumInfo.chartName:
 		releaseName = ciliumInfo.releaseName
-		values, err = loader.loadCiliumValues()
-		if err != nil {
-			return fmt.Errorf("loading values: %w", err)
-		}
+		values = ciliumVals[conf.GetProvider().String()]
 	case certManagerInfo.chartName:
 		releaseName = certManagerInfo.releaseName
 		values = loader.loadCertManagerValues()
 	case constellationOperatorsInfo.chartName:
 		releaseName = constellationOperatorsInfo.releaseName
-		values, err = loader.loadOperatorsValues()
-		if err != nil {
-			return fmt.Errorf("loading values: %w", err)
-		}
+		values = loader.loadOperatorsValues()
 
 		if err := c.updateCRDs(ctx, chart); err != nil {
 			return fmt.Errorf("updating CRDs: %w", err)
 		}
 	case constellationServicesInfo.chartName:
 		releaseName = constellationServicesInfo.releaseName
-		values, err = loader.loadConstellationServicesValues()
-		if err != nil {
-			return fmt.Errorf("loading values: %w", err)
-		}
+		values = loader.loadConstellationServicesValues()
 
 		if err := c.applyMigrations(ctx, releaseName, values, conf); err != nil {
 			return fmt.Errorf("applying migrations: %w", err)

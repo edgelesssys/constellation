@@ -232,29 +232,36 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Constellation microservices")
-	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
 	// cert-manager provides CRDs used by other deployments,
-	// so it should be installed as early as possible, but after our microservices.
+	// so it should be installed as early as possible, but after the services cert-manager depends on.
 	log.Infof("Installing cert-manager")
-	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager, nil); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
 
-	// CSI snapshot-controller requires CRDs from cert-manager. It must be installed after it.
-	// CSI snapshot support should also only be deployed on clouds where we can deploy CSI drivers,
-	// and the deployment was not disabled by the user.
-	if helmReleases.SnapshotCRDs != nil && helmReleases.SnapshotController != nil {
-		log.Infof("Installing CSI snapshot CRDs")
-		if err = k.helmClient.InstallChart(ctx, *helmReleases.SnapshotCRDs); err != nil {
-			return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
+	// Install CSI drivers if enabled by the user.
+	if helmReleases.CSI != nil {
+		var csiVals map[string]any
+		if cloudprovider.FromString(k.cloudProvider) == cloudprovider.OpenStack {
+			creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
+			if err != nil {
+				return nil, err
+			}
+			cinderIni := creds.CloudINI().CinderCSIConfiguration()
+			csiVals = map[string]any{
+				"cinder-config": map[string]any{
+					"secretData": cinderIni,
+				},
+			}
 		}
 
-		log.Infof("Installing CSI snapshot-controller")
-		if err = k.helmClient.InstallChart(ctx, *helmReleases.SnapshotController); err != nil {
-			return nil, fmt.Errorf("installing CSI snapshot-controller: %w", err)
+		log.Infof("Installing CSI deployments")
+		if err := k.helmClient.InstallChart(ctx, *helmReleases.CSI, csiVals); err != nil {
+			return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
 		}
 	}
 
@@ -266,7 +273,7 @@ func (k *KubeWrapper) InitCluster(
 	// Constellation operators require CRDs from cert-manager.
 	// They must be installed after it.
 	log.Infof("Installing operators")
-	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.Operators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 
@@ -430,7 +437,6 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		"join-service": map[string]any{
 			"measurementSalt": base64.StdEncoding.EncodeToString(serviceConfig.measurementSalt),
 		},
-		"ccm": map[string]any{},
 		"verification-service": map[string]any{
 			"loadBalancerIP": serviceConfig.loadBalancerIP,
 		},
@@ -465,15 +471,13 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			return nil, fmt.Errorf("marshaling service account key: %w", err)
 		}
 
-		ccmVals, ok := extraVals["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["GCP"] = map[string]any{
-			"projectID":         projectID,
-			"uid":               uid,
-			"secretData":        string(rawKey),
-			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
+		extraVals["ccm"] = map[string]any{
+			"GCP": map[string]any{
+				"projectID":         projectID,
+				"uid":               uid,
+				"secretData":        string(rawKey),
+				"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
+			},
 		}
 
 	case cloudprovider.Azure:
@@ -487,13 +491,10 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 			return nil, fmt.Errorf("creating ccm secret: %w", err)
 		}
 
-		ccmVals, ok := extraVals["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["Azure"] = map[string]any{
-			"azureConfig":       string(ccmConfig),
-			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
+		extraVals["ccm"] = map[string]any{
+			"Azure": map[string]any{
+				"azureConfig": string(ccmConfig),
+			},
 		}
 
 	case cloudprovider.OpenStack:
@@ -525,10 +526,6 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		extraVals["yawol-controller"] = map[string]any{
 			"yawolNetworkID": networkIDs[0],
 			"yawolAPIHost":   fmt.Sprintf("https://%s:%d", serviceConfig.loadBalancerIP, constants.KubernetesPort),
-		}
-		cinderIni := creds.CloudINI().CinderCSIConfiguration()
-		extraVals["cinder-config"] = map[string]any{
-			"secretData": cinderIni,
 		}
 	}
 	return extraVals, nil

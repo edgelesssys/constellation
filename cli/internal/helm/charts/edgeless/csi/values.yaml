@@ -1,0 +1,11 @@
+global:
+  # Port on which the KeyService will listen.
+  keyServicePort: 9000
+
+# Set one of the tags to true to indicate which CSP you are deploying to.
+tags:
+  AWS: false
+  Azure: false
+  GCP: false
+  OpenStack: false
+  QEMU: false

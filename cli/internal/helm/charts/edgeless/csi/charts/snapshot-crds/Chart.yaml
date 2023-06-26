@@ -1,0 +1,6 @@
+apiVersion: v2
+name: snapshot-crds
+description: A chart to deploy CSI snapshot CRDs
+type: application
+version: 6.2.2
+appVersion: "6.2.2"

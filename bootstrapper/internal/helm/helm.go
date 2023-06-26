@@ -34,7 +34,7 @@ import (
 
 const (
 	// timeout is the maximum time given to the helm client.
-	timeout = 5 * time.Minute
+	timeout = 10 * time.Minute
 )
 
 // Client is used to install microservice during cluster initialization. It is a wrapper for a helm install action.
@@ -66,25 +66,8 @@ func New(log *logger.Logger) (*Client, error) {
 	}, nil
 }
 
-// InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
-func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
-	h.ReleaseName = release.ReleaseName
-
-	mergedVals := helm.MergeMaps(release.Values, extraVals)
-
-	return h.install(ctx, release.Chart, mergedVals)
-}
-
-// InstallChart installs a helm chart without extra setup.
-func (h *Client) InstallChart(ctx context.Context, release helm.Release) error {
-	h.ReleaseName = release.ReleaseName
-	h.Timeout = 10 * time.Minute
-
-	return h.install(ctx, release.Chart, release.Values)
-}
-
-// InstallOperators installs the Constellation Operators.
-func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
+// InstallChart installs a helm chart, optionally merging extraVals into the values of the chart.
+func (h *Client) InstallChart(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)

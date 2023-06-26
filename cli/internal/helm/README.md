@@ -10,14 +10,18 @@ Because upgrades should be a CLI-only operation and we want to avoid the behavio
 Here is how we manage CRD upgrades for each chart.
 
 ## Cilium
+
 - CRDs are updated by cilium-operator.
 
 ## cert-manager
+
 - installCRDs flag is set during upgrade. This flag is managed by cert-manager. cert-manager is in charge of correctly upgrading the CRDs.
 - WARNING: upgrading cert-manager might break other installations of cert-manager in the cluster, if those other installation are not on the same version as the Constellation-manager installation. This is due to the cluster-wide CRDs.
 
 ## Operators
+
 - Manually update CRDs before upgrading the chart. Update by running applying the CRDs found in the `operators/crds/` folder.
 
 ## Constellation-services
+
 - There currently are no CRDs in this chart.
