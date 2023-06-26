@@ -10,8 +10,8 @@ terraform {
 locals {
   tags      = distinct(sort(concat(var.tags, ["constellation-role-${var.role}"], ["constellation-node-group-${var.node_group_name}"])))
   group_uid = random_id.uid.hex
-  #name = "${var.name}-${var.role}"
-  name = "${var.name}-${var.role}-${local.group_uid}"
+  #name = "${var.base_name}-${var.role}"  // TODO keep old naming ?
+  name = "${var.base_name}-${var.role}-${local.group_uid}"
 }
 
 resource "random_id" "uid" {

@@ -249,6 +249,7 @@ type OpenStackClusterVariables struct {
 	Debug bool `hcl:"debug" cty:"debug"`
 }
 
+// OpenStackNodeGroup is a node group to create on OpenStack.
 type OpenStackNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`

@@ -162,7 +162,7 @@ module "instance_group" {
 
   source                     = "./modules/instance_group"
   for_each                   = var.node_groups
-  name                       = local.name // TODO base_name
+  base_name                  = local.name
   node_group_name            = each.key
   role                       = each.value.role
   instance_count             = each.value.instance_count
