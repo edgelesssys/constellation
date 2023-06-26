@@ -42,7 +42,7 @@ spec:
       volumes:
         - name: snapshot-validation-webhook-certs
           secret:
-            secretName: webhook-server-cert
+            secretName: snapshot-validation-serving-cert
 ---
 apiVersion: v1
 kind: Service

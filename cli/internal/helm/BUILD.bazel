@@ -388,6 +388,7 @@ go_library(
         "charts/csi-snapshotter/snapshot-controller/templates/snapshot-controller.yaml",
         "charts/csi-snapshotter/snapshot-controller/templates/snapshot-webhook.yaml",
         "charts/csi-snapshotter/snapshot-controller/values.yaml",
+        "charts/csi-snapshotter/snapshot-controller/templates/admission-configuration.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],
