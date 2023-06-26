@@ -56,7 +56,6 @@ func TestConstellationServices(t *testing.T) {
 	testCases := map[string]struct {
 		config             *config.Config
 		enforceIDKeyDigest bool
-		valuesModifier     func(map[string]any) error
 		ccmImage           string
 		cnmImage           string
 	}{
@@ -69,8 +68,7 @@ func TestConstellationServices(t *testing.T) {
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
-			valuesModifier: prepareAWSValues,
-			ccmImage:       "ccmImageForAWS",
+			ccmImage: "ccmImageForAWS",
 		},
 		"Azure": {
 			config: &config.Config{
@@ -91,7 +89,6 @@ func TestConstellationServices(t *testing.T) {
 				}},
 			},
 			enforceIDKeyDigest: true,
-			valuesModifier:     prepareAzureValues,
 			ccmImage:           "ccmImageForAzure",
 			cnmImage:           "cnmImageForAzure",
 		},
@@ -104,8 +101,7 @@ func TestConstellationServices(t *testing.T) {
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
-			valuesModifier: prepareGCPValues,
-			ccmImage:       "ccmImageForGCP",
+			ccmImage: "ccmImageForGCP",
 		},
 		"OpenStack": {
 			config: &config.Config{
@@ -114,8 +110,7 @@ func TestConstellationServices(t *testing.T) {
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
-			valuesModifier: prepareOpenStackValues,
-			ccmImage:       "ccmImageForOpenStack",
+			ccmImage: "ccmImageForOpenStack",
 		},
 		"QEMU": {
 			config: &config.Config{
@@ -124,7 +119,6 @@ func TestConstellationServices(t *testing.T) {
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
 				}},
 			},
-			valuesModifier: prepareQEMUValues,
 		},
 	}
 
@@ -146,8 +140,7 @@ func TestConstellationServices(t *testing.T) {
 			}
 			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
-			values, err := chartLoader.loadConstellationServicesValues()
-			require.NoError(err)
+			values := chartLoader.loadConstellationServicesValues()
 			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
@@ -165,7 +158,13 @@ func TestConstellationServices(t *testing.T) {
 				KubeVersion: *kubeVersion,
 			}
 
-			err = tc.valuesModifier(values)
+			// Add provider tag
+			values["tags"] = map[string]any{
+				tc.config.GetProvider().String(): true,
+			}
+
+			// Add values that are only known after the cluster is created.
+			err = addInClusterValues(values, tc.config.GetProvider())
 			require.NoError(err)
 
 			// This step is needed to enabled/disable subcharts according to their tags/conditions.
@@ -179,7 +178,7 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 			testDataPath := path.Join("testdata", tc.config.GetProvider().String(), "constellation-services")
 
-			// Build a map with the same struct as result: filepaths -> rendered template.
+			// Build a map with the same structure as result: filepaths -> rendered template.
 			expectedData := map[string]string{}
 			err = filepath.Walk(testDataPath, buildTestdataMap(tc.config.GetProvider().String(), expectedData, require))
 			require.NoError(err)
@@ -222,8 +221,7 @@ func TestOperators(t *testing.T) {
 			}
 			chart, err := loadChartsDir(helmFS, constellationOperatorsInfo.path)
 			require.NoError(err)
-			vals, err := chartLoader.loadOperatorsValues()
-			require.NoError(err)
+			vals := chartLoader.loadOperatorsValues()
 
 			options := chartutil.ReleaseOptions{
 				Name:      "testRelease",
@@ -234,6 +232,9 @@ func TestOperators(t *testing.T) {
 			}
 			caps := &chartutil.Capabilities{}
 
+			vals["tags"] = map[string]any{
+				tc.csp.String(): true,
+			}
 			conOpVals, ok := vals["constellation-operator"].(map[string]any)
 			require.True(ok)
 			conOpVals["constellationUID"] = "42424242424242"
@@ -328,191 +329,14 @@ func buildTestdataMap(csp string, expectedData map[string]string, require *requi
 	}
 }
 
-func prepareAWSValues(values map[string]any) error {
+// addInClusterValues adds values that are only known after the cluster is created.
+func addInClusterValues(values map[string]any, csp cloudprovider.Provider) error {
 	joinVals, ok := values["join-service"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
 
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	ccmVals, ok := values["ccm"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'ccm' key")
-	}
-	ccmVals["AWS"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
-
-	verificationVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'verification-service' key")
-	}
-	verificationVals["loadBalancerIP"] = "127.0.0.1"
-
-	konnectivityVals, ok := values["konnectivity"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'konnectivity' key")
-	}
-	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
-
-	return nil
-}
-
-func prepareAzureValues(values map[string]any) error {
-	joinVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'join-service' key")
-	}
-
-	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	ccmVals, ok := values["ccm"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'ccm' key")
-	}
-	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
-	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
-
-	autoscalerVals, ok := values["autoscaler"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'autoscaler' key")
-	}
-	autoscalerVals["Azure"] = map[string]any{
-		"resourceGroup":  "resourceGroup",
-		"subscriptionID": "subscriptionID",
-		"tenantID":       "TenantID",
-	}
-
-	testTag := "v0.0.0"
-	pullPolicy := "IfNotPresent"
-	verificationVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'verification-service' key")
-	}
-	verificationVals["loadBalancerIP"] = "127.0.0.1"
-
-	konnectivityVals, ok := values["konnectivity"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'konnectivity' key")
-	}
-	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
-
-	csiVals, ok := values["azuredisk-csi-driver"].(map[string]any)
-	if !ok {
-		csiVals = map[string]any{}
-		values["azuredisk-csi-driver"] = csiVals
-	}
-	csiImages, ok := csiVals["image"].(map[string]any)
-	if !ok {
-		csiImages = map[string]any{}
-		csiVals["image"] = csiImages
-	}
-	csiImages["azuredisk"] = map[string]any{
-		"repository": "azure-csi-driver",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiImages["csiProvisioner"] = map[string]any{
-		"repository": "csi-provisioner",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiImages["csiAttacher"] = map[string]any{
-		"repository": "csi-attacher",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiImages["csiResizer"] = map[string]any{
-		"repository": "csi-resizer",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiImages["livenessProbe"] = map[string]any{
-		"repository": "livenessprobe",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiImages["nodeDriverRegistrar"] = map[string]any{
-		"repository": "csi-node-driver-registrar",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiSnapshot, ok := csiVals["snapshot"].(map[string]any)
-	if !ok {
-		csiSnapshot = map[string]any{}
-		csiVals["snapshot"] = csiSnapshot
-	}
-	csiSnapshotImage, ok := csiSnapshot["image"].(map[string]any)
-	if !ok {
-		csiSnapshotImage = map[string]any{}
-		csiSnapshot["image"] = csiSnapshotImage
-	}
-	csiSnapshotImage["csiSnapshotter"] = map[string]any{
-		"repository": "csi-snapshotter",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-	csiSnapshotImage["snapshotController"] = map[string]any{
-		"repository": "snapshot-controller",
-		"tag":        testTag,
-		"pullPolicy": pullPolicy,
-	}
-
-	return nil
-}
-
-func prepareGCPValues(values map[string]any) error {
-	joinVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'join-service' key")
-	}
-
-	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	ccmVals, ok := values["ccm"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'ccm' key")
-	}
-	ccmVals["GCP"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
-	ccmVals["GCP"].(map[string]any)["projectID"] = "42424242424242"
-	ccmVals["GCP"].(map[string]any)["uid"] = "242424242424"
-	ccmVals["GCP"].(map[string]any)["secretData"] = "baaaaaad"
-
-	testTag := "v0.0.0"
-	pullPolicy := "IfNotPresent"
-	values["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
-		"image": map[string]any{
-			"csiProvisioner": map[string]any{
-				"repo":       "csi-provisioner",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiAttacher": map[string]any{
-				"repo":       "csi-attacher",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiResizer": map[string]any{
-				"repo":       "csi-resizer",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiSnapshotter": map[string]any{
-				"repo":       "csi-snapshotter",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiNodeRegistrar": map[string]any{
-				"repo":       "csi-registrar",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"gcepdDriver": map[string]any{
-				"repo":       "csi-driver",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-		},
-	}
 
 	verificationVals, ok := values["verification-service"].(map[string]any)
 	if !ok {
@@ -526,56 +350,40 @@ func prepareGCPValues(values map[string]any) error {
 	}
 	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
-	return nil
-}
-
-func prepareOpenStackValues(values map[string]any) error {
-	joinVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'join-service' key")
-	}
-	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
 	ccmVals, ok := values["ccm"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["OpenStack"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
-	ccmVals["OpenStack"].(map[string]any)["secretData"] = "baaaaaad"
 
-	verificationVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'verification-service' key")
+	switch csp {
+	case cloudprovider.Azure:
+		ccmVals[cloudprovider.Azure.String()] = map[string]any{
+			"azureConfig": "baaaaaad",
+		}
+
+		autoscalerVals, ok := values["autoscaler"].(map[string]any)
+		if !ok {
+			return errors.New("missing 'autoscaler' key")
+		}
+		autoscalerVals["Azure"] = map[string]any{
+			"resourceGroup":  "resourceGroup",
+			"subscriptionID": "subscriptionID",
+			"tenantID":       "TenantID",
+		}
+
+	case cloudprovider.GCP:
+		ccmVals[cloudprovider.GCP.String()] = map[string]any{
+			"subnetworkPodCIDR": "192.0.2.0/24",
+			"projectID":         "42424242424242",
+			"uid":               "242424242424",
+			"secretData":        "baaaaaad",
+		}
+
+	case cloudprovider.OpenStack:
+		ccmVals["OpenStack"] = map[string]any{
+			"secretData": "baaaaaad",
+		}
 	}
-	verificationVals["loadBalancerIP"] = "127.0.0.1"
-
-	konnectivityVals, ok := values["konnectivity"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'konnectivity' key")
-	}
-	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
-
-	return nil
-}
-
-func prepareQEMUValues(values map[string]any) error {
-	joinVals, ok := values["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'join-service' key")
-	}
-	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	verificationVals, ok := values["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'verification-service' key")
-	}
-	verificationVals["loadBalancerIP"] = "127.0.0.1"
-
-	konnectivityVals, ok := values["konnectivity"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'konnectivity' key")
-	}
-	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
 	return nil
 }

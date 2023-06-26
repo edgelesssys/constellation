@@ -14,6 +14,11 @@ if ! command -v git &> /dev/null; then
   exit 1
 fi
 
+if ! command -v yq &> /dev/null; then
+  echo "yq could not be found"
+  exit 1
+fi
+
 # download_chart downloads the Helm chart for the given CSI driver and version.
 #
 # Arguments:
@@ -33,7 +38,8 @@ download_chart() {
   callDir=$(pwd)
   repo_tmp_dir=$(mktemp -d)
 
-  chart_base_path="charts/edgeless/constellation-services/charts"
+  csi_chart_path="charts/edgeless/csi"
+  chart_base_path="${csi_chart_path}/charts"
 
   cd "${repo_tmp_dir}"
   git clone \
@@ -55,6 +61,12 @@ download_chart() {
   mkdir -p "${chart_base_path}/${chart_name}"
   cp -r "${repo_tmp_dir}/${chart_dir}"/* "${chart_base_path}/${chart_name}"
 
+  # get new version from Chart.yaml
+  new_version=$(yq '.version' "${chart_base_path}/${chart_name}/Chart.yaml")
+
+  # update dependency version in parent Chart.yaml
+  yq -i "(.dependencies[] | select( .name== \"${chart_name}\").version) = \"${new_version}\"" "${csi_chart_path}/Chart.yaml"
+
   return
 }
 
@@ -66,5 +78,8 @@ download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-drive
 
 ## GCP CSI Driver
 download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.2.0" "charts" "gcp-compute-persistent-disk-csi-driver"
+
+## OpenStack CSI Driver (cinder)
+download_chart "https://github.com/edgelesssys/constellation-cloud-provider-openstack" "v1.0.0" "charts/cinder-csi-plugin" "openstack-cinder-csi"
 
 echo # final newline

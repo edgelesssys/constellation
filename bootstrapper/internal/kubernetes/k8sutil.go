@@ -26,12 +26,9 @@ type clusterUtil interface {
 	StartKubelet() error
 }
 
-// helmClient bundles functions related to microservice deployment. Only microservices that can be deployed purely via Helm are deployed with this interface.
-// Currently only a subset of microservices is deployed via Helm.
-// Naming is inspired by Helm.
+// helmClient bundles functions related to microservice deployment.
+// Only microservices that can be deployed purely via Helm are deployed with this interface.
 type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
-	InstallChart(ctx context.Context, release helm.Release) error
-	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
-	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
+	InstallChart(ctx context.Context, release helm.Release, extraVals map[string]any) error
 }

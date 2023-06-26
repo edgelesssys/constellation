@@ -1,0 +1,30 @@
+apiVersion: v2
+name: constellation-csi
+description: A chart to deploy CSI services for Constellation
+type: application
+version: 0.0.0
+dependencies:
+  - name: snapshot-controller
+    version: 6.2.2
+  - name: snapshot-crds
+    version: 6.2.2
+  - name: aws-csi-driver
+    version: 1.1.0
+    tags:
+      - AWS
+  - name: azuredisk-csi-driver
+    version: v1.2.0
+    tags:
+      - Azure
+  - name: cinder-config
+    version: 1.0.0
+    tags:
+      - OpenStack
+  - name: gcp-compute-persistent-disk-csi-driver
+    version: 1.2.0
+    tags:
+      - GCP
+  - name: openstack-cinder-csi
+    version: 1.0.0
+    tags:
+      - OpenStack
