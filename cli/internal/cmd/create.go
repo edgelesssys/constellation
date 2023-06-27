@@ -320,7 +320,7 @@ func validateCLIandConstellationVersionAreEqual(cliVersion, imageVersion, micros
 		return fmt.Errorf("parsing binary version: %w", err)
 	}
 
-	if semCLI.Compare(semImage) != 0 || semCLI.Compare(semMicro) != 0 {
+	if !semCLI.MajorMinorPatchEqual(semImage) || semCLI.Compare(semMicro) != 0 {
 		return fmt.Errorf("cli version %q does not match microservice version %q or image %q", semCLI.String(), semMicro.String(), semImage.String())
 	}
 	return nil

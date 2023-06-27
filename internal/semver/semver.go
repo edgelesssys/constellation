@@ -68,6 +68,11 @@ func (v Semver) Compare(other Semver) int {
 	return semver.Compare(v.String(), other.String())
 }
 
+// MajorMinorPatchEqual returns if the major, minor and patch version of two versions are equal.
+func (v Semver) MajorMinorPatchEqual(other Semver) bool {
+	return v.Major == other.Major && v.Minor == other.Minor && v.Patch == other.Patch
+}
+
 // IsUpgradeTo returns if a version is an upgrade to another version.
 // It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
 func (v Semver) IsUpgradeTo(other Semver) bool {

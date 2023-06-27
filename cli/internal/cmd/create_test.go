@@ -305,6 +305,17 @@ func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
 			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
 		},
+		"image version suffix need not be equal to CLI version": {
+			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.19990626150512-9z36ce61799z",
+			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
+			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+		},
+		"microService version suffix must be equal to CLI version": {
+			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: "v2.9.0-pre.0.19990626150512-9z36ce61799z",
+			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+			wantErr:             true,
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
