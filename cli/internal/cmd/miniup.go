@@ -143,15 +143,16 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 		}
 	}
 
-	config := config.Default()
-	config.Name = constants.MiniConstellationUID
-	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
-	config.StateDiskSizeGB = 8
-
+	// TODO: Should we allow this at all?  It seems more logical to follow the usage pattern for the other providers: constellation config generate mini -> constellation init. But maybe it's more user friendly to not persist a config file in the workspace for a testing cluster?
+	config := config.MiniDefault()
 	// only release images (e.g. v2.7.0) use the production NVRAM
 	if !config.IsReleaseImage() {
 		config.Provider.QEMU.NVRAM = "testing"
 	}
+	// TODO: this validation would fail since no image nor measurements are set; we create a cluster with what we call invalid?
+	//if err := config.Validate(flags.force); err != nil {
+	//	return nil, fmt.Errorf("validating config: %w", err)
+	//}
 
 	m.log.Debugf("Prepared configuration")
 

@@ -297,7 +297,7 @@ type AttestationConfig struct {
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
 
-// Default returns a struct with the default config.
+// Default returns a struct with the default config. IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
 func Default() *Config {
 	return &Config{
 		Version:             Version3,
@@ -365,6 +365,15 @@ func Default() *Config {
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
 	}
+}
+
+// MiniDefault returns a default config for a mini cluster.
+func MiniDefault() *Config {
+	config := Default()
+	config.Name = constants.MiniConstellationUID
+	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
+	config.StateDiskSizeGB = 8
+	return config
 }
 
 // fromFile returns config file with `name` read from `fileHandler` by parsing

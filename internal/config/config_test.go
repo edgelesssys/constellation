@@ -376,6 +376,14 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
+		"miniup default config is not valid because image and measurements are missing": {
+			cnf: func() *Config {
+				config := MiniDefault()
+				return config
+			}(),
+			wantErr:      true,
+			wantErrCount: 2,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -389,6 +397,7 @@ func TestValidate(t *testing.T) {
 				assert.Error(err)
 				var valErr *ValidationError
 				require.ErrorAs(err, &valErr)
+				t.Log("validation err:", valErr.LongMessage()) // TODO: Why don't we keep this log for better debugging on failure?
 				assert.Equal(tc.wantErrCount, valErr.messagesCount())
 				return
 			}
