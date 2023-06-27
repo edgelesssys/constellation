@@ -2069,167 +2069,167 @@ def rpms():
         ],
     )
     rpm(
-        name = "libvirt-client-0__9.0.0-3.fc38.x86_64",
-        sha256 = "7dc91d8f667815b76f2f194fcfa868cc71c7f296b6f167a1c9ab754f0da8b0ba",
+        name = "libvirt-client-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/7dc91d8f667815b76f2f194fcfa868cc71c7f296b6f167a1c9ab754f0da8b0ba",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b9b2513c0fae181faa0072afc25d46b60f9ae6cf7d73f0caaf966e13c8946006",
         ],
+        sha256 = "b9b2513c0fae181faa0072afc25d46b60f9ae6cf7d73f0caaf966e13c8946006",
     )
     rpm(
-        name = "libvirt-daemon-0__9.0.0-3.fc38.x86_64",
-        sha256 = "fc6d946c0b66948d5ae7c4b7bdaf163c674067c1378be87a3082cdbc6894222e",
+        name = "libvirt-daemon-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/fc6d946c0b66948d5ae7c4b7bdaf163c674067c1378be87a3082cdbc6894222e",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/4c04adf3577f1d1aef3c63711167ef964284317db0e4e742b271ca413bdf7201",
         ],
+        sha256 = "4c04adf3577f1d1aef3c63711167ef964284317db0e4e742b271ca413bdf7201",
     )
     rpm(
-        name = "libvirt-daemon-config-network-0__9.0.0-3.fc38.x86_64",
-        sha256 = "54dbefc659e4fb2533034b953928187a54c9b6827b58ff79174280c91a8d56d7",
+        name = "libvirt-daemon-config-network-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/54dbefc659e4fb2533034b953928187a54c9b6827b58ff79174280c91a8d56d7",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/30d158e1580e6d3a7dcd09a22d123420d049ed939a8c59ec62da4b52ac7bb66a",
         ],
+        sha256 = "30d158e1580e6d3a7dcd09a22d123420d049ed939a8c59ec62da4b52ac7bb66a",
     )
     rpm(
-        name = "libvirt-daemon-driver-interface-0__9.0.0-3.fc38.x86_64",
-        sha256 = "d4242d9f991d51a93f44d8c1bbf3677f2fa0992c814a94f749120d7a2b219c8a",
+        name = "libvirt-daemon-driver-interface-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/d4242d9f991d51a93f44d8c1bbf3677f2fa0992c814a94f749120d7a2b219c8a",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/a8851a22e223703cbd7e69a2a54691dc84e008913b9db56adbe8b473ba3a536e",
         ],
+        sha256 = "a8851a22e223703cbd7e69a2a54691dc84e008913b9db56adbe8b473ba3a536e",
     )
     rpm(
-        name = "libvirt-daemon-driver-network-0__9.0.0-3.fc38.x86_64",
-        sha256 = "c28fa4a8f8335716a452b0734ef85b770484ae64ff699cf904e94a55f6ccc532",
+        name = "libvirt-daemon-driver-network-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/c28fa4a8f8335716a452b0734ef85b770484ae64ff699cf904e94a55f6ccc532",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/78c4748df4a89b7f9bbe8478bf84122949ba540d3520c79a70285757a1842dbd",
         ],
+        sha256 = "78c4748df4a89b7f9bbe8478bf84122949ba540d3520c79a70285757a1842dbd",
     )
     rpm(
-        name = "libvirt-daemon-driver-nodedev-0__9.0.0-3.fc38.x86_64",
-        sha256 = "ca0d8e38ab32df657b814d7f5365564c7f528b18aafb48d2294cbb52b34ceb23",
+        name = "libvirt-daemon-driver-nodedev-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/ca0d8e38ab32df657b814d7f5365564c7f528b18aafb48d2294cbb52b34ceb23",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/04f85c858a9e801283697440b1ac61508f39c1bfc2d142c26c83af7a07c15fea",
         ],
+        sha256 = "04f85c858a9e801283697440b1ac61508f39c1bfc2d142c26c83af7a07c15fea",
     )
     rpm(
-        name = "libvirt-daemon-driver-nwfilter-0__9.0.0-3.fc38.x86_64",
-        sha256 = "dc1561fc06b0189ee0d6e485694e2835ccd8baea88f83c16d9a36e10ee290df6",
+        name = "libvirt-daemon-driver-nwfilter-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/dc1561fc06b0189ee0d6e485694e2835ccd8baea88f83c16d9a36e10ee290df6",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/ea9f8a26f34716fb0696dba9e0afae22c524d91af28db9aae0b9e12ebcc263a0",
         ],
+        sha256 = "ea9f8a26f34716fb0696dba9e0afae22c524d91af28db9aae0b9e12ebcc263a0",
     )
     rpm(
-        name = "libvirt-daemon-driver-qemu-0__9.0.0-3.fc38.x86_64",
-        sha256 = "04e60005e152c77a5a898f1a12521431e1711564334a819361f4caf5150b11b5",
+        name = "libvirt-daemon-driver-qemu-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/04e60005e152c77a5a898f1a12521431e1711564334a819361f4caf5150b11b5",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/901ef0a3bb342ddf287436b7fd0faecd7427d4f26b150ad4906878fc2d8162ae",
         ],
+        sha256 = "901ef0a3bb342ddf287436b7fd0faecd7427d4f26b150ad4906878fc2d8162ae",
     )
     rpm(
-        name = "libvirt-daemon-driver-secret-0__9.0.0-3.fc38.x86_64",
-        sha256 = "841028aae5d31d3531daaed2875753309ade6dc72be94039968a8824fa9a7af4",
+        name = "libvirt-daemon-driver-secret-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/841028aae5d31d3531daaed2875753309ade6dc72be94039968a8824fa9a7af4",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/2b4b5bc9f533bc1a34aa48c970adf5ebd3a1c9a86247f6734423c13b877a4cea",
         ],
+        sha256 = "2b4b5bc9f533bc1a34aa48c970adf5ebd3a1c9a86247f6734423c13b877a4cea",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-0__9.0.0-3.fc38.x86_64",
-        sha256 = "a43dc8ce0d5675e994944f133973f8272c55b812aa29df9a01791a746efdabc3",
+        name = "libvirt-daemon-driver-storage-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/a43dc8ce0d5675e994944f133973f8272c55b812aa29df9a01791a746efdabc3",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/434aed53d1f3b97ccc189bc5ec5a5820e547ce5fd091bd8c1754cc7f63f41ef6",
         ],
+        sha256 = "434aed53d1f3b97ccc189bc5ec5a5820e547ce5fd091bd8c1754cc7f63f41ef6",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-core-0__9.0.0-3.fc38.x86_64",
-        sha256 = "b48246557e213bb87c4be7d00cfaa5e5e3d62c5bc32f24bd8e0ace8112cf904c",
+        name = "libvirt-daemon-driver-storage-core-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b48246557e213bb87c4be7d00cfaa5e5e3d62c5bc32f24bd8e0ace8112cf904c",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/5e23e654cb57e5efb2920f6ac69936cbc1037d8f5db547417598b86b7e2a9907",
         ],
+        sha256 = "5e23e654cb57e5efb2920f6ac69936cbc1037d8f5db547417598b86b7e2a9907",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-disk-0__9.0.0-3.fc38.x86_64",
-        sha256 = "90932eadeb443d4e70dadff49f9b1913160964931c7df7207016550adf593ebf",
+        name = "libvirt-daemon-driver-storage-disk-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/90932eadeb443d4e70dadff49f9b1913160964931c7df7207016550adf593ebf",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/9b603b7ae2761a219bee19a64b59e1d5c6c25f7ac8a7192e5e0635e470d3612f",
         ],
+        sha256 = "9b603b7ae2761a219bee19a64b59e1d5c6c25f7ac8a7192e5e0635e470d3612f",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-gluster-0__9.0.0-3.fc38.x86_64",
-        sha256 = "38e6dc26b0d4f6dcd1cf95ab5073211cd5987b9f7371f9f520800be7789ab94e",
+        name = "libvirt-daemon-driver-storage-gluster-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/38e6dc26b0d4f6dcd1cf95ab5073211cd5987b9f7371f9f520800be7789ab94e",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/4d3975958c512d40a952ddfc8071309267a2ae2e5ce7981f882aaa49207a11b2",
         ],
+        sha256 = "4d3975958c512d40a952ddfc8071309267a2ae2e5ce7981f882aaa49207a11b2",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-iscsi-0__9.0.0-3.fc38.x86_64",
-        sha256 = "b8331635c52650519ca2ee37b0ae9954b6fd4b905a3f5132b18df9fb4089389d",
+        name = "libvirt-daemon-driver-storage-iscsi-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/b8331635c52650519ca2ee37b0ae9954b6fd4b905a3f5132b18df9fb4089389d",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b5bf66aebb497774a7b1ca252b63622947b37ccf90f29a0c8bee33c738e23aa6",
         ],
+        sha256 = "b5bf66aebb497774a7b1ca252b63622947b37ccf90f29a0c8bee33c738e23aa6",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-iscsi-direct-0__9.0.0-3.fc38.x86_64",
-        sha256 = "0126e9b70bce883935b68bb6e8ff59eec362469ab4eb990413ca601aba7f00e1",
+        name = "libvirt-daemon-driver-storage-iscsi-direct-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/0126e9b70bce883935b68bb6e8ff59eec362469ab4eb990413ca601aba7f00e1",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8cc74fab5d866bf7568a95d6041912892d904e5dcf4743933b24b0f978346a88",
         ],
+        sha256 = "8cc74fab5d866bf7568a95d6041912892d904e5dcf4743933b24b0f978346a88",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-logical-0__9.0.0-3.fc38.x86_64",
-        sha256 = "dc8848dbe4ab5cf0a978b72c5ea59bacf756696fe645aed316426b088fad0d1e",
+        name = "libvirt-daemon-driver-storage-logical-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/dc8848dbe4ab5cf0a978b72c5ea59bacf756696fe645aed316426b088fad0d1e",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/fe66108e6f0b0f234f64685e4249e6bd465dfcc3df50c615c9a4019681e368a7",
         ],
+        sha256 = "fe66108e6f0b0f234f64685e4249e6bd465dfcc3df50c615c9a4019681e368a7",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-mpath-0__9.0.0-3.fc38.x86_64",
-        sha256 = "3fbf564c3aa176e4a521f5867ecfee6e546845d98e3fe5aa773744bf31dab381",
+        name = "libvirt-daemon-driver-storage-mpath-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/3fbf564c3aa176e4a521f5867ecfee6e546845d98e3fe5aa773744bf31dab381",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/3bdeffc1ed5568adda33616f79f6851c57a4315b17610eab85ddc34e49ef022e",
         ],
+        sha256 = "3bdeffc1ed5568adda33616f79f6851c57a4315b17610eab85ddc34e49ef022e",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-rbd-0__9.0.0-3.fc38.x86_64",
-        sha256 = "de7567b831e286438280d037b4655386e0587a0641f68db7d2d5690b9e9df478",
+        name = "libvirt-daemon-driver-storage-rbd-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/de7567b831e286438280d037b4655386e0587a0641f68db7d2d5690b9e9df478",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/6726f2b8c6a3dbdaa434a8db9a0eca5a2e3971099031d83607bfd0daa7262315",
         ],
+        sha256 = "6726f2b8c6a3dbdaa434a8db9a0eca5a2e3971099031d83607bfd0daa7262315",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-scsi-0__9.0.0-3.fc38.x86_64",
-        sha256 = "4fbd5d9825f27552379b7ecdc4d5d32aed9aaaaa6baa9596d8590087982c935f",
+        name = "libvirt-daemon-driver-storage-scsi-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/4fbd5d9825f27552379b7ecdc4d5d32aed9aaaaa6baa9596d8590087982c935f",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/fb623df8a95570573d0680a9c615ab257acf4ed3a2d12462acc07e2bd81dd791",
         ],
+        sha256 = "fb623df8a95570573d0680a9c615ab257acf4ed3a2d12462acc07e2bd81dd791",
     )
     rpm(
-        name = "libvirt-daemon-driver-storage-zfs-0__9.0.0-3.fc38.x86_64",
-        sha256 = "24d0f73660c150f4b6b34a408d7352ccf82e147823aac8b37d8d0775f6f58f21",
+        name = "libvirt-daemon-driver-storage-zfs-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/24d0f73660c150f4b6b34a408d7352ccf82e147823aac8b37d8d0775f6f58f21",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b09b229e64032090071c1bd9abd1f01f6a870fbaab6b063784cadf16e6e7d345",
         ],
+        sha256 = "b09b229e64032090071c1bd9abd1f01f6a870fbaab6b063784cadf16e6e7d345",
     )
     rpm(
-        name = "libvirt-daemon-kvm-0__9.0.0-3.fc38.x86_64",
-        sha256 = "e0ecb4b1865b0b55aa08f81a7cc886e64ba5cfe917eec596b3e4e5176924eb68",
+        name = "libvirt-daemon-kvm-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/e0ecb4b1865b0b55aa08f81a7cc886e64ba5cfe917eec596b3e4e5176924eb68",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/8ffbadb47c57e2f991b67619fe15f04b34c45617406c82469c8a1b6339125f15",
         ],
-    )
-
-    rpm(
-        name = "libvirt-devel-0__9.0.0-3.fc38.x86_64",
-        sha256 = "9f001a1621c0860b93ecb69ec867a083cc9038940b9a4469ecd22cc9c9d0cf81",
-        urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/9f001a1621c0860b93ecb69ec867a083cc9038940b9a4469ecd22cc9c9d0cf81",
-        ],
+        sha256 = "8ffbadb47c57e2f991b67619fe15f04b34c45617406c82469c8a1b6339125f15",
     )
 
     rpm(
-        name = "libvirt-libs-0__9.0.0-3.fc38.x86_64",
-        sha256 = "5d219495350229becd82552aad619dd64428bbcd5e5cd347585f7181b3dc16f6",
+        name = "libvirt-devel-0__8.10.0-2.fc38.x86_64",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/5d219495350229becd82552aad619dd64428bbcd5e5cd347585f7181b3dc16f6",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/7ab54d4407911dc807b9413d4340336cb4ecb5ef219ea751307710fe586c06b2",
         ],
+        sha256 = "7ab54d4407911dc807b9413d4340336cb4ecb5ef219ea751307710fe586c06b2",
+    )
+
+    rpm(
+        name = "libvirt-libs-0__8.10.0-2.fc38.x86_64",
+        urls = [
+            "https://cdn.confidential.cloud/constellation/cas/sha256/b8e433b209972e883bbe268cdde1c3a59af951754775ec97dc7b3aed54838f73",
+        ],
+        sha256 = "b8e433b209972e883bbe268cdde1c3a59af951754775ec97dc7b3aed54838f73",
     )
     rpm(
         name = "libvisual-1__0.4.1-1.fc38.x86_64",
