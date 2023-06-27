@@ -8,12 +8,16 @@ global:
   # Name of the ConfigMap that holds configs that should not be modified by the user.
   internalCMName: internal-config
 
-# GCP specific configuration
-gcp:
+# AWS specific configuration
+aws:
   deployCSIDriver: false
 
 # Azure specific configuration
 azure:
+  deployCSIDriver: false
+
+# GCP specific configuration
+gcp:
   deployCSIDriver: false
 
 # OpenStack specific configuration

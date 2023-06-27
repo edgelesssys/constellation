@@ -126,6 +126,9 @@ type AWSConfig struct {
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
+	// description: |
+	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
+	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -621,6 +624,7 @@ func (c *Config) UpdateMAAURL(maaURL string) {
 // DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.
 func (c *Config) DeployCSIDriver() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.DeployCSIDriver != nil && *c.Provider.Azure.DeployCSIDriver ||
+		c.Provider.AWS != nil && c.Provider.AWS.DeployCSIDriver != nil && *c.Provider.AWS.DeployCSIDriver ||
 		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver ||
 		c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployCSIDriver != nil && *c.Provider.OpenStack.DeployCSIDriver
 }
