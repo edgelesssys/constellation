@@ -294,6 +294,9 @@ node:
     readOnlyRootFilesystem: true
     privileged: true
 
+# Create Constellation default StorageClasses
+createStorageClass: true
+
 storageClasses: []
 # Add StorageClass resources like:
 # - name: ebs-sc
