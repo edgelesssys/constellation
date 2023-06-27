@@ -153,6 +153,17 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
+	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
+	var awsZone string
+	if conf.GetProvider() == cloudprovider.AWS {
+		awsZone = conf.Provider.AWS.Zone
+	}
+	manualMigrations := terraformMigrationAWSNodeGroups(conf.GetProvider(), awsZone)
+	for _, migration := range manualMigrations {
+		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+		u.upgrader.AddManualStateMigration(migration)
+	}
+
 	vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
@@ -437,6 +448,7 @@ type cloudUpgrader interface {
 	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
+	AddManualStateMigration(migration terraform.StateMigration)
 }
 
 func toPtr[T any](v T) *T {
