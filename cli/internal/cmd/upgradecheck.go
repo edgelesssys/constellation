@@ -208,18 +208,16 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
+	vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
-	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
 		LogLevel:   flags.terraformLogLevel,
 		CSP:        conf.GetProvider(),
 		Vars:       vars,
-		Targets:    targets,
 		OutputFile: constants.TerraformMigrationOutputFile,
 	}
 

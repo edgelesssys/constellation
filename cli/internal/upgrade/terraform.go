@@ -46,8 +46,6 @@ type TerraformUpgradeOptions struct {
 	CSP cloudprovider.Provider
 	// Vars are the Terraform variables used for the upgrade.
 	Vars terraform.Variables
-	// Targets are the Terraform targets used for the upgrade.
-	Targets []string
 	// OutputFile is the file to write the Terraform output to.
 	OutputFile string
 }
@@ -102,7 +100,7 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
-	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, opts.Targets...)
+	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
@@ -137,7 +135,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler,
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
 func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts TerraformUpgradeOptions, upgradeID string) error {
-	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel, opts.Targets...)
+	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel)
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
@@ -180,8 +178,8 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 type tfClient interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string, targets ...string) (bool, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel, targets ...string) (terraform.CreateOutput, error)
+	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
 }
 
 // policyPatcher interacts with the CSP (currently only applies for Azure) to update the attestation policy.

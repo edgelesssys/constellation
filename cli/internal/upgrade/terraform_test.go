@@ -356,11 +356,11 @@ func (u *stubTerraformClient) ShowPlan(context.Context, terraform.LogLevel, stri
 	return u.showErr
 }
 
-func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string, ...string) (bool, error) {
+func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string) (bool, error) {
 	return u.hasDiff, u.planErr
 }
 
-func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel, ...string) (terraform.CreateOutput, error) {
+func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel) (terraform.CreateOutput, error) {
 	return terraform.CreateOutput{}, u.CreateClusterErr
 }
 
