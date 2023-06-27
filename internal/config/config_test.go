@@ -397,8 +397,7 @@ func TestValidate(t *testing.T) {
 				assert.Error(err)
 				var valErr *ValidationError
 				require.ErrorAs(err, &valErr)
-				t.Log("validation err:", valErr.LongMessage()) // TODO: Why don't we keep this log for better debugging on failure?
-				assert.Equal(tc.wantErrCount, valErr.messagesCount())
+				assert.Equalf(tc.wantErrCount, valErr.messagesCount(), "Got unexpected error count: %d: %s", valErr.messagesCount(), valErr.LongMessage())
 				return
 			}
 			assert.NoError(err)
