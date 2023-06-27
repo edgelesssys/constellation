@@ -1,0 +1,6 @@
+apiVersion: v2
+version: 1.0.0
+appVersion: "1.0.0"
+description: AWS Container Storage Interface (CSI) Storage Plugin with on-node encryption support
+name: aws-csi-driver
+kubeVersion: ">=1.17.0-0"
