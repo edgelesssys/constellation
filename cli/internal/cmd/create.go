@@ -85,7 +85,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if err != nil {
 		return err
 	}
-	if err := validateCLIandConstellationVersionCompatibility(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
+	if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
 		return err
 	}
 
@@ -175,33 +175,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	cmd.Println("Your Constellation cluster was created successfully.")
-	return nil
-}
-
-func validateCLIandConstellationVersionCompatibility(cliVersion, imageVersion, microserviceVersion string) error {
-	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
-	if err != nil {
-		return fmt.Errorf("parsing image version: %w", err)
-	}
-
-	semImage, err := semver.New(parsedImageVersion.Version)
-	if err != nil {
-		return fmt.Errorf("parsing image semantical version: %w", err)
-	}
-
-	semMicro, err := semver.New(microserviceVersion)
-	if err != nil {
-		return fmt.Errorf("parsing microservice version: %w", err)
-	}
-
-	semCLI, err := semver.New(cliVersion)
-	if err != nil {
-		return fmt.Errorf("parsing binary version: %w", err)
-	}
-
-	if semCLI.Compare(semImage) != 0 || semCLI.Compare(semMicro) != 0 {
-		return fmt.Errorf("cli version %q does not match microservice version %q or image %q", semCLI.String(), semMicro.String(), semImage.String())
-	}
 	return nil
 }
 
@@ -323,4 +296,32 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// validateCLIandConstellationVersionAreEqual checks if the image and microservice version are equal (down to patch level) to the CLI version.
+func validateCLIandConstellationVersionAreEqual(cliVersion, imageVersion, microserviceVersion string) error {
+	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("parsing image version: %w", err)
+	}
+
+	semImage, err := semver.New(parsedImageVersion.Version)
+	if err != nil {
+		return fmt.Errorf("parsing image semantical version: %w", err)
+	}
+
+	semMicro, err := semver.New(microserviceVersion)
+	if err != nil {
+		return fmt.Errorf("parsing microservice version: %w", err)
+	}
+
+	semCLI, err := semver.New(cliVersion)
+	if err != nil {
+		return fmt.Errorf("parsing binary version: %w", err)
+	}
+
+	if semCLI.Compare(semImage) != 0 || semCLI.Compare(semMicro) != 0 {
+		return fmt.Errorf("cli version %q does not match microservice version %q or image %q", semCLI.String(), semMicro.String(), semImage.String())
+	}
+	return nil
 }

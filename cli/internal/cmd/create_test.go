@@ -310,7 +310,7 @@ func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateCLIandConstellationVersionCompatibility(tc.cliVersion, tc.imageVersion, tc.microServiceVersion)
+			err := validateCLIandConstellationVersionAreEqual(tc.cliVersion, tc.imageVersion, tc.microServiceVersion)
 
 			if tc.wantErr {
 				assert.Error(err)
