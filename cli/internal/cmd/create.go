@@ -14,11 +14,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -82,6 +84,11 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	if err != nil {
 		return err
+	}
+	if !flags.force {
+		if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
+			return err
+		}
 	}
 
 	c.log.Debugf("Checking configuration for warnings")
@@ -291,4 +298,35 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// validateCLIandConstellationVersionAreEqual checks if the image and microservice version are equal (down to patch level) to the CLI version.
+func validateCLIandConstellationVersionAreEqual(cliVersion, imageVersion, microserviceVersion string) error {
+	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("parsing image version: %w", err)
+	}
+
+	semImage, err := semver.New(parsedImageVersion.Version)
+	if err != nil {
+		return fmt.Errorf("parsing image semantical version: %w", err)
+	}
+
+	semMicro, err := semver.New(microserviceVersion)
+	if err != nil {
+		return fmt.Errorf("parsing microservice version: %w", err)
+	}
+
+	semCLI, err := semver.New(cliVersion)
+	if err != nil {
+		return fmt.Errorf("parsing binary version: %w", err)
+	}
+
+	if !semCLI.MajorMinorEqual(semImage) {
+		return fmt.Errorf("image version %q does not match the major and minor version of the cli version %q", semImage.String(), semCLI.String())
+	}
+	if semCLI.Compare(semMicro) != 0 {
+		return fmt.Errorf("cli version %q does not match microservice version %q", semCLI.String(), semMicro.String())
+	}
+	return nil
 }
