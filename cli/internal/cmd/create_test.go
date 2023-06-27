@@ -270,6 +270,57 @@ func TestCheckDirClean(t *testing.T) {
 	}
 }
 
+func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
+	testCases := map[string]struct {
+		imageVersion        string
+		microServiceVersion string
+		cliVersion          string
+		wantErr             bool
+	}{
+		"empty": {
+			imageVersion:        "",
+			microServiceVersion: "",
+			cliVersion:          "",
+			wantErr:             true,
+		},
+		"invalid when image < CLI": {
+			imageVersion:        "v2.7.1",
+			microServiceVersion: "v2.8.0",
+			cliVersion:          "v2.8.0",
+			wantErr:             true,
+		},
+		"invalid when microservice < CLI": {
+			imageVersion:        "v2.8.0",
+			microServiceVersion: "v2.7.1",
+			cliVersion:          "v2.8.0",
+			wantErr:             true,
+		},
+		"valid release version": {
+			imageVersion:        "v2.9.0",
+			microServiceVersion: "v2.9.0",
+			cliVersion:          "2.9.0",
+		},
+		"valid pre-version": {
+			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
+			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			err := validateCLIandConstellationVersionCompatibility(tc.cliVersion, tc.imageVersion, tc.microServiceVersion)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
 func intPtr(i int) *int {
 	return &i
 }

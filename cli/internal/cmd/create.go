@@ -14,11 +14,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -81,6 +83,9 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		cmd.PrintErrln(configValidationErr.LongMessage())
 	}
 	if err != nil {
+		return err
+	}
+	if err := validateCLIandConstellationVersionCompatibility(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
 		return err
 	}
 
@@ -170,6 +175,33 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	cmd.Println("Your Constellation cluster was created successfully.")
+	return nil
+}
+
+func validateCLIandConstellationVersionCompatibility(cliVersion, imageVersion, microserviceVersion string) error {
+	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("parsing image version: %w", err)
+	}
+
+	semImage, err := semver.New(parsedImageVersion.Version)
+	if err != nil {
+		return fmt.Errorf("parsing image semantical version: %w", err)
+	}
+
+	semMicro, err := semver.New(microserviceVersion)
+	if err != nil {
+		return fmt.Errorf("parsing microservice version: %w", err)
+	}
+
+	semCLI, err := semver.New(cliVersion)
+	if err != nil {
+		return fmt.Errorf("parsing binary version: %w", err)
+	}
+
+	if semCLI.Compare(semImage) != 0 || semCLI.Compare(semMicro) != 0 {
+		return fmt.Errorf("cli version %q does not match microservice version %q or image %q", semCLI.String(), semMicro.String(), semImage.String())
+	}
 	return nil
 }
 
