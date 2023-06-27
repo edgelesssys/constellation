@@ -85,8 +85,10 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	if err != nil {
 		return err
 	}
-	if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
-		return err
+	if !flags.force {
+		if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
+			return err
+		}
 	}
 
 	c.log.Debugf("Checking configuration for warnings")
