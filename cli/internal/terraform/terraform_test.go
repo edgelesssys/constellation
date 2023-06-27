@@ -1074,6 +1074,7 @@ type stubTerraform struct {
 	setLogPathErr   error
 	planJSONErr     error
 	showPlanFileErr error
+	stateMvErr      error
 	showState       *tfjson.State
 }
 
@@ -1107,4 +1108,8 @@ func (s *stubTerraform) SetLog(_ string) error {
 
 func (s *stubTerraform) SetLogPath(_ string) error {
 	return s.setLogPathErr
+}
+
+func (s *stubTerraform) StateMv(_ context.Context, _, _ string, _ ...tfexec.StateMvCmdOption) error {
+	return s.stateMvErr
 }

@@ -204,6 +204,17 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 
 	u.log.Debugf("Planning Terraform migrations")
 
+	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
+	var awsZone string
+	if csp == cloudprovider.AWS {
+		awsZone = conf.Provider.AWS.Zone
+	}
+	manualMigrations := terraformMigrationAWSNodeGroups(csp, awsZone)
+	for _, migration := range manualMigrations {
+		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+		u.checker.AddManualStateMigration(migration)
+	}
+
 	if err := u.checker.CheckTerraformMigrations(fileHandler); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
@@ -729,6 +740,7 @@ type upgradeChecker interface {
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
+	AddManualStateMigration(migration terraform.StateMigration)
 }
 
 type versionListFetcher interface {

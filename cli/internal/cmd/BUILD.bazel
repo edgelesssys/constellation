@@ -17,6 +17,7 @@ go_library(
         "iamdestroy.go",
         "init.go",
         "log.go",
+        "manualtfstatemigration.go",
         "mini.go",
         "minidown.go",
         "miniup.go",
