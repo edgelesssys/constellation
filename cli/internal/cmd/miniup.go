@@ -13,6 +13,7 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -142,17 +143,18 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 			return nil, errors.New("not overwriting existing config")
 		}
 	}
-
-	// TODO: Should we allow this at all?  It seems more logical to follow the usage pattern for the other providers: constellation config generate mini -> constellation init. But maybe it's more user friendly to not persist a config file in the workspace for a testing cluster?
+	if featureset.CurrentEdition != featureset.EditionEnterprise { // TODO: or !featureset.CanFetchMeasurements? image is also needed..
+		cmd.PrintErrln("Generating a valid default config is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
+		return nil, errors.New("cannot create a mini cluster without a config file in the OSS build")
+	}
 	config := config.MiniDefault()
 	// only release images (e.g. v2.7.0) use the production NVRAM
 	if !config.IsReleaseImage() {
 		config.Provider.QEMU.NVRAM = "testing"
 	}
-	// TODO: this validation would fail since no image nor measurements are set; we create a cluster with what we call invalid?
-	//if err := config.Validate(flags.force); err != nil {
-	//	return nil, fmt.Errorf("validating config: %w", err)
-	//}
+	if err := config.Validate(flags.force); err != nil {
+		return nil, fmt.Errorf("validating config: %w", err)
+	}
 
 	m.log.Debugf("Prepared configuration")
 
