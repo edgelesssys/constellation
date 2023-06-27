@@ -297,7 +297,8 @@ type AttestationConfig struct {
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
 
-// Default returns a struct with the default config. IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
+// Default returns a struct with the default config.
+// IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
 func Default() *Config {
 	return &Config{
 		Version:             Version3,
