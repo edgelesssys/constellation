@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -145,21 +146,49 @@ func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("retrieving load balancer: %w", err)
 	}
-	if len(output.LoadBalancers) != 1 {
-		return "", fmt.Errorf("%d load balancers found; expected 1", len(output.LoadBalancers))
+	if len(output.LoadBalancers) < 1 {
+		return "", fmt.Errorf("%d load balancers found; expected at least 1", len(output.LoadBalancers))
 	}
 
-	if len(output.LoadBalancers[0].AvailabilityZones) != 1 {
-		return "", fmt.Errorf("%d availability zones found; expected 1", len(output.LoadBalancers[0].AvailabilityZones))
-	}
-	if len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses) != 1 {
-		return "", fmt.Errorf("%d load balancer addresses found; expected 1", len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses))
-	}
-	if output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress == nil {
-		return "", errors.New("load balancer address is nil")
+	nodeAZ, err := c.getAZ(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving availability zone: %w", err)
 	}
 
-	return *output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress, nil
+	var sameAZEndpoints []string
+	var endpoints []string
+
+	for _, lb := range output.LoadBalancers {
+		for az := range lb.AvailabilityZones {
+			azName := lb.AvailabilityZones[az].ZoneName
+			for _, lbAddress := range lb.AvailabilityZones[az].LoadBalancerAddresses {
+				if lbAddress.IpAddress != nil {
+					endpoints = append(endpoints, *lbAddress.IpAddress)
+					if azName != nil && *azName == nodeAZ {
+						sameAZEndpoints = append(sameAZEndpoints, *lbAddress.IpAddress)
+					}
+				}
+			}
+		}
+	}
+
+	if len(endpoints) < 1 {
+		return "", errors.New("no load balancer endpoints found")
+	}
+
+	// TODO(malt3): ideally, we would use DNS here instead of IP addresses.
+	// Requires changes to the infrastructure.
+
+	// for HA on AWS, there is one load balancer per AZ, so we can just return a random one
+	// prefer LBs in the same AZ as the instance
+
+	if len(sameAZEndpoints) > 0 {
+		return sameAZEndpoints[rand.Intn(len(sameAZEndpoints))], nil
+	}
+
+	// fall back to any LB. important for legacy clusters
+
+	return endpoints[rand.Intn(len(endpoints))], nil
 }
 
 // getARNsByTag returns a list of ARNs that have the given tag.
@@ -289,6 +318,14 @@ func (c *Cloud) readInstanceTag(ctx context.Context, tag string) (string, error)
 	}
 
 	return findTag(out.Reservations[0].Instances[0].Tags, tag)
+}
+
+func (c *Cloud) getAZ(ctx context.Context) (string, error) {
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance identity: %w", err)
+	}
+	return identity.AvailabilityZone, nil
 }
 
 func findTag(tags []ec2Types.Tag, wantKey string) (string, error) {
