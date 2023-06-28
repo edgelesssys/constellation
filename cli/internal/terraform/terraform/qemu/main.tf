@@ -120,12 +120,3 @@ locals {
   kernel_cmdline   = var.constellation_boot_mode == "direct-linux-boot" ? var.constellation_cmdline : null
 }
 
-moved {
-  from = module.control_plane
-  to   = module.instance_group["control_plane_default"]
-}
-
-moved {
-  from = module.worker
-  to   = module.instance_group["worker_default"]
-}
