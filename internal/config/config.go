@@ -369,12 +369,16 @@ func Default() *Config {
 }
 
 // MiniDefault returns a default config for a mini cluster.
-func MiniDefault() *Config {
+func MiniDefault() (*Config, error) {
 	config := Default()
 	config.Name = constants.MiniConstellationUID
 	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8
-	return config
+	// only release images (e.g. v2.7.0) use the production NVRAM
+	if !config.IsReleaseImage() {
+		config.Provider.QEMU.NVRAM = "testing"
+	}
+	return config, config.Validate(false)
 }
 
 // fromFile returns config file with `name` read from `fileHandler` by parsing

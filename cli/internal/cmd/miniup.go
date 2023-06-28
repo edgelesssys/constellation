@@ -143,19 +143,14 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 			return nil, errors.New("not overwriting existing config")
 		}
 	}
-	if featureset.CurrentEdition != featureset.EditionEnterprise { // TODO: or !featureset.CanFetchMeasurements? image is also needed..
+	if featureset.CurrentEdition != featureset.EditionEnterprise {
 		cmd.PrintErrln("Generating a valid default config is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
 		return nil, errors.New("cannot create a mini cluster without a config file in the OSS build")
 	}
-	config := config.MiniDefault()
-	// only release images (e.g. v2.7.0) use the production NVRAM
-	if !config.IsReleaseImage() {
-		config.Provider.QEMU.NVRAM = "testing"
+	config, err := config.MiniDefault()
+	if err != nil {
+		return nil, fmt.Errorf("mini default config is invalid: %v", err)
 	}
-	if err := config.Validate(flags.force); err != nil {
-		return nil, fmt.Errorf("validating config: %w", err)
-	}
-
 	m.log.Debugf("Prepared configuration")
 
 	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)

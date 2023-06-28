@@ -376,9 +376,10 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
-		"miniup default config is not valid because image and measurements are missing": {
+		"miniup default config is not valid because image and measurements are missing in OSS": {
 			cnf: func() *Config {
-				config := MiniDefault()
+				config, err := MiniDefault()
+				require.Error(t, err)
 				return config
 			}(),
 			wantErr:      true,
