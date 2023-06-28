@@ -153,9 +153,12 @@ oci_register_toolchains(
     crane_version = LATEST_CRANE_VERSION,
 )
 
+load("@aspect_bazel_lib//lib:repositories.bzl", "register_yq_toolchains")
 load("//bazel/toolchains:container_images.bzl", "containter_image_deps")
 
 containter_image_deps()
+
+register_yq_toolchains()
 
 # Multirun
 load("//bazel/toolchains:multirun_deps.bzl", "multirun_deps")

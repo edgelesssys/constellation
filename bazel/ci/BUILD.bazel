@@ -320,6 +320,7 @@ sh_template(
         "//internal/versions/hash-generator",
         "@go_sdk//:bin/go",
         "@org_golang_x_tools//cmd/stringer",
+        "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
         "@@DOCGEN@@": "$(rootpath :com_github_siderolabs_talos_hack_docgen)",
@@ -328,8 +329,10 @@ sh_template(
         "@@HELM@@": "$(rootpath :com_github_helm_helm)",
         "@@MEASUREMENT_GENERATOR@@": "$(rootpath //internal/attestation/measurements/measurement-generator:measurement-generator)",
         "@@STRINGER@@": "$(rootpath @org_golang_x_tools//cmd/stringer:stringer)",
+        "@@YQ@@": "$(YQ_BIN)",
     },
     template = "go_generate.sh.in",
+    toolchains = ["@yq_toolchains//:resolved_toolchain"],
 )
 
 # deps_mirror_fix fixes bazel workspace rules for external dependencies.
