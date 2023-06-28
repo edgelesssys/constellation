@@ -13,19 +13,47 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
 ## Create a cluster
 
-1. Create the configuration file and IAM resources for your selected cloud provider
-
-    First, you need to create a [configuration file](../workflows/config.md) and an [IAM configuration](../workflows/config.md#creating-an-iam-configuration). The easiest way to do this is the following CLI command:
+1. Create the [configuration file](../workflows/config.md) for your cloud provider.
 
     <tabs groupId="csp">
 
     <tabItem value="azure" label="Azure">
 
     ```bash
-    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --generate-config
+    constellation config generate azure
     ```
 
-    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+    </tabItem>
+
+    <tabItem value="gcp" label="GCP">
+
+    ```bash
+    constellation config generate gcp
+    ```
+
+    </tabItem>
+
+    <tabItem value="aws" label="AWS">
+
+    ```bash
+    constellation config generate aws
+    ```
+
+    </tabItem>
+
+    </tabs>
+
+2. Create your [IAM configuration](../workflows/config.md#creating-an-iam-configuration).
+
+    <tabs groupId="csp">
+
+    <tabItem value="azure" label="Azure">
+
+    ```bash
+    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest --update-config
+    ```
+
+    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
     * `westus`
@@ -38,10 +66,10 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <tabItem value="gcp" label="GCP">
 
     ```bash
-    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --generate-config
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test --update-config
     ```
 
-    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Note that only regions offering CVMs of the `C2D` or `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `C2D` or `N2D`.
 
@@ -50,10 +78,10 @@ If you encounter any problem with the following steps, make sure to use the [lat
     <tabItem value="aws" label="AWS">
 
     ```bash
-    constellation iam create aws --zone=us-east-2a --prefix=constellTest --generate-config
+    constellation iam create aws --zone=us-east-2a --prefix=constellTest --update-config
     ```
 
-    This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created. It also creates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
+    This command creates IAM configuration for the AWS zone `us-east-2a` using the prefix `constellTest` for all named resources being created. It also updates the configuration file `constellation-conf.yaml` in your current directory with the IAM values filled in.
 
     Depending on the attestation variant selected on config generation, different regions are available.
     AMD SEV-SNP machines (requires the default attestation variant `awsSEVSNP`) are currently available in the following regions:
@@ -89,7 +117,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 -->
 
-2. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
     If you want to manually use [Terraform](../reference/terraform.md) for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
@@ -109,7 +137,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     Your Constellation cluster was created successfully.
     ```
 
-3. Initialize the cluster
+4. Initialize the cluster.
 
     ```bash
     constellation init
@@ -140,7 +168,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
 
     :::
 
-4. Configure kubectl
+5. Configure kubectl.
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"

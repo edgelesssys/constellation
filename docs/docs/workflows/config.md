@@ -40,10 +40,6 @@ constellation config generate aws
 
 This creates the file `constellation-conf.yaml` in the current directory.
 
-:::tip
-You can also automatically generate a configuration file by adding the `--generate-config` flag to the `constellation iam create` command when [creating an IAM configuration](#creating-an-iam-configuration).
-:::
-
 ## Choosing a VM type
 
 Constellation supports the following VM types:
@@ -92,7 +88,7 @@ See also Constellation's [Kubernetes support policy](../architecture/versions.md
 ## Creating an IAM configuration
 
 You can create an IAM configuration for your cluster automatically using the `constellation iam create` command.
-If you haven't generated a configuration file yet, you can do so by adding the `--generate-config` flag to the command. This creates a configuration file and populates it with the created IAM values.
+If you already have a constellation configuration file, you can add the `--update-config` flag to the command. This writes the needed IAM fields into your configuration.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
