@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -245,49 +246,57 @@ debug = true
 }
 
 func TestQEMUClusterVariables(t *testing.T) {
-	vars := QEMUVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
+	vars := &QEMUVariables{
+		Name: "cluster-name",
+		NodeGroups: map[string]QEMUNodeGroup{
+			"control-plane": {
+				Role:          role.ControlPlane.TFString(),
+				InstanceCount: 1,
+				DiskSize:      30,
+				CPUCount:      4,
+				MemorySize:    8192,
+			},
 		},
+		Machine:            "q35",
 		LibvirtURI:         "qemu:///system",
 		LibvirtSocketPath:  "/var/run/libvirt/libvirt-sock",
 		BootMode:           "uefi",
-		CPUCount:           4,
-		MemorySizeMiB:      8192,
 		ImagePath:          "/var/lib/libvirt/images/cluster-name.qcow2",
 		ImageFormat:        "raw",
 		MetadataAPIImage:   "example.com/metadata-api:latest",
 		MetadataLibvirtURI: "qemu:///system",
 		NVRAM:              "production",
-		Firmware:           "/usr/share/OVMF/OVMF_CODE.fd",
-		BzImagePath:        "/var/lib/libvirt/images/cluster-name-bzimage",
-		InitrdPath:         "/var/lib/libvirt/images/cluster-name-initrd",
-		KernelCmdline:      "console=ttyS0,115200n8",
+		InitrdPath:         toPtr("/var/lib/libvirt/images/cluster-name-initrd"),
+		KernelCmdline:      toPtr("console=ttyS0,115200n8"),
 	}
 
 	// test that the variables are correctly rendered
 	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-libvirt_uri = "qemu:///system"
-libvirt_socket_path = "/var/run/libvirt/libvirt-sock"
-constellation_os_image = "/var/lib/libvirt/images/cluster-name.qcow2"
-image_format = "raw"
+node_groups = {
+  control-plane = {
+    disk_size      = 30
+    instance_count = 1
+    memory         = 8192
+    role           = "control-plane"
+    vcpus          = 4
+  }
+}
+machine                 = "q35"
+libvirt_uri             = "qemu:///system"
+libvirt_socket_path     = "/var/run/libvirt/libvirt-sock"
 constellation_boot_mode = "uefi"
-constellation_kernel = "/var/lib/libvirt/images/cluster-name-bzimage"
-constellation_initrd = "/var/lib/libvirt/images/cluster-name-initrd"
-constellation_cmdline = "console=ttyS0,115200n8"
-vcpus = 4
-memory = 8192
-metadata_api_image = "example.com/metadata-api:latest"
-metadata_libvirt_uri = "qemu:///system"
-nvram = "/usr/share/OVMF/constellation_vars.production.fd"
-firmware = "/usr/share/OVMF/OVMF_CODE.fd"
+constellation_os_image  = "/var/lib/libvirt/images/cluster-name.qcow2"
+image_format            = "raw"
+metadata_api_image      = "example.com/metadata-api:latest"
+metadata_libvirt_uri    = "qemu:///system"
+nvram                   = "/usr/share/OVMF/constellation_vars.production.fd"
+constellation_initrd    = "/var/lib/libvirt/images/cluster-name-initrd"
+constellation_cmdline   = "console=ttyS0,115200n8"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

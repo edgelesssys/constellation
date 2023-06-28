@@ -50,47 +50,27 @@ resource "docker_container" "qemu_metadata" {
 }
 
 
-
-module "control_plane" {
+module "node_group" {
   source           = "./modules/instance_group"
-  role             = "control-plane"
-  amount           = var.control_plane_count
-  vcpus            = var.vcpus
-  memory           = var.memory
-  state_disk_size  = var.state_disk_size
-  cidr             = "10.42.1.0/24"
+  base_name        = var.name
+  for_each         = var.node_groups
+  node_group_name  = each.key
+  role             = each.value.role
+  amount           = each.value.instance_count
+  state_disk_size  = each.value.disk_size
+  vcpus            = each.value.vcpus
+  memory           = each.value.memory
+  machine          = var.machine
+  cidr             = each.value.role == "control-plane" ? "10.42.1.0/24" : "10.42.2.0/24"
   network_id       = libvirt_network.constellation.id
   pool             = libvirt_pool.cluster.name
   boot_mode        = var.constellation_boot_mode
   boot_volume_id   = libvirt_volume.constellation_os_image.id
   kernel_volume_id = local.kernel_volume_id
   initrd_volume_id = local.initrd_volume_id
-  kernel_cmdline   = local.kernel_cmdline
-  machine          = var.machine
+  kernel_cmdline   = each.value.role == "control-plane" ? local.kernel_cmdline : var.constellation_cmdline
   firmware         = var.firmware
   nvram            = var.nvram
-  name             = var.name
-}
-
-module "worker" {
-  source           = "./modules/instance_group"
-  role             = "worker"
-  amount           = var.worker_count
-  vcpus            = var.vcpus
-  memory           = var.memory
-  state_disk_size  = var.state_disk_size
-  cidr             = "10.42.2.0/24"
-  network_id       = libvirt_network.constellation.id
-  pool             = libvirt_pool.cluster.name
-  boot_mode        = var.constellation_boot_mode
-  boot_volume_id   = libvirt_volume.constellation_os_image.id
-  kernel_volume_id = local.kernel_volume_id
-  initrd_volume_id = local.initrd_volume_id
-  kernel_cmdline   = var.constellation_cmdline
-  machine          = var.machine
-  firmware         = var.firmware
-  nvram            = var.nvram
-  name             = var.name
 }
 
 resource "libvirt_pool" "cluster" {

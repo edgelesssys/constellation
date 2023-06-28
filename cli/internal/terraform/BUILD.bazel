@@ -103,6 +103,7 @@ go_test(
         "//internal/cloud/cloudprovider",
         "//internal/constants",
         "//internal/file",
+        "//internal/role",
         "@com_github_azure_azure_sdk_for_go_sdk_azcore//to",
         "@com_github_hashicorp_terraform_exec//tfexec",
         "@com_github_hashicorp_terraform_json//:terraform-json",
