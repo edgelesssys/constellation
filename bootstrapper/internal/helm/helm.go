@@ -57,6 +57,8 @@ func New(log *logger.Logger) (*Client, error) {
 	action := action.NewInstall(actionConfig)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
+	action.Atomic = true
+	action.Wait = true
 
 	return &Client{
 		action,
@@ -67,7 +69,6 @@ func New(log *logger.Logger) (*Client, error) {
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
 func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
-	h.Wait = release.Wait
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -77,7 +78,6 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 // InstallCertManager installs the cert-manager chart.
 func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
-	h.Wait = release.Wait
 	h.Timeout = 10 * time.Minute
 
 	return h.install(ctx, release.Chart, release.Values)
@@ -86,7 +86,6 @@ func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) e
 // InstallOperators installs the Constellation Operators.
 func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
-	h.Wait = release.Wait
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -96,7 +95,6 @@ func (h *Client) InstallOperators(ctx context.Context, release helm.Release, ext
 // InstallCilium sets up the cilium pod network.
 func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	h.ReleaseName = release.ReleaseName
-	h.Wait = release.Wait
 
 	timeoutS := int64(10)
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
@@ -215,7 +213,10 @@ type installDoer struct {
 func (i installDoer) Do(ctx context.Context) error {
 	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install Helm chart")
 
-	_, err := i.client.RunWithContext(ctx, i.chart, i.values)
+	if _, err := i.client.RunWithContext(ctx, i.chart, i.values); err != nil {
+		i.log.With(zap.Error(err)).Errorf("Helm chart installation failed")
+		return err
+	}
 
-	return err
+	return nil
 }
