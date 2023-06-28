@@ -50,7 +50,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 		RunE:  runUpgradeCheck,
 	}
 
-	cmd.Flags().BoolP("write-config", "w", false, "update the specified config file with the suggested versions")
+	cmd.Flags().BoolP("update-config", "u", false, "update the specified config file with the suggested versions")
 	cmd.Flags().String("ref", versionsapi.ReleaseRef, "the reference to use for querying new versions")
 	cmd.Flags().String("stream", "stable", "the stream to use for querying new versions")
 
@@ -109,9 +109,9 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	if err != nil {
 		return upgradeCheckFlags{}, fmt.Errorf("parsing force bool: %w", err)
 	}
-	writeConfig, err := cmd.Flags().GetBool("write-config")
+	updateConfig, err := cmd.Flags().GetBool("update-config")
 	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing write-config bool: %w", err)
+		return upgradeCheckFlags{}, fmt.Errorf("parsing update-config bool: %w", err)
 	}
 	ref, err := cmd.Flags().GetString("ref")
 	if err != nil {
@@ -134,7 +134,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	return upgradeCheckFlags{
 		configPath:        configPath,
 		force:             force,
-		writeConfig:       writeConfig,
+		updateConfig:      updateConfig,
 		ref:               ref,
 		stream:            stream,
 		terraformLogLevel: logLevel,
@@ -257,7 +257,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	// Using Print over Println as buildString already includes a trailing newline where necessary.
 	cmd.Print(updateMsg)
 
-	if flags.writeConfig {
+	if flags.updateConfig {
 		if err := upgrade.writeConfig(conf, fileHandler, flags.configPath); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
@@ -717,7 +717,7 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 type upgradeCheckFlags struct {
 	configPath        string
 	force             bool
-	writeConfig       bool
+	updateConfig      bool
 	ref               string
 	stream            string
 	terraformLogLevel terraform.LogLevel

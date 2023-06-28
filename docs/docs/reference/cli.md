@@ -416,7 +416,7 @@ constellation upgrade check [flags]
   -h, --help            help for check
       --ref string      the reference to use for querying new versions (default "-")
       --stream string   the stream to use for querying new versions (default "stable")
-  -w, --write-config    update the specified config file with the suggested versions
+  -u, --update-config   update the specified config file with the suggested versions
 ```
 
 ### Options inherited from parent commands
@@ -580,10 +580,9 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ### Options
 
 ```
-      --generate-config     automatically generate a configuration file and fill in the required fields
-  -h, --help                help for create
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
-  -y, --yes                 create the IAM configuration without further confirmation
+  -h, --help            help for create
+      --update-config   automatically update the config file with the specific IAM information
+  -y, --yes             create the IAM configuration without further confirmation
 ```
 
 ### Options inherited from parent commands
@@ -619,13 +618,12 @@ constellation iam create aws [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string       path to the configuration file (default "constellation-conf.yaml")
-      --debug               enable debug logging
-      --force               disable version compatibility checks - might result in corrupted clusters
-      --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
-      --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-  -y, --yes                 create the IAM configuration without further confirmation
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --update-config   automatically update the config file with the specific IAM information
+  -y, --yes             create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create azure
@@ -652,13 +650,12 @@ constellation iam create azure [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string       path to the configuration file (default "constellation-conf.yaml")
-      --debug               enable debug logging
-      --force               disable version compatibility checks - might result in corrupted clusters
-      --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
-      --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-  -y, --yes                 create the IAM configuration without further confirmation
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --update-config   automatically update the config file with the specific IAM information
+  -y, --yes             create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create gcp
@@ -688,13 +685,12 @@ constellation iam create gcp [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string       path to the configuration file (default "constellation-conf.yaml")
-      --debug               enable debug logging
-      --force               disable version compatibility checks - might result in corrupted clusters
-      --generate-config     automatically generate a configuration file and fill in the required fields
-  -k, --kubernetes string   Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config (default "v1.26")
-      --tf-log string       sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-  -y, --yes                 create the IAM configuration without further confirmation
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --update-config   automatically update the config file with the specific IAM information
+  -y, --yes             create the IAM configuration without further confirmation
 ```
 
 ## constellation iam destroy
