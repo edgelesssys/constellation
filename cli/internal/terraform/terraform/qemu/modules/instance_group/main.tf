@@ -4,6 +4,10 @@ terraform {
       source  = "dmacvicar/libvirt"
       version = "0.7.1"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.5.1"
+    }
   }
 }
 resource "libvirt_domain" "instance_group" {
@@ -78,7 +82,13 @@ resource "libvirt_volume" "state_volume" {
     ]
   }
 }
+
+resource "random_id" "uid" {
+  byte_length = 4
+}
+
 locals {
+  group_uid            = random_id.uid.hex
   state_disk_size_byte = 1073741824 * var.state_disk_size
   ip_range_start       = 100
   kernel               = var.boot_mode == "direct-linux-boot" ? var.kernel_volume_id : null
