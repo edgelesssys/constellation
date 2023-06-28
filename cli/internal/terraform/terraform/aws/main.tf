@@ -89,7 +89,12 @@ resource "aws_lb" "front_end" {
   tags               = local.tags
 
   dynamic "subnet_mapping" {
-    for_each = toset(module.public_private_subnet.all_zones)
+    # TODO(malt3): use for_each = toset(module.public_private_subnet.all_zones)
+    # in a future version to support all availability zones in the chosen region
+    # without needing to constantly replace the loadbalancer.
+    # This has to wait until the bootstrapper that we upgrade from (source version) can handle multiple AZs
+    # for_each = toset(module.public_private_subnet.all_zones)
+    for_each = toset(local.zones)
     content {
       subnet_id     = module.public_private_subnet.public_subnet_id[subnet_mapping.key]
       allocation_id = aws_eip.lb[subnet_mapping.key].id
