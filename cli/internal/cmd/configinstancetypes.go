@@ -26,7 +26,9 @@ func newConfigInstanceTypesCmd() *cobra.Command {
 }
 
 func printSupportedInstanceTypes(cmd *cobra.Command, _ []string) {
-	cmd.Printf(`AWS instance families:
+	cmd.Printf(`AWS SNP-enabled instance types:
+%v
+AWS NitroTPM-enabled instance types:
 %v
 Azure Confidential VM instance types:
 %v
@@ -34,7 +36,7 @@ Azure Trusted Launch instance types:
 %v
 GCP instance types:
 %v
-`, formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AzureCVMInstanceTypes), formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
+`, formatInstanceTypes(instancetypes.AWSSNPSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AzureCVMInstanceTypes), formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
 }
 
 func formatInstanceTypes(types []string) string {

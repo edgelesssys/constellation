@@ -99,8 +99,9 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	return t
 }
 
-func validateAWSInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.AWS)
+func (c *Config) validateAWSInstanceType(fl validator.FieldLevel) bool {
+	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AWSNitroTPM{})
+	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.AWS)
 }
 
 func (c *Config) validateAzureInstanceType(fl validator.FieldLevel) bool {
@@ -212,11 +213,20 @@ func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe valid
 }
 
 func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be an instance from one of the following families types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceFamilies), true)
+	return ut.Add("aws_instance_type", "{0} must be an instance from one of the following families types with size xlarge or higher: {1}", true)
 }
 
-func translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("aws_instance_type", fe.Field())
+func (c *Config) translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	var t string
+
+	attestVariant := c.GetAttestationConfig().GetVariant()
+
+	instances := instancetypes.AWSSNPSupportedInstanceFamilies
+	if attestVariant.Equal(variant.AWSNitroTPM{}) {
+		instances = instancetypes.AWSSupportedInstanceFamilies
+	}
+
+	t, _ = ut.T("aws_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
@@ -227,6 +237,27 @@ func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
 
 func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
 	t, _ := ut.T("gcp_instance_type", fe.Field())
+
+	return t
+}
+
+// Validation translation functions for Azure & GCP instance type errors.
+func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
+	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
+}
+
+func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
+	var t string
+
+	attestVariant := c.GetAttestationConfig().GetVariant()
+
+	instances := instancetypes.AzureCVMInstanceTypes
+	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
+		instances = instancetypes.AzureTrustedLaunchInstanceTypes
+	}
+
+	t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
@@ -275,7 +306,7 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
 	switch provider {
 	case cloudprovider.AWS:
-		return checkIfAWSInstanceTypeIsValid(insType)
+		return isSupportedAWSInstanceType(insType, acceptNonCVM)
 	case cloudprovider.Azure:
 		if acceptNonCVM {
 			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
@@ -303,8 +334,8 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 	}
 }
 
-// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the instance families supporting NitroTPM.
-func checkIfAWSInstanceTypeIsValid(userInput string) bool {
+// isSupportedAWSInstanceType checks if an AWS instance type passed as user input is in one of the supported instance types.
+func isSupportedAWSInstanceType(userInput string, acceptNonCVM bool) bool {
 	// Check if user or code does anything weird and tries to pass multiple strings as one
 	if strings.Contains(userInput, " ") {
 		return false
@@ -331,9 +362,14 @@ func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 		return false
 	}
 
+	instances := instancetypes.AWSSNPSupportedInstanceFamilies
+	if acceptNonCVM {
+		instances = instancetypes.AWSSupportedInstanceFamilies
+	}
+
 	// Now check if the user input is a supported family
 	// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
-	for _, supportedFamily := range instancetypes.AWSSupportedInstanceFamilies {
+	for _, supportedFamily := range instances {
 		supportedFamilyLowercase := strings.ToLower(supportedFamily)
 		if userDefinedFamily == supportedFamilyLowercase {
 			return true
@@ -341,25 +377,6 @@ func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 	}
 
 	return false
-}
-
-// Validation translation functions for Azure & GCP instance type errors.
-func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
-}
-
-func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
-	var t string
-
-	attestVariant := c.GetAttestationConfig().GetVariant()
-	if attestVariant.Equal(variant.AzureTrustedLaunch{}) {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
-	} else {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
-	}
-
-	return t
 }
 
 func validateNoPlaceholder(fl validator.FieldLevel) bool {

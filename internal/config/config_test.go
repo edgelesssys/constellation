@@ -649,21 +649,47 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			provider:       cloudprovider.AWS,
 			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
 			expectedResult: true,
+			nonCVMsAllowed: true,
 		},
 		"aws one valid instance one with too little vCPUs": {
 			provider:       cloudprovider.AWS,
 			instanceTypes:  []string{"c5.medium"},
 			expectedResult: false,
+			nonCVMsAllowed: true,
 		},
 		"aws graviton sub-family unsupported": {
 			provider:       cloudprovider.AWS,
 			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
 			expectedResult: false,
+			nonCVMsAllowed: true,
 		},
 		"aws combined two valid instances as one string": {
 			provider:       cloudprovider.AWS,
 			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
+			nonCVMsAllowed: true,
+		},
+		"aws only CVMs": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c6a.xlarge", "m6a.xlarge", "r6a.xlarge"},
+			expectedResult: true,
+		},
+		"aws CVMs but CVMs disabled": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"m6a.xlarge", "c6a.xlarge", "r6a.xlarge"},
+			nonCVMsAllowed: true,
+			expectedResult: true,
+		},
+		"aws nitroTPM VMs with CVMs enabled": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
+			expectedResult: false,
+		},
+		"aws nitroTPM VMs with CVMs disabled": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
+			nonCVMsAllowed: true,
+			expectedResult: true,
 		},
 	}
 	for name, tc := range testCases {

@@ -650,7 +650,7 @@ func (c *Config) Validate(force bool) error {
 	})
 
 	// Register AWS, Azure & GCP InstanceType validation error types
-	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
+	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, c.translateAWSInstanceTypeError); err != nil {
 		return err
 	}
 
@@ -709,7 +709,7 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
-	if err := validate.RegisterValidation("aws_instance_type", validateAWSInstanceType); err != nil {
+	if err := validate.RegisterValidation("aws_instance_type", c.validateAWSInstanceType); err != nil {
 		return err
 	}
 

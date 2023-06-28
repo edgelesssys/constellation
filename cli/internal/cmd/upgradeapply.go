@@ -153,22 +153,16 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
+	vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
-	if len(targets) == 0 {
-		u.log.Debugf("No targets specified. Skipping Terraform migration")
-		return nil
-	}
-	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
 		LogLevel:   flags.terraformLogLevel,
 		CSP:        conf.GetProvider(),
 		Vars:       vars,
-		Targets:    targets,
 		OutputFile: constants.TerraformMigrationOutputFile,
 	}
 
@@ -210,14 +204,14 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 }
 
 // parseTerraformUpgradeVars parses the variables required to execute the Terraform script with.
-func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) ([]string, terraform.Variables, error) {
+func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) (terraform.Variables, error) {
 	// Fetch variables to execute Terraform script with
 	provider := conf.GetProvider()
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	region := conf.GetRegion()
 	imageRef, err := fetcher.FetchReference(cmd.Context(), provider, attestationVariant, conf.Image, region)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fetching image reference: %w", err)
+		return nil, fmt.Errorf("fetching image reference: %w", err)
 	}
 
 	commonVariables := terraform.CommonVariables{
@@ -229,8 +223,6 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
-		targets := []string{}
-
 		vars := &terraform.AWSClusterVariables{
 			CommonVariables:        commonVariables,
 			StateDiskType:          conf.Provider.AWS.StateDiskType,
@@ -242,10 +234,8 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 			Debug:                  conf.IsDebugCluster(),
 		}
-		return targets, vars, nil
+		return vars, nil
 	case cloudprovider.Azure:
-		targets := []string{"azurerm_attestation_provider.attestation_provider", "module.scale_set_group", "module.scale_set_control_plane", "module.scale_set_worker"}
-
 		// Azure Terraform provider is very strict about it's casing
 		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
 		imageRef = strings.Replace(imageRef, "Images", "images", 1)
@@ -275,10 +265,8 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			CreateMAA:  toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
 			Debug:      toPtr(conf.IsDebugCluster()),
 		}
-		return targets, vars, nil
+		return vars, nil
 	case cloudprovider.GCP:
-		targets := []string{}
-
 		vars := &terraform.GCPClusterVariables{
 			Name: conf.Name,
 			NodeGroups: map[string]terraform.GCPNodeGroup{
@@ -303,9 +291,9 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 			ImageID: imageRef,
 			Debug:   conf.IsDebugCluster(),
 		}
-		return targets, vars, nil
+		return vars, nil
 	default:
-		return nil, nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
+		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
 	}
 }
 
