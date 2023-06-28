@@ -143,7 +143,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 			return nil, errors.New("not overwriting existing config")
 		}
 	}
-	if featureset.CurrentEdition != featureset.EditionEnterprise {
+	if !featureset.CanUseEmbeddedMeasurmentsAndImage {
 		cmd.PrintErrln("Generating a valid default config is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
 		return nil, errors.New("cannot create a mini cluster without a config file in the OSS build")
 	}
