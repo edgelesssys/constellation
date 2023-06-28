@@ -376,6 +376,15 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
+		"miniup default config is not valid because image and measurements are missing in OSS": {
+			cnf: func() *Config {
+				config, _ := MiniDefault()
+				require.NotNil(t, config)
+				return config
+			}(),
+			wantErr:      true,
+			wantErrCount: 2,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -389,7 +398,7 @@ func TestValidate(t *testing.T) {
 				assert.Error(err)
 				var valErr *ValidationError
 				require.ErrorAs(err, &valErr)
-				assert.Equal(tc.wantErrCount, valErr.messagesCount())
+				assert.Equalf(tc.wantErrCount, valErr.messagesCount(), "Got unexpected error count: %d: %s", valErr.messagesCount(), valErr.LongMessage())
 				return
 			}
 			assert.NoError(err)

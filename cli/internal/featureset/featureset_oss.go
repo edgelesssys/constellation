@@ -9,7 +9,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package featureset
 
 const (
-	edition              = EditionOSS
-	canFetchMeasurements = false
-	canUpgradeCheck      = false
+	edition                           = EditionOSS
+	canFetchMeasurements              = false
+	canUpgradeCheck                   = false
+	canUseEmbeddedMeasurmentsAndImage = false
 )

@@ -13,6 +13,7 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -142,17 +143,14 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 			return nil, errors.New("not overwriting existing config")
 		}
 	}
-
-	config := config.Default()
-	config.Name = constants.MiniConstellationUID
-	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
-	config.StateDiskSizeGB = 8
-
-	// only release images (e.g. v2.7.0) use the production NVRAM
-	if !config.IsReleaseImage() {
-		config.Provider.QEMU.NVRAM = "testing"
+	if !featureset.CanUseEmbeddedMeasurmentsAndImage {
+		cmd.PrintErrln("Generating a valid default config is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
+		return nil, errors.New("cannot create a mini cluster without a config file in the OSS build")
 	}
-
+	config, err := config.MiniDefault()
+	if err != nil {
+		return nil, fmt.Errorf("mini default config is invalid: %v", err)
+	}
 	m.log.Debugf("Prepared configuration")
 
 	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
