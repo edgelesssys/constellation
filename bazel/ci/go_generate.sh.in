@@ -23,6 +23,8 @@ hash_generator=$(realpath @@HASH_GENERATOR@@)
 stat "${hash_generator}" >> /dev/null
 measurement_generator=$(realpath @@MEASUREMENT_GENERATOR@@)
 stat "${measurement_generator}" >> /dev/null
+yq=$(realpath @@YQ@@)
+stat "${yq}" >> /dev/null
 
 cd "${BUILD_WORKSPACE_DIRECTORY}"
 
@@ -34,6 +36,7 @@ PATH=$(dirname "${docgen}"):${PATH}
 PATH=$(dirname "${helm}"):${PATH}
 PATH=$(dirname "${hash_generator}"):${PATH}
 PATH=$(dirname "${measurement_generator}"):${PATH}
+PATH=$(dirname "${yq}"):${PATH}
 export PATH
 
 submodules=$(${go} list -f '{{.Dir}}' -m)
