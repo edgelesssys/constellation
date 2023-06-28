@@ -281,6 +281,8 @@ type QEMUVariables struct {
 	Name string `hcl:"name" cty:"name"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]QEMUNodeGroup `hcl:"node_groups" cty:"node_groups"`
+	// Machine is the type of machine to use.  use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'
+	Machine string `hcl:"machine" cty:"machine"`
 	// LibvirtURI is the libvirt connection URI.
 	LibvirtURI string `hcl:"libvirt_uri" cty:"libvirt_uri"`
 	// LibvirtSocketPath is the path to the libvirt socket in case of unix socket.
@@ -337,8 +339,6 @@ type QEMUNodeGroup struct {
 	CPUCount int `hcl:"vcpus" cty:"vcpus"`
 	// MemorySize is the amount of memory to allocate to each node, in MiB.
 	MemorySize int `hcl:"memory" cty:"memory"`
-	// Machine is the type of machine to use.  use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'
-	Machine string `hcl:"machine" cty:"machine"`
 }
 
 func writeLinef(builder *strings.Builder, format string, a ...any) {

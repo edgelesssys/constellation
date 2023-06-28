@@ -60,7 +60,7 @@ module "node_group" {
   state_disk_size  = each.value.disk_size
   vcpus            = each.value.vcpus
   memory           = each.value.memory
-  machine          = each.value.machine
+  machine          = var.machine
   cidr             = each.value.role == "control-plane" ? "10.42.1.0/24" : "10.42.2.0/24"
   network_id       = libvirt_network.constellation.id
   pool             = libvirt_pool.cluster.name
@@ -119,4 +119,3 @@ locals {
   initrd_volume_id = var.constellation_boot_mode == "direct-linux-boot" ? libvirt_volume.constellation_initrd[0].id : null
   kernel_cmdline   = var.constellation_boot_mode == "direct-linux-boot" ? var.constellation_cmdline : null
 }
-

@@ -41,9 +41,9 @@ func TestPrepareCluster(t *testing.T) {
 				DiskSize:   30,
 				CPUCount:   1,
 				MemorySize: 1024,
-				Machine:    "q35",
 			},
 		},
+		Machine: "q35",
 	}
 
 	testCases := map[string]struct {
@@ -255,9 +255,9 @@ func TestCreateCluster(t *testing.T) {
 				DiskSize:   11,
 				CPUCount:   1,
 				MemorySize: 1024,
-				Machine:    "q35",
 			},
 		},
+		Machine:          "q35",
 		ImagePath:        "path",
 		ImageFormat:      "format",
 		MetadataAPIImage: "api",

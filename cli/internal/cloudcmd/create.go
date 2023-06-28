@@ -421,7 +421,6 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 				DiskSize:      opts.Config.StateDiskSizeGB,
 				CPUCount:      opts.Config.Provider.QEMU.VCPUs,
 				MemorySize:    opts.Config.Provider.QEMU.Memory,
-				Machine:       "q35", // TODO(elchead): make configurable AB#3225
 			},
 			"worker_default": {
 				Role:          role.Worker.TFString(),
@@ -429,9 +428,9 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 				DiskSize:      opts.Config.StateDiskSizeGB,
 				CPUCount:      opts.Config.Provider.QEMU.VCPUs,
 				MemorySize:    opts.Config.Provider.QEMU.Memory,
-				Machine:       "q35", // TODO(elchead): make configurable AB#3225
 			},
 		},
+		Machine:            "q35", // TODO(elchead): make configurable AB#3225
 		MetadataAPIImage:   opts.Config.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
 		NVRAM:              opts.Config.Provider.QEMU.NVRAM,

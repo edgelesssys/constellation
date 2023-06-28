@@ -5,7 +5,6 @@ variable "node_groups" {
     disk_size      = number // size of state disk (GiB)
     vcpus          = number
     memory         = number // amount of memory per instance (MiB)
-    machine        = string // machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'
   }))
   validation {
     condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
@@ -13,6 +12,12 @@ variable "node_groups" {
   }
 
   description = "A map of node group names to node group configurations."
+}
+
+variable "machine" {
+  type        = string
+  default     = "q35"
+  description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }
 
 variable "libvirt_uri" {

@@ -255,9 +255,9 @@ func TestQEMUClusterVariables(t *testing.T) {
 				DiskSize:      30,
 				CPUCount:      4,
 				MemorySize:    8192,
-				Machine:       "q35",
 			},
 		},
+		Machine:            "q35",
 		LibvirtURI:         "qemu:///system",
 		LibvirtSocketPath:  "/var/run/libvirt/libvirt-sock",
 		BootMode:           "uefi",
@@ -276,12 +276,12 @@ node_groups = {
   control-plane = {
     disk_size      = 30
     instance_count = 1
-    machine        = "q35"
     memory         = 8192
     role           = "control-plane"
     vcpus          = 4
   }
 }
+machine                 = "q35"
 libvirt_uri             = "qemu:///system"
 libvirt_socket_path     = "/var/run/libvirt/libvirt-sock"
 constellation_boot_mode = "uefi"
