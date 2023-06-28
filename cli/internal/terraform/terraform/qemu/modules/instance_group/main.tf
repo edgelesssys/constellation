@@ -8,7 +8,7 @@ terraform {
 }
 resource "libvirt_domain" "instance_group" {
   count    = var.amount
-  name     = "${var.base_name}-${var.role}-${count.index}"
+  name     = "${var.base_name}-${var.role}-${local.group_uid}-${count.index}"
   memory   = var.memory
   vcpu     = var.vcpus
   machine  = var.machine
@@ -56,7 +56,7 @@ resource "libvirt_domain" "instance_group" {
 
 resource "libvirt_volume" "boot_volume" {
   count          = var.amount
-  name           = "constellation-${var.role}-${count.index}-boot"
+  name           = "constellation-${var.role}-${local.group_uid}-${count.index}-boot"
   pool           = var.pool
   base_volume_id = var.boot_volume_id
   lifecycle {
@@ -68,7 +68,7 @@ resource "libvirt_volume" "boot_volume" {
 
 resource "libvirt_volume" "state_volume" {
   count  = var.amount
-  name   = "constellation-${var.role}-${count.index}-state"
+  name   = "constellation-${var.role}-${local.group_uid}-${count.index}-state"
   pool   = var.pool
   size   = local.state_disk_size_byte
   format = "qcow2"
