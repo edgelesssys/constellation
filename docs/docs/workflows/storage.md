@@ -121,7 +121,7 @@ AWS comes with two storage classes by default.
   * ext-4 filesystem
   * Encryption of all data written to disk
 * `integrity-encrypted-rwo`
-  * Uses [SSDs of `gp3 type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
+  * Uses [SSDs of `gp3` type](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html)
   * ext-4 filesystem
   * Encryption of all data written to disk
   * Integrity protection of data written to disk
