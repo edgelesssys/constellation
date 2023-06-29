@@ -373,7 +373,6 @@ go_library(
         "charts/edgeless/constellation-services/charts/aws-csi-driver/templates/storageclass.yaml",
         "charts/edgeless/constellation-services/charts/aws-csi-driver/templates/storageclass_default.yaml",
         "charts/edgeless/constellation-services/charts/aws-csi-driver/templates/storageclass_integrity.yaml",
-        "charts/edgeless/constellation-services/charts/aws-csi-driver/templates/tests/helm-tester.yaml",
         "charts/edgeless/constellation-services/charts/aws-csi-driver/templates/volumesnapshotclass.yaml",
         "charts/edgeless/constellation-services/charts/aws-csi-driver/values.yaml",
     ],
