@@ -9,7 +9,7 @@ Cloud service providers (CSPs) offer their own CSI-based solutions for cloud sto
 ## Confidential storage
 
 Most cloud storage solutions support encryption, such as [GCE Persistent Disks (PD)](https://cloud.google.com/kubernetes-engine/docs/how-to/using-cmek).
-Constellation supports the available CSI-based storage options for Kubernetes engines in AWS, Azure and GCP.
+Constellation supports the available CSI-based storage options for Kubernetes engines in AWS, Azure, and GCP.
 However, their encryption takes place in the storage backend and is managed by the CSP.
 Thus, using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
 
