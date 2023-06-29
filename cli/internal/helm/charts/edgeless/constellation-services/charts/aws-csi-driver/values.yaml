@@ -5,7 +5,7 @@
 image:
   repository: ghcr.io/edgelesssys/constellation/aws-csi-driver
   # Overrides the image tag whose default is v{{ .Chart.AppVersion }}
-  tag: "v1.0.0@sha256:e41e5b32f7cf78cfec37ec5c2dc05616a55362e765ee56f12807b9ec6d81415b"
+  tag: "v1.1.0@sha256:3e2c394f2397455516948efcc9a4b87cbaeabf14df31702d5905ce08a53995f2"
   pullPolicy: Always
 
 # -- Custom labels to add into metadata
