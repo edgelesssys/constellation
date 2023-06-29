@@ -25,7 +25,7 @@ async function createConfig() {
     // scripts
     scripts: [
       { src: 'https://plausible.io/js/plausible.js', async: true, defer: true, 'data-domain': 'docs.edgeless.systems' },
-      { id: "Cookiebot", src: "https://consent.cookiebot.com/uc.js", "data-cbid": "55f1dbd1-3f75-4a88-89f8-647f6062f426", "data-blockingmode": "auto" }
+      { id: "Cookiebot", src: "https://consent.cookiebot.com/uc.js", "data-cbid": "a0cc864f-0b67-49be-8d65-9ed354de2ee6", "data-blockingmode": "auto" }
     ],
 
     // Even if you don't use internalization, you can use this field to set useful
