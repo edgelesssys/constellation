@@ -13,7 +13,7 @@ Constellation supports the available CSI-based storage options for Kubernetes en
 However, their encryption takes place in the storage backend and is managed by the CSP.
 Thus, using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
 
-To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk and GCE PD, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
+To address this, Constellation provides CSI drivers for AWS EBS, Azure Disk, and GCE PD, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
 
 For more details see [encrypted persistent storage](../architecture/encrypted-storage.md).
 
