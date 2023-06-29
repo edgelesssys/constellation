@@ -8,6 +8,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -67,17 +68,7 @@ func TestParseIDFile(t *testing.T) {
 }
 
 func TestIAMCreateAWS(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
-		fs := afero.NewMemMapFs()
-		fileHandler := file.NewHandler(fs)
-		for _, f := range existingConfigFiles {
-			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.AWS), file.OptNone))
-		}
-		for _, d := range existingDirs {
-			require.NoError(fs.MkdirAll(d, 0o755))
-		}
-		return fs
-	}
+	defaultFs := createFSWithConfig(*createConfig(cloudprovider.AWS))
 	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
@@ -114,6 +105,16 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:             true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
+		"iam create aws fails when --zone has no availability zone": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-1",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			existingConfigFiles: []string{constants.ConfigFilename},
+			wantErr:             true,
+		},
 		"iam create aws --update-config": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
@@ -124,6 +125,33 @@ func TestIAMCreateAWS(t *testing.T) {
 			configFlag:          constants.ConfigFilename,
 			updateConfigFlag:    true,
 			existingConfigFiles: []string{constants.ConfigFilename},
+		},
+		"iam create aws --update-config fails when --zone is different from zone in config": {
+			setupFs: createFSWithConfig(func() config.Config {
+				cfg := createConfig(cloudprovider.AWS)
+				cfg.Provider.AWS.Zone = "eu-central-1a"
+				cfg.Provider.AWS.Region = "eu-central-1"
+				return *cfg
+			}()),
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-1a",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			existingConfigFiles: []string{constants.ConfigFilename},
+			updateConfigFlag:    true,
+			wantErr:             true,
+		},
+		"iam create aws --update-config fails when config has different provider": {
+			setupFs:             createFSWithConfig(*createConfig(cloudprovider.GCP)),
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-1a",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			existingConfigFiles: []string{constants.ConfigFilename},
+			updateConfigFlag:    true,
+			wantErr:             true,
 		},
 		"iam create aws no config": {
 			setupFs:    defaultFs,
@@ -278,6 +306,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				assert.Error(err)
 				return
 			}
+			assert.NoError(err)
 
 			if tc.wantAbort {
 				assert.False(tc.creator.createCalled)
@@ -827,5 +856,96 @@ func TestIAMCreateGCP(t *testing.T) {
 			require.NoError(readErr)
 			assert.Equal("not_a_secret", (*readServiceAccountKey)["private_key_id"])
 		})
+	}
+}
+
+func TestValidateConfigWithFlagCompatibility(t *testing.T) {
+	testCases := map[string]struct {
+		iamProvider cloudprovider.Provider
+		cfg         config.Config
+		flags       iamFlags
+		wantErr     bool
+	}{
+		"AWS valid when cfg.zone == flag.zone": {
+			iamProvider: cloudprovider.AWS,
+			cfg: func() config.Config {
+				cfg := createConfig(cloudprovider.AWS)
+				cfg.Provider.AWS.Zone = "europe-west-1a"
+				return *cfg
+			}(),
+			flags: iamFlags{
+				aws: awsFlags{
+					zone: "europe-west-1a",
+				},
+			},
+		},
+		"AWS valid when cfg.zone not set": {
+			iamProvider: cloudprovider.AWS,
+			cfg:         *createConfig(cloudprovider.AWS),
+			flags: iamFlags{
+				aws: awsFlags{
+					zone: "europe-west-1a",
+				},
+			},
+		},
+		"GCP invalid when cfg.zone != flag.zone": {
+			iamProvider: cloudprovider.GCP,
+			cfg: func() config.Config {
+				cfg := createConfig(cloudprovider.GCP)
+				cfg.Provider.GCP.Zone = "europe-west-1a"
+				return *cfg
+			}(),
+			flags: iamFlags{
+				aws: awsFlags{
+					zone: "us-west-1a",
+				},
+			},
+			wantErr: true,
+		},
+		"Azure invalid when cfg.zone != flag.zone": {
+			iamProvider: cloudprovider.GCP,
+			cfg: func() config.Config {
+				cfg := createConfig(cloudprovider.Azure)
+				cfg.Provider.Azure.Location = "europe-west-1a"
+				return *cfg
+			}(),
+			flags: iamFlags{
+				aws: awsFlags{
+					zone: "us-west-1a",
+				},
+			},
+			wantErr: true,
+		},
+		"GCP invalid when cfg.provider different from iam provider": {
+			iamProvider: cloudprovider.GCP,
+			cfg:         *createConfig(cloudprovider.AWS),
+			wantErr:     true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			err := ValidateConfigWithFlagCompatibility(tc.iamProvider, tc.cfg, tc.flags)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+func createFSWithConfig(cfg config.Config) func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+	return func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
+		fs := afero.NewMemMapFs()
+		fileHandler := file.NewHandler(fs)
+		fmt.Println("CFG", cfg.Provider.AWS)
+		for _, f := range existingConfigFiles {
+			require.NoError(fileHandler.WriteYAML(f, cfg, file.OptNone))
+		}
+		for _, d := range existingDirs {
+			require.NoError(fs.MkdirAll(d, 0o755))
+		}
+		return fs
 	}
 }
