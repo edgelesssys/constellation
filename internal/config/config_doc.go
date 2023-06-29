@@ -126,7 +126,7 @@ func init() {
 			FieldName: "aws",
 		},
 	}
-	AWSConfigDoc.Fields = make([]encoder.Doc, 6)
+	AWSConfigDoc.Fields = make([]encoder.Doc, 7)
 	AWSConfigDoc.Fields[0].Name = "region"
 	AWSConfigDoc.Fields[0].Type = "string"
 	AWSConfigDoc.Fields[0].Note = ""
@@ -157,6 +157,11 @@ func init() {
 	AWSConfigDoc.Fields[5].Note = ""
 	AWSConfigDoc.Fields[5].Description = "Name of the IAM profile to use for the worker nodes."
 	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Name of the IAM profile to use for the worker nodes."
+	AWSConfigDoc.Fields[6].Name = "deployCSIDriver"
+	AWSConfigDoc.Fields[6].Type = "bool"
+	AWSConfigDoc.Fields[6].Note = ""
+	AWSConfigDoc.Fields[6].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
+	AWSConfigDoc.Fields[6].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 
 	AzureConfigDoc.Type = "AzureConfig"
 	AzureConfigDoc.Comments[encoder.LineComment] = "AzureConfig are Azure specific configuration values used by the CLI."
