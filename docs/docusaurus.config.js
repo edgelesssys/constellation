@@ -22,8 +22,11 @@ async function createConfig() {
     organizationName: 'Edgeless Systems', // Usually your GitHub org/user name.
     projectName: 'Constellation', // Usually your repo name.
 
-    // plausible
-    scripts: [{ src: 'https://plausible.io/js/plausible.js', async: true, defer: true, 'data-domain': 'docs.edgeless.systems' }],
+    // scripts
+    scripts: [
+      { src: 'https://plausible.io/js/plausible.js', async: true, defer: true, 'data-domain': 'docs.edgeless.systems' },
+      { id: "Cookiebot", src: "https://consent.cookiebot.com/uc.js", "data-cbid": "55f1dbd1-3f75-4a88-89f8-647f6062f426", "data-blockingmode": "auto" }
+    ],
 
     // Even if you don't use internalization, you can use this field to set useful
     // metadata like html lang. For example, if your site is Chinese, you may want
@@ -39,30 +42,32 @@ async function createConfig() {
         /** @type {import('@docusaurus/preset-classic').Options} */
         ({
           docs: {
-            remarkPlugins: [[mdxMermaid.default, { mermaid: {
-              theme: 'base',
-              themeVariables: {
-                // general
-                'fontFamily': '"Open Sans", sans-serif',
-                'primaryColor': '#90FF99', // edgeless green
-                'primaryTextColor': '#000000',
-                'secondaryColor': '#A5A5A5', // edgeless grey
-                'secondaryTextColor': '#000000',
-                'tertiaryColor': '#E7E6E6', // edgeless light grey
-                'tertiaryTextColor': '#000000',
-                // flowchart
-                'clusterBorder': '#A5A5A5',
-                'clusterBkg': '#ffffff',
-                'edgeLabelBackground': '#ffffff',
-                // sequence diagram
-                'activationBorderColor': '#000000',
-                'actorBorder': '#A5A5A5',
-                'actorFontFamily': '"Open Sans", sans-serif', // not released by mermaid yet
-                'noteBkgColor': '#8B04DD', // edgeless purple
-                'noteTextColor': '#ffffff',
-              },
-              startOnLoad: true
-            }}]],
+            remarkPlugins: [[mdxMermaid.default, {
+              mermaid: {
+                theme: 'base',
+                themeVariables: {
+                  // general
+                  'fontFamily': '"Open Sans", sans-serif',
+                  'primaryColor': '#90FF99', // edgeless green
+                  'primaryTextColor': '#000000',
+                  'secondaryColor': '#A5A5A5', // edgeless grey
+                  'secondaryTextColor': '#000000',
+                  'tertiaryColor': '#E7E6E6', // edgeless light grey
+                  'tertiaryTextColor': '#000000',
+                  // flowchart
+                  'clusterBorder': '#A5A5A5',
+                  'clusterBkg': '#ffffff',
+                  'edgeLabelBackground': '#ffffff',
+                  // sequence diagram
+                  'activationBorderColor': '#000000',
+                  'actorBorder': '#A5A5A5',
+                  'actorFontFamily': '"Open Sans", sans-serif', // not released by mermaid yet
+                  'noteBkgColor': '#8B04DD', // edgeless purple
+                  'noteTextColor': '#ffffff',
+                },
+                startOnLoad: true
+              }
+            }]],
             sidebarPath: require.resolve('./sidebars.js'),
             // sidebarPath: 'sidebars.js',
             // Please change this to your repo.
@@ -74,6 +79,10 @@ async function createConfig() {
           theme: {
             customCss: require.resolve('./src/css/custom.css'),
           },
+          gtag: {
+            trackingID: 'G-3DVYB2CHLG',
+            anonymizeIP: true,
+          }
         }),
       ],
     ],
