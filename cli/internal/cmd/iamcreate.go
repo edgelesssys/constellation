@@ -79,11 +79,10 @@ func newIAMCreateAWSCmd() *cobra.Command {
 
 	cmd.Flags().String("prefix", "", "name prefix for all resources (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "prefix"))
-	// TODO: leave the availability zone out and should be called region if only necessary for iam creation?
 	cmd.Flags().String("zone", "", "AWS availability zone the resources will be created in, e.g. us-east-2a (required)\n"+
 		"Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. "+
 		"Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
-
+	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
 	return cmd
 }
 
@@ -100,9 +99,9 @@ func newIAMCreateAzureCmd() *cobra.Command {
 	cmd.Flags().String("resourceGroup", "", "name prefix of the two resource groups your cluster / IAM resources will be created in (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "resourceGroup"))
 	cmd.Flags().String("region", "", "region the resources will be created in, e.g. westus (required)")
+	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
 	cmd.Flags().String("servicePrincipal", "", "name of the service principal that will be created (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "servicePrincipal"))
-
 	return cmd
 }
 
@@ -118,6 +117,7 @@ func newIAMCreateGCPCmd() *cobra.Command {
 
 	cmd.Flags().String("zone", "", "GCP zone the cluster will be deployed in (required)\n"+
 		"Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available.")
+	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
 	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created (required)\n"+
 		"Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
