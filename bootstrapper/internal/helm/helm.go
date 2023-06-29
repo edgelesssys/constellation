@@ -214,7 +214,7 @@ func (i installDoer) Do(ctx context.Context) error {
 	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install Helm chart")
 
 	if _, err := i.client.RunWithContext(ctx, i.chart, i.values); err != nil {
-		i.log.With(zap.Error(err)).Errorf("Helm chart installation failed")
+		i.log.With(zap.Error(err), zap.String("chart", i.chart.Name())).Errorf("Helm chart installation failed")
 		return err
 	}
 
