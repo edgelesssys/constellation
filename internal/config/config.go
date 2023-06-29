@@ -317,6 +317,7 @@ func Default() *Config {
 				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
+				DeployCSIDriver:        toPtr(true),
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
