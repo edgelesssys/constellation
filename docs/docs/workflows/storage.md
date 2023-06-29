@@ -46,7 +46,7 @@ Follow the instructions on how to [install the Constellation CSI driver](#instal
 </tabItem>
 </tabs>
 
-Note that in case the options above aren't a suitable solution for you, Constellation is compatible with all other CSI-based storage options. For example, you can use [AWS EFS](https://docs.aws.amazon.com/en_en/eks/latest/userguide/efs-csi.html), [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) or [GCP Filestore](https://cloud.google.com/filestore) with Constellation out of the box. Constellation is just not providing transparent encryption on the node level for these storage types yet.
+Note that in case the options above aren't a suitable solution for you, Constellation is compatible with all other CSI-based storage options. For example, you can use [AWS EFS](https://docs.aws.amazon.com/en_en/eks/latest/userguide/efs-csi.html), [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction), or [GCP Filestore](https://cloud.google.com/filestore) with Constellation out of the box. Constellation is just not providing transparent encryption on the node level for these storage types yet.
 
 ## Installation
 
