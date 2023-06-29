@@ -63,7 +63,7 @@ func TestConstellationServices(t *testing.T) {
 		"AWS": {
 			config: &config.Config{
 				Provider: config.ProviderConfig{AWS: &config.AWSConfig{
-					DeployCSIDriver: toPtr(true),
+					DeployCSIDriver: toPtr(false), 
 				}},
 				Attestation: config.AttestationConfig{AWSNitroTPM: &config.AWSNitroTPM{
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
@@ -154,7 +154,12 @@ func TestConstellationServices(t *testing.T) {
 				IsInstall: true,
 				IsUpgrade: false,
 			}
-			caps := &chartutil.Capabilities{}
+
+			kubeVersion, err := chartutil.ParseKubeVersion("1.18.0")
+			require.NoError(err)
+			caps := &chartutil.Capabilities{
+				KubeVersion: *kubeVersion,
+			}
 
 			err = tc.valuesModifier(values)
 			require.NoError(err)
