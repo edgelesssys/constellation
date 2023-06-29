@@ -230,16 +230,15 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if flags.updateConfig {
-		c.cmd.Printf("The configuration file %q will be automatically updated and populated with the IAM values.\n", flags.configPath)
 		c.log.Debugf("Parsing config %s", flags.configPath)
 		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
-
 		err := ValidateConfigWithFlagCompatibility(c.provider, conf, flags)
 		if err != nil {
 			return err
 		}
+		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", flags.configPath)
 	}
 
 	c.spinner.Start("Creating", false)
@@ -589,6 +588,24 @@ func awsZoneToRegion(zone string) (string, error) {
 	return fmt.Sprintf("%s-%s-%c", parts[0], parts[1], parts[2][0]), nil
 }
 
+// ValidateConfigWithFlagCompatibility checks if the config is compatible with the flags.
+func ValidateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
+	if !hasProviderCfg(iamProvider, cfg) {
+		return fmt.Errorf("iam provider %q seems different from config provider", iamProvider)
+	}
+
+	return checkIfCfgZoneAndFlagZoneDiffer(iamProvider, flags, cfg)
+}
+
+func checkIfCfgZoneAndFlagZoneDiffer(iamProvider cloudprovider.Provider, flags iamFlags, cfg config.Config) error {
+	flagZone := flagZoneOrAzRegion(iamProvider, flags)
+	configZone := configZoneOrAzRegion(iamProvider, cfg)
+	if configZone != "" && flagZone != configZone {
+		return fmt.Errorf("zone/region from the configuration file %q differs from the one provided via flags %q", configZone, flagZone)
+	}
+	return nil
+}
+
 func flagZoneOrAzRegion(provider cloudprovider.Provider, flags iamFlags) string {
 	switch provider {
 	case cloudprovider.AWS:
@@ -623,18 +640,4 @@ func hasProviderCfg(provider cloudprovider.Provider, cfg config.Config) bool {
 		return cfg.Provider.GCP != nil
 	}
 	return false
-}
-
-// ValidateConfigWithFlagCompatibility checks if the config is compatible with the flags.
-func ValidateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
-	if !hasProviderCfg(iamProvider, cfg) {
-		return fmt.Errorf("iam provider %q seems different from config provider", iamProvider)
-	}
-
-	flagZone := flagZoneOrAzRegion(iamProvider, flags)
-	configZone := configZoneOrAzRegion(iamProvider, cfg)
-	if configZone != "" && flagZone != configZone {
-		return fmt.Errorf("zone/region from the configuration file %q differs from the one provided via flags %q", configZone, flagZone)
-	}
-	return nil
 }
