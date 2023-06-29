@@ -15,7 +15,7 @@ locals {
     # 0 => 192.168.176.0/24 (unused private subnet cidr)
     # 1 => 192.168.177.0/24 (unused private subnet cidr)
     legacy = 2 # => 192.168.178.0/24 (legacy private subnet)
-    a      = 3 # => 192.168.178.1/24 (first newly created zonal private subnet)
+    a      = 3 # => 192.168.179.0/24 (first newly created zonal private subnet)
     b      = 4
     c      = 5
     d      = 6
