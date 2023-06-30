@@ -63,7 +63,7 @@ func TestConstellationServices(t *testing.T) {
 		"AWS": {
 			config: &config.Config{
 				Provider: config.ProviderConfig{AWS: &config.AWSConfig{
-					DeployCSIDriver: toPtr(false), 
+					DeployCSIDriver: toPtr(false),
 				}},
 				Attestation: config.AttestationConfig{AWSNitroTPM: &config.AWSNitroTPM{
 					Measurements: measurements.M{1: measurements.WithAllBytes(0xAA, measurements.Enforce, measurements.PCRMeasurementLength)},
