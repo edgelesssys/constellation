@@ -8,7 +8,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -925,7 +924,7 @@ func TestValidateConfigWithFlagCompatibility(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			err := ValidateConfigWithFlagCompatibility(tc.iamProvider, tc.cfg, tc.flags)
+			err := validateConfigWithFlagCompatibility(tc.iamProvider, tc.cfg, tc.flags)
 			if tc.wantErr {
 				assert.Error(err)
 				return

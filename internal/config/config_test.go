@@ -264,6 +264,7 @@ func TestFromFile(t *testing.T) {
 func TestValidate(t *testing.T) {
 	const defaultErrCount = 33 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
+	const awsErrCount = 6
 	const gcpErrCount = 6
 
 	// TODO(AB#3132,3u13r): refactor config validation tests
@@ -346,7 +347,37 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 		},
-
+		"default AWS config is not valid": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: awsErrCount,
+		},
+		"AWS config with correct region and zone format": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Provider.AWS.Region = "us-east-2"
+				cnf.Provider.AWS.Zone = "us-east-2a"
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: awsErrCount - 2,
+		},
+		"AWS config with wrong region and zone format": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Provider.AWS.Region = "us-west2"
+				cnf.Provider.AWS.Zone = "a"
+				cnf.RemoveProviderAndAttestationExcept(cloudprovider.AWS)
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: awsErrCount,
+		},
 		"default GCP config is not valid": {
 			cnf: func() *Config {
 				cnf := Default()

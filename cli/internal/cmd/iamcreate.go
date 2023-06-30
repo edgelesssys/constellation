@@ -26,9 +26,10 @@ import (
 
 var (
 	// GCP-specific validation regexes
+	// Source: https://cloud.google.com/compute/docs/regions-zones
+	zoneRegex   = regexp.MustCompile(`^\w+-\w+-[abc]$`)
+	regionRegex = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	// Source: https://cloud.google.com/resource-manager/reference/rest/v1/projects.
-	zoneRegex         = regexp.MustCompile(`^\w+-\w+-[abc]$`)
-	regionRegex       = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	projectIDRegex    = regexp.MustCompile(`^[a-z][-a-z0-9]{4,28}[a-z0-9]{1}$`)
 	serviceAccIDRegex = regexp.MustCompile(`^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$`)
 )
@@ -234,7 +235,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
-		err := ValidateConfigWithFlagCompatibility(c.provider, conf, flags)
+		err := validateConfigWithFlagCompatibility(c.provider, conf, flags)
 		if err != nil {
 			return err
 		}
@@ -370,17 +371,19 @@ func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 		return iamFlags{}, fmt.Errorf("parsing zone string: %w", err)
 	}
 
+	if !config.ValidateAWSZone(zone) {
+		return iamFlags{}, fmt.Errorf("invalid AWS zone. To find a valid zone, please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
+	}
+	// Infer region from zone.
+	region := zone[:len(zone)-1]
+	if !config.ValidateAWSRegion(region) {
+		return iamFlags{}, fmt.Errorf("invalid AWS region: %s", region)
+	}
+
 	flags.aws = awsFlags{
 		prefix: prefix,
 		zone:   zone,
-	}
-
-	if !strings.HasSuffix(zone, "a") && !strings.HasSuffix(zone, "b") && !strings.HasSuffix(zone, "c") {
-		return iamFlags{}, fmt.Errorf("missing availability zone in %s flag. for more information see the docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones", zone)
-	}
-	flags.aws.region, err = awsZoneToRegion(zone)
-	if err != nil {
-		return iamFlags{}, fmt.Errorf("invalid AWS zone. To find a valid zone, please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
+		region: region,
 	}
 
 	// Setup IAM config.
@@ -572,20 +575,6 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 		return nil, err
 	}
 	return out, nil
-}
-
-// awsZoneToRegion converts an AWS zone string to a region string.
-// Example: "us-east-1a" -> "us-east-1"
-// It does not check against a list of valid zones.
-// Instead, it just checks that the zone string is in the correct format:
-// "The code for Availability Zone is its Region code followed by a letter identifier."
-// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones .
-func awsZoneToRegion(zone string) (string, error) {
-	parts := strings.Split(zone, "-")
-	if len(parts) < 3 || len(parts[2]) < 1 {
-		return "", fmt.Errorf("invalid zone string: %s", zone)
-	}
-	return fmt.Sprintf("%s-%s-%c", parts[0], parts[1], parts[2][0]), nil
 }
 
 // validateConfigWithFlagCompatibility checks if the config is compatible with the flags.
