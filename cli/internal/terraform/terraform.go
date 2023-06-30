@@ -47,9 +47,10 @@ var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating clu
 type Client struct {
 	tf tfInterface
 
-	file       file.Handler
-	workingDir string
-	remove     func()
+	manualStateMigrations []StateMigration
+	file                  file.Handler
+	workingDir            string
+	remove                func()
 }
 
 // New sets up a new Client for Terraform.
@@ -69,6 +70,12 @@ func New(ctx context.Context, workingDir string) (*Client, error) {
 		file:       file,
 		workingDir: workingDir,
 	}, nil
+}
+
+// WithManualStateMigration adds a manual state migration to the Client.
+func (c *Client) WithManualStateMigration(migration StateMigration) *Client {
+	c.manualStateMigrations = append(c.manualStateMigrations, migration)
+	return c
 }
 
 // Show reads the default state path and outputs the state.
@@ -96,7 +103,7 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel, targets ...string) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return CreateOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -105,12 +112,11 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel, targets .
 		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
-	opts := []tfexec.ApplyOption{}
-	for _, target := range targets {
-		opts = append(opts, tfexec.Target(target))
+	if err := c.applyManualStateMigrations(ctx); err != nil {
+		return CreateOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
 	}
 
-	if err := c.tf.Apply(ctx, opts...); err != nil {
+	if err := c.tf.Apply(ctx); err != nil {
 		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
@@ -292,7 +298,7 @@ func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Pro
 
 // Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.
 // If there is a diff, the returned bool is true. Otherwise, it is false.
-func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string, targets ...string) (bool, error) {
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (bool, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -301,11 +307,12 @@ func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string, t
 		return false, fmt.Errorf("terraform init: %w", err)
 	}
 
+	if err := c.applyManualStateMigrations(ctx); err != nil {
+		return false, fmt.Errorf("apply manual state migrations: %w", err)
+	}
+
 	opts := []tfexec.PlanOption{
 		tfexec.Out(planFile),
-	}
-	for _, target := range targets {
-		opts = append(opts, tfexec.Target(target))
 	}
 	return c.tf.Plan(ctx, opts...)
 }
@@ -380,6 +387,23 @@ func GetExecutable(ctx context.Context, workingDir string) (terraform *tfexec.Te
 	return tf, func() { _ = inst.Remove(context.Background()) }, err
 }
 
+// applyManualStateMigrations applies manual state migrations that are not handled by Terraform due to missing features.
+// Each migration is expected to be idempotent.
+// This is a temporary solution until we can remove the need for manual state migrations.
+func (c *Client) applyManualStateMigrations(ctx context.Context) error {
+	for _, migration := range c.manualStateMigrations {
+		if err := migration.Hook(ctx, c.tf); err != nil {
+			return fmt.Errorf("apply manual state migration %s: %w", migration.DisplayName, err)
+		}
+	}
+	return nil
+	// expects to be run on initialized workspace
+	// and only works for AWS
+	// if migration fails, we expect to either be on a different CSP or that the migration has already been applied
+	// and we can continue
+	// c.tf.StateMv(ctx, "module.control_plane.aws_iam_role.this", "module.control_plane.aws_iam_role.control_plane")
+}
+
 // writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
 func (c *Client) writeVars(vars Variables) error {
 	if vars == nil {
@@ -416,6 +440,13 @@ func (c *Client) setLogLevel(logLevel LogLevel) error {
 	return nil
 }
 
+// StateMigration is a manual state migration that is not handled by Terraform due to missing features.
+// TODO(AB#3248): Remove this after we can assume that all existing clusters have been migrated.
+type StateMigration struct {
+	DisplayName string
+	Hook        func(ctx context.Context, tfClient TFMigrator) error
+}
+
 type tfInterface interface {
 	Apply(context.Context, ...tfexec.ApplyOption) error
 	Destroy(context.Context, ...tfexec.DestroyOption) error
@@ -425,4 +456,11 @@ type tfInterface interface {
 	ShowPlanFileRaw(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (string, error)
 	SetLog(level string) error
 	SetLogPath(path string) error
+	TFMigrator
+}
+
+// TFMigrator is an interface for manual terraform state migrations (terraform state mv).
+// TODO(AB#3248): Remove this after we can assume that all existing clusters have been migrated.
+type TFMigrator interface {
+	StateMv(ctx context.Context, src, dst string, opts ...tfexec.StateMvCmdOption) error
 }

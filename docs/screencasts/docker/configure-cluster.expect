@@ -23,9 +23,13 @@ spawn asciinema rec --overwrite /recordings/configure-cluster.cast
 send "\r"
 expect_prompt
 
-run_command "# Step 1: Create IAM configuration and Constellation configuration file"
+run_command "# Step 1: Create a configuration file for Constellation"
 expect_prompt
-run_command "constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
+run_command "constellation config generate gcp"
+expect_prompt
+run_command "# Step 2: Create your cluster's IAM configuration"
+expect_prompt
+run_command "constellation iam create gcp --update-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b"
 expect -re "y\/n"
 send "y"
 send "\r"

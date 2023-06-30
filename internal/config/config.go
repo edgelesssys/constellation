@@ -126,6 +126,9 @@ type AWSConfig struct {
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
+	// description: |
+	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
+	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -298,6 +301,7 @@ type AttestationConfig struct {
 }
 
 // Default returns a struct with the default config.
+// IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
 func Default() *Config {
 	return &Config{
 		Version:             Version3,
@@ -314,6 +318,7 @@ func Default() *Config {
 				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
+				DeployCSIDriver:        toPtr(true),
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -367,6 +372,19 @@ func Default() *Config {
 	}
 }
 
+// MiniDefault returns a default config for a mini cluster.
+func MiniDefault() (*Config, error) {
+	config := Default()
+	config.Name = constants.MiniConstellationUID
+	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
+	config.StateDiskSizeGB = 8
+	// only release images (e.g. v2.7.0) use the production NVRAM
+	if !config.IsReleaseImage() {
+		config.Provider.QEMU.NVRAM = "testing"
+	}
+	return config, config.Validate(false)
+}
+
 // fromFile returns config file with `name` read from `fileHandler` by parsing
 // it as YAML. You should prefer config.New to read env vars and validate
 // config in a consistent manner.
@@ -400,7 +418,7 @@ func isAppClientIDError(err error) bool {
 type UnsupportedAppRegistrationError struct{}
 
 func (e UnsupportedAppRegistrationError) Error() string {
-	return "Azure app registrations are not supported since v2.9. migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nplease remove it from your config and from the Kubernetes secret in your running cluster. ensure that the UAMI has all required permissions."
+	return "Azure app registrations are not supported since v2.9. Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nPlease remove it from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions."
 }
 
 // New creates a new config by:
@@ -621,6 +639,7 @@ func (c *Config) UpdateMAAURL(maaURL string) {
 // DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.
 func (c *Config) DeployCSIDriver() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.DeployCSIDriver != nil && *c.Provider.Azure.DeployCSIDriver ||
+		c.Provider.AWS != nil && c.Provider.AWS.DeployCSIDriver != nil && *c.Provider.AWS.DeployCSIDriver ||
 		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver ||
 		c.Provider.OpenStack != nil && c.Provider.OpenStack.DeployCSIDriver != nil && *c.Provider.OpenStack.DeployCSIDriver
 }
@@ -650,7 +669,7 @@ func (c *Config) Validate(force bool) error {
 	})
 
 	// Register AWS, Azure & GCP InstanceType validation error types
-	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
+	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, c.translateAWSInstanceTypeError); err != nil {
 		return err
 	}
 
@@ -709,7 +728,7 @@ func (c *Config) Validate(force bool) error {
 	}
 
 	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
-	if err := validate.RegisterValidation("aws_instance_type", validateAWSInstanceType); err != nil {
+	if err := validate.RegisterValidation("aws_instance_type", c.validateAWSInstanceType); err != nil {
 		return err
 	}
 

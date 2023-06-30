@@ -58,7 +58,7 @@ var providerAttestationMapping = map[cloudprovider.Provider][]Variant{
 	cloudprovider.OpenStack: {QEMUVTPM{}},
 }
 
-// GetDefaultAttestation returns the default attestation type for the given provider. If not found, it returns the default variant.
+// GetDefaultAttestation returns the default attestation variant for the given provider. If not found, it returns the default variant.
 func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	res, ok := providerAttestationMapping[provider]
 	if ok {
@@ -67,8 +67,8 @@ func GetDefaultAttestation(provider cloudprovider.Provider) Variant {
 	return Dummy{}
 }
 
-// GetAvailableAttestationTypes returns the available attestation types.
-func GetAvailableAttestationTypes() []Variant {
+// GetAvailableAttestationVariants returns the available attestation variants.
+func GetAvailableAttestationVariants() []Variant {
 	var res []Variant
 
 	// assumes that cloudprovider.Provider is a uint32 to sort the providers and get a consistent order
@@ -121,7 +121,7 @@ func FromString(oid string) (Variant, error) {
 	return nil, fmt.Errorf("unknown OID: %q", oid)
 }
 
-// ValidProvider returns true if the attestation type is valid for the given provider.
+// ValidProvider returns true if the attestation variants is valid for the given provider.
 func ValidProvider(provider cloudprovider.Provider, variant Variant) bool {
 	validTypes, ok := providerAttestationMapping[provider]
 	if ok {

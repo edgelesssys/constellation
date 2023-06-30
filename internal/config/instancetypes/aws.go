@@ -14,6 +14,7 @@ var AWSSupportedInstanceFamilies = []string{
 	"C5ad",
 	"C5d",
 	"C5n",
+	"C6a",
 	"C6i",
 	"D3",
 	"D3en",
@@ -39,6 +40,7 @@ var AWSSupportedInstanceFamilies = []string{
 	"R5d",
 	"R5dn",
 	"R5n",
+	"R6a",
 	"R6i",
 	"U-3tb1",
 	"U-6tb1",
@@ -48,4 +50,12 @@ var AWSSupportedInstanceFamilies = []string{
 	"X2iedn",
 	"X2iezn",
 	"z1d",
+}
+
+// AWSSNPSupportedInstanceFamilies is derived from:
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snp-requirements.html
+var AWSSNPSupportedInstanceFamilies = []string{
+	"C6a",
+	"M6a",
+	"R6a",
 }

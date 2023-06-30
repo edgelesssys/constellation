@@ -26,7 +26,7 @@ resource "random_id" "uid" {
 
 resource "openstack_compute_instance_v2" "instance_group_member" {
   name            = "${local.name}-${count.index}"
-  count           = var.instance_count
+  count           = var.initial_count
   image_id        = var.image_id
   flavor_id       = var.flavor_id
   security_groups = var.security_groups

@@ -1,3 +1,25 @@
+variable "node_groups" {
+  type = map(object({
+    role          = string
+    initial_count = number // number of instances in the node group
+    disk_size     = number // size of state disk (GiB)
+    vcpus         = number
+    memory        = number // amount of memory per instance (MiB)
+  }))
+  validation {
+    condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
+    error_message = "The role has to be 'control-plane' or 'worker'."
+  }
+
+  description = "A map of node group names to node group configurations."
+}
+
+variable "machine" {
+  type        = string
+  default     = "q35"
+  description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
+}
+
 variable "libvirt_uri" {
   type        = string
   description = "libvirt socket uri"
@@ -43,38 +65,6 @@ variable "image_format" {
   default     = "qcow2"
   description = "image format"
 }
-
-variable "control_plane_count" {
-  type        = number
-  description = "amount of control plane nodes"
-}
-
-variable "worker_count" {
-  type        = number
-  description = "amount of worker nodes"
-}
-
-variable "vcpus" {
-  type        = number
-  description = "amount of vcpus per instance"
-}
-
-variable "memory" {
-  type        = number
-  description = "amount of memory per instance (MiB)"
-}
-
-variable "state_disk_size" {
-  type        = number
-  description = "size of state disk (GiB)"
-}
-
-variable "machine" {
-  type        = string
-  default     = "q35"
-  description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
-}
-
 variable "firmware" {
   type        = string
   default     = "/usr/share/OVMF/OVMF_CODE.secboot.fd"

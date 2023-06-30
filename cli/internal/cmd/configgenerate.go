@@ -37,7 +37,7 @@ func newConfigGenerateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
-	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationTypes())))
+	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
 
 	return cmd
 }
@@ -72,7 +72,7 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 
 	cg.log.Debugf("Parsed flags as %v", flags)
 	cg.log.Debugf("Using cloud provider %s", provider.String())
-	conf, err := createConfigWithAttestationType(provider, rawProvider, flags.attestationVariant)
+	conf, err := createConfigWithAttestationVariant(provider, rawProvider, flags.attestationVariant)
 	if err != nil {
 		return fmt.Errorf("creating config: %w", err)
 	}
@@ -101,8 +101,8 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 	return nil
 }
 
-// createConfig creates a config file for the given provider.
-func createConfigWithAttestationType(provider cloudprovider.Provider, rawProvider string, attestationVariant variant.Variant) (*config.Config, error) {
+// createConfigWithAttestationVariant creates a config file for the given provider.
+func createConfigWithAttestationVariant(provider cloudprovider.Provider, rawProvider string, attestationVariant variant.Variant) (*config.Config, error) {
 	conf := config.Default().WithOpenStackProviderDefaults(rawProvider)
 	conf.RemoveProviderExcept(provider)
 
@@ -120,7 +120,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, rawProvide
 			return nil, fmt.Errorf("provider %s does not have a default attestation variant", provider)
 		}
 	} else if !variant.ValidProvider(provider, attestationVariant) {
-		return nil, fmt.Errorf("provider %s does not support attestation type %s", provider, attestationVariant)
+		return nil, fmt.Errorf("provider %s does not support attestation variant %s", provider, attestationVariant)
 	}
 	conf.SetAttestation(attestationVariant)
 	return conf, nil
@@ -129,7 +129,7 @@ func createConfigWithAttestationType(provider cloudprovider.Provider, rawProvide
 // createConfig creates a config file for the given provider.
 func createConfig(provider cloudprovider.Provider) *config.Config {
 	// rawProvider can be hardcoded as it only matters for OpenStack
-	res, _ := createConfigWithAttestationType(provider, "", variant.Dummy{})
+	res, _ := createConfigWithAttestationVariant(provider, "", variant.Dummy{})
 	return res
 }
 
@@ -165,12 +165,12 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		return generateFlags{}, fmt.Errorf("parsing attestation flag: %w", err)
 	}
 
-	var attestationType variant.Variant
-	// if no attestation type is specified, use the default for the cloud provider
+	var attestationVariant variant.Variant
+	// if no attestation variant is specified, use the default for the cloud provider
 	if attestationString == "" {
-		attestationType = variant.Dummy{}
+		attestationVariant = variant.Dummy{}
 	} else {
-		attestationType, err = variant.FromString(attestationString)
+		attestationVariant, err = variant.FromString(attestationString)
 		if err != nil {
 			return generateFlags{}, fmt.Errorf("invalid attestation variant: %s", attestationString)
 		}
@@ -178,7 +178,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	return generateFlags{
 		file:               file,
 		k8sVersion:         resolvedVersion,
-		attestationVariant: attestationType,
+		attestationVariant: attestationVariant,
 	}, nil
 }
 

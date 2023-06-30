@@ -208,7 +208,7 @@ If there are still microservice updates needed with the current CLI, we need to 
 
 We also print `In newer CLI versions there are even newer versions available.` if e.g. there is a newer patch version of Kubernetes available in one of the proposed minor versions.
 
-Executing `constellation upgrade check --write-config` writes all new version values to `constellation-conf.json`.
+Executing `constellation upgrade check --update-config` updates all new version values to `constellation-conf.json`.
 This allows the user to execute `constellation upgrade apply` without manually modifying `constellation-conf.json`.
 
 ```bash

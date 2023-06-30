@@ -28,7 +28,7 @@ variable "zones" {
   default     = null
 }
 
-variable "instance_count" {
+variable "initial_count" {
   type        = number
   description = "The number of instances in this scale set."
 }

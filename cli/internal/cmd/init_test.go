@@ -494,7 +494,7 @@ func TestAttestation(t *testing.T) {
 	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, existingIDFile, file.OptNone))
 
 	cfg := config.Default()
-	cfg.Image = "image"
+	cfg.Image = "v0.0.0" // is the default version of the the CLI (before build injects the real version)
 	cfg.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
 	cfg.Attestation.QEMUVTPM.Measurements[0] = measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[1] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)

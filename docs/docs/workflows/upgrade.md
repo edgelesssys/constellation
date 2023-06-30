@@ -36,10 +36,10 @@ To learn which versions the current CLI can upgrade to and what's installed in y
 constellation upgrade check
 
 # Show possible upgrades and write them to config file
-constellation upgrade check --write-config
+constellation upgrade check --update-config
 ```
 
-You can either enter the reported target versions into your config manually or run the above command with the `--write-config` flag.
+You can either enter the reported target versions into your config manually or run the above command with the `--update-config` flag.
 When using this flag, the `kubernetesVersion`, `image`, `microserviceVersion` and `attestation` fields are overwritten with the smallest available upgrade.
 
 ## Apply the upgrade

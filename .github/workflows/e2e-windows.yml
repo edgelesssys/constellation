@@ -57,7 +57,8 @@ jobs:
       - name: Create IAM configuration
         shell: pwsh
         run: |
-          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --generate-config --debug -y
+          .\constellation.exe config generate azure
+          .\constellation.exe iam create azure --region=westus --resourceGroup=e2eWindoewsRG --servicePrincipal=e2eWindoewsSP --update-config --debug -y
 
       - name: Login to Azure (Cluster service principal)
         uses: ./.github/actions/login_azure

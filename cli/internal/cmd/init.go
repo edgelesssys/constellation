@@ -121,7 +121,11 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return err
 	}
-
+	if !flags.force {
+		if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
+			return err
+		}
+	}
 	if conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}) {
 		cmd.PrintErrln("WARNING: SNP based attestation is still under active development. Please do not use in production.")
 	}

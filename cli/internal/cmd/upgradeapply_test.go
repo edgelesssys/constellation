@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -194,6 +195,12 @@ func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.Terraform
 
 func (u stubUpgrader) ApplyTerraformMigrations(context.Context, file.Handler, upgrade.TerraformUpgradeOptions) error {
 	return u.applyTerraformErr
+}
+
+// AddManualStateMigration is not used in this test.
+// TODO(AB#3248): remove this method together with the definition in the interfaces.
+func (u stubUpgrader) AddManualStateMigration(_ terraform.StateMigration) {
+	panic("unused")
 }
 
 type stubImageFetcher struct {

@@ -10,22 +10,34 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAWSClusterVariables(t *testing.T) {
 	vars := AWSClusterVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
+		Name: "cluster-name",
+		NodeGroups: map[string]AWSNodeGroup{
+			"control_plane_default": {
+				Role:            role.ControlPlane.TFString(),
+				StateDiskSizeGB: 30,
+				InitialCount:    1,
+				Zone:            "eu-central-1b",
+				InstanceType:    "x1.foo",
+				DiskType:        "foodisk",
+			},
+			"worker_default": {
+				Role:            role.Worker.TFString(),
+				StateDiskSizeGB: 30,
+				InitialCount:    2,
+				Zone:            "eu-central-1c",
+				InstanceType:    "x1.bar",
+				DiskType:        "bardisk",
+			},
 		},
 		Region:                 "eu-central-1",
 		Zone:                   "eu-central-1a",
 		AMIImageID:             "ami-0123456789abcdef",
-		InstanceType:           "x1.foo",
-		StateDiskType:          "bardisk",
 		IAMProfileControlPlane: "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane",
 		IAMProfileWorkerNodes:  "arn:aws:iam::123456789012:instance-profile/cluster-name-worker",
 		Debug:                  true,
@@ -33,19 +45,32 @@ func TestAWSClusterVariables(t *testing.T) {
 	}
 
 	// test that the variables are correctly rendered
-	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-region = "eu-central-1"
-zone = "eu-central-1a"
-ami = "ami-0123456789abcdef"
-instance_type = "x1.foo"
-state_disk_type = "bardisk"
+	want := `name                               = "cluster-name"
+region                             = "eu-central-1"
+zone                               = "eu-central-1a"
+ami                                = "ami-0123456789abcdef"
 iam_instance_profile_control_plane = "arn:aws:iam::123456789012:instance-profile/cluster-name-controlplane"
-iam_instance_profile_worker_nodes = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
-debug = true
-enable_snp = true
+iam_instance_profile_worker_nodes  = "arn:aws:iam::123456789012:instance-profile/cluster-name-worker"
+debug                              = true
+enable_snp                         = true
+node_groups = {
+  control_plane_default = {
+    disk_size     = 30
+    disk_type     = "foodisk"
+    initial_count = 1
+    instance_type = "x1.foo"
+    role          = "control-plane"
+    zone          = "eu-central-1b"
+  }
+  worker_default = {
+    disk_size     = 30
+    disk_type     = "bardisk"
+    initial_count = 2
+    instance_type = "x1.bar"
+    role          = "worker"
+    zone          = "eu-central-1c"
+  }
+}
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -146,11 +171,11 @@ func TestAzureClusterVariables(t *testing.T) {
 		Name: "cluster-name",
 		NodeGroups: map[string]AzureNodeGroup{
 			"control_plane_default": {
-				Role:          "ControlPlane",
-				InstanceCount: to.Ptr(1),
-				InstanceType:  "Standard_D2s_v3",
-				DiskType:      "StandardSSD_LRS",
-				DiskSizeGB:    100,
+				Role:         "ControlPlane",
+				InitialCount: to.Ptr(1),
+				InstanceType: "Standard_D2s_v3",
+				DiskType:     "StandardSSD_LRS",
+				DiskSizeGB:   100,
 			},
 		},
 		ConfidentialVM:       to.Ptr(true),
@@ -173,12 +198,12 @@ user_assigned_identity = "my-user-assigned-identity"
 confidential_vm        = true
 node_groups = {
   control_plane_default = {
-    disk_size      = 100
-    disk_type      = "StandardSSD_LRS"
-    instance_count = 1
-    instance_type  = "Standard_D2s_v3"
-    role           = "ControlPlane"
-    zones          = null
+    disk_size     = 100
+    disk_type     = "StandardSSD_LRS"
+    initial_count = 1
+    instance_type = "Standard_D2s_v3"
+    role          = "ControlPlane"
+    zones         = null
   }
 }
 `
@@ -252,48 +277,52 @@ debug                      = true
 }
 
 func TestQEMUClusterVariables(t *testing.T) {
-	vars := QEMUVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
+	vars := &QEMUVariables{
+		Name: "cluster-name",
+		NodeGroups: map[string]QEMUNodeGroup{
+			"control-plane": {
+				Role:         role.ControlPlane.TFString(),
+				InitialCount: 1,
+				DiskSize:     30,
+				CPUCount:     4,
+				MemorySize:   8192,
+			},
 		},
+		Machine:            "q35",
 		LibvirtURI:         "qemu:///system",
 		LibvirtSocketPath:  "/var/run/libvirt/libvirt-sock",
 		BootMode:           "uefi",
-		CPUCount:           4,
-		MemorySizeMiB:      8192,
 		ImagePath:          "/var/lib/libvirt/images/cluster-name.qcow2",
 		ImageFormat:        "raw",
 		MetadataAPIImage:   "example.com/metadata-api:latest",
 		MetadataLibvirtURI: "qemu:///system",
 		NVRAM:              "production",
-		Firmware:           "/usr/share/OVMF/OVMF_CODE.fd",
-		BzImagePath:        "/var/lib/libvirt/images/cluster-name-bzimage",
-		InitrdPath:         "/var/lib/libvirt/images/cluster-name-initrd",
-		KernelCmdline:      "console=ttyS0,115200n8",
+		InitrdPath:         toPtr("/var/lib/libvirt/images/cluster-name-initrd"),
+		KernelCmdline:      toPtr("console=ttyS0,115200n8"),
 	}
 
 	// test that the variables are correctly rendered
 	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-libvirt_uri = "qemu:///system"
-libvirt_socket_path = "/var/run/libvirt/libvirt-sock"
-constellation_os_image = "/var/lib/libvirt/images/cluster-name.qcow2"
-image_format = "raw"
+node_groups = {
+  control-plane = {
+    disk_size     = 30
+    initial_count = 1
+    memory        = 8192
+    role          = "control-plane"
+    vcpus         = 4
+  }
+}
+machine                 = "q35"
+libvirt_uri             = "qemu:///system"
+libvirt_socket_path     = "/var/run/libvirt/libvirt-sock"
 constellation_boot_mode = "uefi"
-constellation_kernel = "/var/lib/libvirt/images/cluster-name-bzimage"
-constellation_initrd = "/var/lib/libvirt/images/cluster-name-initrd"
-constellation_cmdline = "console=ttyS0,115200n8"
-vcpus = 4
-memory = 8192
-metadata_api_image = "example.com/metadata-api:latest"
-metadata_libvirt_uri = "qemu:///system"
-nvram = "/usr/share/OVMF/constellation_vars.production.fd"
-firmware = "/usr/share/OVMF/OVMF_CODE.fd"
+constellation_os_image  = "/var/lib/libvirt/images/cluster-name.qcow2"
+image_format            = "raw"
+metadata_api_image      = "example.com/metadata-api:latest"
+metadata_libvirt_uri    = "qemu:///system"
+nvram                   = "/usr/share/OVMF/constellation_vars.production.fd"
+constellation_initrd    = "/var/lib/libvirt/images/cluster-name-initrd"
+constellation_cmdline   = "console=ttyS0,115200n8"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

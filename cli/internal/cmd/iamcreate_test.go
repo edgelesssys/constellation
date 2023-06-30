@@ -18,11 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/mod/semver"
 )
 
 func TestParseIDFile(t *testing.T) {
@@ -69,18 +67,18 @@ func TestParseIDFile(t *testing.T) {
 }
 
 func TestIAMCreateAWS(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
-		for _, f := range existingFiles {
-			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+		for _, f := range existingConfigFiles {
+			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.AWS), file.OptNone))
 		}
 		for _, d := range existingDirs {
 			require.NoError(fs.MkdirAll(d, 0o755))
 		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -93,22 +91,41 @@ func TestIAMCreateAWS(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs            func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
-		creator            *stubIAMCreator
-		provider           cloudprovider.Provider
-		zoneFlag           string
-		prefixFlag         string
-		yesFlag            bool
-		generateConfigFlag bool
-		k8sVersionFlag     string
-		configFlag         string
-		existingFiles      []string
-		existingDirs       []string
-		stdin              string
-		wantAbort          bool
-		wantErr            bool
+		setupFs             func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
+		creator             *stubIAMCreator
+		provider            cloudprovider.Provider
+		zoneFlag            string
+		prefixFlag          string
+		yesFlag             bool
+		updateConfigFlag    bool
+		configFlag          string
+		existingConfigFiles []string
+		existingDirs        []string
+		stdin               string
+		wantAbort           bool
+		wantErr             bool
 	}{
 		"iam create aws": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-2a",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			existingConfigFiles: []string{constants.ConfigFilename},
+		},
+		"iam create aws --update-config": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-2a",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			configFlag:          constants.ConfigFilename,
+			updateConfigFlag:    true,
+			existingConfigFiles: []string{constants.ConfigFilename},
+		},
+		"iam create aws no config": {
 			setupFs:    defaultFs,
 			creator:    &stubIAMCreator{id: validIAMIDFile},
 			provider:   cloudprovider.AWS,
@@ -116,49 +133,27 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag: "test",
 			yesFlag:    true,
 		},
-		"iam create aws generate config": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			yesFlag:            true,
-			configFlag:         constants.ConfigFilename,
-			generateConfigFlag: true,
+		"iam create aws --update-config with --config": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-2a",
+			prefixFlag:          "test",
+			yesFlag:             true,
+			updateConfigFlag:    true,
+			configFlag:          "custom-config.yaml",
+			existingConfigFiles: []string{"custom-config.yaml"},
 		},
-		"iam create aws generate config custom path": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			yesFlag:            true,
-			generateConfigFlag: true,
-			configFlag:         "custom-config.yaml",
-		},
-		"iam create aws generate config path already exists": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			yesFlag:            true,
-			generateConfigFlag: true,
-			wantErr:            true,
-			configFlag:         constants.ConfigFilename,
-			existingFiles:      []string{constants.ConfigFilename},
-		},
-		"iam create aws generate config custom path already exists": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			yesFlag:            true,
-			generateConfigFlag: true,
-			wantErr:            true,
-			configFlag:         "custom-config.yaml",
-			existingFiles:      []string{"custom-config.yaml"},
+		"iam create aws --update-config --config path doesn't exist": {
+			setupFs:          defaultFs,
+			creator:          &stubIAMCreator{id: validIAMIDFile},
+			provider:         cloudprovider.AWS,
+			zoneFlag:         "us-east-2a",
+			prefixFlag:       "test",
+			yesFlag:          true,
+			updateConfigFlag: true,
+			wantErr:          true,
+			configFlag:       constants.ConfigFilename,
 		},
 		"iam create aws existing terraform dir": {
 			setupFs:      defaultFs,
@@ -178,15 +173,16 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag: "test",
 			stdin:      "yes\n",
 		},
-		"interactive generate config": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			stdin:              "yes\n",
-			configFlag:         constants.ConfigFilename,
-			generateConfigFlag: true,
+		"interactive update config": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-2a",
+			prefixFlag:          "test",
+			stdin:               "yes\n",
+			configFlag:          constants.ConfigFilename,
+			updateConfigFlag:    true,
+			existingConfigFiles: []string{constants.ConfigFilename},
 		},
 		"interactive abort": {
 			setupFs:    defaultFs,
@@ -197,16 +193,17 @@ func TestIAMCreateAWS(t *testing.T) {
 			stdin:      "no\n",
 			wantAbort:  true,
 		},
-		"interactive generate config abort": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			stdin:              "no\n",
-			generateConfigFlag: true,
-			configFlag:         constants.ConfigFilename,
-			wantAbort:          true,
+		"interactive update config abort": {
+			setupFs:             defaultFs,
+			creator:             &stubIAMCreator{id: validIAMIDFile},
+			provider:            cloudprovider.AWS,
+			zoneFlag:            "us-east-2a",
+			prefixFlag:          "test",
+			stdin:               "no\n",
+			updateConfigFlag:    true,
+			configFlag:          constants.ConfigFilename,
+			wantAbort:           true,
+			existingConfigFiles: []string{constants.ConfigFilename},
 		},
 		"invalid zone": {
 			setupFs:    defaultFs,
@@ -218,47 +215,15 @@ func TestIAMCreateAWS(t *testing.T) {
 			wantErr:    true,
 		},
 		"unwritable fs": {
-			setupFs:            readOnlyFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			yesFlag:            true,
-			generateConfigFlag: true,
-			wantErr:            true,
-			configFlag:         constants.ConfigFilename,
-		},
-		"iam create azure without generate config and invalid kubernetes version": {
-			setupFs:        defaultFs,
-			creator:        &stubIAMCreator{id: validIAMIDFile},
-			provider:       cloudprovider.AWS,
-			zoneFlag:       "us-east-2a",
-			prefixFlag:     "test",
-			k8sVersionFlag: "1.11.1", // supposed to be ignored without generateConfigFlag
-			yesFlag:        true,
-		},
-		"iam create azure generate config with valid kubernetes version": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			generateConfigFlag: true,
-			k8sVersionFlag:     semver.MajorMinor(string(versions.Default)),
-			configFlag:         constants.ConfigFilename,
-			yesFlag:            true,
-		},
-		"iam create azure generate config with invalid kubernetes version": {
-			setupFs:            defaultFs,
-			creator:            &stubIAMCreator{id: validIAMIDFile},
-			provider:           cloudprovider.AWS,
-			zoneFlag:           "us-east-2a",
-			prefixFlag:         "test",
-			generateConfigFlag: true,
-			k8sVersionFlag:     "1.22.1",
-			configFlag:         constants.ConfigFilename,
-			yesFlag:            true,
-			wantErr:            true,
+			setupFs:          readOnlyFs,
+			creator:          &stubIAMCreator{id: validIAMIDFile},
+			provider:         cloudprovider.AWS,
+			zoneFlag:         "us-east-2a",
+			prefixFlag:       "test",
+			yesFlag:          true,
+			updateConfigFlag: true,
+			wantErr:          true,
+			configFlag:       constants.ConfigFilename,
 		},
 	}
 
@@ -274,8 +239,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
-			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")
@@ -289,17 +253,14 @@ func TestIAMCreateAWS(t *testing.T) {
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
-			if tc.generateConfigFlag {
-				require.NoError(cmd.Flags().Set("generate-config", "true"))
+			if tc.updateConfigFlag {
+				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-			if tc.k8sVersionFlag != "" {
-				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
-			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
@@ -323,7 +284,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				return
 			}
 
-			if tc.generateConfigFlag {
+			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
 				require.NoError(readErr)
@@ -340,18 +301,18 @@ func TestIAMCreateAWS(t *testing.T) {
 }
 
 func TestIAMCreateAzure(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
-		for _, f := range existingFiles {
-			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+		for _, f := range existingConfigFiles {
+			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.Azure), file.OptNone))
 		}
 		for _, d := range existingDirs {
 			require.NoError(fs.MkdirAll(d, 0o755))
 		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -365,17 +326,16 @@ func TestIAMCreateAzure(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		regionFlag           string
 		servicePrincipalFlag string
 		resourceGroupFlag    string
 		yesFlag              bool
-		generateConfigFlag   bool
-		k8sVersionFlag       string
+		updateConfigFlag     bool
 		configFlag           string
-		existingFiles        []string
+		existingConfigFiles  []string
 		existingDirs         []string
 		stdin                string
 		wantAbort            bool
@@ -390,51 +350,61 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
 		},
-		"iam create azure generate config": {
+		"iam create azure with existing config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
+			yesFlag:              true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
+		},
+		"iam create azure --update-config": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
 			yesFlag:              true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
-		"iam create azure generate config custom path": {
+		"iam create azure --update-config with --config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           "custom-config.yaml",
 			yesFlag:              true,
+			existingConfigFiles:  []string{"custom-config.yaml"},
 		},
-		"iam create azure generate config custom path already exists": {
+		"iam create azure --update-config custom --config path doesn't exist": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			yesFlag:              true,
 			wantErr:              true,
 			configFlag:           "custom-config.yaml",
-			existingFiles:        []string{"custom-config.yaml"},
 		},
-		"iam create generate config path already exists": {
+		"iam create azur --update-config --config path doesn't exists": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
 			regionFlag:           "westus",
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
-			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
 			wantErr:              true,
 		},
@@ -458,7 +428,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
 		},
-		"interactive generate config": {
+		"interactive update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
@@ -466,8 +436,9 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
 		"interactive abort": {
 			setupFs:              defaultFs,
@@ -479,7 +450,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "no\n",
 			wantAbort:            true,
 		},
-		"interactive generate config abort": {
+		"interactive update config abort": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
@@ -487,8 +458,9 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "no\n",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			wantAbort:            true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
@@ -498,43 +470,8 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
-			wantErr:              true,
-		},
-		"iam create azure without generate config and invalid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
-			regionFlag:           "westus",
-			servicePrincipalFlag: "constell-test-sp",
-			resourceGroupFlag:    "constell-test-rg",
-			k8sVersionFlag:       "1.11.1", // supposed to be ignored without generateConfigFlag
-			yesFlag:              true,
-		},
-		"iam create azure generate config with valid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
-			regionFlag:           "westus",
-			servicePrincipalFlag: "constell-test-sp",
-			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
-			k8sVersionFlag:       semver.MajorMinor(string(versions.Default)),
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
-		},
-		"iam create azure generate config with invalid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
-			regionFlag:           "westus",
-			servicePrincipalFlag: "constell-test-sp",
-			resourceGroupFlag:    "constell-test-rg",
-			generateConfigFlag:   true,
-			k8sVersionFlag:       "1.22.1",
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
 			wantErr:              true,
 		},
 	}
@@ -551,8 +488,7 @@ func TestIAMCreateAzure(t *testing.T) {
 
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
-			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")
@@ -569,17 +505,14 @@ func TestIAMCreateAzure(t *testing.T) {
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
-			if tc.generateConfigFlag {
-				require.NoError(cmd.Flags().Set("generate-config", "true"))
+			if tc.updateConfigFlag {
+				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-			if tc.k8sVersionFlag != "" {
-				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
-			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
@@ -603,7 +536,7 @@ func TestIAMCreateAzure(t *testing.T) {
 				return
 			}
 
-			if tc.generateConfigFlag {
+			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
 				require.NoError(readErr)
@@ -621,18 +554,18 @@ func TestIAMCreateAzure(t *testing.T) {
 }
 
 func TestIAMCreateGCP(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
-		for _, f := range existingFiles {
-			require.NoError(fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
+		for _, f := range existingConfigFiles {
+			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.GCP), file.OptNone))
 		}
 		for _, d := range existingDirs {
 			require.NoError(fs.MkdirAll(d, 0o755))
 		}
 		return fs
 	}
-	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs {
+	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
 	}
@@ -650,17 +583,16 @@ func TestIAMCreateGCP(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingFiles []string, existingDirs []string) afero.Fs
+		setupFs              func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs
 		creator              *stubIAMCreator
 		provider             cloudprovider.Provider
 		zoneFlag             string
 		serviceAccountIDFlag string
 		projectIDFlag        string
 		yesFlag              bool
-		generateConfigFlag   bool
-		k8sVersionFlag       string
+		updateConfigFlag     bool
 		configFlag           string
-		existingFiles        []string
+		existingConfigFiles  []string
 		existingDirs         []string
 		stdin                string
 		wantAbort            bool
@@ -675,51 +607,61 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			yesFlag:              true,
 		},
-		"iam create gcp generate config": {
+		"iam create gcp with existing config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
+			yesFlag:              true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
+		},
+		"iam create gcp --update-config": {
+			setupFs:              defaultFs,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.GCP,
+			zoneFlag:             "europe-west1-a",
+			serviceAccountIDFlag: "constell-test",
+			projectIDFlag:        "constell-1234",
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
 			yesFlag:              true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
-		"iam create gcp generate config custom path": {
+		"iam create gcp --update-config with --config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           "custom-config.yaml",
 			yesFlag:              true,
+			existingConfigFiles:  []string{"custom-config.yaml"},
 		},
-		"iam create gcp generate config path already exists": {
+		"iam create gcp --update-config --config path doesn't exists": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
-			existingFiles:        []string{constants.ConfigFilename},
 			yesFlag:              true,
 			wantErr:              true,
 		},
-		"iam create gcp generate config custom path already exists": {
+		"iam create gcp --update-config wrong --config path": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
 			zoneFlag:             "europe-west1-a",
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           "custom-config.yaml",
-			existingFiles:        []string{"custom-config.yaml"},
 			yesFlag:              true,
 			wantErr:              true,
 		},
@@ -762,7 +704,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			stdin:                "yes\n",
 		},
-		"interactive generate config": {
+		"interactive update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
@@ -771,7 +713,8 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			stdin:                "yes\n",
 			configFlag:           constants.ConfigFilename,
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
 		"interactive abort": {
 			setupFs:              defaultFs,
@@ -783,7 +726,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			stdin:                "no\n",
 			wantAbort:            true,
 		},
-		"interactive abort generate config": {
+		"interactive abort update config": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
@@ -793,7 +736,8 @@ func TestIAMCreateGCP(t *testing.T) {
 			stdin:                "no\n",
 			wantAbort:            true,
 			configFlag:           constants.ConfigFilename,
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
+			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
@@ -803,43 +747,8 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			yesFlag:              true,
-			generateConfigFlag:   true,
+			updateConfigFlag:     true,
 			configFlag:           constants.ConfigFilename,
-			wantErr:              true,
-		},
-		"iam create gcp without generate config and invalid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			k8sVersionFlag:       "1.11.1", // supposed to be ignored without generateConfigFlag
-			yesFlag:              true,
-		},
-		"iam create gcp generate config with valid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
-			k8sVersionFlag:       semver.MajorMinor(string(versions.Default)),
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
-		},
-		"iam create gcp generate config with invalid kubernetes version": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			generateConfigFlag:   true,
-			k8sVersionFlag:       "1.22.1",
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
 			wantErr:              true,
 		},
 	}
@@ -856,8 +765,7 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			// register persistent flags manually
 			cmd.Flags().String("config", constants.ConfigFilename, "")
-			cmd.Flags().Bool("generate-config", false, "")
-			cmd.Flags().String("kubernetes", semver.MajorMinor(config.Default().KubernetesVersion), "")
+			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
 			cmd.Flags().String("tf-log", "NONE", "")
@@ -874,17 +782,14 @@ func TestIAMCreateGCP(t *testing.T) {
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
-			if tc.generateConfigFlag {
-				require.NoError(cmd.Flags().Set("generate-config", "true"))
+			if tc.updateConfigFlag {
+				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-			if tc.k8sVersionFlag != "" {
-				require.NoError(cmd.Flags().Set("kubernetes", tc.k8sVersionFlag))
-			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingFiles, tc.existingDirs))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
 
 			iamCreator := &iamCreator{
 				cmd:             cmd,
@@ -908,7 +813,7 @@ func TestIAMCreateGCP(t *testing.T) {
 				return
 			}
 
-			if tc.generateConfigFlag {
+			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
 				require.NoError(readErr)

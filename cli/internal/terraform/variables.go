@@ -44,42 +44,46 @@ func (v *CommonVariables) String() string {
 
 // AWSClusterVariables is user configuration for creating a cluster with Terraform on AWS.
 type AWSClusterVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
+	// Name of the cluster.
+	Name string `hcl:"name" cty:"name"`
 	// Region is the AWS region to use.
-	Region string
+	Region string `hcl:"region" cty:"region"`
 	// Zone is the AWS zone to use in the given region.
-	Zone string
+	Zone string `hcl:"zone" cty:"zone"`
 	// AMIImageID is the ID of the AMI image to use.
-	AMIImageID string
-	// InstanceType is the type of the EC2 instance to use.
-	InstanceType string
-	// StateDiskType is the EBS disk type to use for the state disk.
-	StateDiskType string
+	AMIImageID string `hcl:"ami" cty:"ami"`
 	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
-	IAMProfileControlPlane string
+	IAMProfileControlPlane string `hcl:"iam_instance_profile_control_plane" cty:"iam_instance_profile_control_plane"`
 	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
-	IAMProfileWorkerNodes string
+	IAMProfileWorkerNodes string `hcl:"iam_instance_profile_worker_nodes" cty:"iam_instance_profile_worker_nodes"`
 	// Debug is true if debug mode is enabled.
-	Debug bool
+	Debug bool `hcl:"debug" cty:"debug"`
 	// EnableSNP controls enablement of the EC2 cpu-option "AmdSevSnp".
-	EnableSNP bool
+	EnableSNP bool `hcl:"enable_snp" cty:"enable_snp"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
+}
+
+// AWSNodeGroup is a node group to create on AWS.
+type AWSNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
+	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
+	// InitialCount is the initial number of nodes to create in the node group.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// Zone is the AWS availability-zone to use in the given region.
+	Zone string `hcl:"zone" cty:"zone"`
+	// InstanceType is the type of the EC2 instance to use.
+	InstanceType string `hcl:"instance_type" cty:"instance_type"`
+	// DiskType is the EBS disk type to use for the state disk.
+	DiskType string `hcl:"disk_type" cty:"disk_type"`
 }
 
 func (v *AWSClusterVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "ami = %q", v.AMIImageID)
-	writeLinef(b, "instance_type = %q", v.InstanceType)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
-	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
-	writeLinef(b, "debug = %t", v.Debug)
-	writeLinef(b, "enable_snp = %t", v.EnableSNP)
-
-	return b.String()
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(v, f.Body())
+	return string(f.Bytes())
 }
 
 // AWSIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
@@ -195,12 +199,12 @@ func (v *AzureClusterVariables) String() string {
 type AzureNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
-	// InstanceCount is optional for upgrades.
-	InstanceCount *int      `hcl:"instance_count" cty:"instance_count"`
-	InstanceType  string    `hcl:"instance_type" cty:"instance_type"`
-	DiskSizeGB    int       `hcl:"disk_size" cty:"disk_size"`
-	DiskType      string    `hcl:"disk_type" cty:"disk_type"`
-	Zones         *[]string `hcl:"zones" cty:"zones"`
+	// InitialCount is optional for upgrades.
+	InitialCount *int      `hcl:"initial_count" cty:"initial_count"`
+	InstanceType string    `hcl:"instance_type" cty:"instance_type"`
+	DiskSizeGB   int       `hcl:"disk_size" cty:"disk_size"`
+	DiskType     string    `hcl:"disk_type" cty:"disk_type"`
+	Zones        *[]string `hcl:"zones" cty:"zones"`
 }
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
@@ -274,71 +278,68 @@ func (v *OpenStackClusterVariables) String() string {
 
 // QEMUVariables is user configuration for creating a QEMU cluster with Terraform.
 type QEMUVariables struct {
-	// CommonVariables contains common variables.
-	CommonVariables
-
+	// Name is the name to use for the cluster.
+	Name string `hcl:"name" cty:"name"`
+	// NodeGroups is a map of node groups to create.
+	NodeGroups map[string]QEMUNodeGroup `hcl:"node_groups" cty:"node_groups"`
+	// Machine is the type of machine to use.  use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'
+	Machine string `hcl:"machine" cty:"machine"`
 	// LibvirtURI is the libvirt connection URI.
-	LibvirtURI string
+	LibvirtURI string `hcl:"libvirt_uri" cty:"libvirt_uri"`
 	// LibvirtSocketPath is the path to the libvirt socket in case of unix socket.
-	LibvirtSocketPath string
+	LibvirtSocketPath string `hcl:"libvirt_socket_path" cty:"libvirt_socket_path"`
 	// BootMode is the boot mode to use.
 	// Can be either "uefi" or "direct-linux-boot".
-	BootMode string
-	// CPUCount is the number of CPUs to allocate to each node.
-	CPUCount int
-	// MemorySizeMiB is the amount of memory to allocate to each node, in MiB.
-	MemorySizeMiB int
-	// IPRangeStart is the first IP address in the IP range to allocate to the cluster.
-	ImagePath string
+	BootMode string `hcl:"constellation_boot_mode" cty:"constellation_boot_mode"`
+	// ImagePath is the path to the image to use for the nodes.
+	ImagePath string `hcl:"constellation_os_image" cty:"constellation_os_image"`
 	// ImageFormat is the format of the image from ImagePath.
-	ImageFormat string
+	ImageFormat string `hcl:"image_format" cty:"image_format"`
 	// MetadataAPIImage is the container image to use for the metadata API.
-	MetadataAPIImage string
+	MetadataAPIImage string `hcl:"metadata_api_image" cty:"metadata_api_image"`
 	// MetadataLibvirtURI is the libvirt connection URI used by the metadata container.
 	// In case of unix socket, this should be "qemu:///system".
 	// Other wise it should be the same as LibvirtURI.
-	MetadataLibvirtURI string
+	MetadataLibvirtURI string `hcl:"metadata_libvirt_uri" cty:"metadata_libvirt_uri"`
 	// NVRAM is the path to the NVRAM template.
-	NVRAM string
+	NVRAM string `hcl:"nvram" cty:"nvram"`
 	// Firmware is the path to the firmware.
-	Firmware string
+	Firmware *string `hcl:"firmware" cty:"firmware"`
 	// BzImagePath is the path to the bzImage (kernel).
-	BzImagePath string
+	BzImagePath *string `hcl:"constellation_kernel" cty:"constellation_kernel"`
 	// InitrdPath is the path to the initrd.
-	InitrdPath string
+	InitrdPath *string `hcl:"constellation_initrd" cty:"constellation_initrd"`
 	// KernelCmdline is the kernel command line.
-	KernelCmdline string
+	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *QEMUVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "libvirt_uri = %q", v.LibvirtURI)
-	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
-	writeLinef(b, "constellation_os_image = %q", v.ImagePath)
-	writeLinef(b, "image_format = %q", v.ImageFormat)
-	writeLinef(b, "constellation_boot_mode = %q", v.BootMode)
-	writeLinef(b, "constellation_kernel = %q", v.BzImagePath)
-	writeLinef(b, "constellation_initrd = %q", v.InitrdPath)
-	writeLinef(b, "constellation_cmdline = %q", v.KernelCmdline)
-	writeLinef(b, "vcpus = %d", v.CPUCount)
-	writeLinef(b, "memory = %d", v.MemorySizeMiB)
-	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
-	writeLinef(b, "metadata_libvirt_uri = %q", v.MetadataLibvirtURI)
-	switch v.NVRAM {
+	// copy v object
+	vCopy := *v
+	switch vCopy.NVRAM {
 	case "production":
-		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.production.fd\"\n")
+		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.production.fd"
 	case "testing":
-		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.testing.fd\"\n")
-	default:
-		writeLinef(b, "nvram = %q", v.NVRAM)
+		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.testing.fd"
 	}
-	if v.Firmware != "" {
-		writeLinef(b, "firmware = %q", v.Firmware)
-	}
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(vCopy, f.Body())
+	return string(f.Bytes())
+}
 
-	return b.String()
+// QEMUNodeGroup is a node group for a QEMU cluster.
+type QEMUNodeGroup struct {
+	// Role is the role of the node group.
+	Role string `hcl:"role" cty:"role"`
+	// InitialCount is the number of instances to create.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// DiskSize is the size of the disk to allocate to each node, in GiB.
+	DiskSize int `hcl:"disk_size" cty:"disk_size"`
+	// CPUCount is the number of CPUs to allocate to each node.
+	CPUCount int `hcl:"vcpus" cty:"vcpus"`
+	// MemorySize is the amount of memory to allocate to each node, in MiB.
+	MemorySize int `hcl:"memory" cty:"memory"`
 }
 
 func writeLinef(builder *strings.Builder, format string, a ...any) {

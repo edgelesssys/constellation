@@ -264,3 +264,34 @@ jobs:
       workerNodesCount: 2
       controlNodesCount: 3
       scheduled: ${{ github.event_name == 'schedule' }}
+  e2e-mini:
+    name: Run miniconstellation E2E test
+    runs-on: ubuntu-22.04
+    environment: e2e
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+
+      - name: Azure login OIDC
+        uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2 # v1.4.7
+        with:
+          client-id: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run e2e MiniConstellation
+        uses: ./.github/actions/e2e_mini
+        with:
+          azureClientID: ${{ secrets.AZURE_E2E_MINI_CLIENT_ID }}
+          azureSubscriptionID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azureTenantID: ${{ secrets.AZURE_TENANT_ID }}
+          buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
+          registry: ghcr.io
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

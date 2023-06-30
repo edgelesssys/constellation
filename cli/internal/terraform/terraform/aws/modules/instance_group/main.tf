@@ -4,13 +4,21 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.1.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.5.1"
+    }
   }
 }
 
 locals {
-  name = "${var.name}-${lower(var.role)}"
+  group_uid = random_id.uid.hex
+  name      = "${var.base_name}-${lower(var.role)}-${local.group_uid}"
 }
 
+resource "random_id" "uid" {
+  byte_length = 4
+}
 
 resource "aws_launch_template" "launch_template" {
   name_prefix   = local.name
@@ -37,17 +45,22 @@ resource "aws_launch_template" "launch_template" {
     }
   }
 
+  # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#cpu-options
+  cpu_options {
+    # use "enabled" to enable SEV-SNP
+    # use "disabled" to disable SEV-SNP (but still require SNP-capable hardware)
+    # use null to leave the setting unset (allows non-SNP-capable hardware to be used)
+    amd_sev_snp = var.enable_snp ? "enabled" : null
+  }
+
   lifecycle {
     create_before_destroy = true
     ignore_changes = [
+      cpu_options,     # required. we cannot change the CPU options of a launch template
+      name_prefix,     # required. Allow legacy scale sets to keep their old names
       default_version, # required. update procedure creates new versions of the launch template
       image_id,        # required. update procedure modifies the image id externally
     ]
-  }
-
-  # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#cpu-options
-  cpu_options {
-    amd_sev_snp = var.enable_snp ? "enabled" : "disabled"
   }
 }
 
@@ -58,7 +71,7 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   }
   min_size            = 1
   max_size            = 10
-  desired_capacity    = var.instance_count
+  desired_capacity    = var.initial_count
   vpc_zone_identifier = [var.subnetwork]
   target_group_arns   = var.target_group_arns
 
@@ -74,6 +87,7 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   lifecycle {
     create_before_destroy = true
     ignore_changes = [
+      name,                      # required. Allow legacy scale sets to keep their old names
       launch_template.0.version, # required. update procedure creates new versions of the launch template
       min_size,                  # required. autoscaling modifies the instance count externally
       max_size,                  # required. autoscaling modifies the instance count externally

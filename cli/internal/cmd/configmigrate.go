@@ -47,7 +47,7 @@ func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) 
 
 	switch cfgVersion.Version {
 	case config.Version3:
-		cmd.Printf("Config already at version %s, nothing to do", config.Version3)
+		cmd.Printf("Config already at version %s, nothing to do\n", config.Version3)
 		return nil
 	case migration.Version2:
 		if err := migration.V2ToV3(configPath, handler); err != nil {

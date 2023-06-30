@@ -67,6 +67,11 @@ dependencies:
     condition: azure.deployCSIDriver
     tags:
       - Azure
+  - name: aws-csi-driver
+    version: 1.0.0
+    condition: aws.deployCSIDriver
+    tags:
+      - AWS
   - name: yawol-config
     version: 0.0.0
     condition: openstack.deployYawolLoadBalancer

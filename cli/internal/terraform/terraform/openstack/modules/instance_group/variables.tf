@@ -22,7 +22,7 @@ variable "role" {
   }
 }
 
-variable "instance_count" {
+variable "initial_count" {
   type        = number
   description = "Number of instances in the instance group."
 }

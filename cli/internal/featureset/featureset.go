@@ -20,6 +20,9 @@ const (
 // CanFetchMeasurements returns whether the current build can fetch measurements.
 const CanFetchMeasurements = canFetchMeasurements
 
+// CanUseEmbeddedMeasurmentsAndImage returns whether the current build can use embedded measurements and can provide a node image.
+const CanUseEmbeddedMeasurmentsAndImage = canUseEmbeddedMeasurmentsAndImage
+
 // CanUpgradeCheck returns whether the current build can check for upgrades.
 // This also includes fetching new measurements.
 const CanUpgradeCheck = canUpgradeCheck

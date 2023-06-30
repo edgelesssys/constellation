@@ -10,7 +10,8 @@
 
 # Create IAM configuration
 pushd constellation || exit
-constellation iam create gcp --generate-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b --yes
+constellation config generate gcp
+constellation iam create gcp --update-config --projectID constellation-331613 --serviceAccountID constellation-demo --zone europe-west3-b --yes
 popd || exit
 
 docker build -t screenrecodings docker

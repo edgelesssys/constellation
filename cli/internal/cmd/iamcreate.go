@@ -22,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"golang.org/x/mod/semver"
 )
 
 var (
@@ -59,8 +58,7 @@ func newIAMCreateCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolP("yes", "y", false, "create the IAM configuration without further confirmation")
-	cmd.PersistentFlags().Bool("generate-config", false, "automatically generate a configuration file and fill in the required fields")
-	cmd.PersistentFlags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR - only usable in combination with --generate-config")
+	cmd.PersistentFlags().Bool("update-config", false, "automatically update the config file with the specific IAM information")
 
 	cmd.AddCommand(newIAMCreateAWSCmd())
 	cmd.AddCommand(newIAMCreateAzureCmd())
@@ -215,16 +213,13 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	if err := c.checkWorkingDir(flags); err != nil {
+	if err := c.checkWorkingDir(); err != nil {
 		return err
 	}
 
 	if !flags.yesFlag {
 		c.cmd.Printf("The following IAM configuration will be created:\n\n")
 		c.providerCreator.printConfirmValues(c.cmd, flags)
-		if flags.generateConfig {
-			c.cmd.Printf("The configuration file %s will be automatically generated and populated with the IAM values.\n", flags.configPath)
-		}
 		ok, err := askToConfirm(c.cmd, "Do you want to create the configuration?")
 		if err != nil {
 			return err
@@ -235,10 +230,16 @@ func (c *iamCreator) create(ctx context.Context) error {
 		}
 	}
 
+	var conf config.Config
+	if flags.updateConfig {
+		c.cmd.Printf("The configuration file %q will be automatically updated and populated with the IAM values.\n", flags.configPath)
+		c.log.Debugf("Parsing config %s", flags.configPath)
+		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
+			return fmt.Errorf("error reading the configuration file: %w", err)
+		}
+	}
+
 	c.spinner.Start("Creating", false)
-
-	conf := createConfig(c.provider)
-
 	iamFile, err := c.creator.Create(ctx, c.provider, c.iamConfig)
 	c.spinner.Stop()
 	if err != nil {
@@ -252,14 +253,10 @@ func (c *iamCreator) create(ctx context.Context) error {
 		return err
 	}
 
-	if flags.generateConfig {
+	if flags.updateConfig {
 		c.log.Debugf("Writing IAM configuration to %s", flags.configPath)
-		c.providerCreator.writeOutputValuesToConfig(conf, flags, iamFile)
-		// Only overwrite when --generate-config && --kubernetes. Otherwise this string is empty from parseFlagsAndSetupConfig.
-		if flags.k8sVersion != "" {
-			conf.KubernetesVersion = flags.k8sVersion
-		}
-		if err := c.fileHandler.WriteYAML(flags.configPath, conf, file.OptMkdirAll); err != nil {
+		c.providerCreator.writeOutputValuesToConfig(&conf, flags, iamFile)
+		if err := c.fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 			return err
 		}
 		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", flags.configPath)
@@ -282,35 +279,15 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing yes bool: %w", err)
 	}
-	generateConfig, err := c.cmd.Flags().GetBool("generate-config")
+	updateConfig, err := c.cmd.Flags().GetBool("update-config")
 	if err != nil {
-		return iamFlags{}, fmt.Errorf("parsing generate-config bool: %w", err)
-	}
-	k8sVersion, err := c.cmd.Flags().GetString("kubernetes")
-	if err != nil {
-		return iamFlags{}, fmt.Errorf("parsing kubernetes string: %w", err)
-	}
-
-	// This is implemented slightly differently compared to "config generate", since this flag is only respected in combination with --generate-config.
-	// Even if an invalid version is set, in case --generate-config is false, we don't overwrite the default value of the config.
-	// So we only need to validate the input to the flag when --generate-config is set.
-	// Otherwise, we return an empty string. Later, we only overwrite the value in the config when we haven't passed an empty string.
-	// Instead, we should have our validated K8s version parameter then.
-	var resolvedVersion string
-	if generateConfig {
-		resolvedVersion, err = resolveK8sVersion(k8sVersion)
-		if err != nil {
-			return iamFlags{}, fmt.Errorf("resolving kubernetes version: %w", err)
-		}
-	} else if c.cmd.Flag("kubernetes").Changed {
-		c.cmd.Println("Warning: --generate-config is not set, ignoring --kubernetes flag.")
+		return iamFlags{}, fmt.Errorf("parsing update-config bool: %w", err)
 	}
 
 	flags := iamFlags{
-		configPath:     configPath,
-		yesFlag:        yesFlag,
-		generateConfig: generateConfig,
-		k8sVersion:     resolvedVersion,
+		configPath:   configPath,
+		yesFlag:      yesFlag,
+		updateConfig: updateConfig,
 	}
 
 	flags, err = c.providerCreator.parseFlagsAndSetupConfig(c.cmd, flags, c.iamConfig)
@@ -321,28 +298,22 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	return flags, nil
 }
 
-// checkWorkingDir checks if the current working directory already contains a Terraform dir or a Constellation config file.
-func (c *iamCreator) checkWorkingDir(flags iamFlags) error {
+// checkWorkingDir checks if the current working directory already contains a Terraform dir.
+func (c *iamCreator) checkWorkingDir() error {
 	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
 		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", constants.TerraformIAMWorkingDir)
-	}
-	if flags.generateConfig {
-		if _, err := c.fileHandler.Stat(flags.configPath); err == nil {
-			return fmt.Errorf("the flag --generate-config is set, but %q already exists. Please either run the command in a different directory, define another config path, or delete or move the existing configuration", flags.configPath)
-		}
 	}
 	return nil
 }
 
 // iamFlags contains the parsed flags of the iam create command, including the parsed flags of the selected cloud provider.
 type iamFlags struct {
-	aws            awsFlags
-	azure          azureFlags
-	gcp            gcpFlags
-	configPath     string
-	yesFlag        bool
-	generateConfig bool
-	k8sVersion     string
+	aws          awsFlags
+	azure        azureFlags
+	gcp          gcpFlags
+	configPath   string
+	yesFlag      bool
+	updateConfig bool
 }
 
 // awsFlags contains the parsed flags of the iam create aws command.

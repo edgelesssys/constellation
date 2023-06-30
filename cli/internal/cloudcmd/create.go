@@ -130,16 +130,27 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
 	vars := terraform.AWSClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
+		Name: opts.Config.Name,
+		NodeGroups: map[string]terraform.AWSNodeGroup{
+			"control_plane_default": {
+				Role:            role.ControlPlane.TFString(),
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.ControlPlaneCount,
+				Zone:            opts.Config.Provider.AWS.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.AWS.StateDiskType,
+			},
+			"worker_default": {
+				Role:            role.Worker.TFString(),
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+				InitialCount:    opts.WorkerCount,
+				Zone:            opts.Config.Provider.AWS.Zone,
+				InstanceType:    opts.InsType,
+				DiskType:        opts.Config.Provider.AWS.StateDiskType,
+			},
 		},
-		StateDiskType:          opts.Config.Provider.AWS.StateDiskType,
 		Region:                 opts.Config.Provider.AWS.Region,
 		Zone:                   opts.Config.Provider.AWS.Zone,
-		InstanceType:           opts.InsType,
 		AMIImageID:             opts.image,
 		IAMProfileControlPlane: opts.Config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  opts.Config.Provider.AWS.IAMProfileWorkerNodes,
@@ -216,20 +227,20 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts Crea
 		Name: opts.Config.Name,
 		NodeGroups: map[string]terraform.AzureNodeGroup{
 			"control_plane_default": {
-				Role:          role.ControlPlane.TFString(),
-				InstanceCount: toPtr(opts.ControlPlaneCount),
-				InstanceType:  opts.InsType,
-				DiskSizeGB:    opts.Config.StateDiskSizeGB,
-				DiskType:      opts.Config.Provider.Azure.StateDiskType,
-				Zones:         nil, // TODO(elchead): support zones AB#3225
+				Role:         role.ControlPlane.TFString(),
+				InitialCount: toPtr(opts.ControlPlaneCount),
+				InstanceType: opts.InsType,
+				DiskSizeGB:   opts.Config.StateDiskSizeGB,
+				DiskType:     opts.Config.Provider.Azure.StateDiskType,
+				Zones:        nil, // TODO(elchead): support zones AB#3225
 			},
 			"worker_default": {
-				Role:          role.Worker.TFString(),
-				InstanceCount: toPtr(opts.WorkerCount),
-				InstanceType:  opts.InsType,
-				DiskSizeGB:    opts.Config.StateDiskSizeGB,
-				DiskType:      opts.Config.Provider.Azure.StateDiskType,
-				Zones:         nil,
+				Role:         role.Worker.TFString(),
+				InitialCount: toPtr(opts.WorkerCount),
+				InstanceType: opts.InsType,
+				DiskSizeGB:   opts.Config.StateDiskSizeGB,
+				DiskType:     opts.Config.Provider.Azure.StateDiskType,
+				Zones:        nil,
 			},
 		},
 		Location:             opts.Config.Provider.Azure.Location,
@@ -415,30 +426,42 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	}
 
 	vars := terraform.QEMUVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
-		},
+		Name:              opts.Config.Name,
 		LibvirtURI:        libvirtURI,
 		LibvirtSocketPath: libvirtSocketPath,
 		// TODO(malt3): auto select boot mode based on attestation variant.
 		// requires image info v2.
-		BootMode:           "uefi",
-		ImagePath:          imagePath,
-		ImageFormat:        opts.Config.Provider.QEMU.ImageFormat,
-		CPUCount:           opts.Config.Provider.QEMU.VCPUs,
-		MemorySizeMiB:      opts.Config.Provider.QEMU.Memory,
+		BootMode:    "uefi",
+		ImagePath:   imagePath,
+		ImageFormat: opts.Config.Provider.QEMU.ImageFormat,
+		NodeGroups: map[string]terraform.QEMUNodeGroup{
+			"control_plane_default": {
+				Role:         role.ControlPlane.TFString(),
+				InitialCount: opts.ControlPlaneCount,
+				DiskSize:     opts.Config.StateDiskSizeGB,
+				CPUCount:     opts.Config.Provider.QEMU.VCPUs,
+				MemorySize:   opts.Config.Provider.QEMU.Memory,
+			},
+			"worker_default": {
+				Role:         role.Worker.TFString(),
+				InitialCount: opts.WorkerCount,
+				DiskSize:     opts.Config.StateDiskSizeGB,
+				CPUCount:     opts.Config.Provider.QEMU.VCPUs,
+				MemorySize:   opts.Config.Provider.QEMU.Memory,
+			},
+		},
+		Machine:            "q35", // TODO(elchead): make configurable AB#3225
 		MetadataAPIImage:   opts.Config.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
 		NVRAM:              opts.Config.Provider.QEMU.NVRAM,
-		Firmware:           opts.Config.Provider.QEMU.Firmware,
 		// TODO(malt3) enable once we have a way to auto-select values for these
 		// requires image info v2.
 		// BzImagePath:        placeholder,
 		// InitrdPath:         placeholder,
 		// KernelCmdline:      placeholder,
+	}
+	if opts.Config.Provider.QEMU.Firmware != "" {
+		vars.Firmware = toPtr(opts.Config.Provider.QEMU.Firmware)
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), &vars); err != nil {

@@ -50,7 +50,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 		RunE:  runUpgradeCheck,
 	}
 
-	cmd.Flags().BoolP("write-config", "w", false, "update the specified config file with the suggested versions")
+	cmd.Flags().BoolP("update-config", "u", false, "update the specified config file with the suggested versions")
 	cmd.Flags().String("ref", versionsapi.ReleaseRef, "the reference to use for querying new versions")
 	cmd.Flags().String("stream", "stable", "the stream to use for querying new versions")
 
@@ -109,9 +109,9 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	if err != nil {
 		return upgradeCheckFlags{}, fmt.Errorf("parsing force bool: %w", err)
 	}
-	writeConfig, err := cmd.Flags().GetBool("write-config")
+	updateConfig, err := cmd.Flags().GetBool("update-config")
 	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing write-config bool: %w", err)
+		return upgradeCheckFlags{}, fmt.Errorf("parsing update-config bool: %w", err)
 	}
 	ref, err := cmd.Flags().GetString("ref")
 	if err != nil {
@@ -134,7 +134,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	return upgradeCheckFlags{
 		configPath:        configPath,
 		force:             force,
-		writeConfig:       writeConfig,
+		updateConfig:      updateConfig,
 		ref:               ref,
 		stream:            stream,
 		terraformLogLevel: logLevel,
@@ -204,22 +204,31 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 
 	u.log.Debugf("Planning Terraform migrations")
 
+	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
+	var awsZone string
+	if csp == cloudprovider.AWS {
+		awsZone = conf.Provider.AWS.Zone
+	}
+	manualMigrations := terraformMigrationAWSNodeGroups(csp, awsZone)
+	for _, migration := range manualMigrations {
+		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+		u.checker.AddManualStateMigration(migration)
+	}
+
 	if err := u.checker.CheckTerraformMigrations(fileHandler); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
-	targets, vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
+	vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
-	u.log.Debugf("Using migration targets:\n%v", targets)
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
 		LogLevel:   flags.terraformLogLevel,
 		CSP:        conf.GetProvider(),
 		Vars:       vars,
-		Targets:    targets,
 		OutputFile: constants.TerraformMigrationOutputFile,
 	}
 
@@ -259,7 +268,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	// Using Print over Println as buildString already includes a trailing newline where necessary.
 	cmd.Print(updateMsg)
 
-	if flags.writeConfig {
+	if flags.updateConfig {
 		if err := upgrade.writeConfig(conf, fileHandler, flags.configPath); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
@@ -719,7 +728,7 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 type upgradeCheckFlags struct {
 	configPath        string
 	force             bool
-	writeConfig       bool
+	updateConfig      bool
 	ref               string
 	stream            string
 	terraformLogLevel terraform.LogLevel
@@ -731,6 +740,7 @@ type upgradeChecker interface {
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
+	AddManualStateMigration(migration terraform.StateMigration)
 }
 
 type versionListFetcher interface {

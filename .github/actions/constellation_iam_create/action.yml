@@ -42,10 +42,19 @@ runs:
       shell: bash
       if: inputs.cloudProvider == 'aws'
       run: |
+        constellation config generate aws
+        iam_conf_flag="--update-config"
+
+        output=$(constellation iam create --help)
+        if [[ $output == *"generate-config"* ]]; then
+          rm constellation-conf.yaml
+          iam_conf_flag="--generate-config"
+        fi
+
         constellation iam create aws \
           --zone=${{ inputs.awsZone }} \
           --prefix=${{ inputs.namePrefix }} \
-          --generate-config --yes
+          ${iam_conf_flag} --yes
 
     - name: Constellation iam create azure
       shell: bash
@@ -55,21 +64,39 @@ runs:
         if [[ $output == *"tf-log"* ]]; then
           TFFLAG="--tf-log=DEBUG"
         fi
+        constellation config generate azure
+        iam_conf_flag="--update-config"
+
+        output=$(constellation iam create --help)
+        if [[ $output == *"generate-config"* ]]; then
+          rm constellation-conf.yaml
+          iam_conf_flag="--generate-config"
+        fi
+
         constellation iam create azure \
           --region=${{ inputs.azureRegion }} \
           --resourceGroup="${{ inputs.namePrefix }}-rg" \
           --servicePrincipal="${{ inputs.namePrefix }}-sp" \
-          --generate-config --yes ${TFFLAG:-}
+          ${iam_conf_flag} --yes ${TFFLAG:-}
 
     - name: Constellation iam create gcp
       shell: bash
       if: inputs.cloudProvider == 'gcp'
       run: |
+        constellation config generate gcp
+        iam_conf_flag="--update-config"
+
+        output=$(constellation iam create --help)
+        if [[ $output == *"generate-config"* ]]; then
+          rm constellation-conf.yaml
+          iam_conf_flag="--generate-config"
+        fi
+
         constellation iam create gcp \
           --projectID=${{ inputs.gcpProjectID }} \
           --zone=${{ inputs.gcpZone }} \
           --serviceAccountID="${{ inputs.namePrefix }}-sa" \
-          --generate-config --yes
+          ${iam_conf_flag} --yes
 
     - name: Set existing config
       id: setExistingConfig
