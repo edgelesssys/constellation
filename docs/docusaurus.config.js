@@ -199,7 +199,7 @@ async function createConfig() {
                   href: 'https://www.edgeless.systems/privacy',
                 },
                 {
-                  html: `<a href="javascript: Cookiebot.renew()">Cookie Settings</a>`
+                  html: `<a href="javascript: Cookiebot.renew()" class="footer__link-item">Cookie Settings</a>`
                 },
 
                 {
