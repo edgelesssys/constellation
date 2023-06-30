@@ -77,7 +77,11 @@ module "public_private_subnet" {
 }
 
 resource "aws_eip" "lb" {
-  for_each = toset(module.public_private_subnet.all_zones)
+  # TODO(malt3): use for_each = toset(module.public_private_subnet.all_zones)
+  # in a future version to support all availability zones in the chosen region
+  # This should only be done after we migrated to DNS-based addressing for the
+  # control-plane.
+  for_each = toset([var.zone])
   domain   = "vpc"
   tags     = local.tags
 }
@@ -92,9 +96,10 @@ resource "aws_lb" "front_end" {
     # TODO(malt3): use for_each = toset(module.public_private_subnet.all_zones)
     # in a future version to support all availability zones in the chosen region
     # without needing to constantly replace the loadbalancer.
-    # This has to wait until the bootstrapper that we upgrade from (source version) can handle multiple AZs
+    # This has to wait until the bootstrapper that we upgrade from (source version) use
+    # DNS-based addressing for the control-plane.
     # for_each = toset(module.public_private_subnet.all_zones)
-    for_each = toset(local.zones)
+    for_each = toset([var.zone])
     content {
       subnet_id     = module.public_private_subnet.public_subnet_id[subnet_mapping.key]
       allocation_id = aws_eip.lb[subnet_mapping.key].id
@@ -267,6 +272,7 @@ module "instance_group" {
     local.tags,
     { Name = local.name },
     { constellation-role = each.value.role },
+    { constellation-node-group = each.key },
     { constellation-uid = local.uid },
     { constellation-init-secret-hash = local.initSecretHash },
     { "kubernetes.io/cluster/${local.name}" = "owned" }
