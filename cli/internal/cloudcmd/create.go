@@ -313,10 +313,6 @@ func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClu
 }
 
 func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (idFile clusterid.File, retErr error) {
-	// TODO(malt3): Remove this once OpenStack is supported.
-	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
-		return clusterid.File{}, errors.New("OpenStack isn't supported yet")
-	}
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && opts.Config.Provider.OpenStack.Cloud == "" {
 		return clusterid.File{}, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
