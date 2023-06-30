@@ -112,7 +112,7 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
   description        = "Instance group manager for Constellation"
   base_instance_name = local.name
   zone               = var.zone
-  target_size        = var.instance_count
+  target_size        = var.initial_count
 
   dynamic "stateful_disk" {
     for_each = var.role == "control-plane" ? [1] : []

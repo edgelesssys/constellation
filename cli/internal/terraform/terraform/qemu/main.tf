@@ -56,7 +56,7 @@ module "node_group" {
   for_each         = var.node_groups
   node_group_name  = each.key
   role             = each.value.role
-  amount           = each.value.instance_count
+  amount           = each.value.initial_count
   state_disk_size  = each.value.disk_size
   vcpus            = each.value.vcpus
   memory           = each.value.memory

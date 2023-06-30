@@ -71,7 +71,7 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   }
   min_size            = 1
   max_size            = 10
-  desired_capacity    = var.instance_count
+  desired_capacity    = var.initial_count
   vpc_zone_identifier = [var.subnetwork]
   target_group_arns   = var.target_group_arns
 

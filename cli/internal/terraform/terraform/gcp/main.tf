@@ -158,7 +158,7 @@ module "instance_group" {
   zone                = each.value.zone
   uid                 = local.uid
   instance_type       = each.value.instance_type
-  instance_count      = each.value.initial_count
+  initial_count       = each.value.initial_count
   image_id            = var.image_id
   disk_size           = each.value.disk_size
   disk_type           = each.value.disk_type
