@@ -590,16 +590,15 @@ func awsZoneToRegion(zone string) (string, error) {
 
 // validateConfigWithFlagCompatibility checks if the config is compatible with the flags.
 func validateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
-	if !hasProviderCfg(iamProvider, cfg) {
-		return fmt.Errorf("iam provider %q seems different from config provider", iamProvider)
+	if !cfg.HasProvider(iamProvider) {
+		return fmt.Errorf("cloud provider from the the configuration file differs from the one provided via the command %q", iamProvider)
 	}
-
 	return checkIfCfgZoneAndFlagZoneDiffer(iamProvider, flags, cfg)
 }
 
 func checkIfCfgZoneAndFlagZoneDiffer(iamProvider cloudprovider.Provider, flags iamFlags, cfg config.Config) error {
 	flagZone := flagZoneOrAzRegion(iamProvider, flags)
-	configZone := configZoneOrAzRegion(iamProvider, cfg)
+	configZone := cfg.GetZone()
 	if configZone != "" && flagZone != configZone {
 		return fmt.Errorf("zone/region from the configuration file %q differs from the one provided via flags %q", configZone, flagZone)
 	}
@@ -616,28 +615,4 @@ func flagZoneOrAzRegion(provider cloudprovider.Provider, flags iamFlags) string 
 		return flags.gcp.zone
 	}
 	return ""
-}
-
-func configZoneOrAzRegion(provider cloudprovider.Provider, conf config.Config) string {
-	switch provider {
-	case cloudprovider.AWS:
-		return conf.Provider.AWS.Zone
-	case cloudprovider.Azure:
-		return conf.Provider.Azure.Location
-	case cloudprovider.GCP:
-		return conf.Provider.GCP.Zone
-	}
-	return ""
-}
-
-func hasProviderCfg(provider cloudprovider.Provider, cfg config.Config) bool {
-	switch provider {
-	case cloudprovider.AWS:
-		return cfg.Provider.AWS != nil
-	case cloudprovider.Azure:
-		return cfg.Provider.Azure != nil
-	case cloudprovider.GCP:
-		return cfg.Provider.GCP != nil
-	}
-	return false
 }
