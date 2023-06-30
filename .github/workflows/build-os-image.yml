@@ -58,12 +58,12 @@ jobs:
       measurement-reader-sha256: ${{ steps.collect-hashes.outputs.measurement-reader-sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         with:
           go-version: "1.20.5"
           cache: true
@@ -138,7 +138,7 @@ jobs:
       cliApiBasePath: ${{ steps.image-version.outputs.cliApiBasePath }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -277,7 +277,7 @@ jobs:
             attestation_variant: qemu-vtpm
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -407,7 +407,7 @@ jobs:
       ATTESTATION_VARIANT: ${{ matrix.attestation_variant }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -429,7 +429,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
@@ -563,7 +563,7 @@ jobs:
             attestation_variant: qemu-vtpm
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -723,7 +723,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -733,13 +733,13 @@ jobs:
           name: measurements
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+        uses: sigstore/cosign-installer@c85d0e205a72a294fe064f618a87dbac13084086 # v2.8.1
 
       - name: Install Rekor
         shell: bash
@@ -803,7 +803,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
@@ -836,7 +836,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Create SBOM in SPDX fromat
-        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
+        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
@@ -844,7 +844,7 @@ jobs:
           format: spdx-json
 
       - name: Create SBOM in CycloneDX fromat
-        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
+        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
@@ -852,7 +852,7 @@ jobs:
           format: cyclonedx-json
 
       - name: Create SBOM in  Syft fromat
-        uses: anchore/sbom-action@422cb34a0f8b599678c41b21163ea6088edb2624 # v0.14.1
+        uses: anchore/sbom-action@78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1 # v0.14.3
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
@@ -924,7 +924,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
@@ -934,7 +934,7 @@ jobs:
           name: lookup-table
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef # v2.0.0
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
@@ -944,12 +944,12 @@ jobs:
         run: bazel run //image/upload -- info --verbose mkosi.output.*/*/image-upload*.json
 
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
+        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         with:
           go-version: "1.20.5"
           cache: true
