@@ -192,7 +192,7 @@ async function createConfig() {
               items: [
                 {
                   label: 'Imprint',
-                  to: 'https://www.edgeless.systems/imprint',
+                  href: 'https://www.edgeless.systems/imprint',
                 },
                 {
                   label: 'Privacy Policy',
