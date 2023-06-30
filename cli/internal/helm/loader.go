@@ -168,7 +168,7 @@ func (i *ChartLoader) loadRelease(info chartInfo) (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging %s chart: %w", info.releaseName, err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName}, nil
 }
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.
