@@ -242,7 +242,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 		NodeGroups: map[string]OpenStackNodeGroup{
 			"control_plane_default": {
 				Role:            "control-plane",
-				InstanceCount:   1,
+				InitialCount:    1,
 				Zone:            "az-01",
 				StateDiskType:   "performance-8",
 				StateDiskSizeGB: 30,
@@ -254,7 +254,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 	want := `name = "cluster-name"
 node_groups = {
   control_plane_default = {
-    instance_count  = 1
+    initial_count   = 1
     role            = "control-plane"
     state_disk_size = 30
     state_disk_type = "performance-8"
@@ -272,7 +272,6 @@ openstack_password         = "my-password"
 debug                      = true
 `
 	got := vars.String()
-	println(got)
 	assert.Equal(t, want, got)
 }
 

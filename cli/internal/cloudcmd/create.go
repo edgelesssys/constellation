@@ -340,14 +340,14 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts 
 		NodeGroups: map[string]terraform.OpenStackNodeGroup{
 			"control_plane_default": {
 				Role:            role.ControlPlane.TFString(),
-				InstanceCount:   opts.ControlPlaneCount,
+				InitialCount:    opts.ControlPlaneCount,
 				Zone:            opts.Config.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
 				StateDiskType:   opts.Config.Provider.OpenStack.StateDiskType,
 				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
 			},
 			"worker_default": {
 				Role:            role.Worker.TFString(),
-				InstanceCount:   opts.WorkerCount,
+				InitialCount:    opts.WorkerCount,
 				Zone:            opts.Config.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
 				StateDiskType:   opts.Config.Provider.OpenStack.StateDiskType,
 				StateDiskSizeGB: opts.Config.StateDiskSizeGB,

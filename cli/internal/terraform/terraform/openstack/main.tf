@@ -165,7 +165,7 @@ module "instance_group" {
   base_name                  = local.name
   node_group_name            = each.key
   role                       = each.value.role
-  instance_count             = each.value.instance_count
+  initial_count              = each.value.initial_count
   disk_size                  = each.value.state_disk_size
   state_disk_type            = each.value.state_disk_type
   availability_zone          = each.value.zone

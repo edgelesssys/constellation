@@ -257,8 +257,8 @@ type OpenStackClusterVariables struct {
 type OpenStackNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
-	// InstanceCount is the number of instances to create.
-	InstanceCount int `hcl:"instance_count" cty:"instance_count"`
+	// InitialCount is the number of instances to create.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
 	// Zone is the OpenStack availability zone to use.
 	Zone string `hcl:"zone" cty:"zone"`
 	// StateDiskType is the OpenStack disk type to use for the state disk.

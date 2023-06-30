@@ -1,7 +1,7 @@
 variable "node_groups" {
   type = map(object({
     role            = string
-    instance_count  = number // number of instances in the node group
+    initial_count   = number // number of instances in the node group
     state_disk_size = number // size of state disk (GiB)
     state_disk_type = string // type of state disk. Can be 'standard' or 'premium'
     zone            = string // availability zone
