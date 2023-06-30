@@ -151,7 +151,7 @@ func (i *ChartLoader) loadRelease(info chartInfo) (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
 	}
 
-	values := map[string]any{}
+	var values map[string]any
 
 	switch info.releaseName {
 	case ciliumInfo.releaseName:
@@ -166,10 +166,7 @@ func (i *ChartLoader) loadRelease(info chartInfo) (helm.Release, error) {
 		values = i.loadConstellationServicesValues()
 	case csiInfo.releaseName:
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
-	}
-
-	values["tags"] = map[string]any{
-		i.csp.String(): true,
+		values = i.loadCSIValues()
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -240,6 +237,7 @@ func (i *ChartLoader) loadOperatorsValues() map[string]any {
 				},
 			},
 		},
+		"tags": i.cspTags(),
 	}
 }
 
@@ -284,6 +282,19 @@ func (i *ChartLoader) loadConstellationServicesValues() map[string]any {
 		"konnectivity": map[string]any{
 			"image": i.konnectivityImage,
 		},
+		"tags": i.cspTags(),
+	}
+}
+
+func (i *ChartLoader) loadCSIValues() map[string]any {
+	return map[string]any{
+		"tags": i.cspTags(),
+	}
+}
+
+func (i *ChartLoader) cspTags() map[string]any {
+	return map[string]any{
+		i.csp.String(): true,
 	}
 }
 

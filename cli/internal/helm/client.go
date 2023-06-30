@@ -42,6 +42,8 @@ const (
 // ErrConfirmationMissing signals that an action requires user confirmation.
 var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
+var errReleaseNotFound = errors.New("release not found")
+
 // Client handles interaction with helm and the cluster.
 type Client struct {
 	config  *action.Configuration
@@ -107,8 +109,10 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
+	newReleases := []*chart.Chart{}
 
-	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo} {
+	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo} {
+		c.log.Debugf("Checking release %s", info.releaseName)
 		chart, err := loadChartsDir(helmFS, info.path)
 		if err != nil {
 			return fmt.Errorf("loading chart: %w", err)
@@ -127,9 +131,14 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		var invalidUpgrade *compatibility.InvalidUpgradeError
 		err = c.shouldUpgrade(info.releaseName, upgradeVersion, force)
 		switch {
+		case errors.Is(err, errReleaseNotFound):
+			// if the release is not found, we need to install it
+			c.log.Debugf("Release %s not found, adding to new releases...", info.releaseName)
+			newReleases = append(newReleases, chart)
 		case errors.As(err, &invalidUpgrade):
 			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", info.releaseName, err))
 		case err != nil:
+			c.log.Debugf("Adding %s to upgrade releases...", info.releaseName)
 			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
 		case err == nil:
 			upgradeReleases = append(upgradeReleases, chart)
@@ -144,21 +153,34 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 		}
 	}
 
-	if len(upgradeReleases) == 0 {
-		return errors.Join(upgradeErrs...)
-	}
-
-	crds, err := c.backupCRDs(ctx, upgradeID)
-	if err != nil {
-		return fmt.Errorf("creating CRD backup: %w", err)
-	}
-	if err := c.backupCRs(ctx, crds, upgradeID); err != nil {
-		return fmt.Errorf("creating CR backup: %w", err)
+	// Backup CRDs and CRs if we are upgrading anything.
+	if len(upgradeReleases) != 0 {
+		c.log.Debugf("Creating backup of CRDs and CRs")
+		crds, err := c.backupCRDs(ctx, upgradeID)
+		if err != nil {
+			return fmt.Errorf("creating CRD backup: %w", err)
+		}
+		if err := c.backupCRs(ctx, crds, upgradeID); err != nil {
+			return fmt.Errorf("creating CR backup: %w", err)
+		}
 	}
 
 	for _, chart := range upgradeReleases {
-		err = c.upgradeRelease(ctx, timeout, config, chart)
-		if err != nil {
+		c.log.Debugf("Upgrading release %s", chart.Metadata.Name)
+		if err := c.upgradeRelease(ctx, timeout, config, chart); err != nil {
+			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
+		}
+	}
+
+	// Install new releases after upgrading existing ones.
+	// This makes sure if a release was removed as a dependency from one chart,
+	// and then added as a new standalone chart (or as a dependency of another chart),
+	// that the new release is installed without creating naming conflicts.
+	// If in the future, we require to install a new release before upgrading existing ones,
+	// it should be done in a separate loop, instead of moving this one up.
+	for _, chart := range newReleases {
+		c.log.Debugf("Installing new release %s", chart.Metadata.Name)
+		if err := c.installNewRelease(ctx, timeout, config, chart); err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
 	}
@@ -201,7 +223,7 @@ func (c *Client) currentVersion(release string) (string, error) {
 	}
 
 	if len(rel) == 0 {
-		return "", fmt.Errorf("release %s not found", release)
+		return "", errReleaseNotFound
 	}
 	if len(rel) > 1 {
 		return "", fmt.Errorf("multiple releases found for %s", release)
@@ -252,14 +274,42 @@ func (s ServiceVersions) ConstellationServices() string {
 	return s.constellationServices
 }
 
+// installNewRelease installs a previously not installed release on the cluster.
+func (c *Client) installNewRelease(
+	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
+) error {
+	releaseName, values, err := c.loadUpgradeValues(ctx, conf, chart)
+	if err != nil {
+		return fmt.Errorf("loading values: %w", err)
+	}
+	return c.actions.installAction(ctx, releaseName, chart, values, timeout)
+}
+
+// upgradeRelease upgrades a release running on the cluster.
 func (c *Client) upgradeRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
 ) error {
+	releaseName, values, err := c.loadUpgradeValues(ctx, conf, chart)
+	if err != nil {
+		return fmt.Errorf("loading values: %w", err)
+	}
+
+	values, err = c.mergeClusterValues(values, releaseName)
+	if err != nil {
+		return fmt.Errorf("preparing values: %w", err)
+	}
+
+	return c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
+}
+
+// loadUpgradeValues loads values for a chart required for running an upgrade.
+func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, chart *chart.Chart,
+) (string, map[string]any, error) {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
 	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion, true)
 	if err != nil {
-		return fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
+		return "", nil, fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
 	}
 	loader := NewLoader(conf.GetProvider(), k8sVersion)
 
@@ -278,30 +328,23 @@ func (c *Client) upgradeRelease(
 		values = loader.loadOperatorsValues()
 
 		if err := c.updateCRDs(ctx, chart); err != nil {
-			return fmt.Errorf("updating CRDs: %w", err)
+			return "", nil, fmt.Errorf("updating CRDs: %w", err)
 		}
 	case constellationServicesInfo.chartName:
 		releaseName = constellationServicesInfo.releaseName
 		values = loader.loadConstellationServicesValues()
 
 		if err := c.applyMigrations(ctx, releaseName, values, conf); err != nil {
-			return fmt.Errorf("applying migrations: %w", err)
+			return "", nil, fmt.Errorf("applying migrations: %w", err)
 		}
+	case csiInfo.chartName:
+		releaseName = csiInfo.releaseName
+		values = loader.loadCSIValues()
 	default:
-		return fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
+		return "", nil, fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
 
-	values, err = c.prepareValues(values, releaseName)
-	if err != nil {
-		return fmt.Errorf("preparing values: %w", err)
-	}
-
-	err = c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return releaseName, values, nil
 }
 
 // applyMigrations checks the from version and applies the necessary migrations.
@@ -364,12 +407,12 @@ func updateJoinConfig(values map[string]any, conf *config.Config) error {
 	return nil
 }
 
-// prepareValues returns a values map as required for helm-upgrade.
+// mergeClusterValues returns a values map as required for helm-upgrade.
 // It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
 // and merging the fetched values with the locally found values.
 // This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
 // reuse-values does not ensure this.
-func (c *Client) prepareValues(localValues map[string]any, releaseName string) (map[string]any, error) {
+func (c *Client) mergeClusterValues(localValues map[string]any, releaseName string) (map[string]any, error) {
 	// Ensure installCRDs is set for cert-manager chart.
 	if releaseName == certManagerInfo.releaseName {
 		localValues["installCRDs"] = true
@@ -428,6 +471,7 @@ type crdClient interface {
 type actionWrapper interface {
 	listAction(release string) ([]*release.Release, error)
 	getValues(release string) (map[string]any, error)
+	installAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error
 	upgradeAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error
 }
 
@@ -458,6 +502,18 @@ func (a actions) upgradeAction(ctx context.Context, releaseName string, chart *c
 	action.Timeout = timeout
 	if _, err := action.RunWithContext(ctx, releaseName, chart, values); err != nil {
 		return fmt.Errorf("upgrading %s: %w", releaseName, err)
+	}
+	return nil
+}
+
+func (a actions) installAction(ctx context.Context, releaseName string, chart *chart.Chart, values map[string]any, timeout time.Duration) error {
+	action := action.NewInstall(a.config)
+	action.Atomic = true
+	action.Namespace = constants.HelmNamespace
+	action.ReleaseName = releaseName
+	action.Timeout = timeout
+	if _, err := action.RunWithContext(ctx, chart, values); err != nil {
+		return fmt.Errorf("installing previously not installed chart %s: %w", chart.Name(), err)
 	}
 	return nil
 }
