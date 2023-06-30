@@ -12,7 +12,6 @@ type Release struct {
 	Chart       []byte
 	Values      map[string]any
 	ReleaseName string
-	Wait        bool
 }
 
 // Releases bundles all helm releases to be deployed to Constellation.
