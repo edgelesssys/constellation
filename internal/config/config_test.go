@@ -159,7 +159,7 @@ func TestReadConfigFile(t *testing.T) {
 				return m
 			}(),
 			configName:    constants.ConfigFilename,
-			wantedErrType: UnsupportedAppRegistrationError{},
+			wantedErrType: &UnsupportedAppRegistrationError{},
 		},
 	}
 	for name, tc := range testCases {

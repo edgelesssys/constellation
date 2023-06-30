@@ -187,7 +187,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			wantUpdate: true,
 			wantErr:    true,
 			assertCorrectError: func(t *testing.T, err error) bool {
-				upgradeErr := &compatibility.InvalidUpgradeError{}
+				var upgradeErr *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},

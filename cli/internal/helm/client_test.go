@@ -32,7 +32,7 @@ func TestShouldUpgrade(t *testing.T) {
 		"not a valid upgrade": {
 			version: "1.0.0",
 			assertCorrectError: func(t *testing.T, err error) bool {
-				target := &compatibility.InvalidUpgradeError{}
+				var target *compatibility.InvalidUpgradeError
 				return assert.ErrorAs(t, err, &target)
 			},
 			wantError: true,

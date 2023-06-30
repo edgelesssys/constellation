@@ -41,12 +41,12 @@ func NewInvalidUpgradeError(from string, to string, innerErr error) *InvalidUpgr
 }
 
 // Unwrap returns the inner error, which is nil in this case.
-func (e InvalidUpgradeError) Unwrap() error {
+func (e *InvalidUpgradeError) Unwrap() error {
 	return e.innerErr
 }
 
 // Error returns the String representation of this error.
-func (e InvalidUpgradeError) Error() string {
+func (e *InvalidUpgradeError) Error() string {
 	return fmt.Sprintf("upgrading from %s to %s is not a valid upgrade: %s", e.from, e.to, e.innerErr)
 }
 

@@ -116,13 +116,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
+		var upgradeErr *compatibility.InvalidUpgradeError
 		err = u.handleServiceUpgrade(cmd, conf, flags)
-		upgradeErr := &compatibility.InvalidUpgradeError{}
-		noUpgradeRequiredError := &helm.NoUpgradeRequiredError{}
 		switch {
-		case errors.As(err, upgradeErr):
-			cmd.PrintErrln(err)
-		case errors.As(err, noUpgradeRequiredError):
+		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
 		case err != nil:
 			return fmt.Errorf("upgrading services: %w", err)
@@ -132,7 +129,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		switch {
 		case errors.Is(err, kubernetes.ErrInProgress):
 			cmd.PrintErrln("Skipping image and Kubernetes upgrades. Another upgrade is in progress.")
-		case errors.As(err, upgradeErr):
+		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
 		case err != nil:
 			return fmt.Errorf("upgrading NodeVersion: %w", err)

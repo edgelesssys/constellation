@@ -52,6 +52,8 @@ const (
 	Version3 = "v3"
 
 	defaultName = "constell"
+
+	appRegistrationErrStr = "Azure app registrations are not supported since v2.9. Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nPlease remove it from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions."
 )
 
 // Config defines configuration used by CLI.
@@ -395,7 +397,7 @@ func fromFile(fileHandler file.Handler, name string) (*Config, error) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		if isAppClientIDError(err) {
-			return nil, UnsupportedAppRegistrationError{}
+			return nil, &UnsupportedAppRegistrationError{}
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
@@ -417,8 +419,8 @@ func isAppClientIDError(err error) bool {
 // UnsupportedAppRegistrationError is returned when the config contains configuration related to now unsupported app registrations.
 type UnsupportedAppRegistrationError struct{}
 
-func (e UnsupportedAppRegistrationError) Error() string {
-	return "Azure app registrations are not supported since v2.9. Migrate to using a user assigned managed identity by following the migration guide: https://docs.edgeless.systems/constellation/reference/migration.\nPlease remove it from your config and from the Kubernetes secret in your running cluster. Ensure that the UAMI has all required permissions."
+func (e *UnsupportedAppRegistrationError) Error() string {
+	return appRegistrationErrStr
 }
 
 // New creates a new config by:
@@ -442,7 +444,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
 	if clientSecretValue != "" && c.Provider.Azure != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, UnsupportedAppRegistrationError{}.Error())
+		fmt.Fprintf(os.Stderr, "WARNING: the environment variable %s is no longer used %s", constants.EnvVarAzureClientSecretValue, appRegistrationErrStr)
 	}
 
 	openstackPassword := os.Getenv(constants.EnvVarOpenStackPassword)
