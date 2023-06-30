@@ -83,13 +83,18 @@ type InvalidationError struct {
 	inner error
 }
 
+// NewInvalidationError creates a new InvalidationError.
+func NewInvalidationError(err error) *InvalidationError {
+	return &InvalidationError{inner: err}
+}
+
 // Error returns the error message.
-func (e InvalidationError) Error() string {
+func (e *InvalidationError) Error() string {
 	return fmt.Sprintf("invalidating CDN cache: %v", e.inner)
 }
 
 // Unwrap returns the inner error.
-func (e InvalidationError) Unwrap() error {
+func (e *InvalidationError) Unwrap() error {
 	return e.inner
 }
 
@@ -172,7 +177,7 @@ func (c *Client) invalidate(ctx context.Context, keys []string) error {
 // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Invalidation.html#InvalidationLimits
 func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (string, error) {
 	if len(keys) > 3000 {
-		return "", InvalidationError{inner: fmt.Errorf("too many keys to invalidate: %d", len(keys))}
+		return "", NewInvalidationError(fmt.Errorf("too many keys to invalidate: %d", len(keys)))
 	}
 
 	for i, key := range keys {
@@ -193,10 +198,10 @@ func (c *Client) invalidateCacheForKeys(ctx context.Context, keys []string) (str
 	}
 	invalidation, err := c.cdnClient.CreateInvalidation(ctx, in)
 	if err != nil {
-		return "", InvalidationError{inner: fmt.Errorf("creating invalidation: %w", err)}
+		return "", NewInvalidationError(fmt.Errorf("creating invalidation: %w", err))
 	}
 	if invalidation.Invalidation == nil || invalidation.Invalidation.Id == nil {
-		return "", InvalidationError{inner: fmt.Errorf("invalidation ID is not set")}
+		return "", NewInvalidationError(fmt.Errorf("invalidation ID is not set"))
 	}
 	return *invalidation.Invalidation.Id, nil
 }
@@ -214,7 +219,7 @@ func (c *Client) waitForInvalidations(ctx context.Context) error {
 			Id:             &invalidationID,
 		}
 		if err := waiter.Wait(ctx, waitIn, c.cacheInvalidationWaitTimeout); err != nil {
-			return InvalidationError{inner: fmt.Errorf("waiting for invalidation to complete: %w", err)}
+			return NewInvalidationError(fmt.Errorf("waiting for invalidation to complete: %w", err))
 		}
 	}
 	c.invalidationIDs = nil

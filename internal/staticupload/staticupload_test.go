@@ -108,12 +108,13 @@ func TestUpload(t *testing.T) {
 			}
 			_, err := client.Upload(context.Background(), tc.in)
 
+			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
-				assert.ErrorAs(err, &InvalidationError{})
+				assert.ErrorAs(err, &invalidationErr)
 				return
 			}
 			if tc.wantErr {
-				assert.False(errors.As(err, &InvalidationError{}))
+				assert.False(errors.As(err, &invalidationErr))
 				assert.Error(err)
 				return
 			}
@@ -218,12 +219,13 @@ func TestDeleteObject(t *testing.T) {
 			}
 			_, err := client.DeleteObject(context.Background(), newObjectInput(tc.nilInput, tc.nilKey))
 
+			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
-				assert.ErrorAs(err, &InvalidationError{})
+				assert.ErrorAs(err, &invalidationErr)
 				return
 			}
 			if tc.wantErr {
-				assert.False(errors.As(err, &InvalidationError{}))
+				assert.False(errors.As(err, &invalidationErr))
 				assert.Error(err)
 				return
 			}
@@ -255,12 +257,13 @@ func TestDeleteObject(t *testing.T) {
 			}
 			_, err := client.DeleteObjects(context.Background(), newObjectsInput(tc.nilInput, tc.nilKey))
 
+			var invalidationErr *InvalidationError
 			if tc.wantCacheInvalidationErr {
-				assert.ErrorAs(err, &InvalidationError{})
+				assert.ErrorAs(err, &invalidationErr)
 				return
 			}
 			if tc.wantErr {
-				assert.False(errors.As(err, &InvalidationError{}))
+				assert.False(errors.As(err, &invalidationErr))
 				assert.Error(err)
 				return
 			}
@@ -396,7 +399,8 @@ func TestFlush(t *testing.T) {
 			err := client.Flush(context.Background())
 
 			if tc.wantCacheInvalidationErr {
-				assert.ErrorAs(err, &InvalidationError{})
+				var invalidationErr *InvalidationError
+				assert.ErrorAs(err, &invalidationErr)
 				return
 			}
 
