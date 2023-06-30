@@ -784,6 +784,7 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 	switch openStackProvider {
 	case "stackit":
 		c.Provider.OpenStack.Cloud = "stackit"
+		c.Provider.OpenStack.AvailabilityZone = "eu01-1"
 		c.Provider.OpenStack.FlavorID = "2715eabe-3ffc-4c36-b02a-efa8c141a96a"
 		c.Provider.OpenStack.FloatingIPPoolID = "970ace5c-458f-484a-a660-0903bcfd91ad"
 		c.Provider.OpenStack.StateDiskType = "storage_premium_perf6"

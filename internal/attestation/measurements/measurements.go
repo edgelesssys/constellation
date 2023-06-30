@@ -485,6 +485,9 @@ func DefaultsFor(provider cloudprovider.Provider, attestationVariant variant.Var
 	case provider == cloudprovider.QEMU && attestationVariant == variant.QEMUVTPM{}:
 		return qemu_QEMUVTPM.Copy()
 
+	case provider == cloudprovider.OpenStack && attestationVariant == variant.QEMUVTPM{}:
+		return openstack_QEMUVTPM.Copy()
+
 	default:
 		return nil
 	}

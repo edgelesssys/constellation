@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is the default image to use.
-	defaultImage = "ref/main/stream/nightly/v2.9.0-pre.0.20230629134636-a241a84770b9"
+	defaultImage = "ref/poc-openstack-2023-06-30/stream/nightly/v2.9.0-pre.0.20230630121321-5cc75907490d"
 )
