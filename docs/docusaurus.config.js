@@ -187,6 +187,27 @@ async function createConfig() {
                 },
               ],
             },
+            {
+              title: 'Company',
+              items: [
+                {
+                  label: 'Imprint',
+                  to: 'https://www.edgeless.systems/imprint',
+                },
+                {
+                  label: 'Privacy Policy',
+                  href: 'https://www.edgeless.systems/privacy',
+                },
+                {
+                  html: `<a href="javascript: Cookiebot.renew()">Cookie Settings</a>`
+                },
+
+                {
+                  label: 'Contact Us',
+                  href: 'https://www.edgeless.systems/contact/',
+                },
+              ],
+            },
           ],
           copyright: `Copyright © ${new Date().getFullYear()} Edgeless Systems`,
         },
