@@ -58,10 +58,13 @@ download_chart() {
   return
 }
 
-## GCP CSI Driver
-download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.2.0" "charts" "gcp-compute-persistent-disk-csi-driver"
+## AWS CSI Driver
+download_chart "https://github.com/edgelesssys/constellation-aws-ebs-csi-driver" "v1.1.0" "charts/aws-ebs-csi-driver" "aws-csi-driver"
 
 ## Azure CSI Driver
 download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "v1.2.0" "charts/edgeless" "azuredisk-csi-driver"
+
+## GCP CSI Driver
+download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver" "v1.2.0" "charts" "gcp-compute-persistent-disk-csi-driver"
 
 echo # final newline

@@ -489,16 +489,18 @@ func extendConstellationServicesValues(
 
 	csp := cfg.GetProvider()
 	switch csp {
+	case cloudprovider.AWS:
+		in["aws"] = map[string]any{
+			"deployCSIDriver": cfg.DeployCSIDriver(),
+		}
 	case cloudprovider.Azure:
 		in["azure"] = map[string]any{
 			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
-
 	case cloudprovider.GCP:
 		in["gcp"] = map[string]any{
 			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
-
 	case cloudprovider.OpenStack:
 		in["openstack"] = map[string]any{
 			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
