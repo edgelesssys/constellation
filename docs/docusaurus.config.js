@@ -170,7 +170,7 @@ async function createConfig() {
               items: [
                 {
                   label: 'Blog',
-                  to: 'https://blog.edgeless.systems/',
+                  href: 'https://blog.edgeless.systems/',
                 },
                 {
                   label: 'Twitter',
