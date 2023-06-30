@@ -588,8 +588,8 @@ func awsZoneToRegion(zone string) (string, error) {
 	return fmt.Sprintf("%s-%s-%c", parts[0], parts[1], parts[2][0]), nil
 }
 
-// ValidateConfigWithFlagCompatibility checks if the config is compatible with the flags.
-func ValidateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
+// validateConfigWithFlagCompatibility checks if the config is compatible with the flags.
+func validateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
 	if !hasProviderCfg(iamProvider, cfg) {
 		return fmt.Errorf("iam provider %q seems different from config provider", iamProvider)
 	}

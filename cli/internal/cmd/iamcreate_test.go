@@ -306,7 +306,7 @@ func TestIAMCreateAWS(t *testing.T) {
 				assert.Error(err)
 				return
 			}
-			assert.NoError(err)
+			require.NoError(err)
 
 			if tc.wantAbort {
 				assert.False(tc.creator.createCalled)
