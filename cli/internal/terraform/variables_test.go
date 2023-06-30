@@ -171,11 +171,11 @@ func TestAzureClusterVariables(t *testing.T) {
 		Name: "cluster-name",
 		NodeGroups: map[string]AzureNodeGroup{
 			"control_plane_default": {
-				Role:          "ControlPlane",
-				InstanceCount: to.Ptr(1),
-				InstanceType:  "Standard_D2s_v3",
-				DiskType:      "StandardSSD_LRS",
-				DiskSizeGB:    100,
+				Role:         "ControlPlane",
+				InitialCount: to.Ptr(1),
+				InstanceType: "Standard_D2s_v3",
+				DiskType:     "StandardSSD_LRS",
+				DiskSizeGB:   100,
 			},
 		},
 		ConfidentialVM:       to.Ptr(true),
@@ -198,12 +198,12 @@ user_assigned_identity = "my-user-assigned-identity"
 confidential_vm        = true
 node_groups = {
   control_plane_default = {
-    disk_size      = 100
-    disk_type      = "StandardSSD_LRS"
-    instance_count = 1
-    instance_type  = "Standard_D2s_v3"
-    role           = "ControlPlane"
-    zones          = null
+    disk_size     = 100
+    disk_type     = "StandardSSD_LRS"
+    initial_count = 1
+    instance_type = "Standard_D2s_v3"
+    role          = "ControlPlane"
+    zones         = null
   }
 }
 `
@@ -274,11 +274,11 @@ func TestQEMUClusterVariables(t *testing.T) {
 		Name: "cluster-name",
 		NodeGroups: map[string]QEMUNodeGroup{
 			"control-plane": {
-				Role:          role.ControlPlane.TFString(),
-				InstanceCount: 1,
-				DiskSize:      30,
-				CPUCount:      4,
-				MemorySize:    8192,
+				Role:         role.ControlPlane.TFString(),
+				InitialCount: 1,
+				DiskSize:     30,
+				CPUCount:     4,
+				MemorySize:   8192,
 			},
 		},
 		Machine:            "q35",
@@ -298,11 +298,11 @@ func TestQEMUClusterVariables(t *testing.T) {
 	want := `name = "cluster-name"
 node_groups = {
   control-plane = {
-    disk_size      = 30
-    instance_count = 1
-    memory         = 8192
-    role           = "control-plane"
-    vcpus          = 4
+    disk_size     = 30
+    initial_count = 1
+    memory        = 8192
+    role          = "control-plane"
+    vcpus         = 4
   }
 }
 machine                 = "q35"

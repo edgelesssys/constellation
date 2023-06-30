@@ -234,7 +234,7 @@ module "scale_set_group" {
     { constellation-maa-url = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : "" },
   )
 
-  instance_count            = each.value.instance_count
+  initial_count             = each.value.initial_count
   state_disk_size           = each.value.disk_size
   state_disk_type           = each.value.disk_type
   location                  = var.location

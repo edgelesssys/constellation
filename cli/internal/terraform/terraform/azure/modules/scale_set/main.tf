@@ -37,7 +37,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   resource_group_name             = var.resource_group
   location                        = var.location
   sku                             = var.instance_type
-  instances                       = var.instance_count
+  instances                       = var.initial_count
   admin_username                  = "adminuser"
   admin_password                  = random_password.password.result
   overprovision                   = false

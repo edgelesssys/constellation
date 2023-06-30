@@ -199,12 +199,12 @@ func (v *AzureClusterVariables) String() string {
 type AzureNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
-	// InstanceCount is optional for upgrades.
-	InstanceCount *int      `hcl:"instance_count" cty:"instance_count"`
-	InstanceType  string    `hcl:"instance_type" cty:"instance_type"`
-	DiskSizeGB    int       `hcl:"disk_size" cty:"disk_size"`
-	DiskType      string    `hcl:"disk_type" cty:"disk_type"`
-	Zones         *[]string `hcl:"zones" cty:"zones"`
+	// InitialCount is optional for upgrades.
+	InitialCount *int      `hcl:"initial_count" cty:"initial_count"`
+	InstanceType string    `hcl:"instance_type" cty:"instance_type"`
+	DiskSizeGB   int       `hcl:"disk_size" cty:"disk_size"`
+	DiskType     string    `hcl:"disk_type" cty:"disk_type"`
+	Zones        *[]string `hcl:"zones" cty:"zones"`
 }
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
@@ -335,8 +335,8 @@ func (v *QEMUVariables) String() string {
 type QEMUNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
-	// InstanceCount is the number of instances to create.
-	InstanceCount int `hcl:"instance_count" cty:"instance_count"`
+	// InitialCount is the number of instances to create.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
 	// DiskSize is the size of the disk to allocate to each node, in GiB.
 	DiskSize int `hcl:"disk_size" cty:"disk_size"`
 	// CPUCount is the number of CPUs to allocate to each node.

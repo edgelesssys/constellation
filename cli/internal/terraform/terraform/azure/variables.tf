@@ -5,12 +5,12 @@ variable "name" {
 
 variable "node_groups" {
   type = map(object({
-    role           = string
-    instance_count = optional(number)
-    instance_type  = string
-    disk_size      = number
-    disk_type      = string
-    zones          = optional(list(string))
+    role          = string
+    initial_count = optional(number)
+    instance_type = string
+    disk_size     = number
+    disk_type     = string
+    zones         = optional(list(string))
   }))
   description = "A map of node group names to node group configurations."
   validation {

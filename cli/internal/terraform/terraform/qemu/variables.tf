@@ -1,10 +1,10 @@
 variable "node_groups" {
   type = map(object({
-    role           = string
-    instance_count = number // number of instances in the node group
-    disk_size      = number // size of state disk (GiB)
-    vcpus          = number
-    memory         = number // amount of memory per instance (MiB)
+    role          = string
+    initial_count = number // number of instances in the node group
+    disk_size     = number // size of state disk (GiB)
+    vcpus         = number
+    memory        = number // amount of memory per instance (MiB)
   }))
   validation {
     condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
