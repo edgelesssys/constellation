@@ -57,8 +57,10 @@ func New(log *logger.Logger) (*Client, error) {
 	action := action.NewInstall(actionConfig)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
-	action.Atomic = true
-	action.Wait = true
+	// TODO(malt3): Enable "Wait" once every service gets ready with only
+	// one control-plane node and no worker nodes.
+	action.Atomic = false
+	action.Wait = false
 
 	return &Client{
 		action,
