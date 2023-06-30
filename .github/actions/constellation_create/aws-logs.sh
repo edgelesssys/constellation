@@ -12,13 +12,13 @@ CP_SELECTOR="module.instance_group_control_plane"
 W_SELECTOR="module.instance_group_worker_nodes"
 if [[ $(./constellation version) != *"2.8.0"* ]]; then
   echo "Constellation version is not 2.8.0, using updated ASG selectors"
-  CP_SELECTOR="module.instance_group[\"control_plane_default\"]"
-  W_SELECTOR="module.instance_group[\"worker_default\"]"
+  CP_SELECTOR='module.instance_group["control_plane_default"]'
+  W_SELECTOR='module.instance_group["worker_default"]'
 fi
 
 pushd constellation-terraform
 controlAutoscalingGroup=$(
-   terraform show -json |
+  terraform show -json |
     jq --arg selector $CP_SELECTOR \
       -r .'values.root_module.child_modules[] |
       select(.address == $selector) |
