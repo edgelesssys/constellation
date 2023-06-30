@@ -939,7 +939,6 @@ func createFSWithConfig(cfg config.Config) func(require *require.Assertions, pro
 	return func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
-		fmt.Println("CFG", cfg.Provider.AWS)
 		for _, f := range existingConfigFiles {
 			require.NoError(fileHandler.WriteYAML(f, cfg, file.OptNone))
 		}
