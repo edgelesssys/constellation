@@ -1,6 +1,9 @@
-# Creating a Debug cluster
+# Debug cluster
 
 A debug cluster allows quicker iteration cycles during development by being able to upload new bootstrapper binaries through the `cdbg` tool.
+Furthermore, a debug cluster allows you to access the bootstrapper logs through the cloud providers serial console.
+
+## Creating a debug cluster
 
 After building (see [here](./build-develop-deploy.md#build)), you can find all CLIs and binaries in the `build` directory.
 
@@ -43,4 +46,12 @@ Finally run:
 
 ```sh
 ./constellation init
+```
+
+## Access bootstrapper logs
+
+Once logged in to the control-plane machine, execute:
+
+```sh
+journalctl -fu constellation-bootstrapper
 ```
