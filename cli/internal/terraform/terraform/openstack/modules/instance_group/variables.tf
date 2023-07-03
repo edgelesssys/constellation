@@ -1,4 +1,9 @@
-variable "name" {
+variable "node_group_name" {
+  type        = string
+  description = "Constellation name for the node group (used for configuration and CSP-independent naming)."
+}
+
+variable "base_name" {
   type        = string
   description = "Base name of the instance group."
 }

@@ -1,3 +1,20 @@
+variable "node_groups" {
+  type = map(object({
+    role            = string
+    initial_count   = number // number of instances in the node group
+    state_disk_size = number // size of state disk (GiB)
+    state_disk_type = string // type of state disk. Can be 'standard' or 'premium'
+    zone            = string // availability zone
+  }))
+
+  validation {
+    condition     = can([for group in var.node_groups : group.role == "control-plane" || group.role == "worker"])
+    error_message = "The role has to be 'control-plane' or 'worker'."
+  }
+
+  description = "A map of node group names to node group configurations."
+}
+
 variable "cloud" {
   type        = string
   default     = null
@@ -8,32 +25,6 @@ variable "name" {
   type        = string
   default     = "constell"
   description = "Base name of the cluster."
-}
-
-variable "control_plane_count" {
-  type        = number
-  description = "The number of control plane nodes to deploy."
-}
-
-variable "worker_count" {
-  type        = number
-  description = "The number of worker nodes to deploy."
-}
-
-variable "state_disk_size" {
-  type        = number
-  default     = 30
-  description = "The size of the state disk in GB."
-}
-
-variable "state_disk_type" {
-  type        = string
-  description = "Disk/volume type to be used."
-}
-
-variable "availability_zone" {
-  type        = string
-  description = "The availability zone to deploy the nodes in."
 }
 
 variable "image_url" {

@@ -327,23 +327,32 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts 
 	}
 
 	vars := terraform.OpenStackClusterVariables{
-		CommonVariables: terraform.CommonVariables{
-			Name:               opts.Config.Name,
-			CountControlPlanes: opts.ControlPlaneCount,
-			CountWorkers:       opts.WorkerCount,
-			StateDiskSizeGB:    opts.Config.StateDiskSizeGB,
-		},
-		Cloud:                   opts.Config.Provider.OpenStack.Cloud,
-		AvailabilityZone:        opts.Config.Provider.OpenStack.AvailabilityZone,
+		Name:                    opts.Config.Name,
+		Cloud:                   toPtr(opts.Config.Provider.OpenStack.Cloud),
 		FlavorID:                opts.Config.Provider.OpenStack.FlavorID,
 		FloatingIPPoolID:        opts.Config.Provider.OpenStack.FloatingIPPoolID,
-		StateDiskType:           opts.Config.Provider.OpenStack.StateDiskType,
 		ImageURL:                opts.image,
 		DirectDownload:          *opts.Config.Provider.OpenStack.DirectDownload,
 		OpenstackUserDomainName: opts.Config.Provider.OpenStack.UserDomainName,
 		OpenstackUsername:       opts.Config.Provider.OpenStack.Username,
 		OpenstackPassword:       opts.Config.Provider.OpenStack.Password,
 		Debug:                   opts.Config.IsDebugCluster(),
+		NodeGroups: map[string]terraform.OpenStackNodeGroup{
+			"control_plane_default": {
+				Role:            role.ControlPlane.TFString(),
+				InitialCount:    opts.ControlPlaneCount,
+				Zone:            opts.Config.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
+				StateDiskType:   opts.Config.Provider.OpenStack.StateDiskType,
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+			},
+			"worker_default": {
+				Role:            role.Worker.TFString(),
+				InitialCount:    opts.WorkerCount,
+				Zone:            opts.Config.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
+				StateDiskType:   opts.Config.Provider.OpenStack.StateDiskType,
+				StateDiskSizeGB: opts.Config.StateDiskSizeGB,
+			},
+		},
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.OpenStack.String())), &vars); err != nil {

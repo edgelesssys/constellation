@@ -229,41 +229,47 @@ resource_group_name = "my-resource-group"
 
 func TestOpenStackClusterVariables(t *testing.T) {
 	vars := OpenStackClusterVariables{
-		CommonVariables: CommonVariables{
-			Name:               "cluster-name",
-			CountControlPlanes: 1,
-			CountWorkers:       2,
-			StateDiskSizeGB:    30,
-		},
-		Cloud:                   "my-cloud",
-		AvailabilityZone:        "az-01",
+		Name:                    "cluster-name",
+		Cloud:                   toPtr("my-cloud"),
 		FlavorID:                "flavor-0123456789abcdef",
 		FloatingIPPoolID:        "fip-pool-0123456789abcdef",
-		StateDiskType:           "performance-8",
 		ImageURL:                "https://example.com/image.raw",
 		DirectDownload:          true,
 		OpenstackUserDomainName: "my-user-domain",
 		OpenstackUsername:       "my-username",
 		OpenstackPassword:       "my-password",
 		Debug:                   true,
+		NodeGroups: map[string]OpenStackNodeGroup{
+			"control_plane_default": {
+				Role:            "control-plane",
+				InitialCount:    1,
+				Zone:            "az-01",
+				StateDiskType:   "performance-8",
+				StateDiskSizeGB: 30,
+			},
+		},
 	}
 
 	// test that the variables are correctly rendered
 	want := `name = "cluster-name"
-control_plane_count = 1
-worker_count = 2
-state_disk_size = 30
-cloud = "my-cloud"
-availability_zone = "az-01"
-flavor_id = "flavor-0123456789abcdef"
-floating_ip_pool_id = "fip-pool-0123456789abcdef"
-image_url = "https://example.com/image.raw"
-direct_download = true
-state_disk_type = "performance-8"
+node_groups = {
+  control_plane_default = {
+    initial_count   = 1
+    role            = "control-plane"
+    state_disk_size = 30
+    state_disk_type = "performance-8"
+    zone            = "az-01"
+  }
+}
+cloud                      = "my-cloud"
+flavor_id                  = "flavor-0123456789abcdef"
+floating_ip_pool_id        = "fip-pool-0123456789abcdef"
+image_url                  = "https://example.com/image.raw"
+direct_download            = true
 openstack_user_domain_name = "my-user-domain"
-openstack_username = "my-username"
-openstack_password = "my-password"
-debug = true
+openstack_username         = "my-username"
+openstack_password         = "my-password"
+debug                      = true
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

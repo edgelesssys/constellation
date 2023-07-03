@@ -171,7 +171,7 @@ func main() {
 			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
-
+		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
 		clusterInitJoiner = &clusterFake{}
