@@ -8,6 +8,9 @@
 lib=$(realpath @@BASE_LIB@@) || exit 1
 stat "${lib}" >> /dev/null || exit 1
 
+yq=$(realpath @@YQ@@)
+stat "${yq}" >> /dev/null
+
 # shellcheck source=../sh/lib.bash
 if ! source "${lib}"; then
   echo "Error: could not find import"
@@ -65,6 +68,6 @@ if [[ ! -f "${workdir}/constellation-conf.yaml" ]]; then
   echo "constellation-conf.yaml not present in workspace"
   echo "Build version: ${build_version}"
 else
-  @@YQ@@ -i eval ".microserviceVersion=\"${build_version}\"" ./constellation-conf.yaml
+  $yq -i eval ".microserviceVersion=\"${build_version}\"" ./constellation-conf.yaml
   echo "Microservice version updated to ${build_version} in constellation-conf.yaml"
 fi

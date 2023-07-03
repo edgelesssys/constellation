@@ -29,4 +29,3 @@ sh_template(
 cli_edition(
     name = "devbuild_cli_edition",
 )
-∏
