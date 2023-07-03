@@ -29,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
@@ -85,6 +86,12 @@ func TestUpgrade(t *testing.T) {
 	log.Println(string(stdout))
 
 	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
+
+	log.Println("Fetching measurements for new image.")
+	cmd = exec.CommandContext(context.Background(), cli, "config", "fetch-measurements", "--insecure", "--debug")
+	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
+	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
+	log.Println(string(stdout))
 
 	data, err := os.ReadFile("./constellation-conf.yaml")
 	require.NoError(err)
@@ -254,8 +261,8 @@ func testNodesEventuallyAvailable(t *testing.T, k *kubernetes.Clientset, wantCon
 
 func writeUpgradeConfig(require *require.Assertions, image string, kubernetes string, microservices string) versionContainer {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	fetcher := attestationconfigapi.NewFetcher()
-	cfg, err := config.New(fileHandler, constants.ConfigFilename, fetcher, true)
+	attestationFetcher := attestationconfigapi.NewFetcher()
+	cfg, err := config.New(fileHandler, constants.ConfigFilename, attestationFetcher, true)
 	var cfgErr *config.ValidationError
 	var longMsg string
 	if errors.As(err, &cfgErr) {
@@ -263,7 +270,8 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	}
 	require.NoError(err, longMsg)
 
-	info, err := fetchUpgradeInfo(
+	imageFetcher := imagefetcher.New()
+	imageRef, err := imageFetcher.FetchReference(
 		context.Background(),
 		cfg.GetProvider(),
 		cfg.GetAttestationConfig().GetVariant(),
@@ -272,9 +280,8 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	)
 	require.NoError(err)
 
-	log.Printf("Setting image version: %s\n", info.shortPath)
-	cfg.Image = info.shortPath
-	cfg.UpdateMeasurements(info.measurements)
+	log.Printf("Setting image version: %s\n", image)
+	cfg.Image = image
 
 	defaultConfig := config.Default()
 	var kubernetesVersion semver.Semver
@@ -301,7 +308,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 	err = fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptOverwrite)
 	require.NoError(err)
 
-	return versionContainer{imageRef: info.imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
+	return versionContainer{imageRef: imageRef, kubernetes: kubernetesVersion, microservices: microserviceVersion}
 }
 
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
