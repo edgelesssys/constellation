@@ -226,14 +226,14 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
 
-	log.Infof("Installing Constellation microservices")
-	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
-		return nil, fmt.Errorf("installing constellation-services: %w", err)
-	}
-
 	log.Infof("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
+	}
+
+	log.Infof("Installing Constellation microservices")
+	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
+		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
 	// cert-manager is necessary for our operator deployments.
