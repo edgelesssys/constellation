@@ -129,7 +129,6 @@ func ValidateAWSZone(zone string) bool {
 }
 
 // ValidateAWSRegion validates that the region is in the correct format.
-// TODO create validation pkg? (lots of general functions aggregating here..)
 func ValidateAWSRegion(region string) bool {
 	awsRegionRegex := regexp.MustCompile(`^\w+-\w+-[1-9]$`)
 	return awsRegionRegex.MatchString(region)
