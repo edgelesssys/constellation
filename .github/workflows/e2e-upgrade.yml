@@ -156,6 +156,13 @@ jobs:
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build CLI
+        uses: ./.github/actions/build_cli
+        with:
+          enterpriseCLI: true
+          outputPath: "build/constellation"
+          push: true
+
       - name: Run upgrade test
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
@@ -176,7 +183,6 @@ jobs:
             KUBERNETES_FLAG="--target-kubernetes=$KUBERNETES"
           fi
 
-          bazel run //bazel/release:push
           bazel run //e2e/internal/upgrade:upgrade_test -- --want-worker "$WORKERNODES" --want-control "$CONTROLNODES" --target-image "$IMAGE" "$KUBERNETES_FLAG" "$MICROSERVICES_FLAG"
 
       - name: Always fetch logs

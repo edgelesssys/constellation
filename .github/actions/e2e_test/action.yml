@@ -131,6 +131,7 @@ runs:
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
         enterpriseCLI: true
         outputPath: "build/constellation"
+        push: ${{ inputs.cliVersion == '' }}
 
     - name: Download CLI
       if: inputs.cliVersion != ''
@@ -161,11 +162,6 @@ runs:
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
-
-    - name: Upload container images
-      if: inputs.cliVersion == ''
-      shell: bash
-      run: bazel run //bazel/release:push
 
     - name: Login to GCP (IAM service account)
       if: inputs.cloudProvider == 'gcp'
