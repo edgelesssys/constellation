@@ -60,22 +60,11 @@ func TestShouldUpgrade(t *testing.T) {
 
 func TestUpgradeRelease(t *testing.T) {
 	testCases := map[string]struct {
-		allowDestructive   bool
-		version            string
-		assertCorrectError func(t *testing.T, err error) bool
-		wantError          bool
+		version   string
+		wantError bool
 	}{
 		"allow": {
-			allowDestructive: true,
-			version:          "1.9.0",
-		},
-		"deny": {
-			allowDestructive: false,
-			version:          "1.9.0",
-			assertCorrectError: func(t *testing.T, err error) bool {
-				return assert.ErrorIs(t, err, ErrConfirmationMissing)
-			},
-			wantError: true,
+			version: "1.9.0",
 		},
 	}
 
@@ -88,9 +77,9 @@ func TestUpgradeRelease(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart, tc.allowDestructive)
+			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart)
 			if tc.wantError {
-				tc.assertCorrectError(t, err)
+				assert.Error(err)
 				return
 			}
 			assert.NoError(err)

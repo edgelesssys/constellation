@@ -133,6 +133,14 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 			return fmt.Errorf("should upgrade %s: %w", info.releaseName, err)
 		case err == nil:
 			upgradeReleases = append(upgradeReleases, chart)
+
+			// Check if installing/upgrading the chart could be destructive
+			// If so, we don't want to perform any actions,
+			// unless the user confirms it to be OK.
+			if !allowDestructive &&
+				info.chartName == certManagerInfo.chartName {
+				return ErrConfirmationMissing
+			}
 		}
 	}
 
@@ -149,7 +157,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 	}
 
 	for _, chart := range upgradeReleases {
-		err = c.upgradeRelease(ctx, timeout, config, chart, allowDestructive)
+		err = c.upgradeRelease(ctx, timeout, config, chart)
 		if err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
@@ -245,7 +253,7 @@ func (s ServiceVersions) ConstellationServices() string {
 }
 
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart, allowDestructive bool,
+	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
 ) error {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -268,10 +276,6 @@ func (c *Client) upgradeRelease(
 	case certManagerInfo.chartName:
 		releaseName = certManagerInfo.releaseName
 		values = loader.loadCertManagerValues()
-
-		if !allowDestructive {
-			return ErrConfirmationMissing
-		}
 	case constellationOperatorsInfo.chartName:
 		releaseName = constellationOperatorsInfo.releaseName
 		values, err = loader.loadOperatorsValues()

@@ -18,6 +18,7 @@ import (
 )
 
 func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+	c.log.Debugf("Starting CRD backup")
 	crds, err := c.kubectl.GetCRDs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting CRDs: %w", err)
@@ -29,6 +30,8 @@ func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensi
 	}
 	for i := range crds {
 		path := filepath.Join(crdBackupFolder, crds[i].Name+".yaml")
+
+		c.log.Debugf("Creating CRD backup: %s", path)
 
 		// We have to manually set kind/apiversion because of a long-standing limitation of the API:
 		// https://github.com/kubernetes/kubernetes/issues/3030#issuecomment-67543738
@@ -44,14 +47,15 @@ func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensi
 		if err := c.fs.Write(path, yamlBytes); err != nil {
 			return nil, err
 		}
-
-		c.log.Debugf("Created backup crd: %s", path)
 	}
+	c.log.Debugf("CRD backup complete")
 	return crds, nil
 }
 
 func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeID string) error {
+	c.log.Debugf("Starting CR backup")
 	for _, crd := range crds {
+		c.log.Debugf("Creating backup for resource type: %s", crd.Name)
 		for _, version := range crd.Spec.Versions {
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
 			crs, err := c.kubectl.GetCRs(ctx, gvr)
@@ -76,8 +80,9 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 			}
 		}
 
-		c.log.Debugf("Created backups for resource type: %s", crd.Name)
+		c.log.Debugf("Backup for resource type %q complete", crd.Name)
 	}
+	c.log.Debugf("CR backup complete")
 	return nil
 }
 
