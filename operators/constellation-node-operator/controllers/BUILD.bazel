@@ -6,7 +6,6 @@ go_library(
     srcs = [
         "autoscalingstrategy_controller.go",
         "joiningnode_controller.go",
-        "nodejoin_watcher.go",
         "nodeversion_controller.go",
         "nodeversion_watches.go",
         "pendingnode_controller.go",

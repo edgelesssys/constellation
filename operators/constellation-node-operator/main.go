@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/externalcontrollers"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	awsclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/aws/client"
 	azureclient "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client"
@@ -34,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/deploy"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/sgreconciler"
 
 	nodemaintenancev1beta1 "github.com/edgelesssys/constellation/v2/3rdparty/node-maintenance-operator/api/v1beta1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
@@ -148,7 +148,7 @@ func main() {
 
 	uid := os.Getenv(constellationUID)
 
-	extScalingGroupReconciler := externalcontrollers.NewExternalScalingGroupReconciler(
+	extScalingGroupReconciler := sgreconciler.NewExternalScalingGroupReconciler(
 		uid,
 		cspClient,
 		k8sClient,
@@ -203,7 +203,7 @@ func main() {
 
 	//+kubebuilder:scaffold:builder
 
-	if err = controllers.NewNodeJoinWatcher(
+	if err = sgreconciler.NewNodeJoinWatcher(
 		exec.Trigger,
 		mgr.GetClient(),
 		mgr.GetScheme(),
