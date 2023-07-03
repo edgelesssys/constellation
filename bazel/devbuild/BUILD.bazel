@@ -10,6 +10,7 @@ sh_template(
         "//cli:cli_edition_host",
         "//debugd/cmd/cdbg:cdbg_host",
         "//upgrade-agent/cmd:upgrade_agent_linux_amd64",
+        "@yq_toolchains//:resolved_toolchain",
     ],
     substitutions = {
         "@@BOOTSTRAPPER@@": "$(rootpath //bootstrapper/cmd/bootstrapper:bootstrapper_linux_amd64)",
@@ -18,11 +19,14 @@ sh_template(
         "@@CONTAINER_SUMS@@": "$(rootpath //bazel/release:container_sums)",
         "@@EDITION@@": "$(rootpath :devbuild_cli_edition)",
         "@@UPGRADE_AGENT@@": "$(rootpath //upgrade-agent/cmd:upgrade_agent_linux_amd64)",
+        "@@YQ@@": "$(YQ_BIN)",
     },
     template = "prepare_developer_workspace.sh.in",
+    toolchains = ["@yq_toolchains//:resolved_toolchain"],
     visibility = ["//visibility:public"],
 )
 
 cli_edition(
     name = "devbuild_cli_edition",
 )
+∏

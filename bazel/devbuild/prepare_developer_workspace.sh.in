@@ -59,3 +59,12 @@ ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${upgrade_agent}")"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cdbg}")" "${workdir}/cdbg"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${container_sums}")" "${workdir}/container_sums.sha256"
 ln -sf "$(replace_prefix "${host_cache}" "${builder_cache}" "${cli}")" "${workdir}/constellation"
+
+build_version=$("${workdir}"/constellation version | grep ^Version: | awk '{print $2}')
+if [[ ! -f "${workdir}/constellation-conf.yaml" ]]; then
+  echo "constellation-conf.yaml not present in workspace"
+  echo "Build version: ${build_version}"
+else
+  @@YQ@@ -i eval ".microserviceVersion=\"${build_version}\"" ./constellation-conf.yaml
+  echo "Microservice version updated to ${build_version} in constellation-conf.yaml"
+fi
