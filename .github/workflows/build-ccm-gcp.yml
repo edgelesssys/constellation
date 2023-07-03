@@ -21,14 +21,14 @@ jobs:
             latest: true
     steps:
       - name: Checkout kubernetes/cloud-provider-gcp
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           repository: "kubernetes/cloud-provider-gcp"
           ref: refs/tags/ccm/${{ matrix.version }}
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c4ee3adeed93b1fa6a762f209fb01608c1a22f1e # v4.4.0
+        uses: docker/metadata-action@818d4b7b91585d195f67373fd9cb0332e31a7175 # v4.6.0
         with:
           images: |
             ${{ env.REGISTRY }}/edgelesssys/cloud-provider-gcp

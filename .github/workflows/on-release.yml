@@ -26,7 +26,7 @@ jobs:
       WORKING_BRANCH: ${{ env.WORKING_BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
       - name: Determine branch names
         run: |
@@ -72,7 +72,7 @@ jobs:
       latest: ${{ steps.input-passthrough.outputs.latest }}${{ steps.check-last-release.outputs.latest }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
       - name: Override latest
         if: github.event.inputs.latest == 'true'
@@ -146,7 +146,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
       - name: Remove temporary branch
         run: git push origin --delete "${WORKING_BRANCH}"

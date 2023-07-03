@@ -171,14 +171,14 @@ jobs:
         run: brew install coreutils kubectl bash
 
       - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           fetch-depth: 0
           ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Set up gcloud CLI (macOS)
         if: matrix.provider == 'gcp' && runner.os == 'macOS'
-        uses: google-github-actions/setup-gcloud@62d4898025f6041e16b1068643bfc5a696863587 # v1.1.0
+        uses: google-github-actions/setup-gcloud@e30db14379863a8c79331b04a9969f4c1e225e0b # v1.1.1
 
       - name: Run E2E test
         id: e2e_test
