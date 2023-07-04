@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "nodelock",
@@ -8,5 +9,15 @@ go_library(
     deps = [
         "//internal/attestation/initialize",
         "//internal/attestation/vtpm",
+    ],
+)
+
+go_test(
+    name = "nodelock_test",
+    srcs = ["nodelock_test.go"],
+    embed = [":nodelock"],
+    deps = [
+        "//internal/attestation/vtpm",
+        "@com_github_stretchr_testify//assert",
     ],
 )
