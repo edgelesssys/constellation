@@ -154,7 +154,7 @@ func main() {
 		k8sClient,
 	)
 
-	exec := executor.New(extScalingGroupReconciler, executor.Config{})
+	exec := executor.New(extScalingGroupReconciler, executor.NewDefaultConfig())
 
 	stopAndWaitForExecutor := exec.Start(context.Background())
 	defer stopAndWaitForExecutor()

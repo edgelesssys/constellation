@@ -186,6 +186,13 @@ type Config struct {
 	RateLimiter      RateLimiter
 }
 
+// NewDefaultConfig creates a new default configuration.
+func NewDefaultConfig() Config {
+	cfg := Config{}
+	cfg.applyDefaults()
+	return cfg
+}
+
 func (c *Config) applyDefaults() {
 	if c.PollingFrequency == 0 {
 		c.PollingFrequency = defaultPollingFrequency
