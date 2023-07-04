@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package nodelock
 
 import (
-	"sync"
+	"io"
+	"sync/atomic"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/initialize"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
@@ -22,24 +23,36 @@ import (
 // There is no way to unlock, so the state changes only once from unlock to
 // locked.
 type Lock struct {
-	tpm vtpm.TPMOpenFunc
-	mux *sync.Mutex
+	tpm    vtpm.TPMOpenFunc
+	marker tpmMarker
+	inner  atomic.Bool
 }
 
 // New creates a new NodeLock, which is unlocked.
 func New(tpm vtpm.TPMOpenFunc) *Lock {
 	return &Lock{
-		tpm: tpm,
-		mux: &sync.Mutex{},
+		tpm:    tpm,
+		marker: initialize.MarkNodeAsBootstrapped,
 	}
 }
 
 // TryLockOnce tries to lock the node. If the node is already locked, it
 // returns false. If the node is unlocked, it locks it and returns true.
 func (l *Lock) TryLockOnce(clusterID []byte) (bool, error) {
-	if !l.mux.TryLock() {
+	// CompareAndSwap first checks if the node is currently unlocked.
+	// It it was already locked, it returns early.
+	// It it is unlocked, it swaps the value to locked atomically and continues.
+	if !l.inner.CompareAndSwap(unlocked, locked) {
 		return false, nil
 	}
 
-	return true, initialize.MarkNodeAsBootstrapped(l.tpm, clusterID)
+	return true, l.marker(l.tpm, clusterID)
 }
+
+// tpmMarker is a function that marks the node as bootstrapped in the TPM.
+type tpmMarker func(openDevice func() (io.ReadWriteCloser, error), clusterID []byte) error
+
+const (
+	unlocked = false
+	locked   = true
+)
