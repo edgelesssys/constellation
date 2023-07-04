@@ -26,9 +26,10 @@ import (
 
 var (
 	// GCP-specific validation regexes
+	// Source: https://cloud.google.com/compute/docs/regions-zones
+	zoneRegex   = regexp.MustCompile(`^\w+-\w+-[abc]$`)
+	regionRegex = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	// Source: https://cloud.google.com/resource-manager/reference/rest/v1/projects.
-	zoneRegex         = regexp.MustCompile(`^\w+-\w+-[abc]$`)
-	regionRegex       = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	projectIDRegex    = regexp.MustCompile(`^[a-z][-a-z0-9]{4,28}[a-z0-9]{1}$`)
 	serviceAccIDRegex = regexp.MustCompile(`^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$`)
 )
@@ -83,7 +84,6 @@ func newIAMCreateAWSCmd() *cobra.Command {
 		"Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. "+
 		"Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
-
 	return cmd
 }
 
@@ -103,7 +103,6 @@ func newIAMCreateAzureCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
 	cmd.Flags().String("servicePrincipal", "", "name of the service principal that will be created (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "servicePrincipal"))
-
 	return cmd
 }
 
@@ -232,11 +231,14 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if flags.updateConfig {
-		c.cmd.Printf("The configuration file %q will be automatically updated and populated with the IAM values.\n", flags.configPath)
 		c.log.Debugf("Parsing config %s", flags.configPath)
 		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
+		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
+			return err
+		}
+		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", flags.configPath)
 	}
 
 	c.spinner.Start("Creating", false)
@@ -368,14 +370,19 @@ func (c *awsIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 		return iamFlags{}, fmt.Errorf("parsing zone string: %w", err)
 	}
 
+	if !config.ValidateAWSZone(zone) {
+		return iamFlags{}, fmt.Errorf("invalid AWS zone. To find a valid zone, please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
+	}
+	// Infer region from zone.
+	region := zone[:len(zone)-1]
+	if !config.ValidateAWSRegion(region) {
+		return iamFlags{}, fmt.Errorf("invalid AWS region: %s", region)
+	}
+
 	flags.aws = awsFlags{
 		prefix: prefix,
 		zone:   zone,
-	}
-
-	flags.aws.region, err = awsZoneToRegion(zone)
-	if err != nil {
-		return iamFlags{}, fmt.Errorf("invalid AWS zone. To find a valid zone, please refer to our docs and https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones")
+		region: region,
 	}
 
 	// Setup IAM config.
@@ -569,16 +576,31 @@ func parseIDFile(serviceAccountKeyBase64 string) (map[string]string, error) {
 	return out, nil
 }
 
-// awsZoneToRegion converts an AWS zone string to a region string.
-// Example: "us-east-1a" -> "us-east-1"
-// It does not check against a list of valid zones.
-// Instead, it just checks that the zone string is in the correct format:
-// "The code for Availability Zone is its Region code followed by a letter identifier."
-// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones .
-func awsZoneToRegion(zone string) (string, error) {
-	parts := strings.Split(zone, "-")
-	if len(parts) < 3 || len(parts[2]) < 1 {
-		return "", fmt.Errorf("invalid zone string: %s", zone)
+// validateConfigWithFlagCompatibility checks if the config is compatible with the flags.
+func validateConfigWithFlagCompatibility(iamProvider cloudprovider.Provider, cfg config.Config, flags iamFlags) error {
+	if !cfg.HasProvider(iamProvider) {
+		return fmt.Errorf("cloud provider from the the configuration file differs from the one provided via the command %q", iamProvider)
 	}
-	return fmt.Sprintf("%s-%s-%c", parts[0], parts[1], parts[2][0]), nil
+	return checkIfCfgZoneAndFlagZoneDiffer(iamProvider, flags, cfg)
+}
+
+func checkIfCfgZoneAndFlagZoneDiffer(iamProvider cloudprovider.Provider, flags iamFlags, cfg config.Config) error {
+	flagZone := flagZoneOrAzRegion(iamProvider, flags)
+	configZone := cfg.GetZone()
+	if configZone != "" && flagZone != configZone {
+		return fmt.Errorf("zone/region from the configuration file %q differs from the one provided via flags %q", configZone, flagZone)
+	}
+	return nil
+}
+
+func flagZoneOrAzRegion(provider cloudprovider.Provider, flags iamFlags) string {
+	switch provider {
+	case cloudprovider.AWS:
+		return flags.aws.zone
+	case cloudprovider.Azure:
+		return flags.azure.region
+	case cloudprovider.GCP:
+		return flags.gcp.zone
+	}
+	return ""
 }

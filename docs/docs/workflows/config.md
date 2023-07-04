@@ -88,7 +88,7 @@ See also Constellation's [Kubernetes support policy](../architecture/versions.md
 ## Creating an IAM configuration
 
 You can create an IAM configuration for your cluster automatically using the `constellation iam create` command.
-If you already have a constellation configuration file, you can add the `--update-config` flag to the command. This writes the needed IAM fields into your configuration.
+If you already have a Constellation configuration file, you can add the `--update-config` flag to the command. This writes the needed IAM fields into your configuration. Furthermore, the flag updates the zone/region of the configuration if it hasn't been set yet.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
