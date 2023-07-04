@@ -235,8 +235,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
-		err := validateConfigWithFlagCompatibility(c.provider, conf, flags)
-		if err != nil {
+		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
 			return err
 		}
 		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", flags.configPath)
