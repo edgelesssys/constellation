@@ -40,8 +40,8 @@ func New(tpm vtpm.TPMOpenFunc) *Lock {
 // returns false. If the node is unlocked, it locks it and returns true.
 func (l *Lock) TryLockOnce(clusterID []byte) (bool, error) {
 	// CompareAndSwap first checks if the node is currently unlocked.
-	// It it was already locked, it returns early.
-	// It it is unlocked, it swaps the value to locked atomically and continues.
+	// If it was already locked, it returns early.
+	// If it is unlocked, it swaps the value to locked atomically and continues.
 	if !l.inner.CompareAndSwap(unlocked, locked) {
 		return false, nil
 	}
