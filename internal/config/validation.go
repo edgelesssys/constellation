@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -113,6 +114,26 @@ func validateGCPInstanceType(fl validator.FieldLevel) bool {
 	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
 }
 
+func validateAWSRegionField(fl validator.FieldLevel) bool {
+	return ValidateAWSRegion(fl.Field().String())
+}
+
+func validateAWSZoneField(fl validator.FieldLevel) bool {
+	return ValidateAWSZone(fl.Field().String())
+}
+
+// ValidateAWSZone validates that the zone is in the correct format.
+func ValidateAWSZone(zone string) bool {
+	awsZoneRegex := regexp.MustCompile(`^\w+-\w+-[1-9][abc]$`)
+	return awsZoneRegex.MatchString(zone)
+}
+
+// ValidateAWSRegion validates that the region is in the correct format.
+func ValidateAWSRegion(region string) bool {
+	awsRegionRegex := regexp.MustCompile(`^\w+-\w+-[1-9]$`)
+	return awsRegionRegex.MatchString(region)
+}
+
 // validateProvider checks if zero or more than one providers are defined in the config.
 func validateProvider(sl validator.StructLevel) {
 	provider := sl.Current().Interface().(ProviderConfig)
@@ -179,6 +200,26 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 
 func registerNoAttestationError(ut ut.Translator) error {
 	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
+}
+
+func registerAWSRegionError(ut ut.Translator) error {
+	return ut.Add("aws_region", "{0}: has invalid format: {1}", true)
+}
+
+func translateAWSRegionError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("aws_region", fe.Field(), "field must be of format eu-central-1")
+
+	return t
+}
+
+func translateAWSZoneError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("aws_zone", fe.Field(), "field must be of format eu-central-1a")
+
+	return t
+}
+
+func registerAWSZoneError(ut ut.Translator) error {
+	return ut.Add("aws_zone", "{0}: has invalid format: {1}", true)
 }
 
 func registerMoreThanOneAttestationError(ut ut.Translator) error {

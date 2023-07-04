@@ -112,10 +112,10 @@ type ProviderConfig struct {
 type AWSConfig struct {
 	// description: |
 	//   AWS data center region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
-	Region string `yaml:"region" validate:"required"`
+	Region string `yaml:"region" validate:"required,aws_region"`
 	// description: |
 	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
-	Zone string `yaml:"zone" validate:"required"`
+	Zone string `yaml:"zone" validate:"required,aws_zone"`
 	// description: |
 	//   VM instance type to use for Constellation nodes. Needs to support NitroTPM. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html
 	InstanceType string `yaml:"instanceType" validate:"lowercase,aws_instance_type"`
@@ -631,6 +631,19 @@ func (c *Config) GetRegion() string {
 	return ""
 }
 
+// GetZone returns the configured zone or location for providers without zone support (Azure).
+func (c *Config) GetZone() string {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return c.Provider.AWS.Zone
+	case cloudprovider.Azure:
+		return c.Provider.Azure.Location
+	case cloudprovider.GCP:
+		return c.Provider.GCP.Zone
+	}
+	return ""
+}
+
 // UpdateMAAURL updates the MAA URL in the config.
 func (c *Config) UpdateMAAURL(maaURL string) {
 	if c.Attestation.AzureSEVSNP != nil {
@@ -756,6 +769,19 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 	if err := validate.RegisterTranslation("more_than_one_attestation", trans, registerMoreThanOneAttestationError, c.translateMoreThanOneAttestationError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("aws_region", validateAWSRegionField); err != nil {
+		return err
+	}
+	if err := validate.RegisterValidation("aws_zone", validateAWSZoneField); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("aws_region", trans, registerAWSRegionError, translateAWSRegionError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("aws_zone", trans, registerAWSZoneError, translateAWSZoneError); err != nil {
 		return err
 	}
 
