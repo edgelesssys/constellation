@@ -24,7 +24,7 @@ import (
 // locked.
 type Lock struct {
 	tpm    vtpm.TPMOpenFunc
-	marker tpmMarker
+	marker markAsBootstrapped
 	inner  atomic.Bool
 }
 
@@ -49,8 +49,8 @@ func (l *Lock) TryLockOnce(clusterID []byte) (bool, error) {
 	return true, l.marker(l.tpm, clusterID)
 }
 
-// tpmMarker is a function that marks the node as bootstrapped in the TPM.
-type tpmMarker func(openDevice func() (io.ReadWriteCloser, error), clusterID []byte) error
+// markAsBootstrapped is a function that marks the node as bootstrapped in the TPM.
+type markAsBootstrapped func(openDevice func() (io.ReadWriteCloser, error), clusterID []byte) error
 
 const (
 	unlocked = false

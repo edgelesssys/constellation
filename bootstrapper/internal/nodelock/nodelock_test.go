@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package nodelock
 
 import (
@@ -11,41 +17,39 @@ import (
 )
 
 func TestTryLockOnce(t *testing.T) {
-	t.Run("should lock exactly once", func(t *testing.T) {
-		assert := assert.New(t)
-		tpm := spyTPM{}
-		lock := Lock{
-			tpm:    tpm.Opener(),
-			marker: stubMarker,
-		}
+	assert := assert.New(t)
+	tpm := spyDevice{}
+	lock := Lock{
+		tpm:    tpm.Opener(),
+		marker: stubMarker,
+	}
+	locked, err := lock.TryLockOnce(nil)
+	assert.NoError(err)
+	assert.True(locked)
+
+	wg := sync.WaitGroup{}
+	tryLock := func() {
+		defer wg.Done()
 		locked, err := lock.TryLockOnce(nil)
 		assert.NoError(err)
-		assert.True(locked)
+		assert.False(locked)
+	}
 
-		wg := sync.WaitGroup{}
-		tryLock := func() {
-			defer wg.Done()
-			locked, err := lock.TryLockOnce(nil)
-			assert.NoError(err)
-			assert.False(locked)
-		}
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go tryLock()
+	}
 
-		for i := 0; i < 10; i++ {
-			wg.Add(1)
-			go tryLock()
-		}
+	wg.Wait()
 
-		wg.Wait()
-
-		assert.EqualValues(1, tpm.counter.Load())
-	})
+	assert.EqualValues(1, tpm.counter.Load())
 }
 
-type spyTPM struct {
+type spyDevice struct {
 	counter atomic.Uint64
 }
 
-func (s *spyTPM) Opener() vtpm.TPMOpenFunc {
+func (s *spyDevice) Opener() vtpm.TPMOpenFunc {
 	return func() (io.ReadWriteCloser, error) {
 		s.counter.Add(1)
 		return nil, nil
