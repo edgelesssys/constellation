@@ -4,6 +4,9 @@ echo "Installing Constellation CLI"
 curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64
 sudo install constellation-linux-amd64 /usr/local/bin/constellation
 
+# Start docker service and auto start on boot
+# TODO should be done in cloud-init but was not done in my test case
+sudo systemctl start docker.service && sudo systemctl enable docker.service
 echo "Waiting for docker service to be active..."
 # Wait at most 20min
 count=0
@@ -18,7 +21,7 @@ fi
 
 # change to workspace
 mkdir constellation_workspace
-cd constellation_workspace
+cd constellation_workspace || exit
 
 # takes around 15 minutes
 constellation mini up

@@ -12,17 +12,13 @@ groups:
 
 package_update: true
 packages:
- - git
  - cryptsetup
  - build-essential
  - libguestfs-tools
  - apt-transport-https
  - ca-certificates
  - curl
- - gnupg
  - lsb-release
- - jq
- - pv
  - xsltproc
  - libvirt-clients
  - libvirt-daemon

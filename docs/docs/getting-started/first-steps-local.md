@@ -22,7 +22,7 @@ Both options use virtualization to create a local cluster with control-plane nod
 
 ### Instructions
 
-Through the Terraform template for Azure it's very easy to set up a MiniConstellation cluster on a remote VM.
+Through the Terraform template for Azure it's easy to set up a MiniConstellation cluster on a remote VM.
 
 1. Clone the Constellation repository:
 
@@ -41,19 +41,59 @@ Through the Terraform template for Azure it's very easy to set up a MiniConstell
     ```
 
     After execution, you should be connected with the remote machine through SSH.
+    If you accidentally lose connection, you can reconnect via
+
+    ```sh
+    ssh -i id_rsa adminuser@$INSERT_VM_IP_ADDRESS
+    ```
 
 3. Prepare the VM for `constellation mini up`
 
-   For convenience, you will find a script on the machine that installs the Constellation CLI, makes sure that the Docker service is running and executes `constellation mini up`:
+    Once logged into the machine, install the Constellation CLI:
+
+    ```sh
+    echo "Installing Constellation CLI"
+    curl -LO <https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64>
+    sudo install constellation-linux-amd64 /usr/local/bin/constellation
+    ```
+
+    and start the Docker service and make sure that it's running:
+
+    ```sh
+    sudo systemctl start docker.service && sudo systemctl enable docker.service
+    # verify that it is active
+    systemctl is-active docker
+    ```
+
+    At last, create the Constellation cluster in a workspace directory:
+
+    ```sh
+    mkdir constellation_workspace && cd constellation_workspace
+    constellation mini up
+    ```
+
+    The cluster creation takes about 15 minutes.
+
+   For convenience, there is a script that does these steps automatically:
 
    ```sh
    ./setup-miniconstellation.sh
    ```
 
-    The cluster creation takes about 15 minutes.
-4. Clean up cloud resources
+4. Verify the Kubernetes cluster
 
-    Exit the SSH connection and run:
+    Running:
+
+      ```sh
+      export KUBECONFIG="$PWD/constellation-admin.conf"
+      kubectl get nodes
+      ```
+
+      should show both one control-plane and one worker node.
+
+1. Clean up cloud resources
+
+    Exit the SSH connection (Ctrl+D) and run:
 
     ```sh
     terraform destroy
