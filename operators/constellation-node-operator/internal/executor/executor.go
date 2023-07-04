@@ -12,6 +12,7 @@ package executor
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"k8s.io/client-go/util/workqueue"
@@ -36,8 +37,7 @@ type Controller interface {
 // It will call the reconcile method of the given controller with a regular interval
 // or when triggered externally.
 type Executor struct {
-	mux     sync.Mutex
-	running bool
+	running atomic.Bool
 
 	// controller is the controller to be reconciled.
 	controller Controller
@@ -77,12 +77,12 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 		e.Stop()
 	}
 
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	if e.running {
+	// this will return early if the executor is already running
+	// if the executor is not running, set the running flag to true
+	// and continue
+	if !e.running.CompareAndSwap(false, true) {
 		return stopWait
 	}
-	e.running = true
 
 	e.externalTrigger = make(chan struct{}, 1)
 	e.stop = make(chan struct{}, 1)
@@ -120,9 +120,7 @@ func (e *Executor) Start(ctx context.Context) StopWaitFn {
 	// executor routine is responsible for executing the reconciliation
 	go func() {
 		defer func() {
-			e.mux.Lock()
-			defer e.mux.Unlock()
-			e.running = false
+			e.running.Store(false)
 		}()
 		defer wg.Done()
 		defer close(nextScheduledReconcile)
@@ -170,9 +168,7 @@ func (e *Executor) Stop() {
 // Running returns true if the executor is running.
 // When the executor is stopped, it is not running anymore.
 func (e *Executor) Running() bool {
-	e.mux.Lock()
-	defer e.mux.Unlock()
-	return e.running
+	return e.running.Load()
 }
 
 // Trigger triggers a reconciliation.
@@ -208,8 +204,8 @@ type Result struct {
 // RateLimiter is a stripped down version of the controller-runtime ratelimiter.RateLimiter interface.
 type RateLimiter interface {
 	// When gets an item and gets to decide how long that item should wait
-	When(item interface{}) time.Duration
+	When(item any) time.Duration
 	// Forget indicates that an item is finished being retried.  Doesn't matter whether its for perm failing
 	// or for success, we'll stop tracking it
-	Forget(item interface{})
+	Forget(item any)
 }
