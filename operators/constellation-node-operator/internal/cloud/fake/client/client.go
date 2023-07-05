@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
 )
 
@@ -82,8 +83,23 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
-func (c *Client) ListScalingGroups(_ context.Context, _ string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
-	return []string{controlPlanesID}, []string{workersID}, nil
+func (c *Client) ListScalingGroups(_ context.Context, _ string) ([]cspapi.ScalingGroup, error) {
+	return []cspapi.ScalingGroup{
+		{
+			Name:                 controlPlanesID,
+			NodeGroupName:        controlPlanesID,
+			GroupID:              controlPlanesID,
+			AutoscalingGroupName: controlPlanesID,
+			Role:                 updatev1alpha1.ControlPlaneRole,
+		},
+		{
+			Name:                 workersID,
+			NodeGroupName:        workersID,
+			GroupID:              workersID,
+			AutoscalingGroupName: workersID,
+			Role:                 updatev1alpha1.WorkerRole,
+		},
+	}, nil
 }
 
 // AutoscalingCloudProvider returns the cloud-provider name as used by k8s cluster-autoscaler.

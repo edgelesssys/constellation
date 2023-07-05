@@ -23,6 +23,7 @@ go_library(
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "@com_github_googleapis_gax_go_v2//:gax-go",
         "@com_github_spf13_afero//:afero",
         "@com_google_cloud_go_compute//apiv1",
@@ -51,6 +52,7 @@ go_test(
     embed = [":client"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "@com_github_googleapis_gax_go_v2//:gax-go",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

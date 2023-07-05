@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "executor",
+    srcs = ["executor.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/executor",
+    visibility = ["//operators/constellation-node-operator:__subpackages__"],
+    deps = [
+        "@io_k8s_client_go//util/workqueue",
+        "@io_k8s_sigs_controller_runtime//pkg/log",
+    ],
+)
+
+go_test(
+    name = "executor_test",
+    srcs = ["executor_test.go"],
+    embed = [":executor"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@org_uber_go_goleak//:goleak",
+    ],
+)

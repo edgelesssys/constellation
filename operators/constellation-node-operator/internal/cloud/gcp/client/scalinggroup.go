@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"google.golang.org/api/iterator"
 )
 
@@ -106,7 +108,8 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
-func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error) {
+	results := []cspapi.ScalingGroup{}
 	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
 		Project: c.projectID,
 	})
@@ -115,7 +118,7 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 			break
 		}
 		if err != nil {
-			return nil, nil, fmt.Errorf("listing instance group managers: %w", err)
+			return nil, fmt.Errorf("listing instance group managers: %w", err)
 		}
 		if instanceGroupManagerScopedListPair.Value == nil {
 			continue
@@ -134,7 +137,7 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 				InstanceTemplate: templateURI[len(templateURI)-1],
 			})
 			if err != nil {
-				return nil, nil, fmt.Errorf("getting instance template: %w", err)
+				return nil, fmt.Errorf("getting instance template: %w", err)
 			}
 			if template.Properties == nil || template.Properties.Labels == nil {
 				continue
@@ -145,18 +148,43 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 
 			groupID, err := c.canonicalInstanceGroupID(ctx, *grpManager.SelfLink)
 			if err != nil {
-				return nil, nil, fmt.Errorf("normalizing instance group ID: %w", err)
+				return nil, fmt.Errorf("normalizing instance group ID: %w", err)
 			}
 
-			switch strings.ToLower(template.Properties.Labels["constellation-role"]) {
-			case "control-plane", "controlplane":
-				controlPlaneGroupIDs = append(controlPlaneGroupIDs, groupID)
-			case "worker":
-				workerGroupIDs = append(workerGroupIDs, groupID)
+			role := updatev1alpha1.NodeRoleFromString(template.Properties.Labels["constellation-role"])
+
+			name, err := c.GetScalingGroupName(groupID)
+			if err != nil {
+				return nil, fmt.Errorf("getting scaling group name: %w", err)
 			}
+
+			nodeGroupName := template.Properties.Labels["constellation-node-group"]
+			// fallback for legacy clusters
+			// TODO(malt3): remove this fallback once we can assume all clusters have the correct labels
+			if nodeGroupName == "" {
+				switch role {
+				case updatev1alpha1.ControlPlaneRole:
+					nodeGroupName = "control_plane_default"
+				case updatev1alpha1.WorkerRole:
+					nodeGroupName = "worker_default"
+				}
+			}
+
+			autoscalerGroupName, err := c.GetAutoscalingGroupName(groupID)
+			if err != nil {
+				return nil, fmt.Errorf("getting autoscaling group name: %w", err)
+			}
+
+			results = append(results, cspapi.ScalingGroup{
+				Name:                 name,
+				NodeGroupName:        nodeGroupName,
+				GroupID:              groupID,
+				AutoscalingGroupName: autoscalerGroupName,
+				Role:                 role,
+			})
 		}
 	}
-	return controlPlaneGroupIDs, workerGroupIDs, nil
+	return results, nil
 }
 
 func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID string) (*computepb.InstanceTemplate, error) {

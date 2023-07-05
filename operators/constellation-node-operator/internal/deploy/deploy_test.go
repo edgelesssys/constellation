@@ -14,6 +14,7 @@ import (
 
 	mainconstants "github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,18 +42,10 @@ func TestInitialResources(t *testing.T) {
 				{groupID: "control-plane", image: "image-1", name: "control-plane", isControlPlane: true},
 				{groupID: "worker", image: "image-1", name: "worker"},
 			},
-			wantResources: 4,
+			wantResources: 2,
 		},
-		"missing control planes": {
-			items: []scalingGroupStoreItem{
-				{groupID: "worker", image: "image-1", name: "worker"},
-			},
-			wantErr: true,
-		},
-		"missing workers": {
-			items: []scalingGroupStoreItem{
-				{groupID: "control-plane", image: "image-1", name: "control-plane", isControlPlane: true},
-			},
+		"missing groups": {
+			items:   []scalingGroupStoreItem{},
 			wantErr: true,
 		},
 		"listing groups fails": {
@@ -74,14 +67,6 @@ func TestInitialResources(t *testing.T) {
 			},
 			imageErr: errors.New("getting image failed"),
 			wantErr:  true,
-		},
-		"getting name fails": {
-			items: []scalingGroupStoreItem{
-				{groupID: "control-plane", image: "image-1", name: "control-plane", isControlPlane: true},
-				{groupID: "worker", image: "image-1", name: "worker"},
-			},
-			nameErr: errors.New("getting name failed"),
-			wantErr: true,
 		},
 	}
 
@@ -273,70 +258,6 @@ func TestCreateNodeVersion(t *testing.T) {
 	}
 }
 
-func TestCreateScalingGroup(t *testing.T) {
-	testCases := map[string]struct {
-		createErr        error
-		wantScalingGroup *updatev1alpha1.ScalingGroup
-		wantErr          bool
-	}{
-		"create works": {
-			wantScalingGroup: &updatev1alpha1.ScalingGroup{
-				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "ScalingGroup"},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "group-name",
-				},
-				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeVersion:         mainconstants.NodeVersionResourceName,
-					GroupID:             "group-id",
-					AutoscalerGroupName: "group-Name",
-					Min:                 1,
-					Max:                 10,
-					Role:                updatev1alpha1.WorkerRole,
-				},
-			},
-		},
-		"create fails": {
-			createErr: errors.New("create failed"),
-			wantErr:   true,
-		},
-		"image exists": {
-			createErr: k8sErrors.NewAlreadyExists(schema.GroupResource{}, constants.AutoscalingStrategyResourceName),
-			wantScalingGroup: &updatev1alpha1.ScalingGroup{
-				TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "ScalingGroup"},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "group-name",
-				},
-				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeVersion:         mainconstants.NodeVersionResourceName,
-					GroupID:             "group-id",
-					AutoscalerGroupName: "group-Name",
-					Min:                 1,
-					Max:                 10,
-					Role:                updatev1alpha1.WorkerRole,
-				},
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			k8sClient := &fakeK8sClient{createErr: tc.createErr}
-			newScalingGroupConfig := newScalingGroupConfig{k8sClient, "group-id", "group-Name", "group-Name", updatev1alpha1.WorkerRole}
-			err := createScalingGroup(context.Background(), newScalingGroupConfig)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Len(k8sClient.createdObjects, 1)
-			assert.Equal(tc.wantScalingGroup, k8sClient.createdObjects[0])
-		})
-	}
-}
-
 type fakeK8sClient struct {
 	createdObjects []client.Object
 	createErr      error
@@ -437,15 +358,24 @@ func (g *stubScalingGroupGetter) GetAutoscalingGroupName(scalingGroupID string) 
 	return g.store[scalingGroupID].name, g.nameErr
 }
 
-func (g *stubScalingGroupGetter) ListScalingGroups(_ context.Context, _ string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (g *stubScalingGroupGetter) ListScalingGroups(_ context.Context, _ string) ([]cspapi.ScalingGroup, error) {
+	var scalingGroups []cspapi.ScalingGroup
+
 	for _, item := range g.store {
-		if item.isControlPlane {
-			controlPlaneGroupIDs = append(controlPlaneGroupIDs, item.groupID)
-		} else {
-			workerGroupIDs = append(workerGroupIDs, item.groupID)
-		}
+		scalingGroups = append(scalingGroups, cspapi.ScalingGroup{
+			Name:                 item.name,
+			NodeGroupName:        item.nodeGroupName,
+			GroupID:              item.groupID,
+			AutoscalingGroupName: item.autoscalingGroupName,
+			Role: func() updatev1alpha1.NodeRole {
+				if item.isControlPlane {
+					return updatev1alpha1.ControlPlaneRole
+				}
+				return updatev1alpha1.WorkerRole
+			}(),
+		})
 	}
-	return controlPlaneGroupIDs, workerGroupIDs, g.listErr
+	return scalingGroups, g.listErr
 }
 
 func (g *stubScalingGroupGetter) AutoscalingCloudProvider() string {
@@ -453,8 +383,10 @@ func (g *stubScalingGroupGetter) AutoscalingCloudProvider() string {
 }
 
 type scalingGroupStoreItem struct {
-	groupID        string
-	name           string
-	image          string
-	isControlPlane bool
+	name                 string
+	groupID              string
+	autoscalingGroupName string
+	nodeGroupName        string
+	image                string
+	isControlPlane       bool
 }

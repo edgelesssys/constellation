@@ -10,15 +10,18 @@ Constellation comes with autoscaling disabled by default. To enable autoscaling,
 worker nodes:
 
 ```bash
-worker_group=$(kubectl get scalinggroups -o json | jq -r '.items[].metadata.name | select(contains("worker"))')
-echo "The name of your worker scaling group is '$worker_group'"
+kubectl get scalinggroups -o json | yq '.items | .[] | select(.spec.role == "Worker") | [{"name": .metadata.name, "nodeGoupName": .spec.nodeGroupName}]'
 ```
 
-Then, patch the `autoscaling` field of the scaling group resource to `true`:
+This will output a list of scaling groups with the corresponding cloud provider name (`name`) and the cloud provider agnostic name of the node group (`nodeGroupName`).
+
+Then, patch the `autoscaling` field of the scaling group resource with the desired `name` to `true`:
 
 ```bash
+# Replace <name> with the name of the scaling group you want to enable autoscaling for
+worker_group=<name>
 kubectl patch scalinggroups $worker_group --patch '{"spec":{"autoscaling": true}}' --type='merge'
-kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | jq
+kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | yq -P
 ```
 
 The cluster autoscaler now automatically provisions additional worker nodes so that all pods have a place to run.
@@ -27,7 +30,7 @@ You can configure the minimum and maximum number of worker nodes in the scaling 
 
 ```bash
 kubectl patch scalinggroups $worker_group --patch '{"spec":{"max": 5}}' --type='merge'
-kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | jq
+kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | yq -P
 ```
 
 The cluster autoscaler will now never provision more than 5 worker nodes.

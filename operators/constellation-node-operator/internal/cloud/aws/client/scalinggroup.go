@@ -15,6 +15,8 @@ import (
 	scalingtypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -140,7 +142,8 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
-func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.ScalingGroup, error) {
+	results := []cspapi.ScalingGroup{}
 	output, err := c.scalingClient.DescribeAutoScalingGroups(
 		ctx,
 		&autoscaling.DescribeAutoScalingGroupsInput{
@@ -153,22 +156,62 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 		},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to describe scaling groups: %w", err)
+		return nil, fmt.Errorf("failed to describe scaling groups: %w", err)
 	}
 
 	for _, group := range output.AutoScalingGroups {
 		if group.Tags == nil {
 			continue
 		}
+
+		var role updatev1alpha1.NodeRole
+		var nodeGroupName string
 		for _, tag := range group.Tags {
-			if *tag.Key == "constellation-role" {
-				if *tag.Value == "control-plane" {
-					controlPlaneGroupIDs = append(controlPlaneGroupIDs, *group.AutoScalingGroupName)
-				} else if *tag.Value == "worker" {
-					workerGroupIDs = append(workerGroupIDs, *group.AutoScalingGroupName)
-				}
+			if tag.Key == nil || tag.Value == nil {
+				continue
+			}
+			key := *tag.Key
+			switch key {
+			case "constellation-role":
+				role = updatev1alpha1.NodeRoleFromString(*tag.Value)
+			case "constellation-node-group":
+				nodeGroupName = *tag.Value
 			}
 		}
+
+		// fallback for legacy clusters
+		// TODO(malt3): remove this fallback once we can assume all clusters have the correct labels
+		if nodeGroupName == "" {
+			switch role {
+			case updatev1alpha1.ControlPlaneRole:
+				nodeGroupName = "control_plane_default"
+			case updatev1alpha1.WorkerRole:
+				nodeGroupName = "worker_default"
+			}
+		}
+
+		name, err := c.GetScalingGroupName(*group.AutoScalingGroupName)
+		if err != nil {
+			return nil, fmt.Errorf("getting scaling group name: %w", err)
+		}
+
+		nodeGroupName, err = c.GetScalingGroupName(nodeGroupName)
+		if err != nil {
+			return nil, fmt.Errorf("getting node group name: %w", err)
+		}
+
+		autoscalerGroupName, err := c.GetAutoscalingGroupName(*group.AutoScalingGroupName)
+		if err != nil {
+			return nil, fmt.Errorf("getting autoscaler group name: %w", err)
+		}
+
+		results = append(results, cspapi.ScalingGroup{
+			Name:                 name,
+			NodeGroupName:        nodeGroupName,
+			GroupID:              *group.AutoScalingGroupName,
+			AutoscalingGroupName: autoscalerGroupName,
+			Role:                 role,
+		})
 	}
-	return controlPlaneGroupIDs, workerGroupIDs, nil
+	return results, nil
 }

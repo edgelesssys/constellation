@@ -1,0 +1,306 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+package executor
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
+)
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
+
+func TestNew(t *testing.T) {
+	testCases := map[string]struct {
+		config               Config
+		wantPollingFrequency time.Duration
+	}{
+		"applies default polling frequency": {
+			config:               Config{},
+			wantPollingFrequency: defaultPollingFrequency,
+		},
+		"custom polling frequency": {
+			config: Config{
+				PollingFrequency: time.Hour,
+			},
+			wantPollingFrequency: time.Hour,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			exec := New(nil, tc.config)
+			assert.Equal(tc.wantPollingFrequency, exec.pollingFrequency)
+		})
+	}
+}
+
+func TestStartTriggersImmediateReconciliation(t *testing.T) {
+	assert := assert.New(t)
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter:      &stubRateLimiter{},   // no rate limiting
+	}
+	// on start, the executor should trigger a reconciliation
+	stopAndWait := exec.Start(context.Background())
+	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// initial trigger
+	assert.Equal(1, ctrl.reconciliationCounter)
+}
+
+func TestStartMultipleTimesIsCoalesced(t *testing.T) {
+	assert := assert.New(t)
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter:      &stubRateLimiter{},   // no rate limiting
+	}
+	// start once
+	stopAndWait := exec.Start(context.Background())
+	// start again multiple times
+	for i := 0; i < 10; i++ {
+		_ = exec.Start(context.Background())
+	}
+
+	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// initial trigger. extra start calls should be coalesced
+	assert.Equal(1, ctrl.reconciliationCounter)
+}
+
+func TestErrorTriggersImmediateReconciliation(t *testing.T) {
+	assert := assert.New(t)
+	// returning an error should trigger a reconciliation immediately
+	ctrl := newStubController(Result{}, errors.New("reconciler error"))
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter:      &stubRateLimiter{},   // no rate limiting
+	}
+	stopAndWait := exec.Start(context.Background())
+	for i := 0; i < 10; i++ {
+		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
+	}
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// we cannot assert the exact number of reconciliations here, because the executor might
+	// select the stop case or the timer case first.
+	assertBetween(assert, 10, 11, ctrl.reconciliationCounter)
+}
+
+func TestErrorTriggersRateLimiting(t *testing.T) {
+	assert := assert.New(t)
+	// returning an error should trigger a reconciliation immediately
+	ctrl := newStubController(Result{}, errors.New("reconciler error"))
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter: &stubRateLimiter{
+			whenRes: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		},
+	}
+	stopAndWait := exec.Start(context.Background())
+	<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called once to trigger rate limiting
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// initial trigger. error triggers are rate limited to 1 per year
+	assert.Equal(1, ctrl.reconciliationCounter)
+}
+
+func TestRequeueAfterResultRequeueInterval(t *testing.T) {
+	assert := assert.New(t)
+	// setting a requeue result should trigger a reconciliation after the specified delay
+	ctrl := newStubController(Result{
+		Requeue:      true,
+		RequeueAfter: time.Microsecond,
+	}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter: &stubRateLimiter{
+			whenRes: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		},
+	}
+	stopAndWait := exec.Start(context.Background())
+	for i := 0; i < 10; i++ {
+		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
+	}
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// we cannot assert the exact number of reconciliations here, because the executor might
+	// select the stop case or the timer case first.
+	assertBetween(assert, 10, 11, ctrl.reconciliationCounter)
+}
+
+func TestExternalTrigger(t *testing.T) {
+	assert := assert.New(t)
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter: &stubRateLimiter{
+			whenRes: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		},
+	}
+	stopAndWait := exec.Start(context.Background())
+	<-ctrl.waitUntilReconciled // initial trigger
+	for i := 0; i < 10; i++ {
+		exec.Trigger()
+		<-ctrl.waitUntilReconciled // external trigger
+	}
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// initial trigger + 10 external triggers
+	assert.Equal(11, ctrl.reconciliationCounter)
+}
+
+func TestSimultaneousExternalTriggers(t *testing.T) {
+	assert := assert.New(t)
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter: &stubRateLimiter{
+			whenRes: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		},
+	}
+	stopAndWait := exec.Start(context.Background())
+	<-ctrl.waitUntilReconciled // initial trigger
+	for i := 0; i < 100; i++ {
+		exec.Trigger() // extra trigger calls are coalesced
+	}
+	<-ctrl.waitUntilReconciled // external trigger
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// we cannot assert the exact number of reconciliations here, because the executor might
+	// select the stop case or the next manual trigger case first.
+	assertBetween(assert, 2, 3, ctrl.reconciliationCounter)
+}
+
+func TestContextCancel(t *testing.T) {
+	assert := assert.New(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		rateLimiter:      &stubRateLimiter{},   // no rate limiting
+	}
+	_ = exec.Start(ctx)        // no need to explicitly stop the executor, it will stop when the context is canceled
+	<-ctrl.waitUntilReconciled // initial trigger
+
+	// canceling the context should stop the executor without blocking
+	cancel()
+	ctrl.stop <- struct{}{}
+
+	// poll for the executor stop running
+	// this is necessary since the executor doesn't expose
+	// a pure wait method
+	assert.Eventually(func() bool {
+		return !exec.Running()
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// initial trigger
+	assert.Equal(1, ctrl.reconciliationCounter)
+}
+
+func TestRequeueAfterPollingFrequency(t *testing.T) {
+	assert := assert.New(t)
+	ctrl := newStubController(Result{}, nil)
+	exec := Executor{
+		controller:       ctrl,
+		pollingFrequency: time.Microsecond, // basically no delay
+		rateLimiter: &stubRateLimiter{
+			whenRes: time.Hour * 24 * 365, // 1 year. Should be high enough to not trigger the timer in the test.
+		},
+	}
+	stopAndWait := exec.Start(context.Background())
+	for i := 0; i < 10; i++ {
+		<-ctrl.waitUntilReconciled // makes sure to wait until reconcile was called
+	}
+	ctrl.stop <- struct{}{}
+
+	stopAndWait()
+
+	// we cannot assert the exact number of reconciliations here, because the executor might
+	// select the stop case or the timer case first.
+	assertBetween(assert, 10, 11, ctrl.reconciliationCounter)
+}
+
+type stubController struct {
+	stopped               bool
+	stop                  chan struct{}
+	waitUntilReconciled   chan struct{}
+	reconciliationCounter int
+	result                Result
+	err                   error
+}
+
+func newStubController(result Result, err error) *stubController {
+	return &stubController{
+		waitUntilReconciled: make(chan struct{}),
+		stop:                make(chan struct{}, 1),
+		result:              result,
+		err:                 err,
+	}
+}
+
+func (s *stubController) Reconcile(_ context.Context) (Result, error) {
+	if s.stopped {
+		return Result{}, errors.New("controller stopped")
+	}
+	s.reconciliationCounter++
+	select {
+	case <-s.stop:
+		s.stopped = true
+	case s.waitUntilReconciled <- struct{}{}:
+	}
+
+	return s.result, s.err
+}
+
+type stubRateLimiter struct {
+	whenRes time.Duration
+}
+
+func (s *stubRateLimiter) When(_ any) time.Duration {
+	return s.whenRes
+}
+
+func (s *stubRateLimiter) Forget(_ any) {}
+
+func assertBetween(assert *assert.Assertions, min, max, actual int) {
+	assert.GreaterOrEqual(actual, min)
+	assert.LessOrEqual(actual, max)
+}
