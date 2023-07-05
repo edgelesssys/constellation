@@ -40,8 +40,7 @@ stamp_version() {
   if is_pre_version; then
     version=$(pseudo_version)
   fi
-  version=$(remove_v_prefix "${version}")
-  echo "${version}"
+  remove_v_prefix "${version}"
 }
 
 is_pre_version() {
