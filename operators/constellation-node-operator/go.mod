@@ -28,7 +28,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.7
 	go.etcd.io/etcd/client/v3 v3.5.7
 	go.uber.org/goleak v1.2.1
-	golang.org/x/mod v0.10.0
+	golang.org/x/mod v0.12.0
 	google.golang.org/api v0.122.0
 	google.golang.org/protobuf v1.30.0
 	k8s.io/api v0.27.2
