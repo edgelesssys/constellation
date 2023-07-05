@@ -22,20 +22,20 @@ Commands:
 * [mini](#constellation-mini): Manage MiniConstellation clusters
   * [up](#constellation-mini-up): Create and initialize a new MiniConstellation cluster
   * [down](#constellation-mini-down): Destroy a MiniConstellation cluster
+* [status](#constellation-status): Show status of a Constellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
 * [upgrade](#constellation-upgrade): Find and apply upgrades to your Constellation cluster
   * [check](#constellation-upgrade-check): Check for possible upgrades
   * [apply](#constellation-upgrade-apply): Apply an upgrade to a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
-* [version](#constellation-version): Display version of this CLI
 * [iam](#constellation-iam): Work with the IAM configuration on your cloud provider
   * [create](#constellation-iam-create): Create IAM configuration on a cloud platform for your Constellation cluster
     * [aws](#constellation-iam-create-aws): Create IAM configuration on AWS for your Constellation cluster
     * [azure](#constellation-iam-create-azure): Create IAM configuration on Microsoft Azure for your Constellation cluster
     * [gcp](#constellation-iam-create-gcp): Create IAM configuration on GCP for your Constellation cluster
   * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local Terraform files
-* [status](#constellation-status): show status of a Constellation cluster
+* [version](#constellation-version): Display version of this CLI
 
 ## constellation config
 
@@ -57,7 +57,7 @@ Work with the Constellation configuration file.
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation config generate
@@ -87,7 +87,7 @@ constellation config generate {aws|azure|gcp|openstack|qemu|stackit} [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation config fetch-measurements
@@ -118,7 +118,7 @@ constellation config fetch-measurements [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation config instance-types
@@ -145,7 +145,7 @@ constellation config instance-types [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation config kubernetes-versions
@@ -172,7 +172,7 @@ constellation config kubernetes-versions [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation config migrate
@@ -199,7 +199,7 @@ constellation config migrate [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation create
@@ -229,7 +229,7 @@ constellation create [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation init
@@ -261,7 +261,7 @@ constellation init [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation mini
@@ -284,7 +284,7 @@ Manage MiniConstellation clusters.
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation mini up
@@ -314,7 +314,7 @@ constellation mini up [flags]
 ```
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation mini down
@@ -342,7 +342,36 @@ constellation mini down [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
+```
+
+## constellation status
+
+Show status of a Constellation cluster
+
+### Synopsis
+
+Show the status of a constellation cluster.
+
+Shows microservice, image, and Kubernetes versions installed in the cluster. Also shows status of current version upgrades.
+
+```
+constellation status [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for status
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation verify
@@ -351,7 +380,8 @@ Verify the confidential properties of a Constellation cluster
 
 ### Synopsis
 
-Verify the confidential properties of a Constellation cluster.\nIf arguments aren't specified, values are read from `constellation-id.json`.
+Verify the confidential properties of a Constellation cluster.
+If arguments aren't specified, values are read from `constellation-id.json`.
 
 ```
 constellation verify [flags]
@@ -372,7 +402,7 @@ constellation verify [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation upgrade
@@ -395,7 +425,7 @@ Find and apply upgrades to your Constellation cluster.
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation upgrade check
@@ -425,7 +455,7 @@ constellation upgrade check [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation upgrade apply
@@ -455,7 +485,7 @@ constellation upgrade apply [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation recover
@@ -486,7 +516,7 @@ constellation recover [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation terminate
@@ -516,34 +546,7 @@ constellation terminate [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-```
-
-## constellation version
-
-Display version of this CLI
-
-### Synopsis
-
-Display version of this CLI.
-
-```
-constellation version [flags]
-```
-
-### Options
-
-```
-  -h, --help   help for version
-```
-
-### Options inherited from parent commands
-
-```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation iam
@@ -566,7 +569,7 @@ Work with the IAM configuration on your cloud provider.
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation iam create
@@ -581,7 +584,7 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 
 ```
   -h, --help            help for create
-      --update-config   automatically update the config file with the specific IAM information
+      --update-config   update the config file with the specific IAM information
   -y, --yes             create the IAM configuration without further confirmation
 ```
 
@@ -591,7 +594,7 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
 ## constellation iam create aws
@@ -611,8 +614,8 @@ constellation iam create aws [flags]
 ```
   -h, --help            help for aws
       --prefix string   name prefix for all resources (required)
-      --zone string     AWS availability zone the resources will be created in, e.g. us-east-2a (required)
-                        Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. Note that we do not support every zone / region. You can find a list of all supported regions in our docs.
+      --zone string     AWS availability zone the resources will be created in, e.g., us-east-2a (required)
+                        See the Constellation docs for a list of currently supported regions.
 ```
 
 ### Options inherited from parent commands
@@ -621,8 +624,8 @@ constellation iam create aws [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-      --update-config   automatically update the config file with the specific IAM information
+      --tf-log string   Terraform log level (default "NONE")
+      --update-config   update the config file with the specific IAM information
   -y, --yes             create the IAM configuration without further confirmation
 ```
 
@@ -642,7 +645,7 @@ constellation iam create azure [flags]
 
 ```
   -h, --help                      help for azure
-      --region string             region the resources will be created in, e.g. westus (required)
+      --region string             region the resources will be created in, e.g., westus (required)
       --resourceGroup string      name prefix of the two resource groups your cluster / IAM resources will be created in (required)
       --servicePrincipal string   name of the service principal that will be created (required)
 ```
@@ -653,8 +656,8 @@ constellation iam create azure [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-      --update-config   automatically update the config file with the specific IAM information
+      --tf-log string   Terraform log level (default "NONE")
+      --update-config   update the config file with the specific IAM information
   -y, --yes             create the IAM configuration without further confirmation
 ```
 
@@ -675,11 +678,11 @@ constellation iam create gcp [flags]
 ```
   -h, --help                      help for gcp
       --projectID string          ID of the GCP project the configuration will be created in (required)
-                                  Find it on the welcome screen of your project: https://console.cloud.google.com/welcome.
+                                  Find it on the welcome screen of your project: https://console.cloud.google.com/welcome
       --serviceAccountID string   ID for the service account that will be created (required)
-                                  Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$.
+                                  Must be 6 to 30 lowercase letters, digits, or hyphens.
       --zone string               GCP zone the cluster will be deployed in (required)
-                                  Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available.
+                                  Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available
 ```
 
 ### Options inherited from parent commands
@@ -688,8 +691,8 @@ constellation iam create gcp [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
-      --update-config   automatically update the config file with the specific IAM information
+      --tf-log string   Terraform log level (default "NONE")
+      --update-config   update the config file with the specific IAM information
   -y, --yes             create the IAM configuration without further confirmation
 ```
 
@@ -718,27 +721,25 @@ constellation iam destroy [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 
-## constellation status
+## constellation version
 
-show status of a Constellation cluster
+Display version of this CLI
 
 ### Synopsis
 
-Show status of a constellation cluster.
-
-Shows microservice, image and Kubernetes versions installed in the cluster. Also show status of current version upgrades.
+Display version of this CLI.
 
 ```
-constellation status [flags]
+constellation version [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help   help for version
 ```
 
 ### Options inherited from parent commands
@@ -747,6 +748,6 @@ constellation status [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
       --debug           enable debug logging
       --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   sets the Terraform log level (default "NONE" - no logs) (default "NONE")
+      --tf-log string   Terraform log level (default "NONE")
 ```
 

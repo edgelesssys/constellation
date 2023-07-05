@@ -48,19 +48,19 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
 	rootCmd.PersistentFlags().Bool("force", false, "disable version compatibility checks - might result in corrupted clusters")
-	rootCmd.PersistentFlags().String("tf-log", "NONE", "sets the Terraform log level (default \"NONE\" - no logs)")
+	rootCmd.PersistentFlags().String("tf-log", "NONE", "Terraform log level")
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
 	rootCmd.AddCommand(cmd.NewInitCmd())
 	rootCmd.AddCommand(cmd.NewMiniCmd())
+	rootCmd.AddCommand(cmd.NewStatusCmd())
 	rootCmd.AddCommand(cmd.NewVerifyCmd())
 	rootCmd.AddCommand(cmd.NewUpgradeCmd())
 	rootCmd.AddCommand(cmd.NewRecoverCmd())
 	rootCmd.AddCommand(cmd.NewTerminateCmd())
-	rootCmd.AddCommand(cmd.NewVersionCmd())
 	rootCmd.AddCommand(cmd.NewIAMCmd())
-	rootCmd.AddCommand(cmd.NewStatusCmd())
+	rootCmd.AddCommand(cmd.NewVersionCmd())
 
 	return rootCmd
 }
