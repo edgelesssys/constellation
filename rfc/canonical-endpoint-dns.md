@@ -45,21 +45,21 @@ Additionally, customers may register custom domains and point them to the public
 ## Steps for enabling DNS (aka: "canonical endpoint")
 
 1. start adding the fallback endpoint (and the custom domain, if set) to the SAN field of the kube-apiserver certificates
-  - SAN should still contain everything it contains before
-    - legacy public ip we use before switching to dns
-    - `kubernetes`, `kubernetes.default`, `kubernetes.default.svc`, `kubernetes.default.svc.cluster.local`
-    - 127.0.0.1, ::1, localhost
-  - fallback endpoint (as specified above)
-  - optional customer provided hostname (if set)
+    - SAN should still contain everything it contains before
+      - legacy public ip we use before switching to dns
+      - `kubernetes`, `kubernetes.default`, `kubernetes.default.svc`, `kubernetes.default.svc.cluster.local`
+      - 127.0.0.1, ::1, localhost
+    - fallback endpoint (as specified above)
+    - optional customer provided hostname (if set)
 2. once every apiserver uses the extended SAN field, the cluster-internal advertise-address for the apiserver can be switched to the fallback endpoint
-  - no-op on GCP (this is already the status quo)
-  - ensure every existing kubelet uses the new endpoint
-  - ensure newly joining kubelet use the new endpoint
-  - k8s configmap uses new endpoint (`kube-system/kubeadm-config` -> `.data.ClusterConfiguration`)
+    - no-op on GCP (this is already the status quo)
+    - ensure every existing kubelet uses the new endpoint
+    - ensure newly joining kubelet use the new endpoint
+    - k8s configmap uses new endpoint (`kube-system/kubeadm-config` -> `.data.ClusterConfiguration`)
 3. switch id file `constellation-id.json` to use either fallback endpoint or customer endpoint (Q: which is better if both are available?)
 4. switch setting in kubernetes config (`constellation-admin.conf`) to use either fallback endpoint or customer endpoint (Q: which is better if both are available?)
-  - in existing clusters: patch config
-  - in new clusters: write correct endpoint on `constellation init`
+    - in existing clusters: patch config
+    - in new clusters: write correct endpoint on `constellation init`
 
 
 ### Details
