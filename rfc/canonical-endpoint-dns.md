@@ -56,8 +56,8 @@ Additionally, customers may register custom domains and point them to the public
     - ensure every existing kubelet uses the new endpoint
     - ensure newly joining kubelet use the new endpoint
     - k8s configmap uses new endpoint (`kube-system/kubeadm-config` -> `.data.ClusterConfiguration`)
-3. switch id file `constellation-id.json` to use either fallback endpoint or customer endpoint (Q: which is better if both are available?)
-4. switch setting in kubernetes config (`constellation-admin.conf`) to use either fallback endpoint or customer endpoint (Q: which is better if both are available?)
+3. switch id file `constellation-id.json` to use fallback endpoint
+4. switch setting in kubernetes config (`constellation-admin.conf`) to use fallback endpoint
     - in existing clusters: patch config
     - in new clusters: write correct endpoint on `constellation init`
 
