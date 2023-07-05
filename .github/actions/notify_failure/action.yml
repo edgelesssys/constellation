@@ -89,15 +89,7 @@ runs:
           yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' teams_payload.json
         fi
 
-        declare -A gh_to_teams_map
-        gh_to_teams_map["elchead"] = "3931943b-8d4b-4300-ac7e-bbb06c4da27f"
-        gh_to_teams_map["3u13r"] = "26869b29-b0d6-48f8-a9ed-7a6374410a53"
-        gh_to_teams_map["daniel-weisse"] = "759f3380-526e-4776-a620-cc713dce6177"
-        # Paul
-        gh_to_teams_map["katexochen"] = "fcb7b554-33bb-47f7-8f0e-41b66aab4556"
-        gh_to_teams_map["malt3"] = "3012fe21-cff7-499d-88cf-48cf12f2e90c"
-        gh_to_teams_map["derpsteb"] = "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d"
-        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "${{ steps.pick-assignee.outputs.assignee }}, @${gh_to_teams_map[${{ steps.pick-assignee.outputs.assignee }}]} " } ]' teams_payload.json
+        yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "<at>${{ steps.pick-assignee.outputs.assignee }}</at>" } ]' teams_payload.json
         yq -iP '.attachments[0].content.actions[0].url = "${{ steps.create-project-card.outputs.jobURL }}"' teams_payload.json
         yq -iP '.attachments[0].content.actions[1].url = "${{ steps.create-project-card.outputs.issueURL }}"' teams_payload.json
         yq -iP ".attachments[0].content.actions[2].url = \"${{ steps.create-project-card.outputs.opensearchURL }}\"" teams_payload.json
