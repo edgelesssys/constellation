@@ -44,23 +44,38 @@ Additionally, customers may register custom domains and point them to the public
 
 ## Steps for enabling DNS (aka: "canonical endpoint")
 
-1. start adding the fallback endpoint (and the custom domain, if set) to the SAN field of the kube-apiserver certificates
-    - SAN should still contain everything it contains before
-      - legacy public ip we use before switching to dns
-      - `kubernetes`, `kubernetes.default`, `kubernetes.default.svc`, `kubernetes.default.svc.cluster.local`
-      - 127.0.0.1, ::1, localhost
-    - fallback endpoint (as specified above)
-    - optional customer provided hostname (if set)
-2. once every apiserver uses the extended SAN field, the cluster-internal advertise-address for the apiserver can be switched to the fallback endpoint
-    - no-op on GCP (this is already the status quo)
-    - ensure every existing kubelet uses the new endpoint
-    - ensure newly joining kubelet use the new endpoint
-    - k8s configmap uses new endpoint (`kube-system/kubeadm-config` -> `.data.ClusterConfiguration`)
-3. switch id file `constellation-id.json` to use fallback endpoint
-4. switch setting in kubernetes config (`constellation-admin.conf`) to use fallback endpoint
-    - in existing clusters: patch config
-    - in new clusters: write correct endpoint on `constellation init`
+The steps for enabling DNS are split up in phases.
+Each phase has to happen in a separate release, since the steps expect a certain state of the cluster that is reached when the previous phase is completed.
 
+### Phase 1: Discover and add the new endpoints to the SAN field of the apiserver certificates
+
+Start adding the fallback endpoint (and the custom domain, if set) to the SAN field of the kube-apiserver certificates.
+- SAN should still contain everything it contains before
+  - legacy public ip we use before switching to dns
+  - `kubernetes`, `kubernetes.default`, `kubernetes.default.svc`, `kubernetes.default.svc.cluster.local`
+  - 127.0.0.1, ::1, localhost
+- fallback endpoint (as specified above)
+- optional customer provided hostname (if set)
+For new clusters, the cert-sans field should already be set correctly when calling `kubeadm init` (using the `ClusterConfiguration` yaml).
+#### One-time step (migration for existing clusters):
+
+In existing clusters, this can be achieved by patching the `kube-system/kubeadm-config` -> `.data.ClusterConfiguration.certSANs` field.
+Newly joining nodes will use the new endpoint, while existing nodes will continue to use the old endpoint until they are replaced.
+During the upgrade, each control-plane node will be replaced by a node with the new endpoints in the SAN field.
+The new endpoint names can be retrieved from the cloud metadata attached to every node. The CLI can retrieve the new endpoint names from terraform output (fallback endpoint) and directly from the constellation-conf.yaml (custom domain).
+
+### Phase 2: Use new endpoint for `ClusterConfiguration.ControlPlaneEndpoint`, switch id file and kubernetes config
+
+Once every apiserver uses the new SAN field, the cluster-internal control-plane endpoint for the apiserver can be switched to the fallback endpoint.
+For new clusters, the control-plane endpoint in `ClusterConfiguration.ControlPlaneEndpoint` should be set to the fallback endpoint when calling kubeadm init.
+Write fallback endpoint to `constellation-id.json` and `constellation-admin.conf` on `constellation init`.
+
+#### One-time step  (migration for existing clusters):
+
+In existing clusters, this can be achieved by patching the `kube-system/kubeadm-config` -> `.data.ClusterConfiguration.ControlPlaneEndpoint` field.
+The existing configuration files in the user's workspace directory should be updated to use the fallback endpoint.
+- switch id file `constellation-id.json` to use fallback endpoint
+- switch setting in kubernetes config (`constellation-admin.conf`) to use fallback endpoint
 
 ### Details
 
