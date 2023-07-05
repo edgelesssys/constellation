@@ -88,7 +88,7 @@ func main() {
 		}
 		metadataClient, err = azurecloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error).Fatalf("Failed to set up Azure metadata client")
+			log.With(zap.Error(err)).Fatalf("Failed to set up Azure metadata client")
 		}
 
 	case cloudprovider.GCP:
@@ -98,7 +98,7 @@ func main() {
 		}
 		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
-			log.With(zap.Error).Fatalf("Failed to create GCP metadata client")
+			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
 		}
 		defer gcpMeta.Close()
 		metadataClient = gcpMeta
@@ -107,7 +107,7 @@ func main() {
 		diskPath = openstackStateDiskPath
 		metadataClient, err = openstack.New(context.Background())
 		if err != nil {
-			log.With(zap.Error).Fatalf("Failed to create OpenStack metadata client")
+			log.With(zap.Error(err)).Fatalf("Failed to create OpenStack metadata client")
 		}
 
 	case cloudprovider.QEMU:
