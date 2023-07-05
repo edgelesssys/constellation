@@ -36,8 +36,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "honnef.co/go/tools",
-        sum = "h1:o/n5/K5gXqk8Gozvs2cnL0F2S1/g1vcGCAx2vETjITw=",
-        version = "v0.4.3",
+        sum = "h1:UoveltGrhghAA7ePc+e+QYDHXrBps2PqFZiHkGR/xK8=",
+        version = "v0.0.1-2020.1.4",
     )
     go_repository(
         name = "com_github_a8m_expect",
@@ -8253,14 +8253,6 @@ def go_dependencies():
         sum = "h1:UA2aFVmmsIlefxMk29Dp2juaUSth8Pyn3Tq5Y5mJGME=",
         version = "v0.0.0-20230626212559-97b1e661b5df",
     )
-    go_repository(
-        name = "org_golang_x_exp_typeparams",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "golang.org/x/exp/typeparams",
-        sum = "h1:Jw5wfR+h9mnIYH+OtGT2im5wV1YGGDora5vTv/aa5bE=",
-        version = "v0.0.0-20221208152030-732eee02a75a",
-    )
 
     go_repository(
         name = "org_golang_x_image",
@@ -8363,8 +8355,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/vuln",
-        sum = "h1:9GRdj6wAIkDrsMevuolY+SXERPjQPp2P1ysYA0jpZe0=",
-        version = "v0.1.0",
+        sum = "h1:Dlz47lW0pvPHU7tnb10S8vbMn9GnV2B6eyT7Tem5XBI=",
+        version = "v0.2.0",
     )
 
     go_repository(
