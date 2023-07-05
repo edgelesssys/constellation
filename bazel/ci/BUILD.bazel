@@ -461,7 +461,6 @@ multirun(
         ":govulncheck",
         ":deps_mirror_check",
         ":proto_targets_check",
-        "//hack/pseudo-version:pseudo_version_tool_freshness",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
@@ -488,9 +487,4 @@ multirun(
     ],
     jobs = 0,  # execute concurrently
     visibility = ["//visibility:public"],
-)
-
-repo_command(
-    name = "pseudo_version_tool_freshness",
-    command = "//hack/pseudo-version/check",
 )

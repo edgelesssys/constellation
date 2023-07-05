@@ -29,62 +29,46 @@ goarch() {
   esac
 }
 
-need_pseudo_version_tool() {
-  if [[ ! -f "${REPOSITORY_ROOT}/tools/pseudo-version" ]]; then
-    return 1
-  fi
-
-  expected=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
-  local need_pseudo_version_tool=0
-  if type sha256sum > /dev/null 2>&1; then
-    need_pseudo_version_tool=$(sha256sum -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version") && echo 0 || echo 1)
-  elif type shasum > /dev/null 2>&1; then
-    need_pseudo_version_tool=$(shasum -a 256 -c --status <(echo "${expected}  ${REPOSITORY_ROOT}/tools/pseudo-version") && echo 0 || echo 1)
-  else
-    echo "sha256sum or shasum is required to verify the pseudo-version tool" >&2
-    exit 1
-  fi
-
-  return "${need_pseudo_version_tool}"
-}
-
-# shellcheck disable=SC2310
-ensure_pseudo_version_tool() {
-  local should_download=0
-  should_download=$(need_pseudo_version_tool && echo 0 || echo 1)
-
-  if [[ ${should_download} -ne 0 ]]; then
-    get_pseudo_version_tool
-  fi
-}
-
-get_pseudo_version_tool() {
-  out="${REPOSITORY_ROOT}/tools/pseudo-version"
-  hash=$(cat "${REPOSITORY_ROOT}/tools/pseudo_version_$(goos)_$(goarch).sha256")
-  url=https://cdn.confidential.cloud/constellation/cas/sha256/${hash}
-  if command -v curl &> /dev/null; then
-    curl -fsSL "${url}" -o "${out}"
-  elif command -v wget &> /dev/null; then
-    wget -q -O "${out}" "${url}"
-  else
-    echo "curl or wget is required to download the pseudo-version tool" >&2
-    exit 1
-  fi
-  chmod +x "${out}"
-}
-
-pseudo_version() {
-  ensure_pseudo_version_tool
-  "${REPOSITORY_ROOT}/tools/pseudo-version" -skip-v
-}
-
 timestamp() {
-  ensure_pseudo_version_tool
-  "${REPOSITORY_ROOT}/tools/pseudo-version" -print-timestamp -timestamp-format '2006-01-02T15:04:05Z07:00'
+  git show -s --date=format:'%Y-%m-%dT%H:%M:%S' --format=%cd HEAD
+}
+
+stamp_version() {
+  local version
+  version=$(fixed_version)
+  # shellcheck disable=SC2310
+  if is_pre_version; then
+    version=$(pseudo_version)
+  fi
+  remove_v_prefix "${version}"
+}
+
+is_pre_version() {
+  local version
+  version=$(cat "${REPOSITORY_ROOT}/version.txt")
+  [[ ${version} =~ ^.*-pre.*$ ]]
+}
+
+remove_v_prefix() {
+  local version=$1
+  echo "${version#v}"
+}
+
+# pseudo_version is a bash implementation of the go pseudo version format
+# We only care about pre-release versions, so we can simplify the implementation
+# See https://pkg.go.dev/golang.org/x/mod/module#PseudoVersion
+pseudo_version() {
+  local prefix
+  prefix=$(fixed_version)
+  echo "${prefix}.0.$(git show -s --date=format:'%Y%m%d%H%M%S' --format=%cd HEAD)-$(git rev-parse --short=12 HEAD)"
+}
+
+fixed_version() {
+  cat "${REPOSITORY_ROOT}/version.txt"
 }
 
 echo "REPO_URL https://github.com/edgelesssys/constellation.git"
 echo "STABLE_STAMP_COMMIT $(git rev-parse HEAD)"
 echo "STABLE_STAMP_STATE $(git update-index -q --really-refresh && git diff-index --quiet HEAD -- && echo "clean" || echo "dirty")"
-echo "STABLE_STAMP_VERSION $(pseudo_version)"
+echo "STABLE_STAMP_VERSION $(stamp_version)"
 echo "STABLE_STAMP_TIME $(timestamp)"
