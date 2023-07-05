@@ -11,56 +11,56 @@
                 "msteams": {
                     "width": "Full",
                     "entities": [
-                      {
-                        "type": "mention",
-                        "text": "<at>elchead</at>",
-                        "mentioned": {
-                          "id": "3931943b-8d4b-4300-ac7e-bbb06c4da27f",
-                          "name": "Adrian Stobbe"
-                        }
-                      },
-                      {
-                        "type": "mention",
-                        "text": "<at>3u13r</at>",
-                        "mentioned": {
-                          "id": "26869b29-b0d6-48f8-a9ed-7a6374410a53",
-                          "name": "Leonard Cohnen"
-                        }
-                      },
-                      {
-                        "type": "mention",
-                        "text": "<at>daniel-weisse</at>",
-                        "mentioned": {
-                          "id": "759f3380-526e-4776-a620-cc713dce6177",
-                          "name": "Daniel Weisse"
-                        }
-                      },
-                      {
-                        "type": "mention",
-                        "text": "<at>katexochen</at>",
-                        "mentioned": {
-                          "id": "fcb7b554-33bb-47f7-8f0e-41b66aab4556",
-                          "name": "Paul Meyer"
-                        }
-                      },
+                        {
+                            "type": "mention",
+                            "text": "<at>elchead</at>",
+                            "mentioned": {
+                                "id": "3931943b-8d4b-4300-ac7e-bbb06c4da27f",
+                                "name": "Adrian Stobbe"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>3u13r</at>",
+                            "mentioned": {
+                                "id": "26869b29-b0d6-48f8-a9ed-7a6374410a53",
+                                "name": "Leonard Cohnen"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>daniel-weisse</at>",
+                            "mentioned": {
+                                "id": "759f3380-526e-4776-a620-cc713dce6177",
+                                "name": "Daniel Weisse"
+                            }
+                        },
+                        {
+                            "type": "mention",
+                            "text": "<at>katexochen</at>",
+                            "mentioned": {
+                                "id": "fcb7b554-33bb-47f7-8f0e-41b66aab4556",
+                                "name": "Paul Meyer"
+                            }
+                        },
                         {
                             "type": "mention",
                             "text": "<at>derpsteb</at>",
                             "mentioned": {
-                              "id": "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d",
-                              "name": "Otto Bittner"
+                                "id": "a9a34611-9a38-4c00-a8a2-f87d94c2bf7d",
+                                "name": "Otto Bittner"
                             }
-                          },
-                          {
+                        },
+                        {
                             "type": "mention",
                             "text": "<at>malt3</at>",
                             "mentioned": {
-                              "id": "3012fe21-cff7-499d-88cf-48cf12f2e90c",
-                              "name": "Malte Poll"
+                                "id": "3012fe21-cff7-499d-88cf-48cf12f2e90c",
+                                "name": "Malte Poll"
                             }
-                          }
+                        }
                     ]
-                  },
+                },
                 "body": [
                     {
                         "type": "ColumnSet",

@@ -88,6 +88,12 @@ runs:
         if [[ -n "${{ inputs.refStream }}" ]]; then
           yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "RefStream", "value": "${{ inputs.refStream }}" } ]' teams_payload.json
         fi
+        text_value="<at>{{ steps.pick-assignee.outputs.assignee }}</at>"
+        entities=$(jq -c '.attachments[0].content.msteams.entities[]' teams_payload.json)
+        # need to filter entities to only have entry of mentioned person
+        filtered_entity=$(echo $entities | jq -r --arg text_value "$text_value" 'select(.text == $text_value)')
+        yq -iP '.attachments[0].content.msteams.entities = [ '"$filtered_entity"' ]' teams_payload.json
+
 
         yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "<at>${{ steps.pick-assignee.outputs.assignee }}</at>" } ]' teams_payload.json
         yq -iP '.attachments[0].content.actions[0].url = "${{ steps.create-project-card.outputs.jobURL }}"' teams_payload.json
