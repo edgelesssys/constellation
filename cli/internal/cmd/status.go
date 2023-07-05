@@ -28,9 +28,9 @@ import (
 func NewStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "status",
-		Short: "show status of a Constellation cluster",
-		Long: "Show status of a constellation cluster.\n\n" +
-			"Shows microservice, image and Kubernetes versions installed in the cluster. Also show status of current version upgrades.",
+		Short: "Show status of a Constellation cluster",
+		Long: "Show the status of a constellation cluster.\n\n" +
+			"Shows microservice, image, and Kubernetes versions installed in the cluster. Also shows status of current version upgrades.",
 		Args: cobra.NoArgs,
 		RunE: runStatus,
 	}
