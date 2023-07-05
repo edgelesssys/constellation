@@ -14,6 +14,7 @@ import (
 	scalingtypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -229,8 +230,7 @@ func TestListScalingGroups(t *testing.T) {
 		providerID                   string
 		describeAutoScalingGroupsOut []*autoscaling.DescribeAutoScalingGroupsOutput
 		describeAutoScalingGroupsErr []error
-		wantControlPlaneGroupIDs     []string
-		wantWorkerGroupIDs           []string
+		wantGroups                   []cspapi.ScalingGroup
 		wantErr                      bool
 	}{
 		"listing scaling groups work": {
@@ -263,6 +263,10 @@ func TestListScalingGroups(t *testing.T) {
 									Key:   toPtr("constellation-role"),
 									Value: toPtr("worker"),
 								},
+								{
+									Key:   toPtr("constellation-node-group"),
+									Value: toPtr("foo-group"),
+								},
 							},
 						},
 						{
@@ -272,8 +276,29 @@ func TestListScalingGroups(t *testing.T) {
 				},
 			},
 			describeAutoScalingGroupsErr: []error{nil},
-			wantControlPlaneGroupIDs:     []string{"control-plane-asg"},
-			wantWorkerGroupIDs:           []string{"worker-asg", "worker-asg-2"},
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "control-plane-asg",
+					NodeGroupName:        "control_plane_default",
+					GroupID:              "control-plane-asg",
+					AutoscalingGroupName: "control-plane-asg",
+					Role:                 "ControlPlane",
+				},
+				{
+					Name:                 "worker-asg",
+					NodeGroupName:        "worker_default",
+					GroupID:              "worker-asg",
+					AutoscalingGroupName: "worker-asg",
+					Role:                 "Worker",
+				},
+				{
+					Name:                 "worker-asg-2",
+					NodeGroupName:        "foo-group",
+					GroupID:              "worker-asg-2",
+					AutoscalingGroupName: "worker-asg-2",
+					Role:                 "Worker",
+				},
+			},
 		},
 		"fails when describing scaling groups fails": {
 			providerID:                   "aws:///us-east-2a/i-00000000000000000",
@@ -293,14 +318,13 @@ func TestListScalingGroups(t *testing.T) {
 					describeAutoScalingGroupsErr: tc.describeAutoScalingGroupsErr,
 				},
 			}
-			controlPlaneGroupIDs, workerGroupIDs, err := client.ListScalingGroups(context.Background(), tc.providerID)
+			gotGroups, err := client.ListScalingGroups(context.Background(), tc.providerID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantControlPlaneGroupIDs, controlPlaneGroupIDs)
-			assert.Equal(tc.wantWorkerGroupIDs, workerGroupIDs)
+			assert.Equal(tc.wantGroups, gotGroups)
 		})
 	}
 }

@@ -15,6 +15,7 @@ go_library(
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_ec2_imds//:imds",
         "@com_github_aws_aws_sdk_go_v2_service_autoscaling//:autoscaling",
@@ -36,6 +37,7 @@ go_test(
     embed = [":client"],
     deps = [
         "//operators/constellation-node-operator/api/v1alpha1",
+        "//operators/constellation-node-operator/internal/cloud/api",
         "@com_github_aws_aws_sdk_go_v2_service_autoscaling//:autoscaling",
         "@com_github_aws_aws_sdk_go_v2_service_autoscaling//types",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",

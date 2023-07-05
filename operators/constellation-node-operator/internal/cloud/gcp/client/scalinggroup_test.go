@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -330,8 +331,7 @@ func TestListScalingGroups(t *testing.T) {
 		templateLabels               map[string]string
 		listInstanceGroupManagersErr error
 		templateGetErr               error
-		wantControlPlanes            []string
-		wantWorkers                  []string
+		wantGroups                   []cspapi.ScalingGroup
 		wantErr                      bool
 	}{
 		"list instance group managers fails": {
@@ -353,8 +353,14 @@ func TestListScalingGroups(t *testing.T) {
 				"constellation-uid":  "uid",
 				"constellation-role": "control-plane",
 			},
-			wantControlPlanes: []string{
-				"projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "test-control-plane-uid",
+					NodeGroupName:        "control_plane_default",
+					GroupID:              "projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
+					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/test-control-plane-uid",
+					Role:                 "ControlPlane",
+				},
 			},
 		},
 		"list instance group managers for worker": {
@@ -365,8 +371,33 @@ func TestListScalingGroups(t *testing.T) {
 				"constellation-uid":  "uid",
 				"constellation-role": "worker",
 			},
-			wantWorkers: []string{
-				"projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "test-worker-uid",
+					NodeGroupName:        "worker_default",
+					GroupID:              "projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
+					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/test-worker-uid",
+					Role:                 "Worker",
+				},
+			},
+		},
+		"list instance group managers with custom group name": {
+			name:        proto.String("test-worker-uid"),
+			groupID:     proto.String("projects/project/zones/zone/instanceGroupManagers/test-worker-uid"),
+			templateRef: proto.String("projects/project/global/instanceTemplates/test-control-plane-uid"),
+			templateLabels: map[string]string{
+				"constellation-uid":        "uid",
+				"constellation-role":       "worker",
+				"constellation-node-group": "custom-group-name",
+			},
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "test-worker-uid",
+					NodeGroupName:        "custom-group-name",
+					GroupID:              "projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
+					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/test-worker-uid",
+					Role:                 "Worker",
+				},
 			},
 		},
 		"listing instance group managers is not dependant on resource name": {
@@ -377,8 +408,14 @@ func TestListScalingGroups(t *testing.T) {
 				"constellation-uid":  "uid",
 				"constellation-role": "control-plane",
 			},
-			wantControlPlanes: []string{
-				"projects/project/zones/zone/instanceGroupManagers/some-instance-group-manager",
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "some-instance-group-manager",
+					NodeGroupName:        "control_plane_default",
+					GroupID:              "projects/project/zones/zone/instanceGroupManagers/some-instance-group-manager",
+					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/some-instance-group-manager",
+					Role:                 "ControlPlane",
+				},
 			},
 		},
 		"unrelated instance group manager": {
@@ -415,14 +452,13 @@ func TestListScalingGroups(t *testing.T) {
 					getErr: tc.templateGetErr,
 				},
 			}
-			gotControlPlanes, gotWorkers, err := client.ListScalingGroups(context.Background(), "uid")
+			gotGroups, err := client.ListScalingGroups(context.Background(), "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.wantControlPlanes, gotControlPlanes)
-			assert.ElementsMatch(tc.wantWorkers, gotWorkers)
+			assert.ElementsMatch(tc.wantGroups, gotGroups)
 		})
 	}
 }

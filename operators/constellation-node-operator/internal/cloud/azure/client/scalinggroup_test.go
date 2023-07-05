@@ -13,6 +13,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,41 +185,67 @@ func TestGetScalingGroupName(t *testing.T) {
 
 func TestListScalingGroups(t *testing.T) {
 	testCases := map[string]struct {
-		scaleSet          armcompute.VirtualMachineScaleSet
-		fetchPageErr      error
-		wantControlPlanes []string
-		wantWorkers       []string
-		wantErr           bool
+		scaleSet     armcompute.VirtualMachineScaleSet
+		fetchPageErr error
+		wantGroups   []cspapi.ScalingGroup
+		wantErr      bool
 	}{
 		"listing control-plane works": {
 			scaleSet: armcompute.VirtualMachineScaleSet{
-				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"),
+				Name: to.Ptr("constellation-scale-set-control-planes-uid"),
+				ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
 					"constellation-role": to.Ptr("control-plane"),
 				},
 			},
-			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"},
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "constellation-scale-set-control-planes-uid",
+					NodeGroupName:        "control_plane_default",
+					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid",
+					AutoscalingGroupName: "constellation-scale-set-control-planes-uid",
+					Role:                 "ControlPlane",
+				},
+			},
 		},
 		"listing worker works": {
 			scaleSet: armcompute.VirtualMachineScaleSet{
-				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"),
+				Name: to.Ptr("constellation-scale-set-workers-uid"),
+				ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
 					"constellation-role": to.Ptr("worker"),
 				},
 			},
-			wantWorkers: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"},
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "constellation-scale-set-workers-uid",
+					NodeGroupName:        "worker_default",
+					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid",
+					AutoscalingGroupName: "constellation-scale-set-workers-uid",
+					Role:                 "Worker",
+				},
+			},
 		},
 		"listing is not dependent on resource name": {
 			scaleSet: armcompute.VirtualMachineScaleSet{
-				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"),
+				Name: to.Ptr("foo-bar"),
+				ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"),
 				Tags: map[string]*string{
 					"constellation-uid":  to.Ptr("uid"),
 					"constellation-role": to.Ptr("control-plane"),
 				},
 			},
-			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"},
+			wantGroups: []cspapi.ScalingGroup{
+				{
+					Name:                 "some-scale-set",
+					NodeGroupName:        "control_plane_default",
+					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set",
+					AutoscalingGroupName: "some-scale-set",
+					Role:                 "ControlPlane",
+				},
+			},
 		},
 		"listing other works": {
 			scaleSet: armcompute.VirtualMachineScaleSet{
@@ -245,14 +272,13 @@ func TestListScalingGroups(t *testing.T) {
 					},
 				},
 			}
-			gotControlPlanes, gotWorkers, err := client.ListScalingGroups(context.Background(), "uid")
+			gotGroups, err := client.ListScalingGroups(context.Background(), "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.wantControlPlanes, gotControlPlanes)
-			assert.ElementsMatch(tc.wantWorkers, gotWorkers)
+			assert.ElementsMatch(tc.wantGroups, gotGroups)
 		})
 	}
 }
