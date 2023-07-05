@@ -40,7 +40,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.27
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.71
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.36.0
-	github.com/bazelbuild/buildtools v0.0.0-20230317132445-9c3c1fc0106e
+	github.com/bazelbuild/buildtools/v6 v6.1.2
 	github.com/edgelesssys/constellation/v2 v2.6.0
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/hexops/gotextdiff v1.0.3
