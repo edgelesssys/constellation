@@ -77,13 +77,13 @@ type Config struct {
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
 	MicroserviceVersion string `yaml:"microserviceVersion" validate:"required,version_compatibility"`
 	// description: |
-	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
+	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
-	//   Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee our docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
+	//   Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee the docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
 	Attestation AttestationConfig `yaml:"attestation" validate:"dive"`
 }
 
@@ -123,7 +123,7 @@ type AWSConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=standard gp2 gp3 st1 sc1 io1"`
 	// description: |
-	//   Name of the IAM profile to use for the control plane nodes.
+	//   Name of the IAM profile to use for the control-plane nodes.
 	IAMProfileControlPlane string `yaml:"iamProfileControlPlane" validate:"required"`
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
@@ -280,7 +280,7 @@ type QEMUConfig struct {
 // if not required.
 type AttestationConfig struct {
 	// description: |
-	//   AWS SEV-SNP attestation. WARNING: Attestation temporarily relies on AWS nitroTPM. Please see https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.
+	//   AWS SEV-SNP attestation. WARNING: Attestation temporarily relies on AWS nitroTPM. See https://docs.edgeless.systems/constellation/workflows/config#choosing-a-vm-type for more information.
 	AWSSEVSNP *AWSSEVSNP `yaml:"awsSEVSNP,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   AWS Nitro TPM attestation.

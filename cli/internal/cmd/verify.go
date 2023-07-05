@@ -40,8 +40,8 @@ func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify",
 		Short: "Verify the confidential properties of a Constellation cluster",
-		Long: `Verify the confidential properties of a Constellation cluster.\n` +
-			`If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
+		Long: "Verify the confidential properties of a Constellation cluster.\n" +
+			"If arguments aren't specified, values are read from `" + constants.ClusterIDsFileName + "`.",
 		Args: cobra.ExactArgs(0),
 		RunE: runVerify,
 	}

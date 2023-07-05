@@ -30,8 +30,7 @@ var (
 	zoneRegex   = regexp.MustCompile(`^\w+-\w+-[abc]$`)
 	regionRegex = regexp.MustCompile(`^\w+-\w+[0-9]$`)
 	// Source: https://cloud.google.com/resource-manager/reference/rest/v1/projects.
-	projectIDRegex    = regexp.MustCompile(`^[a-z][-a-z0-9]{4,28}[a-z0-9]{1}$`)
-	serviceAccIDRegex = regexp.MustCompile(`^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$`)
+	gcpIDRegex = regexp.MustCompile(`^[a-z][-a-z0-9]{4,28}[a-z0-9]$`)
 )
 
 // NewIAMCmd returns a new cobra.Command for the iam parent command. It needs another verb and does nothing on its own.
@@ -59,7 +58,7 @@ func newIAMCreateCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolP("yes", "y", false, "create the IAM configuration without further confirmation")
-	cmd.PersistentFlags().Bool("update-config", false, "automatically update the config file with the specific IAM information")
+	cmd.PersistentFlags().Bool("update-config", false, "update the config file with the specific IAM information")
 
 	cmd.AddCommand(newIAMCreateAWSCmd())
 	cmd.AddCommand(newIAMCreateAzureCmd())
@@ -80,9 +79,8 @@ func newIAMCreateAWSCmd() *cobra.Command {
 
 	cmd.Flags().String("prefix", "", "name prefix for all resources (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "prefix"))
-	cmd.Flags().String("zone", "", "AWS availability zone the resources will be created in, e.g. us-east-2a (required)\n"+
-		"Find available zones here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones. "+
-		"Note that we do not support every zone / region. You can find a list of all supported regions in our docs.")
+	cmd.Flags().String("zone", "", "AWS availability zone the resources will be created in, e.g., us-east-2a (required)\n"+
+		"See the Constellation docs for a list of currently supported regions.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
 	return cmd
 }
@@ -99,7 +97,7 @@ func newIAMCreateAzureCmd() *cobra.Command {
 
 	cmd.Flags().String("resourceGroup", "", "name prefix of the two resource groups your cluster / IAM resources will be created in (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "resourceGroup"))
-	cmd.Flags().String("region", "", "region the resources will be created in, e.g. westus (required)")
+	cmd.Flags().String("region", "", "region the resources will be created in, e.g., westus (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
 	cmd.Flags().String("servicePrincipal", "", "name of the service principal that will be created (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "servicePrincipal"))
@@ -117,13 +115,13 @@ func newIAMCreateGCPCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String("zone", "", "GCP zone the cluster will be deployed in (required)\n"+
-		"Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available.")
+		"Find a list of available zones here: https://cloud.google.com/compute/docs/regions-zones#available")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "zone"))
 	cmd.Flags().String("serviceAccountID", "", "ID for the service account that will be created (required)\n"+
-		"Must match ^[a-z](?:[-a-z0-9]{4,28}[a-z0-9])$.")
+		"Must be 6 to 30 lowercase letters, digits, or hyphens.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "serviceAccountID"))
 	cmd.Flags().String("projectID", "", "ID of the GCP project the configuration will be created in (required)\n"+
-		"Find it on the welcome screen of your project: https://console.cloud.google.com/welcome.")
+		"Find it on the welcome screen of your project: https://console.cloud.google.com/welcome")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "projectID"))
 
 	return cmd
@@ -501,16 +499,16 @@ func (c *gcpIAMCreator) parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFl
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing projectID string: %w", err)
 	}
-	if !projectIDRegex.MatchString(projectID) {
-		return iamFlags{}, fmt.Errorf("invalid projectID string: %s", projectID)
+	if !gcpIDRegex.MatchString(projectID) {
+		return iamFlags{}, fmt.Errorf("projectID %q doesn't match %s", projectID, gcpIDRegex)
 	}
 
 	serviceAccID, err := cmd.Flags().GetString("serviceAccountID")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing serviceAccountID string: %w", err)
 	}
-	if !serviceAccIDRegex.MatchString(serviceAccID) {
-		return iamFlags{}, fmt.Errorf("invalid serviceAccountID string: %s", serviceAccID)
+	if !gcpIDRegex.MatchString(serviceAccID) {
+		return iamFlags{}, fmt.Errorf("serviceAccountID %q doesn't match %s", serviceAccID, gcpIDRegex)
 	}
 
 	flags.gcp = gcpFlags{
