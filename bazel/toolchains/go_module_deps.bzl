@@ -1997,8 +1997,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/frankban/quicktest",
-        sum = "h1:g2rn0vABPOOXmZUj+vbmUp0lPoXEMuhTpIluN0XL9UY=",
-        version = "v1.14.4",
+        sum = "h1:dfYrrRyLtiqT9GyKXgdh+k4inNeTvmGbuSgZ3lx3GhA=",
+        version = "v1.14.5",
     )
     go_repository(
         name = "com_github_fsnotify_fsnotify",
@@ -3794,8 +3794,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/katexochen/sh/v3",
-        sum = "h1:eIG0cBgpy2u2iQDFgi4fY0Yq38kVBzMSetzuU+ZIGRg=",
-        version = "v3.6.0",
+        sum = "h1:jrU9BWBgp9o2NcetUVm3dNpQ2SK1zG6aF6WF0wtPajc=",
+        version = "v3.7.0",
     )
 
     go_repository(
@@ -5220,8 +5220,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/rogpeppe/go-internal",
-        sum = "h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=",
-        version = "v1.10.0",
+        sum = "h1:3RPlVWzZ/PDqmVuf/FKHARG5EMid/tl7cv54Sw/QRVY=",
+        version = "v1.10.1-0.20230524175051-ec119421bb97",
     )
     go_repository(
         name = "com_github_rs_cors",
