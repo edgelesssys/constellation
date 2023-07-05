@@ -8,100 +8,7 @@ You have two options:
 
 Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
-## Quick setup
-
-### Prerequisites
-
-* [Install Terraform](https://developer.hashicorp.com/terraform/downloads)
-* [Install the Azure CLI](https://learn.microsoft.com/de-de/cli/azure/install-azure-cli)
-  to authenticate with Azure:
-
-  ```sh
-  az login
-  ```
-
-### Instructions
-
-Through the Terraform template for Azure it's easy to set up a MiniConstellation cluster on a remote VM.
-
-1. Clone the Constellation repository:
-
-    ```sh
-    git clone https://github.com/edgelesssys/constellation.git
-    ```
-
-2. Set up the remote Azure VM through Terraform:
-
-    By default, the [`Standard_D8s_v5`](https://learn.microsoft.com/de-de/azure/virtual-machines/dv5-dsv5-series) machine type is selected which supports nested virtualization, but you can also set another supported machine type in Terraform (`machine_type`) by referring to the [Azure docs](https://azure.microsoft.com/en-us/blog/nested-virtualization-in-azure/).
-    Then run:
-
-    ```sh
-    cd constellation/dev-docs/miniconstellation/azure-terraform
-    ./create-vm.sh
-    ```
-
-    After execution, you should be connected with the remote machine through SSH.
-    If you accidentally lose connection, you can reconnect via
-
-    ```sh
-    ssh -i id_rsa adminuser@$INSERT_VM_IP_ADDRESS
-    ```
-
-3. Prepare the VM for `constellation mini up`
-
-    Once logged into the machine, install the Constellation CLI:
-
-    ```sh
-    echo "Installing Constellation CLI"
-    curl -LO <https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64>
-    sudo install constellation-linux-amd64 /usr/local/bin/constellation
-    ```
-
-    and start the Docker service and make sure that it's running:
-
-    ```sh
-    sudo systemctl start docker.service && sudo systemctl enable docker.service
-    # verify that it is active
-    systemctl is-active docker
-    ```
-
-    At last, create the Constellation cluster in a workspace directory:
-
-    ```sh
-    mkdir constellation_workspace && cd constellation_workspace
-    constellation mini up
-    ```
-
-    The cluster creation takes about 15 minutes.
-
-   For convenience, there is a script that does these steps automatically:
-
-   ```sh
-   ./setup-miniconstellation.sh
-   ```
-
-4. Verify the Kubernetes cluster
-
-    Running:
-
-      ```sh
-      export KUBECONFIG="$PWD/constellation-admin.conf"
-      kubectl get nodes
-      ```
-
-      should show both one control-plane and one worker node.
-
-1. Clean up cloud resources
-
-    Exit the SSH connection (Ctrl+D) and run:
-
-    ```sh
-    terraform destroy
-    ```
-
-## Manual setup
-
-### Prerequisites
+## Prerequisites
 
 * machine requirements:
   * An x86-64 CPU with at least 4 cores (6 cores are recommended)
@@ -110,33 +17,33 @@ Through the Terraform template for Azure it's easy to set up a MiniConstellation
   * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM) / nested-virtualization support when using a VM
 * OS / library requirements:
   * recommended: Ubuntu 22.04 LTS
-  * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
-  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
-  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
+  * otherwise:
+    * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
+    * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+    * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 
 * software requirements:
-  * [Docker](https://docs.docker.com/engine/install/)
-  * [Constellation CLI](./install.md#install-the-constellation-cli)
-
   * install requirements
 
     ```sh
+    # install Docker
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
     apt-get update
     apt-get install -y docker-ce docker-ce-cli containerd.io libssl-dev pigz
     systemctl enable docker.service && systemctl start docker.service
+    # install kubectl
     curl -fsSLO "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && install kubectl /usr/local/bin/kubectl
-
+    # install Constellation CLI
     curl -LO <https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64>
     sudo install constellation-linux-amd64 /usr/local/bin/constellation
-
+    # do not drop forwarded packages
     sudo iptables -S | grep -q -- '-P FORWARD DROP'
     ```
 
     If running the following the `iptables` command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access).
 
-### Create a cluster through `mini up` (easy)
+## Create a cluster
 
 <tabs groupId="csp">
 <tabItem value="mini" label="MiniConstellation">
@@ -166,8 +73,6 @@ constellation mini up
 
 This will configure your current directory as the [workspace](../architecture/orchestration.md#workspaces) for this cluster.
 All `constellation` commands concerning this cluster need to be issued from this directory.
-
-### Create a QEMU cluster
 
 </tabItem>
 <tabItem value="qemu" label="QEMU">
