@@ -1924,6 +1924,14 @@ def go_dependencies():
         sum = "h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=",
         version = "v1.14.1",
     )
+    go_repository(
+        name = "com_github_favadi_protoc_go_inject_tag",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/favadi/protoc-go-inject-tag",
+        sum = "h1:K3KXxbgRw5WT4f43LbglARGz/8jVsDOS7uMjG4oNvXY=",
+        version = "v1.4.0",
+    )
 
     go_repository(
         name = "com_github_felixge_httpsnoop",
@@ -3186,8 +3194,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/go-kms-wrapping/v2",
-        sum = "h1:9Q2lu1YbbmiAgvYZ7Pr31RdlVonUpX+mmDL7Z7qTA2U=",
-        version = "v2.0.8",
+        sum = "h1:A51EguZ576URdtcQ0l8mT/tOD948oAtmP1soqIHIFfI=",
+        version = "v2.0.10",
     )
     go_repository(
         name = "com_github_hashicorp_go_kms_wrapping_wrappers_awskms_v2",
