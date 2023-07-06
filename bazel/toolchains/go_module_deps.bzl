@@ -3006,8 +3006,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/gophercloud/gophercloud",
-        sum = "h1:RUKyCMiZoQR3VlVR5E3K7PK1AC3/qppsWYo6dtBiqs8=",
-        version = "v1.3.0",
+        sum = "h1:cDN6XFCLKiiqvYpjQLq9AiM7RDRbIC9450WpPH+yvXo=",
+        version = "v1.5.0",
     )
     go_repository(
         name = "com_github_gophercloud_utils",
