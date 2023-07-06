@@ -32,6 +32,7 @@ function startBazelServer {
     -v "${HOME}/.cache/bazel":"/home/builder/.cache/bazel" \
     -v "${HOME}/.cache/shared_bazel_repository_cache":"/home/builder/.cache/shared_bazel_repository_cache" \
     -v "${HOME}/.cache/shared_bazel_action_cache":"/home/builder/.cache/shared_bazel_action_cache" \
+    -v "${HOME}/.docker/config.json":"/home/builder/.docker/config.json" \
     --entrypoint=/bin/sleep \
     "${containerImage}" \
     infinity || return $?
