@@ -22,7 +22,7 @@ type Mounter interface {
 
 // DeviceMapper is an interface for device mapping operations.
 type DeviceMapper interface {
-	DiskUUID() string
+	DiskUUID() (string, error)
 	FormatDisk(passphrase string) error
 	MapDisk(target string, passphrase string) error
 	UnmapDisk(target string) error

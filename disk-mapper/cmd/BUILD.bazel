@@ -7,7 +7,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/cmd",
     visibility = ["//visibility:private"],
     deps = [
-        "//disk-mapper/internal/mapper",
+        "//disk-mapper/internal/diskencryption",
         "//disk-mapper/internal/recoveryserver",
         "//disk-mapper/internal/rejoinclient",
         "//disk-mapper/internal/setup",

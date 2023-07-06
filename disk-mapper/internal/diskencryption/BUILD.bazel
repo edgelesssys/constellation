@@ -62,3 +62,15 @@ go_library(
         "//conditions:default": [],
     }),
 )
+
+go_library(
+    name = "diskencryption",
+    srcs = ["diskencryption.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption",
+    visibility = ["//disk-mapper:__subpackages__"],
+    deps = [
+        "//internal/cryptsetup",
+        "//internal/logger",
+        "@org_uber_go_zap//:zap",
+    ],
+)
