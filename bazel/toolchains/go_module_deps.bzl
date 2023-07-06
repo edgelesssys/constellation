@@ -7413,16 +7413,16 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "go.etcd.io/etcd/api/v3",
-        sum = "h1:sbcmosSVesNrWOJ58ZQFitHMdncusIifYcrBfwrlJSY=",
-        version = "v3.5.7",
+        sum = "h1:4wSsluwyTbGGmyjJktOf3wFQoTBIURXHnq9n/G/JQHs=",
+        version = "v3.5.9",
     )
     go_repository(
         name = "io_etcd_go_etcd_client_pkg_v3",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "go.etcd.io/etcd/client/pkg/v3",
-        sum = "h1:y3kf5Gbp4e4q7egZdn5T7W9TSHUvkClN6u+Rq9mEOmg=",
-        version = "v3.5.7",
+        sum = "h1:oidDC4+YEuSIQbsR94rY9gur91UPL6DnxDCIYd2IGsE=",
+        version = "v3.5.9",
     )
     go_repository(
         name = "io_etcd_go_etcd_client_v2",
@@ -7437,8 +7437,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "go.etcd.io/etcd/client/v3",
-        sum = "h1:u/OhpiuCgYY8awOHlhIhmGIGpxfBU/GZBUP3m/3/Iz4=",
-        version = "v3.5.7",
+        sum = "h1:r5xghnU7CwbUxD/fbUtRyJGaYNfDun8sp/gTr1hew6E=",
+        version = "v3.5.9",
     )
     go_repository(
         name = "io_etcd_go_etcd_etcdctl_v3",
