@@ -267,14 +267,6 @@ def go_dependencies():
     )
 
     go_repository(
-        name = "com_github_apparentlymart_go_textseg",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/apparentlymart/go-textseg",
-        sum = "h1:rRmlIsPEEhUTIKQb7T++Nz/A5Q6C9IuX2wFoYVvnCs0=",
-        version = "v1.0.0",
-    )
-    go_repository(
         name = "com_github_apparentlymart_go_textseg_v13",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -3399,8 +3391,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/hashicorp/terraform-json",
-        sum = "h1:/gIyNtR6SFw6h5yzlbDbACyGvIhKtQi8mTsbkNd79lE=",
-        version = "v0.15.0",
+        sum = "h1:eMfvh/uWggKmY7Pmb3T85u86E2EQg6EQHgyRwf3RkyA=",
+        version = "v0.17.1",
     )
     go_repository(
         name = "com_github_hashicorp_vault_api",
@@ -5886,22 +5878,6 @@ def go_dependencies():
     )
 
     go_repository(
-        name = "com_github_vmihailenco_msgpack",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/vmihailenco/msgpack",
-        sum = "h1:wapg9xDUZDzGCNFlwc5SqI1rvcciqcxEHac4CYj89xI=",
-        version = "v3.3.3+incompatible",
-    )
-    go_repository(
-        name = "com_github_vmihailenco_msgpack_v4",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/vmihailenco/msgpack/v4",
-        sum = "h1:07s4sz9IReOgdikxLTKNbBdqDMLsjPKXwvCazn8G65U=",
-        version = "v4.3.12",
-    )
-    go_repository(
         name = "com_github_vmihailenco_msgpack_v5",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
@@ -5909,14 +5885,7 @@ def go_dependencies():
         sum = "h1:5gO0H1iULLWGhs2H5tbAHIZTV8/cYafcFOr9znI5mJU=",
         version = "v5.3.5",
     )
-    go_repository(
-        name = "com_github_vmihailenco_tagparser",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/vmihailenco/tagparser",
-        sum = "h1:quXMXlA39OCbd2wAdTsGDlK9RkOk6Wuw+x37wVyIuWY=",
-        version = "v0.1.1",
-    )
+
     go_repository(
         name = "com_github_vmihailenco_tagparser_v2",
         build_file_generation = "on",
@@ -6162,8 +6131,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/zclconf/go-cty",
-        sum = "h1:It5dfKTTZHe9aeppbNOda3mN7Ag7sg6QkBNm6TkyFa0=",
-        version = "v1.13.0",
+        sum = "h1:4GvrUxe/QUDYuJKAav4EYqdM47/kZa672LwmXFmEKT0=",
+        version = "v1.13.2",
     )
     go_repository(
         name = "com_github_zclconf_go_cty_debug",
