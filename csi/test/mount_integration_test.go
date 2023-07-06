@@ -16,22 +16,27 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
+	"github.com/edgelesssys/constellation/v2/internal/cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
 const (
-	DevicePath string = "testDevice"
-	DeviceName string = "testDeviceName"
+	devicePath string = "testDevice"
+	deviceName string = "testdeviceName"
 )
 
 func setup() {
-	_ = exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=64M", "count=1").Run()
+	if err := exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=64M", "count=1").Run(); err != nil {
+		panic(err)
+	}
 }
 
 func teardown(devicePath string) {
-	_ = exec.Command("/bin/rm", "-f", devicePath).Run()
+	if err := exec.Command("/bin/rm", "-f", devicePath).Run(); err != nil {
+		panic(err)
+	}
 }
 
 func cp(source, target string) error {
@@ -39,7 +44,9 @@ func cp(source, target string) error {
 }
 
 func resize() {
-	_ = exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run()
+	if err := exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run(); err != nil {
+		panic(err)
+	}
 }
 
 func TestMain(m *testing.M) {
@@ -58,17 +65,19 @@ func TestOpenAndClose(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	setup()
-	defer teardown(DevicePath)
+	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&fakeKMS{}, &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(&fakeKMS{}, cryptsetup.New())
 
-	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
+	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
 	require.NoError(err)
-	assert.Equal("/dev/mapper/"+DeviceName, newPath)
+	defer func() {
+		_ = mapper.CloseCryptDevice(deviceName)
+	}()
 
 	// assert crypt device got created
 	_, err = os.Stat(newPath)
-	assert.NoError(err)
+	require.NoError(err)
 	// assert no integrity device got created
 	_, err = os.Stat(newPath + "_dif")
 	assert.True(os.IsNotExist(err))
@@ -76,33 +85,33 @@ func TestOpenAndClose(t *testing.T) {
 	// Resize the device
 	resize()
 
-	resizedPath, err := mapper.ResizeCryptDevice(context.Background(), DeviceName)
+	resizedPath, err := mapper.ResizeCryptDevice(context.Background(), deviceName)
 	require.NoError(err)
-	assert.Equal("/dev/mapper/"+DeviceName, resizedPath)
+	assert.Equal("/dev/mapper/"+deviceName, resizedPath)
 
-	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+	assert.NoError(mapper.CloseCryptDevice(deviceName))
 
 	// assert crypt device got removed
 	_, err = os.Stat(newPath)
 	assert.True(os.IsNotExist(err))
 
 	// check if we can reopen the device
-	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
+	_, err = mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
 	assert.NoError(err)
-	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+	assert.NoError(mapper.CloseCryptDevice(deviceName))
 }
 
 func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	setup()
-	defer teardown(DevicePath)
+	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&fakeKMS{}, &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(&fakeKMS{}, cryptsetup.New())
 
-	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
+	newPath, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
 	require.NoError(err)
-	assert.Equal("/dev/mapper/"+DeviceName, newPath)
+	assert.Equal("/dev/mapper/"+deviceName, newPath)
 
 	// assert crypt device got created
 	_, err = os.Stat(newPath)
@@ -113,10 +122,10 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 
 	// integrity devices do not support resizing
 	resize()
-	_, err = mapper.ResizeCryptDevice(context.Background(), DeviceName)
+	_, err = mapper.ResizeCryptDevice(context.Background(), deviceName)
 	assert.Error(err)
 
-	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+	assert.NoError(mapper.CloseCryptDevice(deviceName))
 
 	// assert crypt device got removed
 	_, err = os.Stat(newPath)
@@ -126,30 +135,30 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert.True(os.IsNotExist(err))
 
 	// check if we can reopen the device
-	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
+	_, err = mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, true)
 	assert.NoError(err)
-	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+	assert.NoError(mapper.CloseCryptDevice(deviceName))
 }
 
 func TestDeviceCloning(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	setup()
-	defer teardown(DevicePath)
+	defer teardown(devicePath)
 
-	mapper := cryptmapper.New(&dynamicKMS{}, &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(&dynamicKMS{}, cryptsetup.New())
 
-	_, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
+	_, err := mapper.OpenCryptDevice(context.Background(), devicePath, deviceName, false)
 	assert.NoError(err)
 
-	require.NoError(cp(DevicePath, DevicePath+"-copy"))
-	defer teardown(DevicePath + "-copy")
+	require.NoError(cp(devicePath, devicePath+"-copy"))
+	defer teardown(devicePath + "-copy")
 
-	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath+"-copy", DeviceName+"-copy", false)
+	_, err = mapper.OpenCryptDevice(context.Background(), devicePath+"-copy", deviceName+"-copy", false)
 	assert.NoError(err)
 
-	assert.NoError(mapper.CloseCryptDevice(DeviceName))
-	assert.NoError(mapper.CloseCryptDevice(DeviceName + "-copy"))
+	assert.NoError(mapper.CloseCryptDevice(deviceName))
+	assert.NoError(mapper.CloseCryptDevice(deviceName + "-copy"))
 }
 
 type fakeKMS struct{}
