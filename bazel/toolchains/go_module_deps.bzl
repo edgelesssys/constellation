@@ -4119,8 +4119,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/opencontainers/image-spec",
-        sum = "h1:fzg1mXZFj8YdPeNkRXMg+zb88BFV0Ys52cJydRwBkb8=",
-        version = "v1.1.0-rc3",
+        sum = "h1:oOxKUJWnFC4YGHCCMNql1x4YaDfYBTS5Y4x/Cgeo1E0=",
+        version = "v1.1.0-rc4",
     )
     go_repository(
         name = "com_github_opencontainers_runc",
