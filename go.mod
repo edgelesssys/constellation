@@ -33,7 +33,7 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
-	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299
+	github.com/google/go-tpm => github.com/thomasten/go-tpm f43f8e2a59eb
 	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230612131025-c1ddd5ded590
 )
 
