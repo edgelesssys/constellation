@@ -147,7 +147,7 @@ func main() {
 	}
 
 	// prepare the state disk
-	if mapper.IsLUKSDevice() {
+	if mapper.IsInitialized() {
 		// set up rejoin client
 		var self metadata.InstanceMetadata
 		self, err = metadataClient.Self(context.Background())

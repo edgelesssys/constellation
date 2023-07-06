@@ -90,6 +90,6 @@ func (s *stubCryptdevice) KeyslotChangeByPassphrase(_, _ int, _, _ string) error
 	return s.keyslotChangeErr
 }
 
-func (s *stubCryptdevice) Close() error {
+func (s *stubCryptdevice) SetConstellationStateDiskToken(bool) error {
 	return nil
 }

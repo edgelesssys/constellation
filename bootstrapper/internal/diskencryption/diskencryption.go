@@ -52,7 +52,12 @@ func (c *DiskEncryption) UpdatePassphrase(passphrase string) error {
 	if err != nil {
 		return err
 	}
-	return c.device.KeyslotChangeByPassphrase(keyslot, keyslot, initialPassphrase, passphrase)
+	if err := c.device.KeyslotChangeByPassphrase(keyslot, keyslot, initialPassphrase, passphrase); err != nil {
+		return err
+	}
+
+	// Set token as initialized.
+	return c.device.SetConstellationStateDiskToken(cryptsetup.SetDiskInitialized)
 }
 
 // getInitialPassphrase retrieves the initial passphrase used on first boot.
@@ -68,4 +73,5 @@ type cryptdevice interface {
 	InitByName(name string) (func(), error)
 	GetUUID() (string, error)
 	KeyslotChangeByPassphrase(currentKeyslot int, newKeyslot int, currentPassphrase string, newPassphrase string) error
+	SetConstellationStateDiskToken(bool) error
 }
