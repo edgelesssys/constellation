@@ -77,7 +77,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/go-tpm v0.3.3
 	github.com/google/go-tpm-tools v0.3.12
-	github.com/googleapis/gax-go/v2 v2.11.0
+	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.8
 	github.com/hashicorp/go-kms-wrapping/wrappers/awskms/v2 v2.0.7
