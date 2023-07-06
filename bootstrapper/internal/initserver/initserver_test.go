@@ -360,8 +360,8 @@ type fakeDisk struct {
 	wantKey []byte
 }
 
-func (d *fakeDisk) Open() error {
-	return nil
+func (d *fakeDisk) Open() (func(), error) {
+	return func() {}, nil
 }
 
 func (d *fakeDisk) Close() error {
@@ -381,19 +381,14 @@ func (d *fakeDisk) UpdatePassphrase(passphrase string) error {
 
 type stubDisk struct {
 	openErr                error
-	closeErr               error
 	uuid                   string
 	uuidErr                error
 	updatePassphraseErr    error
 	updatePassphraseCalled bool
 }
 
-func (d *stubDisk) Open() error {
-	return d.openErr
-}
-
-func (d *stubDisk) Close() error {
-	return d.closeErr
+func (d *stubDisk) Open() (func(), error) {
+	return func() {}, d.openErr
 }
 
 func (d *stubDisk) UUID() (string, error) {

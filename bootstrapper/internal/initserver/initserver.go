@@ -299,10 +299,11 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
-	if err := s.disk.Open(); err != nil {
+	free, err := s.disk.Open()
+	if err != nil {
 		return fmt.Errorf("opening encrypted disk: %w", err)
 	}
-	defer s.disk.Close()
+	defer free()
 
 	uuid, err := s.disk.UUID()
 	if err != nil {
@@ -353,9 +354,7 @@ type ClusterInitializer interface {
 
 type encryptedDisk interface {
 	// Open prepares the underlying device for disk operations.
-	Open() error
-	// Close closes the underlying device.
-	Close() error
+	Open() (free func(), err error)
 	// UUID gets the device's UUID.
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.

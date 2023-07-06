@@ -400,19 +400,14 @@ func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapToken
 
 type stubDisk struct {
 	openErr                error
-	closeErr               error
 	uuid                   string
 	uuidErr                error
 	updatePassphraseErr    error
 	updatePassphraseCalled bool
 }
 
-func (d *stubDisk) Open() error {
-	return d.openErr
-}
-
-func (d *stubDisk) Close() error {
-	return d.closeErr
+func (d *stubDisk) Open() (func(), error) {
+	return func() {}, d.openErr
 }
 
 func (d *stubDisk) UUID() (string, error) {

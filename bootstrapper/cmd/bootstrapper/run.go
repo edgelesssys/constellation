@@ -82,10 +82,11 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 
 func getDiskUUID() (string, error) {
 	disk := diskencryption.New()
-	if err := disk.Open(); err != nil {
+	free, err := disk.Open()
+	if err != nil {
 		return "", err
 	}
-	defer disk.Close()
+	defer free()
 	return disk.UUID()
 }
 

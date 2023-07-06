@@ -340,18 +340,20 @@ func (c *JoinClient) getNodeMetadata() error {
 }
 
 func (c *JoinClient) updateDiskPassphrase(passphrase string) error {
-	if err := c.disk.Open(); err != nil {
+	free, err := c.disk.Open()
+	if err != nil {
 		return fmt.Errorf("opening disk: %w", err)
 	}
-	defer c.disk.Close()
+	defer free()
 	return c.disk.UpdatePassphrase(passphrase)
 }
 
 func (c *JoinClient) getDiskUUID() (string, error) {
-	if err := c.disk.Open(); err != nil {
+	free, err := c.disk.Open()
+	if err != nil {
 		return "", fmt.Errorf("opening disk: %w", err)
 	}
-	defer c.disk.Close()
+	defer free()
 	return c.disk.UUID()
 }
 
@@ -427,9 +429,7 @@ type MetadataAPI interface {
 
 type encryptedDisk interface {
 	// Open prepares the underlying device for disk operations.
-	Open() error
-	// Close closes the underlying device.
-	Close() error
+	Open() (func(), error)
 	// UUID gets the device's UUID.
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
