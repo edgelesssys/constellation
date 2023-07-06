@@ -7777,8 +7777,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "k8s.io/kubernetes",
-        sum = "h1:g4v9oY6u7vBUDEuq4FvC50Bbw2K7GZuvM00IIESWVf4=",
-        version = "v1.27.2",
+        sum = "h1:gwufSj7y6X18Q2Gl8v4Ev+AJHdzWkG7A8VNFffS9vu0=",
+        version = "v1.27.3",
     )
     go_repository(
         name = "io_k8s_legacy_cloud_providers",
