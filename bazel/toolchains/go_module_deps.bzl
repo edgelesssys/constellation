@@ -8242,8 +8242,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/crypto",
-        sum = "h1:LKqV2xt9+kDzSTfOhx4FrkEBcMrAgHSYgzywV9zcGmM=",
-        version = "v0.10.0",
+        sum = "h1:6Ewdq3tDic1mg5xRO4milcWCfMVQhI4NkqWWvqejpuA=",
+        version = "v0.11.0",
     )
     go_repository(
         name = "org_golang_x_exp",
@@ -8323,16 +8323,16 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/term",
-        sum = "h1:GRRCnKYhdQrD8kfRAdQ6Zcw1P0OcELxGLKJvtjVMZ28=",
-        version = "v0.9.0",
+        sum = "h1:3R7pNqamzBraeqj/Tj8qt1aQ2HpmlC+Cx/qL/7hn4/c=",
+        version = "v0.10.0",
     )
     go_repository(
         name = "org_golang_x_text",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/text",
-        sum = "h1:UpjohKhiEgNc0CSauXmwYftY1+LlaC75SJwh0SgCX58=",
-        version = "v0.10.0",
+        sum = "h1:LAntKIrcmeSKERyiOh0XMV39LXS8IE9UL2yP7+f5ij4=",
+        version = "v0.11.0",
     )
     go_repository(
         name = "org_golang_x_time",
