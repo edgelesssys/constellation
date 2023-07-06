@@ -8,6 +8,7 @@ def _sh_template_impl(ctx):
     substitutions = {}
     for k, v in ctx.attr.substitutions.items():
         sub = ctx.expand_location(v, ctx.attr.data)
+        sub = ctx.expand_make_variables("substitutions", sub, {})
         substitutions[k] = sub
 
     ctx.actions.expand_template(
@@ -50,6 +51,7 @@ def sh_template(name, **kwargs):
     substitutions = kwargs.pop("substitutions", [])
     substitutions["@@BASE_LIB@@"] = "$(rootpath //bazel/sh:base_lib)"
     template = kwargs.pop("template", [])
+    toolchains = kwargs.pop("toolchains", [])
 
     _sh_template(
         name = script_name,
@@ -57,6 +59,7 @@ def sh_template(name, **kwargs):
         data = data,
         substitutions = substitutions,
         template = template,
+        toolchains = toolchains,
     )
 
     native.sh_binary(
