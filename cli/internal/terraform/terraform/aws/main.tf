@@ -74,8 +74,6 @@ module "public_private_subnet" {
   zone                     = var.zone
   zones                    = local.zones
   tags                     = local.tags
-  depends_on               = [aws_vpc.vpc]
-
 }
 
 resource "aws_eip" "lb" {
@@ -199,7 +197,6 @@ module "load_balancer_target_bootstrapper" {
   port                 = local.ports_bootstrapper
   tags                 = local.tags
   healthcheck_protocol = "TCP"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "load_balancer_target_kubernetes" {
@@ -211,7 +208,6 @@ module "load_balancer_target_kubernetes" {
   tags                 = local.tags
   healthcheck_protocol = "HTTPS"
   healthcheck_path     = "/readyz"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "load_balancer_target_verify" {
@@ -222,7 +218,6 @@ module "load_balancer_target_verify" {
   port                 = local.ports_verify
   tags                 = local.tags
   healthcheck_protocol = "TCP"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "load_balancer_target_recovery" {
@@ -233,7 +228,6 @@ module "load_balancer_target_recovery" {
   port                 = local.ports_recovery
   tags                 = local.tags
   healthcheck_protocol = "TCP"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "load_balancer_target_debugd" {
@@ -245,7 +239,6 @@ module "load_balancer_target_debugd" {
   port                 = local.ports_debugd
   tags                 = local.tags
   healthcheck_protocol = "TCP"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "load_balancer_target_konnectivity" {
@@ -256,7 +249,6 @@ module "load_balancer_target_konnectivity" {
   port                 = local.ports_konnectivity
   tags                 = local.tags
   healthcheck_protocol = "TCP"
-  depends_on           = [aws_vpc.vpc]
 }
 
 module "instance_group" {
