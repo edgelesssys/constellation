@@ -52,7 +52,7 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 	golang.org/x/mod v0.12.0
 	gopkg.in/square/go-jose.v2 v2.6.0
-	libvirt.org/go/libvirt v1.8010.0
+	libvirt.org/go/libvirt v1.9004.0
 )
 
 require (
