@@ -90,9 +90,15 @@ runs:
         fi
         text_value="<at>{{ steps.pick-assignee.outputs.assignee }}</at>"
         entities=$(jq -c '.attachments[0].content.msteams.entities[]' teams_payload.json)
+        echo ENTITIES $entities
         # need to filter entities to only have entry of mentioned person
         filtered_entity=$(echo $entities | jq -r --arg text_value "$text_value" 'select(.text == $text_value)')
-        yq -iP '.attachments[0].content.msteams.entities = [ '"$filtered_entity"' ]' teams_payload.json
+        echo FILTER $filtered_entity
+        echo BEFORE_INSERT
+        jq '.attachments[0].content.msteams.entities' teams_payload.json
+        yq -iP '.attachments[0].content.msteams.entities = [ '"$(echo $entities | jq -r --arg text_value "$text_value" 'select(.text == $text_value)')"' ]' teams_payload.jsonteams_payload.json
+        jq '.attachments[0].content.msteams.entities' teams_payload.json
+        echo AFTER_INSERT
 
 
         yq -iP '.attachments[0].content.body[0].columns[1].items[2].facts += [ { "title": "Assignee", "value": "<at>${{ steps.pick-assignee.outputs.assignee }}</at>" } ]' teams_payload.json
@@ -100,7 +106,6 @@ runs:
         yq -iP '.attachments[0].content.actions[1].url = "${{ steps.create-project-card.outputs.issueURL }}"' teams_payload.json
         yq -iP ".attachments[0].content.actions[2].url = \"${{ steps.create-project-card.outputs.opensearchURL }}\"" teams_payload.json
         cat teams_payload.json
-
         curl \
           -H "Content-Type: application/json" \
           -d @teams_payload.json \
