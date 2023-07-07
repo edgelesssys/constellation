@@ -126,6 +126,7 @@ attaching persistent storage, or autoscaling aren't available.
   ```shell-session
   $ constellation init
   Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+  Note: If you just created the cluster, it can take a few minutes to connect.
   Initializing cluster ...
   Your Constellation cluster was successfully initialized.
 
