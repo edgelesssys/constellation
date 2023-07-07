@@ -5225,14 +5225,6 @@ def go_dependencies():
         sum = "h1:p3Vo3i64TCLY7gIfzeQaUJ+kppEO5WQG3cL8iE8tGHU=",
         version = "v0.0.0-20190923202752-2cc03de413da",
     )
-    go_repository(
-        name = "com_github_santhosh_tekuri_jsonschema_v5",
-        build_file_generation = "on",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/santhosh-tekuri/jsonschema/v5",
-        sum = "h1:WCcC4vZDS1tYNxjWlwRJZQy28r8CMoggKnxNzxsVDMQ=",
-        version = "v5.2.0",
-    )
 
     go_repository(
         name = "com_github_sassoftware_go_rpmutils",
@@ -5439,8 +5431,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/siderolabs/talos/pkg/machinery",
-        sum = "h1:OcfrGmzip4kPDF7A4dccI1RFg3MACqgxHYYPTdSzzC8=",
-        version = "v1.4.4",
+        sum = "h1:SX7Q6FxTDyX2hxugMgIqyivXWzemgMhHj3AlDbxjuFw=",
+        version = "v1.4.6",
     )
     go_repository(
         name = "com_github_sigstore_protobuf_specs",
