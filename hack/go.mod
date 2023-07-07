@@ -125,7 +125,7 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0 // indirect
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f // indirect
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20230707101700-a683be600fcf // indirect
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -163,12 +163,12 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
+	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
 	github.com/google/go-sev-guest v0.6.1 // indirect
-	github.com/google/go-tpm v0.3.3 // indirect
-	github.com/google/go-tpm-tools v0.3.12 // indirect
+	github.com/google/go-tpm v0.9.0 // indirect
+	github.com/google/go-tpm-tools v0.4.0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/logger v1.1.1 // indirect

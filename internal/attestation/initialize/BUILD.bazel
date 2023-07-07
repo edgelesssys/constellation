@@ -10,7 +10,7 @@ go_library(
         "//internal/attestation/measurements",
         "//internal/attestation/tdx",
         "@com_github_edgelesssys_go_tdx_qpl//tdx",
-        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm//legacy/tpm2",
     ],
 )
 
@@ -21,7 +21,7 @@ go_test(
     deps = [
         "//internal/attestation/measurements",
         "//internal/attestation/simulator",
-        "@com_github_google_go_tpm//tpm2",
+        "@com_github_google_go_tpm//legacy/tpm2",
         "@com_github_google_go_tpm_tools//client",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

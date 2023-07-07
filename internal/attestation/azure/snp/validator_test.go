@@ -25,7 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

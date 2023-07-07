@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	tpmclient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 const (
@@ -109,7 +109,7 @@ func (i *Issuer) getAttestationCert(ctx context.Context, tpm io.ReadWriteCloser,
 
 // getAttestationKey reads the Azure trusted launch attesation key.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx)
+	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx, tpmclient.NullSession{})
 	if err != nil {
 		return nil, fmt.Errorf("reading attestation key from TPM: %w", err)
 	}

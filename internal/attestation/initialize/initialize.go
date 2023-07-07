@@ -16,7 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/tdx"
 	tdxapi "github.com/edgelesssys/go-tdx-qpl/tdx"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 // MarkNodeAsBootstrapped marks a node as initialized by extending PCRs.

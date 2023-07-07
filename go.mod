@@ -33,8 +33,7 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api => ./operators/constellation-node-operator/api
-	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230222180349-bb3cc5560299
-	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20230612131025-c1ddd5ded590
+	github.com/google/go-tpm => github.com/thomasten/go-tpm v0.0.0-20230629092004-f43f8e2a59eb
 )
 
 require (
@@ -69,14 +68,14 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
-	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f
+	github.com/edgelesssys/go-azguestattestation v0.0.0-20230707101700-a683be600fcf
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.14.1
-	github.com/google/go-tpm v0.3.3
-	github.com/google/go-tpm-tools v0.3.12
+	github.com/google/go-tpm v0.9.0
+	github.com/google/go-tpm-tools v0.4.0
 	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/go-kms-wrapping/v2 v2.0.10
@@ -228,7 +227,7 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
+	github.com/google/go-attestation v0.5.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.15.2 // indirect
 	github.com/google/go-sev-guest v0.6.1 // indirect

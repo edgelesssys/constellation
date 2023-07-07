@@ -11,7 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/measurement-reader/internal/sorted"
 	tpmClient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 // Measurements returns a sorted list of TPM PCR measurements.

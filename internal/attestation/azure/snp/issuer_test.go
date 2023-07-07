@@ -16,7 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/go-azguestattestation/maa"
 	tpmclient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
