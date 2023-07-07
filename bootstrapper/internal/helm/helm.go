@@ -35,6 +35,8 @@ import (
 const (
 	// timeout is the maximum time given to the helm client.
 	timeout = 5 * time.Minute
+	// maximumRetryAttempts is the maximum number of attempts to retry a helm install.
+	maximumRetryAttempts = 3
 )
 
 // Client is used to install microservice during cluster initialization. It is a wrapper for a helm install action.
@@ -57,8 +59,6 @@ func New(log *logger.Logger) (*Client, error) {
 	action := action.NewInstall(actionConfig)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
-	action.Atomic = true
-	action.Wait = true
 
 	return &Client{
 		action,
@@ -69,6 +69,9 @@ func New(log *logger.Logger) (*Client, error) {
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
 func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -79,6 +82,9 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	h.Timeout = 10 * time.Minute
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	return h.install(ctx, release.Chart, release.Values)
 }
@@ -86,6 +92,9 @@ func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) e
 // InstallOperators installs the Constellation Operators.
 func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -95,6 +104,9 @@ func (h *Client) InstallOperators(ctx context.Context, release helm.Release, ext
 // InstallCilium sets up the cilium pod network.
 func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	timeoutS := int64(10)
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
@@ -164,9 +176,22 @@ func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nod
 
 // install tries to install the given chart and aborts after ~5 tries.
 // The function will wait 30 seconds before retrying a failed installation attempt.
-// After 10 minutes the retrier will be canceled and the function returns with an error.
+// After 3 tries, the retrier will be canceled and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
+	var retries int
 	retriable := func(err error) bool {
+		// abort after maximumRetryAttempts tries.
+		if retries >= maximumRetryAttempts {
+			return false
+		}
+		retries++
+		// only retry if atomic is set
+		// otherwise helm doesn't uninstall
+		// the release on failure
+		if !h.Atomic {
+			return false
+		}
+		// check if error is retriable
 		return wait.Interrupted(err) ||
 			strings.Contains(err.Error(), "connection refused")
 	}
@@ -185,19 +210,30 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	}
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, retriable)
 
-	// Since we have no precise retry condition we want to stop retrying after 10 minutes.
-	// The helm library only reports a timeout error in the error cases we currently know.
-	// Other errors will not be retried.
-	newCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-
 	retryLoopStartTime := time.Now()
-	if err := retrier.Do(newCtx); err != nil {
+	if err := retrier.Do(ctx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
 	}
 	retryLoopFinishDuration := time.Since(retryLoopStartTime)
 	h.log.With(zap.String("chart", chart.Name()), zap.Duration("duration", retryLoopFinishDuration)).Infof("Helm chart installation finished")
 
+	return nil
+}
+
+func (h *Client) setWaitMode(waitMode helm.WaitMode) error {
+	switch waitMode {
+	case helm.WaitModeNone:
+		h.Wait = false
+		h.Atomic = false
+	case helm.WaitModeWait:
+		h.Wait = true
+		h.Atomic = false
+	case helm.WaitModeAtomic:
+		h.Wait = true
+		h.Atomic = true
+	default:
+		return fmt.Errorf("unknown wait mode %q", waitMode)
+	}
 	return nil
 }
 

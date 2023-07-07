@@ -43,6 +43,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	helmdeploy "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
@@ -65,6 +66,7 @@ func NewInitCmd() *cobra.Command {
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
+	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
 	return cmd
 }
@@ -174,7 +176,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	helmDeployments, err := helmLoader.Load(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -409,6 +411,15 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
 	}
 	i.log.Debugf("Conformance flag is %t", conformance)
+	skipHelmWait, err := cmd.Flags().GetBool("skip-helm-wait")
+	if err != nil {
+		return initFlags{}, fmt.Errorf("parsing skip-helm-wait flag: %w", err)
+	}
+	helmWaitMode := helmdeploy.WaitModeAtomic
+	if skipHelmWait {
+		helmWaitMode = helmdeploy.WaitModeNone
+	}
+	i.log.Debugf("Helm wait flag is %t", skipHelmWait)
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
@@ -429,6 +440,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	return initFlags{
 		configPath:       configPath,
 		conformance:      conformance,
+		helmWaitMode:     helmWaitMode,
 		masterSecretPath: masterSecretPath,
 		force:            force,
 		mergeConfigs:     mergeConfigs,
@@ -440,6 +452,7 @@ type initFlags struct {
 	configPath       string
 	masterSecretPath string
 	conformance      bool
+	helmWaitMode     helmdeploy.WaitMode
 	force            bool
 	mergeConfigs     bool
 }
