@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
@@ -74,7 +76,8 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	output, err := status(cmd.Context(), kubeClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient))
+	stableClient := kubernetes.NewStableClient(kubeClient)
+	output, err := status(cmd.Context(), kubeClient, stableClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient))
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -84,7 +87,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
+func status(ctx context.Context, kubeClient kubeClient, stableClient kubernetes.StableInterface, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
@@ -93,6 +96,16 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
 	}
 
+	// attestation version
+	joinConfig, err := stableClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
+	if !ok {
+		return "", fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
+	}
+	prettyYAML, err := convertJSONToYAML([]byte(rawAttestationConfig), err)
+	if err != nil {
+		return "", fmt.Errorf("converting attestation config to yaml: %w", err)
+	}
 	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
 	if err != nil {
 		return "", fmt.Errorf("getting configured versions: %w", err)
@@ -108,19 +121,42 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 		return "", fmt.Errorf("getting cluster status: %w", err)
 	}
 
-	return statusOutput(targetVersions, serviceVersions, status, nodeVersion), nil
+	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
+}
+
+func convertJSONToYAML(rawJSON []byte, err error) ([]byte, error) {
+	var jsonMap map[string]interface{}
+	err = json.Unmarshal(rawJSON, &jsonMap)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling raw json: %w", err)
+	}
+
+	yamlFormatted, err := yaml.Marshal(jsonMap)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling yaml: %w", err)
+	}
+	return yamlFormatted, nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
-func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion) string {
+func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string) string {
 	builder := strings.Builder{}
 
 	builder.WriteString(targetVersionsString(targetVersions))
 	builder.WriteString(serviceVersionsString(serviceVersions))
 	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.Status.Conditions[0].Message))
 	builder.WriteString(nodeStatusString(status, targetVersions))
+	builder.WriteString(fmt.Sprintf("Attestation config:\n%s\n", indentEntireStringWithTab(rawAttestationConfig)))
 
 	return builder.String()
+}
+
+func indentEntireStringWithTab(input string) string {
+	lines := strings.Split(input, "\n")
+	for i, line := range lines {
+		lines[i] = "\t" + line
+	}
+	return strings.Join(lines, "\n")
 }
 
 // nodeStatusString creates the node status part of the output string.
@@ -170,6 +206,9 @@ type kubeClient interface {
 	GetNodes(ctx context.Context) ([]corev1.Node, error)
 }
 
+type configMapClient interface {
+	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+}
 type helmClient interface {
 	Versions() (helm.ServiceVersions, error)
 }

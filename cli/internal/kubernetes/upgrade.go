@@ -89,7 +89,7 @@ func (e *applyError) Error() string {
 
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
-	stableInterface  stableInterface
+	stableInterface  StableInterface
 	dynamicInterface DynamicInterface
 	helmClient       helmInterface
 	imageFetcher     imageFetcher
@@ -275,7 +275,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
 func (u *Upgrader) KubernetesVersion() (string, error) {
-	return u.stableInterface.kubernetesVersion()
+	return u.stableInterface.KubernetesVersion()
 }
 
 // CurrentImage returns the currently used image version of the cluster.
@@ -327,7 +327,7 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig 
 	}
 	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
 	u.log.Debugf("Triggering attestation config update now")
-	if _, err = u.stableInterface.updateConfigMap(ctx, joinConfig); err != nil {
+	if _, err = u.stableInterface.UpdateConfigMap(ctx, joinConfig); err != nil {
 		return fmt.Errorf("setting new attestation config: %w", err)
 	}
 
@@ -338,7 +338,7 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig 
 // GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the attestation config.
 func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
-	existingConf, err := u.stableInterface.getCurrentConfigMap(ctx, constants.JoinConfigMap)
+	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
@@ -361,7 +361,7 @@ func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant vari
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.
 func (u *Upgrader) applyComponentsCM(ctx context.Context, components *corev1.ConfigMap) error {
-	_, err := u.stableInterface.createConfigMap(ctx, components)
+	_, err := u.stableInterface.CreateConfigMap(ctx, components)
 	// If the map already exists we can use that map and assume it has the same content as 'configMap'.
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return fmt.Errorf("creating k8s-components ConfigMap: %w. %T", err, err)
@@ -486,11 +486,17 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 	return false
 }
 
-type stableInterface interface {
-	getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
-	updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
-	createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
-	kubernetesVersion() (string, error)
+// StableInterface is an interface to interact with stable resources.
+type StableInterface interface {
+	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+	UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	KubernetesVersion() (string, error)
+}
+
+// NewStableClient returns a new StableInterface.
+func NewStableClient(client kubernetes.Interface) StableInterface {
+	return &stableClient{client: client}
 }
 
 type stableClient struct {
@@ -498,20 +504,20 @@ type stableClient struct {
 }
 
 // getCurrent returns a ConfigMap given it's name.
-func (u *stableClient) getCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
+func (u *stableClient) GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // update updates the given ConfigMap.
-func (u *stableClient) updateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (u *stableClient) UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
 }
 
-func (u *stableClient) createConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (u *stableClient) CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Create(ctx, configMap, metav1.CreateOptions{})
 }
 
-func (u *stableClient) kubernetesVersion() (string, error) {
+func (u *stableClient) KubernetesVersion() (string, error) {
 	serverVersion, err := u.client.Discovery().ServerVersion()
 	if err != nil {
 		return "", err
