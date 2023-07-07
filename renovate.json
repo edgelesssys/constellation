@@ -19,10 +19,10 @@
   "prConcurrentLimit": 4,
   "ignorePaths": [
     "cli/internal/helm/charts/cilium/**",
-    "cli/internal/helm/charts/edgeless/constellation-services/charts/aws-csi-driver/**",
-    "cli/internal/helm/charts/edgeless/constellation-services/charts/azuredisk-csi-driver/**",
-    "cli/internal/helm/charts/edgeless/constellation-services/charts/gcp-compute-persistent-disk-csi-driver/**",
-    "cli/internal/helm/charts/edgeless/constellation-services/charts/cinder-csi-plugin/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/aws-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/azuredisk-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/gcp-compute-persistent-disk-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/openstack-cinder-csi/**",
     "operators/constellation-node-operator/config/manager/kustomization.yaml"
   ],
   "ignoreDeps": [
