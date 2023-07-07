@@ -8,12 +8,15 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -77,7 +80,24 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	stableClient := kubernetes.NewStableClient(kubeClient)
-	output, err := status(cmd.Context(), kubeClient, stableClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient))
+
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return fmt.Errorf("getting config flag: %w", err)
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return fmt.Errorf("getting config flag: %w", err)
+	}
+	fetcher := attestationconfigapi.NewFetcher()
+	conf, err := config.New(fileHandler, configPath, fetcher, force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
+	variant := conf.GetAttestationConfig().GetVariant()
+
+	output, err := status(cmd.Context(), kubeClient, stableClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -87,7 +107,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
+func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
@@ -105,9 +125,13 @@ func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient
 	if !ok {
 		return "", fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
 	}
-	prettyYAML, err := convertJSONToYAML([]byte(rawAttestationConfig))
+	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
 	if err != nil {
-		return "", fmt.Errorf("converting attestation config to yaml: %w", err)
+		return "", fmt.Errorf("unmarshalling attestation config: %w", err)
+	}
+	prettyYAML, err := yaml.Marshal(attestationConfig)
+	if err != nil {
+		return "", fmt.Errorf("marshalling attestation config: %w", err)
 	}
 
 	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
@@ -126,20 +150,6 @@ func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient
 	}
 
 	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
-}
-
-func convertJSONToYAML(rawJSON []byte) ([]byte, error) {
-	var jsonMap map[string]interface{}
-	err := json.Unmarshal(rawJSON, &jsonMap)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling raw json: %w", err)
-	}
-
-	yamlFormatted, err := yaml.Marshal(jsonMap)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling yaml: %w", err)
-	}
-	return yamlFormatted, nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
