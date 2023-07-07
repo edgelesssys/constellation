@@ -3,8 +3,8 @@ module github.com/edgelesssys/constellation/v2/operators/constellation-node-oper
 go 1.20
 
 require (
-	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/api v0.27.3
+	k8s.io/apimachinery v0.27.3
 	sigs.k8s.io/controller-runtime v0.15.0
 )
 
