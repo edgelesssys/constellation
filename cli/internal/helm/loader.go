@@ -102,23 +102,23 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
-	ciliumRelease, err := i.loadRelease(ciliumInfo)
+	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 	extendCiliumValues(ciliumRelease.Values, conformanceMode)
 
-	certManagerRelease, err := i.loadRelease(certManagerInfo)
+	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cert-manager: %w", err)
 	}
 
-	operatorRelease, err := i.loadRelease(constellationOperatorsInfo)
+	operatorRelease, err := i.loadRelease(constellationOperatorsInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
 
-	conServicesRelease, err := i.loadRelease(constellationServicesInfo)
+	conServicesRelease, err := i.loadRelease(constellationServicesInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
@@ -136,7 +136,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 }
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
-func (i *ChartLoader) loadRelease(info chartInfo) (helm.Release, error) {
+func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
@@ -168,7 +168,7 @@ func (i *ChartLoader) loadRelease(info chartInfo) (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging %s chart: %w", info.releaseName, err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.

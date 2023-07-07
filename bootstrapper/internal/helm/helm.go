@@ -35,6 +35,8 @@ import (
 const (
 	// timeout is the maximum time given to the helm client.
 	timeout = 5 * time.Minute
+	// maximumRetryAttempts is the maximum number of attempts to retry a helm install.
+	maximumRetryAttempts = 3
 )
 
 // Client is used to install microservice during cluster initialization. It is a wrapper for a helm install action.
@@ -57,8 +59,6 @@ func New(log *logger.Logger) (*Client, error) {
 	action := action.NewInstall(actionConfig)
 	action.Namespace = constants.HelmNamespace
 	action.Timeout = timeout
-	action.Atomic = true
-	action.Wait = true
 
 	return &Client{
 		action,
@@ -176,9 +176,22 @@ func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nod
 
 // install tries to install the given chart and aborts after ~5 tries.
 // The function will wait 30 seconds before retrying a failed installation attempt.
-// After 10 minutes the retrier will be canceled and the function returns with an error.
+// After 3 tries, the retrier will be canceled and the function returns with an error.
 func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
+	var retries int
 	retriable := func(err error) bool {
+		// abort after maximumRetryAttempts tries.
+		if retries >= maximumRetryAttempts {
+			return false
+		}
+		retries++
+		// only retry if atomic is set
+		// otherwise helm doesn't uninstall
+		// the release on failure
+		if !h.Atomic {
+			return false
+		}
+		// check if error is retriable
 		return wait.Interrupted(err) ||
 			strings.Contains(err.Error(), "connection refused")
 	}
@@ -197,14 +210,8 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	}
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, retriable)
 
-	// Since we have no precise retry condition we want to stop retrying after 10 minutes.
-	// The helm library only reports a timeout error in the error cases we currently know.
-	// Other errors will not be retried.
-	newCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-
 	retryLoopStartTime := time.Now()
-	if err := retrier.Do(newCtx); err != nil {
+	if err := retrier.Do(ctx); err != nil {
 		return fmt.Errorf("helm install: %w", err)
 	}
 	retryLoopFinishDuration := time.Since(retryLoopStartTime)
