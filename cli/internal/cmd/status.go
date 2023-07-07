@@ -87,7 +87,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, stableClient kubernetes.StableInterface, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
+func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
@@ -97,15 +97,19 @@ func status(ctx context.Context, kubeClient kubeClient, stableClient kubernetes.
 	}
 
 	// attestation version
-	joinConfig, err := stableClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	joinConfig, err := cmClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return "", fmt.Errorf("getting current config map: %w", err)
+	}
 	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
 	if !ok {
 		return "", fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
 	}
-	prettyYAML, err := convertJSONToYAML([]byte(rawAttestationConfig), err)
+	prettyYAML, err := convertJSONToYAML([]byte(rawAttestationConfig))
 	if err != nil {
 		return "", fmt.Errorf("converting attestation config to yaml: %w", err)
 	}
+
 	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
 	if err != nil {
 		return "", fmt.Errorf("getting configured versions: %w", err)
@@ -124,9 +128,9 @@ func status(ctx context.Context, kubeClient kubeClient, stableClient kubernetes.
 	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
 }
 
-func convertJSONToYAML(rawJSON []byte, err error) ([]byte, error) {
+func convertJSONToYAML(rawJSON []byte) ([]byte, error) {
 	var jsonMap map[string]interface{}
-	err = json.Unmarshal(rawJSON, &jsonMap)
+	err := json.Unmarshal(rawJSON, &jsonMap)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling raw json: %w", err)
 	}
@@ -146,14 +150,13 @@ func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm
 	builder.WriteString(serviceVersionsString(serviceVersions))
 	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.Status.Conditions[0].Message))
 	builder.WriteString(nodeStatusString(status, targetVersions))
-	builder.WriteString(fmt.Sprintf("Attestation config:\n%s\n", indentEntireStringWithTab(rawAttestationConfig)))
-
+	builder.WriteString(fmt.Sprintf("Attestation config:\n%s", indentEntireStringWithTab(rawAttestationConfig)))
 	return builder.String()
 }
 
 func indentEntireStringWithTab(input string) string {
 	lines := strings.Split(input, "\n")
-	for i, line := range lines {
+	for i, line := range lines[:len(lines)-1] {
 		lines[i] = "\t" + line
 	}
 	return strings.Join(lines, "\n")

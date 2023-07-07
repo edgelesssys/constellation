@@ -9,7 +9,6 @@ Usage:
 ```
 constellation [command]
 ```
-
 Commands:
 
 * [config](#constellation-config): Work with the Constellation configuration file
@@ -354,7 +353,7 @@ Show status of a Constellation cluster
 
 Show the status of a constellation cluster.
 
-Shows microservice, image, and Kubernetes versions installed in the cluster. Also shows the status of current version upgrades and the attestation config.
+Shows microservice, image, and Kubernetes versions installed in the cluster. Also shows status of current version upgrades.
 
 ```
 constellation status [flags]
@@ -751,3 +750,4 @@ constellation version [flags]
       --force           disable version compatibility checks - might result in corrupted clusters
       --tf-log string   Terraform log level (default "NONE")
 ```
+

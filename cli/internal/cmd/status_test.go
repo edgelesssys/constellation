@@ -29,7 +29,7 @@ Installed service versions:
 	constellation-operators: v1.1.0
 	constellation-services: v1.1.0
 Cluster status: Node version of every node is up to date
-`
+` + attestationConfigOutput
 
 const inProgressOutput = `Target versions:
 	Image: v1.1.0
@@ -42,6 +42,49 @@ Installed service versions:
 Cluster status: Some node versions are out of date
 	Image: 1/2
 	Kubernetes: 1/2
+` + attestationConfigOutput
+
+const attestationConfigOutput = `Attestation config:
+	measurements:
+	    "0":
+	        expected: 737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12
+	        warnOnly: true
+	    "2":
+	        expected: 3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+	        warnOnly: true
+	    "3":
+	        expected: 3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+	        warnOnly: true
+	    "4":
+	        expected: 55f7616b2c51dd7603f491c1c266373fe5c1e25e06a851d2090960172b03b27f
+	        warnOnly: false
+	    "6":
+	        expected: 3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969
+	        warnOnly: true
+	    "7":
+	        expected: fb71e5e55cefba9e2b396d17604de0fe6e1841a76758856a120833e3ad1c40a3
+	        warnOnly: true
+	    "8":
+	        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+	        warnOnly: false
+	    "9":
+	        expected: f7480d37929bef4b61c32823cb7b3771aea19f7510db2e1478719a1d88f9775d
+	        warnOnly: false
+	    "11":
+	        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+	        warnOnly: false
+	    "12":
+	        expected: b8038d11eade4cfee5fd41da04bf64e58bab15c42bfe01801e4c0f61376ba010
+	        warnOnly: false
+	    "13":
+	        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+	        warnOnly: false
+	    "14":
+	        expected: d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f
+	        warnOnly: true
+	    "15":
+	        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+	        warnOnly: false
 `
 
 // TestStatus checks that the status function produces the correct strings.
@@ -150,7 +193,8 @@ func TestStatus(t *testing.T) {
 
 			raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&tc.nodeVersion)
 			require.NoError(err)
-			output, err := status(context.Background(), tc.kubeClient, tc.helmClient, &stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr})
+			configMapper := stubConfigMapper{}
+			output, err := status(context.Background(), tc.kubeClient, configMapper, tc.helmClient, &stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -159,6 +203,16 @@ func TestStatus(t *testing.T) {
 			assert.Equal(tc.expectedOutput, output)
 		})
 	}
+}
+
+type stubConfigMapper struct{}
+
+func (s stubConfigMapper) GetCurrentConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
+	return &corev1.ConfigMap{
+		Data: map[string]string{
+			"attestationConfig": `{"measurements":{"0":{"expected":"737f767a12f54e70eecbc8684011323ae2fe2dd9f90785577969d7a2013e8c12","warnOnly":true},"11":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false},"12":{"expected":"b8038d11eade4cfee5fd41da04bf64e58bab15c42bfe01801e4c0f61376ba010","warnOnly":false},"13":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false},"14":{"expected":"d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f","warnOnly":true},"15":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false},"2":{"expected":"3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969","warnOnly":true},"3":{"expected":"3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969","warnOnly":true},"4":{"expected":"55f7616b2c51dd7603f491c1c266373fe5c1e25e06a851d2090960172b03b27f","warnOnly":false},"6":{"expected":"3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969","warnOnly":true},"7":{"expected":"fb71e5e55cefba9e2b396d17604de0fe6e1841a76758856a120833e3ad1c40a3","warnOnly":true},"8":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false},"9":{"expected":"f7480d37929bef4b61c32823cb7b3771aea19f7510db2e1478719a1d88f9775d","warnOnly":false}}}`,
+		},
+	}, nil
 }
 
 type stubKubeClient struct {
