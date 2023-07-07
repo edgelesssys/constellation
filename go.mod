@@ -104,7 +104,7 @@ require (
 	golang.org/x/sys v0.10.0
 	golang.org/x/tools v0.10.0
 	google.golang.org/api v0.130.0
-	google.golang.org/grpc v1.56.1
+	google.golang.org/grpc v1.56.2
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm v2.17.0+incompatible
