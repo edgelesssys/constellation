@@ -7360,8 +7360,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "golang.org/x/tools",
-        sum = "h1:tvDr/iQoUqNdohiYm0LmmKcBk+q86lb9EprIUFhHHGg=",
-        version = "v0.10.0",
+        sum = "h1:EMCa6U9S2LtZXLAMoWiR/R8dAQFRqbAitmbJ2UKhoi8=",
+        version = "v0.11.0",
     )
     go_repository(
         name = "org_golang_x_vuln",
