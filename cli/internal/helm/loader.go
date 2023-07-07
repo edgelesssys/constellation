@@ -460,8 +460,6 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 func extendConstellationServicesValues(
 	in map[string]any, cfg *config.Config, masterSecret, salt []byte,
 ) error {
-	cfgCopy := *cfg
-	cfgCopy.Attestation.ConfigureToMarshalNumericalValuesInsteadOfLatest()
 	keyServiceValues, ok := in["key-service"].(map[string]any)
 	if !ok {
 		return errors.New("missing 'key-service' key")
@@ -473,11 +471,11 @@ func extendConstellationServicesValues(
 	if !ok {
 		return errors.New("invalid join-service values")
 	}
-	joinServiceVals["attestationVariant"] = cfgCopy.GetAttestationConfig().GetVariant().String()
+	joinServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
 
 	// attestation config is updated separately during upgrade,
 	// so we only set them in Helm during init.
-	attestationConfigJSON, err := json.Marshal(cfgCopy.GetAttestationConfig())
+	attestationConfigJSON, err := json.Marshal(cfg.GetAttestationConfig())
 	if err != nil {
 		return fmt.Errorf("marshalling measurements: %w", err)
 	}
@@ -487,35 +485,35 @@ func extendConstellationServicesValues(
 	if !ok {
 		return errors.New("invalid verification-service values")
 	}
-	verifyServiceVals["attestationVariant"] = cfgCopy.GetAttestationConfig().GetVariant().String()
+	verifyServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
 
-	csp := cfgCopy.GetProvider()
+	csp := cfg.GetProvider()
 	switch csp {
 	case cloudprovider.AWS:
 		in["aws"] = map[string]any{
-			"deployCSIDriver": cfgCopy.DeployCSIDriver(),
+			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
 	case cloudprovider.Azure:
 		in["azure"] = map[string]any{
-			"deployCSIDriver": cfgCopy.DeployCSIDriver(),
+			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
 	case cloudprovider.GCP:
 		in["gcp"] = map[string]any{
-			"deployCSIDriver": cfgCopy.DeployCSIDriver(),
+			"deployCSIDriver": cfg.DeployCSIDriver(),
 		}
 	case cloudprovider.OpenStack:
 		in["openstack"] = map[string]any{
-			"deployYawolLoadBalancer": cfgCopy.DeployYawolLoadBalancer(),
-			"deployCSIDriver":         cfgCopy.DeployCSIDriver(),
+			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
+			"deployCSIDriver":         cfg.DeployCSIDriver(),
 		}
-		if cfgCopy.DeployYawolLoadBalancer() {
+		if cfg.DeployYawolLoadBalancer() {
 			in["yawol-controller"] = map[string]any{
 				"yawolOSSecretName": "yawolkey",
 				// has to be larger than ~30s to account for slow OpenStack API calls.
 				"openstackTimeout": "1m",
-				"yawolFloatingID":  cfgCopy.Provider.OpenStack.FloatingIPPoolID,
-				"yawolFlavorID":    cfgCopy.Provider.OpenStack.YawolFlavorID,
-				"yawolImageID":     cfgCopy.Provider.OpenStack.YawolImageID,
+				"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
+				"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
+				"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
 			}
 		}
 	}
