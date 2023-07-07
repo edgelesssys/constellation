@@ -600,7 +600,9 @@ func (c *Config) GetAttestationConfig() AttestationCfg {
 		return c.Attestation.AWSNitroTPM
 	}
 	if c.Attestation.AzureSEVSNP != nil {
-		return c.Attestation.AzureSEVSNP
+		cp := *c.Attestation.AzureSEVSNP
+		cp.setWantLatestToFalse()
+		return &cp
 	}
 	if c.Attestation.AzureTrustedLaunch != nil {
 		return c.Attestation.AzureTrustedLaunch
@@ -1041,6 +1043,14 @@ type AzureSEVSNP struct {
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+}
+
+// setWantLatestToFalse sets the WantLatest field to false for all versions in order to unmarshal the numerical versions instead of the string "latest".
+func (c *AzureSEVSNP) setWantLatestToFalse() {
+	c.BootloaderVersion.WantLatest = false
+	c.TEEVersion.WantLatest = false
+	c.SNPVersion.WantLatest = false
+	c.MicrocodeVersion.WantLatest = false
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.

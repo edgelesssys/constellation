@@ -42,7 +42,7 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-func TestDefaultConfigWritesLatestVersion(t *testing.T) {
+func TestDefaultConfigMarshalsLatestVersion(t *testing.T) {
 	conf := Default()
 	bt, err := yaml.Marshal(conf)
 	require := require.New(t)
@@ -55,6 +55,24 @@ func TestDefaultConfigWritesLatestVersion(t *testing.T) {
 	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
 	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
 	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+}
+
+func TestGetAttestationConfigMarshalsNumericalVersion(t *testing.T) {
+	conf := Default()
+	conf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
+
+	attestationCfg := conf.GetAttestationConfig()
+	bt, err := yaml.Marshal(attestationCfg)
+	require := require.New(t)
+	require.NoError(err)
+
+	var mp map[string]interface{}
+	require.NoError(yaml.Unmarshal(bt, &mp))
+	assert := assert.New(t)
+	assert.Equal(placeholderVersionValue, mp["microcodeVersion"])
+	assert.Equal(placeholderVersionValue, mp["teeVersion"])
+	assert.Equal(placeholderVersionValue, mp["snpVersion"])
+	assert.Equal(placeholderVersionValue, mp["bootloaderVersion"])
 }
 
 func TestNew(t *testing.T) {

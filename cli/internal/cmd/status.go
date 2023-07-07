@@ -8,17 +8,22 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
@@ -74,7 +79,25 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
 
-	output, err := status(cmd.Context(), kubeClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient))
+	stableClient := kubernetes.NewStableClient(kubeClient)
+
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return fmt.Errorf("getting config flag: %w", err)
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return fmt.Errorf("getting config flag: %w", err)
+	}
+	fetcher := attestationconfigapi.NewFetcher()
+	conf, err := config.New(fileHandler, configPath, fetcher, force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
+	variant := conf.GetAttestationConfig().GetVariant()
+
+	output, err := status(cmd.Context(), kubeClient, stableClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -84,13 +107,31 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface) (string, error) {
+func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
 	}
 	if len(nodeVersion.Status.Conditions) != 1 {
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
+	}
+
+	// attestation version
+	joinConfig, err := cmClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return "", fmt.Errorf("getting current config map: %w", err)
+	}
+	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
+	if !ok {
+		return "", fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
+	}
+	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
+	if err != nil {
+		return "", fmt.Errorf("unmarshalling attestation config: %w", err)
+	}
+	prettyYAML, err := yaml.Marshal(attestationConfig)
+	if err != nil {
+		return "", fmt.Errorf("marshalling attestation config: %w", err)
 	}
 
 	targetVersions, err := kubernetes.NewTargetVersions(nodeVersion)
@@ -108,19 +149,27 @@ func status(ctx context.Context, kubeClient kubeClient, helmClient helmClient, d
 		return "", fmt.Errorf("getting cluster status: %w", err)
 	}
 
-	return statusOutput(targetVersions, serviceVersions, status, nodeVersion), nil
+	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
-func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion) string {
+func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string) string {
 	builder := strings.Builder{}
 
 	builder.WriteString(targetVersionsString(targetVersions))
 	builder.WriteString(serviceVersionsString(serviceVersions))
 	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.Status.Conditions[0].Message))
 	builder.WriteString(nodeStatusString(status, targetVersions))
-
+	builder.WriteString(fmt.Sprintf("Attestation config:\n%s", indentEntireStringWithTab(rawAttestationConfig)))
 	return builder.String()
+}
+
+func indentEntireStringWithTab(input string) string {
+	lines := strings.Split(input, "\n")
+	for i, line := range lines[:len(lines)-1] {
+		lines[i] = "\t" + line
+	}
+	return strings.Join(lines, "\n")
 }
 
 // nodeStatusString creates the node status part of the output string.
@@ -170,6 +219,9 @@ type kubeClient interface {
 	GetNodes(ctx context.Context) ([]corev1.Node, error)
 }
 
+type configMapClient interface {
+	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+}
 type helmClient interface {
 	Versions() (helm.ServiceVersions, error)
 }

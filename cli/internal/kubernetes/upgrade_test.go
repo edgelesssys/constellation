@@ -580,11 +580,11 @@ type stubStableClient struct {
 	k8sErr            error
 }
 
-func (s *stubStableClient) getCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) GetCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
 	return s.configMaps[name], s.getErr
 }
 
-func (s *stubStableClient) updateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	if s.updatedConfigMaps == nil {
 		s.updatedConfigMaps = map[string]*corev1.ConfigMap{}
 	}
@@ -592,7 +592,7 @@ func (s *stubStableClient) updateConfigMap(_ context.Context, configMap *corev1.
 	return s.updatedConfigMaps[configMap.ObjectMeta.Name], s.updateErr
 }
 
-func (s *stubStableClient) createConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *stubStableClient) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	if s.configMaps == nil {
 		s.configMaps = map[string]*corev1.ConfigMap{}
 	}
@@ -600,7 +600,7 @@ func (s *stubStableClient) createConfigMap(_ context.Context, configMap *corev1.
 	return s.configMaps[configMap.ObjectMeta.Name], s.createErr
 }
 
-func (s *stubStableClient) kubernetesVersion() (string, error) {
+func (s *stubStableClient) KubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
 }
 
