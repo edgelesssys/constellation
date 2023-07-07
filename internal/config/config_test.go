@@ -42,19 +42,53 @@ func TestDefaultConfig(t *testing.T) {
 	assert.NotNil(def)
 }
 
-func TestDefaultConfigWritesLatestVersion(t *testing.T) {
-	conf := Default()
-	bt, err := yaml.Marshal(conf)
-	require := require.New(t)
-	require.NoError(err)
+func TestConfigMarshal(t *testing.T) {
+	testCases := []struct {
+		name     string
+		config   *Config
+		expected map[string]interface{}
+	}{
+		{
+			name:   "Default config writes latest version",
+			config: Default(),
+			expected: map[string]interface{}{
+				"microcodeVersion":  "latest",
+				"teeVersion":        "latest",
+				"snpVersion":        "latest",
+				"bootloaderVersion": "latest",
+			},
+		},
+		{
+			name: "Configure to marshal numerical values instead of latest",
+			config: func() *Config {
+				conf := Default()
+				conf.Attestation.ConfigureToMarshalNumericalValuesInsteadOfLatest()
+				return conf
+			}(),
+			expected: map[string]interface{}{
+				"microcodeVersion":  placeholderVersionValue,
+				"teeVersion":        placeholderVersionValue,
+				"snpVersion":        placeholderVersionValue,
+				"bootloaderVersion": placeholderVersionValue,
+			},
+		},
+	}
 
-	var mp configMap
-	require.NoError(yaml.Unmarshal(bt, &mp))
-	assert := assert.New(t)
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("microcodeVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("teeVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("snpVersion"))
-	assert.Equal("latest", mp.getAzureSEVSNPVersion("bootloaderVersion"))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			bt, err := yaml.Marshal(tc.config)
+			require := require.New(t)
+			require.NoError(err)
+
+			var mp configMap
+			require.NoError(yaml.Unmarshal(bt, &mp))
+			assert := assert.New(t)
+			assert.Equal(tc.expected["microcodeVersion"], mp.getAzureSEVSNPVersion("microcodeVersion"))
+			assert.Equal(tc.expected["teeVersion"], mp.getAzureSEVSNPVersion("teeVersion"))
+			assert.Equal(tc.expected["snpVersion"], mp.getAzureSEVSNPVersion("snpVersion"))
+			assert.Equal(tc.expected["bootloaderVersion"], mp.getAzureSEVSNPVersion("bootloaderVersion"))
+		})
+	}
 }
 
 func TestNew(t *testing.T) {
@@ -73,6 +107,41 @@ func TestNew(t *testing.T) {
 				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
 				m.setAzureSEVSNPVersion("teeVersion", 2)
 				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
+				return m
+			}(),
+
+			configName: constants.ConfigFilename,
+			wantResult: func() *Config {
+				conf := Default()
+				modifyConfigForAzureToPassValidate(conf)
+				conf.Attestation.AzureSEVSNP.MicrocodeVersion = AttestationVersion{
+					Value:      testCfg.Microcode,
+					WantLatest: true,
+				}
+				conf.Attestation.AzureSEVSNP.TEEVersion = AttestationVersion{
+					Value:      2,
+					WantLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.BootloaderVersion = AttestationVersion{
+					Value:      1,
+					WantLatest: false,
+				}
+				conf.Attestation.AzureSEVSNP.SNPVersion = AttestationVersion{
+					Value:      testCfg.SNP,
+					WantLatest: true,
+				}
+				return conf
+			}(),
+		},
+		"Azure SEV-SNP: ConfigureToMarshalNumericalValuesInsteadOfLatest": {
+			config: func() configMap {
+				conf := Default() // default configures latest version
+				modifyConfigForAzureToPassValidate(conf)
+				m := getConfigAsMap(conf, t)
+				m.setAzureSEVSNPVersion("microcodeVersion", "Latest") // check uppercase also works
+				m.setAzureSEVSNPVersion("teeVersion", 2)
+				m.setAzureSEVSNPVersion("bootloaderVersion", 1)
+				conf.Attestation.ConfigureToMarshalNumericalValuesInsteadOfLatest()
 				return m
 			}(),
 

@@ -302,6 +302,13 @@ type AttestationConfig struct {
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
 
+// ConfigureToMarshalNumericalValuesInsteadOfLatest configures the AttestationConfig to marshal numerical values instead of the latest version.
+func (c *AttestationConfig) ConfigureToMarshalNumericalValuesInsteadOfLatest() {
+	if c.AzureSEVSNP != nil {
+		c.AzureSEVSNP.setWantLastestFalse()
+	}
+}
+
 // Default returns a struct with the default config.
 // IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
 func Default() *Config {
@@ -1041,6 +1048,14 @@ type AzureSEVSNP struct {
 	// description: |
 	//   AMD Root Key certificate used to verify the SEV-SNP certificate chain.
 	AMDRootKey Certificate `json:"amdRootKey" yaml:"amdRootKey"`
+}
+
+// setWantLastestFalse sets the WantLatest field to false for all versions in order to unmarshal the numerical versions instead of the string "latest".
+func (c *AzureSEVSNP) setWantLastestFalse() {
+	c.BootloaderVersion.WantLatest = false
+	c.TEEVersion.WantLatest = false
+	c.SNPVersion.WantLatest = false
+	c.MicrocodeVersion.WantLatest = false
 }
 
 // AzureTrustedLaunch is the configuration for Azure Trusted Launch attestation.

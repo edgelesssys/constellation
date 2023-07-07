@@ -84,6 +84,10 @@ func TestConstellationServices(t *testing.T) {
 						EnforcementPolicy:  idkeydigest.MAAFallback,
 						MAAURL:             "https://192.0.2.1:8080/maa",
 					},
+					BootloaderVersion: config.AttestationVersion{Value: 1, WantLatest: true},
+					TEEVersion:        config.AttestationVersion{Value: 2, WantLatest: true},
+					SNPVersion:        config.AttestationVersion{Value: 3, WantLatest: true},
+					MicrocodeVersion:  config.AttestationVersion{Value: 4, WantLatest: true},
 				}},
 			},
 			enforceIDKeyDigest: true,
@@ -175,7 +179,7 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 			testDataPath := path.Join("testdata", tc.config.GetProvider().String(), "constellation-services")
 
-			// Build a map with the same structe as result: filepaths -> rendered template.
+			// Build a map with the same struct as result: filepaths -> rendered template.
 			expectedData := map[string]string{}
 			err = filepath.Walk(testDataPath, buildTestdataMap(tc.config.GetProvider().String(), expectedData, require))
 			require.NoError(err)
