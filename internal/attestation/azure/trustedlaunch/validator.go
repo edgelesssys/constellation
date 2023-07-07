@@ -21,7 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 // ameRoot is the AME root CA certificate used to sign Azure's AME Infra CA certificates.

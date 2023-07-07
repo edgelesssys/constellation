@@ -27,7 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/google/go-tpm-tools/proto/attest"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 )
 
 // Validator for Azure confidential VM attestation.

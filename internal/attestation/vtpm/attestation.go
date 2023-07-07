@@ -18,7 +18,7 @@ import (
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
 	tpmServer "github.com/google/go-tpm-tools/server"
-	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/legacy/tpm2"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"

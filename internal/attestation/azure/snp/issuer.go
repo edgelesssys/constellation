@@ -82,7 +82,7 @@ func (i *Issuer) getInstanceInfo(ctx context.Context, tpm io.ReadWriteCloser, us
 
 // getAttestationKey reads the attestation key put into the TPM during early boot.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx)
+	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx, tpmclient.NullSession{})
 	if err != nil {
 		return nil, fmt.Errorf("reading HCL attestation key from TPM: %w", err)
 	}
