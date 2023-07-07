@@ -24,9 +24,9 @@ require (
 	github.com/onsi/gomega v1.27.8
 	github.com/spf13/afero v1.9.5
 	github.com/stretchr/testify v1.8.4
-	go.etcd.io/etcd/api/v3 v3.5.7
-	go.etcd.io/etcd/client/pkg/v3 v3.5.7
-	go.etcd.io/etcd/client/v3 v3.5.7
+	go.etcd.io/etcd/api/v3 v3.5.9
+	go.etcd.io/etcd/client/pkg/v3 v3.5.9
+	go.etcd.io/etcd/client/v3 v3.5.9
 	go.uber.org/goleak v1.2.1
 	golang.org/x/mod v0.12.0
 	google.golang.org/api v0.128.0
