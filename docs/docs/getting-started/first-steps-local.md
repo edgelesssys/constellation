@@ -8,40 +8,40 @@ You have two options:
 
 Both options use virtualization to create a local cluster with control-plane nodes and worker nodes. They **don't** require hardware with Confidential VM (CVM) support. For attestation, they currently use a software-based vTPM provided by KVM/QEMU.
 
+You need an x64 machine with a Linux OS.
+You can use a VM, but it needs nested virtualization.
+
 ## Prerequisites
 
-* machine requirements:
+* Machine requirements:
   * An x86-64 CPU with at least 4 cores (6 cores are recommended)
   * At least 4 GB RAM (6 GB are recommended)
   * 20 GB of free disk space
   * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM) / nested-virtualization support when using a VM
-* OS / library requirements:
-  * recommended: Ubuntu 22.04 LTS
-  * otherwise:
-    * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
-    * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
-    * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
+* Software requirements:
+  * Linux OS with [KVM kernel module](https://www.linux-kvm.org/page/Main_Page)
+    * Recommended: Ubuntu 22.04 LTS
+  * [Docker](https://docs.docker.com/engine/install/)
+  * [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+  * (Optional) [virsh](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 
-* software requirements:
-  * install requirements
+### Software installation on Ubuntu
 
-    ```sh
-    # install Docker
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update
-    apt-get install -y docker-ce docker-ce-cli containerd.io libssl-dev pigz
-    systemctl enable docker.service && systemctl start docker.service
-    # install kubectl
-    curl -fsSLO "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && install kubectl /usr/local/bin/kubectl
-    # install Constellation CLI
-    curl -LO <https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64>
-    sudo install constellation-linux-amd64 /usr/local/bin/constellation
-    # do not drop forwarded packages
-    sudo iptables -S | grep -q -- '-P FORWARD DROP'
-    ```
-
-    If running the following the `iptables` command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access).
+```bash
+# install Docker
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install docker-ce
+# install other dependencies
+sudo apt install xsltproc
+sudo snap install kubectl --classic
+# install Constellation CLI
+curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64
+sudo install constellation-linux-amd64 /usr/local/bin/constellation
+# do not drop forwarded packages
+sudo iptables -P FORWARD ACCEPT
+```
 
 ## Create a cluster
 
@@ -254,7 +254,7 @@ The VM image and cluster configuration file (`constellation-conf.yaml`) will be 
 
 Make sure to use the [latest release](https://github.com/edgelesssys/constellation/releases/latest) and check out the [known issues](https://github.com/edgelesssys/constellation/issues?q=is%3Aopen+is%3Aissue+label%3A%22known+issue%22).
 
-### VMs have no internet access
+### VMs have no internet access / CLI remains in "Initializing cluster" state
 
 `iptables` rules may prevent your VMs from accessing the internet.
 Make sure your rules aren't dropping forwarded packages.
