@@ -8,7 +8,7 @@ csi:
   attacher:
     image:
       repository: registry.k8s.io/sig-storage/csi-attacher
-      tag: v4.2.0
+      tag: v4.3.0
       pullPolicy: IfNotPresent
     resources: {}
     extraArgs: {}
