@@ -69,6 +69,9 @@ func New(log *logger.Logger) (*Client, error) {
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
 func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -79,6 +82,9 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	h.Timeout = 10 * time.Minute
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	return h.install(ctx, release.Chart, release.Values)
 }
@@ -86,6 +92,9 @@ func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) e
 // InstallOperators installs the Constellation Operators.
 func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
@@ -95,6 +104,9 @@ func (h *Client) InstallOperators(ctx context.Context, release helm.Release, ext
 // InstallCilium sets up the cilium pod network.
 func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
 
 	timeoutS := int64(10)
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
@@ -198,6 +210,23 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 	retryLoopFinishDuration := time.Since(retryLoopStartTime)
 	h.log.With(zap.String("chart", chart.Name()), zap.Duration("duration", retryLoopFinishDuration)).Infof("Helm chart installation finished")
 
+	return nil
+}
+
+func (h *Client) setWaitMode(waitMode helm.WaitMode) error {
+	switch waitMode {
+	case helm.WaitModeNone:
+		h.Wait = false
+		h.Atomic = false
+	case helm.WaitModeWait:
+		h.Wait = true
+		h.Atomic = false
+	case helm.WaitModeAtomic:
+		h.Wait = true
+		h.Atomic = true
+	default:
+		return fmt.Errorf("unknown wait mode %q", waitMode)
+	}
 	return nil
 }
 

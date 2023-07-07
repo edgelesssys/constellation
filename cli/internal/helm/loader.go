@@ -101,7 +101,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 }
 
 // Load the embedded helm charts.
-func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
+func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)

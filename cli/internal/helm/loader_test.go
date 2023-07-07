@@ -39,7 +39,7 @@ func TestLoad(t *testing.T) {
 
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"))
+	release, err := chartLoader.Load(config, true, helm.WaitModeAtomic, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 
 	var helmReleases helm.Releases

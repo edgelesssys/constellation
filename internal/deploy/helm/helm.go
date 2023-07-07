@@ -12,6 +12,7 @@ type Release struct {
 	Chart       []byte
 	Values      map[string]any
 	ReleaseName string
+	WaitMode    WaitMode
 }
 
 // Releases bundles all helm releases to be deployed to Constellation.
@@ -43,3 +44,16 @@ func MergeMaps(a, b map[string]any) map[string]any {
 	}
 	return out
 }
+
+// WaitMode specifies the wait mode for a helm release.
+type WaitMode string
+
+const (
+	// WaitModeNone specifies that the helm release should not wait for the resources to be ready.
+	WaitModeNone WaitMode = ""
+	// WaitModeWait specifies that the helm release should wait for the resources to be ready.
+	WaitModeWait WaitMode = "wait"
+	// WaitModeAtomic specifies that the helm release should
+	// wait for the resources to be ready and roll back atomically on failure.
+	WaitModeAtomic WaitMode = "atomic"
+)

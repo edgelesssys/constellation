@@ -253,6 +253,7 @@ constellation init [flags]
   -h, --help                   help for init
       --master-secret string   path to base64-encoded master secret
       --merge-kubeconfig       merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
+      --skip-helm-wait         install helm charts without waiting for deployments to be ready
 ```
 
 ### Options inherited from parent commands
