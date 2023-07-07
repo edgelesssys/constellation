@@ -253,7 +253,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.6.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/siderolabs/talos/pkg/machinery v1.4.4 // indirect
+	github.com/siderolabs/talos/pkg/machinery v1.4.6 // indirect
 	github.com/sigstore/rekor v1.2.2 // indirect
 	github.com/sigstore/sigstore v1.7.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
