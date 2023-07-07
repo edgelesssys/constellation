@@ -144,7 +144,7 @@ The latter means that the value can be generated offline and compared to the one
 | 7           | Secure Boot State                                                | Azure, Constellation Bootloader | No                          |
 | 8           | -                                                                | -                               | -                           |
 | 9           | initramfs                                                        | Linux Kernel                    | Yes                         |
-| 10          | Userspace[^1]                                                    | Linux IMA[^1]                   | No[^1]                      |
+| 10          | User space                                                       | Linux IMA                       | No[^1]                      |
 | 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)      | Yes                         |
 | 12          | Kernel command line                                              | Constellation Bootloader        | Yes                         |
 | 13          | Reserved                                                         | (Constellation Bootloader)      | Yes                         |
@@ -177,7 +177,7 @@ The latter means that the value can be generated offline and compared to the one
 | 7           | GCP Secure Boot Policy                                           | GCP, Constellation Bootloader | No                          |
 | 8           | -                                                                | -                             | -                           |
 | 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
-| 10          | Userspace[^1]                                                    | Linux IMA[^1]                 | No[^1]                      |
+| 10          | User space                                                       | Linux IMA                     | No[^1]                      |
 | 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)    | Yes                         |
 | 12          | Kernel command line                                              | Constellation Bootloader      | Yes                         |
 | 13          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
@@ -311,6 +311,6 @@ flowchart LR
 
 ## References
 
-[^1]: Linux IMA produces runtime measurements of user space binaries.
+[^1]: Linux IMA produces runtime measurements of user-space binaries.
 However, these measurements aren't deterministic and thus, PCR\[10] can't be compared to a constant value.
 Instead, a policy engine must be used to verify the TPM event log against a policy.
