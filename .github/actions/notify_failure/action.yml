@@ -96,7 +96,7 @@ runs:
         echo FILTER $filtered_entity
         echo BEFORE_INSERT
         jq '.attachments[0].content.msteams.entities' teams_payload.json
-        yq -iP '.attachments[0].content.msteams.entities = [ '"$(echo $entities | jq -r --arg text_value "$text_value" 'select(.text == $text_value)')"' ]' teams_payload.jsonteams_payload.json
+        yq -iP '.attachments[0].content.msteams.entities = [ '"$(echo $entities | jq -r --arg text_value "$text_value" 'select(.text == $text_value)')"' ]' teams_payload.json
         jq '.attachments[0].content.msteams.entities' teams_payload.json
         echo AFTER_INSERT
 
