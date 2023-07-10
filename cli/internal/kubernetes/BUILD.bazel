@@ -15,7 +15,6 @@ go_library(
         "//cli/internal/terraform",
         "//cli/internal/upgrade",
         "//internal/api/versionsapi",
-        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",
