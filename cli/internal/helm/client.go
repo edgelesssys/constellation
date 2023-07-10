@@ -324,20 +324,20 @@ func (c *Client) applyMigrations(ctx context.Context, releaseName string, values
 		return fmt.Errorf("parsing current version: %w", err)
 	}
 
-	if currentV.Major == 2 && currentV.Minor == 7 {
+	if currentV.Major == 2 && currentV.Minor == 8 {
 		// Rename/change the following function to implement any necessary migrations.
-		return migrateFrom2_9(ctx, values, conf, c.kubectl)
+		return migrateFrom2_8(ctx, values, conf, c.kubectl)
 	}
 
 	return nil
 }
 
-// migrateFrom2_9 is currently a no-op that is kept for documentation purposes.
+// migrateFrom2_8 is currently a no-op that is kept for documentation purposes.
 // If you have to implement the function please make sure to update the below comment to your situation.
-// migrateFrom2_9 applies the necessary migrations for upgrading from v2.9.x to v2.10.x.
-// migrateFrom2_9 should be applied for v2.9.x --> v2.10.x.
-// migrateFrom2_9 should NOT be applied for v2.9.0 --> v2.9.x.
-func migrateFrom2_9(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
+// migrateFrom2_8 applies the necessary migrations for upgrading from v2.8.x to v2.9.x.
+// migrateFrom2_8 should be applied for v2.8.x --> v2.9.x.
+// migrateFrom2_8 should NOT be applied for v2.8.0 --> v2.9.x.
+func migrateFrom2_8(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
 	return nil
 }
 
