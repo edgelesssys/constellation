@@ -337,7 +337,7 @@ func (c *Client) applyMigrations(ctx context.Context, releaseName string, values
 // migrateFrom2_8 applies the necessary migrations for upgrading from v2.8.x to v2.9.x.
 // migrateFrom2_8 should be applied for v2.8.x --> v2.9.x.
 // migrateFrom2_8 should NOT be applied for v2.8.0 --> v2.9.x.
-func migrateFrom2_8(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
+func migrateFrom2_8(_ context.Context, _ map[string]any, _ *config.Config, _ crdClient) error {
 	return nil
 }
 
