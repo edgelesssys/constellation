@@ -46,8 +46,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, arm64]
-        os: [linux, darwin]
+        include:
+          - arch: amd64
+            os: linux
+
+          - arch: amd64
+            os: darwin
+
+          - arch: amd64
+            os: windows
+
+          - arch: arm64
+            os: linux
+
+          - arch: arm64
+            os: darwin
     steps:
       - name: Checkout
         id: checkout
@@ -70,13 +83,23 @@ jobs:
           cosignPrivateKey: ${{ inputs.key == 'release' && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ inputs.key == 'release' && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
-      - name: Upload CLI as artifact
+      - name: Upload CLI as artifact (unix)
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        if : ${{ matrix.os != 'windows' }}
         with:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}
             build/constellation-${{ matrix.os }}-${{ matrix.arch }}.sig
+
+      - name: Upload CLI as artifact (windows)
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        if : ${{ matrix.os == 'windows' }}
+        with:
+          name: constellation-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe
+            build/constellation-${{ matrix.os }}-${{ matrix.arch }}.exe.sig
 
   push-containers:
     runs-on: ubuntu-22.04
@@ -137,6 +160,11 @@ jobs:
         with:
           name: constellation-linux-arm64
 
+      - name: Download CLI binaries windows-amd64
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: constellation-windows-amd64
+
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
@@ -150,6 +178,7 @@ jobs:
             constellation-darwin-arm64 \
             constellation-linux-amd64 \
             constellation-linux-arm64 \
+            constellation-windows-amd64.exe \
             constellation.spdx.sbom)
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
@@ -253,6 +282,11 @@ jobs:
         with:
           name: constellation-linux-arm64
 
+      - name: Download CLI binaries windows-amd64
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: constellation-windows-amd64
+
       - name: Download CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
@@ -280,6 +314,9 @@ jobs:
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
           slsa-verifier verify-artifact constellation-linux-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact constellation-windows-amd64.exe \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
           slsa-verifier verify-artifact constellation.spdx.sbom \
@@ -319,6 +356,11 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: constellation-linux-arm64
+
+      - name: Download CLI binaries windows-amd64
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
+        with:
+          name: constellation-windows-amd64
 
       - name: Download Constellation CLI SBOM
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
