@@ -341,16 +341,12 @@ type imageFetcher interface {
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
 func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
-	// Config migration from v2.7 to v2.8 requires us to skip comparing configs if the cluster is still using the legacy config.
-	// TODO(daniel-weisse): v2.9 Remove error type check and always run comparison.
-	if err != nil && !errors.Is(err, kubernetes.ErrLegacyJoinConfig) {
-		return fmt.Errorf("getting cluster measurements: %w", err)
+	if err != nil {
+		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
-	if err == nil {
-		// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
-		if equal, err := newConfig.EqualTo(clusterAttestationConfig); err != nil || equal {
-			return err
-		}
+	// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
+	if equal, err := newConfig.EqualTo(clusterAttestationConfig); err != nil || equal {
+		return fmt.Errorf("comparing attestation configs: %w", err)
 	}
 
 	if !flags.yes {

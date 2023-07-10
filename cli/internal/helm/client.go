@@ -8,13 +8,11 @@ package helm
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -327,49 +325,19 @@ func (c *Client) applyMigrations(ctx context.Context, releaseName string, values
 	}
 
 	if currentV.Major == 2 && currentV.Minor == 7 {
-		return migrateFrom2_7(ctx, values, conf, c.kubectl)
+		// Rename/change the following function to implement any necessary migrations.
+		return migrateFrom2_9(ctx, values, conf, c.kubectl)
 	}
 
 	return nil
 }
 
-// migrateFrom2_7 applies the necessary migrations for upgrading from v2.7.x to v2.8.x.
-// migrateFrom2_7 should be applied for v2.7.x --> v2.8.x.
-// migrateFrom2_7 should NOT be applied for v2.8.0 --> v2.8.x.
-// Remove after release of v2.8.0.
-func migrateFrom2_7(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
-	if conf.GetProvider() == cloudprovider.GCP {
-		if err := updateGCPStorageClass(ctx, kubeclient); err != nil {
-			return fmt.Errorf("applying migration for GCP storage class: %w", err)
-		}
-	}
-
-	return updateJoinConfig(values, conf)
-}
-
-func updateGCPStorageClass(ctx context.Context, kubeclient crdClient) error {
-	// v2.8 updates the disk type of GCP default storage class
-	// This value is not updatable in Kubernetes, but we can use a workaround to update it:
-	// First, we delete the storage class, then we upgrade the chart,
-	// which will recreate the storage class with the new disk type.
-	if err := kubeclient.DeleteStorageClass(ctx, "encrypted-rwo"); err != nil {
-		return fmt.Errorf("deleting storage class for update: %w", err)
-	}
-	return nil
-}
-
-func updateJoinConfig(values map[string]any, conf *config.Config) error {
-	joinServiceVals, ok := values["join-service"].(map[string]interface{})
-	if !ok {
-		return errors.New("invalid join-service config")
-	}
-
-	attestationConfigJSON, err := json.Marshal(conf.GetAttestationConfig())
-	if err != nil {
-		return fmt.Errorf("marshalling attestation config: %w", err)
-	}
-	joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
-
+// migrateFrom2_9 is currently a no-op that is kept for documentation purposes.
+// If you have to implement the function please make sure to update the below comment to your situation.
+// migrateFrom2_9 applies the necessary migrations for upgrading from v2.9.x to v2.10.x.
+// migrateFrom2_9 should be applied for v2.9.x --> v2.10.x.
+// migrateFrom2_9 should NOT be applied for v2.9.0 --> v2.9.x.
+func migrateFrom2_9(ctx context.Context, values map[string]any, conf *config.Config, kubeclient crdClient) error {
 	return nil
 }
 
@@ -431,7 +399,6 @@ type crdClient interface {
 	ApplyCRD(ctx context.Context, rawCRD []byte) error
 	GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error)
 	GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error)
-	DeleteStorageClass(ctx context.Context, name string) error // TODO(daniel-weisse): remove with v2.9
 }
 
 type actionWrapper interface {
