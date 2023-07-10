@@ -2,6 +2,10 @@ output "ip" {
   value = module.node_group["control_plane_default"].instance_ips[0]
 }
 
+output "api_server_cert_sans" {
+  value = sort(concat([module.node_group["control_plane_default"].instance_ips[0]], var.custom_endpoint == "" ? [] : [var.custom_endpoint]))
+}
+
 output "uid" {
   value = "qemu" // placeholder
 }

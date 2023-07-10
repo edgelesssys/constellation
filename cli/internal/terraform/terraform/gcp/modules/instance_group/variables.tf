@@ -94,3 +94,8 @@ variable "zone" {
   type        = string
   description = "Zone to deploy the instance group in."
 }
+
+variable "custom_endpoint" {
+  type        = string
+  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+}

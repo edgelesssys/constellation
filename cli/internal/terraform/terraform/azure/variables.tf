@@ -61,3 +61,9 @@ variable "user_assigned_identity" {
   type        = string
   description = "The name of the user assigned identity to attache to the nodes of the cluster."
 }
+
+variable "custom_endpoint" {
+  type        = string
+  default     = ""
+  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+}

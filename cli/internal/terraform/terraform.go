@@ -103,53 +103,66 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
-		return CreateOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+		return ApplyOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
 
 	if err := c.tf.Init(ctx); err != nil {
-		return CreateOutput{}, fmt.Errorf("terraform init: %w", err)
+		return ApplyOutput{}, fmt.Errorf("terraform init: %w", err)
 	}
 
 	if err := c.applyManualStateMigrations(ctx); err != nil {
-		return CreateOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
+		return ApplyOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return CreateOutput{}, fmt.Errorf("terraform apply: %w", err)
+		return ApplyOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return CreateOutput{}, fmt.Errorf("terraform show: %w", err)
+		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {
-		return CreateOutput{}, errors.New("no IP output found")
+		return ApplyOutput{}, errors.New("no IP output found")
 	}
 	ip, ok := ipOutput.Value.(string)
 	if !ok {
-		return CreateOutput{}, errors.New("invalid type in IP output: not a string")
+		return ApplyOutput{}, errors.New("invalid type in IP output: not a string")
+	}
+
+	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
+	if !ok {
+		return ApplyOutput{}, errors.New("no api_server_cert_sans output found")
+	}
+	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
+	if !ok {
+		return ApplyOutput{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
+	}
+	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
+	if err != nil {
+		return ApplyOutput{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
 	}
 
 	secretOutput, ok := tfState.Values.Outputs["initSecret"]
 	if !ok {
-		return CreateOutput{}, errors.New("no initSecret output found")
+		return ApplyOutput{}, errors.New("no initSecret output found")
 	}
 	secret, ok := secretOutput.Value.(string)
 	if !ok {
-		return CreateOutput{}, errors.New("invalid type in initSecret output: not a string")
+		return ApplyOutput{}, errors.New("invalid type in initSecret output: not a string")
 	}
 
 	uidOutput, ok := tfState.Values.Outputs["uid"]
 	if !ok {
-		return CreateOutput{}, errors.New("no uid output found")
+		return ApplyOutput{}, errors.New("no uid output found")
 	}
 	uid, ok := uidOutput.Value.(string)
 	if !ok {
-		return CreateOutput{}, errors.New("invalid type in uid output: not a string")
+		return ApplyOutput{}, errors.New("invalid type in uid output: not a string")
 	}
 
 	var attestationURL string
@@ -159,19 +172,22 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOu
 		}
 	}
 
-	return CreateOutput{
-		IP:             ip,
-		Secret:         secret,
-		UID:            uid,
-		AttestationURL: attestationURL,
+	return ApplyOutput{
+		IP:                ip,
+		APIServerCertSANs: apiServerCertSANs,
+		Secret:            secret,
+		UID:               uid,
+		AttestationURL:    attestationURL,
 	}, nil
 }
 
-// CreateOutput contains the Terraform output values of a cluster creation.
-type CreateOutput struct {
-	IP     string
-	Secret string
-	UID    string
+// ApplyOutput contains the Terraform output values of a cluster creation
+// or apply operation.
+type ApplyOutput struct {
+	IP                string
+	APIServerCertSANs []string
+	Secret            string
+	UID               string
 	// AttestationURL is the URL of the attestation provider.
 	// It is only set if the cluster is created on Azure.
 	AttestationURL string
@@ -445,6 +461,18 @@ func (c *Client) setLogLevel(logLevel LogLevel) error {
 type StateMigration struct {
 	DisplayName string
 	Hook        func(ctx context.Context, tfClient TFMigrator) error
+}
+
+func toStringSlice(in []any) ([]string, error) {
+	out := make([]string, len(in))
+	for i, v := range in {
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid type in list: item at index %v of list is not a string", i)
+		}
+		out[i] = s
+	}
+	return out, nil
 }
 
 type tfInterface interface {

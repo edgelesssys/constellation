@@ -20,10 +20,12 @@ provider "azurerm" {
 }
 
 locals {
-  uid                   = random_id.uid.hex
-  name                  = "${var.name}-${local.uid}"
-  initSecretHash        = random_password.initSecret.bcrypt_hash
-  tags                  = { constellation-uid = local.uid }
+  uid            = random_id.uid.hex
+  name           = "${var.name}-${local.uid}"
+  initSecretHash = random_password.initSecret.bcrypt_hash
+  tags = {
+    constellation-uid = local.uid,
+  }
   ports_node_range      = "30000-32767"
   ports_kubernetes      = "6443"
   ports_bootstrapper    = "9000"
@@ -33,6 +35,9 @@ locals {
   ports_debugd          = "4000"
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
+  // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
+  // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
+  wildcard_lb_dns_name = replace(azurerm_public_ip.loadbalancer_ip.fqdn, "/^[^.]*\\./", "*.")
 }
 
 resource "random_id" "uid" {
@@ -72,6 +77,7 @@ resource "azurerm_application_insights" "insights" {
 
 resource "azurerm_public_ip" "loadbalancer_ip" {
   name                = "${local.name}-lb"
+  domain_name_label   = local.name
   resource_group_name = var.resource_group
   location            = var.location
   allocation_method   = "Static"

@@ -1039,13 +1039,14 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				loadBalancerAPI: tc.loadBalancerAPI,
 				pubIPAPI:        tc.publicIPAddressesAPI,
 			}
-			loadbalancerName, err := metadata.GetLoadBalancerEndpoint(context.Background())
+			gotHost, gotPort, err := metadata.GetLoadBalancerEndpoint(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantIP, loadbalancerName)
+			assert.Equal(tc.wantIP, gotHost)
+			assert.Equal("6443", gotPort)
 		})
 	}
 }

@@ -34,7 +34,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 9)
+	ConfigDoc.Fields = make([]encoder.Doc, 10)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -80,6 +80,11 @@ func init() {
 	ConfigDoc.Fields[8].Note = ""
 	ConfigDoc.Fields[8].Description = "Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee the docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation"
 	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee the docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation"
+	ConfigDoc.Fields[9].Name = "customEndpoint"
+	ConfigDoc.Fields[9].Type = "string"
+	ConfigDoc.Fields[9].Note = ""
+	ConfigDoc.Fields[9].Description = "Optional custom endpoint (DNS name) for the Constellation API server.\nThis can be used to point a custom dns name at the Constellation API server\nand is added to the Subject Alternative Name (SAN) field of the TLS certificate used by the API server.\nA fallback to DNS name is always available."
+	ConfigDoc.Fields[9].Comments[encoder.LineComment] = "Optional custom endpoint (DNS name) for the Constellation API server."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."

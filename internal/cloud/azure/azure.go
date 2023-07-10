@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
@@ -28,6 +29,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -156,41 +158,12 @@ func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServic
 //
 // The returned string is an IP address without a port, but the method name needs to satisfy the
 // metadata interface.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	resourceGroup, err := c.imds.resourceGroup(ctx)
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
+	hostname, err := c.getLoadBalancerPublicIP(ctx)
 	if err != nil {
-		return "", fmt.Errorf("retrieving resource group: %w", err)
+		return "", "", fmt.Errorf("retrieving load balancer public IP: %w", err)
 	}
-	uid, err := c.imds.uid(ctx)
-	if err != nil {
-		return "", fmt.Errorf("retrieving instance UID: %w", err)
-	}
-
-	lb, err := c.getLoadBalancer(ctx, resourceGroup, uid)
-	if err != nil {
-		return "", fmt.Errorf("retrieving load balancer: %w", err)
-	}
-	if lb == nil || lb.Properties == nil {
-		return "", errors.New("could not dereference load balancer IP configuration")
-	}
-
-	var pubIP string
-	for _, fipConf := range lb.Properties.FrontendIPConfigurations {
-		if fipConf == nil || fipConf.Properties == nil || fipConf.Properties.PublicIPAddress == nil || fipConf.Properties.PublicIPAddress.ID == nil {
-			continue
-		}
-		pubIP = path.Base(*fipConf.Properties.PublicIPAddress.ID)
-		break
-	}
-
-	resp, err := c.pubIPAPI.Get(ctx, resourceGroup, pubIP, nil)
-	if err != nil {
-		return "", fmt.Errorf("retrieving load balancer public IP address: %w", err)
-	}
-	if resp.Properties == nil || resp.Properties.IPAddress == nil {
-		return "", fmt.Errorf("could not resolve public IP address reference for load balancer")
-	}
-	return *resp.Properties.IPAddress, nil
+	return hostname, strconv.FormatInt(constants.KubernetesPort, 10), nil
 }
 
 // List retrieves all instances belonging to the current constellation.
@@ -408,6 +381,86 @@ func (c *Cloud) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMachin
 	}
 	return networkInterfaces, nil
 }
+
+// getLoadBalancerPublicIP retrieves the first load balancer IP from cloud provider metadata.
+func (c *Cloud) getLoadBalancerPublicIP(ctx context.Context) (string, error) {
+	resourceGroup, err := c.imds.resourceGroup(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving resource group: %w", err)
+	}
+	uid, err := c.imds.uid(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance UID: %w", err)
+	}
+
+	lb, err := c.getLoadBalancer(ctx, resourceGroup, uid)
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer: %w", err)
+	}
+	if lb == nil || lb.Properties == nil {
+		return "", errors.New("could not dereference load balancer IP configuration")
+	}
+
+	var pubIP string
+	for _, fipConf := range lb.Properties.FrontendIPConfigurations {
+		if fipConf == nil || fipConf.Properties == nil || fipConf.Properties.PublicIPAddress == nil || fipConf.Properties.PublicIPAddress.ID == nil {
+			continue
+		}
+		pubIP = path.Base(*fipConf.Properties.PublicIPAddress.ID)
+		break
+	}
+
+	resp, err := c.pubIPAPI.Get(ctx, resourceGroup, pubIP, nil)
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer public IP address: %w", err)
+	}
+	if resp.Properties == nil || resp.Properties.IPAddress == nil {
+		return "", fmt.Errorf("could not resolve public IP address reference for load balancer")
+	}
+	return *resp.Properties.IPAddress, nil
+}
+
+/*
+// TODO(malt3): uncomment and use as soon as we switch the primary endpoint to DNS.
+// getLoadBalancerDNSName retrieves the dns name of the load balancer.
+// On Azure, the DNS name is the DNS name of the public IP address of the load balancer.
+func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
+	resourceGroup, err := c.imds.resourceGroup(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving resource group: %w", err)
+	}
+	uid, err := c.imds.uid(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance UID: %w", err)
+	}
+
+	lb, err := c.getLoadBalancer(ctx, resourceGroup, uid)
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer: %w", err)
+	}
+	if lb == nil || lb.Properties == nil {
+		return "", errors.New("could not dereference load balancer IP configuration")
+	}
+
+	var pubIP string
+	for _, fipConf := range lb.Properties.FrontendIPConfigurations {
+		if fipConf == nil || fipConf.Properties == nil || fipConf.Properties.PublicIPAddress == nil || fipConf.Properties.PublicIPAddress.ID == nil {
+			continue
+		}
+		pubIP = path.Base(*fipConf.Properties.PublicIPAddress.ID)
+		break
+	}
+
+	resp, err := c.pubIPAPI.Get(ctx, resourceGroup, pubIP, nil)
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer public IP address: %w", err)
+	}
+	if resp.Properties == nil || resp.Properties.DNSSettings == nil || resp.Properties.DNSSettings.Fqdn == nil {
+		return "", fmt.Errorf("could not resolve public IP address fqdn for load balancer")
+	}
+	return *resp.Properties.DNSSettings.Fqdn, nil
+}
+*/
 
 type cloudConfig struct {
 	Cloud                       string `json:"cloud,omitempty"`

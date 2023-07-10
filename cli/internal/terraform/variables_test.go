@@ -43,6 +43,7 @@ func TestAWSClusterVariables(t *testing.T) {
 		IAMProfileWorkerNodes:  "arn:aws:iam::123456789012:instance-profile/cluster-name-worker",
 		Debug:                  true,
 		EnableSNP:              true,
+		CustomEndpoint:         "example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -72,6 +73,7 @@ node_groups = {
     zone          = "eu-central-1c"
   }
 }
+custom_endpoint = "example.com"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -117,6 +119,7 @@ func TestGCPClusterVariables(t *testing.T) {
 				DiskType:        "pd-ssd",
 			},
 		},
+		CustomEndpoint: "example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -144,6 +147,7 @@ node_groups = {
     zone          = "eu-central-1b"
   }
 }
+custom_endpoint = "example.com"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -186,6 +190,7 @@ func TestAzureClusterVariables(t *testing.T) {
 		CreateMAA:            to.Ptr(true),
 		Debug:                to.Ptr(true),
 		Location:             "eu-central-1",
+		CustomEndpoint:       "example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -207,6 +212,7 @@ node_groups = {
     zones         = null
   }
 }
+custom_endpoint = "example.com"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -249,6 +255,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 				StateDiskSizeGB: 30,
 			},
 		},
+		CustomEndpoint: "example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -271,6 +278,7 @@ openstack_user_domain_name = "my-user-domain"
 openstack_username         = "my-username"
 openstack_password         = "my-password"
 debug                      = true
+custom_endpoint            = "example.com"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
@@ -299,6 +307,7 @@ func TestQEMUClusterVariables(t *testing.T) {
 		NVRAM:              "production",
 		InitrdPath:         toPtr("/var/lib/libvirt/images/cluster-name-initrd"),
 		KernelCmdline:      toPtr("console=ttyS0,115200n8"),
+		CustomEndpoint:     "example.com",
 	}
 
 	// test that the variables are correctly rendered
@@ -323,6 +332,7 @@ metadata_libvirt_uri    = "qemu:///system"
 nvram                   = "/usr/share/OVMF/constellation_vars.production.fd"
 constellation_initrd    = "/var/lib/libvirt/images/cluster-name-initrd"
 constellation_cmdline   = "console=ttyS0,115200n8"
+custom_endpoint         = "example.com"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)

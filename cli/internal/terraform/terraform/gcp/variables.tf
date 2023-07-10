@@ -45,3 +45,9 @@ variable "debug" {
   default     = false
   description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
 }
+
+variable "custom_endpoint" {
+  type        = string
+  default     = ""
+  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+}

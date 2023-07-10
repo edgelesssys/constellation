@@ -175,6 +175,11 @@ const (
 	JoinConfigMap = "join-config"
 	// InternalConfigMap k8s config map with internal Constellation config.
 	InternalConfigMap = "internal-config"
+	// KubeadmConfigMap k8s config map with kubeadm config
+	// (holds ClusterConfiguration).
+	KubeadmConfigMap = "kubeadm-config"
+	// ClusterConfigurationKey key in kubeadm config map with ClusterConfiguration.
+	ClusterConfigurationKey = "ClusterConfiguration"
 
 	//
 	// Helm.

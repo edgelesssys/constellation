@@ -37,6 +37,8 @@ go_library(
         "@io_k8s_client_go//dynamic",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//tools/clientcmd",
+        "@io_k8s_kubernetes//cmd/kubeadm/app/apis/kubeadm/v1beta3",
+        "@io_k8s_sigs_yaml//:yaml",
     ],
 )
 

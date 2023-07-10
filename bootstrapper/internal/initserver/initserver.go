@@ -220,6 +220,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 		req.HelmDeployments,
 		req.ConformanceMode,
 		components.NewComponentsFromInitProto(req.KubernetesComponents),
+		req.ApiserverCertSans,
 		s.log,
 	)
 	if err != nil {
@@ -348,6 +349,7 @@ type ClusterInitializer interface {
 		helmDeployments []byte,
 		conformanceMode bool,
 		kubernetesComponents components.Components,
+		apiServerCertSANs []string,
 		log *logger.Logger,
 	) ([]byte, error)
 }

@@ -197,6 +197,10 @@ func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.Terrafor
 	return u.applyTerraformErr
 }
 
+func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
+	return nil
+}
+
 // AddManualStateMigration is not used in this test.
 // TODO(AB#3248): remove this method together with the definition in the interfaces.
 func (u stubUpgrader) AddManualStateMigration(_ terraform.StateMigration) {
