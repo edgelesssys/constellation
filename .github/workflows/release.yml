@@ -194,25 +194,6 @@ jobs:
       stream: "stable"
       ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
 
-  os-image-additional-streams:
-    name: Build OS image (additional streams)
-    needs: [verify-inputs, update-versions]
-    strategy:
-      fail-fast: false
-      matrix:
-        stream: [debug, console]
-    uses: ./.github/workflows/build-os-image.yml
-    permissions:
-      id-token: write
-      contents: read
-      packages: read
-    secrets: inherit
-    with:
-      imageVersion: ${{ inputs.version }}
-      isRelease: true
-      stream: ${{ matrix.stream }}
-      ref: ${{ needs.verify-inputs.outputs.WORKING_BRANCH }}
-
   update-hardcoded-measurements:
     name: Update hardcoded measurements (in the CLI)
     needs: [verify-inputs, os-image]
