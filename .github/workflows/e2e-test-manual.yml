@@ -3,14 +3,10 @@ name: e2e test manual
 on:
   workflow_dispatch:
     inputs:
-      workerNodesCount:
-        description: "Number of worker nodes to spawn."
-        default: "2"
-        required: true
-      controlNodesCount:
-        description: "Number of control-plane nodes to spawn."
-        default: "3"
-        required: true
+      nodeCount:
+        description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
+        default: "3:2"
+        type: string
       cloudProvider:
         description: "Which cloud provider to use."
         type: choice
@@ -50,8 +46,13 @@ on:
         type: boolean
         default: false
         required: false
-      cliImageVersion:
-        description: "Version of a released CLI to download:Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+      cliVersion:
+        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
+        type: string
+        default: ""
+        required: false
+      imageVersion:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
         type: string
         default: ""
         required: false
@@ -67,14 +68,10 @@ on:
         required: false
   workflow_call:
     inputs:
-      workerNodesCount:
-        description: "Number of worker nodes to spawn."
-        type: number
-        required: true
-      controlNodesCount:
-        description: "Number of control-plane nodes to spawn."
-        type: number
-        required: true
+      nodeCount:
+        description: "Number of nodes to use in the cluster. Given in format `<control-plane nodes>:<worker nodes>`."
+        default: "3:2"
+        type: string
       cloudProvider:
         description: "Which cloud provider to use."
         type: string
@@ -95,10 +92,16 @@ on:
         description: "Keep measurements embedded in the CLI."
         type: boolean
         required: true
-      cliImageVersion:
-        description: "Version of a released CLI to download and full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main. Must be in the form of 'cliVersion:image'."
+      cliVersion:
+        description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
         type: string
-        required: true
+        default: ""
+        required: false
+      imageVersion:
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
+        type: string
+        default: ""
+        required: false
       machineType:
         description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
         type: string
@@ -109,35 +112,35 @@ on:
         required: true
 
 jobs:
-  split-cliImageVersion:
-    name: Split cliImageVersion
+  split-nodeCount:
+    name: Split nodeCount
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
     outputs:
-      image: ${{ steps.split-cliImageVersion.outputs.image }}
-      cliVersion: ${{ steps.split-cliImageVersion.outputs.cliVersion }}
+      workerNodes: ${{ steps.split-nodeCount.outputs.workerNodes }}
+      controlPlaneNodes: ${{ steps.split-nodeCount.outputs.controlPlaneNodes }}
     steps:
-      - name: Split cliImageVersion
-        id: split-cliImageVersion
+      - name: Split nodeCount
+        id: split-nodeCount
         shell: bash
         run: |
-          if [[ -z "${{ inputs.cliImageVersion }}" ]]; then
-            echo "Using latest debug image from main."
-            exit 0
+          nodeCount="${{ inputs.nodeCount }}"
+          workerNodes="${nodeCount##*:}"
+          controlPlaneNodes="${nodeCount%%:*}"
+
+          if [[ -z "${workerNodes}" ]] || [[ -z "{controlPlaneNodes}" ]]; then
+            echo "Invalid nodeCount input: '${nodeCount}'."
+            exit 1
           fi
 
-          cliImageVersion="${{ inputs.cliImageVersion }}"
-          image="${cliImageVersion##*:}"
-          cliVersion="${cliImageVersion%%:*}"
-          echo "image=${image}" | tee -a "$GITHUB_OUTPUT"
-          echo "cliVersion=${cliVersion}" | tee -a "$GITHUB_OUTPUT"
+          echo "workerNodes=${workerNodes}" | tee -a "$GITHUB_OUTPUT"
+          echo "controlPlaneNodes=${controlPlaneNodes}" | tee -a "$GITHUB_OUTPUT"
 
   find-latest-image:
     name: Select image
     runs-on: ubuntu-22.04
-    needs: [split-cliImageVersion]
     permissions:
       id-token: write
       contents: read
@@ -149,27 +152,27 @@ jobs:
         id: check-input
         shell: bash
         run: |
-          if [[ -z "${{ needs.split-cliImageVersion.outputs.image }}" ]]; then
+          if [[ -z "${{ inputs.imageVersion }}" ]]; then
             echo "Using latest debug image from main."
             exit 0
           else
-            echo "image=${{ needs.split-cliImageVersion.outputs.image }}" | tee -a "$GITHUB_OUTPUT"
+            echo "image=${{ inputs.imageVersion }}" | tee -a "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout head
-        if: needs.split-cliImageVersion.outputs.image == '' && inputs.git-ref == 'head'
+        if: inputs.imageVersion == '' && inputs.git-ref == 'head'
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: Checkout ref
-        if: needs.split-cliImageVersion.outputs.image == '' && inputs.git-ref != 'head'
+        if: inputs.imageVersion == '' && inputs.git-ref != 'head'
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
         with:
           ref: ${{ inputs.git-ref }}
 
       - name: Login to AWS
-        if: needs.split-cliImageVersion.outputs.image == ''
+        if: inputs.imageVersion == ''
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationVersionsAPIRead
@@ -177,7 +180,7 @@ jobs:
 
       - name: Find latest image
         id: find-latest-image
-        if: needs.split-cliImageVersion.outputs.image == ''
+        if: inputs.imageVersion == ''
         uses: ./.github/actions/versionsapi
         with:
           command: latest
@@ -188,7 +191,7 @@ jobs:
         id: isDebugImage
         shell: bash
         run: |
-          case "${{ needs.split-cliImageVersion.outputs.image }}" in
+          case "${{ inputs.imageVersion }}" in
             "")
               echo "isDebugImage=true" | tee -a "$GITHUB_OUTPUT"
               ;;
@@ -207,7 +210,7 @@ jobs:
       checks: write
       contents: read
       packages: write
-    needs: [find-latest-image, split-cliImageVersion]
+    needs: [find-latest-image, split-nodeCount]
     if: always() && !cancelled()
     steps:
       - name: Install basic tools (macOS)
@@ -235,8 +238,8 @@ jobs:
         id: e2e_test
         uses: ./.github/actions/e2e_test
         with:
-          workerNodesCount: ${{ inputs.workerNodesCount }}
-          controlNodesCount: ${{ inputs.controlNodesCount }}
+          workerNodesCount: ${{ needs.split-nodeCount.outputs.workerNodes }}
+          controlNodesCount: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
           cloudProvider: ${{ inputs.cloudProvider }}
           machineType: ${{ inputs.machineType }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
@@ -250,7 +253,7 @@ jobs:
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
           osImage: ${{ needs.find-latest-image.outputs.image }}
-          cliVersion: ${{ needs.split-cliImageVersion.outputs.cliVersion }}
+          cliVersion: ${{ inputs.cliVersion }}
           isDebugImage: ${{ needs.find-latest-image.outputs.isDebugImage }}
           buildBuddyApiKey: ${{ secrets.BUILDBUDDY_ORG_API_KEY }}
           azureClusterCreateCredentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
