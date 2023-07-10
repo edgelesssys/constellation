@@ -196,6 +196,7 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	cmd.Flags().String("master-secret", "", "")
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
+	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	log, err := newCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
