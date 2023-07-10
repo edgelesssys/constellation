@@ -91,10 +91,12 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
 Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+
 * `westus`
 * `eastus`
 * `northeurope`
 * `westeurope`
+* `southeastasia`
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
@@ -129,6 +131,7 @@ constellation iam create aws --zone=eu-central-1a --prefix=constellTest
 This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
 
 Constellation OS images are currently replicated to the following regions:
+
 * `eu-central-1`
 * `eu-west-1`
 * `eu-west-3`
@@ -166,6 +169,7 @@ The following describes the configuration fields and how you obtain the required
   * `eastus`
   * `northeurope`
   * `westeurope`
+  * `southeastasia`
 
 * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup) for your Constellation cluster. Set this configuration     field to the name of the created resource group.
 
@@ -212,11 +216,11 @@ The following describes the configuration fields and how you obtain the required
 
 * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
 
-  - `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
-  - `Compute Network Admin (roles/compute.networkAdmin)`
-  - `Compute Security Admin (roles/compute.securityAdmin)`
-  - `Compute Storage Admin (roles/compute.storageAdmin)`
-  - `Service Account User (roles/iam.serviceAccountUser)`
+  * `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
+  * `Compute Network Admin (roles/compute.networkAdmin)`
+  * `Compute Security Admin (roles/compute.securityAdmin)`
+  * `Compute Storage Admin (roles/compute.storageAdmin)`
+  * `Service Account User (roles/iam.serviceAccountUser)`
 
   Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
@@ -265,6 +269,7 @@ Now that you've configured your CSP, you can [create your cluster](./create.md).
 You can keep a created IAM configuration and reuse it for new clusters. Alternatively, you can also delete it if you don't want to use it anymore.
 
 Delete the IAM configuration by executing the following command in the same directory where you executed `constellation iam create` (the directory that contains [`constellation-iam-terraform`](../reference/terraform.md) as a subdirectory):
+
 ```bash
 constellation iam destroy
 ```

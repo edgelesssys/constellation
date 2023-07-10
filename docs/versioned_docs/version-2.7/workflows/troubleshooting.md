@@ -12,6 +12,7 @@ If something doesn't work, check out the [known issues](https://github.com/edgel
 ### Azure: Resource Providers can't be registered
 
 On Azure, you may receive the following error when running `create` or `terminate` with limited IAM permissions:
+
 ```shell-session
 Error: Error ensuring Resource Providers are registered.
 
@@ -28,11 +29,13 @@ To continue, please ensure that the [required resource providers](../getting-sta
 
 Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable and either run `create` or `terminate` again.
 For example:
+
 ```bash
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
 ```
 
 Or alternatively, for `terminate`:
+
 ```bash
 ARM_SKIP_PROVIDER_REGISTRATION=true constellation terminate
 ```
@@ -59,6 +62,7 @@ You can use the `upgrade apply` command to change measurements of a running clus
 Keep in mind that running `upgrade apply` also applies any version changes from your config to the cluster.
 
 You can run these commands to learn about the versions currently configured in the cluster:
+
 - Kubernetes API server version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.kubernetesClusterVersion`
 - image version: `kubectl get nodeversion constellation-version -o json -n kube-system | jq .spec.imageVersion`
 - microservices versions: `helm list --filter 'constellation-services' -n kube-system`
@@ -77,7 +81,7 @@ You can view this information in the following places:
 1. In your Azure subscription find the Constellation resource group.
 2. Inside the resource group find the Application Insights resource called `constellation-insights-*`.
 3. On the left-hand side go to `Logs`, which is located in the section `Monitoring`.
-    + Close the Queries page if it pops up.
+    - Close the Queries page if it pops up.
 5. In the query text field type in `traces`, and click `Run`.
 
 To **find the disk UUIDs** use the following query: `traces | where message contains "Disk UUID"`
@@ -88,7 +92,7 @@ To **find the disk UUIDs** use the following query: `traces | where message cont
 1. Select the project that hosts Constellation.
 2. Go to the `Compute Engine` service.
 3. On the right-hand side of a VM entry select `More Actions` (a stacked ellipsis)
-    + Select `View logs`
+    - Select `View logs`
 
 To **find the disk UUIDs** use the following query: `resource.type="gce_instance" text_payload=~"Disk UUID:.*\n" logName=~".*/constellation-boot-log"`
 
@@ -115,7 +119,7 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 1. Figure out which node to connect to:
 
-    ```sh
+    ```bash
     kubectl get nodes
     # or to see more information, such as IPs:
     kubectl get nodes -o wide
@@ -123,7 +127,7 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 2. Connect to the node:
 
-    ```sh
+    ```bash
     kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
     ```
 
@@ -133,6 +137,6 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
 3. Once finished, clean up the debug pod:
 
-    ```sh
+    ```bash
     kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
     ```
