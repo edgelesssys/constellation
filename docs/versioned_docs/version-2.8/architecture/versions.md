@@ -7,7 +7,7 @@ Additional `PATCH` releases may be created on demand, to fix security issues or 
 
 New releases are published on [GitHub](https://github.com/edgelesssys/constellation/releases).
 
-### Kubernetes support policy
+## Kubernetes support policy
 
 Constellation is aligned to the [version support policy of Kubernetes](https://kubernetes.io/releases/version-skew-policy/#supported-versions), and therefore usually supports the most recent three minor versions.
 When a new minor version of Kubernetes is released, support is added to the next Constellation release, and that version then supports four Kubernetes versions.

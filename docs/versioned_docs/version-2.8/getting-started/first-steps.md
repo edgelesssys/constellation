@@ -32,6 +32,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     * `eastus`
     * `northeurope`
     * `westeurope`
+    * `southeastasia`
 
     </tabItem>
 
@@ -112,6 +113,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     ```shell-session
     $ constellation init
     Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+    Note: If you just created the cluster, it can take a few minutes to connect.
     Initializing cluster ...
     Your Constellation cluster was successfully initialized.
 

@@ -20,6 +20,7 @@ Most importantly, a given CLI version can only upgrade a cluster of the previous
 This means that you have to upgrade your CLI and cluster one minor version at a time.
 
 For example, if you are currently on CLI version v2.6 and the latest version is v2.8, you should
+
 * upgrade the CLI to v2.7,
 * upgrade the cluster to v2.7,
 * and only then continue upgrading the CLI (and the cluster) to v2.8 after.
@@ -47,7 +48,7 @@ constellation upgrade check --write-config
 ```
 
 You can either enter the reported target versions into your config manually or run the above command with the `--write-config` flag.
-When using this flag, the `kubernetesVersion`, `image`, `microserviceVersion` and `attestation` fields are overwritten with the smallest available upgrade.
+When using this flag, the `kubernetesVersion`, `image`, `microserviceVersion`, and `attestation` fields are overwritten with the smallest available upgrade.
 
 ## Apply the upgrade
 

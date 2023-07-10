@@ -2,6 +2,7 @@
 
 A local cluster lets you deploy and test Constellation without a cloud subscription.
 You have two options:
+
 * Use MiniConstellation to automatically deploy a two-node cluster.
 * For more fine-grained control, create the cluster using the QEMU provider.
 
@@ -110,6 +111,7 @@ attaching persistent storage, or autoscaling aren't available.
   ```shell-session
   $ constellation init
   Your Constellation master secret was successfully written to ./constellation-mastersecret.json
+  Note: If you just created the cluster, it can take a few minutes to connect.
   Initializing cluster ...
   Your Constellation cluster was successfully initialized.
 
