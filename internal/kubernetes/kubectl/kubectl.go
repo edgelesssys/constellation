@@ -241,12 +241,6 @@ func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors ma
 	return nil
 }
 
-// DeleteStorageClass deletes the storage class with the given name.
-// TODO(daniel-weisse): Remove with v2.9.
-func (k *Kubectl) DeleteStorageClass(ctx context.Context, name string) error {
-	return k.StorageV1().StorageClasses().Delete(ctx, name, metav1.DeleteOptions{})
-}
-
 // parseCRD takes a byte slice of data and tries to create a CustomResourceDefinition object from it.
 func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
 	sch := runtime.NewScheme()
