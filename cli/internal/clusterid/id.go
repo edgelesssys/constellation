@@ -28,3 +28,8 @@ type File struct {
 	// It is only set if the cluster is created on Azure.
 	AttestationURL string `json:"attestationURL,omitempty"`
 }
+
+// GetClusterName returns the name of the cluster.
+func GetClusterName(cfgName string, idFile File) string {
+	return cfgName + idFile.UID
+}

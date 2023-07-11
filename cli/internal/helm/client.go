@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -102,7 +103,7 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 
@@ -155,7 +156,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 	}
 
 	for _, chart := range upgradeReleases {
-		err = c.upgradeRelease(ctx, timeout, config, chart)
+		err = c.upgradeRelease(ctx, timeout, config, idFile, chart)
 		if err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
@@ -251,7 +252,7 @@ func (s ServiceVersions) ConstellationServices() string {
 }
 
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) error {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -259,7 +260,11 @@ func (c *Client) upgradeRelease(
 	if err != nil {
 		return fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
 	}
-	loader := NewLoader(conf.GetProvider(), k8sVersion)
+
+	c.log.Debugf("Checking cluster ID file")
+	clusterName := clusterid.GetClusterName(conf.Name, idFile)
+
+	loader := NewLoader(conf.GetProvider(), k8sVersion, clusterName)
 
 	var values map[string]any
 	var releaseName string

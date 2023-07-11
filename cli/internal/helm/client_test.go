@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -77,7 +78,7 @@ func TestUpgradeRelease(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			err = client.upgradeRelease(context.Background(), 0, config.Default(), chart)
+			err = client.upgradeRelease(context.Background(), 0, config.Default(), clusterid.File{UID: "test"}, chart)
 			if tc.wantError {
 				assert.Error(err)
 				return

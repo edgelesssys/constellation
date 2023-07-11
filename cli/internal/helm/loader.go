@@ -58,18 +58,19 @@ type ChartLoader struct {
 	csp                          cloudprovider.Provider
 	joinServiceImage             string
 	keyServiceImage              string
-	ccmImage                     string
-	cnmImage                     string
+	ccmImage                     string // cloud controller manager image
+	cnmImage                     string // Azure cloud node manager image
 	autoscalerImage              string
 	verificationServiceImage     string
 	gcpGuestAgentImage           string
 	konnectivityImage            string
 	constellationOperatorImage   string
 	nodeMaintenanceOperatorImage string
+	clusterName                  string
 }
 
 // NewLoader creates a new ChartLoader.
-func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
+func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, clusterName string) *ChartLoader {
 	var ccmImage, cnmImage string
 	switch csp {
 	case cloudprovider.AWS:
@@ -97,6 +98,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 		konnectivityImage:            versions.KonnectivityAgentImage,
 		constellationOperatorImage:   imageversion.ConstellationNodeOperator("", ""),
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
+		clusterName:                  clusterName,
 	}
 }
 
@@ -405,6 +407,13 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 		values["tags"] = map[string]any{
 			"AWS": true,
 		}
+		values["aws-load-balancer-controller"] = map[string]any{
+			"nodeSelector": map[string]any{
+				"node-role.kubernetes.io/control-plane": "",
+			},
+			"clusterName": i.clusterName,
+		}
+
 	case cloudprovider.Azure:
 		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
