@@ -63,3 +63,8 @@ func (f *File) Merge(other File) *File {
 
 	return f
 }
+
+// GetClusterName returns the name of the cluster.
+func GetClusterName(cfgName string, idFile File) string {
+	return cfgName + idFile.UID
+}
