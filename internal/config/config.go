@@ -130,7 +130,7 @@ type AWSConfig struct {
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
 	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
-	DeployCSIDriver *bool `yaml:"deployCSIDriver"`
+	DeployCSIDriver *bool `yaml:"deployCSIDriver"` // TODO (msanft): after v2.9 release re-enable "required" validation
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -457,7 +457,7 @@ func New(fileHandler file.Handler, name string, fetcher attestationconfigapi.Fet
 	if c.Provider.AWS != nil && c.Provider.AWS.DeployCSIDriver == nil {
 		fmt.Fprintln(
 			os.Stderr,
-			"WARNING: 'provider.aws.deployCSIDriver' will be required in an upcoming version. Setting to 'false'.",
+			"WARNING: 'provider.aws.deployCSIDriver' not set. The key will be required in v2.10. Defaulting to 'false'.",
 		)
 		c.Provider.AWS.DeployCSIDriver = toPtr(false)
 	}
