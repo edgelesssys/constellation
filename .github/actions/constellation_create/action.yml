@@ -105,8 +105,8 @@ runs:
           constellation-conf.yaml
 
         yq eval -i \
-          "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-west-1\" |
-            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-west-1c\" |
+          "(.provider | select(. | has(\"aws\")).aws.region) = \"us-east-2\" |
+            (.provider | select(. | has(\"aws\")).aws.zone) = \"us-east-2c\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
@@ -291,7 +291,7 @@ runs:
             ./.github/actions/constellation_create/gcp-logs.sh
             ;;
           aws)
-            ./.github/actions/constellation_create/aws-logs.sh eu-west-1
+            ./.github/actions/constellation_create/aws-logs.sh us-east-2
             ;;
         esac
         echo "::endgroup::"
