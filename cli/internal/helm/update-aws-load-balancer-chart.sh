@@ -15,7 +15,6 @@ if ! command -v git &> /dev/null; then
   exit 1
 fi
 
-
 callDir=$(pwd)
 repo_tmp_dir=$(mktemp -d)
 
@@ -26,12 +25,12 @@ chart_url="https://github.com/aws/eks-charts"
 chart_dir="stable/aws-load-balancer-controller"
 cd "${repo_tmp_dir}"
 git clone \
---filter=blob:none \
---no-checkout \
---sparse \
---depth 1 \
---branch="${branch}" \
-"${chart_url}" "${repo_tmp_dir}"
+  --filter=blob:none \
+  --no-checkout \
+  --sparse \
+  --depth 1 \
+  --branch="${branch}" \
+  "${chart_url}" "${repo_tmp_dir}"
 
 git sparse-checkout add "${chart_dir}"
 git checkout

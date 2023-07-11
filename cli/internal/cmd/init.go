@@ -174,16 +174,17 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
-	helmLoader := helm.NewLoader(provider, k8sVersion)
+
+	clusterName := clusterid.GetClusterName(conf.Name, idFile)
+	i.log.Debugf("Setting cluster name to %s", clusterName)
+
+	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
 	i.log.Debugf("Created new Helm loader")
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
-
-	clusterName := conf.Name + "-" + idFile.UID
-	i.log.Debugf("Setting cluster name to %s", clusterName)
 
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	i.spinner.Start("Connecting ", false)

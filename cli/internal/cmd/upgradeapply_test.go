@@ -169,7 +169,7 @@ func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ 
 	return u.nodeVersionErr
 }
 
-func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ time.Duration, _, _ bool) error {
+func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _ bool) error {
 	return u.helmErr
 }
 
