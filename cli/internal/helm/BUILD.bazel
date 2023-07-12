@@ -393,6 +393,7 @@ go_library(
         "charts/edgeless/constellation-services/charts/aws-load-balancer-controller/templates/webhook.yaml",
         "charts/edgeless/constellation-services/charts/aws-load-balancer-controller/test.yaml",
         "charts/edgeless/constellation-services/charts/aws-load-balancer-controller/values.yaml",
+        "charts/edgeless/constellation-services/charts/aws-load-balancer-controller/.helmignore",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],

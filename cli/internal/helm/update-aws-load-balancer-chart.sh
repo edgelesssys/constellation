@@ -41,4 +41,5 @@ rm -r "${chart_base_path:?}/${chart_name}"
 
 # move new chart
 mkdir -p "${chart_base_path}/${chart_name}"
-cp -r "${repo_tmp_dir}/${chart_dir}"/* "${chart_base_path}/${chart_name}"
+# do not use /* because it will not copy hidden files
+cp -r "${repo_tmp_dir}/${chart_dir}" "${chart_base_path}/"
