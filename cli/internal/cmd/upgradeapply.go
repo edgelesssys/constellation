@@ -345,8 +345,12 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
 	// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
-	if equal, err := newConfig.EqualTo(clusterAttestationConfig); err != nil || equal {
+	equal, err := newConfig.EqualTo(clusterAttestationConfig)
+	if err != nil {
 		return fmt.Errorf("comparing attestation configs: %w", err)
+	}
+	if equal {
+		return nil
 	}
 
 	if !flags.yes {
