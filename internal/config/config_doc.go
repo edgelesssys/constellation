@@ -159,7 +159,7 @@ func init() {
 	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Name of the IAM profile to use for the worker nodes."
 	AWSConfigDoc.Fields[6].Name = "deployCSIDriver"
 	AWSConfigDoc.Fields[6].Type = "bool"
-	AWSConfigDoc.Fields[6].Note = ""
+	AWSConfigDoc.Fields[6].Note = "TODO (msanft): after v2.9 release re-enable \"required\" validation\n"
 	AWSConfigDoc.Fields[6].Description = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 	AWSConfigDoc.Fields[6].Comments[encoder.LineComment] = "Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage"
 
