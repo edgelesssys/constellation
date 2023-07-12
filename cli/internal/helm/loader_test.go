@@ -143,6 +143,7 @@ func TestConstellationServices(t *testing.T) {
 				verificationServiceImage: "verificationImage",
 				konnectivityImage:        "konnectivityImage",
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
+				clusterName:              "testCluster",
 			}
 			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
