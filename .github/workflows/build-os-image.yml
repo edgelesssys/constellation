@@ -608,8 +608,6 @@ jobs:
                 .measurements.4.warnOnly = false |
                 .measurements.6.warnOnly = true |
                 .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.7.warnOnly = true |
-                .measurements.7.expected = "fb71e5e55cefba9e2b396d17604de0fe6e1841a76758856a120833e3ad1c40a3" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
                 .measurements.11.warnOnly = false |
@@ -630,8 +628,6 @@ jobs:
                 .measurements.3.warnOnly = true |
                 .measurements.3.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
                 .measurements.4.warnOnly = false |
-                .measurements.7.warnOnly = true |
-                .measurements.7.expected = "346547a8ce5957af27e552427d6b9e6d9cb502f0156e9155380451eea1b3f0ed" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
                 .measurements.11.warnOnly = false |
@@ -654,8 +650,6 @@ jobs:
                 .measurements.4.warnOnly = false |
                 .measurements.6.warnOnly = true |
                 .measurements.6.expected = "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969" |
-                .measurements.7.warnOnly = true |
-                .measurements.7.expected = "a1d193dbfc3da1a5e93fe7b1384427fb78feeffcb06675a0cf840ec99406f237" |
                 .measurements.8.warnOnly = false |
                 .measurements.9.warnOnly = false |
                 .measurements.11.warnOnly = false |
