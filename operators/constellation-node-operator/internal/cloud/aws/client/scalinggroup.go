@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
@@ -55,7 +56,7 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 				ImageId: &imageURI,
 			},
 			LaunchTemplateId: launchTemplate.LaunchTemplateId,
-			SourceVersion:    toPtr(fmt.Sprintf("%d", *launchTemplate.VersionNumber)),
+			SourceVersion:    toPtr(strconv.FormatInt(*launchTemplate.VersionNumber, 10)),
 		},
 	)
 	if err != nil {
@@ -77,7 +78,7 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 		ctx,
 		&ec2.ModifyLaunchTemplateInput{
 			LaunchTemplateId: launchTemplate.LaunchTemplateId,
-			DefaultVersion:   toPtr(fmt.Sprintf("%d", createLaunchTemplateOut.LaunchTemplateVersion.VersionNumber)),
+			DefaultVersion:   toPtr(strconv.FormatInt(*createLaunchTemplateOut.LaunchTemplateVersion.VersionNumber, 10)),
 		},
 	)
 	if err != nil {
