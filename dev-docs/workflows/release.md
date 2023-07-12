@@ -81,8 +81,8 @@ Depending on how far the pipeline ran we need to delete:
 
 ### GCP
 1. Navigate to [Images](https://console.cloud.google.com/compute/images?tab=images&project=constellation-images) tab of the "constellation-images" project
-2. Search for the image version "v1-3-0-stable"
-3. Select the image and press "DELETE" 
+2. Search for the image versions "v1-3-0-gcp-sev-es-stable" and "v1-3-0-gcp-sev-snp-stable"
+3. Select the images and press "DELETE" 
 
 ### Azure
 1. Navigate to [Azure compute galleries](https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.Compute%2Fgalleries)
@@ -105,7 +105,7 @@ Currently, this includes: 
 - Mumbai (ap-south-1) 
 
 1. Navigate to [AMI](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Images:visibility=owned-by-me)
-2. Search for release version "constellation-v1.3.0" and select the AMI
+2. Search for release version "constellation-v1.3.0" and select the AMIs for both variants ("constellation-v1.3.0-aws-sev-snp" and "constellation-v1.3.0-aws-nitro-tpm")
 3. On the "Actions" button (top right) select "Deregister AMI"
 4. Either follow the link on the deletion confirmation leading you to the [Snapshots](https://eu-central-1.console.aws.amazon.com/ec2/home?region=eu-central-1#Snapshots) panel or navigate there yourself
 5. Search for a snapshot by the same name "constellation-v1.3.0" and select it
