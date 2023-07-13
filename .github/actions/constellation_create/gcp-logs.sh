@@ -9,7 +9,7 @@ echo "Using Constellation UID: ${2}"
 allInstances=$(
   gcloud compute instances list \
     --filter="labels.constellation-uid=${2}" \
-    --format=json | jq -r '.[] | .id'
+    --format=json | yq '.[] | .id'
 )
 
 for instance in ${allInstances}; do
