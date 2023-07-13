@@ -51,6 +51,8 @@ var (
 	certManagerInfo            = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
+
+	awsInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
 )
 
 // ChartLoader loads embedded helm charts.
@@ -129,6 +131,13 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 	}
 
 	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
+	if config.HasProvider(cloudprovider.AWS) {
+		awsRelease, err := i.loadRelease(awsInfo, helmWaitMode)
+		if err != nil {
+			return nil, fmt.Errorf("loading aws-services: %w", err)
+		}
+		releases.AWSLoadBalancerController = awsRelease
+	}
 
 	rel, err := json.Marshal(releases)
 	if err != nil {
@@ -159,9 +168,11 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 
 		values, err = i.loadConstellationServicesValues()
+	case awsInfo.releaseName:
+		values, err = i.loadAWSLoadBalancerControllerValues()
 	}
 
-	if err != nil {
+	if err != nil || values == nil {
 		return helm.Release{}, fmt.Errorf("loading %s values: %w", info.releaseName, err)
 	}
 
@@ -171,6 +182,20 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 	}
 
 	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
+}
+
+func (i *ChartLoader) loadAWSLoadBalancerControllerValues() (map[string]any, error) {
+	valuesFile, err := helmFS.ReadFile(awsInfo.path + "/values.yaml")
+	if err != nil {
+		return nil, err
+	}
+	values, err := chartutil.ReadValues(valuesFile)
+	if err != nil {
+		return nil, err
+	}
+	values["clusterName"] = i.clusterName
+	// TODO add custom settings like nodeSelector here or keep in values.yaml?
+	return values, nil
 }
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.
