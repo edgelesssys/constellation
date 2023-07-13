@@ -14,7 +14,7 @@ controlInstances=$(
     --region "${1}" \
     --no-paginate \
     --output json |
-    yq '.Reservations[].Instances[].InstanceId'
+    yq eval '.Reservations[].Instances[].InstanceId' -
 )
 workerInstances=$(
   aws ec2 describe-instances \
@@ -22,7 +22,7 @@ workerInstances=$(
     --region "${1}" \
     --no-paginate \
     --output json |
-    yq '.Reservations[].Instances[].InstanceId'
+    yq eval '.Reservations[].Instances[].InstanceId' -
 )
 
 echo "Fetching logs from control planes"
