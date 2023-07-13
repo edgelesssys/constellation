@@ -692,7 +692,7 @@ jobs:
 
           # TODO (malt3): Calculate PCR from firmware blob.
           # AWS SNP machines have a different expected value for PCR 0.
-          if [[ ${{ matrix.attestation_variant }} -eq "aws-sev-snp" ]]
+          if [[ ${{ matrix.attestation_variant }} = "aws-sev-snp" ]]
           then
             yq e '.csp = "AWS" |
                   .measurements.0.expected = "7b068c0c3ac29afe264134536b9be26f1d4ccd575b88d3c3ceabf36ac99c0278"' \
