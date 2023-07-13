@@ -34,4 +34,5 @@ type helmClient interface {
 	InstallCertManager(ctx context.Context, release helm.Release) error
 	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
 	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
+	InstallAWSLoadBalancerController(ctx context.Context, release helm.Release) error
 }

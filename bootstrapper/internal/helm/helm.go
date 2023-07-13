@@ -66,6 +66,16 @@ func New(log *logger.Logger) (*Client, error) {
 	}, nil
 }
 
+// InstallAWSLoadBalancerController installs the AWS Load Balancer Controller.
+func (h *Client) InstallAWSLoadBalancerController(ctx context.Context, release helm.Release) error {
+	h.ReleaseName = release.ReleaseName
+	if err := h.setWaitMode(release.WaitMode); err != nil {
+		return err
+	}
+
+	return h.install(ctx, release.Chart, release.Values)
+}
+
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
 func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.ReleaseName = release.ReleaseName
