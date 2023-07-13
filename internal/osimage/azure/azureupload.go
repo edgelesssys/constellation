@@ -663,6 +663,10 @@ var targetRegions = []*armcomputev4.TargetRegion{
 		Name:                 toPtr("westus"),
 		RegionalReplicaCount: toPtr[int32](1),
 	},
+	{
+		Name:                 toPtr("southeastasia"),
+		RegionalReplicaCount: toPtr[int32](1),
+	},
 }
 
 //go:generate stringer -type=DiskType -trimprefix=DiskType
