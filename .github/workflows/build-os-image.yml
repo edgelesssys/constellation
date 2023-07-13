@@ -695,7 +695,7 @@ jobs:
           if [[ ${{ matrix.attestation_variant }} -eq "aws-sev-snp" ]]
           then
             yq e '.csp = "AWS" |
-                  .measurements.0.expected = "7b068c0c3ac29afe264134536b9be26f1d4ccd575b88d3c3ceabf36ac99c0278" \
+                  .measurements.0.expected = "7b068c0c3ac29afe264134536b9be26f1d4ccd575b88d3c3ceabf36ac99c0278"' \
                   -I 0 -o json -i "${{ github.workspace }}/pcrs-${{ matrix.csp }}-${{ matrix.attestation_variant }}.json"
           fi
 
