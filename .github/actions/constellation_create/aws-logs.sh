@@ -6,51 +6,26 @@ set -euo pipefail
 shopt -s inherit_errexit
 
 echo "Using AWS region: ${1}"
-
-# TODO(msanft): Remove once 2.9.0 is released
-CP_SELECTOR="module.instance_group_control_plane"
-W_SELECTOR="module.instance_group_worker_nodes"
-if [[ $(./constellation version) != *"2.8.0"* ]]; then
-  echo "Constellation version is not 2.8.0, using updated ASG selectors"
-  CP_SELECTOR='module.instance_group["control_plane_default"]'
-  W_SELECTOR='module.instance_group["worker_default"]'
-fi
-
-pushd constellation-terraform
-controlAutoscalingGroup=$(
-  terraform show -json |
-    jq --arg selector "$CP_SELECTOR" \
-      -r .'values.root_module.child_modules[] |
-      select(.address == $selector) |
-      .resources[0].values.name'
-)
-workerAutoscalingGroup=$(
-  terraform show -json |
-    jq --arg selector "$W_SELECTOR" \
-      -r .'values.root_module.child_modules[] |
-      select(.address == $selector) |
-      .resources[0].values.name'
-)
-popd
+echo "Using Constellation UID: ${2}"
 
 controlInstances=$(
-  aws autoscaling describe-auto-scaling-groups \
+  aws ec2 describe-instances \
+    --filters "Name=tag:constellation-uid,Values=${2}" "Name=tag:constellation-role,Values=control-plane" \
     --region "${1}" \
     --no-paginate \
-    --output json \
-    --auto-scaling-group-names "${controlAutoscalingGroup}" |
-    jq -r '.AutoScalingGroups[0].Instances[].InstanceId'
+    --output json |
+    jq -r '.Reservations[].Instances[].InstanceId'
 )
 workerInstances=$(
-  aws autoscaling describe-auto-scaling-groups \
+  aws ec2 describe-instances \
+    --filters "Name=tag:constellation-uid,Values=${2}" "Name=tag:constellation-role,Values=worker" \
     --region "${1}" \
     --no-paginate \
-    --output json \
-    --auto-scaling-group-names "${workerAutoscalingGroup}" |
-    jq -r '.AutoScalingGroups[0].Instances[].InstanceId'
+    --output json |
+    jq -r '.Reservations[].Instances[].InstanceId'
 )
 
-echo "Fetching logs from control planes: ${controlInstances}"
+echo "Fetching logs from control planes"
 
 for instance in ${controlInstances}; do
   printf "Fetching for %s\n" "${instance}"
@@ -59,7 +34,7 @@ for instance in ${controlInstances}; do
     tail -n +2 > control-plane-"${instance}".log
 done
 
-echo "Fetching logs from worker nodes: ${workerInstances}"
+echo "Fetching logs from worker nodes"
 
 for instance in ${workerInstances}; do
   printf "Fetching for %s\n" "${instance}"

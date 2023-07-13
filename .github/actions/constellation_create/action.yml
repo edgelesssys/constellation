@@ -282,16 +282,18 @@ runs:
         CSP: ${{ inputs.cloudProvider }}
       run: |
         echo "::group::Download boot logs"
+        CONSTELL_UID=$(yq '.uid' constellation-id.json)
         case $CSP in
           azure)
             AZURE_RESOURCE_GROUP=$(yq eval ".provider.azure.resourceGroup" constellation-conf.yaml)
             ./.github/actions/constellation_create/az-logs.sh ${AZURE_RESOURCE_GROUP}
             ;;
           gcp)
-            ./.github/actions/constellation_create/gcp-logs.sh
+            GCP_ZONE=$(yq eval ".provider.gcp.zone" constellation-conf.yaml)
+            ./.github/actions/constellation_create/gcp-logs.sh ${GCP_ZONE} ${CONSTELL_UID}
             ;;
           aws)
-            ./.github/actions/constellation_create/aws-logs.sh us-east-2
+            ./.github/actions/constellation_create/aws-logs.sh us-east-2 ${CONSTELL_UID}
             ;;
         esac
         echo "::endgroup::"
