@@ -14,7 +14,7 @@ controlInstances=$(
     --region "${1}" \
     --no-paginate \
     --output json |
-    jq -r '.Reservations[].Instances[].InstanceId'
+    yq '.Reservations[].Instances[].InstanceId'
 )
 workerInstances=$(
   aws ec2 describe-instances \
