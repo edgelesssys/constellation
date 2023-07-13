@@ -22,7 +22,7 @@ workerInstances=$(
     --region "${1}" \
     --no-paginate \
     --output json |
-    jq -r '.Reservations[].Instances[].InstanceId'
+    yq '.Reservations[].Instances[].InstanceId'
 )
 
 echo "Fetching logs from control planes"
