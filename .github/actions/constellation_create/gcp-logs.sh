@@ -13,9 +13,9 @@ allInstances=$(
 )
 
 for instance in ${allInstances}; do
-  printf "Fetching for %s\n" "${shortName}"
+  printf "Fetching for %s\n" "${instance}"
   gcloud compute instances get-serial-port-output "${instance}" \
     --port 1 \
     --start 0 \
-    --zone "${1}" > "${shortName}".log
+    --zone "${1}" > "${instance}".log
 done
