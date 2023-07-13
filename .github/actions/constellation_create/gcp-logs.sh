@@ -9,11 +9,10 @@ echo "Using Constellation UID: ${2}"
 allInstances=$(
   gcloud compute instances list \
     --filter="labels.constellation-uid=${2}" \
-    --format=json | yq '.[] | .id'
+    --format=json | yq '.[] | .name'
 )
 
 for instance in ${allInstances}; do
-  shortName=${instance##*/}
   printf "Fetching for %s\n" "${shortName}"
   gcloud compute instances get-serial-port-output "${instance}" \
     --port 1 \
