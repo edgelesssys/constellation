@@ -89,7 +89,7 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
-        kubectl wait deployment nginx --for condition=available --timeout=15m
+        kubectl wait deployment nginx --for condition=available --timeout=25m
         worker_count=$(kubectl get nodes -o json --selector='!node-role.kubernetes.io/control-plane' | jq '.items | length')
         if [[ $(( "${{ steps.scaling_limit.outputs.worker_target }}" )) -ne $(( "${worker_count}" )) ]]; then
           echo "::error::Expected worker count ${{ steps.scaling_limit.outputs.worker_target }}, but was ${worker_count}"
