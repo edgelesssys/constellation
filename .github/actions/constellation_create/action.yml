@@ -33,9 +33,45 @@ inputs:
     default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
   azureSNPEnforcementPolicy:
-    required: false
+    description: "Keep measurements embedded in the CLI."
     description: "Azure SNP enforcement policy."
-
+  existingConfig:
+    default: "false"
+    description: "Use existing config file."
+  test:
+    description: "The e2e test payload."
+    required: true
+  #
+  # GCP specific inputs
+  #
+  gcpProject:
+    description: "The GCP project to deploy Constellation in."
+    required: false
+  gcpInClusterServiceAccountKey:
+    description: "The GCP Service account to use inside the created Constellation cluster."
+    required: false
+  #
+  # Azure specific inputs
+  #
+  azureSubscription:
+    description: "The Azure subscription ID to deploy Constellation in."
+    required: false
+  azureTenant:
+    description: "The Azure tenant ID to deploy Constellation in."
+    required: false
+  azureClientID:
+    description: "The Azure client ID of the application registration created for Constellation."
+    required: false
+  azureClientSecret:
+    description: "The Azure client secret value of the used secret."
+    required: false
+  azureUserAssignedIdentity:
+    description: "The Azure user assigned identity to use for Constellation."
+    required: false
+  azureResourceGroup:
+    description: "The Azure resource group to use for Constellation cluster"
+    required: false
+    
 outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
@@ -124,6 +160,7 @@ runs:
           --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
           --upgrade-agent "${{ github.workspace }}/build/upgrade-agent" \
           --info logcollect=true \
+          --info logcollect.is-debug-cluster=false \
           --info logcollect.github.actor="${{ github.triggering_actor }}" \
           --info logcollect.github.workflow="${{ github.workflow }}" \
           --info logcollect.github.run-id="${{ github.run_id }}" \
@@ -131,6 +168,8 @@ runs:
           --info logcollect.github.ref-name="${{ github.ref_name }}" \
           --info logcollect.github.sha="${{ github.sha }}" \
           --info logcollect.github.runner-os="${{ runner.os }}" \
+          --info logcollect.e2e-test-payload="${{ inputs.test }}" \
+          --info logcollect.deployment-type="debugd" } \
           --verbosity=-1 \
           --force
         echo "::endgroup::"

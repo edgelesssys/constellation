@@ -1,0 +1,66 @@
+name: Log Collection Deployment
+description: Deploy log collection functionality to the cluster.
+
+inputs:
+  logstash-port:
+    description: "The port of the logstash service."
+    default: "5045"
+  kubeconfig:
+    description: "The kubeconfig of the cluster to deploy to."
+    required: true
+  opensearch-user:
+    description: "The username of the opensearch cluster."
+    required: true
+  opensearch-pwd:
+    description: "The password of the opensearch cluster."
+    required: true
+  test:
+    description: "The e2e test payload."
+    required: true
+  provider:
+    description: "The CSP of the cluster."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Template Logcollection Helm Values
+      id: template
+      shell: bash
+      run: |
+        bazel run //hack/logcollector template -- \
+         --dir $(realpath .) \
+         --username ${{ inputs.opensearch-user }} \
+         --password ${{ inputs.opensearch-pwd }} \
+         --port ${{ inputs.logstash-port }} \
+         --info is-debug-cluster=false \
+         --info github.actor="${{ github.triggering_actor }}" \
+         --info github.workflow="${{ github.workflow }}" \
+         --info github.run-id="${{ github.run_id }}" \
+         --info github.run-attempt="${{ github.run_attempt }}" \
+         --info github.ref-name="${{ github.ref_name }}" \
+         --info github.sha="${{ github.sha }}" \
+         --info github.runner-os="${{ runner.os }}" \
+         --info github.e2e-test-payload="${{ inputs.test }}" \
+         --info provider="${{ inputs.provider }}" \
+         --info deployment-type="k8s"
+
+    - name: Deploy Logstash
+      id: deploy-logstash
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cd logstash
+        make add
+        make install
+
+    - name: Deploy Filebeat
+      id: deploy-filebeat
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cd filebeat
+        make add
+        make install

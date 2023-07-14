@@ -248,6 +248,18 @@ runs:
         cliVersion: ${{ inputs.cliVersion }}
         azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
 
+    - name: Deploy logcollection
+      id: deploy-logcollection
+      # TODO(msanft):temporarily deploy in debug clusters too to resolve "missing logs"-bug
+      # see https://dev.azure.com/Edgeless/Edgeless/_workitems/edit/3227
+      # if: inputs.isDebugImage == 'false'
+      uses: ./.github/actions/deploy_logcollection
+      with:
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        opensearch-user: ${{ inputs.awsOpenSearchUsers }}
+        opensearch-pwd: ${{ inputs.awsOpenSearchPwd }}
+        test: ${{ inputs.test }}
+        provider: ${{ inputs.cloudProvider }}
     #
     # Test payloads
     #
