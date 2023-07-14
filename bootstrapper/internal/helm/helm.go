@@ -72,8 +72,11 @@ func (h *Client) InstallAWSLoadBalancerController(ctx context.Context, release h
 	if err := h.setWaitMode(release.WaitMode); err != nil {
 		return err
 	}
-
-	return h.install(ctx, release.Chart, release.Values)
+	err := h.install(ctx, release.Chart, release.Values)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.

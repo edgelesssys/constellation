@@ -242,8 +242,8 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
 
-	log.Infof("Installing AWS Load Balancer Controller")
 	if helmReleases.AWSLoadBalancerController.ReleaseName != "" {
+		log.Infof("Installing AWS Load Balancer Controller")
 		if err = k.helmClient.InstallAWSLoadBalancerController(ctx, helmReleases.AWSLoadBalancerController); err != nil {
 			return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}

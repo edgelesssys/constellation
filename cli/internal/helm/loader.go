@@ -104,6 +104,29 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 	}
 }
 
+type ChartBuilder struct {
+	charts []chartInfo
+	i      *ChartLoader
+}
+
+func (b *ChartBuilder) AddChart(info chartInfo) {
+	b.charts = append(b.charts, info)
+}
+
+func (b *ChartBuilder) Load(helmWaitMode helm.WaitMode) (helm.Releases, error) {
+	var releases helm.Releases
+	for _, info := range b.charts {
+		awsRelease, err := b.i.loadRelease(info, helmWaitMode)
+		if err != nil {
+			return helm.Releases{}, fmt.Errorf("loading aws-services: %w", err)
+		}
+		releases.AWSLoadBalancerController = awsRelease
+	}
+	return releases, nil
+}
+
+type HelmInstaller struct{}
+
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
@@ -194,7 +217,6 @@ func (i *ChartLoader) loadAWSLoadBalancerControllerValues() (map[string]any, err
 		return nil, err
 	}
 	values["clusterName"] = i.clusterName
-	// TODO add custom settings like nodeSelector here or keep in values.yaml?
 	return values, nil
 }
 

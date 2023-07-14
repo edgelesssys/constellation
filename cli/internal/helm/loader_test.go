@@ -51,6 +51,29 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
+func TestLoadDeploy(t *testing.T) {
+	chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
+	require.NoError(t, err)
+	for _, f := range chart.Raw {
+		// fmt.Println("UNFILTERED", f.Name)
+		if strings.Contains(f.Name, "charts/aws-load-balancer-controller/crds/kustomization.yaml") {
+			t.Error("helmignore should have filtered it out", f.Name)
+		}
+	}
+}
+
+func TestLoadAWSLoadBalancerValues(t *testing.T) {
+	sut := ChartLoader{
+		clusterName: "testCluster",
+	}
+	val, err := sut.loadAWSLoadBalancerControllerValues()
+	require.NoError(t, err)
+	assert.Equal(t, "testCluster", val["clusterName"])
+	// needs to run on control-plane
+	assert.Contains(t, val["nodeSelector"].(map[string]any), "node-role.kubernetes.io/control-plane")
+	assert.Contains(t, val["tolerations"].([]interface{}), map[string]any{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"})
+}
+
 // TestConstellationServices checks if the rendered constellation-services chart produces the expected yaml files.
 func TestConstellationServices(t *testing.T) {
 	testCases := map[string]struct {
@@ -145,8 +168,14 @@ func TestConstellationServices(t *testing.T) {
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 				clusterName:              "testCluster",
 			}
-			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
+			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
 			require.NoError(err)
+			for _, f := range chart.Raw {
+				// fmt.Println("UNFILTERED", f.Name)
+				if strings.Contains(f.Name, "crds") {
+					fmt.Println("FOUND", f.Name)
+				}
+			}
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
 			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
