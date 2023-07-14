@@ -52,7 +52,7 @@ resource "aws_subnet" "private" {
   vpc_id            = var.vpc_id
   cidr_block        = cidrsubnet(var.cidr_vpc_subnet_nodes, 4, local.az_number[each.value.name_suffix])
   availability_zone = each.key
-  tags              = merge(var.tags, { Name = "${var.name}-subnet-nodes" })
+  tags              = merge(var.tags, { Name = "${var.name}-subnet-nodes" }, { "kubernetes.io/role/internal-elb" = 1 })
   lifecycle {
     ignore_changes = [
       cidr_block, # required. Legacy subnets used fixed cidr blocks for the single zone that don't match the new scheme.
@@ -65,7 +65,7 @@ resource "aws_subnet" "public" {
   vpc_id            = var.vpc_id
   cidr_block        = cidrsubnet(var.cidr_vpc_subnet_internet, 4, local.az_number[each.value.name_suffix])
   availability_zone = each.key
-  tags              = merge(var.tags, { Name = "${var.name}-subnet-internet" })
+  tags              = merge(var.tags, { Name = "${var.name}-subnet-internet" }, { "kubernetes.io/role/elb" = 1 })
   lifecycle {
     ignore_changes = [
       cidr_block, # required. Legacy subnets used fixed cidr blocks for the single zone that don't match the new scheme.
