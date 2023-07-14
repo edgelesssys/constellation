@@ -61,11 +61,16 @@ resources: {}
 # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
 priorityClassName: system-cluster-critical
 
+# TODO; changed
 nodeSelector: {
   node-role.kubernetes.io/control-plane: ""
 }
 
-tolerations: []
+# TODO: changed
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
 
 # affinity specifies a custom affinity for the controller pods
 affinity: {}
