@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,6 +35,7 @@ import (
 //go:generate ./generateCilium.sh
 //go:generate ./update-csi-charts.sh
 //go:generate ./generateCertManager.sh
+//go:generate ./update-aws-load-balancer-controller.sh
 
 //go:embed all:charts/*
 var helmFS embed.FS
@@ -639,12 +639,14 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 	rules.AddDefaults()
 
 	files := []*loader.BufferedFile{}
+	dir += string(filepath.Separator) // add trailing dash to match rules with pattern: dir/file.yaml
 
-	walk := func(path string, d fs.DirEntry, err error) error {
+	walkFn := func(path string, fi os.FileInfo, err error) error {
+		fmt.Println("walk", path, dir)
 		n := strings.TrimPrefix(path, dir)
 		if n == "" {
 			// No need to process top level. Avoid bug with helmignore .* matching
-			// empty names. See issue https://github.com/kubernetes/helm/issues/1776.
+			// empty names. See issue 1779.
 			return nil
 		}
 
@@ -656,12 +658,7 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 			return err
 		}
 
-		fi, err := d.Info()
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
+		if fi.IsDir() {
 			// Directory-based ignore rules should involve skipping the entire
 			// contents of that directory.
 			if rules.Ignore(n, fi) {
@@ -671,7 +668,9 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 		}
 
 		// If a .helmignore file matches, skip this file.
+		fmt.Println("before ignore", n, fi.Name())
 		if rules.Ignore(n, fi) {
+			fmt.Print("Ignoring file: ", n, "\n")
 			return nil
 		}
 
@@ -694,7 +693,7 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 		return nil
 	}
 
-	if err := fs.WalkDir(efs, dir, walk); err != nil {
+	if err := walk(dir, walkFn); err != nil {
 		return c, err
 	}
 

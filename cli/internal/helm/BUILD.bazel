@@ -9,6 +9,7 @@ go_library(
         "helm.go",
         "installer.go",
         "loader.go",
+        "symwalk.go",
         "values.go",
     ],
     embedsrcs = [
@@ -397,6 +398,8 @@ go_library(
         "charts/aws-load-balancer-controller/templates/servicemonitor.yaml",
         "charts/aws-load-balancer-controller/templates/webhook.yaml",
         "charts/aws-load-balancer-controller/values.yaml",
+        "charts/aws-load-balancer-controller/crds/kustomization.yaml",
+        "charts/aws-load-balancer-controller/test.yaml",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/helm",
     visibility = ["//cli:__subpackages__"],

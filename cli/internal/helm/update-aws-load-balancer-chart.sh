@@ -4,7 +4,7 @@
 # script is mostly copied from cli/internal/helm/update-csi-charts.sh
 
 set -euo pipefail
-set -o errtrac
+set -o errtrace
 shopt -s inherit_errexit
 
 echo "Updating AWS Load Balancer Controller Helm chart..."
@@ -35,12 +35,13 @@ git clone \
 git sparse-checkout add "${chart_dir}"
 git checkout
 cd "${callDir}"
-rm "${repo_tmp_dir}/${chart_dir}/crds/kustomization.yaml"
-rm "${repo_tmp_dir}/${chart_dir}/test.yaml"
+
+# remove values.yaml from upstream chart
 rm "${repo_tmp_dir}/${chart_dir}/values.yaml"
 
-# remove old chart
-rm -r "${chart_base_path:?}/${chart_name}"
+# delete current chart
+# but keep values.yaml
+find "${chart_base_path:?}/${chart_name}" -mindepth 1 -maxdepth 1 ! -name "values.yaml" -exec rm -r {} +
 
 # move new chart
 mkdir -p "${chart_base_path}/${chart_name}"

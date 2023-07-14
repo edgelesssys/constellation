@@ -51,12 +51,12 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
-func TestLoadDeploy(t *testing.T) {
-	chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
+func TestIgnoreFilesInSubdirectory(t *testing.T) {
+	fileToIgnore := "crds/kustomization.yaml"
+	chart, err := loadChartsDir(helmFS, awsInfo.path)
 	require.NoError(t, err)
 	for _, f := range chart.Raw {
-		// fmt.Println("UNFILTERED", f.Name)
-		if strings.Contains(f.Name, "charts/aws-load-balancer-controller/crds/kustomization.yaml") {
+		if strings.Contains(f.Name, fileToIgnore) {
 			t.Error("helmignore should have filtered it out", f.Name)
 		}
 	}
