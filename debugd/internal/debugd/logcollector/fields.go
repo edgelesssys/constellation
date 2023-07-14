@@ -10,7 +10,8 @@ package logcollector
 // under the prefix "logcollect.".
 func InfoFields() (string, map[string]struct{}) {
 	return "logcollect.", map[string]struct{}{
-		"admin": {}, // name of the person running the cdbg command
+		"admin":            {}, // name of the person running the cdbg command
+		"is_debug_cluster": {}, // whether the cluster is a debug cluster
 
 		// GitHub workflow information, see https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
 		"github.actor":       {},

@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "logstash",
+    srcs = ["assets.go"],
+    embedsrcs = [
+        "config/log4j2.properties",
+        "config/logstash.yml",
+        "config/pipelines.yml",
+        "templates/pipeline.conf",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/debugd/logstash",
+    visibility = ["//visibility:public"],
+)

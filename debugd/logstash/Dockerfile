@@ -9,8 +9,8 @@ FROM fedora:38@sha256:61f921e0c7b51e162e6f94b14ef4e6b0d38eac5987286fe4f52a2c1158
 
 COPY --from=build logstash-* /usr/share/logstash
 
-COPY debugd/internal/debugd/logcollector/logstash/config/ /usr/share/logstash/config/
-COPY debugd/internal/debugd/logcollector/logstash/templates/ /usr/share/constellogs/templates/
+COPY debugd/logstash/config/ /usr/share/logstash/config/
+COPY debugd/logstash/templates/ /usr/share/constellogs/templates/
 
 RUN chmod -R 777 /usr/share/logstash/data/
 

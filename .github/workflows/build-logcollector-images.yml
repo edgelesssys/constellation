@@ -6,13 +6,13 @@ on:
     branches:
       - main
     paths:
-      - "debugd/internal/debugd/logcollector/Makefile"
-      - "debugd/internal/debugd/logcollector/filebeat/**"
-      - "debugd/internal/debugd/logcollector/logstash/**"
+      - "debugd/filebeat/**"
+      - "debugd/logstash/**"
+      - "hack/logcollector/internal/templates/**"
       - ".github/workflows/build-logcollector-images.yml"
 
 jobs:
-  build-logcollector-images:
+  build-logcollector-debugd-images:
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -24,16 +24,16 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
-      - name: Build and upload logstash container image
+      - name: Build and upload Logstash container image
         uses: ./.github/actions/build_micro_service
         with:
           name: logstash-debugd
-          dockerfile: debugd/internal/debugd/logcollector/logstash/Dockerfile
+          dockerfile: debugd/logstash/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and upload filebeat container image
+      - name: Build and upload Filebeat container image
         uses: ./.github/actions/build_micro_service
         with:
           name: filebeat-debugd
-          dockerfile: debugd/internal/debugd/logcollector/filebeat/Dockerfile
+          dockerfile: debugd/filebeat/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}
