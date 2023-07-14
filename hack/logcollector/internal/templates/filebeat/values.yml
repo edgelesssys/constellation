@@ -1,0 +1,40 @@
+image: ghcr.io/edgelesssys/beats/filebeat-oss
+imageTag: 8.10.0@sha256:655b2162104dc00b912a1bc91e6c437f4baf21b5aaef3464a1ac3e47251d8e01
+
+daemonset:
+  enabled: true
+  filebeatConfig:
+    filebeat.yml: ""
+    inputs.yml: ""
+  extraEnvs: []
+  secretMounts: []
+  securityContext:
+    runAsUser: 0
+    privileged: true
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  extraVolumeMounts:
+    - name: runsystemd
+      mountPath: /run/systemd
+      readOnly: true
+    - name: machine-id
+      mountPath: /etc/machine-id
+      readOnly: true
+    - name: runlogjournal
+      mountPath: /run/log/journal
+      readOnly: true
+  extraVolumes:
+    - name: runsystemd
+      hostPath:
+        path: /run/systemd
+        type: ""
+    - name: machine-id
+      hostPath:
+        path: /etc/machine-id
+        type: ""
+    - name: runlogjournal
+      hostPath:
+        path: /run/log/journal
+        type: ""

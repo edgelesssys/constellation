@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "internal",
+    srcs = [
+        "filebeat.go",
+        "logstash.go",
+    ],
+    embedsrcs = [
+        "templates/filebeat/Makefile",
+        "templates/filebeat/values.yml",
+        "templates/logstash/Makefile",
+        "templates/logstash/values.yml",
+    ],
+    importpath = "github.com/edgelesssys/constellation/v2/hack/logcollector/internal",
+    visibility = ["//hack/logcollector:__subpackages__"],
+    deps = [
+        "//debugd/filebeat",
+        "//debugd/logstash",
+        "//internal/file",
+        "@com_github_spf13_afero//:afero",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)
