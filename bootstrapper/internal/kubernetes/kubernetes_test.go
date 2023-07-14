@@ -592,7 +592,7 @@ func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ hel
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallAWSLoadBalancerController(_ context.Context, _ helm.Release) error {
+func (s *stubHelmClient) InstallAWSLoadBalancerController(_ context.Context, _ k8sapi.Client, _ helm.Release) error {
 	return s.ciliumError
 }
 

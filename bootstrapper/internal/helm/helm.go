@@ -67,13 +67,27 @@ func New(log *logger.Logger) (*Client, error) {
 }
 
 // InstallAWSLoadBalancerController installs the AWS Load Balancer Controller.
-func (h *Client) InstallAWSLoadBalancerController(ctx context.Context, release helm.Release) error {
+func (h *Client) InstallAWSLoadBalancerController(ctx context.Context, kubectl k8sapi.Client, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	if err := h.setWaitMode(release.WaitMode); err != nil {
 		return err
 	}
+	tolerations := []corev1.Toleration{
+		{
+			Key:      "node-role.kubernetes.io/control-plane",
+			Operator: corev1.TolerationOpExists,
+			Effect:   corev1.TaintEffectNoSchedule,
+		},
+	}
 
-	return h.install(ctx, release.Chart, release.Values)
+	err := h.install(ctx, release.Chart, release.Values)
+	if err != nil {
+		return err
+	}
+	if err := kubectl.AddTolerationsToDeployment(ctx, tolerations, "aws-load-balancer-controller", "kube-system"); err != nil {
+		return fmt.Errorf("failed to add tolerations to coredns deployment: %w", err)
+	}
+	return nil
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.

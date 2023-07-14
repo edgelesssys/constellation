@@ -51,6 +51,25 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
+func TestLoadDeploy(t *testing.T) {
+	chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
+	require.NoError(t, err)
+	for _, f := range chart.Raw {
+		// fmt.Println("UNFILTERED", f.Name)
+		if strings.Contains(f.Name, "charts/aws-load-balancer-controller/crds/kustomization.yaml") {
+			t.Error("helmignore should have filtered it out", f.Name)
+		}
+	}
+}
+
+func TestLoadAWSValues(t *testing.T) {
+	sut := ChartLoader{}
+	val, err := sut.loadAWSLoadBalancerControllerValues()
+	require.NoError(t, err)
+	assert.NotNil(t, val)
+	assert.Equal(t, 1., val["replicaCount"].(float64))
+}
+
 // TestConstellationServices checks if the rendered constellation-services chart produces the expected yaml files.
 func TestConstellationServices(t *testing.T) {
 	testCases := map[string]struct {
@@ -145,8 +164,14 @@ func TestConstellationServices(t *testing.T) {
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 				clusterName:              "testCluster",
 			}
-			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
+			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
 			require.NoError(err)
+			for _, f := range chart.Raw {
+				// fmt.Println("UNFILTERED", f.Name)
+				if strings.Contains(f.Name, "crds") {
+					fmt.Println("FOUND", f.Name)
+				}
+			}
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
 			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
