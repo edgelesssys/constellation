@@ -153,6 +153,14 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgrade
 	return u, nil
 }
 
+func (u *Upgrader) GetTerraformUpgrader() *terraform.Client {
+	return u.tfClient
+}
+
+func (u *Upgrader) GetUpgradeID() string {
+	return u.upgradeID
+}
+
 // AddManualStateMigration adds a manual state migration to the Terraform client.
 // TODO(AB#3248): Remove this method after we can assume that all existing clusters have been migrated.
 func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
@@ -175,10 +183,15 @@ func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
 func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
-	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
+	hasDiff, err := u.tfUpgrader.PlanIAMMigration(ctx, opts.CSP, opts.LogLevel, u.upgradeID)
+	if err != nil {
+		return false, fmt.Errorf("planning terraform migrations: %w", err)
+	}
+	return hasDiff, nil
+	// return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.

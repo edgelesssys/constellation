@@ -102,6 +102,18 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 	return c.writeVars(vars)
 }
 
+// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
+func (c *Client) PrepareIAMUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+	// copy the vars file from the old working dir to the new working dir
+	if err := c.file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
+		return fmt.Errorf("copying vars file: %w", err)
+	}
+	return nil
+}
+
 // CreateCluster creates a Constellation cluster using Terraform.
 func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (CreateOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {

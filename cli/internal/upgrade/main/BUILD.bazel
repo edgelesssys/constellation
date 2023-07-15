@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "main_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/upgrade/main",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cli/internal/terraform",
+        "//cli/internal/upgrade",
+        "//internal/cloud/cloudprovider",
+        "//internal/constants",
+    ],
+)
+
+go_binary(
+    name = "main",
+    embed = [":main_lib"],
+    visibility = ["//cli:__subpackages__"],
+)

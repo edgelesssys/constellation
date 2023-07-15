@@ -85,6 +85,31 @@ func checkFileExists(fileHandler file.Handler, existingFiles *[]string, filename
 	return nil
 }
 
+func (u *TerraformUpgrader) PlanIAMMigration(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel, upgradeID string) (bool, error) {
+	err := u.tf.PrepareIAMUpgradeWorkspace(
+		filepath.Join("terraform", "iam", strings.ToLower(csp.String())),
+		constants.TerraformIAMWorkingDir,
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
+	)
+	if err != nil {
+		return false, fmt.Errorf("preparing terraform workspace: %w", err)
+	}
+
+	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile)
+	if err != nil {
+		return false, fmt.Errorf("terraform plan: %w", err)
+	}
+
+	if hasDiff {
+		if err := u.tf.ShowPlan(ctx, logLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
+			return false, fmt.Errorf("terraform show plan: %w", err)
+		}
+	}
+
+	return hasDiff, nil
+}
+
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
@@ -130,7 +155,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler,
 	return nil
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
@@ -176,6 +201,7 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 
 // a tfClient performs the Terraform interactions in an upgrade.
 type tfClient interface {
+	PrepareIAMUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string) error
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)

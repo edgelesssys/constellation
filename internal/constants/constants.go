@@ -154,6 +154,8 @@ const (
 	TerraformUpgradePlanFile = "plan.zip"
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an upgrade.
 	TerraformUpgradeWorkingDir = "terraform"
+	// TerraformIAMUpgradeWorkingDir is the directory name for the Terraform IAM workspace being used in an upgrade.
+	TerraformIAMUpgradeWorkingDir = "terraform-iam"
 	// TerraformUpgradeBackupDir is the directory name being used to backup the pre-upgrade state in an upgrade.
 	TerraformUpgradeBackupDir = "terraform-backup"
 	// TerraformMigrationOutputFile is the file name of the output file created by a successful Terraform migration.
