@@ -138,7 +138,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeID string) error {
 	return nil
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
@@ -198,6 +198,7 @@ func (u *TerraformUpgrader) mergeClusterIDFile(migrationOutput clusterid.File) e
 
 // a tfClient performs the Terraform interactions in an upgrade.
 type tfClient interface {
+	PrepareIAMUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string) error
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)

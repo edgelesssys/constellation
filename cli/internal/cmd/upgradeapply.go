@@ -110,6 +110,14 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
+	tfClient, err := u.upgrader.GetTerraformUpgrader(cmd.Context(), constants.TerraformIAMUpgradeWorkingDir)
+	if err != nil {
+		return fmt.Errorf("getting terraform client: %w", err)
+	}
+	migrateIAM := getIAMMigrateCmd(cmd, tfClient, conf, flags, u.upgrader.GetUpgradeID())
+	if err := u.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
+		return fmt.Errorf("executing IAM migration: %w", err)
+	}
 
 	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
@@ -203,6 +211,54 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
 			constants.ClusterIDsFileName, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
+	} else {
+		u.log.Debugf("No Terraform diff detected")
+	}
+
+	return nil
+}
+
+func getIAMMigrateCmd(cmd *cobra.Command, tfClient *terraform.Client, conf *config.Config, flags upgradeApplyFlags, upgradeID string) *terraform.IAMMigrateCmd {
+	// Check if there are any Terraform migrations to apply
+	outWriter := cmd.OutOrStdout()
+
+	migrateCmd := terraform.NewIAMMigrateCmd(
+		tfClient,
+		upgradeID,
+		conf.GetProvider(),
+		flags.terraformLogLevel,
+		outWriter,
+	)
+	return migrateCmd
+}
+
+func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
+	u.log.Debugf("Executing %s", migrateCmd.String())
+	hasDiff, err := migrateCmd.Plan(cmd.Context()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	if err != nil {
+		return fmt.Errorf("planning terraform migrations: %w", err)
+	}
+	if hasDiff {
+		// If there are any Terraform migrations to apply, ask for confirmation
+		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
+		if !flags.yes {
+			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Aborting upgrade.")
+				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+					return fmt.Errorf("cleaning up workspace: %w", err)
+				}
+				return fmt.Errorf("aborted by user")
+			}
+		}
+		u.log.Debugf("Applying Terraform %s migrations", migrateCmd.String())
+		err := migrateCmd.Apply(cmd.Context(), file) // u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		if err != nil {
+			return fmt.Errorf("applying terraform migrations: %w", err)
+		}
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -446,6 +502,8 @@ type cloudUpgrader interface {
 	CheckTerraformMigrations() error
 	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
+	GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error)
+	GetUpgradeID() string
 }
 
 func toPtr[T any](v T) *T {

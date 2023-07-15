@@ -153,6 +153,18 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	return u, nil
 }
 
+func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error) {
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, u.upgradeID, terraformDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
+	return tfClient, nil
+}
+
+func (u *Upgrader) GetUpgradeID() string {
+	return u.upgradeID
+}
+
 // AddManualStateMigration adds a manual state migration to the Terraform client.
 // TODO(AB#3248): Remove this method after we can assume that all existing clusters have been migrated.
 func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
@@ -178,7 +190,7 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.

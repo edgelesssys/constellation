@@ -4,6 +4,7 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "terraform",
     srcs = [
+        "iammigrate.go",
         "loader.go",
         "logging.go",
         "terraform.go",
@@ -94,6 +95,7 @@ go_library(
 go_test(
     name = "terraform_test",
     srcs = [
+        "iammigrate_test.go",
         "loader_test.go",
         "terraform_test.go",
         "variables_test.go",
