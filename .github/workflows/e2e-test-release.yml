@@ -189,7 +189,6 @@ jobs:
           cloudProvider: ${{ matrix.provider }}
           cliVersion: ""
           kubernetesVersion: ${{ matrix.kubernetes-version }}
-          keepMeasurements: "true"
           osImage: ""
           isDebugImage: "false"
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}

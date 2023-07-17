@@ -29,9 +29,6 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
-  keepMeasurements:
-    default: "false"
-    description: "Keep measurements embedded in the CLI."
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
@@ -237,7 +234,6 @@ runs:
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
-        keepMeasurements: ${{ inputs.keepMeasurements }}
         existingConfig: ${{ steps.constellation-iam-create.outputs.existingConfig }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
 
