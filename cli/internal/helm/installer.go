@@ -48,7 +48,7 @@ func Install(kubeconfig string) {
 	if err != nil {
 		panic(err)
 	}
-	err = installer.InstallAWSLoadBalancerController(context.Background(), kubectl, release.AWSLoadBalancerController)
+	err = installer.InstallAWSLoadBalancerController(context.Background(), release.AWSLoadBalancerController)
 	if err != nil {
 		panic(err)
 	}
@@ -107,7 +107,7 @@ type k8sClient interface {
 
 // InstallAWSLoadBalancerController installs the AWS Load Balancer Controller.
 // fails when --skip-helm-wait due to needing cert-manager to be ready
-func (h *Installer) InstallAWSLoadBalancerController(ctx context.Context, kubectl k8sClient, release helm.Release) error {
+func (h *Installer) InstallAWSLoadBalancerController(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	if err := h.setWaitMode(release.WaitMode); err != nil {
 		return err
