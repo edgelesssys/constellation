@@ -2,8 +2,8 @@ variable "name" {
   type        = string
   description = "Name of your Constellation"
   validation {
-    condition     = length(var.name) < 10
-    error_message = "The name of the Constellation must be shorter than 10 characters"
+    condition     = length(var.name) <= 10
+    error_message = "The length of the name of the Constellation must be <= 10 characters"
   }
 }
 
