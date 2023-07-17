@@ -231,7 +231,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		Vars:     vars,
 	}
 
-	cmd.Println("The following Teraform migrations are available with this CLI:")
+	cmd.Println("The following Terraform migrations are available with this CLI:")
 
 	// Check if there are any Terraform migrations
 	hasDiff, err := u.checker.PlanTerraformMigrations(cmd.Context(), opts)
