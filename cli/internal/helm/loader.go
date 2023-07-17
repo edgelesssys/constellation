@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -639,14 +640,12 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 	rules.AddDefaults()
 
 	files := []*loader.BufferedFile{}
-	dir += string(filepath.Separator) // add trailing dash to match rules with pattern: dir/file.yaml
 
-	walkFn := func(path string, fi os.FileInfo, err error) error {
-		fmt.Println("walk", path, dir)
+	walk := func(path string, d fs.DirEntry, err error) error {
 		n := strings.TrimPrefix(path, dir)
 		if n == "" {
 			// No need to process top level. Avoid bug with helmignore .* matching
-			// empty names. See issue 1779.
+			// empty names. See issue https://github.com/kubernetes/helm/issues/1776.
 			return nil
 		}
 
@@ -658,7 +657,12 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 			return err
 		}
 
-		if fi.IsDir() {
+		fi, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
 			// Directory-based ignore rules should involve skipping the entire
 			// contents of that directory.
 			if rules.Ignore(n, fi) {
@@ -668,9 +672,7 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 		}
 
 		// If a .helmignore file matches, skip this file.
-		fmt.Println("before ignore", n, fi.Name())
 		if rules.Ignore(n, fi) {
-			fmt.Print("Ignoring file: ", n, "\n")
 			return nil
 		}
 
@@ -693,7 +695,7 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 		return nil
 	}
 
-	if err := walk(dir, walkFn); err != nil {
+	if err := fs.WalkDir(efs, dir, walk); err != nil {
 		return c, err
 	}
 
