@@ -46,7 +46,7 @@ Here is how we manage CRD upgrades for each chart.
 
 ### Operators
 
-* Manually update CRDs before upgrading the chart. Update by running applying the CRDs found in the `operators/crds/` folder.
+* Manually update CRDs before upgrading the chart. Update by applying the CRDs found in the `operators/crds/` folder.
 
 ### Constellation-services
 
