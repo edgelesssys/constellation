@@ -29,6 +29,9 @@ inputs:
   existingConfig:
     default: "false"
     description: "Use existing config file."
+  fetchMeasurements:
+    default: "false"
+    description: "Update measurements via the 'constellation config fetch-measurements' command."
   #
   # GCP specific inputs
   #
@@ -113,7 +116,7 @@ runs:
         fi
 
     - name: Update measurements for non-stable images
-      if: inputs.isDebugImage == 'true'
+      if:  inputs.fetchMeasurements
       shell: bash
       run: |
         constellation config fetch-measurements

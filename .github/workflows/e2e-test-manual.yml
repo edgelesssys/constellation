@@ -249,6 +249,7 @@ jobs:
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
 
       - name: Always terminate cluster
         if: always()
