@@ -13,7 +13,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/martinjungblut/go-cryptsetup"
 	"go.uber.org/zap/zapcore"
@@ -39,11 +39,11 @@ func BenchmarkMapper(b *testing.B) {
 	}
 
 	passphrase := "benchmark"
-	mapper, err := mapper.New(testPath, logger.New(logger.PlainLog, zapcore.InfoLevel))
+	mapper, free, err := diskencryption.New(testPath, logger.New(logger.PlainLog, zapcore.InfoLevel))
 	if err != nil {
 		b.Fatal("Failed to create mapper:", err)
 	}
-	defer mapper.Close()
+	defer free()
 
 	if err := mapper.FormatDisk(passphrase); err != nil {
 		b.Fatal("Failed to format disk:", err)

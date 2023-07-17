@@ -394,8 +394,8 @@ type stubMapper struct {
 	uuid             string
 }
 
-func (s *stubMapper) DiskUUID() string {
-	return s.uuid
+func (s *stubMapper) DiskUUID() (string, error) {
+	return s.uuid, nil
 }
 
 func (s *stubMapper) FormatDisk(string) error {

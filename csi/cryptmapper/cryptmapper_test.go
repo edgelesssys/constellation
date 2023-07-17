@@ -1,5 +1,3 @@
-//go:build linux && cgo
-
 /*
 Copyright (c) Edgeless Systems GmbH
 
@@ -9,86 +7,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cryptmapper
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
+	"time"
 
-	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
-}
-
-type stubCryptDevice struct {
-	deviceName       string
-	uuid             string
-	initErr          error
-	initByNameErr    error
-	activateErr      error
-	activatePassErr  error
-	deactivateErr    error
-	formatErr        error
-	loadErr          error
-	keySlotAddCalled bool
-	keySlotAddErr    error
-	wipeErr          error
-	resizeErr        error
-}
-
-func (c *stubCryptDevice) Init(string) error {
-	return c.initErr
-}
-
-func (c *stubCryptDevice) InitByName(string) error {
-	return c.initByNameErr
-}
-
-func (c *stubCryptDevice) ActivateByVolumeKey(string, string, int, int) error {
-	return c.activateErr
-}
-
-func (c *stubCryptDevice) ActivateByPassphrase(string, int, string, int) error {
-	return c.activatePassErr
-}
-
-func (c *stubCryptDevice) Deactivate(string) error {
-	return c.deactivateErr
-}
-
-func (c *stubCryptDevice) Format(cryptsetup.DeviceType, cryptsetup.GenericParams) error {
-	return c.formatErr
-}
-
-func (c *stubCryptDevice) Free() bool {
-	return true
-}
-
-func (c *stubCryptDevice) GetDeviceName() string {
-	return c.deviceName
-}
-
-func (c *stubCryptDevice) GetUUID() string {
-	return c.uuid
-}
-
-func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
-	return c.loadErr
-}
-
-func (c *stubCryptDevice) KeyslotAddByVolumeKey(int, string, string) error {
-	c.keySlotAddCalled = true
-	return c.keySlotAddErr
-}
-
-func (c *stubCryptDevice) Wipe(string, int, uint64, uint64, int, int, func(size, offset uint64) int) error {
-	return c.wipeErr
-}
-
-func (c *stubCryptDevice) Resize(string, uint64) error {
-	return c.resizeErr
 }
 
 func TestCloseCryptDevice(t *testing.T) {
@@ -101,11 +31,11 @@ func TestCloseCryptDevice(t *testing.T) {
 			wantErr: false,
 		},
 		"error on InitByName": {
-			mapper:  &stubCryptDevice{initByNameErr: errors.New("error")},
+			mapper:  &stubCryptDevice{initByNameErr: assert.AnError},
 			wantErr: true,
 		},
 		"error on Deactivate": {
-			mapper:  &stubCryptDevice{deactivateErr: errors.New("error")},
+			mapper:  &stubCryptDevice{deactivateErr: assert.AnError},
 			wantErr: true,
 		},
 	}
@@ -114,7 +44,11 @@ func TestCloseCryptDevice(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := closeCryptDevice(tc.mapper, "/dev/some-device", "volume0", "test")
+			mapper := &CryptMapper{
+				kms:    &fakeKMS{},
+				mapper: tc.mapper,
+			}
+			err := mapper.closeCryptDevice("/dev/mapper/volume01", "volume01-unit-test", "crypt")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -129,22 +63,12 @@ func TestCloseCryptDevice(t *testing.T) {
 }
 
 func TestOpenCryptDevice(t *testing.T) {
-	someErr := errors.New("error")
-	getKeyFunc := func(context.Context, string, int) ([]byte, error) {
-		return []byte{
-			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-		}, nil
-	}
-
 	testCases := map[string]struct {
 		source    string
 		volumeID  string
 		integrity bool
 		mapper    *stubCryptDevice
-		getKey    func(context.Context, string, int) ([]byte, error)
+		kms       keyCreator
 		diskInfo  func(disk string) (string, error)
 		wantErr   bool
 	}{
@@ -152,15 +76,15 @@ func TestOpenCryptDevice(t *testing.T) {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
-			getKey:   getKeyFunc,
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  false,
 		},
 		"success with error on Load": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{loadErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  false,
 		},
@@ -168,48 +92,48 @@ func TestOpenCryptDevice(t *testing.T) {
 			source:    "/dev/some-device",
 			volumeID:  "volume0",
 			integrity: true,
-			mapper:    &stubCryptDevice{loadErr: someErr},
-			getKey:    getKeyFunc,
+			mapper:    &stubCryptDevice{loadErr: assert.AnError},
+			kms:       &fakeKMS{},
 			diskInfo:  func(disk string) (string, error) { return "", nil },
 			wantErr:   false,
 		},
 		"error on Init": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{initErr: someErr},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{initErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on Format": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr, formatErr: someErr},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{loadErr: assert.AnError, formatErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on Activate": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{activatePassErr: someErr},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{activatePassErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"error on diskInfo": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr},
-			getKey:   getKeyFunc,
-			diskInfo: func(disk string) (string, error) { return "", someErr },
+			mapper:   &stubCryptDevice{loadErr: assert.AnError},
+			kms:      &fakeKMS{},
+			diskInfo: func(disk string) (string, error) { return "", assert.AnError },
 			wantErr:  true,
 		},
 		"disk is already formatted": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{loadErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "ext4", nil },
 			wantErr:  true,
 		},
@@ -217,37 +141,16 @@ func TestOpenCryptDevice(t *testing.T) {
 			source:    "/dev/some-device",
 			volumeID:  "volume0",
 			integrity: true,
-			mapper:    &stubCryptDevice{loadErr: someErr, wipeErr: someErr},
-			getKey:    getKeyFunc,
-			diskInfo:  func(disk string) (string, error) { return "", nil },
-			wantErr:   true,
-		},
-		"error with integrity on activate": {
-			source:    "/dev/some-device",
-			volumeID:  "volume0",
-			integrity: true,
-			mapper:    &stubCryptDevice{loadErr: someErr, activateErr: someErr},
-			getKey:    getKeyFunc,
-			diskInfo:  func(disk string) (string, error) { return "", nil },
-			wantErr:   true,
-		},
-		"error with integrity on deactivate": {
-			source:    "/dev/some-device",
-			volumeID:  "volume0",
-			integrity: true,
-			mapper:    &stubCryptDevice{loadErr: someErr, deactivateErr: someErr},
-			getKey:    getKeyFunc,
+			mapper:    &stubCryptDevice{loadErr: assert.AnError, wipeErr: assert.AnError},
+			kms:       &fakeKMS{},
 			diskInfo:  func(disk string) (string, error) { return "", nil },
 			wantErr:   true,
 		},
 		"error on adding keyslot": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper: &stubCryptDevice{
-				loadErr:       someErr,
-				keySlotAddErr: someErr,
-			},
-			getKey:   getKeyFunc,
+			mapper:   &stubCryptDevice{loadErr: assert.AnError, keySlotAddErr: assert.AnError},
+			kms:      &fakeKMS{},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
@@ -255,15 +158,15 @@ func TestOpenCryptDevice(t *testing.T) {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
-			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return []byte{0x1, 0x2, 0x3}, nil },
+			kms:      &fakeKMS{presetKey: []byte{0x1, 0x2, 0x3}},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"incorrect key length with error on Load": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr},
-			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return []byte{0x1, 0x2, 0x3}, nil },
+			mapper:   &stubCryptDevice{loadErr: assert.AnError},
+			kms:      &fakeKMS{presetKey: []byte{0x1, 0x2, 0x3}},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
@@ -271,15 +174,15 @@ func TestOpenCryptDevice(t *testing.T) {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
 			mapper:   &stubCryptDevice{},
-			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return nil, someErr },
+			kms:      &fakeKMS{getDEKErr: assert.AnError},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
 		"getKey fails with error on Load": {
 			source:   "/dev/some-device",
 			volumeID: "volume0",
-			mapper:   &stubCryptDevice{loadErr: someErr},
-			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return nil, someErr },
+			mapper:   &stubCryptDevice{loadErr: assert.AnError},
+			kms:      &fakeKMS{getDEKErr: assert.AnError},
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
@@ -289,15 +192,13 @@ func TestOpenCryptDevice(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := openCryptDevice(
-				context.Background(),
-				tc.mapper,
-				tc.source,
-				tc.volumeID,
-				tc.integrity,
-				tc.getKey,
-				tc.diskInfo,
-			)
+			mapper := &CryptMapper{
+				mapper:        tc.mapper,
+				kms:           tc.kms,
+				getDiskFormat: tc.diskInfo,
+			}
+
+			out, err := mapper.OpenCryptDevice(context.Background(), tc.source, tc.volumeID, tc.integrity)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -460,12 +361,85 @@ func TestIsIntegrityFS(t *testing.T) {
 	}
 }
 
-type fakeKMS struct{}
+type fakeKMS struct {
+	presetKey []byte
+	getDEKErr error
+}
 
 func (k *fakeKMS) GetDEK(_ context.Context, _ string, dekSize int) ([]byte, error) {
-	key := make([]byte, dekSize)
-	for i := range key {
-		key[i] = 0x41
+	if k.getDEKErr != nil {
+		return nil, k.getDEKErr
 	}
-	return key, nil
+	if k.presetKey != nil {
+		return k.presetKey, nil
+	}
+	return bytes.Repeat([]byte{0xAA}, dekSize), nil
+}
+
+type stubCryptDevice struct {
+	deviceName       string
+	uuid             string
+	uuidErr          error
+	initErr          error
+	initByNameErr    error
+	activateErr      error
+	activatePassErr  error
+	deactivateErr    error
+	formatErr        error
+	loadErr          error
+	keySlotAddCalled bool
+	keySlotAddErr    error
+	wipeErr          error
+	resizeErr        error
+}
+
+func (c *stubCryptDevice) Init(_ string) (func(), error) {
+	return func() {}, c.initErr
+}
+
+func (c *stubCryptDevice) InitByName(_ string) (func(), error) {
+	return func() {}, c.initByNameErr
+}
+
+func (c *stubCryptDevice) ActivateByVolumeKey(_, _ string, _, _ int) error {
+	return c.activateErr
+}
+
+func (c *stubCryptDevice) ActivateByPassphrase(_ string, _ int, _ string, _ int) error {
+	return c.activatePassErr
+}
+
+func (c *stubCryptDevice) Deactivate(_ string) error {
+	return c.deactivateErr
+}
+
+func (c *stubCryptDevice) Format(_ bool) error {
+	return c.formatErr
+}
+
+func (c *stubCryptDevice) Free() {}
+
+func (c *stubCryptDevice) GetDeviceName() string {
+	return c.deviceName
+}
+
+func (c *stubCryptDevice) GetUUID() (string, error) {
+	return c.uuid, c.uuidErr
+}
+
+func (c *stubCryptDevice) LoadLUKS2() error {
+	return c.loadErr
+}
+
+func (c *stubCryptDevice) KeyslotAddByVolumeKey(_ int, _ string, _ string) error {
+	c.keySlotAddCalled = true
+	return c.keySlotAddErr
+}
+
+func (c *stubCryptDevice) Wipe(_ string, _ int, _ int, _ func(size, offset uint64), _ time.Duration) error {
+	return c.wipeErr
+}
+
+func (c *stubCryptDevice) Resize(_ string, _ uint64) error {
+	return c.resizeErr
 }

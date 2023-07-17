@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/recoveryserver"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup"
@@ -119,11 +119,11 @@ func main() {
 	}
 
 	// initialize device mapper
-	mapper, err := mapper.New(diskPath, log)
+	mapper, free, err := diskencryption.New(diskPath, log)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to initialize device mapper")
 	}
-	defer mapper.Close()
+	defer free()
 
 	// Use TDX if available
 	openDevice := vtpm.OpenVTPM

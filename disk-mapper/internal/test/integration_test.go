@@ -15,7 +15,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
@@ -64,9 +64,9 @@ func TestMapper(t *testing.T) {
 	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, err := mapper.New(devicePath, logger.NewTest(t))
+	mapper, free, err := diskencryption.New(devicePath, logger.NewTest(t))
 	require.NoError(err, "failed to initialize crypt device")
-	defer func() { require.NoError(mapper.Close(), "failed to close crypt device") }()
+	defer free()
 
 	assert.False(mapper.IsLUKSDevice())
 
