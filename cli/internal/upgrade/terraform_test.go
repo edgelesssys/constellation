@@ -23,8 +23,8 @@ import (
 )
 
 func TestCheckTerraformMigrations(t *testing.T) {
-	upgrader := func() *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil))
+	upgrader := func(fileHandler file.Handler) *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
 		return u
@@ -62,8 +62,8 @@ func TestCheckTerraformMigrations(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			u := upgrader()
-			err := u.CheckTerraformMigrations(tc.workspace, tc.upgradeID)
+			u := upgrader(tc.workspace)
+			err := u.CheckTerraformMigrations(tc.upgradeID)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -75,48 +75,74 @@ func TestCheckTerraformMigrations(t *testing.T) {
 }
 
 func TestPlanTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfClient) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil))
+	upgrader := func(tf tfClient, fileHandler file.Handler) *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
 		return u
+	}
+	workspace := func(existingFiles []string) file.Handler {
+		fs := afero.NewMemMapFs()
+		for _, f := range existingFiles {
+			require.NoError(t, afero.WriteFile(fs, f, []byte{}, 0o644))
+		}
+
+		return file.NewHandler(fs)
 	}
 
 	testCases := map[string]struct {
 		upgradeID string
 		tf        tfClient
+		workspace file.Handler
 		want      bool
 		wantErr   bool
 	}{
 		"success no diff": {
 			upgradeID: "1234",
 			tf:        &stubTerraformClient{},
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
 		},
 		"success diff": {
 			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				hasDiff: true,
 			},
-			want: true,
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			want:      true,
 		},
 		"prepare workspace error": {
 			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				prepareWorkspaceErr: assert.AnError,
 			},
-			wantErr: true,
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			wantErr:   true,
+		},
+		"constellation-id.json does not exist": {
+			upgradeID: "1234",
+			tf:        &stubTerraformClient{},
+			workspace: workspace(nil),
+			wantErr:   true,
+		},
+		"constellation-id backup already exists": {
+			upgradeID: "1234",
+			tf:        &stubTerraformClient{},
+			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, "1234", constants.ClusterIDsFileName+".old")}),
+			wantErr:   true,
 		},
 		"plan error": {
 			tf: &stubTerraformClient{
 				planErr: assert.AnError,
 			},
-			wantErr: true,
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			wantErr:   true,
 		},
 		"show plan error no diff": {
 			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				showErr: assert.AnError,
 			},
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
 		},
 		"show plan error diff": {
 			upgradeID: "1234",
@@ -124,7 +150,8 @@ func TestPlanTerraformMigrations(t *testing.T) {
 				showErr: assert.AnError,
 				hasDiff: true,
 			},
-			wantErr: true,
+			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			wantErr:   true,
 		},
 	}
 
@@ -132,7 +159,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			u := upgrader(tc.tf)
+			u := upgrader(tc.tf, tc.workspace)
 
 			opts := TerraformUpgradeOptions{
 				LogLevel: terraform.LogLevelDebug,
@@ -152,8 +179,8 @@ func TestPlanTerraformMigrations(t *testing.T) {
 }
 
 func TestApplyTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfClient) *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil))
+	upgrader := func(tf tfClient, fileHandler file.Handler) *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
 		return u
@@ -228,7 +255,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			require := require.New(t)
 
-			u := upgrader(tc.tf)
+			u := upgrader(tc.tf, tc.fs)
 
 			opts := TerraformUpgradeOptions{
 				LogLevel:   terraform.LogLevelDebug,
@@ -237,7 +264,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 				OutputFile: tc.outputFileName,
 			}
 
-			err := u.ApplyTerraformMigrations(context.Background(), tc.fs, opts, tc.upgradeID)
+			err := u.ApplyTerraformMigrations(context.Background(), opts, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -248,8 +275,8 @@ func TestApplyTerraformMigrations(t *testing.T) {
 }
 
 func TestCleanUpTerraformMigrations(t *testing.T) {
-	upgrader := func() *TerraformUpgrader {
-		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil))
+	upgrader := func(fileHandler file.Handler) *TerraformUpgrader {
+		u, err := NewTerraformUpgrader(&stubTerraformClient{}, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
 		return u
@@ -315,9 +342,9 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 			require := require.New(t)
 
 			workspace := workspace(tc.workspaceFiles)
-			u := upgrader()
+			u := upgrader(workspace)
 
-			err := u.CleanUpTerraformMigrations(workspace, tc.upgradeID)
+			err := u.CleanUpTerraformMigrations(tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 				return
