@@ -168,10 +168,9 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel:   flags.terraformLogLevel,
-		CSP:        conf.GetProvider(),
-		Vars:       vars,
-		OutputFile: constants.TerraformMigrationOutputFile,
+		LogLevel: flags.terraformLogLevel,
+		CSP:      conf.GetProvider(),
+		Vars:     vars,
 	}
 
 	// Check if there are any Terraform migrations to apply
@@ -202,8 +201,8 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
-			"A backup of the pre-upgrade Terraform state has been written to: %s\n",
-			opts.OutputFile, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
+			"A backup of the pre-upgrade state has been written to: %s\n",
+			constants.ClusterIDsFileName, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}

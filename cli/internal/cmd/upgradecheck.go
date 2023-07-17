@@ -226,10 +226,9 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel:   flags.terraformLogLevel,
-		CSP:        conf.GetProvider(),
-		Vars:       vars,
-		OutputFile: constants.TerraformMigrationOutputFile,
+		LogLevel: flags.terraformLogLevel,
+		CSP:      conf.GetProvider(),
+		Vars:     vars,
 	}
 
 	cmd.Println("The following Teraform migrations are available with this CLI:")

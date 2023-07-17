@@ -48,11 +48,6 @@ func TestCheckTerraformMigrations(t *testing.T) {
 			upgradeID: "1234",
 			workspace: workspace(nil),
 		},
-		"migration output file already exists": {
-			upgradeID: "1234",
-			workspace: workspace([]string{constants.TerraformMigrationOutputFile}),
-			wantErr:   true,
-		},
 		"terraform backup dir already exists": {
 			upgradeID: "1234",
 			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, "1234", constants.TerraformUpgradeBackupDir)}),
@@ -188,6 +183,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 
 	fileHandler := func(upgradeID string, existingFiles ...string) file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
+
 		require.NoError(t,
 			fh.Write(
 				filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir, "someFile"),
@@ -200,54 +196,35 @@ func TestApplyTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		upgradeID      string
-		tf             tfClient
-		policyPatcher  stubPolicyPatcher
-		fs             file.Handler
-		outputFileName string
-		wantErr        bool
+		upgradeID          string
+		tf                 tfClient
+		policyPatcher      stubPolicyPatcher
+		fs                 file.Handler
+		skipIDFileCreation bool // if true, do not create the constellation-id.json file
+		wantErr            bool
 	}{
 		"success": {
-			upgradeID:      "1234",
-			tf:             &stubTerraformClient{},
-			fs:             fileHandler("1234"),
-			policyPatcher:  stubPolicyPatcher{},
-			outputFileName: "test.json",
+			upgradeID:     "1234",
+			tf:            &stubTerraformClient{},
+			fs:            fileHandler("1234"),
+			policyPatcher: stubPolicyPatcher{},
 		},
 		"create cluster error": {
 			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				CreateClusterErr: assert.AnError,
 			},
-			fs:             fileHandler("1234"),
-			policyPatcher:  stubPolicyPatcher{},
-			outputFileName: "test.json",
-			wantErr:        true,
+			fs:            fileHandler("1234"),
+			policyPatcher: stubPolicyPatcher{},
+			wantErr:       true,
 		},
-		"patch error": {
-			upgradeID: "1234",
-			tf:        &stubTerraformClient{},
-			fs:        fileHandler("1234"),
-			policyPatcher: stubPolicyPatcher{
-				patchErr: assert.AnError,
-			},
-			wantErr: true,
-		},
-		"empty file name": {
-			upgradeID:      "1234",
-			tf:             &stubTerraformClient{},
-			fs:             fileHandler("1234"),
-			policyPatcher:  stubPolicyPatcher{},
-			outputFileName: "",
-			wantErr:        true,
-		},
-		"file already exists": {
-			upgradeID:      "1234",
-			tf:             &stubTerraformClient{},
-			fs:             fileHandler("1234", "test.json"),
-			policyPatcher:  stubPolicyPatcher{},
-			outputFileName: "test.json",
-			wantErr:        true,
+		"constellation-id.json does not exist": {
+			upgradeID:          "1234",
+			tf:                 &stubTerraformClient{},
+			fs:                 fileHandler("1234"),
+			policyPatcher:      stubPolicyPatcher{},
+			skipIDFileCreation: true,
+			wantErr:            true,
 		},
 	}
 
@@ -257,11 +234,18 @@ func TestApplyTerraformMigrations(t *testing.T) {
 
 			u := upgrader(tc.tf, tc.fs)
 
+			if !tc.skipIDFileCreation {
+				require.NoError(
+					tc.fs.Write(
+						filepath.Join(constants.ClusterIDsFileName),
+						[]byte("{}"),
+					))
+			}
+
 			opts := TerraformUpgradeOptions{
-				LogLevel:   terraform.LogLevelDebug,
-				CSP:        cloudprovider.Unknown,
-				Vars:       &terraform.QEMUVariables{},
-				OutputFile: tc.outputFileName,
+				LogLevel: terraform.LogLevelDebug,
+				CSP:      cloudprovider.Unknown,
+				Vars:     &terraform.QEMUVariables{},
 			}
 
 			err := u.ApplyTerraformMigrations(context.Background(), opts, tc.upgradeID)

@@ -48,8 +48,6 @@ type TerraformUpgradeOptions struct {
 	CSP cloudprovider.Provider
 	// Vars are the Terraform variables used for the upgrade.
 	Vars terraform.Variables
-	// OutputFile is the file to write the Terraform output to.
-	OutputFile string
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
@@ -57,7 +55,6 @@ type TerraformUpgradeOptions struct {
 func (u *TerraformUpgrader) CheckTerraformMigrations(upgradeID string) error {
 	var existingFiles []string
 	filesToCheck := []string{
-		constants.TerraformMigrationOutputFile,
 		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
 	}
 
@@ -178,8 +175,22 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts T
 		return fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 
-	if err := u.fileHandler.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
-		return fmt.Errorf("writing terraform output to file: %w", err)
+	if err := u.mergeClusterIDFile(outputFileContents); err != nil {
+		return fmt.Errorf("merging migration output into %s: %w", constants.ClusterIDsFileName, err)
+	}
+
+	return nil
+}
+
+// mergeClusterIDFile merges the output of the migration into the constellation-id.json file.
+func (u *TerraformUpgrader) mergeClusterIDFile(migrationOutput clusterid.File) error {
+	idFile := &clusterid.File{}
+	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFileName, idFile); err != nil {
+		return fmt.Errorf("reading %s: %w", constants.ClusterIDsFileName, err)
+	}
+
+	if err := u.fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile.Merge(migrationOutput), file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing %s: %w", constants.ClusterIDsFileName, err)
 	}
 
 	return nil
