@@ -1,6 +1,3 @@
-#aws-load-balancer-controller:
-  #fullnameOverride: aws-load-balancer-controller
-
 global:
   # Port on which the KeyService will listen. Global since join-service also uses the value.
   keyServicePort: 9000

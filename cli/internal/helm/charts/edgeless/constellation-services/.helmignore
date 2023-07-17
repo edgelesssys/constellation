@@ -21,6 +21,3 @@
 .idea/
 *.tmproj
 .vscode/
-
-#charts/aws-load-balancer-controller/crds/kustomization.yaml
-#charts/aws-load-balancer-controller/test.yaml

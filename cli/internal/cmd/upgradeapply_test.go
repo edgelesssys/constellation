@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -143,7 +144,8 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, migrationExecutor: &migrationExecutorPlaceholder{}}
+
 			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
 				assert.Error(err)
@@ -152,6 +154,12 @@ func TestUpgradeApply(t *testing.T) {
 			}
 		})
 	}
+}
+
+type migrationExecutorPlaceholder struct{}
+
+func (d *migrationExecutorPlaceholder) executeMigration(_ *cobra.Command, _ file.Handler, _ terraform.MigrationCmd, _ upgradeApplyFlags) error {
+	return nil
 }
 
 type stubUpgrader struct {
@@ -163,6 +171,14 @@ type stubUpgrader struct {
 	checkTerraformErr error
 	applyTerraformErr error
 	cleanTerraformErr error
+}
+
+func (u stubUpgrader) GetTerraformUpgrader(_ context.Context, _ string) (*terraform.Client, error) {
+	return nil, nil
+}
+
+func (u stubUpgrader) GetUpgradeID() string {
+	return "test-upgrade"
 }
 
 func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {

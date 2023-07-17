@@ -359,6 +359,10 @@ type stubTerraformClient struct {
 	CreateClusterErr    error
 }
 
+func (u *stubTerraformClient) PrepareIAMUpgradeWorkspace(string, string, string, string) error {
+	return u.prepareWorkspaceErr
+}
+
 func (u *stubTerraformClient) PrepareUpgradeWorkspace(string, string, string, string, terraform.Variables) error {
 	return u.prepareWorkspaceErr
 }

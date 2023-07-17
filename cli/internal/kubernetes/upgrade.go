@@ -153,6 +153,8 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	return u, nil
 }
 
+// GetTerraformUpgrader returns a Terraform client for the upgrade workspace.
+// TODO discuss: remove.
 func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error) {
 	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, u.upgradeID, terraformDir))
 	if err != nil {
@@ -161,6 +163,8 @@ func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string
 	return tfClient, nil
 }
 
+// GetUpgradeID returns the upgrade ID.
+// TODO remove.
 func (u *Upgrader) GetUpgradeID() string {
 	return u.upgradeID
 }

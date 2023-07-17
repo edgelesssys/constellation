@@ -39,6 +39,7 @@ cd "${callDir}"
 # remove values.yaml from upstream chart
 rm "${repo_tmp_dir}/${chart_dir}/values.yaml"
 # remoe files being ignored in .helmignore due to wrong import of .helmignore in current implementation
+rm -r "${repo_tmp_dir}/${chart_dir}/ci"
 rm "${repo_tmp_dir}/${chart_dir}/crds/kustomization.yaml"
 rm "${repo_tmp_dir}/${chart_dir}/test.yaml"
 

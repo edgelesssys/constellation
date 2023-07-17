@@ -1,17 +1,20 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package helm
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"go.uber.org/zap"
@@ -19,46 +22,11 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func Install(kubeconfig string) {
-	loader := NewLoader(cloudprovider.AWS, "v1.26.6", "constell-aws")
-	builder := ChartBuilder{
-		i: loader,
-	}
-	builder.AddChart(awsInfo)
-	release, err := builder.Load(helm.WaitModeAtomic)
-	if err != nil {
-		panic(err)
-	}
-	installer, err := New(logger.New(logger.PlainLog, -1), kubeconfig)
-	if err != nil {
-		panic(err)
-	}
-
-	kubectl := kubectl.New()
-	// Build the rest.Config object from the KUBECONFIG file
-	cfgB, err := os.ReadFile(kubeconfig)
-	if err != nil {
-		panic(fmt.Errorf("failed to read kubeconfig file: %w", err))
-	}
-	err = kubectl.Initialize(cfgB)
-	if err != nil {
-		panic(err)
-	}
-	err = installer.InstallAWSLoadBalancerController(context.Background(), release.AWSLoadBalancerController)
-	if err != nil {
-		panic(err)
-	}
-}
-
-/*
-Copyright (c) Edgeless Systems GmbH
-
-SPDX-License-Identifier: AGPL-3.0-only
-*/
+// TODO clenaup once agreed on design.
+// copied from bootstrapper
 
 const (
 	// timeout is the maximum time given to the helm Installer.
@@ -94,19 +62,8 @@ func New(log *logger.Logger, kubeconfig string) (*Installer, error) {
 	}, nil
 }
 
-// Client provides the functions to talk to the k8s API.
-type k8sClient interface {
-	Initialize(kubeconfig []byte) error
-	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
-	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
-	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
-	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
-	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
-	EnforceCoreDNSSpread(ctx context.Context) error
-}
-
 // InstallAWSLoadBalancerController installs the AWS Load Balancer Controller.
-// fails when --skip-helm-wait due to needing cert-manager to be ready
+// fails when --skip-helm-wait due to needing cert-manager to be ready.
 func (h *Installer) InstallAWSLoadBalancerController(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	if err := h.setWaitMode(release.WaitMode); err != nil {

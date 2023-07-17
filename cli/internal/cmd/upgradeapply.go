@@ -72,14 +72,16 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	configFetcher := attestationconfigapi.NewFetcher()
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
+	applyCmd.migrationExecutor = &migrationCmdExecutor{&applyCmd}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
-	upgrader      cloudUpgrader
-	imageFetcher  imageFetcher
-	configFetcher attestationconfigapi.Fetcher
-	log           debugLog
+	upgrader          cloudUpgrader
+	imageFetcher      imageFetcher
+	configFetcher     attestationconfigapi.Fetcher
+	log               debugLog
+	migrationExecutor migrationExecutor
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -110,12 +112,14 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
+	// TODO refactor to place updateID creation outside of upgrader and then remove this method
 	tfClient, err := u.upgrader.GetTerraformUpgrader(cmd.Context(), constants.TerraformIAMUpgradeWorkingDir)
 	if err != nil {
 		return fmt.Errorf("getting terraform client: %w", err)
 	}
 	migrateIAM := getIAMMigrateCmd(cmd, tfClient, conf, flags, u.upgrader.GetUpgradeID())
-	if err := u.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
+	// TODO put terraform migration into cmd as well
+	if err := u.migrationExecutor.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
 		return fmt.Errorf("executing IAM migration: %w", err)
 	}
 
@@ -504,6 +508,54 @@ type cloudUpgrader interface {
 	AddManualStateMigration(migration terraform.StateMigration)
 	GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error)
 	GetUpgradeID() string
+}
+
+type migrationExecutor interface {
+	executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error
+}
+
+type migrationCmdExecutor struct {
+	*upgradeApplyCmd
+}
+
+func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
+	u.log.Debugf("Executing %s", migrateCmd.String())
+	hasDiff, err := migrateCmd.Plan(cmd.Context()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	if err != nil {
+		return fmt.Errorf("planning terraform migrations: %w", err)
+	}
+	if hasDiff {
+		// If there are any Terraform migrations to apply, ask for confirmation
+		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
+		if !flags.yes {
+			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Aborting upgrade.")
+				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+					return fmt.Errorf("cleaning up workspace: %w", err)
+				}
+				return fmt.Errorf("aborted by user")
+			}
+		}
+		u.log.Debugf("Applying Terraform %s migrations", migrateCmd.String())
+		err := migrateCmd.Apply(cmd.Context(), file) // u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		if err != nil {
+			return fmt.Errorf("applying terraform migrations: %w", err)
+		}
+
+		// TODO write this outside of apply migration
+		upgradeOutputFile := constants.TerraformMigrationOutputFile
+		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
+			"A backup of the pre-upgrade Terraform state has been written to: %s\n",
+			upgradeOutputFile, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir)) // TODO include log  of file write where the action happens?
+	} else {
+		u.log.Debugf("No Terraform diff detected")
+	}
+
+	return nil
 }
 
 func toPtr[T any](v T) *T {
