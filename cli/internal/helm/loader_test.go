@@ -62,6 +62,18 @@ func TestIgnoreFilesInSubdirectory(t *testing.T) {
 	}
 }
 
+func TestLoadChartYaml(t *testing.T) {
+	expectToLoad := "Chart.yaml"
+	chart, err := loadChartsDir(helmFS, ciliumInfo.path)
+	require.NoError(t, err)
+	for _, f := range chart.Raw {
+		if strings.Contains(f.Name, expectToLoad) {
+			return
+		}
+	}
+	t.Error("did not find expected file")
+}
+
 func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := ChartLoader{
 		clusterName: "testCluster",
