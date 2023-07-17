@@ -181,11 +181,11 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) CheckTerraformMigrations(file.Handler) error {
+func (u stubUpgrader) CheckTerraformMigrations() error {
 	return u.checkTerraformErr
 }
 
-func (u stubUpgrader) CleanUpTerraformMigrations(file.Handler) error {
+func (u stubUpgrader) CleanUpTerraformMigrations() error {
 	return u.cleanTerraformErr
 }
 
@@ -193,7 +193,7 @@ func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.Terraform
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubUpgrader) ApplyTerraformMigrations(context.Context, file.Handler, upgrade.TerraformUpgradeOptions) error {
+func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) error {
 	return u.applyTerraformErr
 }
 

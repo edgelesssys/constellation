@@ -63,7 +63,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, kubernetes.UpgradeCmdKindApply)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
 	u.log.Debugf("Planning Terraform migrations")
 
-	if err := u.upgrader.CheckTerraformMigrations(file); err != nil {
+	if err := u.upgrader.CheckTerraformMigrations(); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -190,14 +190,14 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+				if err := u.upgrader.CleanUpTerraformMigrations(); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
 			}
 		}
 		u.log.Debugf("Applying Terraform migrations")
-		err := u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		err := u.upgrader.ApplyTerraformMigrations(cmd.Context(), opts)
 		if err != nil {
 			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
@@ -442,9 +442,9 @@ type cloudUpgrader interface {
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
-	ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error
-	CheckTerraformMigrations(fileHandler file.Handler) error
-	CleanUpTerraformMigrations(fileHandler file.Handler) error
+	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) error
+	CheckTerraformMigrations() error
+	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
 }
 

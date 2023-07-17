@@ -68,7 +68,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, kubernetes.UpgradeCmdKindCheck)
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		u.checker.AddManualStateMigration(migration)
 	}
 
-	if err := u.checker.CheckTerraformMigrations(fileHandler); err != nil {
+	if err := u.checker.CheckTerraformMigrations(); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -240,7 +240,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		if err := u.checker.CleanUpTerraformMigrations(fileHandler); err != nil {
+		if err := u.checker.CleanUpTerraformMigrations(); err != nil {
 			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
 		}
 	}()
@@ -738,8 +738,8 @@ type upgradeChecker interface {
 	CurrentImage(ctx context.Context) (string, error)
 	CurrentKubernetesVersion(ctx context.Context) (string, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
-	CheckTerraformMigrations(fileHandler file.Handler) error
-	CleanUpTerraformMigrations(fileHandler file.Handler) error
+	CheckTerraformMigrations() error
+	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
 }
 

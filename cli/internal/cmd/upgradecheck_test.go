@@ -377,11 +377,11 @@ func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.Ter
 	return u.tfDiff, u.err
 }
 
-func (u stubUpgradeChecker) CheckTerraformMigrations(file.Handler) error {
+func (u stubUpgradeChecker) CheckTerraformMigrations() error {
 	return u.err
 }
 
-func (u stubUpgradeChecker) CleanUpTerraformMigrations(file.Handler) error {
+func (u stubUpgradeChecker) CleanUpTerraformMigrations() error {
 	return u.err
 }
 
