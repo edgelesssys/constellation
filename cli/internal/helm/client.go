@@ -10,15 +10,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
@@ -106,11 +109,55 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
+	chartsToUpgrade := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo}
 
-	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo} {
+	// TODO refactor to GetCharts(provider) ?
+	if config.GetProvider() == cloudprovider.AWS {
+		svcVersions, err := c.Versions()
+		if err != nil {
+			return fmt.Errorf("getting versions: %w", err)
+		}
+		c.log.Debugf("Upgrade %s", svcVersions.awsLoadBalancerController)
+		// install instead of upgrade if the awsLoadBalancerController is not installed yet
+		if svcVersions.awsLoadBalancerController == "" {
+			c.log.Debugf("installing aws load balancer controller")
+			k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion, false)
+			if err != nil {
+				return fmt.Errorf("validating k8s version: %s", config.KubernetesVersion)
+			}
+
+			loader := NewLoader(config.GetProvider(), k8sVersion, clusterid.GetClusterName(config.Name, idFile))
+			builder := ChartBuilder{
+				i: loader,
+			}
+			builder.AddChart(awsInfo)
+			release, err := builder.Load(helm.WaitModeAtomic) // TODO configurable
+			if err != nil {
+				return fmt.Errorf("loading chart: %w", err)
+			}
+			kubeconfig := os.Getenv("KUBECONFIG") // TODO
+			installer, err := New(logger.New(logger.PlainLog, -1), kubeconfig)
+			if err != nil {
+				return fmt.Errorf("creating installer: %w", err)
+			}
+
+			c.log.Debugf("Installing %s", awsInfo.releaseName)
+			err = installer.InstallAWSLoadBalancerController(context.Background(), release.AWSLoadBalancerController)
+			if err != nil {
+				return fmt.Errorf("installing aws load balancer controller: %w", err)
+			}
+			if err != nil {
+				return fmt.Errorf("loading chart %s: %w", awsInfo.chartName, err)
+			}
+		} else {
+			chartsToUpgrade = append(chartsToUpgrade, awsInfo)
+		}
+	}
+
+	for _, info := range chartsToUpgrade {
 		chart, err := loadChartsDir(helmFS, info.path)
 		if err != nil {
-			return fmt.Errorf("loading chart: %w", err)
+			return fmt.Errorf("loading chart %s: %w", info.chartName, err)
 		}
 
 		// define target version the chart is upgraded to
@@ -184,12 +231,29 @@ func (c *Client) Versions() (ServiceVersions, error) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
 
+	awsLBVersion, err := c.currentVersion(awsInfo.releaseName)
+	if err != nil {
+		var releaseNotFoundError *ReleaseNotFoundError
+		if !errors.As(err, &releaseNotFoundError) {
+			fmt.Println("IS THIS THE PROBLEM?")
+			return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsInfo.releaseName, err)
+		}
+	}
 	return ServiceVersions{
-		cilium:                 compatibility.EnsurePrefixV(ciliumVersion),
-		certManager:            compatibility.EnsurePrefixV(certManagerVersion),
-		constellationOperators: compatibility.EnsurePrefixV(operatorsVersion),
-		constellationServices:  compatibility.EnsurePrefixV(servicesVersion),
+		cilium:                    compatibility.EnsurePrefixV(ciliumVersion),
+		certManager:               compatibility.EnsurePrefixV(certManagerVersion),
+		constellationOperators:    compatibility.EnsurePrefixV(operatorsVersion),
+		constellationServices:     compatibility.EnsurePrefixV(servicesVersion),
+		awsLoadBalancerController: compatibility.EnsurePrefixV(awsLBVersion),
 	}, nil
+}
+
+type ReleaseNotFoundError struct {
+	ReleaseName string
+}
+
+func (e *ReleaseNotFoundError) Error() string {
+	return fmt.Sprintf("release %s not found", e.ReleaseName)
 }
 
 // currentVersion returns the version of the currently installed helm release.
@@ -200,7 +264,7 @@ func (c *Client) currentVersion(release string) (string, error) {
 	}
 
 	if len(rel) == 0 {
-		return "", fmt.Errorf("release %s not found", release)
+		return "", &ReleaseNotFoundError{ReleaseName: release}
 	}
 	if len(rel) > 1 {
 		return "", fmt.Errorf("multiple releases found for %s", release)
@@ -215,10 +279,11 @@ func (c *Client) currentVersion(release string) (string, error) {
 
 // ServiceVersions bundles the versions of all services that are part of Constellation.
 type ServiceVersions struct {
-	cilium                 string
-	certManager            string
-	constellationOperators string
-	constellationServices  string
+	cilium                    string
+	certManager               string
+	constellationOperators    string
+	constellationServices     string
+	awsLoadBalancerController string
 }
 
 // NewServiceVersions returns a new ServiceVersions struct.
