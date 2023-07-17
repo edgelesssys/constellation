@@ -54,11 +54,12 @@ func (c *IAMMigrateCmd) String() string {
 }
 
 func (c *IAMMigrateCmd) Plan(ctx context.Context) (bool, error) {
+	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
 	err := c.tf.PrepareIAMUpgradeWorkspace(
-		filepath.Join("terraform", "iam", strings.ToLower(c.csp.String())),
+		templateDir,
 		constants.TerraformIAMWorkingDir,
 		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),
-		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformUpgradeBackupDir), // TODO: use IAM backup dir
+		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeBackupDir), // TODO: use IAM backup dir
 	)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
@@ -66,7 +67,7 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context) (bool, error) {
 
 	hasDiff, err := c.tf.Plan(ctx, c.logLevel, constants.TerraformUpgradePlanFile)
 	if err != nil {
-		return false, fmt.Errorf("terraform plan: %w", err)
+		return false, fmt.Errorf("terraform plan 1: %w", err)
 	}
 
 	if hasDiff {

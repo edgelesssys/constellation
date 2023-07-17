@@ -110,8 +110,11 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
-
-	migrateIAM := getIAMMigrateCmd(cmd, u.upgrader.GetTerraformUpgrader(), conf, flags, u.upgrader.GetUpgradeID())
+	tfClient, err := u.upgrader.GetTerraformUpgrader(cmd.Context(), constants.TerraformIAMUpgradeWorkingDir)
+	if err != nil {
+		return fmt.Errorf("getting terraform client: %w", err)
+	}
+	migrateIAM := getIAMMigrateCmd(cmd, tfClient, conf, flags, u.upgrader.GetUpgradeID())
 	if err := u.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
 		return fmt.Errorf("executing IAM migration: %w", err)
 	}
@@ -232,6 +235,7 @@ func getIAMMigrateCmd(cmd *cobra.Command, tfClient *terraform.Client, conf *conf
 }
 
 func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
+	u.log.Debugf("Executing %s", migrateCmd.String())
 	hasDiff, err := migrateCmd.Plan(cmd.Context()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
@@ -253,7 +257,6 @@ func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler
 			}
 		}
 		u.log.Debugf("Applying Terraform %s migrations", migrateCmd.String())
-		// .ApplyMigration()
 		err := migrateCmd.Apply(cmd.Context(), file) // u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
 		if err != nil {
 			return fmt.Errorf("applying terraform migrations: %w", err)
@@ -506,7 +509,7 @@ type cloudUpgrader interface {
 	CheckTerraformMigrations(fileHandler file.Handler) error
 	CleanUpTerraformMigrations(fileHandler file.Handler) error
 	AddManualStateMigration(migration terraform.StateMigration)
-	GetTerraformUpgrader() *terraform.Client
+	GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error)
 	GetUpgradeID() string
 }
 

@@ -95,6 +95,7 @@ go_library(
 go_test(
     name = "terraform_test",
     srcs = [
+        "iammigrate_test.go",
         "loader_test.go",
         "terraform_test.go",
         "variables_test.go",

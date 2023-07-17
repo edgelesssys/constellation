@@ -153,8 +153,12 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgrade
 	return u, nil
 }
 
-func (u *Upgrader) GetTerraformUpgrader() *terraform.Client {
-	return u.tfClient
+func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error) {
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, u.upgradeID, terraformDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
+	return tfClient, nil
 }
 
 func (u *Upgrader) GetUpgradeID() string {

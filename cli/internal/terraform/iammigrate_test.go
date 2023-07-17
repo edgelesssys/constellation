@@ -70,6 +70,10 @@ func TestIAMMigrate(t *testing.T) {
 	res, err = fs.Stat(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
 	assert.Error(t, err)
 	assert.Nil(t, res)
+
+	res, err = fs.Stat(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir))
+	assert.Error(t, err)
+	assert.Nil(t, res)
 }
 
 type tfClientStub struct {
