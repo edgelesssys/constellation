@@ -85,31 +85,6 @@ func checkFileExists(fileHandler file.Handler, existingFiles *[]string, filename
 	return nil
 }
 
-func (u *TerraformUpgrader) PlanIAMMigration(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel, upgradeID string) (bool, error) {
-	err := u.tf.PrepareIAMUpgradeWorkspace(
-		filepath.Join("terraform", "iam", strings.ToLower(csp.String())),
-		constants.TerraformIAMWorkingDir,
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
-	)
-	if err != nil {
-		return false, fmt.Errorf("preparing terraform workspace: %w", err)
-	}
-
-	hasDiff, err := u.tf.Plan(ctx, logLevel, constants.TerraformUpgradePlanFile)
-	if err != nil {
-		return false, fmt.Errorf("terraform plan: %w", err)
-	}
-
-	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, logLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
-			return false, fmt.Errorf("terraform show plan: %w", err)
-		}
-	}
-
-	return hasDiff, nil
-}
-
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.

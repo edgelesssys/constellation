@@ -183,12 +183,7 @@ func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
 func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error) {
-	hasDiff, err := u.tfUpgrader.PlanIAMMigration(ctx, opts.CSP, opts.LogLevel, u.upgradeID)
-	if err != nil {
-		return false, fmt.Errorf("planning terraform migrations: %w", err)
-	}
-	return hasDiff, nil
-	// return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
+	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
 // ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
