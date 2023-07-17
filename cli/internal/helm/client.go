@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -56,7 +55,7 @@ type Client struct {
 // NewClient returns a new initializes client for the namespace Client.
 func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debugLog) (*Client, error) {
 	settings := cli.New()
-	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
+	settings.KubeConfig = kubeConfigPath
 
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Debugf); err != nil {
@@ -114,13 +113,13 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 	// TODO refactor to GetCharts(provider) ?
 	if config.GetProvider() == cloudprovider.AWS {
 		svcVersions, err := c.Versions()
+		c.log.Debugf("Apply %s", svcVersions.awsLoadBalancerController)
 		if err != nil {
 			return fmt.Errorf("getting versions: %w", err)
 		}
-		c.log.Debugf("Upgrade %s", svcVersions.awsLoadBalancerController)
 		// install instead of upgrade if the awsLoadBalancerController is not installed yet
 		if svcVersions.awsLoadBalancerController == "" {
-			c.log.Debugf("installing aws load balancer controller")
+			c.log.Debugf("Installing aws-load-balancer-controller")
 			k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion, false)
 			if err != nil {
 				return fmt.Errorf("validating k8s version: %s", config.KubernetesVersion)
@@ -131,11 +130,11 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 				i: loader,
 			}
 			builder.AddChart(awsInfo)
-			release, err := builder.Load(helm.WaitModeAtomic) // TODO configurable
+			release, err := builder.Load(helm.WaitModeAtomic) // TODO make configurable
 			if err != nil {
 				return fmt.Errorf("loading chart: %w", err)
 			}
-			kubeconfig := os.Getenv("KUBECONFIG") // TODO
+			kubeconfig := constants.AdminConfFilename // TODO: get path as arg ,os.Getenv("KUBECONFIG")
 			installer, err := New(logger.New(logger.PlainLog, -1), kubeconfig)
 			if err != nil {
 				return fmt.Errorf("creating installer: %w", err)
@@ -235,7 +234,6 @@ func (c *Client) Versions() (ServiceVersions, error) {
 	if err != nil {
 		var releaseNotFoundError *ReleaseNotFoundError
 		if !errors.As(err, &releaseNotFoundError) {
-			fmt.Println("IS THIS THE PROBLEM?")
 			return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsInfo.releaseName, err)
 		}
 	}
@@ -248,10 +246,12 @@ func (c *Client) Versions() (ServiceVersions, error) {
 	}, nil
 }
 
+// ReleaseNotFoundError is returned when a helm release is not found.
 type ReleaseNotFoundError struct {
 	ReleaseName string
 }
 
+// Error returns the error message.
 func (e *ReleaseNotFoundError) Error() string {
 	return fmt.Sprintf("release %s not found", e.ReleaseName)
 }
@@ -326,7 +326,7 @@ func (c *Client) upgradeRelease(
 		return fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
 	}
 
-	c.log.Debugf("Checking cluster ID file")
+	c.log.Debugf("Checking cluster ID file to determine cluster name")
 	clusterName := clusterid.GetClusterName(conf.Name, idFile)
 
 	loader := NewLoader(conf.GetProvider(), k8sVersion, clusterName)

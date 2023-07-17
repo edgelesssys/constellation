@@ -23,6 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+// TODO clenaup once agreed on design
+
+// TODO delete only used for manual test
 func Install(kubeconfig string) {
 	loader := NewLoader(cloudprovider.AWS, "v1.26.6", "constell-aws")
 	builder := ChartBuilder{
@@ -53,12 +56,6 @@ func Install(kubeconfig string) {
 		panic(err)
 	}
 }
-
-/*
-Copyright (c) Edgeless Systems GmbH
-
-SPDX-License-Identifier: AGPL-3.0-only
-*/
 
 const (
 	// timeout is the maximum time given to the helm Installer.

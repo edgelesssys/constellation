@@ -380,8 +380,6 @@ go_library(
         "charts/aws-load-balancer-controller/.helmignore",
         "charts/aws-load-balancer-controller/Chart.yaml",
         "charts/aws-load-balancer-controller/README.md",
-        "charts/aws-load-balancer-controller/ci/extra_args",
-        "charts/aws-load-balancer-controller/ci/values.yaml",
         "charts/aws-load-balancer-controller/crds/crds.yaml",
         "charts/aws-load-balancer-controller/templates/NOTES.txt",
         "charts/aws-load-balancer-controller/templates/_helpers.tpl",

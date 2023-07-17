@@ -51,6 +51,7 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
+// TODO discuss: this test passes with current code only since we delete crds/kustomization.yaml in update-aws-load-balancer-controller.sh . Our current implementation does not support this!
 func TestIgnoreFilesInSubdirectory(t *testing.T) {
 	fileToIgnore := "crds/kustomization.yaml"
 	chart, err := loadChartsDir(helmFS, awsInfo.path)
@@ -62,6 +63,7 @@ func TestIgnoreFilesInSubdirectory(t *testing.T) {
 	}
 }
 
+// TODO discuss: this works in test but fails in real code when using newer symwalk implementation
 func TestLoadChartYaml(t *testing.T) {
 	expectToLoad := "Chart.yaml"
 	chart, err := loadChartsDir(helmFS, ciliumInfo.path)
@@ -180,14 +182,8 @@ func TestConstellationServices(t *testing.T) {
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 				clusterName:              "testCluster",
 			}
-			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path) // helmFS, "./charts/edgeless/constellation-services/charts/aws-load-balancer-controller") //
+			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
-			for _, f := range chart.Raw {
-				// fmt.Println("UNFILTERED", f.Name)
-				if strings.Contains(f.Name, "crds") {
-					fmt.Println("FOUND", f.Name)
-				}
-			}
 			values, err := chartLoader.loadConstellationServicesValues()
 			require.NoError(err)
 			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))

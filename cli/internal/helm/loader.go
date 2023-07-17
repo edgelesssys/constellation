@@ -114,6 +114,7 @@ func (b *ChartBuilder) AddChart(info chartInfo) {
 	b.charts = append(b.charts, info)
 }
 
+// TODO only supports AWS for now (discuss design first)
 func (b *ChartBuilder) Load(helmWaitMode helm.WaitMode) (helm.Releases, error) {
 	var releases helm.Releases
 	for _, info := range b.charts {
@@ -125,8 +126,6 @@ func (b *ChartBuilder) Load(helmWaitMode helm.WaitMode) (helm.Releases, error) {
 	}
 	return releases, nil
 }
-
-type HelmInstaller struct{}
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
@@ -456,6 +455,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 			"AWS": true,
 		}
 		values["aws-load-balancer-controller"] = map[string]any{
+			// TODO: nodeSelector is already set in (customized) values.yaml. Should we have a custom values.yaml instead of configuring here for easier testing?
 			"nodeSelector": map[string]any{
 				"node-role.kubernetes.io/control-plane": "",
 			},

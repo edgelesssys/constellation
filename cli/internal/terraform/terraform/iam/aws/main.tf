@@ -51,6 +51,7 @@ resource "aws_iam_policy" "control_plane_policy" {
     {
       "Effect": "Allow",
       "Action": [
+        # roles for aws-load-balancer-controller
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeInstances",
         "elasticloadbalancing:DescribeTargetGroups",
@@ -64,6 +65,7 @@ resource "aws_iam_policy" "control_plane_policy" {
         "elasticloadbalancing:RegisterTargets",
         "elasticloadbalancing:DeregisterTargets",
         "elasticloadbalancing:DescribeTags",
+        # rest
         "autoscaling:DescribeAutoScalingGroups",
         "autoscaling:DescribeLaunchConfigurations",
         "autoscaling:DescribeTags",

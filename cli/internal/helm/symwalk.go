@@ -6,6 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package helm
 
+// TODO discuss if we want newer implementation with subdir support for .helmignore
+
 import (
 	"log"
 	"os"

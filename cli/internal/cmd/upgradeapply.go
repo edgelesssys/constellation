@@ -110,11 +110,13 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
+	// TODO refactor to place updateID creation outside of upgrader and then remove this method
 	tfClient, err := u.upgrader.GetTerraformUpgrader(cmd.Context(), constants.TerraformIAMUpgradeWorkingDir)
 	if err != nil {
 		return fmt.Errorf("getting terraform client: %w", err)
 	}
 	migrateIAM := getIAMMigrateCmd(cmd, tfClient, conf, flags, u.upgrader.GetUpgradeID())
+	// TODO put terraform migration into cmd as well
 	if err := u.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
 		return fmt.Errorf("executing IAM migration: %w", err)
 	}

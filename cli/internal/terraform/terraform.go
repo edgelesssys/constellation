@@ -103,6 +103,7 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 }
 
 // PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
+// TODO should be inside IAMMigrateCmd
 func (c *Client) PrepareIAMUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string) error {
 	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
 		return fmt.Errorf("prepare upgrade workspace: %w", err)
