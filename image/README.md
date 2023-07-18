@@ -184,9 +184,9 @@ Warning! Never set `--version` to a value that is already used for a release ima
 - Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
 - Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
 - Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
-    - `pki_dev` can be used for local image builds
-    - `pki_test` is used by the CI for non-release images
-    - `pki_prod` is used for release images
+  - `pki_dev` can be used for local image builds
+  - `pki_test` is used by the CI for non-release images
+  - `pki_prod` is used for release images
 
 ```sh
 # Warning! Never set `--version` to a value that is already used for a release image.
@@ -202,9 +202,9 @@ bazel run //image/upload -- aws --verbose --raw-image mkosi.output.aws/fedora~38
 - Install `gcloud` and `gsutil` (see [here](https://cloud.google.com/sdk/docs/install))
 - Login to GCP (see [here](https://cloud.google.com/sdk/docs/authorizing))
 - Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
-    - `pki_dev` can be used for local image builds
-    - `pki_test` is used by the CI for non-release images
-    - `pki_prod` is used for release images
+  - `pki_dev` can be used for local image builds
+  - `pki_test` is used by the CI for non-release images
+  - `pki_prod` is used for release images
 
 ```sh
 export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~38/image.raw
