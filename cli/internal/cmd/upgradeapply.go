@@ -63,7 +63,8 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply)
+	upgradeID := kubernetes.NewUpgradeID()
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, kubernetes.UpgradeCmdKindApply, upgradeID)
 	if err != nil {
 		return err
 	}
@@ -73,6 +74,12 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
 	applyCmd.migrationExecutor = &migrationCmdExecutor{&applyCmd}
+	iamMigrateCmd, err := terraform.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
+	if err != nil {
+		return fmt.Errorf("setting up IAM migration command: %w", err)
+	}
+	// TODO put terraform migration into cmd as well
+	applyCmd.migrationCmds = []terraform.MigrationCmd{iamMigrateCmd}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
@@ -82,6 +89,7 @@ type upgradeApplyCmd struct {
 	configFetcher     attestationconfigapi.Fetcher
 	log               debugLog
 	migrationExecutor migrationExecutor
+	migrationCmds     []terraform.MigrationCmd
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -112,15 +120,10 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
-	// TODO refactor to place updateID creation outside of upgrader and then remove this method
-	tfClient, err := u.upgrader.GetTerraformUpgrader(cmd.Context(), constants.TerraformIAMUpgradeWorkingDir)
-	if err != nil {
-		return fmt.Errorf("getting terraform client: %w", err)
-	}
-	migrateIAM := getIAMMigrateCmd(cmd, tfClient, conf, flags, u.upgrader.GetUpgradeID())
-	// TODO put terraform migration into cmd as well
-	if err := u.migrationExecutor.executeMigration(cmd, fileHandler, migrateIAM, flags); err != nil {
-		return fmt.Errorf("executing IAM migration: %w", err)
+	for _, migrationCmd := range u.migrationCmds {
+		if err := u.migrationExecutor.executeMigration(cmd, fileHandler, migrationCmd, flags); err != nil {
+			return fmt.Errorf("executing %s migration: %w", migrationCmd.String(), err)
+		}
 	}
 
 	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
@@ -222,23 +225,9 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 	return nil
 }
 
-func getIAMMigrateCmd(cmd *cobra.Command, tfClient *terraform.Client, conf *config.Config, flags upgradeApplyFlags, upgradeID string) *terraform.IAMMigrateCmd {
-	// Check if there are any Terraform migrations to apply
-	outWriter := cmd.OutOrStdout()
-
-	migrateCmd := terraform.NewIAMMigrateCmd(
-		tfClient,
-		upgradeID,
-		conf.GetProvider(),
-		flags.terraformLogLevel,
-		outWriter,
-	)
-	return migrateCmd
-}
-
 func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
 	u.log.Debugf("Executing %s", migrateCmd.String())
-	hasDiff, err := migrateCmd.Plan(cmd.Context()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	hasDiff, err := migrateCmd.Plan(cmd.Context(), cmd.OutOrStdout()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
@@ -506,8 +495,6 @@ type cloudUpgrader interface {
 	CheckTerraformMigrations() error
 	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
-	GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error)
-	GetUpgradeID() string
 }
 
 type migrationExecutor interface {
@@ -520,7 +507,7 @@ type migrationCmdExecutor struct {
 
 func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
 	u.log.Debugf("Executing %s", migrateCmd.String())
-	hasDiff, err := migrateCmd.Plan(cmd.Context()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	hasDiff, err := migrateCmd.Plan(cmd.Context(), cmd.OutOrStdout()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}

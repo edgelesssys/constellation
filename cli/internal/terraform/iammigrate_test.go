@@ -31,8 +31,9 @@ func TestIAMMigrate(t *testing.T) {
 
 	// act
 	fakeTfClient := &tfClientStub{tfClient, upgradeID}
-	sut := NewIAMMigrateCmd(fakeTfClient, upgradeID, cloudprovider.AWS, LogLevelDebug, bytes.NewBuffer(nil))
-	hasDiff, err := sut.Plan(context.Background())
+	sut := &IAMMigrateCmd{fakeTfClient, upgradeID, cloudprovider.AWS, LogLevelDebug}
+	require.NoError(t, err)
+	hasDiff, err := sut.Plan(context.Background(), bytes.NewBuffer(nil))
 	// assert
 	assert.NoError(t, err)
 	assert.False(t, hasDiff)

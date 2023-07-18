@@ -27,7 +27,7 @@ type tfClient interface {
 
 // MigrationCmd is an interface for all terraform upgrade / migration commands.
 type MigrationCmd interface {
-	Plan(ctx context.Context) (bool, error)
+	Plan(ctx context.Context, outWriter io.Writer) (bool, error)
 	Apply(ctx context.Context, fileHandler file.Handler) error
 	String() string
 }
@@ -38,18 +38,20 @@ type IAMMigrateCmd struct {
 	upgradeID string
 	csp       cloudprovider.Provider
 	logLevel  LogLevel
-	outWriter io.Writer
 }
 
 // NewIAMMigrateCmd creates a new IAMMigrateCmd.
-func NewIAMMigrateCmd(tf tfClient, upgradeID string, csp cloudprovider.Provider, logLevel LogLevel, outWriter io.Writer) *IAMMigrateCmd {
+func NewIAMMigrateCmd(ctx context.Context, upgradeID string, csp cloudprovider.Provider, logLevel LogLevel) (*IAMMigrateCmd, error) {
+	tfClient, err := New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
 	return &IAMMigrateCmd{
-		tf:        tf,
+		tf:        tfClient,
 		upgradeID: upgradeID,
 		csp:       csp,
 		logLevel:  logLevel,
-		outWriter: outWriter,
-	}
+	}, nil
 }
 
 // String returns the name of the command.
@@ -59,7 +61,7 @@ func (c *IAMMigrateCmd) String() string {
 
 // Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
 // TODO put outWriter as argument.
-func (c *IAMMigrateCmd) Plan(ctx context.Context) (bool, error) {
+func (c *IAMMigrateCmd) Plan(ctx context.Context, outWriter io.Writer) (bool, error) {
 	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
 	err := c.tf.PrepareIAMUpgradeWorkspace(
 		templateDir,
@@ -77,7 +79,7 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context) (bool, error) {
 	}
 
 	if hasDiff {
-		if err := c.tf.ShowPlan(ctx, c.logLevel, constants.TerraformUpgradePlanFile, c.outWriter); err != nil {
+		if err := c.tf.ShowPlan(ctx, c.logLevel, constants.TerraformUpgradePlanFile, outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}

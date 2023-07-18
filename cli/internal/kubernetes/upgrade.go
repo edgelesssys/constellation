@@ -26,7 +26,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -97,21 +96,37 @@ type Upgrader struct {
 	upgradeID  string
 }
 
+// NewUpgradeID returns a new upgrade ID.
+// is private function to avoid construction outside this function.
+//
+//nolint:all
+func NewUpgradeID() upgradeID {
+	return upgradeID{"upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]}
+}
+
+type upgradeID struct {
+	string
+}
+
+func (u upgradeID) String() string {
+	return u.string
+}
+
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
-	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgradeCmdKind UpgradeCmdKind, upgradeID upgradeID) (*Upgrader, error) {
+	upgradeIDStr := upgradeID.String()
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
 		// Terraform state. The directory is deleted after the check is finished.
 		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
-		upgradeID += "-tmp"
+		upgradeIDStr += "-tmp"
 	}
 
 	u := &Upgrader{
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
 		log:          log,
-		upgradeID:    upgradeID,
+		upgradeID:    upgradeIDStr,
 	}
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
@@ -138,7 +153,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	}
 	u.helmClient = helmClient
 
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID.String(), constants.TerraformUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -151,22 +166,6 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	u.tfUpgrader = tfUpgrader
 
 	return u, nil
-}
-
-// GetTerraformUpgrader returns a Terraform client for the upgrade workspace.
-// TODO discuss: remove.
-func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error) {
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, u.upgradeID, terraformDir))
-	if err != nil {
-		return nil, fmt.Errorf("setting up terraform client: %w", err)
-	}
-	return tfClient, nil
-}
-
-// GetUpgradeID returns the upgrade ID.
-// TODO remove.
-func (u *Upgrader) GetUpgradeID() string {
-	return u.upgradeID
 }
 
 // AddManualStateMigration adds a manual state migration to the Terraform client.
