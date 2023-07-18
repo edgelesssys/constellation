@@ -9,6 +9,7 @@ package kubernetes
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -34,5 +35,5 @@ type helmClient interface {
 	InstallCertManager(ctx context.Context, release helm.Release) error
 	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
 	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
-	InstallAWSLoadBalancerController(context.Context, helm.Release) error
+	InstallChart(context.Context, helm.Release, *time.Duration) error
 }

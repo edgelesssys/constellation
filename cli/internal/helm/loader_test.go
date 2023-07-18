@@ -54,7 +54,7 @@ func TestLoad(t *testing.T) {
 // TODO discuss: this test passes with current code only since we delete crds/kustomization.yaml in update-aws-load-balancer-controller.sh . Our current implementation does not support this!
 func TestIgnoreFilesInSubdirectory(t *testing.T) {
 	fileToIgnore := "crds/kustomization.yaml"
-	chart, err := loadChartsDir(helmFS, awsInfo.path)
+	chart, err := loadChartsDir(helmFS, awsLBControllerInfo.path)
 	require.NoError(t, err)
 	for _, f := range chart.Raw {
 		if strings.Contains(f.Name, fileToIgnore) {

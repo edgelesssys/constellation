@@ -244,7 +244,7 @@ func (k *KubeWrapper) InitCluster(
 
 	if helmReleases.AWSLoadBalancerController.ReleaseName != "" {
 		log.Infof("Installing AWS Load Balancer Controller")
-		if err = k.helmClient.InstallAWSLoadBalancerController(ctx, helmReleases.AWSLoadBalancerController); err != nil {
+		if err = k.helmClient.InstallChart(ctx, helmReleases.AWSLoadBalancerController, nil); err != nil {
 			return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}

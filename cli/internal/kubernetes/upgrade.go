@@ -204,7 +204,7 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.Te
 
 // UpgradeHelmServices upgrade helm services.
 func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool) error {
-	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID)
+	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, constants.AdminConfFilename)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -529,7 +529,7 @@ func (u *stableClient) KubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error
+	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID, kubeconfig string) error
 }
 
 type debugLog interface {

@@ -53,7 +53,7 @@ var (
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
 
-	awsInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
+	awsLBControllerInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
 )
 
 // ChartLoader loads embedded helm charts.
@@ -105,31 +105,6 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 	}
 }
 
-// ChartBuilder is used to load individual charts.
-type ChartBuilder struct {
-	charts []chartInfo
-	i      *ChartLoader
-}
-
-// AddChart adds a chart to the ChartBuilder.
-func (b *ChartBuilder) AddChart(info chartInfo) {
-	b.charts = append(b.charts, info)
-}
-
-// Load loads the added charts.
-// TODO only supports AWS for now (discuss design first).
-func (b *ChartBuilder) Load(helmWaitMode helm.WaitMode) (helm.Releases, error) {
-	var releases helm.Releases
-	for _, info := range b.charts {
-		awsRelease, err := b.i.loadRelease(info, helmWaitMode)
-		if err != nil {
-			return helm.Releases{}, fmt.Errorf("loading aws-services: %w", err)
-		}
-		releases.AWSLoadBalancerController = awsRelease
-	}
-	return releases, nil
-}
-
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
@@ -158,7 +133,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 
 	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
 	if config.HasProvider(cloudprovider.AWS) {
-		awsRelease, err := i.loadRelease(awsInfo, helmWaitMode)
+		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading aws-services: %w", err)
 		}
@@ -194,7 +169,7 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 
 		values, err = i.loadConstellationServicesValues()
-	case awsInfo.releaseName:
+	case awsLBControllerInfo.releaseName:
 		values, err = i.loadAWSLoadBalancerControllerValues()
 	}
 
@@ -211,7 +186,7 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 }
 
 func (i *ChartLoader) loadAWSLoadBalancerControllerValues() (map[string]any, error) {
-	valuesFile, err := helmFS.ReadFile(awsInfo.path + "/values.yaml")
+	valuesFile, err := helmFS.ReadFile(awsLBControllerInfo.path + "/values.yaml")
 	if err != nil {
 		return nil, err
 	}

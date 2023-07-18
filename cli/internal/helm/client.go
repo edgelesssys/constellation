@@ -105,51 +105,24 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID, kubeconfig string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	chartsToUpgrade := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo}
 
-	// TODO refactor to GetCharts(provider) ?
 	if config.GetProvider() == cloudprovider.AWS {
-		svcVersions, err := c.Versions()
-		c.log.Debugf("Apply %s", svcVersions.awsLoadBalancerController)
-		if err != nil {
-			return fmt.Errorf("getting versions: %w", err)
-		}
-		// install instead of upgrade if the awsLoadBalancerController is not installed yet
-		if svcVersions.awsLoadBalancerController == "" {
+		if isInstalled, err := c.isChartInstalled(awsLBControllerInfo.releaseName); !isInstalled {
 			c.log.Debugf("Installing aws-load-balancer-controller")
-			k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion, false)
+			err := c.installChart(awsLBControllerInfo, config, idFile, kubeconfig)
 			if err != nil {
-				return fmt.Errorf("validating k8s version: %s", config.KubernetesVersion)
-			}
-
-			loader := NewLoader(config.GetProvider(), k8sVersion, clusterid.GetClusterName(config.Name, idFile))
-			builder := ChartBuilder{
-				i: loader,
-			}
-			builder.AddChart(awsInfo)
-			release, err := builder.Load(helm.WaitModeAtomic) // TODO make configurable
-			if err != nil {
-				return fmt.Errorf("loading chart: %w", err)
-			}
-			kubeconfig := constants.AdminConfFilename // TODO: get path as arg ,os.Getenv("KUBECONFIG")
-			installer, err := New(logger.New(logger.PlainLog, -1), kubeconfig)
-			if err != nil {
-				return fmt.Errorf("creating installer: %w", err)
-			}
-
-			c.log.Debugf("Installing %s", awsInfo.releaseName)
-			err = installer.InstallAWSLoadBalancerController(context.Background(), release.AWSLoadBalancerController)
-			if err != nil {
-				return fmt.Errorf("installing aws load balancer controller: %w", err)
-			}
-			if err != nil {
-				return fmt.Errorf("loading chart %s: %w", awsInfo.chartName, err)
+				return fmt.Errorf("installing %s: %w", awsLBControllerInfo.chartName, err)
 			}
 		} else {
-			chartsToUpgrade = append(chartsToUpgrade, awsInfo)
+			if err != nil {
+				return fmt.Errorf("getting version of %s: %w", awsLBControllerInfo.chartName, err)
+			}
+			c.log.Debugf("Schedule %s for upgrade", awsLBControllerInfo.chartName)
+			chartsToUpgrade = append(chartsToUpgrade, awsLBControllerInfo)
 		}
 	}
 
@@ -211,6 +184,40 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 	return errors.Join(upgradeErrs...)
 }
 
+func (c *Client) isChartInstalled(releaseName string) (bool, error) {
+	if _, err := c.currentVersion(releaseName); err != nil {
+		var releaseNotFoundError *ReleaseNotFoundError
+		if errors.As(err, &releaseNotFoundError) {
+			return false, nil
+		}
+		return true, fmt.Errorf("getting %s version: %w", releaseName, err)
+	}
+	return true, nil
+}
+
+func (c *Client) installChart(chart chartInfo, config *config.Config, idFile clusterid.File, kubeconfig string) error {
+	k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion, false)
+	if err != nil {
+		return fmt.Errorf("validating k8s version: %s", config.KubernetesVersion)
+	}
+
+	loader := NewLoader(config.GetProvider(), k8sVersion, clusterid.GetClusterName(config.Name, idFile))
+	release, err := loader.loadRelease(chart, helm.WaitModeAtomic)
+	if err != nil {
+		return fmt.Errorf("loading chart: %w", err)
+	}
+	installer, err := helm.NewInstaller(logger.New(logger.PlainLog, -1), kubeconfig)
+	if err != nil {
+		return fmt.Errorf("creating installer: %w", err)
+	}
+	c.log.Debugf("Installing %s", chart.releaseName)
+	err = installer.InstallChart(context.Background(), release, nil)
+	if err != nil {
+		return fmt.Errorf("installing chart %s: %w", awsLBControllerInfo.chartName, err)
+	}
+	return nil
+}
+
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
 func (c *Client) Versions() (ServiceVersions, error) {
 	ciliumVersion, err := c.currentVersion(ciliumInfo.releaseName)
@@ -230,11 +237,11 @@ func (c *Client) Versions() (ServiceVersions, error) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
 
-	awsLBVersion, err := c.currentVersion(awsInfo.releaseName)
+	awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName)
 	if err != nil {
 		var releaseNotFoundError *ReleaseNotFoundError
 		if !errors.As(err, &releaseNotFoundError) {
-			return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsInfo.releaseName, err)
+			return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
 		}
 	}
 	return ServiceVersions{

@@ -11,14 +11,7 @@ go_library(
         "//internal/constants",
         "//internal/deploy/helm",
         "//internal/logger",
-        "//internal/retry",
         "@io_k8s_api//core/v1:core",
-        "@io_k8s_apimachinery//pkg/util/wait",
-        "@org_uber_go_zap//:zap",
-        "@sh_helm_helm_v3//pkg/action",
-        "@sh_helm_helm_v3//pkg/chart",
-        "@sh_helm_helm_v3//pkg/chart/loader",
-        "@sh_helm_helm_v3//pkg/cli",
     ],
 )
 

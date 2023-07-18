@@ -12,6 +12,7 @@ import (
 	"net"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
@@ -592,7 +593,7 @@ func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ hel
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallAWSLoadBalancerController(_ context.Context, _ helm.Release) error {
+func (s *stubHelmClient) InstallChart(_ context.Context, _ helm.Release, _ *time.Duration) error {
 	return s.ciliumError
 }
 
