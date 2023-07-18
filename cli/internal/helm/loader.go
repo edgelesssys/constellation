@@ -147,6 +147,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 }
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
+// IMPORTANT: .helmignore rules specifiying files in subdirectories are not applied (e.g. crds/kustomization.yaml)
 func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
@@ -600,6 +601,7 @@ func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
 // loadChartsDir loads from a directory.
 //
 // This loads charts only from directories.
+// IMPORTANT: .helmignore rules specifiying files in subdirectories are not applied (e.g. crds/kustomization.yaml)
 func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 	utf8bom := []byte{0xEF, 0xBB, 0xBF}
 	// Just used for errors.
