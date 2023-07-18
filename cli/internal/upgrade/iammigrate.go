@@ -55,6 +55,7 @@ func (c *IAMMigrateCmd) String() string {
 	return "iam migration"
 }
 
+// UpgradeID returns the upgrade ID.
 func (c *IAMMigrateCmd) UpgradeID() string {
 	return c.upgradeID
 }

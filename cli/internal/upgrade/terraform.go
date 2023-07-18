@@ -133,6 +133,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeID string) error {
 	return CleanUpTerraformMigrations(upgradeID, u.fileHandler)
 }
 
+// CleanUpTerraformMigrations cleans up the Terraform upgrade directory.
 func CleanUpTerraformMigrations(upgradeID string, fileHandler file.Handler) error {
 	cleanupFiles := []string{
 		filepath.Join(constants.UpgradeDir, upgradeID),
@@ -212,7 +213,7 @@ type tfClientCommon interface {
 }
 
 type tfTerraformClient interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
+	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
 	tfClientCommon
 }

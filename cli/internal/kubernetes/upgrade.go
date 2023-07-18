@@ -101,8 +101,15 @@ type Upgrader struct {
 // is private function to avoid construction outside this function.
 //
 //nolint:all
-func NewUpgradeID() upgradeID {
-	return upgradeID{"upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]}
+func NewUpgradeID(upgradeCmdKind UpgradeCmdKind) upgradeID {
+	str := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+	if upgradeCmdKind == UpgradeCmdKindCheck {
+		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
+		// Terraform state. The directory is deleted after the check is finished.
+		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
+		str += "-tmp"
+	}
+	return upgradeID{str}
 }
 
 type upgradeID struct {
@@ -114,20 +121,12 @@ func (u upgradeID) String() string {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind, upgradeID upgradeID) (*Upgrader, error) {
-	upgradeIDStr := upgradeID.String()
-	if upgradeCmdKind == UpgradeCmdKindCheck {
-		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
-		// Terraform state. The directory is deleted after the check is finished.
-		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
-		upgradeIDStr += "-tmp"
-	}
-
+func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeID upgradeID) (*Upgrader, error) {
 	u := &Upgrader{
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
 		log:          log,
-		upgradeID:    upgradeIDStr,
+		upgradeID:    upgradeID.String(),
 	}
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)

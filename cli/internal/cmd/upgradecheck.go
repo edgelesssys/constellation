@@ -63,13 +63,13 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	fileHandler := file.NewHandler(afero.NewOsFs())
 	flags, err := parseUpgradeCheckFlags(cmd)
 	if err != nil {
 		return err
 	}
-	upgradeID := kubernetes.NewUpgradeID()
-	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck, upgradeID)
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	upgradeID := kubernetes.NewUpgradeID(kubernetes.UpgradeCmdKindCheck)
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, upgradeID)
 	if err != nil {
 		return err
 	}
@@ -215,12 +215,21 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
-	u.log.Debugf("Planning Terraform migrations")
+	u.log.Debugf("Planning IAM migrations")
+	if u.iamMigrateCmd != nil {
+		hasIAMDiff, err := u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
+		if err != nil {
+			return fmt.Errorf("planning IAM migration: %w", err)
+		}
+		if !hasIAMDiff {
+			cmd.Println("  No IAM migrations are available.")
+		}
+	}
 
-	//_, err = u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
-	//if err != nil {
-	//	return fmt.Errorf("planning IAM migration: %w", err)
-	//}
+	u.log.Debugf("Planning Terraform migrations")
+	if err := u.checker.CheckTerraformMigrations(); err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
 
 	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
 	var awsZone string
@@ -231,10 +240,6 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	for _, migration := range manualMigrations {
 		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
 		u.checker.AddManualStateMigration(migration)
-	}
-
-	if err := u.checker.CheckTerraformMigrations(); err != nil {
-		return fmt.Errorf("checking workspace: %w", err)
 	}
 
 	vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
