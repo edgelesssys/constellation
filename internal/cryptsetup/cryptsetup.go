@@ -14,6 +14,7 @@ There should only be one instance using this package per process.
 package cryptsetup
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +23,13 @@ import (
 )
 
 const (
+	// ConstellationStateDiskTokenID is the ID of Constellation's state disk token.
+	ConstellationStateDiskTokenID = 0
+	// SetDiskInitialized is a flag to set the Constellation state disk token to initialized.
+	SetDiskInitialized = true
+	// SetDiskNotInitialized is a flag to set the Constellation state disk token to not initialized.
+	SetDiskNotInitialized = false
+
 	// FormatIntegrity is a flag to enable dm-integrity for a crypt device when formatting.
 	FormatIntegrity = true
 	// FormatNoIntegrity is a flag to disable dm-integrity for a crypt device when formatting.
@@ -220,6 +228,70 @@ func (c *CryptSetup) Resize(name string, newSize uint64) error {
 	return nil
 }
 
+// TokenJSONGet gets the JSON data for a token.
+func (c *CryptSetup) TokenJSONGet(token int) (string, error) {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+	if c.device == nil {
+		return "", errDeviceNotOpen
+	}
+	json, err := c.device.TokenJSONGet(token)
+	if err != nil {
+		return "", fmt.Errorf("getting JSON data for token %d: %w", token, err)
+	}
+	return json, nil
+}
+
+// TokenJSONSet sets the JSON data for a token.
+// The JSON data must be a valid LUKS2 token.
+// Required fields are:
+//   - type [string] the token type (tokens with luks2- prefix are reserved)
+//   - keyslots [array] the array of keyslot objects names that are assigned to the token
+//
+// Returns the allocated token ID on success.
+func (c *CryptSetup) TokenJSONSet(token int, json string) (int, error) {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+	if c.device == nil {
+		return -1, errDeviceNotOpen
+	}
+	tokenID, err := c.device.TokenJSONSet(token, json)
+	if err != nil {
+		return -1, fmt.Errorf("setting JSON data for token %d: %w", token, err)
+	}
+	return tokenID, nil
+}
+
+// SetConstellationStateDiskToken sets the Constellation state disk token.
+func (c *CryptSetup) SetConstellationStateDiskToken(diskIsInitialized bool) error {
+	token := constellationLUKS2Token{
+		Type:              "constellation-state-disk",
+		Keyslots:          []string{},
+		DiskIsInitialized: diskIsInitialized,
+	}
+	json, err := json.Marshal(token)
+	if err != nil {
+		return fmt.Errorf("marshaling token: %w", err)
+	}
+	if _, err := c.device.TokenJSONSet(ConstellationStateDiskTokenID, string(json)); err != nil {
+		return fmt.Errorf("setting token: %w", err)
+	}
+	return nil
+}
+
+// ConstellationStateDiskTokenIsInitialized returns true if the Constellation state disk token is set to initialized.
+func (c *CryptSetup) ConstellationStateDiskTokenIsInitialized() bool {
+	stateDiskToken, err := c.device.TokenJSONGet(ConstellationStateDiskTokenID)
+	if err != nil {
+		return false
+	}
+	var token constellationLUKS2Token
+	if err := json.Unmarshal([]byte(stateDiskToken), &token); err != nil {
+		return false
+	}
+	return token.DiskIsInitialized
+}
+
 // Wipe overwrites the device with zeros to initialize integrity checksums.
 func (c *CryptSetup) Wipe(
 	name string, blockWipeSize int, flags int, logCallback func(size, offset uint64), logFrequency time.Duration,
@@ -264,6 +336,12 @@ func (c *CryptSetup) Wipe(
 	return nil
 }
 
+type constellationLUKS2Token struct {
+	Type              string   `json:"type"`
+	Keyslots          []string `json:"keyslots"`
+	DiskIsInitialized bool     `json:"diskIsInitialized"`
+}
+
 type cryptDevice interface {
 	ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error
 	ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error
@@ -274,5 +352,7 @@ type cryptDevice interface {
 	KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error
 	KeyslotChangeByPassphrase(currentKeyslot, newKeyslot int, currentPassphrase, newPassphrase string) error
 	Resize(name string, newSize uint64) error
+	TokenJSONGet(token int) (string, error)
+	TokenJSONSet(token int, json string) (int, error)
 	Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error
 }

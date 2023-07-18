@@ -413,6 +413,10 @@ func (s *stubMapper) UnmapDisk(string) error {
 	return s.unmapDiskErr
 }
 
+func (s *stubMapper) SetDiskToInitialized() error {
+	return nil
+}
+
 type stubMounter struct {
 	mountCalled   bool
 	mountErr      error

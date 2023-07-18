@@ -24,23 +24,30 @@ import (
 
 // DiskEncryption handles actions for formatting and mapping crypt devices.
 type DiskEncryption struct {
-	device cryptDevice
-	log    *logger.Logger
+	device     cryptDevice
+	devicePath string
+	log        *logger.Logger
 }
 
 // New creates a new crypt device for the device at path.
 func New(path string, log *logger.Logger) (*DiskEncryption, func(), error) {
 	device := cryptsetup.New()
-	free, err := device.Init(path)
+	_, err := device.Init(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("initializing crypt device for disk %q: %w", path, err)
 	}
-	return &DiskEncryption{device: device, log: log}, free, nil
+	d := &DiskEncryption{device: device, devicePath: path, log: log}
+	return d, d.free, nil
 }
 
-// IsLUKSDevice returns true if the device is formatted as a LUKS device.
-func (d *DiskEncryption) IsLUKSDevice() bool {
-	return d.device.LoadLUKS2() == nil
+// IsInitialized returns true if the device is formatted as a LUKS device,
+// and has been successfully initialized before (successfully joined a cluster).
+func (d *DiskEncryption) IsInitialized() bool {
+	if err := d.device.LoadLUKS2(); err != nil {
+		return false
+	}
+
+	return d.device.ConstellationStateDiskTokenIsInitialized()
 }
 
 // DiskUUID gets the device's UUID.
@@ -50,6 +57,14 @@ func (d *DiskEncryption) DiskUUID() (string, error) {
 
 // FormatDisk formats the disk and adds passphrase in keyslot 0.
 func (d *DiskEncryption) FormatDisk(passphrase string) error {
+	// Successfully calling LoadLUKS2() before FormatDisk() will cause format to fail.
+	// To make sure format is idempotent, we need to run it on a freshly initialized device.
+	// Therefore we free the device and reinitialize it.
+	d.free()
+	if _, err := d.device.Init(d.devicePath); err != nil {
+		return fmt.Errorf("re-initializing crypt device for disk %q: %w", d.devicePath, err)
+	}
+
 	if err := d.device.Format(cryptsetup.FormatIntegrity); err != nil {
 		return fmt.Errorf("formatting disk: %w", err)
 	}
@@ -63,6 +78,9 @@ func (d *DiskEncryption) FormatDisk(passphrase string) error {
 		return fmt.Errorf("wiping disk: %w", err)
 	}
 
+	if err := d.device.SetConstellationStateDiskToken(cryptsetup.SetDiskNotInitialized); err != nil {
+		return fmt.Errorf("setting disk token: %w", err)
+	}
 	return nil
 }
 
@@ -96,13 +114,21 @@ func (d *DiskEncryption) Wipe(blockWipeSize int) error {
 	return nil
 }
 
+func (d *DiskEncryption) free() {
+	d.device.Free()
+}
+
 type cryptDevice interface {
 	ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error
 	ActivateByVolumeKey(deviceName string, volumeKey string, volumeKeySize int, flags int) error
 	Deactivate(deviceName string) error
 	Format(integrity bool) error
+	Free()
 	GetUUID() (string, error)
+	Init(path string) (func(), error)
 	LoadLUKS2() error
 	KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error
+	SetConstellationStateDiskToken(diskIsInitialized bool) error
+	ConstellationStateDiskTokenIsInitialized() bool
 	Wipe(name string, wipeBlockSize int, flags int, logCallback func(size, offset uint64), logFrequency time.Duration) error
 }
