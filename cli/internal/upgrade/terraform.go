@@ -23,11 +23,12 @@ import (
 )
 
 // NewTerraformUpgrader returns a new TerraformUpgrader.
-func NewTerraformUpgrader(tfClient tfClient, outWriter io.Writer) (*TerraformUpgrader, error) {
+func NewTerraformUpgrader(tfClient tfClient, outWriter io.Writer, fileHandler file.Handler) (*TerraformUpgrader, error) {
 	return &TerraformUpgrader{
 		tf:            tfClient,
 		policyPatcher: cloudcmd.NewAzurePolicyPatcher(),
 		outWriter:     outWriter,
+		fileHandler:   fileHandler,
 	}, nil
 }
 
@@ -36,6 +37,7 @@ type TerraformUpgrader struct {
 	tf            tfClient
 	policyPatcher policyPatcher
 	outWriter     io.Writer
+	fileHandler   file.Handler
 }
 
 // TerraformUpgradeOptions are the options used for the Terraform upgrade.
@@ -46,21 +48,18 @@ type TerraformUpgradeOptions struct {
 	CSP cloudprovider.Provider
 	// Vars are the Terraform variables used for the upgrade.
 	Vars terraform.Variables
-	// OutputFile is the file to write the Terraform output to.
-	OutputFile string
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
-func (u *TerraformUpgrader) CheckTerraformMigrations(fileHandler file.Handler, upgradeID string) error {
+func (u *TerraformUpgrader) CheckTerraformMigrations(upgradeID string) error {
 	var existingFiles []string
 	filesToCheck := []string{
-		constants.TerraformMigrationOutputFile,
 		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
 	}
 
 	for _, f := range filesToCheck {
-		if err := checkFileExists(fileHandler, &existingFiles, f); err != nil {
+		if err := checkFileExists(u.fileHandler, &existingFiles, f); err != nil {
 			return fmt.Errorf("checking terraform migrations: %w", err)
 		}
 	}
@@ -89,6 +88,7 @@ func checkFileExists(fileHandler file.Handler, existingFiles *[]string, filename
 // If a diff exists, it's being written to the upgrader's output writer. It also returns
 // a bool indicating whether a diff exists.
 func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) (bool, error) {
+	// Prepare the new Terraform workspace and backup the old one
 	err := u.tf.PrepareUpgradeWorkspace(
 		filepath.Join("terraform", strings.ToLower(opts.CSP.String())),
 		constants.TerraformWorkingDir,
@@ -98,6 +98,14 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 	)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
+	}
+
+	// Backup the old constellation-id.json file
+	if err := u.fileHandler.CopyFile(
+		constants.ClusterIDsFileName,
+		filepath.Join(constants.UpgradeDir, upgradeID, constants.ClusterIDsFileName+".old"),
+	); err != nil {
+		return false, fmt.Errorf("backing up %s: %w", constants.ClusterIDsFileName, err)
 	}
 
 	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile)
@@ -116,13 +124,13 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
-func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler, upgradeID string) error {
+func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeID string) error {
 	cleanupFiles := []string{
 		filepath.Join(constants.UpgradeDir, upgradeID),
 	}
 
 	for _, f := range cleanupFiles {
-		if err := fileHandler.RemoveAll(f); err != nil {
+		if err := u.fileHandler.RemoveAll(f); err != nil {
 			return fmt.Errorf("cleaning up file %s: %w", f, err)
 		}
 	}
@@ -134,7 +142,7 @@ func (u *TerraformUpgrader) CleanUpTerraformMigrations(fileHandler file.Handler,
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts TerraformUpgradeOptions, upgradeID string) error {
+func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) error {
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel)
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
@@ -155,20 +163,34 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, fileHa
 		AttestationURL: tfOutput.AttestationURL,
 	}
 
-	if err := fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
+	if err := u.fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
 		return fmt.Errorf("removing old terraform directory: %w", err)
 	}
 
-	if err := fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
+	if err := u.fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
 		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
-	if err := fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
+	if err := u.fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
 		return fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 
-	if err := fileHandler.WriteJSON(opts.OutputFile, outputFileContents); err != nil {
-		return fmt.Errorf("writing terraform output to file: %w", err)
+	if err := u.mergeClusterIDFile(outputFileContents); err != nil {
+		return fmt.Errorf("merging migration output into %s: %w", constants.ClusterIDsFileName, err)
+	}
+
+	return nil
+}
+
+// mergeClusterIDFile merges the output of the migration into the constellation-id.json file.
+func (u *TerraformUpgrader) mergeClusterIDFile(migrationOutput clusterid.File) error {
+	idFile := &clusterid.File{}
+	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFileName, idFile); err != nil {
+		return fmt.Errorf("reading %s: %w", constants.ClusterIDsFileName, err)
+	}
+
+	if err := u.fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile.Merge(migrationOutput), file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing %s: %w", constants.ClusterIDsFileName, err)
 	}
 
 	return nil

@@ -97,7 +97,7 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
+func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
 	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
@@ -143,7 +143,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgrade
 	}
 	u.tfClient = tfClient
 
-	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter)
+	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter, fileHandler)
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform upgrader: %w", err)
 	}
@@ -160,14 +160,14 @@ func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
-func (u *Upgrader) CheckTerraformMigrations(fileHandler file.Handler) error {
-	return u.tfUpgrader.CheckTerraformMigrations(fileHandler, u.upgradeID)
+func (u *Upgrader) CheckTerraformMigrations() error {
+	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
-func (u *Upgrader) CleanUpTerraformMigrations(fileHandler file.Handler) error {
-	return u.tfUpgrader.CleanUpTerraformMigrations(fileHandler, u.upgradeID)
+func (u *Upgrader) CleanUpTerraformMigrations() error {
+	return u.tfUpgrader.CleanUpTerraformMigrations(u.upgradeID)
 }
 
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
@@ -181,8 +181,8 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, fileHandler file.Handler, opts upgrade.TerraformUpgradeOptions) error {
-	return u.tfUpgrader.ApplyTerraformMigrations(ctx, fileHandler, opts, u.upgradeID)
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) error {
+	return u.tfUpgrader.ApplyTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
 // UpgradeHelmServices upgrade helm services.

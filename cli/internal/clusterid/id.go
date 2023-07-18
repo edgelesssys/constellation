@@ -28,3 +28,38 @@ type File struct {
 	// It is only set if the cluster is created on Azure.
 	AttestationURL string `json:"attestationURL,omitempty"`
 }
+
+// Merge merges the other file into the current file and returns the result.
+// If a field is set in both files, the value of the other file is used.
+// This does in-place changes on the current file.
+func (f *File) Merge(other File) *File {
+	if other.ClusterID != "" {
+		f.ClusterID = other.ClusterID
+	}
+
+	if other.OwnerID != "" {
+		f.OwnerID = other.OwnerID
+	}
+
+	if other.UID != "" {
+		f.UID = other.UID
+	}
+
+	if other.CloudProvider != cloudprovider.Unknown {
+		f.CloudProvider = other.CloudProvider
+	}
+
+	if other.IP != "" {
+		f.IP = other.IP
+	}
+
+	if other.InitSecret != nil {
+		f.InitSecret = other.InitSecret
+	}
+
+	if other.AttestationURL != "" {
+		f.AttestationURL = other.AttestationURL
+	}
+
+	return f
+}
