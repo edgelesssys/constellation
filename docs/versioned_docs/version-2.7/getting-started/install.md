@@ -252,6 +252,7 @@ To [create the IAM configuration](../workflows/config.md#creating-an-iam-configu
                 "iam:CreateRole",
                 "iam:DeleteInstanceProfile",
                 "iam:DeletePolicy",
+                "iam:DeletePolicyVersion",
                 "iam:DeleteRole",
                 "iam:DetachRolePolicy",
                 "iam:GetInstanceProfile",
