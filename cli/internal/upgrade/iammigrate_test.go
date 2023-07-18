@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package terraform
+package upgrade
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -24,16 +25,11 @@ import (
 func TestIAMMigrate(t *testing.T) {
 	upgradeID := "test-upgrade"
 	upgradeDir := filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir)
-	tfClient, err := New(context.Background(), filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
-	require.NoError(t, err)
 	fs, file := setupMemFSAndFileHandler(t, []string{"terraform.tfvars", "terraform.tfstate"}, []byte("OLD"))
-	tfClient.file = file
-
 	// act
-	fakeTfClient := &tfClientStub{tfClient, upgradeID}
-	sut := &IAMMigrateCmd{fakeTfClient, upgradeID, cloudprovider.AWS, LogLevelDebug}
-	require.NoError(t, err)
-	hasDiff, err := sut.Plan(context.Background(), bytes.NewBuffer(nil))
+	fakeTfClient := &tfClientStub{upgradeID, file}
+	sut := &IAMMigrateCmd{fakeTfClient, upgradeID, cloudprovider.AWS, terraform.LogLevelDebug}
+	hasDiff, err := sut.Plan(context.Background(), file, bytes.NewBuffer(nil))
 	// assert
 	assert.NoError(t, err)
 	assert.False(t, hasDiff)
@@ -82,39 +78,35 @@ func setupMemFSAndFileHandler(t *testing.T, files []string, content []byte) (afe
 }
 
 type tfClientStub struct {
-	realClient *Client
-	upgradeID  string
+	upgradeID string
+	file      file.Handler
 }
 
-func (t *tfClientStub) PrepareIAMUpgradeWorkspace(rootDir, workingDir, newWorkingDir, backupDir string) error {
-	return t.realClient.PrepareIAMUpgradeWorkspace(rootDir, workingDir, newWorkingDir, backupDir)
-}
-
-func (t *tfClientStub) Plan(_ context.Context, _ LogLevel, _ string) (bool, error) {
+func (t *tfClientStub) Plan(_ context.Context, _ terraform.LogLevel, _ string) (bool, error) {
 	return false, nil
 }
 
-func (t *tfClientStub) ShowPlan(_ context.Context, _ LogLevel, _ string, _ io.Writer) error {
+func (t *tfClientStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ string, _ io.Writer) error {
 	return nil
 }
 
-func (t *tfClientStub) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider, _ LogLevel) (IAMOutput, error) {
+func (t *tfClientStub) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
-	err := t.realClient.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
+	err := t.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
 	if err != nil {
-		return IAMOutput{}, err
+		return terraform.IAMOutput{}, err
 	}
-	err = t.realClient.file.Write(filepath.Join(upgradeDir, "terraform.tfvars"), []byte("NEW"))
+	err = t.file.Write(filepath.Join(upgradeDir, "terraform.tfvars"), []byte("NEW"))
 	if err != nil {
-		return IAMOutput{}, err
+		return terraform.IAMOutput{}, err
 	}
-	err = t.realClient.file.Remove(filepath.Join(upgradeDir, "terraform.tfstate"))
+	err = t.file.Remove(filepath.Join(upgradeDir, "terraform.tfstate"))
 	if err != nil {
-		return IAMOutput{}, err
+		return terraform.IAMOutput{}, err
 	}
-	err = t.realClient.file.Write(filepath.Join(upgradeDir, "terraform.tfstate"), []byte("NEW"))
+	err = t.file.Write(filepath.Join(upgradeDir, "terraform.tfstate"), []byte("NEW"))
 	if err != nil {
-		return IAMOutput{}, err
+		return terraform.IAMOutput{}, err
 	}
-	return IAMOutput{}, nil
+	return terraform.IAMOutput{}, nil
 }

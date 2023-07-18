@@ -158,7 +158,7 @@ func TestUpgradeApply(t *testing.T) {
 
 type migrationExecutorPlaceholder struct{}
 
-func (d *migrationExecutorPlaceholder) executeMigration(_ *cobra.Command, _ file.Handler, _ terraform.MigrationCmd, _ upgradeApplyFlags) error {
+func (d *migrationExecutorPlaceholder) executeMigration(_ *cobra.Command, _ file.Handler, _ upgrade.MigrationCmd, _ upgradeApplyFlags) error {
 	return nil
 }
 

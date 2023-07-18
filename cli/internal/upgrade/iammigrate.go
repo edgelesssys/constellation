@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package terraform
+package upgrade
 
 import (
 	"context"
@@ -13,36 +13,31 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-type tfClient interface {
-	PrepareIAMUpgradeWorkspace(rootDir, workingDir, newWorkingDir, backupDir string) error
-	Plan(ctx context.Context, logLevel LogLevel, planFile string) (bool, error)
-	ShowPlan(ctx context.Context, logLevel LogLevel, planFile string, outWriter io.Writer) error
-	CreateIAMConfig(ctx context.Context, csp cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error)
-}
-
 // MigrationCmd is an interface for all terraform upgrade / migration commands.
 type MigrationCmd interface {
-	Plan(ctx context.Context, outWriter io.Writer) (bool, error)
+	CheckTerraformMigrations(file file.Handler) error
+	Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error)
 	Apply(ctx context.Context, fileHandler file.Handler) error
 	String() string
 }
 
 // IAMMigrateCmd is a terraform migration command for IAM.
 type IAMMigrateCmd struct {
-	tf        tfClient
+	tf        tfIAMClient
 	upgradeID string
 	csp       cloudprovider.Provider
-	logLevel  LogLevel
+	logLevel  terraform.LogLevel
 }
 
 // NewIAMMigrateCmd creates a new IAMMigrateCmd.
-func NewIAMMigrateCmd(ctx context.Context, upgradeID string, csp cloudprovider.Provider, logLevel LogLevel) (*IAMMigrateCmd, error) {
-	tfClient, err := New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
+func NewIAMMigrateCmd(ctx context.Context, upgradeID string, csp cloudprovider.Provider, logLevel terraform.LogLevel) (*IAMMigrateCmd, error) {
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -59,11 +54,16 @@ func (c *IAMMigrateCmd) String() string {
 	return "iam migration"
 }
 
+// CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
+func (c *IAMMigrateCmd) CheckTerraformMigrations(file file.Handler) error {
+	return CheckTerraformMigrations(file, c.upgradeID, constants.TerraformIAMUpgradeBackupDir)
+}
+
 // Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
 // TODO put outWriter as argument.
-func (c *IAMMigrateCmd) Plan(ctx context.Context, outWriter io.Writer) (bool, error) {
+func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error) {
 	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
-	err := c.tf.PrepareIAMUpgradeWorkspace(
+	err := terraform.PrepareIAMUpgradeWorkspace(file,
 		templateDir,
 		constants.TerraformIAMWorkingDir,
 		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),

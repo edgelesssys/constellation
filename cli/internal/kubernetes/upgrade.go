@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	internalk8s "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
@@ -113,7 +114,7 @@ func (u upgradeID) String() string {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, log debugLog, upgradeCmdKind UpgradeCmdKind, upgradeID upgradeID) (*Upgrader, error) {
+func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind, upgradeID upgradeID) (*Upgrader, error) {
 	upgradeIDStr := upgradeID.String()
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
@@ -177,7 +178,7 @@ func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
 func (u *Upgrader) CheckTerraformMigrations() error {
-	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID)
+	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID, constants.TerraformUpgradeBackupDir)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is

@@ -64,7 +64,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgradeID := kubernetes.NewUpgradeID()
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), log, kubernetes.UpgradeCmdKindApply, upgradeID)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply, upgradeID)
 	if err != nil {
 		return err
 	}
@@ -74,12 +74,11 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
 	applyCmd.migrationExecutor = &migrationCmdExecutor{&applyCmd}
-	iamMigrateCmd, err := terraform.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
-	// TODO put terraform migration into cmd as well
-	applyCmd.migrationCmds = []terraform.MigrationCmd{iamMigrateCmd}
+	applyCmd.migrationCmds = []upgrade.MigrationCmd{iamMigrateCmd}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
@@ -89,7 +88,7 @@ type upgradeApplyCmd struct {
 	configFetcher     attestationconfigapi.Fetcher
 	log               debugLog
 	migrationExecutor migrationExecutor
-	migrationCmds     []terraform.MigrationCmd
+	migrationCmds     []upgrade.MigrationCmd
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -125,7 +124,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 			return fmt.Errorf("executing %s migration: %w", migrationCmd.String(), err)
 		}
 	}
-
+	// not moving existing Terraform migrator because of planned apply refactor
 	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
@@ -225,9 +224,11 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 	return nil
 }
 
-func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error {
 	u.log.Debugf("Executing %s", migrateCmd.String())
-	hasDiff, err := migrateCmd.Plan(cmd.Context(), cmd.OutOrStdout()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	// TODO check migration
+	// upgrade.CheckTerraformMigrations()
+	hasDiff, err := migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
@@ -241,7 +242,7 @@ func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+				if err := u.upgrader.CleanUpTerraformMigrations(); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
@@ -498,16 +499,21 @@ type cloudUpgrader interface {
 }
 
 type migrationExecutor interface {
-	executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error
+	executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error
 }
 
 type migrationCmdExecutor struct {
 	*upgradeApplyCmd
 }
 
-func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd terraform.MigrationCmd, flags upgradeApplyFlags) error {
+// adapted from migrateTerraform().
+func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error {
 	u.log.Debugf("Executing %s", migrateCmd.String())
-	hasDiff, err := migrateCmd.Plan(cmd.Context(), cmd.OutOrStdout()) // u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
+	err := migrateCmd.CheckTerraformMigrations(file)
+	if err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
+	hasDiff, err := migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
@@ -521,23 +527,17 @@ func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Ha
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(file); err != nil {
+				if err := u.upgrader.CleanUpTerraformMigrations(); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
 			}
 		}
 		u.log.Debugf("Applying Terraform %s migrations", migrateCmd.String())
-		err := migrateCmd.Apply(cmd.Context(), file) // u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
+		err := migrateCmd.Apply(cmd.Context(), file)
 		if err != nil {
 			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
-
-		// TODO write this outside of apply migration
-		upgradeOutputFile := constants.TerraformMigrationOutputFile
-		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
-			"A backup of the pre-upgrade Terraform state has been written to: %s\n",
-			upgradeOutputFile, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir)) // TODO include log  of file write where the action happens?
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
