@@ -119,7 +119,7 @@ runs:
       if: inputs.fetchMeasurements
       shell: bash
       run: |
-        config fetch-measurements --debug --insecure
+        constellation config fetch-measurements --debug --insecure
 
     - name: Set image
       id: setImage
