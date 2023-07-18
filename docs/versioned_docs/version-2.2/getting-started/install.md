@@ -174,6 +174,7 @@ To create the AWS IAM policies, your user requires the following minimal set of 
                 "iam:ListPolicyVersions",
                 "iam:ListInstanceProfilesForRole",
                 "iam:DeletePolicy",
+                "iam:DeletePolicyVersion",
                 "iam:DeleteRole"
             ],
             "Resource": "*"
