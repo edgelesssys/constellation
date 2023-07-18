@@ -111,7 +111,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 
-	if err := u.migrateTerraform(cmd, fileHandler, u.imageFetcher, conf, flags); err != nil {
+	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
 
@@ -143,7 +143,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
-func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, file file.Handler, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
 	u.log.Debugf("Planning Terraform migrations")
 
 	if err := u.upgrader.CheckTerraformMigrations(); err != nil {
