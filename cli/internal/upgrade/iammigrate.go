@@ -25,6 +25,7 @@ type MigrationCmd interface {
 	Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error)
 	Apply(ctx context.Context, fileHandler file.Handler) error
 	String() string
+	UpgradeID() string
 }
 
 // IAMMigrateCmd is a terraform migration command for IAM.
@@ -52,6 +53,10 @@ func NewIAMMigrateCmd(ctx context.Context, upgradeID string, csp cloudprovider.P
 // String returns the name of the command.
 func (c *IAMMigrateCmd) String() string {
 	return "iam migration"
+}
+
+func (c *IAMMigrateCmd) UpgradeID() string {
+	return c.upgradeID
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.

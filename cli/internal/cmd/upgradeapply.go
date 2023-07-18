@@ -72,8 +72,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	imagefetcher := imagefetcher.New()
 	configFetcher := attestationconfigapi.NewFetcher()
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
-	applyCmd.migrationExecutor = &migrationCmdExecutor{&applyCmd}
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, migrationExecutor: &migrationCmdExecutor{log}}
 	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
@@ -217,42 +216,6 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
 			constants.ClusterIDsFileName, filepath.Join(constants.UpgradeDir, constants.TerraformUpgradeBackupDir))
-	} else {
-		u.log.Debugf("No Terraform diff detected")
-	}
-
-	return nil
-}
-
-func (u *upgradeApplyCmd) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error {
-	u.log.Debugf("Executing %s", migrateCmd.String())
-	// TODO check migration
-	// upgrade.CheckTerraformMigrations()
-	hasDiff, err := migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
-	if err != nil {
-		return fmt.Errorf("planning terraform migrations: %w", err)
-	}
-	if hasDiff {
-		// If there are any Terraform migrations to apply, ask for confirmation
-		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
-		if !flags.yes {
-			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
-			if err != nil {
-				return fmt.Errorf("asking for confirmation: %w", err)
-			}
-			if !ok {
-				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(); err != nil {
-					return fmt.Errorf("cleaning up workspace: %w", err)
-				}
-				return fmt.Errorf("aborted by user")
-			}
-		}
-		u.log.Debugf("Applying Terraform %s migrations", migrateCmd.String())
-		err := migrateCmd.Apply(cmd.Context(), file) // u.upgrader.ApplyTerraformMigrations(cmd.Context(), file, opts)
-		if err != nil {
-			return fmt.Errorf("applying terraform migrations: %w", err)
-		}
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -503,17 +466,26 @@ type migrationExecutor interface {
 }
 
 type migrationCmdExecutor struct {
-	*upgradeApplyCmd
+	log debugLog
 }
 
+// planMigration checks for Terraform migrations and asks for confirmation if there are any. The user input is returned as confirmedDiff.
 // adapted from migrateTerraform().
-func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error {
-	u.log.Debugf("Executing %s", migrateCmd.String())
-	err := migrateCmd.CheckTerraformMigrations(file)
+func (u *migrationCmdExecutor) planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd) (hasDiff bool, err error) {
+	u.log.Debugf("Planning %s", migrateCmd.String())
+	err = migrateCmd.CheckTerraformMigrations(file)
 	if err != nil {
-		return fmt.Errorf("checking workspace: %w", err)
+		return false, fmt.Errorf("checking workspace: %w", err)
 	}
-	hasDiff, err := migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
+	hasDiff, err = migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
+	if err != nil {
+		return hasDiff, fmt.Errorf("planning terraform migrations: %w", err)
+	}
+	return hasDiff, nil
+}
+
+func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd, flags upgradeApplyFlags) error {
+	hasDiff, err := u.planMigration(cmd, file, migrateCmd)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
@@ -527,7 +499,7 @@ func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Ha
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(); err != nil {
+				if err := upgrade.CleanUpTerraformMigrations(migrateCmd.UpgradeID(), file); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
@@ -541,7 +513,6 @@ func (u *migrationCmdExecutor) executeMigration(cmd *cobra.Command, file file.Ha
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
-
 	return nil
 }
 

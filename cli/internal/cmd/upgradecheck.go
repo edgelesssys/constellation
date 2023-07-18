@@ -68,7 +68,8 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck, kubernetes.NewUpgradeID())
+	upgradeID := kubernetes.NewUpgradeID()
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck, upgradeID)
 	if err != nil {
 		return err
 	}
@@ -76,6 +77,10 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
+	}
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
+	if err != nil {
+		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
 	up := &upgradeCheckCmd{
 		canUpgradeCheck: featureset.CanUpgradeCheck,
@@ -92,9 +97,11 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker:      checker,
-		imagefetcher: imagefetcher.New(),
-		log:          log,
+		checker:       checker,
+		imagefetcher:  imagefetcher.New(),
+		log:           log,
+		iamMigrateCmd: iamMigrateCmd,
+		planExecutor:  &migrationCmdExecutor{log},
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -141,12 +148,18 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}, nil
 }
 
+type planExecutor interface {
+	planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd) (hasDiff bool, err error)
+}
+
 type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
 	checker         upgradeChecker
 	imagefetcher    imageFetcher
 	log             debugLog
+	iamMigrateCmd   upgrade.MigrationCmd
+	planExecutor    planExecutor
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -203,6 +216,11 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	u.log.Debugf("Planning Terraform migrations")
+
+	//_, err = u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
+	//if err != nil {
+	//	return fmt.Errorf("planning IAM migration: %w", err)
+	//}
 
 	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
 	var awsZone string

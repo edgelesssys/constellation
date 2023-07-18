@@ -130,12 +130,16 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
 func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeID string) error {
+	return CleanUpTerraformMigrations(upgradeID, u.fileHandler)
+}
+
+func CleanUpTerraformMigrations(upgradeID string, fileHandler file.Handler) error {
 	cleanupFiles := []string{
 		filepath.Join(constants.UpgradeDir, upgradeID),
 	}
 
 	for _, f := range cleanupFiles {
-		if err := u.fileHandler.RemoveAll(f); err != nil {
+		if err := fileHandler.RemoveAll(f); err != nil {
 			return fmt.Errorf("cleaning up file %s: %w", f, err)
 		}
 	}
