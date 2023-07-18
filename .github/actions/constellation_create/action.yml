@@ -116,7 +116,7 @@ runs:
         fi
 
     - name: Update measurements for non-stable images
-      if:  inputs.fetchMeasurements
+      if: inputs.fetchMeasurements
       shell: bash
       run: |
         constellation config fetch-measurements
