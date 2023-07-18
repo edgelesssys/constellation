@@ -153,6 +153,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			conf.GetProvider(),
 			conf.GetAttestationConfig().GetVariant(),
 		)
+		cfm.log.Debugf("Measurements:\n", fetchedMeasurements)
 		if err != nil {
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
