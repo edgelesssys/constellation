@@ -256,10 +256,7 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
 
 		vars := &terraform.AzureClusterVariables{
-			Name:                 conf.Name,
-			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
-			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
-			ImageID:              imageRef,
+			Name: conf.Name,
 			NodeGroups: map[string]terraform.AzureNodeGroup{
 				"control_plane_default": {
 					Role:         "control-plane",
@@ -274,10 +271,14 @@ func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher 
 					DiskType:     conf.Provider.Azure.StateDiskType,
 				},
 			},
-			Location:   conf.Provider.Azure.Location,
-			SecureBoot: conf.Provider.Azure.SecureBoot,
-			CreateMAA:  toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-			Debug:      toPtr(conf.IsDebugCluster()),
+			Location:             conf.Provider.Azure.Location,
+			ImageID:              imageRef,
+			CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+			Debug:                toPtr(conf.IsDebugCluster()),
+			ConfidentialVM:       toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
+			SecureBoot:           conf.Provider.Azure.SecureBoot,
+			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
+			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
 		}
 		return vars, nil
 	case cloudprovider.GCP:
