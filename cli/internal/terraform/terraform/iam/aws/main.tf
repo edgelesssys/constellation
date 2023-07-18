@@ -51,18 +51,11 @@ resource "aws_iam_policy" "control_plane_policy" {
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:DescribeSecurityGroups",
-        "ec2:DescribeInstances",
-        "elasticloadbalancing:DescribeTargetGroups",
         "elasticloadbalancing:DescribeTargetGroupAttributes",
         "elasticloadbalancing:DescribeRules",
         "shield:GetSubscriptionState",
         "elasticloadbalancing:DescribeListeners",
-        "elasticloadbalancing:DescribeTargetHealth",
-        "elasticloadbalancing:ModifyTargetGroup",
         "elasticloadbalancing:ModifyTargetGroupAttributes",
-        "elasticloadbalancing:RegisterTargets",
-        "elasticloadbalancing:DeregisterTargets",
         "elasticloadbalancing:DescribeTags",
         "autoscaling:DescribeAutoScalingGroups",
         "autoscaling:DescribeLaunchConfigurations",
