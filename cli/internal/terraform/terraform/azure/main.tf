@@ -77,6 +77,10 @@ resource "azurerm_public_ip" "loadbalancer_ip" {
   allocation_method   = "Static"
   sku                 = "Standard"
   tags                = local.tags
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "azurerm_public_ip" "nat_gateway_ip" {
