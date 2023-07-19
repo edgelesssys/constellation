@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,18 +19,18 @@ func TestAWSClusterVariables(t *testing.T) {
 	vars := AWSClusterVariables{
 		Name: "cluster-name",
 		NodeGroups: map[string]AWSNodeGroup{
-			"control_plane_default": {
+			constants.ControlPlaneDefault: {
 				Role:            role.ControlPlane.TFString(),
 				StateDiskSizeGB: 30,
-				InitialCount:    1,
+				InitialCount:    toPtr(1),
 				Zone:            "eu-central-1b",
 				InstanceType:    "x1.foo",
 				DiskType:        "foodisk",
 			},
-			"worker_default": {
+			constants.WorkerDefault: {
 				Role:            role.Worker.TFString(),
 				StateDiskSizeGB: 30,
-				InitialCount:    2,
+				InitialCount:    toPtr(2),
 				Zone:            "eu-central-1c",
 				InstanceType:    "x1.bar",
 				DiskType:        "bardisk",
@@ -99,18 +100,18 @@ func TestGCPClusterVariables(t *testing.T) {
 		ImageID: "image-0123456789abcdef",
 		Debug:   true,
 		NodeGroups: map[string]GCPNodeGroup{
-			"control_plane_default": {
+			constants.ControlPlaneDefault: {
 				Role:            "control-plane",
 				StateDiskSizeGB: 30,
-				InitialCount:    1,
+				InitialCount:    toPtr(1),
 				Zone:            "eu-central-1a",
 				InstanceType:    "n2d-standard-4",
 				DiskType:        "pd-ssd",
 			},
-			"worker_default": {
+			constants.WorkerDefault: {
 				Role:            "worker",
 				StateDiskSizeGB: 10,
-				InitialCount:    1,
+				InitialCount:    toPtr(1),
 				Zone:            "eu-central-1b",
 				InstanceType:    "n2d-standard-8",
 				DiskType:        "pd-ssd",
@@ -170,7 +171,7 @@ func TestAzureClusterVariables(t *testing.T) {
 	vars := AzureClusterVariables{
 		Name: "cluster-name",
 		NodeGroups: map[string]AzureNodeGroup{
-			"control_plane_default": {
+			constants.ControlPlaneDefault: {
 				Role:         "ControlPlane",
 				InitialCount: to.Ptr(1),
 				InstanceType: "Standard_D2s_v3",
@@ -240,9 +241,9 @@ func TestOpenStackClusterVariables(t *testing.T) {
 		OpenstackPassword:       "my-password",
 		Debug:                   true,
 		NodeGroups: map[string]OpenStackNodeGroup{
-			"control_plane_default": {
+			constants.ControlPlaneDefault: {
 				Role:            "control-plane",
-				InitialCount:    1,
+				InitialCount:    toPtr(1),
 				Zone:            "az-01",
 				StateDiskType:   "performance-8",
 				StateDiskSizeGB: 30,
@@ -281,7 +282,7 @@ func TestQEMUClusterVariables(t *testing.T) {
 		NodeGroups: map[string]QEMUNodeGroup{
 			"control-plane": {
 				Role:         role.ControlPlane.TFString(),
-				InitialCount: 1,
+				InitialCount: toPtr(1),
 				DiskSize:     30,
 				CPUCount:     4,
 				MemorySize:   8192,
@@ -325,8 +326,4 @@ constellation_cmdline   = "console=ttyS0,115200n8"
 `
 	got := vars.String()
 	assert.Equal(t, want, got)
-}
-
-func toPtr[T any](v T) *T {
-	return &v
 }

@@ -19,6 +19,17 @@ type Variables interface {
 	fmt.Stringer
 }
 
+// ClusterVariables should be used in places where a cluster is created.
+type ClusterVariables interface {
+	Variables
+	// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
+	// GetCreateMAA does not follow Go's naming convention because we need to keep the CreateMAA property public for now.
+	// There are functions creating Variables objects outside of this package.
+	// These functions can only be moved into this package once we have introduced an interface for config.Config,
+	// since we do not want to introduce a dependency on config.Config in this package.
+	GetCreateMAA() *bool
+}
+
 // CommonVariables is user configuration for creating a cluster with Terraform.
 type CommonVariables struct {
 	// Name of the cluster.
@@ -64,6 +75,10 @@ type AWSClusterVariables struct {
 	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
+func (a *AWSClusterVariables) GetCreateMAA() *bool {
+	return nil
+}
+
 // AWSNodeGroup is a node group to create on AWS.
 type AWSNodeGroup struct {
 	// Role is the role of the node group.
@@ -71,7 +86,8 @@ type AWSNodeGroup struct {
 	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
 	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
 	// InitialCount is the initial number of nodes to create in the node group.
-	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// During upgrades this value is not set.
+	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
 	// Zone is the AWS availability-zone to use in the given region.
 	Zone string `hcl:"zone" cty:"zone"`
 	// InstanceType is the type of the EC2 instance to use.
@@ -121,6 +137,10 @@ type GCPClusterVariables struct {
 	NodeGroups map[string]GCPNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
+func (g *GCPClusterVariables) GetCreateMAA() *bool {
+	return nil
+}
+
 // GCPNodeGroup is a node group to create on GCP.
 type GCPNodeGroup struct {
 	// Role is the role of the node group.
@@ -128,7 +148,8 @@ type GCPNodeGroup struct {
 	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
 	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
 	// InitialCount is the initial number of nodes to create in the node group.
-	InitialCount int    `hcl:"initial_count" cty:"initial_count"`
+	// During upgrades this value is not set.
+	InitialCount *int   `hcl:"initial_count" cty:"initial_count"`
 	Zone         string `hcl:"zone" cty:"zone"`
 	InstanceType string `hcl:"instance_type" cty:"instance_type"`
 	DiskType     string `hcl:"disk_type" cty:"disk_type"`
@@ -186,6 +207,10 @@ type AzureClusterVariables struct {
 	SecureBoot *bool `hcl:"secure_boot" cty:"secure_boot"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
+}
+
+func (a *AzureClusterVariables) GetCreateMAA() *bool {
+	return a.CreateMAA
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -253,12 +278,17 @@ type OpenStackClusterVariables struct {
 	Debug bool `hcl:"debug" cty:"debug"`
 }
 
+func (o *OpenStackClusterVariables) GetCreateMAA() *bool {
+	return nil
+}
+
 // OpenStackNodeGroup is a node group to create on OpenStack.
 type OpenStackNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
 	// InitialCount is the number of instances to create.
-	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// InitialCount is optional for upgrades. OpenStack does not support upgrades yet but might in the future.
+	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
 	// Zone is the OpenStack availability zone to use.
 	Zone string `hcl:"zone" cty:"zone"`
 	// StateDiskType is the OpenStack disk type to use for the state disk.
@@ -313,6 +343,10 @@ type QEMUVariables struct {
 	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
 }
 
+func (q *QEMUVariables) GetCreateMAA() *bool {
+	return nil
+}
+
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *QEMUVariables) String() string {
 	// copy v object
@@ -333,7 +367,9 @@ type QEMUNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
 	// InitialCount is the number of instances to create.
-	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// InitialCount is optional for upgrades.
+	// Upgrades are not implemented for QEMU. The type is similar to other NodeGroup types for consistency.
+	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
 	// DiskSize is the size of the disk to allocate to each node, in GiB.
 	DiskSize int `hcl:"disk_size" cty:"disk_size"`
 	// CPUCount is the number of CPUs to allocate to each node.
@@ -345,4 +381,8 @@ type QEMUNodeGroup struct {
 func writeLinef(builder *strings.Builder, format string, a ...any) {
 	builder.WriteString(fmt.Sprintf(format, a...))
 	builder.WriteByte('\n')
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }

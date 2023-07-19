@@ -11,9 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
@@ -27,7 +27,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
-	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -141,6 +140,14 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	return nil
 }
 
+func getImage(ctx context.Context, conf *config.Config, fetcher imageFetcher) (string, error) {
+	// Fetch variables to execute Terraform script with
+	provider := conf.GetProvider()
+	attestationVariant := conf.GetAttestationConfig().GetVariant()
+	region := conf.GetRegion()
+	return fetcher.FetchReference(ctx, provider, attestationVariant, conf.Image, region)
+}
+
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
 func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags) error {
@@ -161,7 +168,12 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 		u.upgrader.AddManualStateMigration(migration)
 	}
 
-	vars, err := parseTerraformUpgradeVars(cmd, conf, fetcher)
+	imageRef, err := getImage(cmd.Context(), conf, fetcher)
+	if err != nil {
+		return fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	vars, err := cloudcmd.TerraformUpgradeVars(cmd.Context(), conf, imageRef)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -208,108 +220,6 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 	}
 
 	return nil
-}
-
-// parseTerraformUpgradeVars parses the variables required to execute the Terraform script with.
-func parseTerraformUpgradeVars(cmd *cobra.Command, conf *config.Config, fetcher imageFetcher) (terraform.Variables, error) {
-	// Fetch variables to execute Terraform script with
-	provider := conf.GetProvider()
-	attestationVariant := conf.GetAttestationConfig().GetVariant()
-	region := conf.GetRegion()
-	imageRef, err := fetcher.FetchReference(cmd.Context(), provider, attestationVariant, conf.Image, region)
-	if err != nil {
-		return nil, fmt.Errorf("fetching image reference: %w", err)
-	}
-
-	switch conf.GetProvider() {
-	case cloudprovider.AWS:
-		vars := &terraform.AWSClusterVariables{
-			Name: conf.Name,
-			NodeGroups: map[string]terraform.AWSNodeGroup{
-				"control_plane_default": {
-					Role:            role.ControlPlane.TFString(),
-					StateDiskSizeGB: conf.StateDiskSizeGB,
-					Zone:            conf.Provider.AWS.Zone,
-					InstanceType:    conf.Provider.AWS.InstanceType,
-					DiskType:        conf.Provider.AWS.StateDiskType,
-				},
-				"worker_default": {
-					Role:            role.Worker.TFString(),
-					StateDiskSizeGB: conf.StateDiskSizeGB,
-					Zone:            conf.Provider.AWS.Zone,
-					InstanceType:    conf.Provider.AWS.InstanceType,
-					DiskType:        conf.Provider.AWS.StateDiskType,
-				},
-			},
-			Region:                 conf.Provider.AWS.Region,
-			Zone:                   conf.Provider.AWS.Zone,
-			AMIImageID:             imageRef,
-			IAMProfileControlPlane: conf.Provider.AWS.IAMProfileControlPlane,
-			IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
-			Debug:                  conf.IsDebugCluster(),
-		}
-		return vars, nil
-	case cloudprovider.Azure:
-		// Azure Terraform provider is very strict about it's casing
-		imageRef = strings.Replace(imageRef, "CommunityGalleries", "communityGalleries", 1)
-		imageRef = strings.Replace(imageRef, "Images", "images", 1)
-		imageRef = strings.Replace(imageRef, "Versions", "versions", 1)
-
-		vars := &terraform.AzureClusterVariables{
-			Name: conf.Name,
-			NodeGroups: map[string]terraform.AzureNodeGroup{
-				"control_plane_default": {
-					Role:         "control-plane",
-					InstanceType: conf.Provider.Azure.InstanceType,
-					DiskSizeGB:   conf.StateDiskSizeGB,
-					DiskType:     conf.Provider.Azure.StateDiskType,
-				},
-				"worker_default": {
-					Role:         "worker",
-					InstanceType: conf.Provider.Azure.InstanceType,
-					DiskSizeGB:   conf.StateDiskSizeGB,
-					DiskType:     conf.Provider.Azure.StateDiskType,
-				},
-			},
-			Location:             conf.Provider.Azure.Location,
-			ImageID:              imageRef,
-			CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-			Debug:                toPtr(conf.IsDebugCluster()),
-			ConfidentialVM:       toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
-			SecureBoot:           conf.Provider.Azure.SecureBoot,
-			UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
-			ResourceGroup:        conf.Provider.Azure.ResourceGroup,
-		}
-		return vars, nil
-	case cloudprovider.GCP:
-		vars := &terraform.GCPClusterVariables{
-			Name: conf.Name,
-			NodeGroups: map[string]terraform.GCPNodeGroup{
-				"control_plane_default": {
-					Role:            role.ControlPlane.TFString(),
-					StateDiskSizeGB: conf.StateDiskSizeGB,
-					Zone:            conf.Provider.GCP.Zone,
-					InstanceType:    conf.Provider.GCP.InstanceType,
-					DiskType:        conf.Provider.GCP.StateDiskType,
-				},
-				"worker_default": {
-					Role:            role.Worker.TFString(),
-					StateDiskSizeGB: conf.StateDiskSizeGB,
-					Zone:            conf.Provider.GCP.Zone,
-					InstanceType:    conf.Provider.GCP.InstanceType,
-					DiskType:        conf.Provider.GCP.StateDiskType,
-				},
-			},
-			Project: conf.Provider.GCP.Project,
-			Region:  conf.Provider.GCP.Region,
-			Zone:    conf.Provider.GCP.Zone,
-			ImageID: imageRef,
-			Debug:   conf.IsDebugCluster(),
-		}
-		return vars, nil
-	default:
-		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
-	}
 }
 
 // handleInvalidK8sPatchVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.

@@ -11,6 +11,7 @@ go_library(
         "patch.go",
         "rollback.go",
         "terminate.go",
+        "terraform.go",
         "validators.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd",

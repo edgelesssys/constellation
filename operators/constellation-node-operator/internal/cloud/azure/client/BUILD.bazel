@@ -18,6 +18,7 @@ go_library(
     importpath = "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/azure/client",
     visibility = ["//operators/constellation-node-operator:__subpackages__"],
     deps = [
+        "//internal/constants",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//operators/constellation-node-operator/internal/cloud/api",
         "//operators/constellation-node-operator/internal/poller",
@@ -44,6 +45,7 @@ go_test(
     ],
     embed = [":client"],
     deps = [
+        "//internal/constants",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//operators/constellation-node-operator/internal/cloud/api",
         "//operators/constellation-node-operator/internal/poller",
