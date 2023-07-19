@@ -6,11 +6,10 @@ def node_maintainance_operator_deps():
     http_archive(
         name = "com_github_medik8s_node_maintainance_operator",
         urls = [
-            "https://cdn.confidential.cloud/constellation/cas/sha256/048323ffdb55787df9b93d85be93e4730f4495fba81b440dc6fe195408ec2533",
-            "https://github.com/medik8s/node-maintenance-operator/archive/refs/tags/v0.14.0.tar.gz",
+            "https://cdn.confidential.cloud/constellation/cas/sha256/df5ea2f9d982dd78770f2549333fd40aaf40e50a28deec9d7892f83cf9d1bdb2",
+            "https://github.com/medik8s/node-maintenance-operator/archive/refs/tags/v0.15.0.tar.gz",
         ],
-        sha256 = "048323ffdb55787df9b93d85be93e4730f4495fba81b440dc6fe195408ec2533",
-        strip_prefix = "node-maintenance-operator-0.14.0",
+        strip_prefix = "node-maintenance-operator-0.15.0",
         build_file_content = """
 api_v1beta1 = glob(["api/v1beta1/*.go"])
 filegroup(
@@ -20,4 +19,5 @@ filegroup(
 )
         """,
         type = "tar.gz",
+        sha256 = "df5ea2f9d982dd78770f2549333fd40aaf40e50a28deec9d7892f83cf9d1bdb2",
     )
