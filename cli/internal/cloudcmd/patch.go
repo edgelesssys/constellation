@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -55,10 +56,13 @@ func (p AzurePolicyPatcher) Patch(ctx context.Context, attestationURL string) er
 	if err != nil {
 		return fmt.Errorf("sending request: %w", err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("updating attestation policy: unexpected status code: %s", resp.Status)
+		buf := new(bytes.Buffer)
+		_, _ = buf.ReadFrom(resp.Body)
+		fmt.Printf("updating attestation policy: unexpected status code: %s with message %q", resp.Status, buf.String())
+		fmt.Println("Patching the attestations policy failed. Please patch the policy manually before continuing to initialize the cluster.")
 	}
 
 	return nil
