@@ -117,7 +117,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	}
 
 	return clusterid.File{
-		CloudProvider:  cloudprovider.Azure,
+		CloudProvider:  opts.Provider,
 		IP:             tfOutput.IP,
 		InitSecret:     []byte(tfOutput.Secret),
 		UID:            tfOutput.UID,

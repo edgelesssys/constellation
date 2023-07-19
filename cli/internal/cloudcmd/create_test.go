@@ -188,6 +188,7 @@ func TestCreator(t *testing.T) {
 			wantErr:               true,
 		},
 		"unknown provider": {
+			tfClient: &stubTerraformClient{},
 			provider: cloudprovider.Unknown,
 			config:   config.Default(),
 			wantErr:  true,
