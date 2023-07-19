@@ -27,7 +27,7 @@ type ClusterVariables interface {
 	// There are functions creating Variables objects outside of this package.
 	// These functions can only be moved into this package once we have introduced an interface for config.Config,
 	// since we do not want to introduce a dependency on config.Config in this package.
-	GetCreateMAA() *bool
+	GetCreateMAA() bool
 }
 
 // CommonVariables is user configuration for creating a cluster with Terraform.
@@ -77,8 +77,8 @@ type AWSClusterVariables struct {
 
 // GetCreateMAA gets the CreateMAA variable.
 // TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
-func (a *AWSClusterVariables) GetCreateMAA() *bool {
-	return nil
+func (a *AWSClusterVariables) GetCreateMAA() bool {
+	return false
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -142,8 +142,8 @@ type GCPClusterVariables struct {
 
 // GetCreateMAA gets the CreateMAA variable.
 // TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
-func (g *GCPClusterVariables) GetCreateMAA() *bool {
-	return nil
+func (g *GCPClusterVariables) GetCreateMAA() bool {
+	return false
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -216,8 +216,12 @@ type AzureClusterVariables struct {
 
 // GetCreateMAA gets the CreateMAA variable.
 // TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
-func (a *AzureClusterVariables) GetCreateMAA() *bool {
-	return a.CreateMAA
+func (a *AzureClusterVariables) GetCreateMAA() bool {
+	if a.CreateMAA == nil {
+		return false
+	}
+
+	return *a.CreateMAA
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -287,8 +291,8 @@ type OpenStackClusterVariables struct {
 
 // GetCreateMAA gets the CreateMAA variable.
 // TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
-func (o *OpenStackClusterVariables) GetCreateMAA() *bool {
-	return nil
+func (o *OpenStackClusterVariables) GetCreateMAA() bool {
+	return false
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -354,8 +358,8 @@ type QEMUVariables struct {
 
 // GetCreateMAA gets the CreateMAA variable.
 // TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
-func (q *QEMUVariables) GetCreateMAA() *bool {
-	return nil
+func (q *QEMUVariables) GetCreateMAA() bool {
+	return false
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
