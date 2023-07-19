@@ -204,6 +204,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	newServices := supported.service
 	if err := compatibility.IsValidUpgrade(current.service, supported.service); err != nil {
 		newServices = ""
+		u.log.Debugf("No valid service upgrades are available from %q to %q. The minor version can only drift by 1.\n", current.service, supported.service)
 	}
 
 	newKubernetes := filterK8sUpgrades(current.k8s, supported.k8s)

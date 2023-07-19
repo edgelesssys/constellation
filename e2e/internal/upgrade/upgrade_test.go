@@ -314,7 +314,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
 func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check")
+	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 
