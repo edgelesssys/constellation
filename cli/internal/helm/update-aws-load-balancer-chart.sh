@@ -37,7 +37,6 @@ git checkout
 cd "${callDir}"
 
 # remove values.yaml from upstream chart
-rm "${repo_tmp_dir}/${chart_dir}/values.yaml"
 # remove files being ignored in .helmignore due to wrong import of .helmignore in current implementation
 rm -r "${repo_tmp_dir}/${chart_dir}/ci"
 rm "${repo_tmp_dir}/${chart_dir}/crds/kustomization.yaml"
@@ -45,7 +44,7 @@ rm "${repo_tmp_dir}/${chart_dir}/test.yaml"
 
 # delete current chart
 # but keep values.yaml
-find "${chart_base_path:?}/${chart_name}" -mindepth 1 -maxdepth 1 ! -name "values.yaml" -exec rm -r {} +
+rm -r "${chart_base_path:?}/${chart_name}"
 
 # move new chart
 mkdir -p "${chart_base_path}/${chart_name}"

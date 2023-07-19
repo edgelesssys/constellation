@@ -17,10 +17,10 @@ type Release struct {
 
 // Releases bundles all helm releases to be deployed to Constellation.
 type Releases struct {
-	AWSLoadBalancerController Release
+	AWSLoadBalancerController *Release
 	Cilium                    Release
 	CertManager               Release
-	Operators                 Release
+	ConstellationOperators    Release
 	ConstellationServices     Release
 }
 

@@ -54,7 +54,7 @@ func (c *stubTerraformClient) CreateCluster(_ context.Context, _ terraform.LogLe
 	}, c.createClusterErr
 }
 
-func (c *stubTerraformClient) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
+func (c *stubTerraformClient) ApplyIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	return c.iamOutput, c.iamOutputErr
 }
 

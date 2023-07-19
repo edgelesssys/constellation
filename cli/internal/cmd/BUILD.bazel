@@ -27,6 +27,7 @@ go_library(
         "spinner.go",
         "status.go",
         "terminate.go",
+        "tfmigrationclient.go",
         "upgrade.go",
         "upgradeapply.go",
         "upgradecheck.go",

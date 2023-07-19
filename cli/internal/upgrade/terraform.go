@@ -23,7 +23,7 @@ import (
 )
 
 // NewTerraformUpgrader returns a new TerraformUpgrader.
-func NewTerraformUpgrader(tfClient tfTerraformClient, outWriter io.Writer, fileHandler file.Handler) (*TerraformUpgrader, error) {
+func NewTerraformUpgrader(tfClient tfResourceClient, outWriter io.Writer, fileHandler file.Handler) (*TerraformUpgrader, error) {
 	return &TerraformUpgrader{
 		tf:            tfClient,
 		policyPatcher: cloudcmd.NewAzurePolicyPatcher(),
@@ -34,7 +34,7 @@ func NewTerraformUpgrader(tfClient tfTerraformClient, outWriter io.Writer, fileH
 
 // TerraformUpgrader is responsible for performing Terraform migrations on cluster upgrades.
 type TerraformUpgrader struct {
-	tf            tfTerraformClient
+	tf            tfResourceClient
 	policyPatcher policyPatcher
 	outWriter     io.Writer
 	fileHandler   file.Handler
@@ -51,7 +51,7 @@ type TerraformUpgradeOptions struct {
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
-func CheckTerraformMigrations(file file.Handler, upgradeID, upgradeSubDir string) error {
+func checkTerraformMigrations(file file.Handler, upgradeID, upgradeSubDir string) error {
 	var existingFiles []string
 	filesToCheck := []string{
 		filepath.Join(constants.UpgradeDir, upgradeID, upgradeSubDir),
@@ -72,7 +72,7 @@ func CheckTerraformMigrations(file file.Handler, upgradeID, upgradeSubDir string
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
 func (u *TerraformUpgrader) CheckTerraformMigrations(upgradeID, upgradeSubDir string) error {
-	return CheckTerraformMigrations(u.fileHandler, upgradeID, upgradeSubDir)
+	return checkTerraformMigrations(u.fileHandler, upgradeID, upgradeSubDir)
 }
 
 // checkFileExists checks whether a file exists and adds it to the existingFiles slice if it does.
@@ -206,20 +206,21 @@ func (u *TerraformUpgrader) mergeClusterIDFile(migrationOutput clusterid.File) e
 	return nil
 }
 
-// a tfTerraformClient performs the Terraform interactions in an upgrade.
 type tfClientCommon interface {
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
 }
 
-type tfTerraformClient interface {
+// tfResourceClient is a Terraform client for managing cluster resources.
+type tfResourceClient interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
 	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
 	tfClientCommon
 }
 
+// tfIAMClient is a Terraform client for managing IAM resources.
 type tfIAMClient interface {
-	CreateIAMConfig(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+	ApplyIAMConfig(ctx context.Context, csp cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
 	tfClientCommon
 }
 

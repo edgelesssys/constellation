@@ -6,7 +6,10 @@ go_library(
     srcs = ["id.go"],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/clusterid",
     visibility = ["//cli:__subpackages__"],
-    deps = ["//internal/cloud/cloudprovider"],
+    deps = [
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+    ],
 )
 
 go_test(

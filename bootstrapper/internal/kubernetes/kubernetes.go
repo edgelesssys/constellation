@@ -221,7 +221,7 @@ func (k *KubeWrapper) InitCluster(
 		cloudServiceAccountURI: cloudServiceAccountURI,
 		loadBalancerIP:         controlPlaneIP,
 	}
-	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
+	constellationVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
@@ -232,19 +232,19 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Constellation microservices")
-	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
+	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationServices, constellationVals); err != nil {
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
 	// cert-manager is necessary for our operator deployments.
 	log.Infof("Installing cert-manager")
-	if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
 
-	if helmReleases.AWSLoadBalancerController.ReleaseName != "" {
+	if helmReleases.AWSLoadBalancerController != nil {
 		log.Infof("Installing AWS Load Balancer Controller")
-		if err = k.helmClient.InstallChart(ctx, helmReleases.AWSLoadBalancerController, nil); err != nil {
+		if err = k.helmClient.InstallChart(ctx, *helmReleases.AWSLoadBalancerController); err != nil {
 			return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}
@@ -255,7 +255,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing operators")
-	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
+	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationOperators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 

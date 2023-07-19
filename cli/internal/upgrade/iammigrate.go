@@ -19,8 +19,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-// MigrationCmd is an interface for all terraform upgrade / migration commands.
-type MigrationCmd interface {
+// TfMigrationCmd is an interface for all terraform upgrade / migration commands.
+type TfMigrationCmd interface {
 	CheckTerraformMigrations(file file.Handler) error
 	Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error)
 	Apply(ctx context.Context, fileHandler file.Handler) error
@@ -62,11 +62,10 @@ func (c *IAMMigrateCmd) UpgradeID() string {
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 func (c *IAMMigrateCmd) CheckTerraformMigrations(file file.Handler) error {
-	return CheckTerraformMigrations(file, c.upgradeID, constants.TerraformIAMUpgradeBackupDir)
+	return checkTerraformMigrations(file, c.upgradeID, constants.TerraformIAMUpgradeBackupDir)
 }
 
 // Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
-// TODO put outWriter as argument.
 func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error) {
 	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
 	err := terraform.PrepareIAMUpgradeWorkspace(file,
@@ -95,7 +94,7 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter i
 
 // Apply applies the Terraform IAM migrations for the Constellation upgrade.
 func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) error {
-	_, err := c.tf.CreateIAMConfig(ctx, c.csp, c.logLevel) // TODO rename CreateIAMConfig to ApplyIAMConfig to reflect usage for migration too
+	_, err := c.tf.ApplyIAMConfig(ctx, c.csp, c.logLevel)
 
 	// TODO: put in template, since moving files is also done in other TF migrations
 	if err := fileHandler.RemoveAll(constants.TerraformIAMWorkingDir); err != nil {

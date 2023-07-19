@@ -52,9 +52,6 @@ func (e *InvalidUpgradeError) Error() string {
 
 // EnsurePrefixV returns the input string prefixed with the letter "v", if the string doesn't already start with that letter.
 func EnsurePrefixV(str string) string {
-	if str == "" {
-		return str
-	}
 	if strings.HasPrefix(str, "v") {
 		return str
 	}

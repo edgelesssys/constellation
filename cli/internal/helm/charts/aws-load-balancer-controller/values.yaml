@@ -2,11 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1 # TODO from 2
+replicaCount: 2
 
 image:
   repository: public.ecr.aws/eks/aws-load-balancer-controller
-  tag: v2.5.4
+  tag: v2.5.3
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -61,16 +61,9 @@ resources: {}
 # ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
 priorityClassName: system-cluster-critical
 
-# TODO; changed
-nodeSelector: {
-  node-role.kubernetes.io/control-plane: ""
-}
+nodeSelector: {}
 
-# TODO: changed
-tolerations:
-  - key: node-role.kubernetes.io/control-plane
-    operator: Exists
-    effect: NoSchedule
+tolerations: []
 
 # affinity specifies a custom affinity for the controller pods
 affinity: {}
@@ -222,7 +215,7 @@ targetgroupbindingMaxConcurrentReconciles:
 # Maximum duration of exponential backoff for targetGroupBinding reconcile failures
 targetgroupbindingMaxExponentialBackoffDelay:
 
-# Period at which the controller forces the repopulation of its local object stores. (default 10h0m0s)
+# Period at which the controller forces the repopulation of its local object stores. (default 1h0m0s)
 syncPeriod:
 
 # Namespace the controller watches for updates to Kubernetes objects, If empty, all namespaces are watched.

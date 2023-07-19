@@ -14,7 +14,6 @@ import (
 	"net"
 	"os/exec"
 	"strconv"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -36,24 +35,6 @@ func New(log *logger.Logger) (*Client, error) {
 		return nil, err
 	}
 	return &Client{installer, log}, nil
-}
-
-// InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
-func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
-	mergedVals := helm.MergeMaps(release.Values, extraVals)
-	return h.InstallChartWithValues(ctx, release, mergedVals, nil)
-}
-
-// InstallCertManager installs the cert-manager chart.
-func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
-	timeout := 10 * time.Minute
-	return h.InstallChart(ctx, release, &timeout)
-}
-
-// InstallOperators installs the Constellation Operators.
-func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
-	mergedVals := helm.MergeMaps(release.Values, extraVals)
-	return h.InstallChartWithValues(ctx, release, mergedVals, nil)
 }
 
 // InstallCilium sets up the cilium pod network.
@@ -98,7 +79,7 @@ func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release,
 	release.Values["k8sServiceHost"] = host
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
-	return h.InstallChart(ctx, release, nil)
+	return h.InstallChart(ctx, release)
 }
 
 func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
@@ -121,5 +102,5 @@ func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nod
 		release.Values["k8sServicePort"] = port
 	}
 
-	return h.InstallChart(ctx, release, nil)
+	return h.InstallChart(ctx, release)
 }

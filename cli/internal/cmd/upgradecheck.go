@@ -101,7 +101,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		imagefetcher:  imagefetcher.New(),
 		log:           log,
 		iamMigrateCmd: iamMigrateCmd,
-		planExecutor:  &migrationCmdExecutor{log},
+		planExecutor:  &tfMigrationClient{log},
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -148,8 +148,8 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}, nil
 }
 
-type planExecutor interface {
-	planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.MigrationCmd) (hasDiff bool, err error)
+type tfPlanner interface {
+	planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd) (hasDiff bool, err error)
 }
 
 type upgradeCheckCmd struct {
@@ -158,8 +158,8 @@ type upgradeCheckCmd struct {
 	checker         upgradeChecker
 	imagefetcher    imageFetcher
 	log             debugLog
-	iamMigrateCmd   upgrade.MigrationCmd
-	planExecutor    planExecutor
+	iamMigrateCmd   upgrade.TfMigrationCmd
+	planExecutor    tfPlanner
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.

@@ -201,7 +201,7 @@ func (c *Client) installChart(chart chartInfo, config *config.Config, idFile clu
 		return fmt.Errorf("validating k8s version: %s", config.KubernetesVersion)
 	}
 
-	loader := NewLoader(config.GetProvider(), k8sVersion, clusterid.GetClusterName(config.Name, idFile))
+	loader := NewLoader(config.GetProvider(), k8sVersion, clusterid.GetClusterName(config, idFile))
 	release, err := loader.loadRelease(chart, helm.WaitModeAtomic)
 	if err != nil {
 		return fmt.Errorf("loading chart: %w", err)
@@ -211,7 +211,7 @@ func (c *Client) installChart(chart chartInfo, config *config.Config, idFile clu
 		return fmt.Errorf("creating installer: %w", err)
 	}
 	c.log.Debugf("Installing %s", chart.releaseName)
-	err = installer.InstallChart(context.Background(), release, nil)
+	err = installer.InstallChart(context.Background(), release)
 	if err != nil {
 		return fmt.Errorf("installing chart %s: %w", awsLBControllerInfo.chartName, err)
 	}
@@ -334,7 +334,7 @@ func (c *Client) upgradeRelease(
 	}
 
 	c.log.Debugf("Checking cluster ID file to determine cluster name")
-	clusterName := clusterid.GetClusterName(conf.Name, idFile)
+	clusterName := clusterid.GetClusterName(conf, idFile)
 
 	loader := NewLoader(conf.GetProvider(), k8sVersion, clusterName)
 
@@ -342,6 +342,9 @@ func (c *Client) upgradeRelease(
 	var releaseName string
 
 	switch chart.Metadata.Name {
+	case awsLBControllerInfo.chartName:
+		releaseName = awsLBControllerInfo.releaseName
+		values = loader.loadAWSLBControllerValues()
 	case ciliumInfo.chartName:
 		releaseName = ciliumInfo.releaseName
 		values, err = loader.loadCiliumValues()

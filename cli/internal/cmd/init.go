@@ -175,7 +175,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 
-	clusterName := clusterid.GetClusterName(conf.Name, idFile)
+	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
 	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)

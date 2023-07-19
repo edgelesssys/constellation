@@ -61,7 +61,7 @@ type ChartLoader struct {
 	joinServiceImage             string
 	keyServiceImage              string
 	ccmImage                     string // cloud controller manager image
-	cnmImage                     string // Azure cloud node manager image
+	azureCNMImage                string // Azure cloud node manager image
 	autoscalerImage              string
 	verificationServiceImage     string
 	gcpGuestAgentImage           string
@@ -93,7 +93,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 		joinServiceImage:             imageversion.JoinService("", ""),
 		keyServiceImage:              imageversion.KeyService("", ""),
 		ccmImage:                     ccmImage,
-		cnmImage:                     cnmImage,
+		azureCNMImage:                cnmImage,
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 		verificationServiceImage:     imageversion.VerificationService("", ""),
 		gcpGuestAgentImage:           versions.GcpGuestImage,
@@ -130,13 +130,13 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 
-	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
+	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
 	if config.HasProvider(cloudprovider.AWS) {
 		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading aws-services: %w", err)
 		}
-		releases.AWSLoadBalancerController = awsRelease
+		releases.AWSLoadBalancerController = &awsRelease
 	}
 
 	rel, err := json.Marshal(releases)
@@ -170,10 +170,10 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 
 		values, err = i.loadConstellationServicesValues()
 	case awsLBControllerInfo.releaseName:
-		values, err = i.loadAWSLoadBalancerControllerValues()
+		values = i.loadAWSLBControllerValues()
 	}
 
-	if err != nil || values == nil {
+	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading %s values: %w", info.releaseName, err)
 	}
 
@@ -185,17 +185,14 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 
-func (i *ChartLoader) loadAWSLoadBalancerControllerValues() (map[string]any, error) {
-	valuesFile, err := helmFS.ReadFile(awsLBControllerInfo.path + "/values.yaml")
-	if err != nil {
-		return nil, err
+func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
+	return map[string]any{
+		"clusterName":  i.clusterName,
+		"nodeSelector": map[string]any{"node-role.kubernetes.io/control-plane": ""},
+		"tolerations": []map[string]any{
+			{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"},
+		},
 	}
-	values, err := chartutil.ReadValues(valuesFile)
-	if err != nil {
-		return nil, err
-	}
-	values["clusterName"] = i.clusterName
-	return values, nil
 }
 
 // loadCiliumValues is used to separate the marshalling step from the loading step.
@@ -442,7 +439,7 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 		}
 
 		values["cnm"] = map[string]any{
-			"image": i.cnmImage,
+			"image": i.azureCNMImage,
 		}
 
 		values["tags"] = map[string]any{

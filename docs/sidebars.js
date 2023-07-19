@@ -145,6 +145,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Deploy an application',
+          id: 'workflows/lb',
+        },
+        {
+          type: 'doc',
           label: 'Install cert-manager',
           id: 'workflows/cert-manager',
         },

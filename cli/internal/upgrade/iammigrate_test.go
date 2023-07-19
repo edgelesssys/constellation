@@ -90,7 +90,7 @@ func (t *tfClientStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ strin
 	return nil
 }
 
-func (t *tfClientStub) CreateIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
+func (t *tfClientStub) ApplyIAMConfig(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.IAMOutput, error) {
 	upgradeDir := filepath.Join(constants.UpgradeDir, t.upgradeID, constants.TerraformIAMUpgradeWorkingDir)
 	err := t.file.Remove(filepath.Join(upgradeDir, "terraform.tfvars"))
 	if err != nil {

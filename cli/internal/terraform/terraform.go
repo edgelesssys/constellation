@@ -214,8 +214,8 @@ type AWSIAMOutput struct {
 	WorkerNodeInstanceProfile   string
 }
 
-// CreateIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+// ApplyIAMConfig creates an IAM configuration using Terraform.
+func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}

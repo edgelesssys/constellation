@@ -9,7 +9,6 @@ package kubernetes
 import (
 	"context"
 	"net"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -32,8 +31,6 @@ type clusterUtil interface {
 // Naming is inspired by Helm.
 type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
-	InstallCertManager(ctx context.Context, release helm.Release) error
-	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
-	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
-	InstallChart(context.Context, helm.Release, *time.Duration) error
+	InstallChart(context.Context, helm.Release) error
+	InstallChartWithValues(ctx context.Context, release helm.Release, extraValues map[string]any) error
 }

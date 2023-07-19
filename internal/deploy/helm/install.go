@@ -24,12 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// TODO clenaup once agreed on design.
-// copied from bootstrapper
-
 const (
 	// timeout is the maximum time given to the helm Installer.
-	timeout = 5 * time.Minute
+	timeout = 10 * time.Minute
 	// maximumRetryAttempts is the maximum number of attempts to retry a helm install.
 	maximumRetryAttempts = 3
 )
@@ -63,20 +60,18 @@ func NewInstaller(log *logger.Logger, kubeconfig string) (*Installer, error) {
 
 // InstallChart is the generic install function for helm charts.
 // When timeout is nil, the default timeout is used.
-func (h *Installer) InstallChart(ctx context.Context, release Release, timeout *time.Duration) error {
-	return h.InstallChartWithValues(ctx, release, release.Values, timeout)
+func (h *Installer) InstallChart(ctx context.Context, release Release) error {
+	return h.InstallChartWithValues(ctx, release, release.Values)
 }
 
 // InstallChartWithValues is the generic install function for helm charts with custom values.
-func (h *Installer) InstallChartWithValues(ctx context.Context, release Release, values map[string]any, timeout *time.Duration) error {
+func (h *Installer) InstallChartWithValues(ctx context.Context, release Release, extraValues map[string]any) error {
+	mergedVals := MergeMaps(release.Values, extraValues)
 	h.ReleaseName = release.ReleaseName
 	if err := h.SetWaitMode(release.WaitMode); err != nil {
 		return err
 	}
-	if timeout != nil {
-		h.Timeout = *timeout
-	}
-	return h.install(ctx, release.Chart, values)
+	return h.install(ctx, release.Chart, mergedVals)
 }
 
 // install tries to install the given chart and aborts after ~5 tries.

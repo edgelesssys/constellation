@@ -70,7 +70,7 @@ func TestCheckTerraformMigrations(t *testing.T) {
 }
 
 func TestPlanTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfTerraformClient, fileHandler file.Handler) *TerraformUpgrader {
+	upgrader := func(tf tfResourceClient, fileHandler file.Handler) *TerraformUpgrader {
 		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
@@ -87,7 +87,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 
 	testCases := map[string]struct {
 		upgradeID string
-		tf        tfTerraformClient
+		tf        tfResourceClient
 		workspace file.Handler
 		want      bool
 		wantErr   bool
@@ -174,7 +174,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 }
 
 func TestApplyTerraformMigrations(t *testing.T) {
-	upgrader := func(tf tfTerraformClient, fileHandler file.Handler) *TerraformUpgrader {
+	upgrader := func(tf tfResourceClient, fileHandler file.Handler) *TerraformUpgrader {
 		u, err := NewTerraformUpgrader(tf, bytes.NewBuffer(nil), fileHandler)
 		require.NoError(t, err)
 
@@ -197,7 +197,7 @@ func TestApplyTerraformMigrations(t *testing.T) {
 
 	testCases := map[string]struct {
 		upgradeID          string
-		tf                 tfTerraformClient
+		tf                 tfResourceClient
 		policyPatcher      stubPolicyPatcher
 		fs                 file.Handler
 		skipIDFileCreation bool // if true, do not create the constellation-id.json file

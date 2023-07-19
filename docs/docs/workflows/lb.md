@@ -1,4 +1,6 @@
 # Expose services
+Constellation integrates the native load balancers of each CSP. Therefore, to expose a service simply create a service of type `LoadBalancer`.
+
 
 ## Internet-facing LB service on AWS
 
