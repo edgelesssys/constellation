@@ -35,14 +35,14 @@ jobs:
           PART_MINOR=${WITHOUT_V#*.}
           MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}
           RELEASE_BRANCH="release/v${MAJOR_MINOR}"
-          WORKING_BRANCH_PREFIX="tmp/${FULL_VERSION}"
+          WORKING_BRANCH_PREFIX="origin/tmp/${FULL_VERSION}"
           echo "RELEASE_BRANCH=${RELEASE_BRANCH}" | tee -a "$GITHUB_ENV"
           echo "WORKING_BRANCH_PREFIX=${WORKING_BRANCH_PREFIX}" | tee -a "$GITHUB_ENV"
 
       - name: Find temporary branch
         id: find-temporary-branch
         run: |
-          working_branch_count=$(git branch --list "${WORKING_BRANCH_PREFIX}*" | wc -l)
+          working_branch_count=$(git branch --list -r "${WORKING_BRANCH_PREFIX}*" | wc -l)
           if [[ "${working_branch_count}" -ne 1 ]]; then
             echo "More than one (or zero) temporary branches found. Cannot finish transaction."
             git branch --list "${WORKING_BRANCH_PREFIX}*"
