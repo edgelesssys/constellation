@@ -131,7 +131,7 @@ jobs:
           git checkout "${RELEASE_BRANCH}" || exit 0
           git checkout "${WORKING_BRANCH}"
           ahead=$(git rev-list HEAD --not "${RELEASE_BRANCH}"  | wc -l)
-          if [[ "${ahead}" -gt 0 ]]; then
+          if [[ "${ahead}" -eq 0 ]]; then
             echo "The current branch is not strictly ahead of the release branch. Please rebase."
             exit 1
           fi
