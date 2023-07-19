@@ -173,7 +173,7 @@ func (u *upgradeApplyCmd) migrateTerraform(cmd *cobra.Command, fetcher imageFetc
 		return fmt.Errorf("fetching image reference: %w", err)
 	}
 
-	vars, err := cloudcmd.TerraformUpgradeVars(cmd.Context(), conf, imageRef)
+	vars, err := cloudcmd.TerraformUpgradeVars(conf, imageRef)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}
@@ -356,8 +356,4 @@ type cloudUpgrader interface {
 	CheckTerraformMigrations() error
 	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
-}
-
-func toPtr[T any](v T) *T {
-	return &v
 }

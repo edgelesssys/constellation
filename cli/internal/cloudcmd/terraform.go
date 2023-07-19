@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -19,7 +18,7 @@ import (
 )
 
 // TerraformUpgradeVars returns variables required to execute the Terraform scripts.
-func TerraformUpgradeVars(ctx context.Context, conf *config.Config, imageRef string) (terraform.Variables, error) {
+func TerraformUpgradeVars(conf *config.Config, imageRef string) (terraform.Variables, error) {
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
 		vars := awsTerraformVars(conf, imageRef, nil, nil)

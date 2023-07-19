@@ -75,8 +75,17 @@ type AWSClusterVariables struct {
 	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
+// GetCreateMAA gets the CreateMAA variable.
+// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AWSClusterVariables) GetCreateMAA() *bool {
 	return nil
+}
+
+// String returns a string representation of the variables, formatted as Terraform variables.
+func (a *AWSClusterVariables) String() string {
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(a, f.Body())
+	return string(f.Bytes())
 }
 
 // AWSNodeGroup is a node group to create on AWS.
@@ -94,12 +103,6 @@ type AWSNodeGroup struct {
 	InstanceType string `hcl:"instance_type" cty:"instance_type"`
 	// DiskType is the EBS disk type to use for the state disk.
 	DiskType string `hcl:"disk_type" cty:"disk_type"`
-}
-
-func (v *AWSClusterVariables) String() string {
-	f := hclwrite.NewEmptyFile()
-	gohcl.EncodeIntoBody(v, f.Body())
-	return string(f.Bytes())
 }
 
 // AWSIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
@@ -137,8 +140,17 @@ type GCPClusterVariables struct {
 	NodeGroups map[string]GCPNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
+// GetCreateMAA gets the CreateMAA variable.
+// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (g *GCPClusterVariables) GetCreateMAA() *bool {
 	return nil
+}
+
+// String returns a string representation of the variables, formatted as Terraform variables.
+func (g *GCPClusterVariables) String() string {
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(g, f.Body())
+	return string(f.Bytes())
 }
 
 // GCPNodeGroup is a node group to create on GCP.
@@ -153,13 +165,6 @@ type GCPNodeGroup struct {
 	Zone         string `hcl:"zone" cty:"zone"`
 	InstanceType string `hcl:"instance_type" cty:"instance_type"`
 	DiskType     string `hcl:"disk_type" cty:"disk_type"`
-}
-
-// String returns a string representation of the variables, formatted as Terraform variables.
-func (v *GCPClusterVariables) String() string {
-	f := hclwrite.NewEmptyFile()
-	gohcl.EncodeIntoBody(v, f.Body())
-	return string(f.Bytes())
 }
 
 // GCPIAMVariables is user configuration for creating the IAM confioguration with Terraform on GCP.
@@ -209,14 +214,16 @@ type AzureClusterVariables struct {
 	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
 }
 
+// GetCreateMAA gets the CreateMAA variable.
+// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (a *AzureClusterVariables) GetCreateMAA() *bool {
 	return a.CreateMAA
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
-func (v *AzureClusterVariables) String() string {
+func (a *AzureClusterVariables) String() string {
 	f := hclwrite.NewEmptyFile()
-	gohcl.EncodeIntoBody(v, f.Body())
+	gohcl.EncodeIntoBody(a, f.Body())
 	return string(f.Bytes())
 }
 
@@ -278,8 +285,17 @@ type OpenStackClusterVariables struct {
 	Debug bool `hcl:"debug" cty:"debug"`
 }
 
+// GetCreateMAA gets the CreateMAA variable.
+// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (o *OpenStackClusterVariables) GetCreateMAA() *bool {
 	return nil
+}
+
+// String returns a string representation of the variables, formatted as Terraform variables.
+func (o *OpenStackClusterVariables) String() string {
+	f := hclwrite.NewEmptyFile()
+	gohcl.EncodeIntoBody(o, f.Body())
+	return string(f.Bytes())
 }
 
 // OpenStackNodeGroup is a node group to create on OpenStack.
@@ -295,13 +311,6 @@ type OpenStackNodeGroup struct {
 	StateDiskType string `hcl:"state_disk_type" cty:"state_disk_type"`
 	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
 	StateDiskSizeGB int `hcl:"state_disk_size" cty:"state_disk_size"`
-}
-
-// String returns a string representation of the variables, formatted as Terraform variables.
-func (v *OpenStackClusterVariables) String() string {
-	f := hclwrite.NewEmptyFile()
-	gohcl.EncodeIntoBody(v, f.Body())
-	return string(f.Bytes())
 }
 
 // TODO(malt3): Add support for OpenStack IAM variables.
@@ -343,14 +352,16 @@ type QEMUVariables struct {
 	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
 }
 
+// GetCreateMAA gets the CreateMAA variable.
+// TODO (derpsteb): Rename this function once we have introduced an interface for config.Config.
 func (q *QEMUVariables) GetCreateMAA() *bool {
 	return nil
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
-func (v *QEMUVariables) String() string {
+func (q *QEMUVariables) String() string {
 	// copy v object
-	vCopy := *v
+	vCopy := *q
 	switch vCopy.NVRAM {
 	case "production":
 		vCopy.NVRAM = "/usr/share/OVMF/constellation_vars.production.fd"
