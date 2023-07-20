@@ -201,19 +201,19 @@ func (i *ChartLoader) loadCertManagerValues() map[string]any {
 		"prometheus": map[string]any{
 			"enabled": false,
 		},
-		"tolerations": controlPlaneTolerations(),
+		"tolerations": controlPlaneTolerations,
 		"webhook": map[string]any{
-			"tolerations": controlPlaneTolerations(),
+			"tolerations": controlPlaneTolerations,
 		},
 		"cainjector": map[string]any{
-			"tolerations": controlPlaneTolerations(),
+			"tolerations": controlPlaneTolerations,
 		},
 		"startupapicheck": map[string]any{
 			"timeout": "5m",
 			"extraArgs": []string{
 				"--verbose",
 			},
-			"tolerations": controlPlaneTolerations(),
+			"tolerations": controlPlaneTolerations,
 		},
 	}
 }
@@ -473,19 +473,4 @@ func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 	}
 
 	return loader.LoadFiles(files)
-}
-
-func controlPlaneTolerations() []map[string]any {
-	return []map[string]any{
-		{
-			"key":      "node-role.kubernetes.io/control-plane",
-			"effect":   "NoSchedule",
-			"operator": "Exists",
-		},
-		{
-			"key":      "node-role.kubernetes.io/master",
-			"effect":   "NoSchedule",
-			"operator": "Exists",
-		},
-	}
 }
