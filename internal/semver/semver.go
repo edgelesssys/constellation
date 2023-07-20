@@ -17,9 +17,11 @@ package semver
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
 )
@@ -110,8 +112,19 @@ func (v Semver) MajorMinorEqual(other Semver) bool {
 
 // IsUpgradeTo returns if a version is an upgrade to another version.
 // It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
-func (v Semver) IsUpgradeTo(other Semver) bool {
-	return v.Compare(other) > 0 && v.major == other.major && v.minor-other.minor <= 1
+func (v Semver) IsUpgradeTo(other Semver) error {
+	if v.Compare(other) <= 0 {
+		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), errors.New("current version newer than or equal to new version"))
+	}
+	if v.major != other.major {
+		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), compatibility.ErrMajorMismatch)
+	}
+
+	if v.minor-other.minor > 1 {
+		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), compatibility.ErrMinorDrift)
+	}
+
+	return nil
 }
 
 // CompatibleWithBinary returns if a version is compatible version of the current built binary.
@@ -122,7 +135,9 @@ func (v Semver) CompatibleWithBinary() bool {
 		return false
 	}
 
-	return v.Compare(binaryVersion) == 0 || binaryVersion.IsUpgradeTo(v)
+	isUpgrade := binaryVersion.IsUpgradeTo(v) == nil
+
+	return v.Compare(binaryVersion) == 0 || isUpgrade
 }
 
 // NextMinor returns the next minor version in the format "vm.MINOR".
