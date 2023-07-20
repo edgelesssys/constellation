@@ -205,6 +205,7 @@ func TestInitCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
+				cloudProvider:    "aws", // provide a valid cloud provider for cilium installation
 				clusterUtil:      &tc.clusterUtil,
 				helmClient:       &tc.helmClient,
 				providerMetadata: tc.providerMetadata,
@@ -592,24 +593,22 @@ func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ hel
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallChart(_ context.Context, _ helm.Release) error {
-	return s.ciliumError
+func (s *stubHelmClient) InstallChart(ctx context.Context, release helm.Release) error {
+	return s.InstallChartWithValues(ctx, release, release.Values)
 }
 
-func (s *stubHelmClient) InstallChartWithValues(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.ciliumError
-}
-
-func (s *stubHelmClient) InstallCertManager(_ context.Context, _ helm.Release) error {
-	return s.certManagerError
-}
-
-func (s *stubHelmClient) InstallOperators(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.operatorsError
-}
-
-func (s *stubHelmClient) InstallConstellationServices(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.servicesError
+func (s *stubHelmClient) InstallChartWithValues(_ context.Context, release helm.Release, _ map[string]any) error {
+	switch release.ReleaseName {
+	case "cert-manager":
+		return s.certManagerError
+	case "constellation-operators":
+		return s.operatorsError
+	case "constellation-services":
+		return s.servicesError
+	case "cilium":
+		return s.ciliumError
+	}
+	return nil
 }
 
 type stubKubeAPIWaiter struct {

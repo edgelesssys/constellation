@@ -10,7 +10,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -30,7 +29,6 @@ type clusterUtil interface {
 // Currently only a subset of microservices is deployed via Helm.
 // Naming is inspired by Helm.
 type helmClient interface {
-	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
 	InstallChart(context.Context, helm.Release) error
 	InstallChartWithValues(ctx context.Context, release helm.Release, extraValues map[string]any) error
 }

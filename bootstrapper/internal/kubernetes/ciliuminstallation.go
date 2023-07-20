@@ -4,8 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// Package helm is used to install Constellation microservices and other services during cluster initialization.
-package helm
+// Package kubernetes provides functionality to bootstrap a Kubernetes cluster, or join an exiting one.
+package kubernetes
 
 import (
 	"context"
@@ -18,27 +18,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Client is used to install microservice during cluster initialization. It is a wrapper for a helm install action.
-type Client struct {
-	*helm.Installer
-	log *logger.Logger
-}
-
-// New creates a new client with the given logger.
-func New(log *logger.Logger) (*Client, error) {
-	installer, err := helm.NewInstaller(log, constants.ControlPlaneAdminConfFilename)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{installer, log}, nil
-}
-
-// InstallCilium sets up the cilium pod network.
-func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
+// installCilium sets up the cilium pod network.
+func installCilium(ctx context.Context, helmInstaller helmClient, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	timeoutS := int64(10)
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
 	tolerations := []corev1.Toleration{
@@ -63,9 +47,9 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 
 	switch in.CloudProvider {
 	case "aws", "azure", "openstack", "qemu":
-		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
+		return installCiliumGeneric(ctx, helmInstaller, release, in.LoadBalancerEndpoint)
 	case "gcp":
-		return h.installCiliumGCP(ctx, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return installCiliumGCP(ctx, helmInstaller, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -74,15 +58,17 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 // installCiliumGeneric installs cilium with the given load balancer endpoint.
 // This is used for cloud providers that do not require special server-side configuration.
 // Currently this is AWS, Azure, and QEMU.
-func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release, kubeAPIEndpoint string) error {
+func installCiliumGeneric(ctx context.Context, helmInstaller helmClient, release helm.Release, kubeAPIEndpoint string) error {
 	host := kubeAPIEndpoint
-	release.Values["k8sServiceHost"] = host
-	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
+	if release.Values != nil {
+		release.Values["k8sServiceHost"] = host
+		release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
+	}
 
-	return h.InstallChart(ctx, release)
+	return helmInstaller.InstallChart(ctx, release)
 }
 
-func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func installCiliumGCP(ctx context.Context, helmInstaller helmClient, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -102,5 +88,5 @@ func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nod
 		release.Values["k8sServicePort"] = port
 	}
 
-	return h.InstallChart(ctx, release)
+	return helmInstaller.InstallChart(ctx, release)
 }

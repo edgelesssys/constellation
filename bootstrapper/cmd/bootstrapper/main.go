@@ -16,7 +16,6 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
@@ -33,6 +32,7 @@ import (
 	openstackcloud "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -67,7 +67,7 @@ func main() {
 	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-	helmClient, err := helm.New(log)
+	helmClient, err := helm.NewInstaller(log, constants.ControlPlaneAdminConfFilename)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Helm client could not be initialized")
 	}
