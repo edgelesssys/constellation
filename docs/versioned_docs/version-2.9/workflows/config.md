@@ -178,9 +178,9 @@ The following describes the configuration fields and how you obtain the required
   * `westeurope`
   * `southeastasia`
 
-* **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup) for your Constellation cluster. Set this configuration     field to the name of the created resource group.
+* **resourceGroup**: [Create a new resource group in Azure](https://learn.microsoft.com/azure/azure-resource-manager/management/manage-resource-groups-portal) for your Constellation cluster. Set this configuration     field to the name of the created resource group.
 
-* **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). You should create the identity in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
+* **userAssignedIdentity**: [Create a new managed identity in Azure](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities). You should create the identity in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
 
   Add three role assignments to the identity: `Owner`, `Virtual Machine Contributor`, and `Application Insights Component Contributor`. The `scope` of all three should refer to the previously created cluster resource group.
 
