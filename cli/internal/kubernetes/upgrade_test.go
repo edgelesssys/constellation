@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -33,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestUpgradeNodeVersion(t *testing.T) {
@@ -271,11 +271,12 @@ func TestUpgradeNodeVersion(t *testing.T) {
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
 			},
-			wantUpdate: false, // because stubClient is not used
+			wantUpdate: false, // because customClient is used
 			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface {
 				fakeClient := &fakeDynamicClient{}
-				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil).Times(2) // 1st time is get the node version and 2nd time is inside the update function
-				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil)
+				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
+				fakeClient.On("Update", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
+				fakeClient.On("Update", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
 				return fakeClient
 			},
 		},
@@ -587,13 +588,12 @@ func (u *fakeDynamicClient) GetCurrent(ctx context.Context, str string) (*unstru
 	return args.Get(0).(*unstructured.Unstructured), args.Error(1)
 }
 
-// imitate ConflictError when updatedObject is outdated
 func (u *fakeDynamicClient) Update(ctx context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	current, _ := u.GetCurrent(ctx, "")
-	if updatedObject.GetGeneration() < current.GetGeneration() {
-		return nil, kerrors.NewConflict(schema.GroupResource{Resource: "test"}, current.GetName(), nil)
+	args := u.Called(ctx, updatedObject)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
 	}
-	return updatedObject, nil
+	return updatedObject, args.Error(1)
 }
 
 type stubDynamicClient struct {
