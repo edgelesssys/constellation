@@ -278,8 +278,6 @@ The built-in `AdministratorAccess` policy is a superset of these permissions.
 
 To [create a Constellation cluster](../workflows/create.md#the-create-step), you need the following permissions:
 
-# TODO should we refer to the file instead of manually copying the changes.. Nobody seems to update it
-See [main.tf](https://github.com/edgelesssys/constellation/blob/main/cli/internal/terraform/terraform/iam/aws/main.tf) under `control_plane_policy` and `worker_node_policy`.
 ```json
 {
     "Version": "2012-10-17",

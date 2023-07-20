@@ -36,14 +36,12 @@ git sparse-checkout add "${chart_dir}"
 git checkout
 cd "${callDir}"
 
-# remove values.yaml from upstream chart
 # remove files being ignored in .helmignore due to wrong import of .helmignore in current implementation
 rm -r "${repo_tmp_dir}/${chart_dir}/ci"
 rm "${repo_tmp_dir}/${chart_dir}/crds/kustomization.yaml"
 rm "${repo_tmp_dir}/${chart_dir}/test.yaml"
 
 # delete current chart
-# but keep values.yaml
 rm -r "${chart_base_path:?}/${chart_name}"
 
 # move new chart
