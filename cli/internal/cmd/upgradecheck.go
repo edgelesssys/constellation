@@ -694,7 +694,7 @@ func (v *versionCollector) newCLIVersions(ctx context.Context) ([]string, error)
 		Ref:         v.flags.ref,
 		Stream:      v.flags.stream,
 		Granularity: versionsapi.GranularityMajor,
-		Base:        fmt.Sprintf("v%d", cliVersion.Major),
+		Base:        fmt.Sprintf("v%d", cliVersion.Major()),
 		Kind:        versionsapi.VersionKindCLI,
 	}
 	minorList, err := v.versionsapi.FetchVersionList(ctx, list)

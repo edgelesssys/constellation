@@ -390,7 +390,7 @@ func (c *Client) applyMigrations(ctx context.Context, releaseName string, values
 		return fmt.Errorf("parsing current version: %w", err)
 	}
 
-	if currentV.Major == 2 && currentV.Minor == 8 {
+	if currentV.Major() == 2 && currentV.Minor() == 8 {
 		// Rename/change the following function to implement any necessary migrations.
 		return migrateFrom2_8(ctx, values, conf, c.kubectl)
 	}

@@ -308,7 +308,7 @@ func TestValidate(t *testing.T) {
 				cnf.Image = ""
 				ver, err := semver.New(versions.SupportedK8sVersions()[0])
 				require.NoError(t, err)
-				ver.Patch = ver.Patch - 1
+				ver = semver.NewFromInt(ver.Major(), ver.Minor(), ver.Patch()-1)
 				cnf.KubernetesVersion = ver.String()
 				return cnf
 			}(),

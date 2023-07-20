@@ -14,13 +14,13 @@ import (
 )
 
 var (
-	v1_18_0         = Semver{Major: 1, Minor: 18, Patch: 0}
-	v1_18_0Pre      = Semver{Major: 1, Minor: 18, Patch: 0, Prerelease: "pre"}
-	v1_18_0PreExtra = Semver{Major: 1, Minor: 18, Patch: 0, Prerelease: "pre.1"}
-	v1_19_0         = Semver{Major: 1, Minor: 19, Patch: 0}
-	v1_18_1         = Semver{Major: 1, Minor: 18, Patch: 1}
-	v1_20_0         = Semver{Major: 1, Minor: 20, Patch: 0}
-	v2_0_0          = Semver{Major: 2, Minor: 0, Patch: 0}
+	v1_18_0         = Semver{major: 1, minor: 18, patch: 0}
+	v1_18_0Pre      = Semver{major: 1, minor: 18, patch: 0, prerelease: "pre"}
+	v1_18_0PreExtra = Semver{major: 1, minor: 18, patch: 0, prerelease: "pre.1"}
+	v1_19_0         = Semver{major: 1, minor: 19, patch: 0}
+	v1_18_1         = Semver{major: 1, minor: 18, patch: 1}
+	v1_20_0         = Semver{major: 1, minor: 20, patch: 0}
+	v2_0_0          = Semver{major: 2, minor: 0, patch: 0}
 )
 
 func TestNewVersion(t *testing.T) {
@@ -32,19 +32,19 @@ func TestNewVersion(t *testing.T) {
 		"valid version": {
 			version: "v1.18.0",
 			want: Semver{
-				Major: 1,
-				Minor: 18,
-				Patch: 0,
+				major: 1,
+				minor: 18,
+				patch: 0,
 			},
 			wantErr: false,
 		},
 		"valid version prerelease": {
 			version: "v1.18.0-pre+yyyymmddhhmmss-abcdefabcdef",
 			want: Semver{
-				Major:      1,
-				Minor:      18,
-				Patch:      0,
-				Prerelease: "pre",
+				major:      1,
+				minor:      18,
+				patch:      0,
+				prerelease: "pre",
 			},
 			wantErr: false,
 		},
@@ -53,27 +53,27 @@ func TestNewVersion(t *testing.T) {
 		"add prefix": {
 			version: "1.18.0",
 			want: Semver{
-				Major: 1,
-				Minor: 18,
-				Patch: 0,
+				major: 1,
+				minor: 18,
+				patch: 0,
 			},
 			wantErr: false,
 		},
 		"only major.minor": {
 			version: "v1.18",
 			want: Semver{
-				Major: 1,
-				Minor: 18,
-				Patch: 0,
+				major: 1,
+				minor: 18,
+				patch: 0,
 			},
 			wantErr: false,
 		},
 		"only major": {
 			version: "v1",
 			want: Semver{
-				Major: 1,
-				Minor: 0,
-				Patch: 0,
+				major: 1,
+				minor: 0,
+				patch: 0,
 			},
 			wantErr: false,
 		},
@@ -282,7 +282,7 @@ func TestCanUpgrade(t *testing.T) {
 	}
 }
 
-func TestNextMinor(t *testing.T) {
+func TestNextminor(t *testing.T) {
 	testCases := map[string]struct {
 		version Semver
 		want    string
