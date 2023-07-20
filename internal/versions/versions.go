@@ -52,7 +52,7 @@ func NewValidK8sVersion(k8sVersion string, strict bool) (ValidK8sVersion, error)
 		supported = isSupportedK8sVersion(k8sVersion)
 	}
 	if !supported {
-		return "", fmt.Errorf("invalid Kubernetes version: %s", k8sVersion)
+		return "", fmt.Errorf("invalid Kubernetes version: %s; supported versions are %v", k8sVersion, SupportedK8sVersions())
 	}
 	if !strict {
 		k8sVersion, _ = supportedVersionForMajorMinor(k8sVersion)
