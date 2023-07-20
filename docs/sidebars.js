@@ -145,7 +145,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Deploy an application',
+          label: 'Expose a service',
           id: 'workflows/lb',
         },
         {
