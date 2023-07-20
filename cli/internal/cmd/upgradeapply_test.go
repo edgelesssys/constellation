@@ -173,10 +173,6 @@ type stubUpgrader struct {
 	cleanTerraformErr error
 }
 
-func (u stubUpgrader) GetTerraformUpgrader(_ context.Context, _ string) (*terraform.Client, error) {
-	return nil, nil
-}
-
 func (u stubUpgrader) GetUpgradeID() string {
 	return "test-upgrade"
 }

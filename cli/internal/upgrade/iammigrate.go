@@ -96,7 +96,6 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter i
 func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) error {
 	_, err := c.tf.ApplyIAMConfig(ctx, c.csp, c.logLevel)
 
-	// TODO: put in template, since moving files is also done in other TF migrations
 	if err := fileHandler.RemoveAll(constants.TerraformIAMWorkingDir); err != nil {
 		return fmt.Errorf("removing old terraform directory: %w", err)
 	}

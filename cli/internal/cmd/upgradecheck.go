@@ -69,6 +69,9 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck)
+	if err != nil {
+		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
+	}
 	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {

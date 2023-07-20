@@ -51,31 +51,6 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
-// TODO discuss: this test passes with current code only since we delete crds/kustomization.yaml in update-aws-load-balancer-controller.sh . Our current implementation does not support this!
-func TestIgnoreFilesInSubdirectory(t *testing.T) {
-	fileToIgnore := "crds/kustomization.yaml"
-	chart, err := loadChartsDir(helmFS, awsLBControllerInfo.path)
-	require.NoError(t, err)
-	for _, f := range chart.Raw {
-		if strings.Contains(f.Name, fileToIgnore) {
-			t.Error("helmignore should have filtered it out", f.Name)
-		}
-	}
-}
-
-// TODO discuss: this works in test but fails in real code when using newer symwalk implementation.
-func TestLoadChartYaml(t *testing.T) {
-	expectToLoad := "Chart.yaml"
-	chart, err := loadChartsDir(helmFS, ciliumInfo.path)
-	require.NoError(t, err)
-	for _, f := range chart.Raw {
-		if strings.Contains(f.Name, expectToLoad) {
-			return
-		}
-	}
-	t.Error("did not find expected file")
-}
-
 func TestLoadAWSLoadBalancerValues(t *testing.T) {
 	sut := ChartLoader{
 		clusterName: "testCluster",
