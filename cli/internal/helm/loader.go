@@ -155,7 +155,11 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 
 	switch info.releaseName {
 	case ciliumInfo.releaseName:
-		values = ciliumVals[i.csp.String()]
+		var ok bool
+		values, ok = ciliumVals[i.csp.String()]
+		if !ok {
+			return helm.Release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+		}
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
 	case constellationOperatorsInfo.releaseName:
