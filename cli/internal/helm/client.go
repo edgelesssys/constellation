@@ -317,7 +317,11 @@ func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, cha
 	switch chart.Metadata.Name {
 	case ciliumInfo.chartName:
 		releaseName = ciliumInfo.releaseName
-		values = ciliumVals[conf.GetProvider().String()]
+		var ok bool
+		values, ok = ciliumVals[conf.GetProvider().String()]
+		if !ok {
+			return "", nil, fmt.Errorf("cilium values for csp %q not found", conf.GetProvider().String())
+		}
 	case certManagerInfo.chartName:
 		releaseName = certManagerInfo.releaseName
 		values = loader.loadCertManagerValues()
