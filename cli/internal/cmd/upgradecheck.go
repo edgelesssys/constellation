@@ -215,6 +215,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
+	cmd.Println("The following IAM migrations are available with this CLI:")
 	u.log.Debugf("Planning IAM migrations")
 	if u.iamMigrateCmd != nil {
 		hasIAMDiff, err := u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
