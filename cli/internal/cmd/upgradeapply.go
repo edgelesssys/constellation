@@ -63,8 +63,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgradeID := kubernetes.NewUpgradeID(kubernetes.UpgradeCmdKindApply)
-	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, upgradeID)
+	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply)
 	if err != nil {
 		return err
 	}
@@ -73,7 +72,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	configFetcher := attestationconfigapi.NewFetcher()
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, migrationExecutor: &tfMigrationClient{log}}
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgrader.GetUpgradeID(), cloudprovider.AWS, terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}

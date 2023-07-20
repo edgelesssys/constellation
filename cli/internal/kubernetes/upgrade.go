@@ -97,36 +97,21 @@ type Upgrader struct {
 	upgradeID  string
 }
 
-// NewUpgradeID returns a new upgrade ID.
-// is private function to avoid construction outside this function.
-//
-//nolint:all
-func NewUpgradeID(upgradeCmdKind UpgradeCmdKind) upgradeID {
-	str := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
+// NewUpgrader returns a new Upgrader.
+func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
+	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
 		// Terraform state. The directory is deleted after the check is finished.
 		// Therefore, add a tmp-suffix to the upgrade ID to indicate that the directory will be cleared after the check.
-		str += "-tmp"
+		upgradeID += "-tmp"
 	}
-	return upgradeID{str}
-}
 
-type upgradeID struct {
-	string
-}
-
-func (u upgradeID) String() string {
-	return u.string
-}
-
-// NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeID upgradeID) (*Upgrader, error) {
 	u := &Upgrader{
 		imageFetcher: imagefetcher.New(),
 		outWriter:    outWriter,
 		log:          log,
-		upgradeID:    upgradeID.String(),
+		upgradeID:    upgradeID,
 	}
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
@@ -153,7 +138,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	}
 	u.helmClient = helmClient
 
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID.String(), constants.TerraformUpgradeWorkingDir))
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -166,6 +151,20 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	u.tfUpgrader = tfUpgrader
 
 	return u, nil
+}
+
+// GetTerraformUpgrader returns a Terraform client for the upgrade workspace.
+// TODO discuss: remove.
+func (u *Upgrader) GetTerraformUpgrader(ctx context.Context, terraformDir string) (*terraform.Client, error) {
+	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, u.upgradeID, terraformDir))
+	if err != nil {
+		return nil, fmt.Errorf("setting up terraform client: %w", err)
+	}
+	return tfClient, nil
+}
+
+func (u *Upgrader) GetUpgradeID() string {
+	return u.upgradeID
 }
 
 // AddManualStateMigration adds a manual state migration to the Terraform client.

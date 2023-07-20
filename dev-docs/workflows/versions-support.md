@@ -12,7 +12,8 @@ The source version can only be older by one minor version to ensure we can perfo
 
 (the version that is referenced in the config during constellation init or referenced as target version during upgrade apply) must match one of the embedded k8s versions. We have a hardcoded list that is embedded in the CLI.
 When planning an upgrade, the source k8s version may be up to one minor version older (allow upgrades from k8s 1.25.x to 1.26.x).
-The reason is this: The CLI embeds components for kubernetes version for the hardcoded list of supported k8s versions. So whenever we deploy a k8s version (during constellation init or constellation upgrade apply), the k8s components for the target version need to be available.
+The reason is this: The// GetUpgradeID returns the upgrade ID.
+// TODO remove. CLI embeds components for kubernetes version for the hardcoded list of supported k8s versions. So whenever we deploy a k8s version (during constellation init or constellation upgrade apply), the k8s components for the target version need to be available.
 The source version drift is a general k8s recommendation: k8s was designed to withstand a version drift of one minor version in each component during a rolling upgrade.
 
 ## Image version

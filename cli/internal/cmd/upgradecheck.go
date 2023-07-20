@@ -68,17 +68,13 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	upgradeID := kubernetes.NewUpgradeID(kubernetes.UpgradeCmdKindCheck)
-	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, upgradeID)
-	if err != nil {
-		return err
-	}
+	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck)
 	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID.String(), cloudprovider.AWS, terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), checker.GetUpgradeID(), cloudprovider.AWS, terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
