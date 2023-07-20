@@ -193,3 +193,16 @@ var ciliumVals = map[string]map[string]any{
 		"l7Proxy":                             false,
 	},
 }
+
+var controlPlaneTolerations = []map[string]any{
+	{
+		"key":      "node-role.kubernetes.io/control-plane",
+		"effect":   "NoSchedule",
+		"operator": "Exists",
+	},
+	{
+		"key":      "node-role.kubernetes.io/master",
+		"effect":   "NoSchedule",
+		"operator": "Exists",
+	},
+}
