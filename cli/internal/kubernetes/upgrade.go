@@ -43,6 +43,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	"sigs.k8s.io/yaml"
 )
@@ -420,23 +421,31 @@ func (u *Upgrader) applyComponentsCM(ctx context.Context, components *corev1.Con
 }
 
 func (u *Upgrader) applyNodeVersion(ctx context.Context, nodeVersion updatev1alpha1.NodeVersion) (updatev1alpha1.NodeVersion, error) {
-	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
-	if err != nil {
-		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting nodeVersion to unstructured: %w", err)
-	}
 	u.log.Debugf("Triggering NodeVersion upgrade now")
-	// Send the updated NodeVersion resource
-	updated, err := u.dynamicInterface.Update(ctx, &unstructured.Unstructured{Object: raw})
-	if err != nil {
-		return updatev1alpha1.NodeVersion{}, fmt.Errorf("updating NodeVersion: %w", err)
-	}
-
 	var updatedNodeVersion updatev1alpha1.NodeVersion
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(updated.UnstructuredContent(), &updatedNodeVersion); err != nil {
-		return updatev1alpha1.NodeVersion{}, fmt.Errorf("converting unstructured to NodeVersion: %w", err)
-	}
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		newNode, err := u.getClusterStatus(ctx)
+		if err != nil {
+			return fmt.Errorf("retrieving current NodeVersion: %w", err)
+		}
+		cmd := newUpgradeVersionCmd(nodeVersion)
+		cmd.SetUpdatedVersions(&newNode)
+		raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&newNode)
+		if err != nil {
+			return fmt.Errorf("converting nodeVersion to unstructured: %w", err)
+		}
+		updated, err := u.dynamicInterface.Update(ctx, &unstructured.Unstructured{Object: raw})
+		if err != nil {
+			return err
+		}
 
-	return updatedNodeVersion, nil
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(updated.UnstructuredContent(), &updatedNodeVersion); err != nil {
+			return fmt.Errorf("converting unstructured to NodeVersion: %w", err)
+		}
+		return nil
+	})
+
+	return updatedNodeVersion, err
 }
 
 func (u *Upgrader) getClusterStatus(ctx context.Context) (updatev1alpha1.NodeVersion, error) {
@@ -592,4 +601,35 @@ type imageFetcher interface {
 		provider cloudprovider.Provider, attestationVariant variant.Variant,
 		image, region string,
 	) (string, error)
+}
+
+type upgradeVersionCmd struct {
+	imageVersion     string
+	imageRef         string
+	k8sComponentsRef string
+	k8sVersion       string
+}
+
+func newUpgradeVersionCmd(newNodeVersion updatev1alpha1.NodeVersion) upgradeVersionCmd {
+	return upgradeVersionCmd{
+		imageVersion:     newNodeVersion.Spec.ImageVersion,
+		imageRef:         newNodeVersion.Spec.ImageReference,
+		k8sComponentsRef: newNodeVersion.Spec.KubernetesComponentsReference,
+		k8sVersion:       newNodeVersion.Spec.KubernetesClusterVersion,
+	}
+}
+
+func (u upgradeVersionCmd) SetUpdatedVersions(node *updatev1alpha1.NodeVersion) {
+	if u.imageVersion != "" {
+		node.Spec.ImageVersion = u.imageVersion
+	}
+	if u.imageRef != "" {
+		node.Spec.ImageReference = u.imageRef
+	}
+	if u.k8sComponentsRef != "" {
+		node.Spec.KubernetesComponentsReference = u.k8sComponentsRef
+	}
+	if u.k8sVersion != "" {
+		node.Spec.KubernetesClusterVersion = u.k8sVersion
+	}
 }
