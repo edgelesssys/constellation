@@ -199,7 +199,7 @@ func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
 		"clusterName":  i.clusterName,
 		"tolerations":  controlPlaneTolerations,
-		"nodeSelector": nodeSelectorForControlPlane,
+		"nodeSelector": controlPlaneNodeSelector,
 	}
 }
 
