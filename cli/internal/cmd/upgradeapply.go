@@ -71,11 +71,6 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	configFetcher := attestationconfigapi.NewFetcher()
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, migrationExecutor: &tfMigrationClient{log}}
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgrader.GetUpgradeID(), cloudprovider.AWS, terraform.LogLevelDebug)
-	if err != nil {
-		return fmt.Errorf("setting up IAM migration command: %w", err)
-	}
-	applyCmd.migrationCmds = []upgrade.TfMigrationCmd{iamMigrateCmd}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
