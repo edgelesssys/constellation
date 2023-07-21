@@ -93,7 +93,9 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter i
 
 // Apply applies the Terraform IAM migrations for the Constellation upgrade.
 func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) error {
-	_, err := c.tf.ApplyIAMConfig(ctx, c.csp, c.logLevel)
+	if _, err := c.tf.ApplyIAMConfig(ctx, c.csp, c.logLevel); err != nil {
+		return fmt.Errorf("terraform apply: %w", err)
+	}
 
 	if err := fileHandler.RemoveAll(constants.TerraformIAMWorkingDir); err != nil {
 		return fmt.Errorf("removing old terraform directory: %w", err)
@@ -106,5 +108,5 @@ func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) err
 		return fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 
-	return err
+	return nil
 }

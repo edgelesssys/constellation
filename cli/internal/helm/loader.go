@@ -198,8 +198,8 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
 		"clusterName":  i.clusterName,
-		"nodeSelector": map[string]any{"node-role.kubernetes.io/control-plane": ""},
-		"tolerations": controlPlaneTolerations,
+		"tolerations":  controlPlaneTolerations,
+		"nodeSelector": nodeSelectorForControlPlane,
 	}
 }
 
