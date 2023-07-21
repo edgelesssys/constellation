@@ -158,6 +158,10 @@ const (
 	TerraformUpgradeBackupDir = "terraform-backup"
 	// UpgradeDir is the name of the directory being used for cluster upgrades.
 	UpgradeDir = "constellation-upgrade"
+	// ControlPlaneDefault is the name of the default control plane worker group.
+	ControlPlaneDefault = "control_plane_default"
+	// WorkerDefault is the name of the default worker group.
+	WorkerDefault = "worker_default"
 
 	//
 	// Kubernetes.

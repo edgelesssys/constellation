@@ -14,6 +14,7 @@ import (
 	scalingtypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -279,14 +280,14 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "control-plane-asg",
-					NodeGroupName:        "control_plane_default",
+					NodeGroupName:        constants.ControlPlaneDefault,
 					GroupID:              "control-plane-asg",
 					AutoscalingGroupName: "control-plane-asg",
 					Role:                 "ControlPlane",
 				},
 				{
 					Name:                 "worker-asg",
-					NodeGroupName:        "worker_default",
+					NodeGroupName:        constants.WorkerDefault,
 					GroupID:              "worker-asg",
 					AutoscalingGroupName: "worker-asg",
 					Role:                 "Worker",

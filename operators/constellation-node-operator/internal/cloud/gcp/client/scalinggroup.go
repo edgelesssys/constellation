@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"google.golang.org/api/iterator"
@@ -164,9 +165,9 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 			if nodeGroupName == "" {
 				switch role {
 				case updatev1alpha1.ControlPlaneRole:
-					nodeGroupName = "control_plane_default"
+					nodeGroupName = constants.ControlPlaneDefault
 				case updatev1alpha1.WorkerRole:
-					nodeGroupName = "worker_default"
+					nodeGroupName = constants.WorkerDefault
 				}
 			}
 
