@@ -19,12 +19,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
 )
+
+// Sort sorts a list of semantic version strings using [ByVersion].
+func Sort(list []Semver) {
+	sort.Sort(ByVersion(list))
+}
 
 // Semver represents a semantic version.
 type Semver struct {
@@ -164,4 +170,21 @@ func (v *Semver) UnmarshalJSON(data []byte) error {
 
 	*v = version
 	return nil
+}
+
+// ByVersion implements [sort.Interface] for sorting semantic version strings.
+// Copied from Go's semver pkg with minimal modification.
+// https://cs.opensource.google/go/x/mod/+/master:semver/semver.go
+type ByVersion []Semver
+
+func (vs ByVersion) Len() int      { return len(vs) }
+func (vs ByVersion) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
+func (vs ByVersion) Less(i, j int) bool {
+	cmp := vs[i].Compare(vs[j])
+	if cmp != 0 {
+		return cmp < 0
+	}
+
+	// if versions are equal, sort by lexicographic order
+	return vs[i].String() < vs[j].String()
 }
