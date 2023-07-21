@@ -199,9 +199,7 @@ func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 	return map[string]any{
 		"clusterName":  i.clusterName,
 		"nodeSelector": map[string]any{"node-role.kubernetes.io/control-plane": ""},
-		"tolerations": []map[string]any{
-			{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"},
-		},
+		"tolerations": controlPlaneTolerations,
 	}
 }
 
