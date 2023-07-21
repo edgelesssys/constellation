@@ -96,3 +96,9 @@ variable "name" {
   default     = "constellation"
   description = "name prefix of the cluster VMs"
 }
+
+variable "custom_endpoint" {
+  type        = string
+  default     = ""
+  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+}

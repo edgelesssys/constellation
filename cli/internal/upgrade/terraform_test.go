@@ -371,8 +371,8 @@ func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string) 
 	return u.hasDiff, u.planErr
 }
 
-func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel) (terraform.CreateOutput, error) {
-	return terraform.CreateOutput{}, u.CreateClusterErr
+func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel) (terraform.ApplyOutput, error) {
+	return terraform.ApplyOutput{}, u.CreateClusterErr
 }
 
 type stubPolicyPatcher struct {

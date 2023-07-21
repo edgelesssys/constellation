@@ -83,7 +83,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	}
 	defer cl.RemoveInstaller()
 
-	var tfOutput terraform.CreateOutput
+	var tfOutput terraform.ApplyOutput
 	switch opts.Provider {
 	case cloudprovider.AWS:
 
@@ -117,48 +117,49 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	}
 
 	return clusterid.File{
-		CloudProvider:  opts.Provider,
-		IP:             tfOutput.IP,
-		InitSecret:     []byte(tfOutput.Secret),
-		UID:            tfOutput.UID,
-		AttestationURL: tfOutput.AttestationURL,
+		CloudProvider:     opts.Provider,
+		IP:                tfOutput.IP,
+		APIServerCertSANs: tfOutput.APIServerCertSANs,
+		InitSecret:        []byte(tfOutput.Secret),
+		UID:               tfOutput.UID,
+		AttestationURL:    tfOutput.AttestationURL,
 	}, nil
 }
 
-func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.CreateOutput, retErr error) {
+func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := awsTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.AWS, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	return tfOutput, nil
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.CreateOutput, retErr error) {
+func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := gcpTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.GCP, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	return tfOutput, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.CreateOutput, retErr error) {
+func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := azureTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.Azure, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	if vars.GetCreateMAA() {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
 		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
-			return terraform.CreateOutput{}, err
+			return terraform.ApplyOutput{}, err
 		}
 	}
 
@@ -196,13 +197,13 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 	return vars
 }
 
-func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.CreateOutput, retErr error) {
+func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
-		return terraform.CreateOutput{}, errors.New("OpenStack isn't supported yet")
+		return terraform.ApplyOutput{}, errors.New("OpenStack isn't supported yet")
 	}
 	if _, hasOSAuthURL := os.LookupEnv("OS_AUTH_URL"); !hasOSAuthURL && opts.Config.Provider.OpenStack.Cloud == "" {
-		return terraform.CreateOutput{}, errors.New(
+		return terraform.ApplyOutput{}, errors.New(
 			"neither environment variable OS_AUTH_URL nor cloud name for \"clouds.yaml\" is set. OpenStack authentication requires a set of " +
 				"OS_* environment variables that are typically sourced into the current shell with an openrc file " +
 				"or a cloud name for \"clouds.yaml\". " +
@@ -214,21 +215,21 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts 
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.OpenStack, vars, c.out, opts.TFLogLevel)
 	if err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	return tfOutput, nil
 }
 
-func runTerraformCreate(ctx context.Context, cl terraformClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output terraform.CreateOutput, retErr error) {
+func runTerraformCreate(ctx context.Context, cl terraformClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output terraform.ApplyOutput, retErr error) {
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(provider.String())), vars); err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	defer rollbackOnError(outWriter, &retErr, &rollbackerTerraform{client: cl}, loglevel)
 	tfOutput, err := cl.CreateCluster(ctx, loglevel)
 	if err != nil {
-		return terraform.CreateOutput{}, err
+		return terraform.ApplyOutput{}, err
 	}
 
 	return tfOutput, nil
@@ -239,7 +240,7 @@ type qemuCreateOptions struct {
 	CreateOptions
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput terraform.CreateOutput, retErr error) {
+func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
 	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 
@@ -247,7 +248,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	downloader := c.newRawDownloader()
 	imagePath, err := downloader.Download(ctx, c.out, false, opts.source, opts.Config.Image)
 	if err != nil {
-		return terraform.CreateOutput{}, fmt.Errorf("download raw image: %w", err)
+		return terraform.ApplyOutput{}, fmt.Errorf("download raw image: %w", err)
 	}
 
 	libvirtURI := opts.Config.Provider.QEMU.LibvirtURI
@@ -257,7 +258,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
 		if err := lv.Start(ctx, opts.Config.Name, opts.Config.Provider.QEMU.LibvirtContainerImage); err != nil {
-			return terraform.CreateOutput{}, fmt.Errorf("start libvirt container: %w", err)
+			return terraform.ApplyOutput{}, fmt.Errorf("start libvirt container: %w", err)
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
 
@@ -273,11 +274,11 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	case strings.HasPrefix(libvirtURI, "qemu+unix://"):
 		unixURI, err := url.Parse(strings.TrimPrefix(libvirtURI, "qemu+unix://"))
 		if err != nil {
-			return terraform.CreateOutput{}, err
+			return terraform.ApplyOutput{}, err
 		}
 		libvirtSocketPath = unixURI.Query().Get("socket")
 		if libvirtSocketPath == "" {
-			return terraform.CreateOutput{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
+			return terraform.ApplyOutput{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
 		}
 	}
 
@@ -293,7 +294,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	}
 
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), vars); err != nil {
-		return terraform.CreateOutput{}, fmt.Errorf("prepare workspace: %w", err)
+		return terraform.ApplyOutput{}, fmt.Errorf("prepare workspace: %w", err)
 	}
 
 	// Allow rollback of QEMU Terraform workspace from this point on
@@ -301,7 +302,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 
 	tfOutput, err = cl.CreateCluster(ctx, opts.TFLogLevel)
 	if err != nil {
-		return terraform.CreateOutput{}, fmt.Errorf("create cluster: %w", err)
+		return terraform.ApplyOutput{}, fmt.Errorf("create cluster: %w", err)
 	}
 
 	return tfOutput, nil

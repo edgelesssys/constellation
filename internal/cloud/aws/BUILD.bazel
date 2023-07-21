@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//internal/cloud",
         "//internal/cloud/metadata",
+        "//internal/constants",
         "//internal/role",
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
@@ -21,6 +22,7 @@ go_library(
         "@com_github_aws_aws_sdk_go_v2_service_ec2//:ec2",
         "@com_github_aws_aws_sdk_go_v2_service_ec2//types",
         "@com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2//:elasticloadbalancingv2",
+        "@com_github_aws_aws_sdk_go_v2_service_elasticloadbalancingv2//types",
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//:resourcegroupstaggingapi",
         "@com_github_aws_aws_sdk_go_v2_service_resourcegroupstaggingapi//types",
         "@io_k8s_utils//clock",

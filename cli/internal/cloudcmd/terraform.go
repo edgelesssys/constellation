@@ -64,6 +64,7 @@ func awsTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, w
 		IAMProfileWorkerNodes:  conf.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  conf.IsDebugCluster(),
 		EnableSNP:              conf.GetAttestationConfig().GetVariant().Equal(variant.AWSSEVSNP{}),
+		CustomEndpoint:         conf.CustomEndpoint,
 	}
 }
 
@@ -98,6 +99,7 @@ func azureTerraformVars(conf *config.Config, imageRef string, controlPlaneCount,
 		SecureBoot:           conf.Provider.Azure.SecureBoot,
 		UserAssignedIdentity: conf.Provider.Azure.UserAssignedIdentity,
 		ResourceGroup:        conf.Provider.Azure.ResourceGroup,
+		CustomEndpoint:       conf.CustomEndpoint,
 	}
 
 	vars = normalizeAzureURIs(vars)
@@ -127,11 +129,12 @@ func gcpTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, w
 				DiskType:        conf.Provider.GCP.StateDiskType,
 			},
 		},
-		Project: conf.Provider.GCP.Project,
-		Region:  conf.Provider.GCP.Region,
-		Zone:    conf.Provider.GCP.Zone,
-		ImageID: imageRef,
-		Debug:   conf.IsDebugCluster(),
+		Project:        conf.Provider.GCP.Project,
+		Region:         conf.Provider.GCP.Region,
+		Zone:           conf.Provider.GCP.Zone,
+		ImageID:        imageRef,
+		Debug:          conf.IsDebugCluster(),
+		CustomEndpoint: conf.CustomEndpoint,
 	}
 }
 
@@ -165,6 +168,7 @@ func openStackTerraformVars(conf *config.Config, imageRef string, controlPlaneCo
 				StateDiskSizeGB: conf.StateDiskSizeGB,
 			},
 		},
+		CustomEndpoint: conf.CustomEndpoint,
 	}
 }
 

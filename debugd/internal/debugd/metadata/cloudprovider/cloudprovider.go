@@ -10,7 +10,6 @@ package cloudprovider
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -22,7 +21,7 @@ type providerMetadata interface {
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 	// UID returns the UID of the current instance.
 	UID(ctx context.Context) (string, error)
 }
@@ -91,16 +90,10 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 
 // DiscoverLoadbalancerIP gets load balancer IP from metadata API.
 func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
-	lbEndpoint, err := f.metaAPI.GetLoadBalancerEndpoint(ctx)
+	lbHost, _, err := f.metaAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return "", fmt.Errorf("retrieving load balancer endpoint: %w", err)
 	}
 
-	// The port of the endpoint is not the port we need. We need to strip it off.
-	lbIP, _, err := net.SplitHostPort(lbEndpoint)
-	if err != nil {
-		return "", fmt.Errorf("parsing load balancer endpoint: %w", err)
-	}
-
-	return lbIP, nil
+	return lbHost, nil
 }

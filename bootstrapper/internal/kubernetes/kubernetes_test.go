@@ -63,7 +63,8 @@ func TestInitCluster(t *testing.T) {
 					VPCIP:         privateIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
-				getLoadBalancerEndpointResp: loadbalancerIP,
+				getLoadBalancerHostResp: loadbalancerIP,
+				getLoadBalancerPortResp: strconv.Itoa(constants.KubernetesPort),
 			},
 			wantConfig: k8sapi.KubeadmInitYAML{
 				InitConfiguration: kubeadm.InitConfiguration{
@@ -96,7 +97,8 @@ func TestInitCluster(t *testing.T) {
 					VPCIP:         privateIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
-				getLoadBalancerEndpointResp: loadbalancerIP,
+				getLoadBalancerHostResp: loadbalancerIP,
+				getLoadBalancerPortResp: strconv.Itoa(constants.KubernetesPort),
 			},
 			kubectl:    stubKubectl{annotateNodeErr: assert.AnError},
 			wantErr:    true,
@@ -191,7 +193,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion), "kubernetes",
-				nil, []byte("{}"), false, nil, logger.NewTest(t),
+				nil, []byte("{}"), false, nil, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -449,7 +451,7 @@ func (s *stubClusterUtil) InstallComponents(_ context.Context, _ components.Comp
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _ string, _ bool, _ *logger.Logger) ([]byte, error) {
+func (s *stubClusterUtil) InitCluster(_ context.Context, initConfig []byte, _, _ string, _ []net.IP, _, _ string, _ bool, _ *logger.Logger) ([]byte, error) {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.kubeconfig, s.initClusterErr
 }
@@ -474,7 +476,7 @@ func (s *stubClusterUtil) SetupNodeOperator(_ context.Context, _ k8sapi.Client, 
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ role.Role, _ string, _ *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(_ context.Context, joinConfig []byte, _ role.Role, _, _ string, _ *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }

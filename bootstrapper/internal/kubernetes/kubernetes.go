@@ -79,7 +79,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string, measurementSalt []byte,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, log *logger.Logger,
+	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
@@ -110,16 +110,24 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	// this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
-	controlPlaneEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	// TODO(malt3): switch over to DNS name on AWS and Azure
+	// soon as every apiserver certificate of every control-plane node
+	// has the dns endpoint in its SAN list.
+	controlPlaneHost, controlPlanePort, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
 	}
+
+	certSANs := []string{nodeIP}
+	certSANs = append(certSANs, apiServerCertSANs...)
 
 	log.With(
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", instance.ProviderID),
 		zap.String("nodeIP", nodeIP),
-		zap.String("controlPlaneEndpoint", controlPlaneEndpoint),
+		zap.String("controlPlaneHost", controlPlaneHost),
+		zap.String("controlPlanePort", controlPlanePort),
+		zap.String("certSANs", strings.Join(certSANs, ",")),
 		zap.String("podCIDR", subnetworkPodCIDR),
 	).Infof("Setting information for node")
 
@@ -130,16 +138,16 @@ func (k *KubeWrapper) InitCluster(
 	initConfig := k.configProvider.InitConfiguration(ccmSupported, versionString)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetClusterName(clusterName)
-	initConfig.SetCertSANs([]string{nodeIP})
+	initConfig.SetCertSANs(certSANs)
 	initConfig.SetNodeName(nodeName)
 	initConfig.SetProviderID(instance.ProviderID)
-	initConfig.SetControlPlaneEndpoint(controlPlaneEndpoint)
+	initConfig.SetControlPlaneEndpoint(controlPlaneHost)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, controlPlaneEndpoint, conformanceMode, log)
+	kubeConfig, err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, clusterName, validIPs, controlPlaneHost, controlPlanePort, conformanceMode, log)
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
@@ -171,11 +179,12 @@ func (k *KubeWrapper) InitCluster(
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
-		CloudProvider:        k.cloudProvider,
-		NodeName:             nodeName,
-		FirstNodePodCIDR:     nodePodCIDR,
-		SubnetworkPodCIDR:    subnetworkPodCIDR,
-		LoadBalancerEndpoint: controlPlaneEndpoint,
+		CloudProvider:     k.cloudProvider,
+		NodeName:          nodeName,
+		FirstNodePodCIDR:  nodePodCIDR,
+		SubnetworkPodCIDR: subnetworkPodCIDR,
+		LoadBalancerHost:  controlPlaneHost,
+		LoadBalancerPort:  controlPlanePort,
 	}
 
 	var helmReleases helm.Releases
@@ -206,20 +215,11 @@ func (k *KubeWrapper) InitCluster(
 		// Continue and don't throw an error here - things might be okay.
 	}
 
-	var controlPlaneIP string
-	if strings.Contains(controlPlaneEndpoint, ":") {
-		controlPlaneIP, _, err = net.SplitHostPort(controlPlaneEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("parsing control plane endpoint: %w", err)
-		}
-	} else {
-		controlPlaneIP = controlPlaneEndpoint
-	}
 	serviceConfig := constellationServicesConfig{
 		measurementSalt:        measurementSalt,
 		subnetworkPodCIDR:      subnetworkPodCIDR,
 		cloudServiceAccountURI: cloudServiceAccountURI,
-		loadBalancerIP:         controlPlaneIP,
+		loadBalancerIP:         controlPlaneHost,
 	}
 	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
@@ -300,7 +300,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("generating node name: %w", err)
 	}
 
-	loadbalancerEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	loadBalancerHost, loadBalancerPort, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
@@ -309,6 +309,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", providerID),
 		zap.String("nodeIP", nodeInternalIP),
+		zap.String("loadBalancerHost", loadBalancerHost),
+		zap.String("loadBalancerPort", loadBalancerPort),
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
@@ -329,7 +331,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadbalancerEndpoint, log); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadBalancerHost, loadBalancerPort, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 

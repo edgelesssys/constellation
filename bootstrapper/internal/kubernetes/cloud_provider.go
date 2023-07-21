@@ -19,12 +19,12 @@ type ProviderMetadata interface {
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
-	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }
 
 type stubProviderMetadata struct {
-	getLoadBalancerEndpointErr  error
-	getLoadBalancerEndpointResp string
+	getLoadBalancerEndpointErr                       error
+	getLoadBalancerHostResp, getLoadBalancerPortResp string
 
 	selfErr  error
 	selfResp metadata.InstanceMetadata
@@ -33,8 +33,8 @@ type stubProviderMetadata struct {
 	uidResp string
 }
 
-func (m *stubProviderMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
-	return m.getLoadBalancerEndpointResp, m.getLoadBalancerEndpointErr
+func (m *stubProviderMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return m.getLoadBalancerHostResp, m.getLoadBalancerPortResp, m.getLoadBalancerEndpointErr
 }
 
 func (m *stubProviderMetadata) Self(_ context.Context) (metadata.InstanceMetadata, error) {

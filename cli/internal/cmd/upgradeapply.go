@@ -113,6 +113,20 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
+	// reload idFile after terraform migration
+	// it might have been updated by the migration
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return fmt.Errorf("reading updated cluster ID file: %w", err)
+	}
+
+	// extend the clusterConfig cert SANs with any of the supported endpoints:
+	// - (legacy) public IP
+	// - fallback endpoint
+	// - custom (user-provided) endpoint
+	sans := append([]string{idFile.IP, conf.CustomEndpoint}, idFile.APIServerCertSANs...)
+	if err := u.upgrader.ExtendClusterConfigCertSANs(cmd.Context(), sans); err != nil {
+		return fmt.Errorf("extending cert SANs: %w", err)
+	}
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		var upgradeErr *compatibility.InvalidUpgradeError
@@ -350,6 +364,7 @@ type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, force bool) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
+	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) error

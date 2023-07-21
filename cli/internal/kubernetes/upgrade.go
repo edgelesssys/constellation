@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -42,6 +43,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
+	"sigs.k8s.io/yaml"
 )
 
 // UpgradeCmdKind is the kind of the upgrade command (check, apply).
@@ -341,6 +344,69 @@ func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant vari
 	}
 
 	return existingAttestationConfig, existingConf, nil
+}
+
+// ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
+// Existing SANs are preserved.
+func (u *Upgrader) ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error {
+	clusterConfiguration, kubeadmConfig, err := u.GetClusterConfiguration(ctx)
+	if err != nil {
+		return fmt.Errorf("getting ClusterConfig: %w", err)
+	}
+
+	existingSANs := make(map[string]struct{})
+	for _, existingSAN := range clusterConfiguration.APIServer.CertSANs {
+		existingSANs[existingSAN] = struct{}{}
+	}
+
+	var missingSANs []string
+	for _, san := range alternativeNames {
+		if _, ok := existingSANs[san]; !ok {
+			missingSANs = append(missingSANs, san)
+		}
+	}
+
+	if len(missingSANs) == 0 {
+		return nil
+	}
+	u.log.Debugf("Extending the cluster's apiserver SAN field with the following SANs: %s\n", strings.Join(missingSANs, ", "))
+
+	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, missingSANs...)
+	sort.Strings(clusterConfiguration.APIServer.CertSANs)
+
+	newConfigYAML, err := yaml.Marshal(clusterConfiguration)
+	if err != nil {
+		return fmt.Errorf("marshaling ClusterConfiguration: %w", err)
+	}
+
+	kubeadmConfig.Data[constants.ClusterConfigurationKey] = string(newConfigYAML)
+	u.log.Debugf("Triggering kubeadm config update now")
+	if _, err = u.stableInterface.UpdateConfigMap(ctx, kubeadmConfig); err != nil {
+		return fmt.Errorf("setting new kubeadm config: %w", err)
+	}
+
+	fmt.Fprintln(u.outWriter, "Successfully extended the cluster's apiserver SAN field")
+	return nil
+}
+
+// GetClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
+// and returns both the full configmap and the ClusterConfiguration.
+func (u *Upgrader) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
+	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.KubeadmConfigMap)
+	if err != nil {
+		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
+	}
+	clusterConf, ok := existingConf.Data[constants.ClusterConfigurationKey]
+	if !ok {
+		return kubeadmv1beta3.ClusterConfiguration{}, nil, errors.New("ClusterConfiguration missing from kubeadm-config")
+	}
+
+	var existingClusterConfig kubeadmv1beta3.ClusterConfiguration
+	if err := yaml.Unmarshal([]byte(clusterConf), &existingClusterConfig); err != nil {
+		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("unmarshaling ClusterConfiguration: %w", err)
+	}
+
+	return existingClusterConfig, existingConf, nil
 }
 
 // applyComponentsCM applies the k8s components ConfigMap to the cluster.

@@ -12,9 +12,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -109,9 +107,9 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 
 	switch in.CloudProvider {
 	case "aws", "azure", "openstack", "qemu":
-		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
+		return h.installCiliumGeneric(ctx, release, in.LoadBalancerHost, in.LoadBalancerPort)
 	case "gcp":
-		return h.installCiliumGCP(ctx, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return h.installCiliumGCP(ctx, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerHost, in.LoadBalancerPort)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -120,33 +118,25 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 // installCiliumGeneric installs cilium with the given load balancer endpoint.
 // This is used for cloud providers that do not require special server-side configuration.
 // Currently this is AWS, Azure, and QEMU.
-func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release, kubeAPIEndpoint string) error {
-	host := kubeAPIEndpoint
-	release.Values["k8sServiceHost"] = host
-	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
+func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release, kubeAPIHost, kubeAPIPort string) error {
+	release.Values["k8sServiceHost"] = kubeAPIHost
+	release.Values["k8sServicePort"] = kubeAPIPort
 
 	return h.install(ctx, release.Chart, release.Values)
 }
 
-func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func (h *Client) installCiliumGCP(ctx context.Context, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIHost, kubeAPIPort string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
 		return err
 	}
 
-	host, port, err := net.SplitHostPort(kubeAPIEndpoint)
-	if err != nil {
-		return err
-	}
-
 	// configure pod network CIDR
 	release.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
 	release.Values["strictModeCIDR"] = subnetworkPodCIDR
-	release.Values["k8sServiceHost"] = host
-	if port != "" {
-		release.Values["k8sServicePort"] = port
-	}
+	release.Values["k8sServiceHost"] = kubeAPIHost
+	release.Values["k8sServicePort"] = kubeAPIPort
 
 	return h.install(ctx, release.Chart, release.Values)
 }

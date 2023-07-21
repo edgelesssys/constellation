@@ -123,7 +123,6 @@ func TestDiscoverDebugIPs(t *testing.T) {
 
 func TestDiscoverLoadbalancerIP(t *testing.T) {
 	ip := "192.0.2.1"
-	endpoint := ip + ":1234"
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -132,15 +131,11 @@ func TestDiscoverLoadbalancerIP(t *testing.T) {
 		wantErr bool
 	}{
 		"discovery works": {
-			metaAPI: &stubMetadata{getLBEndpointRes: endpoint},
+			metaAPI: &stubMetadata{getLBHostRes: ip},
 			wantIP:  ip,
 		},
 		"get endpoint fails": {
 			metaAPI: &stubMetadata{getLBEndpointErr: someErr},
-			wantErr: true,
-		},
-		"invalid endpoint": {
-			metaAPI: &stubMetadata{getLBEndpointRes: "invalid"},
 			wantErr: true,
 		},
 	}
@@ -166,14 +161,14 @@ func TestDiscoverLoadbalancerIP(t *testing.T) {
 }
 
 type stubMetadata struct {
-	listRes          []metadata.InstanceMetadata
-	listErr          error
-	selfRes          metadata.InstanceMetadata
-	selfErr          error
-	getLBEndpointRes string
-	getLBEndpointErr error
-	uid              string
-	uidErr           error
+	listRes                    []metadata.InstanceMetadata
+	listErr                    error
+	selfRes                    metadata.InstanceMetadata
+	selfErr                    error
+	getLBHostRes, getLBPortRes string
+	getLBEndpointErr           error
+	uid                        string
+	uidErr                     error
 }
 
 func (m *stubMetadata) List(_ context.Context) ([]metadata.InstanceMetadata, error) {
@@ -184,8 +179,8 @@ func (m *stubMetadata) Self(_ context.Context) (metadata.InstanceMetadata, error
 	return m.selfRes, m.selfErr
 }
 
-func (m *stubMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
-	return m.getLBEndpointRes, m.getLBEndpointErr
+func (m *stubMetadata) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return m.getLBHostRes, m.getLBPortRes, m.getLBEndpointErr
 }
 
 func (m *stubMetadata) UID(_ context.Context) (string, error) {

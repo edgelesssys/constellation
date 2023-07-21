@@ -16,6 +16,7 @@ go_library(
     deps = [
         "//internal/cloud",
         "//internal/cloud/metadata",
+        "//internal/constants",
         "//internal/role",
         "@com_github_gophercloud_gophercloud//:gophercloud",
         "@com_github_gophercloud_gophercloud//openstack/compute/v2/servers",

@@ -156,11 +156,12 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts T
 	}
 
 	outputFileContents := clusterid.File{
-		CloudProvider:  opts.CSP,
-		InitSecret:     []byte(tfOutput.Secret),
-		IP:             tfOutput.IP,
-		UID:            tfOutput.UID,
-		AttestationURL: tfOutput.AttestationURL,
+		CloudProvider:     opts.CSP,
+		InitSecret:        []byte(tfOutput.Secret),
+		IP:                tfOutput.IP,
+		APIServerCertSANs: tfOutput.APIServerCertSANs,
+		UID:               tfOutput.UID,
+		AttestationURL:    tfOutput.AttestationURL,
 	}
 
 	if err := u.fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
@@ -201,7 +202,7 @@ type tfClient interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, upgradeID string, vars terraform.Variables) error
 	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
 	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 }
 
 // policyPatcher interacts with the CSP (currently only applies for Azure) to update the attestation policy.

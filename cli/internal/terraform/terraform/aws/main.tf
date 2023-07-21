@@ -46,8 +46,13 @@ locals {
   zones = distinct(sort([
     for node_group in var.node_groups : node_group.zone
   ]))
+  // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
+  // example: given "name-1234567890.region.elb.amazonaws.com" it will return "*.region.elb.amazonaws.com"
+  wildcard_lb_dns_name = replace(aws_lb.front_end.dns_name, "/^[^.]*\\./", "*.")
 
-  tags = { constellation-uid = local.uid }
+  tags = {
+    constellation-uid = local.uid,
+  }
 }
 
 resource "random_id" "uid" {
@@ -83,7 +88,7 @@ resource "aws_eip" "lb" {
   # control-plane.
   for_each = toset([var.zone])
   domain   = "vpc"
-  tags     = local.tags
+  tags     = merge(local.tags, { "constellation-ip-endpoint" = each.key == var.zone ? "legacy-primary-zone" : "additional-zone" })
 }
 
 resource "aws_lb" "front_end" {

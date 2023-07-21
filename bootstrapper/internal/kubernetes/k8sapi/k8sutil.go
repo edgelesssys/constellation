@@ -91,7 +91,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesCompon
 // InitCluster instruments kubeadm to initialize the K8s cluster.
 // On success an admin kubeconfig file is returned.
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName, clusterName string, ips []net.IP, controlPlaneHost, controlPlanePort string, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -148,6 +148,7 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	log.Infof("Preparing node for Konnectivity")
+	controlPlaneEndpoint := net.JoinHostPort(controlPlaneHost, controlPlanePort)
 	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
 		return nil, fmt.Errorf("setup konnectivity: %w", err)
 	}
@@ -241,11 +242,12 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 
 // SetupPodNetworkInput holds all configuration options to setup the pod network.
 type SetupPodNetworkInput struct {
-	CloudProvider        string
-	NodeName             string
-	FirstNodePodCIDR     string
-	SubnetworkPodCIDR    string
-	LoadBalancerEndpoint string
+	CloudProvider     string
+	NodeName          string
+	FirstNodePodCIDR  string
+	SubnetworkPodCIDR string
+	LoadBalancerHost  string
+	LoadBalancerPort  string
 }
 
 // WaitForCilium waits until Cilium reports a healthy status over its /healthz endpoint.
@@ -314,7 +316,7 @@ func (k *KubernetesUtil) FixCilium(ctx context.Context) error {
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneHost, controlPlanePort string, log *logger.Logger) error {
 	// TODO(3u13r): audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -341,6 +343,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 
 	if peerRole == role.ControlPlane {
 		log.Infof("Prep Init Kubernetes cluster")
+		controlPlaneEndpoint := net.JoinHostPort(controlPlaneHost, controlPlanePort)
 		if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
 			return fmt.Errorf("setup konnectivity: %w", err)
 		}

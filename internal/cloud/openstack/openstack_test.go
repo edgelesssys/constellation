@@ -487,10 +487,10 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		imds    *stubIMDSClient
-		api     *stubServersClient
-		want    string
-		wantErr bool
+		imds     *stubIMDSClient
+		api      *stubServersClient
+		wantHost string
+		wantErr  bool
 	}{
 		"error returned from IMDS client": {
 			imds:    &stubIMDSClient{uidErr: errors.New("failed")},
@@ -613,7 +613,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 					},
 				}, nil),
 			},
-			want: "198.51.100.0",
+			wantHost: "198.51.100.0",
 		},
 		"first valid endpoint returned from server addresses not in subnet CIDR": {
 			imds: &stubIMDSClient{},
@@ -628,7 +628,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 					},
 				}, nil),
 			},
-			want: "198.51.100.0",
+			wantHost: "198.51.100.0",
 		},
 	}
 
@@ -641,13 +641,14 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				api:  tc.api,
 			}
 
-			got, err := c.GetLoadBalancerEndpoint(context.Background())
+			gotHost, gotPort, err := c.GetLoadBalancerEndpoint(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.want, got)
+				assert.Equal(tc.wantHost, gotHost)
+				assert.Equal("6443", gotPort)
 			}
 		})
 	}
