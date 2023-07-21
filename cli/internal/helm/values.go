@@ -194,7 +194,7 @@ var ciliumVals = map[string]map[string]any{
 	},
 }
 
-var nodeSelectorForControlPlane = map[string]any{"node-role.kubernetes.io/control-plane": ""}
+var controlPlaneNodeSelector = map[string]any{"node-role.kubernetes.io/control-plane": ""}
 
 var controlPlaneTolerations = []map[string]any{
 	{
