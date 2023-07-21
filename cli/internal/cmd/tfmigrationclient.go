@@ -23,8 +23,7 @@ type tfMigrationClient struct {
 // adapted from migrateTerraform().
 func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd) (hasDiff bool, err error) {
 	u.log.Debugf("Planning %s", migrateCmd.String())
-	err = migrateCmd.CheckTerraformMigrations(file)
-	if err != nil {
+	if err := migrateCmd.CheckTerraformMigrations(file); err != nil {
 		return false, fmt.Errorf("checking workspace: %w", err)
 	}
 	hasDiff, err = migrateCmd.Plan(cmd.Context(), file, cmd.OutOrStdout())
