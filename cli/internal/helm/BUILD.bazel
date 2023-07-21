@@ -8,6 +8,7 @@ go_library(
         "client.go",
         "helm.go",
         "loader.go",
+        "serviceversion.go",
         "values.go",
     ],
     embedsrcs = [

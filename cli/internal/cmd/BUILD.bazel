@@ -136,7 +136,6 @@ go_test(
         "//bootstrapper/initproto",
         "//cli/internal/cloudcmd",
         "//cli/internal/clusterid",
-        "//cli/internal/helm",
         "//cli/internal/iamid",
         "//cli/internal/kubernetes",
         "//cli/internal/terraform",
