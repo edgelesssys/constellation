@@ -68,13 +68,12 @@ func (c *IAMMigrateCmd) CheckTerraformMigrations(file file.Handler) error {
 // Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
 func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error) {
 	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
-	err := terraform.PrepareIAMUpgradeWorkspace(file,
+	if err := terraform.PrepareIAMUpgradeWorkspace(file,
 		templateDir,
 		constants.TerraformIAMWorkingDir,
 		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),
 		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeBackupDir),
-	)
-	if err != nil {
+	); err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
