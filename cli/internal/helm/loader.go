@@ -53,6 +53,7 @@ var (
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
 	awsLBControllerInfo        = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
+	csiInfo                    = chartInfo{releaseName: "constellation-csi", chartName: "constellation-csi", path: "charts/edgeless/csi"}
 )
 
 // ChartLoader loads embedded helm charts.
@@ -139,6 +140,14 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 		releases.AWSLoadBalancerController = &awsRelease
 	}
 
+	if config.DeployCSIDriver() {
+		csi, err := i.loadRelease(csiInfo, helmWaitMode)
+		if err != nil {
+			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
+		}
+		releases.CSI = &csi
+	}
+
 	rel, err := json.Marshal(releases)
 	if err != nil {
 		return nil, err
@@ -158,23 +167,24 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 
 	switch info.releaseName {
 	case ciliumInfo.releaseName:
-		values, err = i.loadCiliumValues()
+		var ok bool
+		values, ok = ciliumVals[i.csp.String()]
+		if !ok {
+			return helm.Release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+		}
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
 	case constellationOperatorsInfo.releaseName:
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
-
-		values, err = i.loadOperatorsValues()
+		values = i.loadOperatorsValues()
 	case constellationServicesInfo.releaseName:
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
-
-		values, err = i.loadConstellationServicesValues()
+		values = i.loadConstellationServicesValues()
 	case awsLBControllerInfo.releaseName:
 		values = i.loadAWSLBControllerValues()
-	}
-
-	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading %s values: %w", info.releaseName, err)
+	case csiInfo.releaseName:
+		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+		values = i.loadCSIValues()
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -193,28 +203,6 @@ func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 			{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"},
 		},
 	}
-}
-
-// loadCiliumValues is used to separate the marshalling step from the loading step.
-// This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadCiliumValues() (map[string]any, error) {
-	var values map[string]any
-	switch i.csp {
-	case cloudprovider.AWS:
-		values = awsVals
-	case cloudprovider.Azure:
-		values = azureVals
-	case cloudprovider.GCP:
-		values = gcpVals
-	case cloudprovider.OpenStack:
-		values = openStackVals
-	case cloudprovider.QEMU:
-		values = qemuVals
-	default:
-		return nil, fmt.Errorf("unknown csp: %s", i.csp)
-	}
-
-	return values, nil
 }
 
 // extendCiliumValues extends the given values map by some values depending on user input.
@@ -241,77 +229,34 @@ func (i *ChartLoader) loadCertManagerValues() map[string]any {
 		"prometheus": map[string]any{
 			"enabled": false,
 		},
-		"tolerations": []map[string]any{
-			{
-				"key":      "node-role.kubernetes.io/control-plane",
-				"effect":   "NoSchedule",
-				"operator": "Exists",
-			},
-			{
-				"key":      "node-role.kubernetes.io/master",
-				"effect":   "NoSchedule",
-				"operator": "Exists",
-			},
-		},
+		"tolerations": controlPlaneTolerations,
 		"webhook": map[string]any{
-			"tolerations": []map[string]any{
-				{
-					"key":      "node-role.kubernetes.io/control-plane",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-				{
-					"key":      "node-role.kubernetes.io/master",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-			},
+			"tolerations": controlPlaneTolerations,
 		},
 		"cainjector": map[string]any{
-			"tolerations": []map[string]any{
-				{
-					"key":      "node-role.kubernetes.io/control-plane",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-				{
-					"key":      "node-role.kubernetes.io/master",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-			},
+			"tolerations": controlPlaneTolerations,
 		},
 		"startupapicheck": map[string]any{
 			"timeout": "5m",
 			"extraArgs": []string{
 				"--verbose",
 			},
-			"tolerations": []map[string]any{
-				{
-					"key":      "node-role.kubernetes.io/control-plane",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-				{
-					"key":      "node-role.kubernetes.io/master",
-					"effect":   "NoSchedule",
-					"operator": "Exists",
-				},
-			},
+			"tolerations": controlPlaneTolerations,
 		},
 	}
 }
 
 // loadOperatorsHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
-	values := map[string]any{
+func (i *ChartLoader) loadOperatorsValues() map[string]any {
+	return map[string]any{
 		"constellation-operator": map[string]any{
 			"controllerManager": map[string]any{
 				"manager": map[string]any{
 					"image": i.constellationOperatorImage,
 				},
 			},
+			"csp": i.csp.String(),
 		},
 		"node-maintenance-operator": map[string]any{
 			"controllerManager": map[string]any{
@@ -320,67 +265,14 @@ func (i *ChartLoader) loadOperatorsValues() (map[string]any, error) {
 				},
 			},
 		},
+		"tags": i.cspTags(),
 	}
-	switch i.csp {
-	case cloudprovider.AWS:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "AWS"
-
-		values["tags"] = map[string]any{
-			"AWS": true,
-		}
-	case cloudprovider.Azure:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "Azure"
-
-		values["tags"] = map[string]any{
-			"Azure": true,
-		}
-	case cloudprovider.GCP:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "GCP"
-
-		values["tags"] = map[string]any{
-			"GCP": true,
-		}
-	case cloudprovider.OpenStack:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "OpenStack"
-
-		values["tags"] = map[string]any{
-			"OpenStack": true,
-		}
-	case cloudprovider.QEMU:
-		conOpVals, ok := values["constellation-operator"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid constellation-operator values")
-		}
-		conOpVals["csp"] = "QEMU"
-
-		values["tags"] = map[string]any{
-			"QEMU": true,
-		}
-	}
-
-	return values, nil
 }
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
 // This reduces the time unit tests take to execute.
-func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) {
-	values := map[string]any{
+func (i *ChartLoader) loadConstellationServicesValues() map[string]any {
+	return map[string]any{
 		"global": map[string]any{
 			"keyServicePort":      constants.KeyServicePort,
 			"keyServiceNamespace": "", // empty namespace means we use the release namespace
@@ -399,7 +291,11 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 			"image": i.joinServiceImage,
 		},
 		"ccm": map[string]any{
-			"csp": i.csp.String(),
+			"csp":   i.csp.String(),
+			"image": i.ccmImage,
+		},
+		"cnm": map[string]any{
+			"image": i.azureCNMImage,
 		},
 		"autoscaler": map[string]any{
 			"csp":   i.csp.String(),
@@ -414,69 +310,20 @@ func (i *ChartLoader) loadConstellationServicesValues() (map[string]any, error) 
 		"konnectivity": map[string]any{
 			"image": i.konnectivityImage,
 		},
+		"tags": i.cspTags(),
 	}
+}
 
-	switch i.csp {
-	case cloudprovider.AWS:
-		ccmVals, ok := values["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["AWS"] = map[string]any{
-			"image": i.ccmImage,
-		}
-
-		values["tags"] = map[string]any{
-			"AWS": true,
-		}
-	case cloudprovider.Azure:
-		ccmVals, ok := values["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["Azure"] = map[string]any{
-			"image": i.ccmImage,
-		}
-
-		values["cnm"] = map[string]any{
-			"image": i.azureCNMImage,
-		}
-
-		values["tags"] = map[string]any{
-			"Azure": true,
-		}
-
-	case cloudprovider.GCP:
-		ccmVals, ok := values["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["GCP"] = map[string]any{
-			"image": i.ccmImage,
-		}
-
-		values["tags"] = map[string]any{
-			"GCP": true,
-		}
-	case cloudprovider.OpenStack:
-		ccmVals, ok := values["ccm"].(map[string]any)
-		if !ok {
-			return nil, errors.New("invalid ccm values")
-		}
-		ccmVals["OpenStack"] = map[string]any{
-			"image": i.ccmImage,
-		}
-
-		values["tags"] = map[string]any{
-			"OpenStack": true,
-		}
-	case cloudprovider.QEMU:
-		values["tags"] = map[string]any{
-			"QEMU": true,
-		}
-
+func (i *ChartLoader) loadCSIValues() map[string]any {
+	return map[string]any{
+		"tags": i.cspTags(),
 	}
-	return values, nil
+}
+
+func (i *ChartLoader) cspTags() map[string]any {
+	return map[string]any{
+		i.csp.String(): true,
+	}
 }
 
 // extendConstellationServicesValues extends the given values map by some values depending on user input.
@@ -513,22 +360,9 @@ func extendConstellationServicesValues(
 
 	csp := cfg.GetProvider()
 	switch csp {
-	case cloudprovider.AWS:
-		in["aws"] = map[string]any{
-			"deployCSIDriver": cfg.DeployCSIDriver(),
-		}
-	case cloudprovider.Azure:
-		in["azure"] = map[string]any{
-			"deployCSIDriver": cfg.DeployCSIDriver(),
-		}
-	case cloudprovider.GCP:
-		in["gcp"] = map[string]any{
-			"deployCSIDriver": cfg.DeployCSIDriver(),
-		}
 	case cloudprovider.OpenStack:
 		in["openstack"] = map[string]any{
 			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
-			"deployCSIDriver":         cfg.DeployCSIDriver(),
 		}
 		if cfg.DeployYawolLoadBalancer() {
 			in["yawol-controller"] = map[string]any{

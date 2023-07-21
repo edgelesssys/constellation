@@ -3,37 +3,28 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["AWS", "Azure", "GCP", "OpenStack", "QEMU"]
-        },
-        "AWS": {
-            "description": "Config values required for deployment on AWS",
-            "type": "object",
-            "properties": {
-                "image": {
-                    "description": "Container image to use for the spawned pods.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "image"
+            "enum": [
+                "AWS",
+                "Azure",
+                "GCP",
+                "OpenStack",
+                "QEMU"
             ]
+        },
+        "image": {
+            "description": "Container image to use for the Cloud Controller Manager.",
+            "type": "string"
         },
         "Azure": {
             "description": "Config values required for deployment on Azure",
             "type": "object",
             "properties": {
-                "image": {
-                    "description": "Container image to use for the spawned pods.",
-                    "type": "string",
-                    "examples": ["mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:latest"]
-                },
                 "azureConfig": {
                     "description": "Base64 encoded json string that hold required config parameters for Azure CCM.",
                     "type": "string"
                 }
             },
             "required": [
-                "image",
                 "azureConfig"
             ]
         },
@@ -41,14 +32,12 @@
             "description": "Config values required for deployment on GCP",
             "type": "object",
             "properties": {
-                "image": {
-                    "description": "Container image to use for the spawned pods.",
-                    "type": "string"
-                },
                 "projectID": {
                     "description": "ID of the GCP project into which the cluster is deployed",
                     "type": "string",
-                    "examples": ["demoproject-581925"]
+                    "examples": [
+                        "demoproject-581925"
+                    ]
                 },
                 "uid": {
                     "description": "Unique identifier for the cluster",
@@ -61,12 +50,13 @@
                 "subnetworkPodCIDR": {
                     "description": "CIDR Range for Pods in cluster",
                     "type": "string",
-                    "examples": ["192.0.2.0/24"],
+                    "examples": [
+                        "192.0.2.0/24"
+                    ],
                     "pattern": "[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}/[0-9]{1,2}"
                 }
             },
             "required": [
-                "image",
                 "projectID",
                 "uid",
                 "secretData",
@@ -77,52 +67,71 @@
             "description": "Config values required for deployment on OpenStack",
             "type": "object",
             "properties": {
-                "image": {
-                    "description": "Container image to use for the spawned pods.",
-                    "type": "string"
-                },
                 "secretData": {
                     "description": "OpenStack service account key as a json-string",
                     "type": "string"
                 }
             },
             "required": [
-                "image",
                 "secretData"
             ]
         }
     },
     "required": [
-        "csp"
+        "csp",
+        "image"
     ],
     "allOf": [
         {
             "if": {
-                "properties": { "csp": { "const": "AWS" } },
-                "required": ["csp"]
+                "properties": {
+                    "csp": {
+                        "const": "Azure"
+                    }
+                },
+                "required": [
+                    "csp"
+                ]
             },
-            "then": { "required": ["AWS"] }
+            "then": {
+                "required": [
+                    "Azure"
+                ]
+            }
         },
         {
             "if": {
-                "properties": { "csp": { "const": "Azure" } },
-                "required": ["csp"]
+                "properties": {
+                    "csp": {
+                        "const": "GCP"
+                    }
+                },
+                "required": [
+                    "csp"
+                ]
             },
-            "then": { "required": ["Azure"] }
+            "then": {
+                "required": [
+                    "GCP"
+                ]
+            }
         },
         {
             "if": {
-                "properties": { "csp": { "const": "GCP" } },
-                "required": ["csp"]
+                "properties": {
+                    "csp": {
+                        "const": "OpenStack"
+                    }
+                },
+                "required": [
+                    "csp"
+                ]
             },
-            "then": { "required": ["GCP"] }
-        },
-        {
-            "if": {
-                "properties": { "csp": { "const": "OpenStack" } },
-                "required": ["csp"]
-            },
-            "then": { "required": ["OpenStack"] }
+            "then": {
+                "required": [
+                    "OpenStack"
+                ]
+            }
         }
     ],
     "title": "Values",

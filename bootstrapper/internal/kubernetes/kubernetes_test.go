@@ -35,7 +35,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitCluster(t *testing.T) {
-	someErr := errors.New("failed")
 	serviceAccountURI := "some-service-account-uri"
 
 	nodeName := "node-name"
@@ -99,7 +98,7 @@ func TestInitCluster(t *testing.T) {
 				},
 				getLoadBalancerEndpointResp: loadbalancerIP,
 			},
-			kubectl:    stubKubectl{annotateNodeErr: someErr},
+			kubectl:    stubKubectl{annotateNodeErr: assert.AnError},
 			wantErr:    true,
 			k8sVersion: versions.Default,
 		},
@@ -107,7 +106,7 @@ func TestInitCluster(t *testing.T) {
 			clusterUtil:   stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				selfErr: someErr,
+				selfErr: assert.AnError,
 			},
 			wantErr:    true,
 			k8sVersion: versions.Default,
@@ -115,14 +114,14 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
 			clusterUtil: stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
 			providerMetadata: &stubProviderMetadata{
-				getLoadBalancerEndpointErr: someErr,
+				getLoadBalancerEndpointErr: assert.AnError,
 			},
 			wantErr:    true,
 			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when applying the init config": {
 			clusterUtil: stubClusterUtil{
-				initClusterErr: someErr,
+				initClusterErr: assert.AnError,
 				kubeconfig:     []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
@@ -132,30 +131,14 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when deploying cilium": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{ciliumError: someErr},
+			helmClient:       stubHelmClient{ciliumError: assert.AnError},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: someErr},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting the cloud node manager": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: someErr},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting the cluster autoscaler": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: someErr},
+			helmClient:       stubHelmClient{installChartError: assert.AnError},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -163,14 +146,6 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when reading kubeconfig": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{},
-			providerMetadata: &stubProviderMetadata{},
-			wantErr:          true,
-			k8sVersion:       versions.Default,
-		},
-		"kubeadm init fails when setting up konnectivity": {
-			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{servicesError: someErr},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -185,7 +160,7 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when waiting for kubeAPI server": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: someErr},
+			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: assert.AnError},
 			providerMetadata: &stubProviderMetadata{},
 			k8sVersion:       versions.Default,
 			wantErr:          true,
@@ -235,7 +210,6 @@ func TestInitCluster(t *testing.T) {
 }
 
 func TestJoinCluster(t *testing.T) {
-	someErr := errors.New("failed")
 	joinCommand := &kubeadm.BootstrapTokenDiscovery{
 		APIServerEndpoint: "192.0.2.0:" + strconv.Itoa(constants.KubernetesPort),
 		Token:             "kube-fake-token",
@@ -365,13 +339,13 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				selfErr: someErr,
+				selfErr: assert.AnError,
 			},
 			role:    role.Worker,
 			wantErr: true,
 		},
 		"kubeadm join worker fails when applying the join config": {
-			clusterUtil:      stubClusterUtil{joinClusterErr: someErr},
+			clusterUtil:      stubClusterUtil{joinClusterErr: assert.AnError},
 			providerMetadata: &stubProviderMetadata{},
 			role:             role.Worker,
 			wantErr:          true,
@@ -583,10 +557,8 @@ func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
 }
 
 type stubHelmClient struct {
-	ciliumError      error
-	certManagerError error
-	operatorsError   error
-	servicesError    error
+	ciliumError       error
+	installChartError error
 }
 
 func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ helm.Release, _ k8sapi.SetupPodNetworkInput) error {
@@ -599,16 +571,11 @@ func (s *stubHelmClient) InstallChart(ctx context.Context, release helm.Release)
 
 func (s *stubHelmClient) InstallChartWithValues(_ context.Context, release helm.Release, _ map[string]any) error {
 	switch release.ReleaseName {
-	case "cert-manager":
-		return s.certManagerError
-	case "constellation-operators":
-		return s.operatorsError
-	case "constellation-services":
-		return s.servicesError
 	case "cilium":
 		return s.ciliumError
+	default:
+		return s.installChartError
 	}
-	return nil
 }
 
 type stubKubeAPIWaiter struct {

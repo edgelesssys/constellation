@@ -142,7 +142,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	// init only supported up-to-date versions.
 	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(conf.KubernetesVersion), true)
 	if err != nil {
-		return fmt.Errorf("invalid Kubernetes version: %s", conf.KubernetesVersion)
+		return err
 	}
 	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {

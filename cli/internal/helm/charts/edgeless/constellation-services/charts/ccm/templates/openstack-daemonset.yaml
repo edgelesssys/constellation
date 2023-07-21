@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cloud-controller-manager
-          image: {{ .Values.OpenStack.image | quote }}
+          image: {{ .Values.image | quote }}
           args:
           - /bin/openstack-cloud-controller-manager
           - --cloud-provider=openstack

@@ -101,6 +101,10 @@ func (a *stubActionWrapper) getValues(_ string) (map[string]any, error) {
 	return nil, nil
 }
 
+func (a *stubActionWrapper) installAction(_ context.Context, _ string, _ *chart.Chart, _ map[string]any, _ time.Duration) error {
+	return nil
+}
+
 func (a *stubActionWrapper) upgradeAction(_ context.Context, _ string, _ *chart.Chart, _ map[string]any, _ time.Duration) error {
 	return nil
 }

@@ -3569,8 +3569,9 @@ def go_dependencies():
         patches = [
             "//3rdparty/bazel/com_github_martinjungblut_go_cryptsetup:com_github_martinjungblut_go_cryptsetup.patch",  # keep
         ],
-        sum = "h1:YDjLk3wsL5ZLhLC4TIwIvT2NkSCAdAV6pzzZaRfj4jk=",
-        version = "v0.0.0-20220520180014-fd0874fd07a6",
+        replace = "github.com/daniel-weisse/go-cryptsetup",
+        sum = "h1:ToajP6trZoiqlZ3Z4uoG1P02/wtqSw1AcowOXOYjATk=",
+        version = "v0.0.0-20230705150314-d8c07bd1723c",
     )
     go_repository(
         name = "com_github_masterminds_goutils",

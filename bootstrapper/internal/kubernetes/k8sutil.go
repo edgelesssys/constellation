@@ -25,9 +25,8 @@ type clusterUtil interface {
 	StartKubelet() error
 }
 
-// helmClient bundles functions related to microservice deployment. Only microservices that can be deployed purely via Helm are deployed with this interface.
-// Currently only a subset of microservices is deployed via Helm.
-// Naming is inspired by Helm.
+// helmClient bundles functions related to microservice deployment.
+// Only microservices that can be deployed purely via Helm are deployed with this interface.
 type helmClient interface {
 	InstallChart(context.Context, helm.Release) error
 	InstallChartWithValues(ctx context.Context, release helm.Release, extraValues map[string]any) error
