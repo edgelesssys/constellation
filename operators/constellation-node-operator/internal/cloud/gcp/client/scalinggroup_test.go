@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -356,7 +357,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "test-control-plane-uid",
-					NodeGroupName:        "control_plane_default",
+					NodeGroupName:        constants.ControlPlaneDefault,
 					GroupID:              "projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
 					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/test-control-plane-uid",
 					Role:                 "ControlPlane",
@@ -374,7 +375,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "test-worker-uid",
-					NodeGroupName:        "worker_default",
+					NodeGroupName:        constants.WorkerDefault,
 					GroupID:              "projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
 					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/test-worker-uid",
 					Role:                 "Worker",
@@ -411,7 +412,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "some-instance-group-manager",
-					NodeGroupName:        "control_plane_default",
+					NodeGroupName:        constants.ControlPlaneDefault,
 					GroupID:              "projects/project/zones/zone/instanceGroupManagers/some-instance-group-manager",
 					AutoscalingGroupName: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/some-instance-group-manager",
 					Role:                 "ControlPlane",

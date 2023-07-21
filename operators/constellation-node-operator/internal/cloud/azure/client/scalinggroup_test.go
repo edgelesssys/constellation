@@ -13,6 +13,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -202,7 +203,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "constellation-scale-set-control-planes-uid",
-					NodeGroupName:        "control_plane_default",
+					NodeGroupName:        constants.ControlPlaneDefault,
 					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid",
 					AutoscalingGroupName: "constellation-scale-set-control-planes-uid",
 					Role:                 "ControlPlane",
@@ -221,7 +222,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "constellation-scale-set-workers-uid",
-					NodeGroupName:        "worker_default",
+					NodeGroupName:        constants.WorkerDefault,
 					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid",
 					AutoscalingGroupName: "constellation-scale-set-workers-uid",
 					Role:                 "Worker",
@@ -240,7 +241,7 @@ func TestListScalingGroups(t *testing.T) {
 			wantGroups: []cspapi.ScalingGroup{
 				{
 					Name:                 "some-scale-set",
-					NodeGroupName:        "control_plane_default",
+					NodeGroupName:        constants.ControlPlaneDefault,
 					GroupID:              "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set",
 					AutoscalingGroupName: "some-scale-set",
 					Role:                 "ControlPlane",

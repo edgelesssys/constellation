@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
@@ -243,7 +244,16 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		u.checker.AddManualStateMigration(migration)
 	}
 
-	vars, err := parseTerraformUpgradeVars(cmd, conf, u.imagefetcher)
+	if err := u.checker.CheckTerraformMigrations(); err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
+
+	imageRef, err := getImage(cmd.Context(), conf, u.imagefetcher)
+	if err != nil {
+		return fmt.Errorf("fetching image reference: %w", err)
+	}
+
+	vars, err := cloudcmd.TerraformUpgradeVars(conf, imageRef)
 	if err != nil {
 		return fmt.Errorf("parsing upgrade variables: %w", err)
 	}

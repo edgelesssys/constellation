@@ -16,6 +16,7 @@ import (
 	scalingtypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	cspapi "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/internal/cloud/api"
 )
@@ -185,9 +186,9 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) ([]cspapi.Sc
 		if nodeGroupName == "" {
 			switch role {
 			case updatev1alpha1.ControlPlaneRole:
-				nodeGroupName = "control_plane_default"
+				nodeGroupName = constants.ControlPlaneDefault
 			case updatev1alpha1.WorkerRole:
-				nodeGroupName = "worker_default"
+				nodeGroupName = constants.WorkerDefault
 			}
 		}
 
