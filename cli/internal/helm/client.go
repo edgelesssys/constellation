@@ -353,6 +353,9 @@ func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, idF
 	case csiInfo.chartName:
 		releaseName = csiInfo.releaseName
 		values = loader.loadCSIValues()
+	case awsLBControllerInfo.chartName:
+		releaseName = awsLBControllerInfo.releaseName
+		values = loader.loadAWSLBControllerValues()
 	default:
 		return "", nil, fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}
