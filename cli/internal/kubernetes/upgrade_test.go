@@ -13,6 +13,8 @@ import (
 	"io"
 	"testing"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -24,11 +26,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestUpgradeNodeVersion(t *testing.T) {
@@ -46,6 +50,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 		wantErr               bool
 		wantUpdate            bool
 		assertCorrectError    func(t *testing.T, err error) bool
+		customClientFn        func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface
 	}{
 		"success": {
 			conf: func() *config.Config {
@@ -252,6 +257,29 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				return assert.ErrorAs(t, err, &upgradeErr)
 			},
 		},
+		"succeed after update retry when the updated node object is outdated": {
+			conf: func() *config.Config {
+				conf := config.Default()
+				conf.Image = "v1.2.3"
+				conf.KubernetesVersion = versions.SupportedK8sVersions()[1]
+				return conf
+			}(),
+			currentImageVersion:   "v1.2.2",
+			currentClusterVersion: versions.SupportedK8sVersions()[0],
+			stable: &stubStableClient{
+				configMaps: map[string]*corev1.ConfigMap{
+					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
+				},
+			},
+			wantUpdate: false, // because customClient is used
+			customClientFn: func(nodeVersion updatev1alpha1.NodeVersion) DynamicInterface {
+				fakeClient := &fakeDynamicClient{}
+				fakeClient.On("GetCurrent", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 1), nil)
+				fakeClient.On("Update", mock.Anything, mock.Anything).Return(nil, kerrors.NewConflict(schema.GroupResource{Resource: nodeVersion.Name}, nodeVersion.Name, nil)).Once()
+				fakeClient.On("Update", mock.Anything, mock.Anything).Return(unstructedObjectWithGeneration(nodeVersion, 2), nil).Once()
+				return fakeClient
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -269,9 +297,6 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				},
 			}
 
-			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
-			require.NoError(err)
-
 			var badUpdatedObject *unstructured.Unstructured
 			if tc.badImageVersion != "" {
 				nodeVersion.Spec.ImageVersion = tc.badImageVersion
@@ -280,6 +305,8 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				badUpdatedObject = &unstructured.Unstructured{Object: unstrBadNodeVersion}
 			}
 
+			unstrNodeVersion, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+			require.NoError(err)
 			dynamicClient := &stubDynamicClient{object: &unstructured.Unstructured{Object: unstrNodeVersion}, badUpdatedObject: badUpdatedObject, getErr: tc.getErr}
 			upgrader := Upgrader{
 				stableInterface:  tc.stable,
@@ -288,9 +315,11 @@ func TestUpgradeNodeVersion(t *testing.T) {
 				log:              logger.NewTest(t),
 				outWriter:        io.Discard,
 			}
+			if tc.customClientFn != nil {
+				upgrader.dynamicInterface = tc.customClientFn(nodeVersion)
+			}
 
 			err = upgrader.UpgradeNodeVersion(context.Background(), tc.conf, tc.force)
-
 			// Check upgrades first because if we checked err first, UpgradeImage may error due to other reasons and still trigger an upgrade.
 			if tc.wantUpdate {
 				assert.NotNil(dynamicClient.updatedObject)
@@ -550,6 +579,23 @@ func newJoinConfigMap(data string) *corev1.ConfigMap {
 	}
 }
 
+type fakeDynamicClient struct {
+	mock.Mock
+}
+
+func (u *fakeDynamicClient) GetCurrent(ctx context.Context, str string) (*unstructured.Unstructured, error) {
+	args := u.Called(ctx, str)
+	return args.Get(0).(*unstructured.Unstructured), args.Error(1)
+}
+
+func (u *fakeDynamicClient) Update(ctx context.Context, updatedObject *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	args := u.Called(ctx, updatedObject)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return updatedObject, args.Error(1)
+}
+
 type stubDynamicClient struct {
 	object           *unstructured.Unstructured
 	updatedObject    *unstructured.Unstructured
@@ -614,4 +660,11 @@ func (f *stubImageFetcher) FetchReference(_ context.Context,
 	_, _ string,
 ) (string, error) {
 	return f.reference, f.fetchReferenceErr
+}
+
+func unstructedObjectWithGeneration(nodeVersion updatev1alpha1.NodeVersion, generation int64) *unstructured.Unstructured {
+	unstrNodeVersion, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(&nodeVersion)
+	object := &unstructured.Unstructured{Object: unstrNodeVersion}
+	object.SetGeneration(generation)
+	return object
 }
