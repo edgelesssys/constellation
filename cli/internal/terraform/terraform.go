@@ -102,6 +102,18 @@ func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, bac
 	return c.writeVars(vars)
 }
 
+// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
+func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
+	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+	// copy the vars file from the old working dir to the new working dir
+	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
+		return fmt.Errorf("copying vars file: %w", err)
+	}
+	return nil
+}
+
 // CreateCluster creates a Constellation cluster using Terraform.
 func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
@@ -218,8 +230,8 @@ type AWSIAMOutput struct {
 	WorkerNodeInstanceProfile   string
 }
 
-// CreateIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+// ApplyIAMConfig creates an IAM configuration using Terraform.
+func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}

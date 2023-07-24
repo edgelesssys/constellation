@@ -154,8 +154,12 @@ const (
 	TerraformUpgradePlanFile = "plan.zip"
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an upgrade.
 	TerraformUpgradeWorkingDir = "terraform"
+	// TerraformIAMUpgradeWorkingDir is the directory name for the Terraform IAM workspace being used in an upgrade.
+	TerraformIAMUpgradeWorkingDir = "terraform-iam"
 	// TerraformUpgradeBackupDir is the directory name being used to backup the pre-upgrade state in an upgrade.
 	TerraformUpgradeBackupDir = "terraform-backup"
+	// TerraformIAMUpgradeBackupDir is the directory name being used to backup the pre-upgrade state of iam in an upgrade.
+	TerraformIAMUpgradeBackupDir = "terraform-iam-backup"
 	// UpgradeDir is the name of the directory being used for cluster upgrades.
 	UpgradeDir = "constellation-upgrade"
 	// ControlPlaneDefault is the name of the default control plane worker group.

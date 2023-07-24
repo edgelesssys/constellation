@@ -166,7 +166,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, opts *IA
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.GCP, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.GCP, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}
@@ -193,7 +193,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, opts *
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.Azure, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.Azure, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}
@@ -221,7 +221,7 @@ func (c *IAMCreator) createAWS(ctx context.Context, cl terraformClient, opts *IA
 		return iamid.File{}, err
 	}
 
-	iamOutput, err := cl.CreateIAMConfig(ctx, cloudprovider.AWS, opts.TFLogLevel)
+	iamOutput, err := cl.ApplyIAMConfig(ctx, cloudprovider.AWS, opts.TFLogLevel)
 	if err != nil {
 		return iamid.File{}, err
 	}

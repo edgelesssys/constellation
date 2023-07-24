@@ -22,6 +22,7 @@ spec:
           - --leader-elect=true
           - --allocate-node-cidrs=false
           - --configure-cloud-routes=false
+          - --controllers=*,-service
           - -v=2
           volumeMounts:
             - mountPath: /etc/kubernetes

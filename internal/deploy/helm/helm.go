@@ -17,11 +17,12 @@ type Release struct {
 
 // Releases bundles all helm releases to be deployed to Constellation.
 type Releases struct {
-	Cilium                Release
-	CertManager           Release
-	Operators             Release
-	ConstellationServices Release
-	CSI                   *Release
+	AWSLoadBalancerController *Release
+	CSI                       *Release
+	Cilium                    Release
+	CertManager               Release
+	ConstellationOperators    Release
+	ConstellationServices     Release
 }
 
 // MergeMaps returns a new map that is the merger of it's inputs.

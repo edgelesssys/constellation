@@ -18,11 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
-
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -34,6 +29,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
@@ -193,7 +192,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Cilium")
-	if err = k.helmClient.InstallCilium(ctx, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
+	if err = installCilium(ctx, k.helmClient, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
 		return nil, fmt.Errorf("installing pod network: %w", err)
 	}
 
@@ -221,7 +220,7 @@ func (k *KubeWrapper) InitCluster(
 		cloudServiceAccountURI: cloudServiceAccountURI,
 		loadBalancerIP:         controlPlaneHost,
 	}
-	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
+	constellationVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
@@ -232,14 +231,14 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Constellation microservices")
-	if err = k.helmClient.InstallChart(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
+	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationServices, constellationVals); err != nil {
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
 	// cert-manager provides CRDs used by other deployments,
 	// so it should be installed as early as possible, but after the services cert-manager depends on.
 	log.Infof("Installing cert-manager")
-	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager, nil); err != nil {
+	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
 		return nil, fmt.Errorf("installing cert-manager: %w", err)
 	}
 
@@ -260,8 +259,15 @@ func (k *KubeWrapper) InitCluster(
 		}
 
 		log.Infof("Installing CSI deployments")
-		if err := k.helmClient.InstallChart(ctx, *helmReleases.CSI, csiVals); err != nil {
+		if err := k.helmClient.InstallChartWithValues(ctx, *helmReleases.CSI, csiVals); err != nil {
 			return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
+		}
+	}
+
+	if helmReleases.AWSLoadBalancerController != nil {
+		log.Infof("Installing AWS Load Balancer Controller")
+		if err = k.helmClient.InstallChart(ctx, *helmReleases.AWSLoadBalancerController); err != nil {
+			return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}
 
@@ -273,7 +279,7 @@ func (k *KubeWrapper) InitCluster(
 	// Constellation operators require CRDs from cert-manager.
 	// They must be installed after it.
 	log.Infof("Installing operators")
-	if err = k.helmClient.InstallChart(ctx, helmReleases.Operators, operatorVals); err != nil {
+	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationOperators, operatorVals); err != nil {
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 

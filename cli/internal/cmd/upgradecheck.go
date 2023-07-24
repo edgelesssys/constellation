@@ -64,19 +64,23 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	fileHandler := file.NewHandler(afero.NewOsFs())
 	flags, err := parseUpgradeCheckFlags(cmd)
 	if err != nil {
 		return err
 	}
+	fileHandler := file.NewHandler(afero.NewOsFs())
 	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}
 	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
+	}
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), checker.GetUpgradeID(), cloudprovider.AWS, terraform.LogLevelDebug)
+	if err != nil {
+		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
 	up := &upgradeCheckCmd{
 		canUpgradeCheck: featureset.CanUpgradeCheck,
@@ -93,9 +97,11 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker:      checker,
-		imagefetcher: imagefetcher.New(),
-		log:          log,
+		checker:       checker,
+		imagefetcher:  imagefetcher.New(),
+		log:           log,
+		iamMigrateCmd: iamMigrateCmd,
+		planExecutor:  &tfMigrationClient{log},
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -142,12 +148,18 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}, nil
 }
 
+type tfPlanner interface {
+	planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd) (hasDiff bool, err error)
+}
+
 type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
 	checker         upgradeChecker
 	imagefetcher    imageFetcher
 	log             debugLog
+	iamMigrateCmd   upgrade.TfMigrationCmd
+	planExecutor    tfPlanner
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -192,6 +204,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	newServices := supported.service
 	if err := compatibility.IsValidUpgrade(current.service, supported.service); err != nil {
 		newServices = ""
+		u.log.Debugf("No valid service upgrades are available from %q to %q. The minor version can only drift by 1.\n", current.service, supported.service)
 	}
 
 	newKubernetes := filterK8sUpgrades(current.k8s, supported.k8s)
@@ -203,7 +216,22 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return err
 	}
 
+	cmd.Println("The following IAM migrations are available with this CLI:")
+	u.log.Debugf("Planning IAM migrations")
+	if u.iamMigrateCmd != nil {
+		hasIAMDiff, err := u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
+		if err != nil {
+			return fmt.Errorf("planning IAM migration: %w", err)
+		}
+		if !hasIAMDiff {
+			cmd.Println("  No IAM migrations are available.")
+		}
+	}
+
 	u.log.Debugf("Planning Terraform migrations")
+	if err := u.checker.CheckTerraformMigrations(); err != nil {
+		return fmt.Errorf("checking workspace: %w", err)
+	}
 
 	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
 	var awsZone string

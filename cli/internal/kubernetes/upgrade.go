@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
@@ -155,6 +156,11 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	return u, nil
 }
 
+// GetUpgradeID returns the upgrade ID.
+func (u *Upgrader) GetUpgradeID() string {
+	return u.upgradeID
+}
+
 // AddManualStateMigration adds a manual state migration to the Terraform client.
 // TODO(AB#3248): Remove this method after we can assume that all existing clusters have been migrated.
 func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
@@ -164,7 +170,7 @@ func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
 func (u *Upgrader) CheckTerraformMigrations() error {
-	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID)
+	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID, constants.TerraformUpgradeBackupDir)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
@@ -180,7 +186,7 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 	return u.tfUpgrader.PlanTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
-// ApplyTerraformMigrations applies the migerations planned by PlanTerraformMigrations.
+// ApplyTerraformMigrations applies the migrations planned by PlanTerraformMigrations.
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
@@ -189,8 +195,8 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.Te
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive bool, force bool) error {
-	return u.helmClient.Upgrade(ctx, config, timeout, allowDestructive, force, u.upgradeID)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool) error {
+	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID)
 }
 
 // UpgradeNodeVersion upgrades the cluster's NodeVersion object and in turn triggers image & k8s version upgrades.
@@ -578,7 +584,7 @@ func (u *stableClient) KubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error
+	Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error
 }
 
 type debugLog interface {

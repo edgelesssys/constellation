@@ -727,7 +727,7 @@ func TestCreateIAM(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider, LogLevelDebug)
+			IAMoutput, err := c.ApplyIAMConfig(context.Background(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)

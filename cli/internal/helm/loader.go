@@ -36,6 +36,7 @@ import (
 //go:generate ./generateCilium.sh
 //go:generate ./update-csi-charts.sh
 //go:generate ./generateCertManager.sh
+//go:generate ./update-aws-load-balancer-chart.sh
 
 //go:embed all:charts/*
 var helmFS embed.FS
@@ -51,6 +52,7 @@ var (
 	certManagerInfo            = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
+	awsLBControllerInfo        = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
 	csiInfo                    = chartInfo{releaseName: "constellation-csi", chartName: "constellation-csi", path: "charts/edgeless/csi"}
 )
 
@@ -59,18 +61,19 @@ type ChartLoader struct {
 	csp                          cloudprovider.Provider
 	joinServiceImage             string
 	keyServiceImage              string
-	ccmImage                     string
-	cnmImage                     string
+	ccmImage                     string // cloud controller manager image
+	azureCNMImage                string // Azure cloud node manager image
 	autoscalerImage              string
 	verificationServiceImage     string
 	gcpGuestAgentImage           string
 	konnectivityImage            string
 	constellationOperatorImage   string
 	nodeMaintenanceOperatorImage string
+	clusterName                  string
 }
 
 // NewLoader creates a new ChartLoader.
-func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
+func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, clusterName string) *ChartLoader {
 	var ccmImage, cnmImage string
 	switch csp {
 	case cloudprovider.AWS:
@@ -91,13 +94,14 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 		joinServiceImage:             imageversion.JoinService("", ""),
 		keyServiceImage:              imageversion.KeyService("", ""),
 		ccmImage:                     ccmImage,
-		cnmImage:                     cnmImage,
+		azureCNMImage:                cnmImage,
 		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 		verificationServiceImage:     imageversion.VerificationService("", ""),
 		gcpGuestAgentImage:           versions.GcpGuestImage,
 		konnectivityImage:            versions.KonnectivityAgentImage,
 		constellationOperatorImage:   imageversion.ConstellationNodeOperator("", ""),
 		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
+		clusterName:                  clusterName,
 	}
 }
 
@@ -127,7 +131,14 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 
-	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
+	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
+	if config.HasProvider(cloudprovider.AWS) {
+		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
+		if err != nil {
+			return nil, fmt.Errorf("loading aws-services: %w", err)
+		}
+		releases.AWSLoadBalancerController = &awsRelease
+	}
 
 	if config.DeployCSIDriver() {
 		csi, err := i.loadRelease(csiInfo, helmWaitMode)
@@ -145,6 +156,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 }
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
+// IMPORTANT: .helmignore rules specifying files in subdirectories are not applied (e.g. crds/kustomization.yaml).
 func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
@@ -168,6 +180,8 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 	case constellationServicesInfo.releaseName:
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 		values = i.loadConstellationServicesValues()
+	case awsLBControllerInfo.releaseName:
+		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
 		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
 		values = i.loadCSIValues()
@@ -179,6 +193,14 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 	}
 
 	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
+}
+
+func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
+	return map[string]any{
+		"clusterName":  i.clusterName,
+		"tolerations":  controlPlaneTolerations,
+		"nodeSelector": controlPlaneNodeSelector,
+	}
 }
 
 // extendCiliumValues extends the given values map by some values depending on user input.
@@ -271,7 +293,7 @@ func (i *ChartLoader) loadConstellationServicesValues() map[string]any {
 			"image": i.ccmImage,
 		},
 		"cnm": map[string]any{
-			"image": i.cnmImage,
+			"image": i.azureCNMImage,
 		},
 		"autoscaler": map[string]any{
 			"csp":   i.csp.String(),
@@ -400,6 +422,7 @@ func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
 // loadChartsDir loads from a directory.
 //
 // This loads charts only from directories.
+// IMPORTANT: .helmignore rules specifying files in subdirectories are not applied (e.g. crds/kustomization.yaml).
 func loadChartsDir(efs embed.FS, dir string) (*chart.Chart, error) {
 	utf8bom := []byte{0xEF, 0xBB, 0xBF}
 	// Just used for errors.

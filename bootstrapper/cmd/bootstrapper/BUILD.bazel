@@ -13,7 +13,6 @@ go_library(
     deps = [
         "//bootstrapper/internal/clean",
         "//bootstrapper/internal/diskencryption",
-        "//bootstrapper/internal/helm",
         "//bootstrapper/internal/initserver",
         "//bootstrapper/internal/joinclient",
         "//bootstrapper/internal/kubernetes",
@@ -36,6 +35,7 @@ go_library(
         "//internal/cloud/openstack",
         "//internal/cloud/qemu",
         "//internal/constants",
+        "//internal/deploy/helm",
         "//internal/file",
         "//internal/grpc/dialer",
         "//internal/kubernetes/kubectl",

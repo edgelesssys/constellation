@@ -80,7 +80,7 @@ func TestUpgrade(t *testing.T) {
 
 	// Migrate config if necessary.
 	log.Println("Migrating config if needed.")
-	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--force", "--debug")
+	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	log.Println(string(stdout))
@@ -314,7 +314,7 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 // runUpgradeCheck executes 'upgrade check' and does basic checks on the output.
 // We can not check images upgrades because we might use unpublished images. CLI uses public CDN to check for available images.
 func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) {
-	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check")
+	cmd := exec.CommandContext(context.Background(), cli, "upgrade", "check", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 
@@ -356,7 +356,7 @@ func runUpgradeApply(require *require.Assertions, cli string) {
 		tfLogFlag = "--tf-log=DEBUG"
 	}
 
-	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--force", "--debug", "--yes", tfLogFlag)
+	cmd = exec.CommandContext(context.Background(), cli, "upgrade", "apply", "--debug", "--yes", tfLogFlag)
 	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	require.NoError(containsUnexepectedMsg(string(stdout)))

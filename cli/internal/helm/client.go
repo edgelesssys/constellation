@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -104,12 +105,12 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	newReleases := []*chart.Chart{}
 
-	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo} {
+	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo, awsLBControllerInfo} {
 		c.log.Debugf("Checking release %s", info.releaseName)
 		chart, err := loadChartsDir(helmFS, info.path)
 		if err != nil {
@@ -165,7 +166,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 
 	for _, chart := range upgradeReleases {
 		c.log.Debugf("Upgrading release %s", chart.Metadata.Name)
-		if err := c.upgradeRelease(ctx, timeout, config, chart); err != nil {
+		if err := c.upgradeRelease(ctx, timeout, config, idFile, chart); err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
 	}
@@ -178,7 +179,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout tim
 	// it should be done in a separate loop, instead of moving this one up.
 	for _, chart := range newReleases {
 		c.log.Debugf("Installing new release %s", chart.Metadata.Name)
-		if err := c.installNewRelease(ctx, timeout, config, chart); err != nil {
+		if err := c.installNewRelease(ctx, timeout, config, idFile, chart); err != nil {
 			return fmt.Errorf("upgrading %s: %w", chart.Metadata.Name, err)
 		}
 	}
@@ -204,12 +205,17 @@ func (c *Client) Versions() (ServiceVersions, error) {
 	if err != nil {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
+	awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName)
+	if !errors.Is(err, errReleaseNotFound) {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
+	}
 
 	return ServiceVersions{
 		cilium:                 compatibility.EnsurePrefixV(ciliumVersion),
 		certManager:            compatibility.EnsurePrefixV(certManagerVersion),
 		constellationOperators: compatibility.EnsurePrefixV(operatorsVersion),
 		constellationServices:  compatibility.EnsurePrefixV(servicesVersion),
+		awsLBController:        compatibility.EnsurePrefixV(awsLBVersion),
 	}, nil
 }
 
@@ -240,6 +246,7 @@ type ServiceVersions struct {
 	certManager            string
 	constellationOperators string
 	constellationServices  string
+	awsLBController        string
 }
 
 // NewServiceVersions returns a new ServiceVersions struct.
@@ -274,9 +281,9 @@ func (s ServiceVersions) ConstellationServices() string {
 
 // installNewRelease installs a previously not installed release on the cluster.
 func (c *Client) installNewRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, chart)
+	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
 	if err != nil {
 		return fmt.Errorf("loading values: %w", err)
 	}
@@ -285,9 +292,9 @@ func (c *Client) installNewRelease(
 
 // upgradeRelease upgrades a release running on the cluster.
 func (c *Client) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, chart)
+	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
 	if err != nil {
 		return fmt.Errorf("loading values: %w", err)
 	}
@@ -301,7 +308,7 @@ func (c *Client) upgradeRelease(
 }
 
 // loadUpgradeValues loads values for a chart required for running an upgrade.
-func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, chart *chart.Chart,
+func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) (string, map[string]any, error) {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -309,7 +316,11 @@ func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, cha
 	if err != nil {
 		return "", nil, fmt.Errorf("validating k8s version: %s", conf.KubernetesVersion)
 	}
-	loader := NewLoader(conf.GetProvider(), k8sVersion)
+
+	c.log.Debugf("Checking cluster ID file")
+	clusterName := clusterid.GetClusterName(conf, idFile)
+
+	loader := NewLoader(conf.GetProvider(), k8sVersion, clusterName)
 
 	var values map[string]any
 	var releaseName string
@@ -342,6 +353,9 @@ func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, cha
 	case csiInfo.chartName:
 		releaseName = csiInfo.releaseName
 		values = loader.loadCSIValues()
+	case awsLBControllerInfo.chartName:
+		releaseName = awsLBControllerInfo.releaseName
+		values = loader.loadAWSLBControllerValues()
 	default:
 		return "", nil, fmt.Errorf("unknown chart name: %s", chart.Metadata.Name)
 	}

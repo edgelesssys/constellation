@@ -3,9 +3,23 @@ load("//bazel/go:go_test.bzl", "go_test")
 
 go_library(
     name = "helm",
-    srcs = ["helm.go"],
+    srcs = [
+        "helm.go",
+        "install.go",
+    ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/deploy/helm",
     visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/constants",
+        "//internal/logger",
+        "//internal/retry",
+        "@io_k8s_apimachinery//pkg/util/wait",
+        "@org_uber_go_zap//:zap",
+        "@sh_helm_helm_v3//pkg/action",
+        "@sh_helm_helm_v3//pkg/chart",
+        "@sh_helm_helm_v3//pkg/chart/loader",
+        "@sh_helm_helm_v3//pkg/cli",
+    ],
 )
 
 go_test(

@@ -8,6 +8,7 @@ package clusterid
 
 import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
 // File contains state information about a cluster.
@@ -67,4 +68,9 @@ func (f *File) Merge(other File) *File {
 	}
 
 	return f
+}
+
+// GetClusterName returns the name of the cluster.
+func GetClusterName(cfg *config.Config, idFile File) string {
+	return cfg.Name + "-" + idFile.UID
 }

@@ -51,6 +51,17 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
+func TestLoadAWSLoadBalancerValues(t *testing.T) {
+	sut := ChartLoader{
+		clusterName: "testCluster",
+	}
+	val := sut.loadAWSLBControllerValues()
+	assert.Equal(t, "testCluster", val["clusterName"])
+	// needs to run on control-plane
+	assert.Contains(t, val["nodeSelector"].(map[string]any), "node-role.kubernetes.io/control-plane")
+	assert.Contains(t, val["tolerations"].([]map[string]any), map[string]any{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"})
+}
+
 // TestConstellationServices checks if the rendered constellation-services chart produces the expected yaml files.
 func TestConstellationServices(t *testing.T) {
 	testCases := map[string]struct {
@@ -132,11 +143,12 @@ func TestConstellationServices(t *testing.T) {
 				joinServiceImage:         "joinServiceImage",
 				keyServiceImage:          "keyServiceImage",
 				ccmImage:                 tc.ccmImage,
-				cnmImage:                 tc.cnmImage,
+				azureCNMImage:            tc.cnmImage,
 				autoscalerImage:          "autoscalerImage",
 				verificationServiceImage: "verificationImage",
 				konnectivityImage:        "konnectivityImage",
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
+				clusterName:              "testCluster",
 			}
 			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
@@ -214,7 +226,7 @@ func TestOperators(t *testing.T) {
 				joinServiceImage:             "joinServiceImage",
 				keyServiceImage:              "keyServiceImage",
 				ccmImage:                     "ccmImage",
-				cnmImage:                     "cnmImage",
+				azureCNMImage:                "cnmImage",
 				autoscalerImage:              "autoscalerImage",
 				constellationOperatorImage:   "constellationOperatorImage",
 				nodeMaintenanceOperatorImage: "nodeMaintenanceOperatorImage",

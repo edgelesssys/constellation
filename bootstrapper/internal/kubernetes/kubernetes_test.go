@@ -182,6 +182,7 @@ func TestInitCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
+				cloudProvider:    "aws", // provide a valid cloud provider for cilium installation
 				clusterUtil:      &tc.clusterUtil,
 				helmClient:       &tc.helmClient,
 				providerMetadata: tc.providerMetadata,
@@ -566,8 +567,17 @@ func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ hel
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallChart(_ context.Context, _ helm.Release, _ map[string]any) error {
-	return s.installChartError
+func (s *stubHelmClient) InstallChart(ctx context.Context, release helm.Release) error {
+	return s.InstallChartWithValues(ctx, release, release.Values)
+}
+
+func (s *stubHelmClient) InstallChartWithValues(_ context.Context, release helm.Release, _ map[string]any) error {
+	switch release.ReleaseName {
+	case "cilium":
+		return s.ciliumError
+	default:
+		return s.installChartError
+	}
 }
 
 type stubKubeAPIWaiter struct {
