@@ -206,7 +206,7 @@ func (c *Client) Versions() (ServiceVersions, error) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
 	awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName)
-	if !errors.Is(err, errReleaseNotFound) {
+	if err != nil && !errors.Is(err, errReleaseNotFound) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
 	}
 
