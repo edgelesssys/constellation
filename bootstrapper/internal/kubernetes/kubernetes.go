@@ -162,6 +162,10 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
+	if err := k.client.EnforceCoreDNSSpread(ctx); err != nil {
+		return nil, fmt.Errorf("configuring CoreDNS deployment: %w", err)
+	}
+
 	// Setup the K8s components ConfigMap.
 	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents, versionString)
 	if err != nil {
@@ -192,7 +196,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Cilium")
-	if err = installCilium(ctx, k.helmClient, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
+	if err = installCilium(ctx, k.helmClient, helmReleases.Cilium, setupPodNetworkInput); err != nil {
 		return nil, fmt.Errorf("installing pod network: %w", err)
 	}
 

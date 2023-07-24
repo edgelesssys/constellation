@@ -16,33 +16,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // installCilium sets up the cilium pod network.
-func installCilium(ctx context.Context, helmInstaller helmClient, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
-	timeoutS := int64(10)
-	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	tolerations := []corev1.Toleration{
-		{
-			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
-			Value:  "true",
-			Effect: corev1.TaintEffectNoSchedule,
-		},
-		{
-			Key:               "node.kubernetes.io/unreachable",
-			Operator:          corev1.TolerationOpExists,
-			Effect:            corev1.TaintEffectNoExecute,
-			TolerationSeconds: &timeoutS,
-		},
-	}
-	if err := kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
-		return fmt.Errorf("failed to add tolerations to coredns deployment: %w", err)
-	}
-	if err := kubectl.EnforceCoreDNSSpread(ctx); err != nil {
-		return fmt.Errorf("failed to enforce CoreDNS spread: %w", err)
-	}
-
+func installCilium(ctx context.Context, helmInstaller helmClient, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	switch in.CloudProvider {
 	case "aws", "azure", "openstack", "qemu":
 		return installCiliumGeneric(ctx, helmInstaller, release, in.LoadBalancerHost, in.LoadBalancerPort)
