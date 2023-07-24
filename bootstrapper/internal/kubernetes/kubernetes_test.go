@@ -516,7 +516,6 @@ func (s *stubConfigProvider) JoinConfiguration(_ bool) k8sapi.KubeadmJoinYAML {
 
 type stubKubectl struct {
 	createConfigMapErr               error
-	addTolerationsToDeploymentErr    error
 	addTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
 	listAllNamespacesErr             error
@@ -532,10 +531,6 @@ func (s *stubKubectl) Initialize(_ []byte) error {
 
 func (s *stubKubectl) CreateConfigMap(_ context.Context, _ corev1.ConfigMap) error {
 	return s.createConfigMapErr
-}
-
-func (s *stubKubectl) AddTolerationsToDeployment(_ context.Context, _ []corev1.Toleration, _, _ string) error {
-	return s.addTolerationsToDeploymentErr
 }
 
 func (s *stubKubectl) AddNodeSelectorsToDeployment(_ context.Context, _ map[string]string, _, _ string) error {
@@ -561,10 +556,6 @@ func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
 type stubHelmClient struct {
 	ciliumError       error
 	installChartError error
-}
-
-func (s *stubHelmClient) InstallCilium(_ context.Context, _ k8sapi.Client, _ helm.Release, _ k8sapi.SetupPodNetworkInput) error {
-	return s.ciliumError
 }
 
 func (s *stubHelmClient) InstallChart(ctx context.Context, release helm.Release) error {
