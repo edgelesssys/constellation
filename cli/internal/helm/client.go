@@ -206,17 +206,20 @@ func (c *Client) Versions() (ServiceVersions, error) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
 	awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName)
-	if !errors.Is(err, errReleaseNotFound) {
+	if err != nil && !errors.Is(err, errReleaseNotFound) {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
 	}
 
-	return ServiceVersions{
+	res := ServiceVersions{
 		cilium:                 compatibility.EnsurePrefixV(ciliumVersion),
 		certManager:            compatibility.EnsurePrefixV(certManagerVersion),
 		constellationOperators: compatibility.EnsurePrefixV(operatorsVersion),
 		constellationServices:  compatibility.EnsurePrefixV(servicesVersion),
-		awsLBController:        compatibility.EnsurePrefixV(awsLBVersion),
-	}, nil
+	}
+	if awsLBVersion != "" {
+		res.awsLBController = compatibility.EnsurePrefixV(awsLBVersion)
+	}
+	return res, nil
 }
 
 // currentVersion returns the version of the currently installed helm release.
