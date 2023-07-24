@@ -5,6 +5,13 @@ function setup {
   mkdir -p "${HOME}/.cache/bazel"
   mkdir -p "${HOME}/.cache/shared_bazel_repository_cache"
   mkdir -p "${HOME}/.cache/shared_bazel_action_cache"
+
+  if [[ ! -f "${HOME}/.docker/config.json" ]]; then
+    echo "ERROR: ${HOME}/.docker/config.json does not exist."
+    echo "Please login into your container registry to create it."
+    echo "echo <TOKEN> | docker login ghcr.io -u <USERNAME> --password-stdin"
+    exit 1
+  fi
 }
 
 function startBazelServer {
