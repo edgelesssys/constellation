@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/netip"
+	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
@@ -230,7 +232,15 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 // For OpenStack, the load balancer is a floating ip attached to
 // a control plane node.
 // TODO(malt3): Rewrite to use real load balancer once it is available.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
+	host, err = c.getLoadBalancerHost(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("getting load balancer host: %w", err)
+	}
+	return host, strconv.FormatInt(constants.KubernetesPort, 10), nil
+}
+
+func (c *Cloud) getLoadBalancerHost(ctx context.Context) (string, error) {
 	uid, err := c.imds.uid(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting uid: %w", err)

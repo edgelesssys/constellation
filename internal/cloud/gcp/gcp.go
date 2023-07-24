@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"path"
 	"regexp"
 	"strings"
@@ -124,43 +123,44 @@ func (c *Cloud) Close() {
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
 	project, zone, instanceName, err := c.retrieveInstanceInfo()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	uid, err := c.uid(ctx, project, zone, instanceName)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	// First try to find a global forwarding rule.
-	endpoint, err := c.getGlobalForwardingRule(ctx, project, uid)
+	host, port, err = c.getGlobalForwardingRule(ctx, project, uid)
 	if err != nil && !errors.Is(err, errNoForwardingRule) {
-		return "", fmt.Errorf("getting global forwarding rule: %w", err)
+		return "", "", fmt.Errorf("getting global forwarding rule: %w", err)
 	} else if err == nil {
-		return endpoint, nil
+		return host, port, nil
 	}
 
 	// If no global forwarding rule was found, try to find a regional forwarding rule.
 	region := zoneFromRegionRegex.FindString(zone)
 	if region == "" {
-		return "", fmt.Errorf("invalid zone %s", zone)
+		return "", "", fmt.Errorf("invalid zone %s", zone)
 	}
 
-	endpoint, err = c.getRegionalForwardingRule(ctx, project, uid, region)
+	host, port, err = c.getRegionalForwardingRule(ctx, project, uid, region)
 	if err != nil && !errors.Is(err, errNoForwardingRule) {
-		return "", fmt.Errorf("getting regional forwarding rule: %w", err)
-	} else if err == nil {
-		return endpoint, nil
+		return "", "", fmt.Errorf("getting regional forwarding rule: %w", err)
+	} else if err != nil {
+		return "", "", fmt.Errorf("kubernetes load balancer with UID %s not found: %w", uid, err)
 	}
 
-	return "", fmt.Errorf("kubernetes load balancer with UID %s not found: %w", uid, err)
+	return host, port, nil
 }
 
 // getGlobalForwardingRule returns the endpoint of the load balancer if it is a global load balancer.
+// It returns the host, port and optionally an error.
 // This functions returns ErrNoForwardingRule if no forwarding rule was found.
-func (c *Cloud) getGlobalForwardingRule(ctx context.Context, project, uid string) (string, error) {
+func (c *Cloud) getGlobalForwardingRule(ctx context.Context, project, uid string) (string, string, error) {
 	var resp *computepb.ForwardingRule
 	var err error
 	iter := c.globalForwardingRulesAPI.List(ctx, &computepb.ListGlobalForwardingRulesRequest{
@@ -175,19 +175,19 @@ func (c *Cloud) getGlobalForwardingRule(ctx context.Context, project, uid string
 			continue
 		}
 		portRange := strings.Split(*resp.PortRange, "-")
-		return net.JoinHostPort(*resp.IPAddress, portRange[0]), nil
+		return *resp.IPAddress, portRange[0], nil
 	}
 	if err != iterator.Done {
-		return "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
+		return "", "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
 	}
-	return "", errNoForwardingRule
+	return "", "", errNoForwardingRule
 }
 
 // getRegionalForwardingRule returns the endpoint of the load balancer if it is a regional load balancer.
+// It returns the host, port and optionally an error.
 // This functions returns ErrNoForwardingRule if no forwarding rule was found.
-func (c *Cloud) getRegionalForwardingRule(ctx context.Context, project, uid, region string) (string, error) {
+func (c *Cloud) getRegionalForwardingRule(ctx context.Context, project, uid, region string) (host string, port string, err error) {
 	var resp *computepb.ForwardingRule
-	var err error
 	iter := c.regionalForwardingRulesAPI.List(ctx, &computepb.ListForwardingRulesRequest{
 		Project: project,
 		Region:  region,
@@ -204,12 +204,12 @@ func (c *Cloud) getRegionalForwardingRule(ctx context.Context, project, uid, reg
 			continue
 		}
 		portRange := strings.Split(*resp.PortRange, "-")
-		return net.JoinHostPort(*resp.IPAddress, portRange[0]), nil
+		return *resp.IPAddress, portRange[0], nil
 	}
 	if err != iterator.Done {
-		return "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
+		return "", "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
 	}
-	return "", errNoForwardingRule
+	return "", "", errNoForwardingRule
 }
 
 // List retrieves all instances belonging to the current constellation.

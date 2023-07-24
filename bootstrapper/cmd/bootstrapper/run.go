@@ -99,5 +99,5 @@ type clusterInitJoiner interface {
 type metadataAPI interface {
 	joinclient.MetadataAPI
 	initserver.MetadataAPI
-	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
+	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
 }

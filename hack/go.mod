@@ -109,6 +109,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
@@ -305,10 +306,12 @@ require (
 	k8s.io/apiserver v0.27.3 // indirect
 	k8s.io/cli-runtime v0.27.2 // indirect
 	k8s.io/client-go v0.27.3 // indirect
+	k8s.io/cluster-bootstrap v0.27.3 // indirect
 	k8s.io/component-base v0.27.3 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/kubectl v0.27.2 // indirect
+	k8s.io/kubernetes v1.27.3 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	oras.land/oras-go v1.2.3 // indirect
 	sigs.k8s.io/controller-runtime v0.15.0 // indirect

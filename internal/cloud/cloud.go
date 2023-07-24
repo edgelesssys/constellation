@@ -33,4 +33,7 @@ const (
 	TagUID = "constellation-uid"
 	// TagInitSecretHash is the tag/label key used to identify the hash of the init secret.
 	TagInitSecretHash = "constellation-init-secret-hash"
+	// TagCustomEndpoint is the tag/label key used to identify the custom endpoint
+	// or dns name that should be added to tls cert SANs.
+	TagCustomEndpoint = "constellation-custom-endpoint"
 )

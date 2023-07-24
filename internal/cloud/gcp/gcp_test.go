@@ -211,7 +211,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 		instanceAPI                stubInstanceAPI
 		globalForwardingRulesAPI   stubGlobalForwardingRulesAPI
 		regionalForwardingRulesAPI stubRegionalForwardingRulesAPI
-		wantEndpoint               string
+		wantHost                   string
 		wantErr                    bool
 	}{
 		"success global forwarding rule": {
@@ -236,7 +236,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{},
 			},
-			wantEndpoint: "192.0.2.255:6443",
+			wantHost: "192.0.2.255",
 		},
 		"success regional forwarding rule": {
 			imds: stubIMDS{
@@ -261,7 +261,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 					},
 				},
 			},
-			wantEndpoint: "192.0.2.255:6443",
+			wantHost: "192.0.2.255",
 		},
 		"regional forwarding rule has no region": {
 			imds: stubIMDS{
@@ -473,13 +473,14 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 				regionalForwardingRulesAPI: &tc.regionalForwardingRulesAPI,
 			}
 
-			endpoint, err := cloud.GetLoadBalancerEndpoint(context.Background())
+			gotHost, gotPort, err := cloud.GetLoadBalancerEndpoint(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
-			assert.Equal(tc.wantEndpoint, endpoint)
+			assert.Equal(tc.wantHost, gotHost)
+			assert.Equal("6443", gotPort)
 		})
 	}
 }

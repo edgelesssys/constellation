@@ -198,6 +198,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
 		ClusterName:            clusterName,
+		ApiserverCertSans:      idFile.APIServerCertSANs,
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)

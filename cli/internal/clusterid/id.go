@@ -11,7 +11,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
-// File contains identifying information about a cluster.
+// File contains state information about a cluster.
+// This information is accessible after the creation
+// and can be used by further operations such as initialization and upgrades.
 type File struct {
 	// ClusterID is the unique identifier of the cluster.
 	ClusterID string `json:"clusterID,omitempty"`
@@ -23,6 +25,9 @@ type File struct {
 	CloudProvider cloudprovider.Provider `json:"cloudprovider,omitempty"`
 	// IP is the IP address the cluster can be reached at (often the load balancer).
 	IP string `json:"ip,omitempty"`
+	// APIServerCertSANs are subject alternative names (SAN) that are added to
+	// the TLS certificate of each apiserver instance.
+	APIServerCertSANs []string `json:"apiServerCertSANs,omitempty"`
 	// InitSecret is the secret the first Bootstrapper uses to verify the user.
 	InitSecret []byte `json:"initsecret,omitempty"`
 	// AttestationURL is the URL of the attestation service.

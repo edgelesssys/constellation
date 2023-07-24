@@ -194,6 +194,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bketelsen/crypt v0.0.4/go.mod h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
+github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
+github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bshuster-repo/logrus-logstash-hook v1.0.0 h1:e+C0SB5R1pu//O4MQ3f9cFuPGoOVeF2fE4Og9otCc70=
 github.com/bugsnag/bugsnag-go v0.0.0-20141110184014-b1d153021fcd h1:rFt+Y/IK1aEZkEHchZRSq9OQbsSzIT/OrI8YFFmRIng=
 github.com/bugsnag/osext v0.0.0-20130617224835-0dd3f918b21b h1:otBG+dV+YK+Soembjv71DPz3uX/V/6MMlSyD9JBQ6kQ=
@@ -652,8 +654,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213/go.mod h1:vNUNkEQ1e29fT/6vq2aBdFsgNPmy8qMdSay1npru+Sw=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
-github.com/karrick/godirwalk v1.16.1 h1:DynhcF+bztK8gooS0+NDJFrdNZjJ3gzVzC545UNA9iw=
 github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
+github.com/karrick/godirwalk v1.17.0 h1:b4kY7nqDdioR/6qnbHQyDvmA17u5G1cZ6J+CZXwSWoI=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
@@ -1549,6 +1551,8 @@ k8s.io/cli-runtime v0.27.2 h1:9HI8gfReNujKXt16tGOAnb8b4NZ5E+e0mQQHKhFGwYw=
 k8s.io/cli-runtime v0.27.2/go.mod h1:9UecpyPDTkhiYY4d9htzRqN+rKomJgyb4wi0OfrmCjw=
 k8s.io/client-go v0.27.3 h1:7dnEGHZEJld3lYwxvLl7WoehK6lAq7GvgjxpA3nv1E8=
 k8s.io/client-go v0.27.3/go.mod h1:2MBEKuTo6V1lbKy3z1euEGnhPfGZLKTS9tiJ2xodM48=
+k8s.io/cluster-bootstrap v0.27.3 h1:yk1XIWt/mbMgNHFdxd0HyVPq/rnJK7BS3oXj24gHClU=
+k8s.io/cluster-bootstrap v0.27.3/go.mod h1:4/bxgDkpV7XPapJS1585P/nvy3FdBIoFssK4Z5oztrc=
 k8s.io/component-base v0.27.3 h1:g078YmdcdTfrCE4fFobt7qmVXwS8J/3cI1XxRi/2+6k=
 k8s.io/component-base v0.27.3/go.mod h1:JNiKYcGImpQ44iwSYs6dysxzR9SxIIgQalk4HaCNVUY=
 k8s.io/klog/v2 v2.100.1 h1:7WCHKK6K8fNhTqfBhISHQ97KrnJNFZMcQvKp7gP/tmg=
@@ -1557,6 +1561,8 @@ k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f h1:2kWPakN3i/k81b0gvD5C5F
 k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f/go.mod h1:byini6yhqGC14c3ebc/QwanvYwhuMWF6yz2F8uwW8eg=
 k8s.io/kubectl v0.27.2 h1:sSBM2j94MHBFRWfHIWtEXWCicViQzZsb177rNsKBhZg=
 k8s.io/kubectl v0.27.2/go.mod h1:GCOODtxPcrjh+EC611MqREkU8RjYBh10ldQCQ6zpFKw=
+k8s.io/kubernetes v1.27.3 h1:gwufSj7y6X18Q2Gl8v4Ev+AJHdzWkG7A8VNFffS9vu0=
+k8s.io/kubernetes v1.27.3/go.mod h1:U8ZXeKBAPxeb4J4/HOaxjw1A9K6WfSH+fY2SS7CR6IM=
 k8s.io/utils v0.0.0-20230505201702-9f6742963106 h1:EObNQ3TW2D+WptiYXlApGNLVy0zm/JIBVY9i+M4wpAU=
 k8s.io/utils v0.0.0-20230505201702-9f6742963106/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 libvirt.org/go/libvirt v1.9004.0 h1:u+CHhs2OhVmu0MWzBDrlbLzQ5QB3ZfWtfT+lD3EaUIs=

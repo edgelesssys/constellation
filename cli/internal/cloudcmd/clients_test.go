@@ -45,8 +45,8 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(_ context.Context, _ terraform.LogLevel) (terraform.CreateOutput, error) {
-	return terraform.CreateOutput{
+func (c *stubTerraformClient) CreateCluster(_ context.Context, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
+	return terraform.ApplyOutput{
 		IP:             c.ip,
 		Secret:         c.initSecret,
 		UID:            c.uid,

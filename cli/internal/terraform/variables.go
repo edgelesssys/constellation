@@ -30,29 +30,6 @@ type ClusterVariables interface {
 	GetCreateMAA() bool
 }
 
-// CommonVariables is user configuration for creating a cluster with Terraform.
-type CommonVariables struct {
-	// Name of the cluster.
-	Name string
-	// CountControlPlanes is the number of control-plane nodes to create.
-	CountControlPlanes int
-	// CountWorkers is the number of worker nodes to create.
-	CountWorkers int
-	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
-	StateDiskSizeGB int
-}
-
-// String returns a string representation of the variables, formatted as Terraform variables.
-func (v *CommonVariables) String() string {
-	b := &strings.Builder{}
-	writeLinef(b, "name = %q", v.Name)
-	writeLinef(b, "control_plane_count = %d", v.CountControlPlanes)
-	writeLinef(b, "worker_count = %d", v.CountWorkers)
-	writeLinef(b, "state_disk_size = %d", v.StateDiskSizeGB)
-
-	return b.String()
-}
-
 // AWSClusterVariables is user configuration for creating a cluster with Terraform on AWS.
 type AWSClusterVariables struct {
 	// Name of the cluster.
@@ -73,6 +50,8 @@ type AWSClusterVariables struct {
 	EnableSNP bool `hcl:"enable_snp" cty:"enable_snp"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]AWSNodeGroup `hcl:"node_groups" cty:"node_groups"`
+	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
+	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -138,6 +117,8 @@ type GCPClusterVariables struct {
 	Debug bool `hcl:"debug" cty:"debug"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]GCPNodeGroup `hcl:"node_groups" cty:"node_groups"`
+	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
+	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -212,6 +193,8 @@ type AzureClusterVariables struct {
 	SecureBoot *bool `hcl:"secure_boot" cty:"secure_boot"`
 	// NodeGroups is a map of node groups to create.
 	NodeGroups map[string]AzureNodeGroup `hcl:"node_groups" cty:"node_groups"`
+	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
+	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -287,6 +270,8 @@ type OpenStackClusterVariables struct {
 	OpenstackPassword string `hcl:"openstack_password" cty:"openstack_password"`
 	// Debug is true if debug mode is enabled.
 	Debug bool `hcl:"debug" cty:"debug"`
+	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
+	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.
@@ -354,6 +339,8 @@ type QEMUVariables struct {
 	InitrdPath *string `hcl:"constellation_initrd" cty:"constellation_initrd"`
 	// KernelCmdline is the kernel command line.
 	KernelCmdline *string `hcl:"constellation_cmdline" cty:"constellation_cmdline"`
+	// CustomEndpoint is the (optional) custom dns hostname for the kubernetes api server.
+	CustomEndpoint string `hcl:"custom_endpoint" cty:"custom_endpoint"`
 }
 
 // GetCreateMAA gets the CreateMAA variable.

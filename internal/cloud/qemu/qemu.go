@@ -16,8 +16,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 const qemuMetadataEndpoint = "10.42.0.1:8080"
@@ -56,7 +58,15 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 // For QEMU, the load balancer is the first control plane node returned by the metadata API.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
+	host, err = c.getLoadBalancerHost(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("getting load balancer host: %w", err)
+	}
+	return host, strconv.FormatInt(constants.KubernetesPort, 10), nil
+}
+
+func (c *Cloud) getLoadBalancerHost(ctx context.Context) (string, error) {
 	endpointRaw, err := c.retrieveMetadata(ctx, "/endpoint")
 	if err != nil {
 		return "", err

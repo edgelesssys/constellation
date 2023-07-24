@@ -63,3 +63,9 @@ variable "enable_snp" {
   default     = true
   description = "Enable AMD SEV SNP. Setting this to true sets the cpu-option AmdSevSnp to enable."
 }
+
+variable "custom_endpoint" {
+  type        = string
+  default     = ""
+  description = "Custom endpoint to use for the Kubernetes apiserver. If not set, the default endpoint will be used."
+}

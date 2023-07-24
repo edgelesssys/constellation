@@ -11,9 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os/exec"
-	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -47,9 +45,9 @@ func installCilium(ctx context.Context, helmInstaller helmClient, kubectl k8sapi
 
 	switch in.CloudProvider {
 	case "aws", "azure", "openstack", "qemu":
-		return installCiliumGeneric(ctx, helmInstaller, release, in.LoadBalancerEndpoint)
+		return installCiliumGeneric(ctx, helmInstaller, release, in.LoadBalancerHost, in.LoadBalancerPort)
 	case "gcp":
-		return installCiliumGCP(ctx, helmInstaller, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return installCiliumGCP(ctx, helmInstaller, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerHost, in.LoadBalancerPort)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -58,35 +56,26 @@ func installCilium(ctx context.Context, helmInstaller helmClient, kubectl k8sapi
 // installCiliumGeneric installs cilium with the given load balancer endpoint.
 // This is used for cloud providers that do not require special server-side configuration.
 // Currently this is AWS, Azure, and QEMU.
-func installCiliumGeneric(ctx context.Context, helmInstaller helmClient, release helm.Release, kubeAPIEndpoint string) error {
-	host := kubeAPIEndpoint
+func installCiliumGeneric(ctx context.Context, helmInstaller helmClient, release helm.Release, kubeAPIHost, kubeAPIPort string) error {
 	if release.Values != nil {
-		release.Values["k8sServiceHost"] = host
-		release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
+		release.Values["k8sServiceHost"] = kubeAPIHost
+		release.Values["k8sServicePort"] = kubeAPIPort
 	}
-
 	return helmInstaller.InstallChart(ctx, release)
 }
 
-func installCiliumGCP(ctx context.Context, helmInstaller helmClient, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func installCiliumGCP(ctx context.Context, helmInstaller helmClient, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIHost, kubeAPIPort string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
 		return err
 	}
 
-	host, port, err := net.SplitHostPort(kubeAPIEndpoint)
-	if err != nil {
-		return err
-	}
-
 	// configure pod network CIDR
 	release.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
 	release.Values["strictModeCIDR"] = subnetworkPodCIDR
-	release.Values["k8sServiceHost"] = host
-	if port != "" {
-		release.Values["k8sServicePort"] = port
-	}
+	release.Values["k8sServiceHost"] = kubeAPIHost
+	release.Values["k8sServicePort"] = kubeAPIPort
 
 	return helmInstaller.InstallChart(ctx, release)
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -26,10 +27,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	elasticloadbalancingv2types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
 	tagType "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -48,6 +51,7 @@ type loadbalancerAPI interface {
 
 type ec2API interface {
 	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
+	DescribeAddresses(context.Context, *ec2.DescribeAddressesInput, ...func(*ec2.Options)) (*ec2.DescribeAddressesOutput, error)
 }
 
 type imdsAPI interface {
@@ -126,46 +130,100 @@ func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+// TODO(malt3): remove old infrastructure code once we have migrated to using DNS as the load balancer endpoint.
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error) {
+	// try new architecture first
 	uid, err := c.readInstanceTag(ctx, cloud.TagUID)
 	if err != nil {
-		return "", fmt.Errorf("retrieving uid tag: %w", err)
+		return "", "", fmt.Errorf("retrieving uid tag: %w", err)
+	}
+	describeIPsOutput, err := c.ec2.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
+		Filters: []ec2Types.Filter{
+			{
+				Name:   aws.String(cloud.TagUID),
+				Values: []string{uid},
+			},
+			{
+				Name:   aws.String("constellation-ip-endpoint"),
+				Values: []string{"legacy-primary-zone"},
+			},
+		},
+	})
+	if err == nil && len(describeIPsOutput.Addresses) == 1 && describeIPsOutput.Addresses[0].PublicIp != nil {
+		return *describeIPsOutput.Addresses[0].PublicIp, strconv.FormatInt(constants.KubernetesPort, 10), nil
+	}
+	// fallback to old architecture
+	// this will be removed in the future
+	hostname, err := c.getLoadBalancerIPOldInfrastructure(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("retrieving load balancer ip: %w", err)
+	}
+	return hostname, strconv.FormatInt(constants.KubernetesPort, 10), nil
+}
+
+// getLoadBalancerIPOldInfrastructure returns the IP of the load balancer.
+// This is only used for the old infrastructure.
+// This will be removed in the future.
+func (c *Cloud) getLoadBalancerIPOldInfrastructure(ctx context.Context) (string, error) {
+	loadbalancer, err := c.getLoadBalancer(ctx)
+	if err != nil {
+		return "", fmt.Errorf("finding Constellation load balancer: %w", err)
+	}
+
+	// TODO(malt3): Add support for multiple availability zones in the lb frontend.
+	// This can only be done after we have migrated to using DNS as the load balancer endpoint.
+	// At that point, we don't need to care about the number of availability zones anymore.
+	if len(loadbalancer.AvailabilityZones) != 1 {
+		return "", fmt.Errorf("%d availability zones found; expected 1", len(loadbalancer.AvailabilityZones))
+	}
+
+	if len(loadbalancer.AvailabilityZones[0].LoadBalancerAddresses) != 1 {
+		return "", fmt.Errorf("%d load balancer addresses found; expected 1", len(loadbalancer.AvailabilityZones[0].LoadBalancerAddresses))
+	}
+	if loadbalancer.AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress == nil {
+		return "", errors.New("load balancer address is nil")
+	}
+
+	return *loadbalancer.AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress, nil
+}
+
+/*
+// TODO(malt3): uncomment and use as soon as we switch the primary endpoint to DNS.
+func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
+	loadbalancer, err := c.getLoadBalancer(ctx)
+	if err != nil {
+		return "", fmt.Errorf("finding Constellation load balancer: %w", err)
+	}
+	if loadbalancer.DNSName == nil {
+		return "", errors.New("load balancer dns name missing")
+	}
+	return *loadbalancer.DNSName, nil
+}
+*/
+
+func (c *Cloud) getLoadBalancer(ctx context.Context) (*elasticloadbalancingv2types.LoadBalancer, error) {
+	uid, err := c.readInstanceTag(ctx, cloud.TagUID)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving uid tag: %w", err)
 	}
 	arns, err := c.getARNsByTag(ctx, uid, "elasticloadbalancing:loadbalancer")
 	if err != nil {
-		return "", fmt.Errorf("retrieving load balancer ARNs: %w", err)
+		return nil, fmt.Errorf("retrieving load balancer ARNs: %w", err)
 	}
 	if len(arns) != 1 {
-		return "", fmt.Errorf("%d load balancers found", len(arns))
+		return nil, fmt.Errorf("%d load balancers found", len(arns))
 	}
 
 	output, err := c.loadbalancer.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
 		LoadBalancerArns: arns,
 	})
 	if err != nil {
-		return "", fmt.Errorf("retrieving load balancer: %w", err)
+		return nil, fmt.Errorf("retrieving load balancer: %w", err)
 	}
 	if len(output.LoadBalancers) != 1 {
-		return "", fmt.Errorf("%d load balancers found; expected 1", len(output.LoadBalancers))
+		return nil, fmt.Errorf("%d load balancers found; expected 1", len(output.LoadBalancers))
 	}
-
-	// TODO(malt3): Add support for multiple availability zones in the lb frontend.
-	// This can only be done after we have migrated to using DNS as the load balancer endpoint.
-	// At that point, we don't need to care about the number of availability zones anymore.
-	if len(output.LoadBalancers[0].AvailabilityZones) != 1 {
-		return "", fmt.Errorf("%d availability zones found; expected 1", len(output.LoadBalancers[0].AvailabilityZones))
-	}
-
-	if len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses) != 1 {
-		return "", fmt.Errorf("%d load balancer addresses found; expected 1", len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses))
-	}
-	if output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress == nil {
-		return "", errors.New("load balancer address is nil")
-	}
-
-	// TODO(malt3): ideally, we would use DNS here instead of IP addresses.
-	// Requires changes to the infrastructure.
-	return *output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress, nil
+	return &output.LoadBalancers[0], nil
 }
 
 // getARNsByTag returns a list of ARNs that have the given tag.

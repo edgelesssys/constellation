@@ -22,7 +22,7 @@ type clusterFake struct{}
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
 func (c *clusterFake) InitCluster(
 	context.Context, string, string, string, []byte,
-	[]byte, bool, components.Components, *logger.Logger,
+	[]byte, bool, components.Components, []string, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }
@@ -53,8 +53,8 @@ func (f *providerMetadataFake) Self(_ context.Context) (metadata.InstanceMetadat
 	}, nil
 }
 
-func (f *providerMetadataFake) GetLoadBalancerEndpoint(_ context.Context) (string, error) {
-	return "", nil
+func (f *providerMetadataFake) GetLoadBalancerEndpoint(_ context.Context) (string, string, error) {
+	return "", "", nil
 }
 
 func (f *providerMetadataFake) InitSecretHash(_ context.Context) ([]byte, error) {

@@ -26,6 +26,7 @@ message InitRequest {
   repeated KubernetesComponent kubernetes_components = 15;
   bytes init_secret = 16;
   string cluster_name = 17;
+  repeated string apiserver_cert_sans = 18;
 }
 
 message InitResponse {

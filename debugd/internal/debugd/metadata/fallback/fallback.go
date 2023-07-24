@@ -32,8 +32,8 @@ func (fallbackMetadata) Self(context.Context) (metadata.InstanceMetadata, error)
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-func (fallbackMetadata) GetLoadBalancerEndpoint(context.Context) (string, error) {
-	return "", nil
+func (fallbackMetadata) GetLoadBalancerEndpoint(context.Context) (string, string, error) {
+	return "", "", nil
 }
 
 // UID returns the UID of the current instance.

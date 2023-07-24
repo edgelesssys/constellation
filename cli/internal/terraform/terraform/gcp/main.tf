@@ -30,10 +30,12 @@ provider "google-beta" {
 }
 
 locals {
-  uid                   = random_id.uid.hex
-  name                  = "${var.name}-${local.uid}"
-  initSecretHash        = random_password.initSecret.bcrypt_hash
-  labels                = { constellation-uid = local.uid }
+  uid            = random_id.uid.hex
+  name           = "${var.name}-${local.uid}"
+  initSecretHash = random_password.initSecret.bcrypt_hash
+  labels = {
+    constellation-uid = local.uid,
+  }
   ports_node_range      = "30000-32767"
   ports_kubernetes      = "6443"
   ports_bootstrapper    = "9000"
@@ -170,6 +172,7 @@ module "instance_group" {
   named_ports         = each.value.role == "control-plane" ? local.control_plane_named_ports : []
   labels              = local.labels
   init_secret_hash    = local.initSecretHash
+  custom_endpoint     = var.custom_endpoint
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {

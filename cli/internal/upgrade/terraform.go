@@ -166,11 +166,12 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts T
 	}
 
 	outputFileContents := clusterid.File{
-		CloudProvider:  opts.CSP,
-		InitSecret:     []byte(tfOutput.Secret),
-		IP:             tfOutput.IP,
-		UID:            tfOutput.UID,
-		AttestationURL: tfOutput.AttestationURL,
+		CloudProvider:     opts.CSP,
+		InitSecret:        []byte(tfOutput.Secret),
+		IP:                tfOutput.IP,
+		APIServerCertSANs: tfOutput.APIServerCertSANs,
+		UID:               tfOutput.UID,
+		AttestationURL:    tfOutput.AttestationURL,
 	}
 
 	if err := u.fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
@@ -214,7 +215,7 @@ type tfClientCommon interface {
 // tfResourceClient is a Terraform client for managing cluster resources.
 type tfResourceClient interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.CreateOutput, error)
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 	tfClientCommon
 }
 

@@ -8,5 +8,8 @@ go_library(
     ],
     importpath = "github.com/edgelesssys/constellation/v2/internal/cloud/qemu",
     visibility = ["//:__subpackages__"],
-    deps = ["//internal/cloud/metadata"],
+    deps = [
+        "//internal/cloud/metadata",
+        "//internal/constants",
+    ],
 )

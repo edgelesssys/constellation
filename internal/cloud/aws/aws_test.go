@@ -485,7 +485,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 		ec2API       *stubEC2
 		loadbalancer *stubLoadbalancer
 		resourceapi  *stubResourceGroupTagging
-		wantAddr     string
+		wantHost     string
 		wantErr      bool
 	}{
 		"success retrieving loadbalancer endpoint": {
@@ -514,6 +514,47 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+				describeAddressesResp: &ec2.DescribeAddressesOutput{
+					Addresses: []ec2Types.Address{
+						{
+							Tags: []ec2Types.Tag{
+								{Key: aws.String(cloud.TagUID), Value: aws.String("uid")},
+								{Key: aws.String("constellation-ip-endpoint"), Value: aws.String("legacy-primary-zone")},
+							},
+							PublicIp: aws.String(lbAddr),
+						},
+					},
+				},
+			},
+			wantHost: lbAddr,
+		},
+		"success retrieving loadbalancer endpoint legacy": {
+			imds: &stubIMDS{
+				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
+					InstanceIdentityDocument: imds.InstanceIdentityDocument{
+						InstanceID: "test-instance-id",
+					},
+				},
+			},
+			ec2API: &stubEC2{
+				selfInstance: &ec2.DescribeInstancesOutput{
+					Reservations: []ec2Types.Reservation{
+						{
+							Instances: []ec2Types.Instance{
+								{
+									InstanceId: aws.String("test-instance-id"),
+									Tags: []ec2Types.Tag{
+										{
+											Key:   aws.String(cloud.TagUID),
+											Value: aws.String("uid"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
@@ -541,9 +582,9 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 					},
 				},
 			},
-			wantAddr: lbAddr,
+			wantHost: lbAddr,
 		},
-		"too many ARNs": {
+		"too many ARNs legacy": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
@@ -569,6 +610,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
@@ -601,7 +643,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"too many ARNs (paged)": {
+		"too many ARNs (paged) legacy": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
@@ -627,6 +669,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
@@ -664,7 +707,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"loadbalancer has no availability zones": {
+		"loadbalancer has no availability zones legacy": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
@@ -690,6 +733,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
@@ -711,7 +755,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"failure to get resources by tag": {
+		"failure to get resources by tag legacy": {
 			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
@@ -737,6 +781,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+				describeAddressesErr: errors.New("using legacy infrastructure"),
 			},
 			loadbalancer: &stubLoadbalancer{
 				describeLoadBalancersOut: &elasticloadbalancingv2.DescribeLoadBalancersOutput{
@@ -772,14 +817,15 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				resourceapiClient: tc.resourceapi,
 			}
 
-			endpoint, err := m.GetLoadBalancerEndpoint(context.Background())
+			gotHost, gotPort, err := m.GetLoadBalancerEndpoint(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 
 			assert.NoError(err)
-			assert.Equal(tc.wantAddr, endpoint)
+			assert.Equal(tc.wantHost, gotHost)
+			assert.Equal("6443", gotPort)
 		})
 	}
 }
@@ -973,6 +1019,8 @@ type stubEC2 struct {
 	selfInstance           *ec2.DescribeInstancesOutput
 	describeInstancesResp1 *ec2.DescribeInstancesOutput
 	describeInstancesResp2 *ec2.DescribeInstancesOutput
+	describeAddressesErr   error
+	describeAddressesResp  *ec2.DescribeAddressesOutput
 }
 
 func (s *stubEC2) DescribeInstances(_ context.Context, in *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
@@ -983,6 +1031,10 @@ func (s *stubEC2) DescribeInstances(_ context.Context, in *ec2.DescribeInstances
 		return s.describeInstancesResp1, s.describeInstancesErr
 	}
 	return s.describeInstancesResp2, s.describeInstancesErr
+}
+
+func (s *stubEC2) DescribeAddresses(context.Context, *ec2.DescribeAddressesInput, ...func(*ec2.Options)) (*ec2.DescribeAddressesOutput, error) {
+	return s.describeAddressesResp, s.describeAddressesErr
 }
 
 type stubLoadbalancer struct {

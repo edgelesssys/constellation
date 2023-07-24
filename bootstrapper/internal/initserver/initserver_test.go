@@ -407,7 +407,7 @@ type stubClusterInitializer struct {
 
 func (i *stubClusterInitializer) InitCluster(
 	context.Context, string, string, string, []byte,
-	[]byte, bool, components.Components, *logger.Logger,
+	[]byte, bool, components.Components, []string, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }
