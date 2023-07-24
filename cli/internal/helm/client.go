@@ -92,10 +92,11 @@ func (c *Client) shouldUpgrade(releaseName string, newVersion semver.Semver, for
 			return err
 		}
 	}
+	cliVersion := constants.BinaryVersion()
 	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
 	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
-		if versions.CLIVersion().Compare(newVersion) != 0 {
-			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", constants.VersionInfo())
+		if cliVersion.Compare(newVersion) != 0 {
+			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", cliVersion.String())
 		}
 	}
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
@@ -121,7 +122,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 		var upgradeVersion semver.Semver
 		if info == constellationOperatorsInfo || info == constellationServicesInfo {
 			// ensure that the services chart has the same version as the CLI
-			updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+			updateVersions(chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {
 			chartVersion, err := semver.New(chart.Metadata.Version)

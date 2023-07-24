@@ -49,7 +49,7 @@ func main() {
 
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	log.With(
-		zap.String("version", constants.VersionInfo()),
+		zap.String("version", constants.BinaryVersion().String()),
 		zap.String("cloudProvider", *provider),
 		zap.String("attestationVariant", *attestationVariant),
 	).Infof("Constellation Node Join Service")

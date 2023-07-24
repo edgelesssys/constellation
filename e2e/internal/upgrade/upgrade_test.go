@@ -332,10 +332,8 @@ func runUpgradeCheck(require *require.Assertions, cli, targetKubernetes string) 
 		require.Contains(string(stdout), targetKubernetes, fmt.Sprintf("Expected Kubernetes version %s in output.", targetKubernetes))
 	}
 
-	cliVersion, err := semver.New(constants.VersionInfo())
-	require.NoError(err)
 	require.Contains(string(stdout), "Services:")
-	require.Contains(string(stdout), fmt.Sprintf("--> %s", cliVersion.String()))
+	require.Contains(string(stdout), fmt.Sprintf("--> %s", constants.BinaryVersion().String()))
 
 	log.Println(string(stdout))
 }

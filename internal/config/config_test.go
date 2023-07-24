@@ -140,7 +140,7 @@ func TestNew(t *testing.T) {
 
 func modifyConfigForAzureToPassValidate(c *Config) {
 	c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-	c.Image = "v" + constants.VersionInfo()
+	c.Image = constants.BinaryVersion().String()
 	c.Provider.Azure.SubscriptionID = "11111111-1111-1111-1111-111111111111"
 	c.Provider.Azure.TenantID = "11111111-1111-1111-1111-111111111111"
 	c.Provider.Azure.Location = "westus"
@@ -350,7 +350,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				cnf.Image = "v" + constants.VersionInfo()
+				cnf.Image = constants.BinaryVersion().String()
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
@@ -411,7 +411,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
-				cnf.Image = "v" + constants.VersionInfo()
+				cnf.Image = constants.BinaryVersion().String()
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"

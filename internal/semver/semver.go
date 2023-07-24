@@ -7,11 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 /*
 Package semver provides functionality to parse and process semantic versions, as they are used in multiple components of Constellation.
 
-The official semantic versioning specification [1] disallows leading "v" prefixes.
+The official [semantic versioning specification] disallows leading "v" prefixes.
 However, the Constellation config uses the "v" prefix for versions to make version strings more recognizable.
 This package bridges the gap between Go's semver pkg (doesn't allow "v" prefix) and the Constellation config (requires "v" prefix).
 
-[1] https://semver.org/.
+[semantic versioning specification]: https://semver.org/
 */
 package semver
 
@@ -23,13 +23,12 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"golang.org/x/mod/semver"
 )
 
 // Sort sorts a list of semantic version strings using [ByVersion].
 func Sort(list []Semver) {
-	sort.Sort(ByVersion(list))
+	sort.Sort(byVersion(list))
 }
 
 // Semver represents a semantic version.
@@ -68,7 +67,7 @@ func New(version string) (Semver, error) {
 	}, nil
 }
 
-// NewFromInt constructs a new Semver from three integers: MAJOR.MINOR.PATCH.
+// NewFromInt constructs a new Semver from three integers and prerelease string: MAJOR.MINOR.PATCH-PRERELEASE.
 func NewFromInt(major, minor, patch int, prerelease string) Semver {
 	return Semver{
 		major:      major,
@@ -158,20 +157,7 @@ func (v Semver) IsUpgradeTo(other Semver) error {
 	return nil
 }
 
-// CompatibleWithBinary returns if a version is compatible version of the current built binary.
-// It checks if the version of the binary is equal or greater than the current version and allows a drift of at most one minor version.
-func (v Semver) CompatibleWithBinary() bool {
-	binaryVersion, err := New(constants.VersionInfo())
-	if err != nil {
-		return false
-	}
-
-	isUpgrade := binaryVersion.IsUpgradeTo(v) == nil
-
-	return v.Compare(binaryVersion) == 0 || isUpgrade
-}
-
-// NextMinor returns the next minor version in the format "vm.MINOR".
+// NextMinor returns the next minor version in the format "vMAJOR.MINOR+1".
 func (v Semver) NextMinor() string {
 	return fmt.Sprintf("v%d.%d", v.major, v.minor+1)
 }
@@ -219,14 +205,14 @@ func (v *Semver) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ByVersion implements [sort.Interface] for sorting semantic version strings.
+// byVersion implements [sort.Interface] for sorting semantic version strings.
 // Copied from Go's semver pkg with minimal modification.
 // https://cs.opensource.google/go/x/mod/+/master:semver/semver.go
-type ByVersion []Semver
+type byVersion []Semver
 
-func (vs ByVersion) Len() int      { return len(vs) }
-func (vs ByVersion) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
-func (vs ByVersion) Less(i, j int) bool {
+func (vs byVersion) Len() int      { return len(vs) }
+func (vs byVersion) Swap(i, j int) { vs[i], vs[j] = vs[j], vs[i] }
+func (vs byVersion) Less(i, j int) bool {
 	cmp := vs[i].Compare(vs[j])
 	if cmp != 0 {
 		return cmp < 0

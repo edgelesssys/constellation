@@ -12,6 +12,7 @@ go_library(
     deps = [
         "//internal/constants",
         "//internal/logger",
+        "//internal/semver",
         "@sh_helm_helm_v3//pkg/action",
         "@sh_helm_helm_v3//pkg/cli",
     ],

@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -497,7 +498,7 @@ func registerVersionCompatibilityError(ut ut.Translator) error {
 }
 
 func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldError) string {
-	binaryVersion := constants.VersionInfo()
+	binaryVersion := constants.BinaryVersion()
 	err := validateVersionCompatibilityHelper(binaryVersion, fe.Field(), fe.Value().(string))
 	var msg string
 
@@ -505,11 +506,11 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 	case errors.Is(err, compatibility.ErrSemVer):
 		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMajorMismatch):
-		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", binaryVersion.String(), fe.Value().(string))
 	case errors.Is(err, compatibility.ErrMinorDrift):
-		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", binaryVersion.String(), fe.Value().(string))
 	case errors.Is(err, compatibility.ErrOutdatedCLI):
-		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
+		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", binaryVersion.String(), fe.Value().(string))
 	default:
 		msg = err.Error()
 	}
@@ -521,7 +522,7 @@ func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldErro
 
 // Check that the validated field and the CLI version are not more than one minor version apart.
 func validateVersionCompatibility(fl validator.FieldLevel) bool {
-	binaryVersion := constants.VersionInfo()
+	binaryVersion := constants.BinaryVersion()
 	if err := validateVersionCompatibilityHelper(binaryVersion, fl.FieldName(), fl.Field().String()); err != nil {
 		return false
 	}
@@ -529,7 +530,7 @@ func validateVersionCompatibility(fl validator.FieldLevel) bool {
 	return true
 }
 
-func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVersion string) error {
+func validateVersionCompatibilityHelper(binaryVersion consemver.Semver, fieldName, configuredVersion string) error {
 	if fieldName == "image" {
 		imageVersion, err := versionsapi.NewVersionFromShortPath(configuredVersion, versionsapi.VersionKindImage)
 		if err != nil {
@@ -539,14 +540,13 @@ func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVers
 	}
 
 	if fieldName == "microserviceVersion" {
-		cliVersion := compatibility.EnsurePrefixV(binaryVersion)
 		serviceVersion := compatibility.EnsurePrefixV(configuredVersion)
-		if semver.Compare(cliVersion, serviceVersion) == -1 {
-			return fmt.Errorf("the CLI's version (%s) is older than the configured version (%s)", cliVersion, serviceVersion)
+		if semver.Compare(binaryVersion.String(), serviceVersion) == -1 {
+			return fmt.Errorf("the CLI's version (%s) is older than the configured version (%s)", binaryVersion.String(), serviceVersion)
 		}
 	}
 
-	return compatibility.BinaryWith(binaryVersion, configuredVersion)
+	return compatibility.BinaryWith(binaryVersion.String(), configuredVersion)
 }
 
 func returnsTrue(_ validator.FieldLevel) bool {

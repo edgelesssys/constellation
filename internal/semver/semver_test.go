@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -218,59 +218,59 @@ func TestComparison(t *testing.T) {
 
 func TestCanUpgrade(t *testing.T) {
 	testCases := map[string]struct {
-		version1 Semver
-		version2 Semver
-		wantErr  bool
+		version1    Semver
+		version2    Semver
+		wantUpgrade bool
 	}{
 		"equal": {
-			version1: v1_18_0,
-			version2: v1_18_0,
-			wantErr:  false,
+			version1:    v1_18_0,
+			version2:    v1_18_0,
+			wantUpgrade: false,
 		},
 		"patch less than": {
-			version1: v1_18_0,
-			version2: v1_18_1,
-			wantErr:  true,
+			version1:    v1_18_0,
+			version2:    v1_18_1,
+			wantUpgrade: true,
 		},
 		"minor less then": {
-			version1: v1_18_0,
-			version2: v1_19_0,
-			wantErr:  true,
+			version1:    v1_18_0,
+			version2:    v1_19_0,
+			wantUpgrade: true,
 		},
 		"minor too big drift": {
-			version1: v1_18_0,
-			version2: v1_20_0,
-			wantErr:  false,
+			version1:    v1_18_0,
+			version2:    v1_20_0,
+			wantUpgrade: false,
 		},
 		"major too big drift": {
-			version1: v1_18_0,
-			version2: v2_0_0,
-			wantErr:  false,
+			version1:    v1_18_0,
+			version2:    v2_0_0,
+			wantUpgrade: false,
 		},
 		"greater than": {
-			version1: v1_18_1,
-			version2: v1_18_0,
-			wantErr:  false,
+			version1:    v1_18_1,
+			version2:    v1_18_0,
+			wantUpgrade: false,
 		},
 		"prerelease less than": {
-			version1: v1_18_0Pre,
-			version2: v1_18_0,
-			wantErr:  true,
+			version1:    v1_18_0Pre,
+			version2:    v1_18_0,
+			wantUpgrade: true,
 		},
 		"prerelease greater than": {
-			version1: v1_18_0,
-			version2: v1_18_0Pre,
-			wantErr:  false,
+			version1:    v1_18_0,
+			version2:    v1_18_0Pre,
+			wantUpgrade: false,
 		},
 		"prerelease equal": {
-			version1: v1_18_0Pre,
-			version2: v1_18_0Pre,
-			wantErr:  false,
+			version1:    v1_18_0Pre,
+			version2:    v1_18_0Pre,
+			wantUpgrade: false,
 		},
 		"prerelease extra": {
-			version1: v1_18_0Pre,
-			version2: v1_18_0PreExtra,
-			wantErr:  true,
+			version1:    v1_18_0Pre,
+			version2:    v1_18_0PreExtra,
+			wantUpgrade: true,
 		},
 	}
 
@@ -278,12 +278,12 @@ func TestCanUpgrade(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			assert.Equal(tc.wantErr, tc.version2.IsUpgradeTo(tc.version1) == nil)
+			assert.Equal(tc.wantUpgrade, tc.version2.IsUpgradeTo(tc.version1) == nil)
 		})
 	}
 }
 
-func TestNextminor(t *testing.T) {
+func TestNextMinor(t *testing.T) {
 	testCases := map[string]struct {
 		version Semver
 		want    string
@@ -340,6 +340,11 @@ func TestVersionMarshalYAML(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tc.want, string(marshalled))
+
+			var unmarshalled Semver
+			err = yaml.Unmarshal(marshalled, &unmarshalled)
+			require.NoError(t, err)
+			require.Equal(t, tc.version, unmarshalled)
 		})
 	}
 }
@@ -350,15 +355,6 @@ func TestVersionUnmarshalYAML(t *testing.T) {
 		want      Semver
 		wantError bool
 	}{
-		"simple unmarshal works": {
-			version: []byte("v1.18.0"),
-			want: Semver{
-				major:      1,
-				minor:      18,
-				patch:      0,
-				prerelease: "",
-			},
-		},
 		"empty string": {
 			version: []byte(""),
 		},
@@ -374,6 +370,24 @@ func TestVersionUnmarshalYAML(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tc.want.Compare(actual), 0, fmt.Sprintf("expected %s, got %s", tc.want, actual))
+		})
+	}
+}
+
+func TestSort(t *testing.T) {
+	testCases := map[string]struct {
+		input []Semver
+		want  []Semver
+	}{
+		"": {
+			input: []Semver{NewFromInt(2, 0, 0, ""), NewFromInt(0, 0, 0, ""), NewFromInt(1, 5, 0, "aa"), NewFromInt(1, 5, 0, "bb"), NewFromInt(1, 0, 0, "")},
+			want:  []Semver{NewFromInt(0, 0, 0, ""), NewFromInt(1, 0, 0, ""), NewFromInt(1, 5, 0, "aa"), NewFromInt(1, 5, 0, "bb"), NewFromInt(2, 0, 0, "")},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			Sort(tc.input)
+			require.Equal(t, tc.want, tc.input, fmt.Sprintf("expected %s, got %s", tc.want, tc.input))
 		})
 	}
 }

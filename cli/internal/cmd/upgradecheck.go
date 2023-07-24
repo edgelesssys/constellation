@@ -93,7 +93,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			cosign:         sigstore.CosignVerifier{},
 			rekor:          rekor,
 			flags:          flags,
-			cliVersion:     versions.CLIVersion(),
+			cliVersion:     constants.BinaryVersion(),
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
@@ -446,7 +446,7 @@ func (v *versionCollector) supportedVersions(ctx context.Context, version, curre
 
 	return supportedVersionInfo{
 		// Each CLI comes with a set of services that have the same version as the CLI.
-		service:       versions.CLIVersion(),
+		service:       constants.BinaryVersion(),
 		image:         imageVersions,
 		k8s:           k8sVersions,
 		cli:           cliVersions,
@@ -685,15 +685,11 @@ type versionFetcher interface {
 
 // newCLIVersions returns a list of versions of the CLI which are a valid upgrade.
 func (v *versionCollector) newCLIVersions(ctx context.Context) ([]consemver.Semver, error) {
-	cliVersion, err := consemver.New(constants.VersionInfo())
-	if err != nil {
-		return nil, fmt.Errorf("parsing current CLI version: %w", err)
-	}
 	list := versionsapi.List{
 		Ref:         v.flags.ref,
 		Stream:      v.flags.stream,
 		Granularity: versionsapi.GranularityMajor,
-		Base:        fmt.Sprintf("v%d", cliVersion.Major()),
+		Base:        fmt.Sprintf("v%d", constants.BinaryVersion().Major()),
 		Kind:        versionsapi.VersionKindCLI,
 	}
 	minorList, err := v.versionsapi.FetchVersionList(ctx, list)

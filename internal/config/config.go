@@ -75,7 +75,6 @@ type Config struct {
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
-	// TODO (derpsteb): add unmarshal.
 	MicroserviceVersion semver.Semver `yaml:"microserviceVersion" validate:"required,version_compatibility"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
@@ -316,7 +315,7 @@ func Default() *Config {
 		Version:             Version3,
 		Image:               defaultImage,
 		Name:                defaultName,
-		MicroserviceVersion: versions.CLIVersion(),
+		MicroserviceVersion: constants.BinaryVersion(),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
 		DebugCluster:        toPtr(false),

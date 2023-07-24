@@ -8,7 +8,6 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/compatibility",
-        "//internal/constants",
         "@org_golang_x_mod//semver",
     ],
 )
@@ -20,6 +19,6 @@ go_test(
     deps = [
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@in_gopkg_yaml_v2//:yaml_v2",
+        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )

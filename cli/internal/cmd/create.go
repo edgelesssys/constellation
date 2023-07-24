@@ -21,8 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
-	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -88,7 +86,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 	if !flags.force {
-		if err := validateCLIandConstellationVersionAreEqual(versions.CLIVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
+		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
 	}
@@ -303,7 +301,7 @@ func must(err error) {
 }
 
 // validateCLIandConstellationVersionAreEqual checks if the image and microservice version are equal (down to patch level) to the CLI version.
-func validateCLIandConstellationVersionAreEqual(cliVersion consemver.Semver, imageVersion string, microserviceVersion consemver.Semver) error {
+func validateCLIandConstellationVersionAreEqual(cliVersion semver.Semver, imageVersion string, microserviceVersion semver.Semver) error {
 	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
 	if err != nil {
 		return fmt.Errorf("parsing image version: %w", err)
