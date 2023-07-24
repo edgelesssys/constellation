@@ -18,9 +18,21 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
 	"golang.org/x/mod/semver"
 )
+
+// CLIVersion returns the version of this CLI.
+func CLIVersion() consemver.Semver {
+	version, err := consemver.New(constants.VersionInfo())
+	if err != nil {
+		// This is not user input, unrecoverable, should never happen.
+		panic(fmt.Sprintf("parsing embedded CLI version: %s", err))
+	}
+
+	return version
+}
 
 // SupportedK8sVersions returns a list (sorted) of supported Kubernetes versions.
 func SupportedK8sVersions() []string {

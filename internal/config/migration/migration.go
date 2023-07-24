@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 )
 
 const (
@@ -195,6 +196,11 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 		return fmt.Errorf("reading config file %s using v2 format: %w", path, err)
 	}
 
+	microserviceVersion, err := semver.New(cfgV2.MicroserviceVersion)
+	if err != nil {
+		return fmt.Errorf("parsing microservice version: %w", err)
+	}
+
 	// Migrate to new format
 	var cfgV3 config.Config
 	cfgV3.Version = config.Version3
@@ -202,7 +208,7 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 	cfgV3.Name = cfgV2.Name
 	cfgV3.StateDiskSizeGB = cfgV2.StateDiskSizeGB
 	cfgV3.KubernetesVersion = cfgV2.KubernetesVersion
-	cfgV3.MicroserviceVersion = cfgV2.MicroserviceVersion
+	cfgV3.MicroserviceVersion = microserviceVersion
 	cfgV3.DebugCluster = cfgV2.DebugCluster
 
 	switch {

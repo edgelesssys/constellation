@@ -7,10 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package semver
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -218,58 +220,57 @@ func TestCanUpgrade(t *testing.T) {
 	testCases := map[string]struct {
 		version1 Semver
 		version2 Semver
-		want     bool
 		wantErr  bool
 	}{
 		"equal": {
 			version1: v1_18_0,
 			version2: v1_18_0,
-			want:     false,
+			wantErr:  false,
 		},
 		"patch less than": {
 			version1: v1_18_0,
 			version2: v1_18_1,
-			want:     true,
+			wantErr:  true,
 		},
 		"minor less then": {
 			version1: v1_18_0,
 			version2: v1_19_0,
-			want:     true,
+			wantErr:  true,
 		},
 		"minor too big drift": {
 			version1: v1_18_0,
 			version2: v1_20_0,
-			want:     false,
+			wantErr:  false,
 		},
 		"major too big drift": {
 			version1: v1_18_0,
 			version2: v2_0_0,
-			want:     false,
+			wantErr:  false,
 		},
 		"greater than": {
 			version1: v1_18_1,
 			version2: v1_18_0,
-			want:     false,
+			wantErr:  false,
 		},
 		"prerelease less than": {
 			version1: v1_18_0Pre,
 			version2: v1_18_0,
-			want:     true,
+			wantErr:  true,
 		},
 		"prerelease greater than": {
 			version1: v1_18_0,
 			version2: v1_18_0Pre,
-			want:     false,
+			wantErr:  false,
 		},
 		"prerelease equal": {
 			version1: v1_18_0Pre,
 			version2: v1_18_0Pre,
-			want:     false,
+			wantErr:  false,
 		},
 		"prerelease extra": {
 			version1: v1_18_0Pre,
 			version2: v1_18_0PreExtra,
-			want:     true,
+			wantErr:  true,
 		},
 	}
 
@@ -277,7 +278,7 @@ func TestCanUpgrade(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			assert.Equal(tc.want, tc.version2.IsUpgradeTo(tc.version1))
+			assert.Equal(tc.wantErr, tc.version2.IsUpgradeTo(tc.version1) == nil)
 		})
 	}
 }
@@ -301,6 +302,78 @@ func TestNextminor(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			assert.Equal(tc.want, tc.version.NextMinor())
+		})
+	}
+}
+
+func TestVersionMarshalYAML(t *testing.T) {
+	testCases := map[string]struct {
+		version Semver
+		want    string
+	}{
+		"simple": {
+			version: Semver{
+				major:      1,
+				minor:      18,
+				patch:      0,
+				prerelease: "",
+			},
+			want: "v1.18.0\n",
+		},
+		"with prerelease": {
+			version: Semver{
+				major:      1,
+				minor:      18,
+				patch:      0,
+				prerelease: "pre",
+			},
+			want: "v1.18.0-pre\n",
+		},
+		"empty semver": {
+			version: Semver{},
+			want:    "v0.0.0\n",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			marshalled, err := yaml.Marshal(tc.version)
+
+			require.NoError(t, err)
+			require.Equal(t, tc.want, string(marshalled))
+		})
+	}
+}
+
+func TestVersionUnmarshalYAML(t *testing.T) {
+	testCases := map[string]struct {
+		version   []byte
+		want      Semver
+		wantError bool
+	}{
+		"simple unmarshal works": {
+			version: []byte("v1.18.0"),
+			want: Semver{
+				major:      1,
+				minor:      18,
+				patch:      0,
+				prerelease: "",
+			},
+		},
+		"empty string": {
+			version: []byte(""),
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			var new Semver
+			err := yaml.Unmarshal(tc.version, &new)
+			if tc.wantError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.want.Compare(new), 0, fmt.Sprintf("expected %s, got %s", tc.want, new))
 		})
 	}
 }

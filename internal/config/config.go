@@ -40,10 +40,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -75,7 +75,8 @@ type Config struct {
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
-	MicroserviceVersion string `yaml:"microserviceVersion" validate:"required,version_compatibility"`
+	// TODO (derpsteb): add unmarshal.
+	MicroserviceVersion semver.Semver `yaml:"microserviceVersion" validate:"required,version_compatibility"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
@@ -315,7 +316,7 @@ func Default() *Config {
 		Version:             Version3,
 		Image:               defaultImage,
 		Name:                defaultName,
-		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo()),
+		MicroserviceVersion: versions.CLIVersion(),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
 		DebugCluster:        toPtr(false),

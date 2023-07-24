@@ -86,11 +86,11 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	configured = compatibility.EnsurePrefixV(configured)
 	switch {
 	case !semver.IsValid(configured):
-		errorMsg = "The configured version is not a valid semantic version"
+		errorMsg = "The configured version is not a valid semantic version\n"
 	case semver.Compare(configured, minVersion) == -1:
-		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s", configured, minVersion)
+		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s\n", configured, minVersion)
 	case semver.Compare(configured, maxVersion) == 1:
-		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s", configured, maxVersion)
+		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s\n", configured, maxVersion)
 	}
 
 	errorMsg = errorMsg + fmt.Sprintf("Supported versions: %s", strings.Join(validVersionsSorted, " "))

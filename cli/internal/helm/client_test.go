@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"helm.sh/helm/v3/pkg/chart"
@@ -49,7 +50,9 @@ func TestShouldUpgrade(t *testing.T) {
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
-			err = client.shouldUpgrade(certManagerInfo.releaseName, chart.Metadata.Version, false)
+			chartVersion, err := semver.New(chart.Metadata.Version)
+			require.NoError(err)
+			err = client.shouldUpgrade(certManagerInfo.releaseName, chartVersion, false)
 			if tc.wantError {
 				tc.assertCorrectError(t, err)
 				return

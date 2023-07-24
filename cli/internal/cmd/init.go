@@ -124,7 +124,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	if !flags.force {
-		if err := validateCLIandConstellationVersionAreEqual(constants.VersionInfo(), conf.Image, conf.MicroserviceVersion); err != nil {
+		if err := validateCLIandConstellationVersionAreEqual(versions.CLIVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
 	}

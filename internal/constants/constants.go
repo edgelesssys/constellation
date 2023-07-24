@@ -232,6 +232,7 @@ b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 )
 
 // VersionInfo returns the version of a binary.
+// In most cases you will want to rely on versions.CLIVersion.
 func VersionInfo() string {
 	return versionInfo
 }

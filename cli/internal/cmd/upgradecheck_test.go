@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,30 +41,30 @@ func TestBuildString(t *testing.T) {
 	}{
 		"update everything": {
 			upgrade: versionUpgrade{
-				newServices: "v2.5.0",
+				newServices: consemver.NewFromInt(2, 5, 0, ""),
 				newImages: map[string]measurements.M{
 					"v2.5.0": measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{}),
 				},
 				newKubernetes:     []string{"v1.24.12", "v1.25.6"},
-				newCLI:            []string{"v2.5.0", "v2.6.0"},
-				currentServices:   "v2.4.0",
+				newCLI:            []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
+				currentServices:   consemver.NewFromInt(2, 4, 0, ""),
 				currentImage:      "v2.4.0",
 				currentKubernetes: "v1.24.5",
-				currentCLI:        "v2.4.0",
+				currentCLI:        consemver.NewFromInt(2, 4, 0, ""),
 			},
 			expected: "The following updates are available with this CLI:\n  Kubernetes: v1.24.5 --> v1.24.12 v1.25.6\n  Images:\n    v2.4.0 --> v2.5.0\n      Includes these measurements:\n      4:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      8:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      9:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      11:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      12:\n          expected: \"1234123412341234123412341234123412341234123412341234123412341234\"\n          warnOnly: false\n      13:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      15:\n          expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n          warnOnly: false\n      \n  Services: v2.4.0 --> v2.5.0\n",
 		},
 		"cli incompatible with K8s": {
 			upgrade: versionUpgrade{
-				newCLI:     []string{"v2.5.0", "v2.6.0"},
-				currentCLI: "v2.4.0",
+				newCLI:     []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
+				currentCLI: consemver.NewFromInt(2, 4, 0, ""),
 			},
 			expected: "There are newer CLIs available (v2.5.0 v2.6.0), however, you need to upgrade your cluster's Kubernetes version first.\n",
 		},
 		"cli compatible with K8s": {
 			upgrade: versionUpgrade{
-				newCompatibleCLI: []string{"v2.5.0", "v2.6.0"},
-				currentCLI:       "v2.4.0",
+				newCompatibleCLI: []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
+				currentCLI:       consemver.NewFromInt(2, 4, 0, ""),
 			},
 			expected: "Newer CLI versions that are compatible with your cluster are: v2.5.0 v2.6.0\n",
 		},
@@ -76,14 +77,14 @@ func TestBuildString(t *testing.T) {
 		},
 		"no upgrades": {
 			upgrade: versionUpgrade{
-				newServices:       "",
+				newServices:       consemver.Semver{},
 				newImages:         map[string]measurements.M{},
 				newKubernetes:     []string{},
-				newCLI:            []string{},
-				currentServices:   "v2.5.0",
+				newCLI:            []consemver.Semver{},
+				currentServices:   consemver.NewFromInt(2, 5, 0, ""),
 				currentImage:      "v2.5.0",
 				currentKubernetes: "v1.25.6",
-				currentCLI:        "v2.5.0",
+				currentCLI:        consemver.NewFromInt(2, 5, 0, ""),
 			},
 			expected: "You are up to date.\n",
 		},
@@ -227,18 +228,18 @@ func TestUpgradeCheck(t *testing.T) {
 		Kind:    versionsapi.VersionKindImage,
 	}
 	collector := stubVersionCollector{
-		supportedServicesVersions: "v2.5.0",
+		supportedServicesVersions: consemver.NewFromInt(2, 5, 0, ""),
 		supportedImages:           []versionsapi.Version{v2_3},
 		supportedImageVersions: map[string]measurements.M{
 			"v2.3.0": measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{}),
 		},
 		supportedK8sVersions:    []string{"v1.24.5", "v1.24.12", "v1.25.6"},
-		currentServicesVersions: "v2.4.0",
+		currentServicesVersions: consemver.NewFromInt(2, 4, 0, ""),
 		currentImageVersion:     "v2.4.0",
 		currentK8sVersion:       "v1.24.5",
-		currentCLIVersion:       "v2.4.0",
+		currentCLIVersion:       consemver.NewFromInt(2, 4, 0, ""),
 		images:                  []versionsapi.Version{v2_5},
-		newCLIVersionsList:      []string{"v2.5.0", "v2.6.0"},
+		newCLIVersionsList:      []consemver.Semver{consemver.NewFromInt(2, 5, 0, ""), consemver.NewFromInt(2, 6, 0, "")},
 	}
 
 	testCases := map[string]struct {
@@ -305,18 +306,18 @@ func TestUpgradeCheck(t *testing.T) {
 }
 
 type stubVersionCollector struct {
-	supportedServicesVersions    string
+	supportedServicesVersions    consemver.Semver
 	supportedImages              []versionsapi.Version
 	supportedImageVersions       map[string]measurements.M
 	supportedK8sVersions         []string
-	supportedCLIVersions         []string
-	currentServicesVersions      string
+	supportedCLIVersions         []consemver.Semver
+	currentServicesVersions      consemver.Semver
 	currentImageVersion          string
 	currentK8sVersion            string
-	currentCLIVersion            string
+	currentCLIVersion            consemver.Semver
 	images                       []versionsapi.Version
-	newCLIVersionsList           []string
-	newCompatibleCLIVersionsList []string
+	newCLIVersionsList           []consemver.Semver
+	newCompatibleCLIVersionsList []consemver.Semver
 	someErr                      error
 }
 
@@ -350,11 +351,11 @@ func (s *stubVersionCollector) newerVersions(_ context.Context, _ []string) ([]v
 	return s.images, nil
 }
 
-func (s *stubVersionCollector) newCLIVersions(_ context.Context) ([]string, error) {
+func (s *stubVersionCollector) newCLIVersions(_ context.Context) ([]consemver.Semver, error) {
 	return s.newCLIVersionsList, nil
 }
 
-func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ []string, _ string) ([]string, error) {
+func (s *stubVersionCollector) filterCompatibleCLIVersions(_ context.Context, _ []consemver.Semver, _ string) ([]consemver.Semver, error) {
 	return s.newCompatibleCLIVersionsList, nil
 }
 
@@ -408,7 +409,7 @@ func TestNewCLIVersions(t *testing.T) {
 	}
 	verCollector := func(minorList, patchList versionsapi.List, verListErr error) versionCollector {
 		return versionCollector{
-			cliVersion: "v0.1.0",
+			cliVersion: consemver.NewFromInt(0, 1, 0, ""),
 			versionsapi: stubVersionFetcher{
 				minorList:      minorList,
 				patchList:      patchList,
@@ -451,7 +452,7 @@ func TestFilterCompatibleCLIVersions(t *testing.T) {
 	someErr := errors.New("some error")
 	verCollector := func(cliInfoErr error) versionCollector {
 		return versionCollector{
-			cliVersion: "v0.1.0",
+			cliVersion: consemver.NewFromInt(0, 1, 0, ""),
 			versionsapi: stubVersionFetcher{
 				cliInfoErr: cliInfoErr,
 			},
@@ -460,16 +461,16 @@ func TestFilterCompatibleCLIVersions(t *testing.T) {
 
 	testCases := map[string]struct {
 		verCollector     versionCollector
-		cliPatchVersions []string
+		cliPatchVersions []consemver.Semver
 		wantErr          bool
 	}{
 		"works": {
 			verCollector:     verCollector(nil),
-			cliPatchVersions: []string{"v0.1.1"},
+			cliPatchVersions: []consemver.Semver{consemver.NewFromInt(0, 1, 1, "")},
 		},
 		"cli info error": {
 			verCollector:     verCollector(someErr),
-			cliPatchVersions: []string{"v0.1.1"},
+			cliPatchVersions: []consemver.Semver{consemver.NewFromInt(0, 1, 1, "")},
 			wantErr:          true,
 		},
 	}

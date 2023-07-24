@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//internal/compatibility",
         "//internal/constants",
+        "//internal/semver",
         "//internal/versions/components",
         "@org_golang_x_mod//semver",
     ],

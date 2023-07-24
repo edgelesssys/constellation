@@ -69,12 +69,37 @@ func New(version string) (Semver, error) {
 }
 
 // NewFromInt constructs a new Semver from three integers: MAJOR.MINOR.PATCH.
-func NewFromInt(major, minor, patch int) Semver {
+func NewFromInt(major, minor, patch int, prerelease string) Semver {
 	return Semver{
-		major: major,
-		minor: minor,
-		patch: patch,
+		major:      major,
+		minor:      minor,
+		patch:      patch,
+		prerelease: prerelease,
 	}
+}
+
+// NewSlice returns a slice of Semver from a slice of strings.
+func NewSlice(in []string) ([]Semver, error) {
+	var out []Semver
+	for _, version := range in {
+		new, err := New(version)
+		if err != nil {
+			return nil, fmt.Errorf("parsing version %s: %w", version, err)
+		}
+		out = append(out, new)
+	}
+
+	return out, nil
+}
+
+// ToStrings converts a slice of Semver to a slice of strings.
+func ToStrings(in []Semver) []string {
+	var out []string
+	for _, v := range in {
+		out = append(out, v.String())
+	}
+
+	return out
 }
 
 // Major returns the major version of the object.
@@ -149,6 +174,28 @@ func (v Semver) CompatibleWithBinary() bool {
 // NextMinor returns the next minor version in the format "vm.MINOR".
 func (v Semver) NextMinor() string {
 	return fmt.Sprintf("v%d.%d", v.major, v.minor+1)
+}
+
+// MarshalYAML implements the yaml.Marshaller interface.
+func (v Semver) MarshalYAML() (any, error) {
+	return v.String(), nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (v *Semver) UnmarshalYAML(unmarshal func(any) error) error {
+	var raw string
+	if err := unmarshal(&raw); err != nil {
+		return fmt.Errorf("unmarshalling to string: %w", err)
+	}
+
+	version, err := New(raw)
+	if err != nil {
+		return fmt.Errorf("parsing semantic version: %w", err)
+	}
+
+	*v = version
+
+	return nil
 }
 
 // MarshalJSON implements the json.Marshaler interface.
