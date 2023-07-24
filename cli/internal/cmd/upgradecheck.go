@@ -703,11 +703,11 @@ func (v *versionCollector) newCLIVersions(ctx context.Context) ([]consemver.Semv
 
 	var patchVersions []string
 	for _, version := range minorList.Versions {
-		new, err := consemver.New(version)
+		target, err := consemver.New(version)
 		if err != nil {
 			return nil, fmt.Errorf("parsing version %s: %w", version, err)
 		}
-		if err := new.IsUpgradeTo(v.cliVersion); err != nil {
+		if err := target.IsUpgradeTo(v.cliVersion); err != nil {
 			v.log.Debugf("Skipping incompatible minor version %q: %s", version, err)
 			continue
 		}

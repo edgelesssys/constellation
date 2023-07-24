@@ -365,15 +365,15 @@ func TestVersionUnmarshalYAML(t *testing.T) {
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			var new Semver
-			err := yaml.Unmarshal(tc.version, &new)
+			var actual Semver
+			err := yaml.Unmarshal(tc.version, &actual)
 			if tc.wantError {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tc.want.Compare(new), 0, fmt.Sprintf("expected %s, got %s", tc.want, new))
+			require.Equal(t, tc.want.Compare(actual), 0, fmt.Sprintf("expected %s, got %s", tc.want, actual))
 		})
 	}
 }

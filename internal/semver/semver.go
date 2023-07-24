@@ -82,11 +82,11 @@ func NewFromInt(major, minor, patch int, prerelease string) Semver {
 func NewSlice(in []string) ([]Semver, error) {
 	var out []Semver
 	for _, version := range in {
-		new, err := New(version)
+		semVersion, err := New(version)
 		if err != nil {
 			return nil, fmt.Errorf("parsing version %s: %w", version, err)
 		}
-		out = append(out, new)
+		out = append(out, semVersion)
 	}
 
 	return out, nil

@@ -293,11 +293,13 @@ func writeUpgradeConfig(require *require.Assertions, image string, kubernetes st
 		require.NoError(err)
 	}
 
-	var microserviceVersion string
+	var microserviceVersion semver.Semver
 	if microservices == "" {
 		microserviceVersion = defaultConfig.MicroserviceVersion
 	} else {
-		microserviceVersion = microservices
+		version, err := semver.New(microservices)
+		require.NoError(err)
+		microserviceVersion = version
 	}
 
 	log.Printf("Setting K8s version: %s\n", kubernetesVersion.String())
@@ -403,7 +405,7 @@ func testStatusEventuallyWorks(t *testing.T, cli string, timeout time.Duration) 
 	}, timeout, time.Minute)
 }
 
-func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion string, timeout time.Duration) {
+func testMicroservicesEventuallyHaveVersion(t *testing.T, wantMicroserviceVersion semver.Semver, timeout time.Duration) {
 	require.Eventually(t, func() bool {
 		version, err := servicesVersion(t)
 		if err != nil {
@@ -460,7 +462,7 @@ func testNodesEventuallyHaveVersion(t *testing.T, k *kubernetes.Clientset, targe
 type versionContainer struct {
 	imageRef      string
 	kubernetes    semver.Semver
-	microservices string
+	microservices semver.Semver
 }
 
 // runCommandWithSeparateOutputs runs the given command while separating buffers for
