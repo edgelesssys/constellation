@@ -13,15 +13,14 @@ import (
 	"net"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
-	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/filetransfer/streamer"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
+	"github.com/edgelesssys/constellation/v2/hack/logcollector/fields"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -125,7 +124,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	if err != nil {
 		return err
 	}
-	if err := checkInfoMap(info); err != nil {
+	if err := fields.FieldsFromMap(info).Check(); err != nil {
 		return err
 	}
 
@@ -276,22 +275,6 @@ func uploadFiles(ctx context.Context, client pb.DebugdClient, in deployOnEndpoin
 		return fmt.Errorf("upload already started on %v", in.debugdEndpoint)
 	default:
 		return fmt.Errorf("unknown upload status %v", uploadResponse.Status)
-	}
-
-	return nil
-}
-
-func checkInfoMap(info map[string]string) error {
-	logPrefix, logFields := logcollector.InfoFields()
-	for k := range info {
-		if !strings.HasPrefix(k, logPrefix) {
-			continue
-		}
-		subkey := strings.TrimPrefix(k, logPrefix)
-
-		if _, ok := logFields[subkey]; !ok {
-			return fmt.Errorf("invalid subkey %q for info key %q", subkey, fmt.Sprintf("%s.%s", logPrefix, k))
-		}
 	}
 
 	return nil

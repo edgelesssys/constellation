@@ -8,6 +8,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/hack/logcollector/fields"
 	"github.com/edgelesssys/constellation/v2/hack/logcollector/internal"
 	"github.com/spf13/cobra"
 )
@@ -29,13 +30,13 @@ func newTemplateCmd() *cobra.Command {
 	must(templateCmd.MarkFlagRequired("password"))
 	templateCmd.Flags().String("index-prefix", "systemd-logs", "Prefix for logging index (e.g. systemd-logs)")
 	templateCmd.Flags().Int("port", 5045, "Logstash port")
-	templateCmd.Flags().StringToString("info", nil, "Additional fields for the Logstash pipeline in the format --info key1=value1,key2=value2,...")
+	templateCmd.Flags().StringToString("fields", nil, "Additional fields for the Logstash pipeline")
 
 	return templateCmd
 }
 
 func runTemplate(cmd *cobra.Command, _ []string) error {
-	infoMap := infoMap{}
+	fields := fields.Fields{}
 
 	flags, err := parseTemplateFlags(cmd)
 	if err != nil {
@@ -43,7 +44,7 @@ func runTemplate(cmd *cobra.Command, _ []string) error {
 	}
 
 	logstashPreparer := internal.NewLogstashPreparer(
-		infoMap.Extend(flags.extraInfo),
+		fields.Extend(flags.extraFields),
 		flags.username,
 		flags.password,
 		flags.indexPrefix,
@@ -84,7 +85,7 @@ func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
 		return templateFlags{}, fmt.Errorf("parse index-prefix string: %w", err)
 	}
 
-	extraInfo, err := cmd.Flags().GetStringToString("info")
+	extraFields, err := cmd.Flags().GetStringToString("info")
 	if err != nil {
 		return templateFlags{}, fmt.Errorf("parse info map: %w", err)
 	}
@@ -99,7 +100,7 @@ func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
 		username:    username,
 		password:    password,
 		indexPrefix: indexPrefix,
-		extraInfo:   infoMap(extraInfo),
+		extraFields: extraFields,
 		port:        port,
 	}, nil
 }
@@ -109,17 +110,8 @@ type templateFlags struct {
 	username    string
 	password    string
 	indexPrefix string
-	extraInfo   infoMap
+	extraFields fields.Fields
 	port        int
-}
-
-type infoMap map[string]string
-
-func (m infoMap) Extend(other infoMap) infoMap {
-	for k, v := range other {
-		m[k] = v
-	}
-	return m
 }
 
 func must(err error) {
