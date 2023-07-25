@@ -24,7 +24,7 @@ import (
 const successOutput = `Target versions:
 	Image: v1.1.0
 	Kubernetes: v1.2.3
-Installed service versions:
+Service versions:
 	Cilium: v1.0.0
 	cert-manager: v1.0.0
 	constellation-operators: v1.1.0

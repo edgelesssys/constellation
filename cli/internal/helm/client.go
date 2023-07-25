@@ -234,11 +234,10 @@ func (c *Client) Versions() (ServiceVersions, error) {
 		csiVersions:            csiVersions,
 	}
 
-	if awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName); err != nil {
-		if !errors.Is(err, errReleaseNotFound) {
-			return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
-		}
+	if awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName); err == nil {
 		serviceVersions.awsLBController = awsLBVersion
+	} else if !errors.Is(err, errReleaseNotFound) {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
 	}
 
 	return serviceVersions, nil
@@ -271,9 +270,11 @@ func (c *Client) csiVersions() (map[string]semver.Semver, error) {
 		return nil, fmt.Errorf("listing %s: %w", csiInfo.releaseName, err)
 	}
 
+	csiVersions := make(map[string]semver.Semver)
+
 	// No CSI driver installed
 	if len(packedChartRelease) == 0 {
-		return nil, nil
+		return csiVersions, nil
 	}
 
 	if len(packedChartRelease) > 1 {
@@ -284,7 +285,6 @@ func (c *Client) csiVersions() (map[string]semver.Semver, error) {
 		return nil, fmt.Errorf("received invalid release %s", csiInfo.releaseName)
 	}
 
-	csiVersions := map[string]semver.Semver{}
 	dependencies := packedChartRelease[0].Chart.Metadata.Dependencies
 	for _, dep := range dependencies {
 		var err error

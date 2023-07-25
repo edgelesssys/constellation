@@ -26,7 +26,7 @@ type ServiceVersions struct {
 // String returns a string representation of the ServiceVersions struct.
 func (s ServiceVersions) String() string {
 	builder := strings.Builder{}
-	builder.WriteString("Installed service versions:\n")
+	builder.WriteString("Service versions:\n")
 	builder.WriteString(fmt.Sprintf("\tCilium: %s\n", s.cilium))
 	builder.WriteString(fmt.Sprintf("\tcert-manager: %s\n", s.certManager))
 	builder.WriteString(fmt.Sprintf("\tconstellation-operators: %s\n", s.constellationOperators))
@@ -36,11 +36,14 @@ func (s ServiceVersions) String() string {
 		builder.WriteString(fmt.Sprintf("\taws-load-balancer-controller: %s\n", s.awsLBController))
 	}
 
-	if s.csiVersions != nil {
-		builder.WriteString("\tCSI:\n")
+	builder.WriteString("\tCSI:")
+	if len(s.csiVersions) != 0 {
+		builder.WriteString("\n")
 		for name, csiVersion := range s.csiVersions {
 			builder.WriteString(fmt.Sprintf("\t\t%s: %s\n", name, csiVersion))
 		}
+	} else {
+		builder.WriteString(" not installed\n")
 	}
 
 	return builder.String()
