@@ -51,19 +51,19 @@ runs:
     - name: Deploy Logstash
       id: deploy-logstash
       shell: bash
+      working-directory: ./logstash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
-        cd logstash
         make add
         make install
 
     - name: Deploy Filebeat
       id: deploy-filebeat
       shell: bash
+      working-directory: ./filebeat
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
-        cd filebeat
         make add
         make install
