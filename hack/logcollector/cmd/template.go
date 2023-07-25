@@ -12,12 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type infoMap map[string]string
-
-var defaultInfoMap = infoMap{
-	"is-debug-cluster": "false",
-}
-
 func newTemplateCmd() *cobra.Command {
 	templateCmd := &cobra.Command{
 		Use:   "template",
@@ -40,13 +34,15 @@ func newTemplateCmd() *cobra.Command {
 }
 
 func runTemplate(cmd *cobra.Command, _ []string) error {
+	infoMap := infoMap{}
+
 	flags, err := parseTemplateFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parse template flags: %w", err)
 	}
 
 	logstashPreparer := internal.NewLogstashPreparer(
-		defaultInfoMap.Extend(flags.extraInfo),
+		infoMap.Extend(flags.extraInfo),
 		flags.username,
 		flags.password,
 		flags.port,
@@ -63,13 +59,6 @@ func runTemplate(cmd *cobra.Command, _ []string) error {
 	}
 
 	return nil
-}
-
-func (m infoMap) Extend(other infoMap) infoMap {
-	for k, v := range other {
-		m[k] = v
-	}
-	return m
 }
 
 func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
@@ -113,6 +102,15 @@ type templateFlags struct {
 	password  string
 	extraInfo infoMap
 	port      int
+}
+
+type infoMap map[string]string
+
+func (m infoMap) Extend(other infoMap) infoMap {
+	for k, v := range other {
+		m[k] = v
+	}
+	return m
 }
 
 func must(err error) {
