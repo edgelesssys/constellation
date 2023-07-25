@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const upgradeRequiresIAMMigration = true // TODO(elchead): needs to be set on every release. Can we automate this?
+
 func newIAMUpgradeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade",

@@ -60,6 +60,16 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
+	if upgradeRequiresIAMMigration {
+		yes, err := askToConfirm(cmd, "WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
+		if err != nil {
+			return fmt.Errorf("asking for confirmation: %w", err)
+		}
+		if !yes {
+			cmd.Println("Skipping upgrade.")
+			return nil
+		}
+	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply)
