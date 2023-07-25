@@ -33,7 +33,6 @@ runs:
          --username ${{ inputs.opensearch-user }} \
          --password ${{ inputs.opensearch-pwd }} \
          --port ${{ inputs.logstash-port }} \
-         --info is-debug-cluster=false \
          --info github.actor="${{ github.triggering_actor }}" \
          --info github.workflow="${{ github.workflow }}" \
          --info github.run-id="${{ github.run_id }}" \
@@ -42,7 +41,8 @@ runs:
          --info github.sha="${{ github.sha }}" \
          --info github.runner-os="${{ runner.os }}" \
          --info github.e2e-test-payload="${{ inputs.test }}" \
-         --info provider="${{ inputs.provider }}" \
+         --info github.is-debug-cluster=false \
+         --info github.e2e-test-provider="${{ inputs.provider }}" \
          --info deployment-type="k8s"
 
     - name: Deploy Logstash
