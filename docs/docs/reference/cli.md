@@ -35,6 +35,8 @@ Commands:
     * [azure](#constellation-iam-create-azure): Create IAM configuration on Microsoft Azure for your Constellation cluster
     * [gcp](#constellation-iam-create-gcp): Create IAM configuration on GCP for your Constellation cluster
   * [destroy](#constellation-iam-destroy): Destroy an IAM configuration and delete local Terraform files
+  * [upgrade](#constellation-iam-upgrade): Find and apply upgrades to your IAM profile
+    * [apply](#constellation-iam-upgrade-apply): Apply an upgrade to an IAM profile
 * [version](#constellation-version): Display version of this CLI
 
 ## constellation config
@@ -714,6 +716,58 @@ constellation iam destroy [flags]
 ```
   -h, --help   help for destroy
   -y, --yes    destroy the IAM configuration without asking for confirmation
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   Terraform log level (default "NONE")
+```
+
+## constellation iam upgrade
+
+Find and apply upgrades to your IAM profile
+
+### Synopsis
+
+Find and apply upgrades to your IAM profile.
+
+### Options
+
+```
+  -h, --help   help for upgrade
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
+      --force           disable version compatibility checks - might result in corrupted clusters
+      --tf-log string   Terraform log level (default "NONE")
+```
+
+## constellation iam upgrade apply
+
+Apply an upgrade to an IAM profile
+
+### Synopsis
+
+Apply an upgrade to an IAM profile.
+
+```
+constellation iam upgrade apply [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for apply
+  -y, --yes    run upgrades without further confirmation
+               
 ```
 
 ### Options inherited from parent commands
