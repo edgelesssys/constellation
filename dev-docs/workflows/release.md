@@ -6,6 +6,8 @@ This checklist will prepare `v1.3.0` from `v1.2.0` (minor release) or `v1.3.1` f
 
 1. Search the code for TODOs and FIXMEs that should be resolved before releasing.
 2. [Update titles and labels for all PRs relevant for this release](/dev-docs/conventions.md#pr-conventions) to aid in the [changelog generation](/.github/release.yml).
+3. Check PRs with `breaking change` for the label `iam upgrade`. If there is any, the `upgradeRequiresIAMMigration` constant in `iamupgradeapply.go` needs to be set to `true`, otherwise set to `false`. This ensures to issue a warning to the user on `upgrade apply` to ensure prior `iam upgrade apply`
+
 
 
 ## Automated release
