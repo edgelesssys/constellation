@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -162,6 +163,10 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
+	if err := k.client.EnforceCoreDNSSpread(ctx); err != nil {
+		return nil, fmt.Errorf("configuring CoreDNS deployment: %w", err)
+	}
+
 	// Setup the K8s components ConfigMap.
 	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents, versionString)
 	if err != nil {
@@ -192,8 +197,12 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	log.Infof("Installing Cilium")
-	if err = installCilium(ctx, k.helmClient, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
-		return nil, fmt.Errorf("installing pod network: %w", err)
+	ciliumVals, err := k.setupCiliumVals(ctx, setupPodNetworkInput)
+	if err != nil {
+		return nil, fmt.Errorf("setting up cilium vals: %w", err)
+	}
+	if err := k.helmClient.InstallChartWithValues(ctx, helmReleases.Cilium, ciliumVals); err != nil {
+		return nil, fmt.Errorf("installing cilium pod network: %w", err)
 	}
 
 	log.Infof("Waiting for Cilium to become healthy")
@@ -550,6 +559,31 @@ func (k *KubeWrapper) setupOperatorVals(ctx context.Context) (map[string]any, er
 			"constellationUID": uid,
 		},
 	}, nil
+}
+
+func (k *KubeWrapper) setupCiliumVals(ctx context.Context, in k8sapi.SetupPodNetworkInput) (map[string]any, error) {
+	vals := map[string]any{
+		"k8sServiceHost": in.LoadBalancerHost,
+		"k8sServicePort": in.LoadBalancerPort,
+	}
+
+	// GCP requires extra configuration for Cilium
+	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP {
+		if out, err := exec.CommandContext(
+			ctx, constants.KubectlPath,
+			"--kubeconfig", constants.ControlPlaneAdminConfFilename,
+			"patch", "node", in.NodeName, "-p", "{\"spec\":{\"podCIDR\": \""+in.FirstNodePodCIDR+"\"}}",
+		).CombinedOutput(); err != nil {
+			err = errors.New(string(out))
+			return nil, fmt.Errorf("%s: %w", out, err)
+		}
+
+		vals["ipv4NativeRoutingCIDR"] = in.SubnetworkPodCIDR
+		vals["strictModeCIDR"] = in.SubnetworkPodCIDR
+
+	}
+
+	return vals, nil
 }
 
 type ccmConfigGetter interface {

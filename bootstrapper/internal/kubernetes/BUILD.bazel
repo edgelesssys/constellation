@@ -4,7 +4,6 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "kubernetes",
     srcs = [
-        "ciliuminstallation.go",
         "cloud_provider.go",
         "k8sutil.go",
         "kubernetes.go",

@@ -144,39 +144,34 @@ func (k *Kubectl) GetNodes(ctx context.Context) ([]corev1.Node, error) {
 	return nodes.Items, nil
 }
 
-// AddTolerationsToDeployment adds [K8s tolerations] to the deployment, identified
-// by name and namespace.
-//
-// [K8s tolerations]: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
-	deployments := k.AppsV1().Deployments(namespace)
+// EnforceCoreDNSSpread adds a pod anti-affinity to the CoreDNS deployment to ensure that
+// CoreDNS pods are spread across nodes.
+func (k *Kubectl) EnforceCoreDNSSpread(ctx context.Context) error {
+	// allow CoreDNS Pods to run on uninitialized nodes, which is required by cloud-controller-manager
+	tolerationSeconds := int64(10)
+	tolerations := []corev1.Toleration{
+		{
+			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+			Value:  "true",
+			Effect: corev1.TaintEffectNoSchedule,
+		},
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          corev1.TolerationOpExists,
+			Effect:            corev1.TaintEffectNoExecute,
+			TolerationSeconds: &tolerationSeconds,
+		},
+	}
 
+	deployments := k.AppsV1().Deployments("kube-system")
 	// retry resource update if an error occurs
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		result, err := deployments.Get(ctx, name, metav1.GetOptions{})
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, err := deployments.Get(ctx, "coredns", metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get Deployment to add toleration: %w", err)
 		}
 
 		result.Spec.Template.Spec.Tolerations = append(result.Spec.Template.Spec.Tolerations, tolerations...)
-		if _, err = deployments.Update(ctx, result, metav1.UpdateOptions{}); err != nil {
-			return err
-		}
-		return nil
-	})
-	return err
-}
-
-// EnforceCoreDNSSpread adds a pod anti-affinity to the coredns deployment to ensure that
-// coredns pods are spread across nodes.
-func (k *Kubectl) EnforceCoreDNSSpread(ctx context.Context) error {
-	deployments := k.AppsV1().Deployments("kube-system")
-	// retry resource update if an error occurs
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		result, err := deployments.Get(ctx, "coredns", metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to get Deployment to add toleration: %w", err)
-		}
 
 		if result.Spec.Template.Spec.Affinity == nil {
 			result.Spec.Template.Spec.Affinity = &corev1.Affinity{}
@@ -206,10 +201,6 @@ func (k *Kubectl) EnforceCoreDNSSpread(ctx context.Context) error {
 		_, err = deployments.Update(ctx, result, metav1.UpdateOptions{})
 		return err
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // AddNodeSelectorsToDeployment adds [K8s selectors] to the deployment, identified
