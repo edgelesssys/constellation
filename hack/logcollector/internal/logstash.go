@@ -29,30 +29,33 @@ const (
 
 // LogstashPreparer prepares the Logstash Helm chart.
 type LogstashPreparer struct {
-	fh       file.Handler
-	infoMap  map[string]string
-	username string
-	password string
-	port     int
-	TemplatePreparer
+	fh          file.Handler
+	infoMap     map[string]string
+	indexPrefix string
+	username    string
+	password    string
+	port        int
+	templatePreparer
 }
 
 // NewLogstashPreparer returns a new LogstashPreparer.
-func NewLogstashPreparer(infoMap map[string]string, username, password string, port int) *LogstashPreparer {
+func NewLogstashPreparer(infoMap map[string]string, username, password, indexPrefix string, port int) *LogstashPreparer {
 	return &LogstashPreparer{
-		username: username,
-		password: password,
-		infoMap:  infoMap,
-		fh:       file.NewHandler(afero.NewOsFs()),
-		port:     port,
+		username:    username,
+		password:    password,
+		indexPrefix: indexPrefix,
+		infoMap:     infoMap,
+		fh:          file.NewHandler(afero.NewOsFs()),
+		port:        port,
 	}
 }
 
 // Prepare prepares the Logstash Helm chart by templating the required files and placing them in the specified directory.
 func (p *LogstashPreparer) Prepare(dir string) error {
 	templatedPipelineConf, err := p.template(logstashAssets, "templates/pipeline.conf", pipelineConfTemplate{
-		InfoMap: p.infoMap,
-		Host:    openSearchHost,
+		InfoMap:     p.infoMap,
+		Host:        openSearchHost,
+		IndexPrefix: p.indexPrefix,
 		Credentials: Credentials{
 			Username: p.username,
 			Password: p.password,
@@ -140,6 +143,7 @@ type LogstashHelmValues struct {
 type pipelineConfTemplate struct {
 	InfoMap     map[string]string
 	Host        string
+	IndexPrefix string
 	Credentials Credentials
 	Port        int
 }

@@ -27,7 +27,7 @@ var (
 type FilebeatPreparer struct {
 	fh   file.Handler
 	port int
-	TemplatePreparer
+	templatePreparer
 }
 
 // NewFilebeatPreparer returns a new FilebeatPreparer.

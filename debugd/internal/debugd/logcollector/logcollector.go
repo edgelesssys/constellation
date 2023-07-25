@@ -93,6 +93,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			pipelineConf := logstashConfInput{
 				Port:        5044,
 				Host:        openSearchHost,
+				IndexPrefix: "systemd-logs",
 				InfoMap:     infoMapM,
 				Credentials: creds,
 			}
@@ -276,6 +277,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 type logstashConfInput struct {
 	Port        int
 	Host        string
+	IndexPrefix string
 	InfoMap     map[string]string
 	Credentials credentials
 }

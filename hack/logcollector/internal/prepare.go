@@ -12,13 +12,13 @@ import (
 	"text/template"
 )
 
-type TemplatePreparer struct{}
+type templatePreparer struct{}
 
-func NewTemplatePreparer() TemplatePreparer {
-	return TemplatePreparer{}
+func newTemplatePreparer() templatePreparer {
+	return templatePreparer{}
 }
 
-func (p TemplatePreparer) template(fs embed.FS, templateFile string, templateData any) (*bytes.Buffer, error) {
+func (p templatePreparer) template(fs embed.FS, templateFile string, templateData any) (*bytes.Buffer, error) {
 	templates, err := template.ParseFS(fs, templateFile)
 	if err != nil {
 		return nil, fmt.Errorf("parse templates: %w", err)

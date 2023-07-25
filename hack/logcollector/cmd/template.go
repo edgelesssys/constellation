@@ -27,6 +27,7 @@ func newTemplateCmd() *cobra.Command {
 	must(templateCmd.MarkFlagRequired("username"))
 	templateCmd.Flags().String("password", "", "OpenSearch password (required)")
 	must(templateCmd.MarkFlagRequired("password"))
+	templateCmd.Flags().String("index-prefix", "systemd-logs", "Prefix for logging index (e.g. systemd-logs)")
 	templateCmd.Flags().Int("port", 5045, "Logstash port")
 	templateCmd.Flags().StringToString("info", nil, "Additional fields for the Logstash pipeline in the format --info key1=value1,key2=value2,...")
 
@@ -45,6 +46,7 @@ func runTemplate(cmd *cobra.Command, _ []string) error {
 		infoMap.Extend(flags.extraInfo),
 		flags.username,
 		flags.password,
+		flags.indexPrefix,
 		flags.port,
 	)
 	if err := logstashPreparer.Prepare(flags.dir); err != nil {
@@ -77,6 +79,11 @@ func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
 		return templateFlags{}, fmt.Errorf("parse password string: %w", err)
 	}
 
+	indexPrefix, err := cmd.Flags().GetString("index-prefix")
+	if err != nil {
+		return templateFlags{}, fmt.Errorf("parse index-prefix string: %w", err)
+	}
+
 	extraInfo, err := cmd.Flags().GetStringToString("info")
 	if err != nil {
 		return templateFlags{}, fmt.Errorf("parse info map: %w", err)
@@ -88,20 +95,22 @@ func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
 	}
 
 	return templateFlags{
-		dir:       dir,
-		username:  username,
-		password:  password,
-		extraInfo: infoMap(extraInfo),
-		port:      port,
+		dir:         dir,
+		username:    username,
+		password:    password,
+		indexPrefix: indexPrefix,
+		extraInfo:   infoMap(extraInfo),
+		port:        port,
 	}, nil
 }
 
 type templateFlags struct {
-	dir       string
-	username  string
-	password  string
-	extraInfo infoMap
-	port      int
+	dir         string
+	username    string
+	password    string
+	indexPrefix string
+	extraInfo   infoMap
+	port        int
 }
 
 type infoMap map[string]string
