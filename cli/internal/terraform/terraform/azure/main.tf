@@ -37,7 +37,7 @@ locals {
   cidr_vpc_subnet_pods  = "10.10.0.0/16"
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
-  wildcard_lb_dns_name = replace(azurerm_public_ip.loadbalancer_ip.fqdn, "/^[^.]*\\./", "*.")
+  wildcard_lb_dns_name = replace(data.azurerm_public_ip.loadbalancer_ip.fqdn, "/^[^.]*\\./", "*.")
 }
 
 resource "random_id" "uid" {
@@ -87,6 +87,18 @@ resource "azurerm_public_ip" "loadbalancer_ip" {
   lifecycle {
     ignore_changes = [name]
   }
+}
+
+// Reads data from the resource of the same name.
+// Used to wait to the actual resource to become ready, before using data from that resource.
+// Property "fqdn" only becomes available on azurerm_public_ip resources once domain_name_label is set.
+// Since we are setting domain_name_label starting with 2.10 we need to migrate
+// resources for clusters created before 2.9. In those cases we need to wait until loadbalancer_ip has
+// been updated before reading from it.
+data "azurerm_public_ip" "loadbalancer_ip" {
+  name                = "${local.name}-lb"
+  resource_group_name = var.resource_group
+  depends_on = [azurerm_public_ip.loadbalancer_ip]
 }
 
 resource "azurerm_public_ip" "nat_gateway_ip" {
