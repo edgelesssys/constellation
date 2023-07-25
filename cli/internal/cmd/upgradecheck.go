@@ -78,10 +78,6 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), checker.GetUpgradeID(), cloudprovider.AWS, terraform.LogLevelDebug)
-	if err != nil {
-		return fmt.Errorf("setting up IAM migration command: %w", err)
-	}
 	up := &upgradeCheckCmd{
 		canUpgradeCheck: featureset.CanUpgradeCheck,
 		collect: &versionCollector{
@@ -97,11 +93,9 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			log:            log,
 			versionsapi:    versionfetcher,
 		},
-		checker:       checker,
-		imagefetcher:  imagefetcher.New(),
-		log:           log,
-		iamMigrateCmd: iamMigrateCmd,
-		planExecutor:  &tfMigrationClient{log},
+		checker:      checker,
+		imagefetcher: imagefetcher.New(),
+		log:          log,
 	}
 
 	return up.upgradeCheck(cmd, fileHandler, attestationconfigapi.NewFetcher(), flags)
@@ -148,18 +142,12 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}, nil
 }
 
-type tfPlanner interface {
-	planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd) (hasDiff bool, err error)
-}
-
 type upgradeCheckCmd struct {
 	canUpgradeCheck bool
 	collect         collector
 	checker         upgradeChecker
 	imagefetcher    imageFetcher
 	log             debugLog
-	iamMigrateCmd   upgrade.TfMigrationCmd
-	planExecutor    tfPlanner
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -214,18 +202,6 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	newImages, err := u.collect.newMeasurements(cmd.Context(), csp, attestationVariant, supported.image)
 	if err != nil {
 		return err
-	}
-
-	cmd.Println("The following IAM migrations are available with this CLI:")
-	u.log.Debugf("Planning IAM migrations")
-	if u.iamMigrateCmd != nil {
-		hasIAMDiff, err := u.planExecutor.planMigration(cmd, fileHandler, u.iamMigrateCmd)
-		if err != nil {
-			return fmt.Errorf("planning IAM migration: %w", err)
-		}
-		if !hasIAMDiff {
-			cmd.Println("  No IAM migrations are available.")
-		}
 	}
 
 	u.log.Debugf("Planning Terraform migrations")
