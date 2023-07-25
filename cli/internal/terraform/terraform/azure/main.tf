@@ -98,7 +98,7 @@ resource "azurerm_public_ip" "loadbalancer_ip" {
 data "azurerm_public_ip" "loadbalancer_ip" {
   name                = "${local.name}-lb"
   resource_group_name = var.resource_group
-  depends_on = [azurerm_public_ip.loadbalancer_ip]
+  depends_on          = [azurerm_public_ip.loadbalancer_ip]
 }
 
 resource "azurerm_public_ip" "nat_gateway_ip" {
