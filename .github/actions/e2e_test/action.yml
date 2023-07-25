@@ -8,8 +8,7 @@ inputs:
     default: "2"
   controlNodesCount:
     description: "Number of control-plane nodes to spawn."
-    required: false
-    default: "3"
+    required: false default: "3"
   cloudProvider:
     description: "Which cloud provider to use."
     required: true

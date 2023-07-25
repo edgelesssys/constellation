@@ -78,172 +78,8 @@ func (c *Client) WithManualStateMigration(migration StateMigration) *Client {
 	return c
 }
 
-// Show reads the default state path and outputs the state.
-func (c *Client) Show(ctx context.Context) (*tfjson.State, error) {
-	return c.tf.Show(ctx)
-}
-
-// PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
-func (c *Client) PrepareWorkspace(path string, vars Variables) error {
-	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
-		return fmt.Errorf("prepare workspace: %w", err)
-	}
-
-	return c.writeVars(vars)
-}
-
-// PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
-// It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
-func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars Variables) error {
-	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
-	}
-
-	return c.writeVars(vars)
-}
-
-// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
-func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
-	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
-		return fmt.Errorf("prepare upgrade workspace: %w", err)
-	}
-	// copy the vars file from the old working dir to the new working dir
-	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
-		return fmt.Errorf("copying vars file: %w", err)
-	}
-	return nil
-}
-
-// CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOutput, error) {
-	if err := c.setLogLevel(logLevel); err != nil {
-		return ApplyOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
-	}
-
-	if err := c.tf.Init(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform init: %w", err)
-	}
-
-	if err := c.applyManualStateMigrations(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
-	}
-
-	if err := c.tf.Apply(ctx); err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform apply: %w", err)
-	}
-
-	tfState, err := c.tf.Show(ctx)
-	if err != nil {
-		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
-	}
-
-	ipOutput, ok := tfState.Values.Outputs["ip"]
-	if !ok {
-		return ApplyOutput{}, errors.New("no IP output found")
-	}
-	ip, ok := ipOutput.Value.(string)
-	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in IP output: not a string")
-	}
-
-	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
-	if !ok {
-		return ApplyOutput{}, errors.New("no api_server_cert_sans output found")
-	}
-	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
-	if !ok {
-		return ApplyOutput{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
-	}
-	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
-	if err != nil {
-		return ApplyOutput{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
-	}
-
-	secretOutput, ok := tfState.Values.Outputs["initSecret"]
-	if !ok {
-		return ApplyOutput{}, errors.New("no initSecret output found")
-	}
-	secret, ok := secretOutput.Value.(string)
-	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in initSecret output: not a string")
-	}
-
-	uidOutput, ok := tfState.Values.Outputs["uid"]
-	if !ok {
-		return ApplyOutput{}, errors.New("no uid output found")
-	}
-	uid, ok := uidOutput.Value.(string)
-	if !ok {
-		return ApplyOutput{}, errors.New("invalid type in uid output: not a string")
-	}
-
-	var attestationURL string
-	if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
-		if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
-			attestationURL = attestationURLString
-		}
-	}
-
-	return ApplyOutput{
-		IP:                ip,
-		APIServerCertSANs: apiServerCertSANs,
-		Secret:            secret,
-		UID:               uid,
-		AttestationURL:    attestationURL,
-	}, nil
-}
-
-// ApplyOutput contains the Terraform output values of a cluster creation
-// or apply operation.
-type ApplyOutput struct {
-	IP                string
-	APIServerCertSANs []string
-	Secret            string
-	UID               string
-	// AttestationURL is the URL of the attestation provider.
-	// It is only set if the cluster is created on Azure.
-	AttestationURL string
-}
-
-// IAMOutput contains the output information of the Terraform IAM operations.
-type IAMOutput struct {
-	GCP   GCPIAMOutput
-	Azure AzureIAMOutput
-	AWS   AWSIAMOutput
-}
-
-// GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
-type GCPIAMOutput struct {
-	SaKey string
-}
-
-// AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
-type AzureIAMOutput struct {
-	SubscriptionID string
-	TenantID       string
-	UAMIID         string
-}
-
-// AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
-type AWSIAMOutput struct {
-	ControlPlaneInstanceProfile string
-	WorkerNodeInstanceProfile   string
-}
-
-// ApplyIAMConfig creates an IAM configuration using Terraform.
-func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
-	if err := c.setLogLevel(logLevel); err != nil {
-		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
-	}
-
-	if err := c.tf.Init(ctx); err != nil {
-		return IAMOutput{}, err
-	}
-
-	if err := c.tf.Apply(ctx); err != nil {
-		return IAMOutput{}, err
-	}
-
+// ShowIAM reads the state of Constellation IAM resources from Terraform.
+func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (IAMOutput, error) {
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
 		return IAMOutput{}, err
@@ -322,6 +158,196 @@ func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Prov
 	default:
 		return IAMOutput{}, errors.New("unsupported cloud provider")
 	}
+}
+
+// ShowCluster reads the state of Constellation cluster resources from Terraform.
+func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
+	tfState, err := c.tf.Show(ctx)
+	if err != nil {
+		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
+	}
+
+	ipOutput, ok := tfState.Values.Outputs["ip"]
+	if !ok {
+		return ApplyOutput{}, errors.New("no IP output found")
+	}
+	ip, ok := ipOutput.Value.(string)
+	if !ok {
+		return ApplyOutput{}, errors.New("invalid type in IP output: not a string")
+	}
+
+	apiServerCertSANsOutput, ok := tfState.Values.Outputs["api_server_cert_sans"]
+	if !ok {
+		return ApplyOutput{}, errors.New("no api_server_cert_sans output found")
+	}
+	apiServerCertSANsUntyped, ok := apiServerCertSANsOutput.Value.([]any)
+	if !ok {
+		return ApplyOutput{}, fmt.Errorf("invalid type in api_server_cert_sans output: %s is not a list of elements", apiServerCertSANsOutput.Type.FriendlyName())
+	}
+	apiServerCertSANs, err := toStringSlice(apiServerCertSANsUntyped)
+	if err != nil {
+		return ApplyOutput{}, fmt.Errorf("convert api_server_cert_sans output: %w", err)
+	}
+
+	secretOutput, ok := tfState.Values.Outputs["initSecret"]
+	if !ok {
+		return ApplyOutput{}, errors.New("no initSecret output found")
+	}
+	secret, ok := secretOutput.Value.(string)
+	if !ok {
+		return ApplyOutput{}, errors.New("invalid type in initSecret output: not a string")
+	}
+
+	uidOutput, ok := tfState.Values.Outputs["uid"]
+	if !ok {
+		return ApplyOutput{}, errors.New("no uid output found")
+	}
+	uid, ok := uidOutput.Value.(string)
+	if !ok {
+		return ApplyOutput{}, errors.New("invalid type in uid output: not a string")
+	}
+
+	var attestationURL string
+	if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
+		if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
+			attestationURL = attestationURLString
+		}
+	}
+
+	res := ApplyOutput{
+		IP:                ip,
+		APIServerCertSANs: apiServerCertSANs,
+		Secret:            secret,
+		UID:               uid,
+		AttestationURL:    attestationURL,
+	}
+	// TODO add provider
+	gcpProject, ok := tfState.Values.Outputs["project"]
+	if ok {
+		cidrNodes := tfState.Values.Outputs["ip_cidr_nodes"]
+		cidrPods := tfState.Values.Outputs["ip_cidr_pods"]
+
+		res.GCP = &GCPApplyOutput{
+			ProjectID:  gcpProject.Value.(string),
+			IPCidrNode: cidrNodes.Value.(string),
+			IPCidrPod:  cidrPods.Value.(string), // TODO error handling conversion
+		}
+	}
+
+	return res, nil
+}
+
+// PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
+func (c *Client) PrepareWorkspace(path string, vars Variables) error {
+	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
+		return fmt.Errorf("prepare workspace: %w", err)
+	}
+
+	return c.writeVars(vars)
+}
+
+// PrepareUpgradeWorkspace prepares a Terraform workspace for a Constellation version upgrade.
+// It copies the Terraform state from the old working dir and the embedded Terraform files into the new working dir.
+func (c *Client) PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars Variables) error {
+	if err := prepareUpgradeWorkspace(path, c.file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+
+	return c.writeVars(vars)
+}
+
+// PrepareIAMUpgradeWorkspace prepares a Terraform workspace for a Constellation IAM upgrade.
+func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorkingDir, backupDir string) error {
+	if err := prepareUpgradeWorkspace(path, file, oldWorkingDir, newWorkingDir, backupDir); err != nil {
+		return fmt.Errorf("prepare upgrade workspace: %w", err)
+	}
+	// copy the vars file from the old working dir to the new working dir
+	if err := file.CopyFile(filepath.Join(oldWorkingDir, terraformVarsFile), filepath.Join(newWorkingDir, terraformVarsFile)); err != nil {
+		return fmt.Errorf("copying vars file: %w", err)
+	}
+	return nil
+}
+
+// CreateCluster creates a Constellation cluster using Terraform.
+func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOutput, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return ApplyOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	if err := c.tf.Init(ctx); err != nil {
+		return ApplyOutput{}, fmt.Errorf("terraform init: %w", err)
+	}
+
+	if err := c.applyManualStateMigrations(ctx); err != nil {
+		return ApplyOutput{}, fmt.Errorf("apply manual state migrations: %w", err)
+	}
+
+	if err := c.tf.Apply(ctx); err != nil {
+		return ApplyOutput{}, fmt.Errorf("terraform apply: %w", err)
+	}
+
+	return c.ShowCluster(ctx)
+}
+
+// ApplyOutput contains the Terraform output values of a cluster creation
+// or apply operation.
+type ApplyOutput struct {
+	IP                string
+	APIServerCertSANs []string
+	Secret            string
+	UID               string
+	// AttestationURL is the URL of the attestation provider.
+	// It is only set if the cluster is created on Azure.
+	AttestationURL string
+	GCP            *GCPApplyOutput
+}
+
+// GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
+type GCPApplyOutput struct {
+	ProjectID  string
+	IPCidrNode string
+	IPCidrPod  string
+}
+
+// IAMOutput contains the output information of the Terraform IAM operations.
+type IAMOutput struct {
+	GCP   GCPIAMOutput
+	Azure AzureIAMOutput
+	AWS   AWSIAMOutput
+}
+
+// GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type GCPIAMOutput struct {
+	SaKey string
+}
+
+// AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
+type AzureIAMOutput struct {
+	SubscriptionID string
+	TenantID       string
+	UAMIID         string
+}
+
+// AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type AWSIAMOutput struct {
+	ControlPlaneInstanceProfile string
+	WorkerNodeInstanceProfile   string
+}
+
+// ApplyIAMConfig creates an IAM configuration using Terraform.
+func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (IAMOutput, error) {
+	if err := c.setLogLevel(logLevel); err != nil {
+		return IAMOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
+	}
+
+	if err := c.tf.Init(ctx); err != nil {
+		return IAMOutput{}, err
+	}
+
+	if err := c.tf.Apply(ctx); err != nil {
+		return IAMOutput{}, err
+	}
+	return c.ShowIAM(ctx, provider)
 }
 
 // Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.

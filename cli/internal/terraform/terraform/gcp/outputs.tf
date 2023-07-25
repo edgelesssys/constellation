@@ -18,3 +18,15 @@ output "initSecret" {
   value     = random_password.initSecret.result
   sensitive = true
 }
+
+output "project" {
+  value = var.project
+}
+
+output "ip_cidr_nodes" {
+  value = local.cidr_vpc_subnet_nodes
+}
+
+output "ip_cidr_pods" {
+  value = local.cidr_vpc_subnet_pods
+}

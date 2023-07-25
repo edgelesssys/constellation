@@ -9,6 +9,7 @@ go_library(
         "helm.go",
         "loader.go",
         "serviceversion.go",
+        "setup.go",
         "values.go",
     ],
     embedsrcs = [
@@ -418,6 +419,7 @@ go_library(
         "//cli/internal/clusterid",
         "//cli/internal/helm/imageversion",
         "//internal/cloud/cloudprovider",
+        "//internal/cloud/metadata",
         "//internal/compatibility",
         "//internal/config",
         "//internal/constants",

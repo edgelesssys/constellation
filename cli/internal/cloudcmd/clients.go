@@ -13,7 +13,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // imageFetcher gets an image reference from the versionsapi.
@@ -24,14 +23,23 @@ type imageFetcher interface {
 	) (string, error)
 }
 
-type terraformClient interface {
-	PrepareWorkspace(path string, input terraform.Variables) error
-	ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
-	Destroy(ctx context.Context, logLevel terraform.LogLevel) error
+type tfCommonClient interface {
 	CleanUpWorkspace() error
+	Destroy(ctx context.Context, logLevel terraform.LogLevel) error
+	PrepareWorkspace(path string, input terraform.Variables) error
 	RemoveInstaller()
-	Show(ctx context.Context) (*tfjson.State, error)
+}
+
+type tfResourceClient interface {
+	tfCommonClient
+	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	ShowCluster(ctx context.Context) (terraform.ApplyOutput, error)
+}
+
+type tfIAMClient interface {
+	tfCommonClient
+	ApplyIAMConfig(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.IAMOutput, error)
+	ShowIAM(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error)
 }
 
 type libvirtRunner interface {

@@ -31,7 +31,7 @@ import (
 type Creator struct {
 	out                io.Writer
 	image              imageFetcher
-	newTerraformClient func(ctx context.Context) (terraformClient, error)
+	newTerraformClient func(ctx context.Context) (tfResourceClient, error)
 	newLibvirtRunner   func() libvirtRunner
 	newRawDownloader   func() rawDownloader
 	policyPatcher      policyPatcher
@@ -42,7 +42,7 @@ func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out:   out,
 		image: imagefetcher.New(),
-		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+		newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
 			return terraform.New(ctx, constants.TerraformWorkingDir)
 		},
 		newLibvirtRunner: func() libvirtRunner {
@@ -126,7 +126,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	}, nil
 }
 
-func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := awsTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.AWS, vars, c.out, opts.TFLogLevel)
@@ -137,7 +137,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, opts Create
 	return tfOutput, nil
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createGCP(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := gcpTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.GCP, vars, c.out, opts.TFLogLevel)
@@ -148,7 +148,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, opts Create
 	return tfOutput, nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createAzure(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	vars := azureTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.Azure, vars, c.out, opts.TFLogLevel)
@@ -197,7 +197,7 @@ func normalizeAzureURIs(vars *terraform.AzureClusterVariables) *terraform.AzureC
 	return vars
 }
 
-func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	// TODO(malt3): Remove this once OpenStack is supported.
 	if os.Getenv("CONSTELLATION_OPENSTACK_DEV") != "1" {
 		return terraform.ApplyOutput{}, errors.New("OpenStack isn't supported yet")
@@ -221,7 +221,7 @@ func (c *Creator) createOpenStack(ctx context.Context, cl terraformClient, opts 
 	return tfOutput, nil
 }
 
-func runTerraformCreate(ctx context.Context, cl terraformClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output terraform.ApplyOutput, retErr error) {
+func runTerraformCreate(ctx context.Context, cl tfResourceClient, provider cloudprovider.Provider, vars terraform.Variables, outWriter io.Writer, loglevel terraform.LogLevel) (output terraform.ApplyOutput, retErr error) {
 	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(provider.String())), vars); err != nil {
 		return terraform.ApplyOutput{}, err
 	}
@@ -240,7 +240,7 @@ type qemuCreateOptions struct {
 	CreateOptions
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
+func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvirtRunner, opts qemuCreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
 	defer rollbackOnError(c.out, &retErr, qemuRollbacker, opts.TFLogLevel)
 

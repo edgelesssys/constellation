@@ -13,6 +13,7 @@ go_library(
         "configkubernetesversions.go",
         "configmigrate.go",
         "create.go",
+        "helminstaller.go",
         "iamcreate.go",
         "iamdestroy.go",
         "iamupgradeapply.go",

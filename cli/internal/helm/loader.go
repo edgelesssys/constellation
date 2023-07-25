@@ -121,6 +121,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 	return rel, nil
 }
 
+// LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
 func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) (*helm.Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {

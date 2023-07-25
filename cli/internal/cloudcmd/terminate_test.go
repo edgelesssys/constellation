@@ -19,7 +19,7 @@ func TestTerminator(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		tfClient       terraformClient
+		tfClient       tfResourceClient
 		newTfClientErr error
 		libvirt        *stubLibvirtRunner
 		wantErr        bool
@@ -55,7 +55,7 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
