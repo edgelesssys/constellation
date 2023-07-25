@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"text/template"
@@ -95,7 +96,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				InfoMap:     infoMapM,
 				Credentials: creds,
 			}
-			if err := writeLogstashPipelineConf(tmpl, pipelineConf); err != nil {
+			if err := writeTemplate("/run/filebeat/filebeat.yml", tmpl, pipelineConf); err != nil {
 				logger.Errorf("Writing logstash pipeline: %v", err)
 				return
 			}
@@ -109,7 +110,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			filebeatConf := filebeatConfInput{
 				LogstashHost: "localhost:5044",
 			}
-			if err := writeFilebeatConf(tmpl, filebeatConf); err != nil {
+			if err := writeTemplate("/run/logstash/pipeline/pipeline.conf", tmpl, filebeatConf); err != nil {
 				logger.Errorf("Writing filebeat config: %v", err)
 				return
 			}
@@ -279,41 +280,23 @@ type logstashConfInput struct {
 	Credentials credentials
 }
 
-func writeLogstashPipelineConf(templ *template.Template, in logstashConfInput) error {
-	if err := os.MkdirAll("/run/filebeat", 0o777); err != nil {
-		return fmt.Errorf("creating filebeat config dir: %w", err)
-	}
-
-	file, err := os.OpenFile("/run/filebeat/filebeat.yml", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
-	if err != nil {
-		return fmt.Errorf("opening filebeat config file: %w", err)
-	}
-	defer file.Close()
-
-	if err := templ.Execute(file, in); err != nil {
-		return fmt.Errorf("executing filebeat config template: %w", err)
-	}
-
-	return nil
-}
-
 type filebeatConfInput struct {
 	LogstashHost string
 }
 
-func writeFilebeatConf(templ *template.Template, in filebeatConfInput) error {
-	if err := os.MkdirAll("/run/logstash/pipeline", 0o777); err != nil {
-		return fmt.Errorf("creating logstash config dir: %w", err)
+func writeTemplate(path string, templ *template.Template, in any) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
+		return fmt.Errorf("creating template dir: %w", err)
 	}
 
-	file, err := os.OpenFile("/run/logstash/pipeline/pipeline.conf", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
 	if err != nil {
-		return fmt.Errorf("opening logstash config file: %w", err)
+		return fmt.Errorf("opening template file: %w", err)
 	}
 	defer file.Close()
 
 	if err := templ.Execute(file, in); err != nil {
-		return fmt.Errorf("executing logstash pipeline template: %w", err)
+		return fmt.Errorf("executing template: %w", err)
 	}
 
 	return nil
