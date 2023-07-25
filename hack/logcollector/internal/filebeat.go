@@ -6,11 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package internal
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"path/filepath"
-	"text/template"
 
 	"github.com/edgelesssys/constellation/v2/debugd/filebeat"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -29,6 +27,7 @@ var (
 type FilebeatPreparer struct {
 	fh   file.Handler
 	port int
+	TemplatePreparer
 }
 
 // NewFilebeatPreparer returns a new FilebeatPreparer.
@@ -85,21 +84,6 @@ func (p *FilebeatPreparer) Prepare(dir string) error {
 	}
 
 	return nil
-}
-
-func (p *FilebeatPreparer) template(fs embed.FS, templateFile string, templateData any) (*bytes.Buffer, error) {
-	templates, err := template.ParseFS(fs, templateFile)
-	if err != nil {
-		return nil, fmt.Errorf("parse templates: %w", err)
-	}
-
-	buf := bytes.NewBuffer(nil)
-
-	if err = templates.Execute(buf, templateData); err != nil {
-		return nil, fmt.Errorf("execute template: %w", err)
-	}
-
-	return buf, nil
 }
 
 // FilebeatTemplateData is template data.

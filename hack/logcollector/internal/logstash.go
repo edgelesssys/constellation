@@ -6,11 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package internal
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"path/filepath"
-	"text/template"
 
 	"github.com/edgelesssys/constellation/v2/debugd/logstash"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -36,6 +34,7 @@ type LogstashPreparer struct {
 	username string
 	password string
 	port     int
+	TemplatePreparer
 }
 
 // NewLogstashPreparer returns a new LogstashPreparer.
@@ -135,21 +134,6 @@ type LogstashHelmValues struct {
 		Operator string `yaml:"operator"`
 		Effect   string `yaml:"effect"`
 	} `yaml:"tolerations"`
-}
-
-func (p *LogstashPreparer) template(fs embed.FS, templateFile string, templateData any) (*bytes.Buffer, error) {
-	templates, err := template.ParseFS(fs, templateFile)
-	if err != nil {
-		return nil, fmt.Errorf("parse templates: %w", err)
-	}
-
-	buf := bytes.NewBuffer(nil)
-
-	if err = templates.Execute(buf, templateData); err != nil {
-		return nil, fmt.Errorf("execute template: %w", err)
-	}
-
-	return buf, nil
 }
 
 // pipelineConfTemplate is template Data.

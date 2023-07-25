@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "filebeat.go",
         "logstash.go",
+        "prepare.go",
     ],
     embedsrcs = [
         "templates/filebeat/Makefile",
