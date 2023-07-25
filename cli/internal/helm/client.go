@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -109,8 +110,11 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	newReleases := []*chart.Chart{}
-
-	for _, info := range []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo, awsLBControllerInfo} {
+	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo}
+	if config.GetProvider() == cloudprovider.AWS {
+		charts = append(charts, awsLBControllerInfo)
+	}
+	for _, info := range charts {
 		c.log.Debugf("Checking release %s", info.releaseName)
 		chart, err := loadChartsDir(helmFS, info.path)
 		if err != nil {
