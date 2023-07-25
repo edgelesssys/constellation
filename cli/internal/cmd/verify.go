@@ -309,14 +309,14 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 			return fmt.Errorf("parse %s: %w", certTypeName, err)
 		}
 
-		b.WriteString(fmt.Sprintf("\t%s (%d):\n", certTypeName, i))
-		b.WriteString(fmt.Sprintf("\t\tSerial Number: %s\n", cert.SerialNumber))
-		b.WriteString(fmt.Sprintf("\t\tSubject: %s\n", cert.Subject))
-		b.WriteString(fmt.Sprintf("\t\tIssuer: %s\n", cert.Issuer))
-		b.WriteString(fmt.Sprintf("\t\tNot Before: %s\n", cert.NotBefore))
-		b.WriteString(fmt.Sprintf("\t\tNot After: %s\n", cert.NotAfter))
-		b.WriteString(fmt.Sprintf("\t\tSignature Algorithm: %s\n", cert.SignatureAlgorithm))
-		b.WriteString(fmt.Sprintf("\t\tPublic Key Algorithm: %s\n", cert.PublicKeyAlgorithm))
+		writeIndentfln(b, 1, "%s (%d):", certTypeName, i)
+		writeIndentfln(b, 2, "Serial Number: %s", cert.SerialNumber)
+		writeIndentfln(b, 2, "Subject: %s", cert.Subject)
+		writeIndentfln(b, 2, "Issuer: %s", cert.Issuer)
+		writeIndentfln(b, 2, "Not Before: %s", cert.NotBefore)
+		writeIndentfln(b, 2, "Not After: %s", cert.NotAfter)
+		writeIndentfln(b, 2, "Signature Algorithm: %s", cert.SignatureAlgorithm)
+		writeIndentfln(b, 2, "Public Key Algorithm: %s", cert.PublicKeyAlgorithm)
 
 		if certTypeName == "VCEK certificate" {
 			// Extensions documented in Table 8 and Table 9 of
@@ -326,18 +326,18 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 				return fmt.Errorf("parsing VCEK certificate extensions: %w", err)
 			}
 
-			b.WriteString(fmt.Sprintf("\t\tStruct version: %d\n", vcekExts.StructVersion))
-			b.WriteString(fmt.Sprintf("\t\tProduct name: %s\n", vcekExts.ProductName))
+			writeIndentfln(b, 2, "Struct version: %d", vcekExts.StructVersion)
+			writeIndentfln(b, 2, "Product name: %s", vcekExts.ProductName)
 			tcb := kds.DecomposeTCBVersion(vcekExts.TCBVersion)
-			b.WriteString(fmt.Sprintf("\t\tSecure Processor bootloader SVN: %d\n", tcb.BlSpl))
-			b.WriteString(fmt.Sprintf("\t\tSecure Processor operating system SVN: %d\n", tcb.TeeSpl))
-			b.WriteString(fmt.Sprintf("\t\tSVN 4 (reserved): %d\n", tcb.Spl4))
-			b.WriteString(fmt.Sprintf("\t\tSVN 5 (reserved): %d\n", tcb.Spl5))
-			b.WriteString(fmt.Sprintf("\t\tSVN 6 (reserved): %d\n", tcb.Spl6))
-			b.WriteString(fmt.Sprintf("\t\tSVN 7 (reserved): %d\n", tcb.Spl7))
-			b.WriteString(fmt.Sprintf("\t\tSEV-SNP firmware SVN: %d\n", tcb.SnpSpl))
-			b.WriteString(fmt.Sprintf("\t\tMicrocode SVN: %d\n", tcb.UcodeSpl))
-			b.WriteString(fmt.Sprintf("\t\tHardware ID: %#x\n", vcekExts.HWID))
+			writeIndentfln(b, 2, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
+			writeIndentfln(b, 2, "Secure Processor operating system SVN: %d", tcb.TeeSpl)
+			writeIndentfln(b, 2, "SVN 4 (reserved): %d", tcb.Spl4)
+			writeIndentfln(b, 2, "SVN 5 (reserved): %d", tcb.Spl5)
+			writeIndentfln(b, 2, "SVN 6 (reserved): %d", tcb.Spl6)
+			writeIndentfln(b, 2, "SVN 7 (reserved): %d", tcb.Spl7)
+			writeIndentfln(b, 2, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
+			writeIndentfln(b, 2, "Microcode SVN: %d", tcb.UcodeSpl)
+			writeIndentfln(b, 2, "Hardware ID: %#x", vcekExts.HWID)
 		}
 
 		i++
@@ -348,16 +348,16 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 
 // parseQuotes parses the base64-encoded quotes and writes their details to the output builder.
 func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []quote, expectedPCRs measurements.M) error {
-	b.WriteString("\tQuote:\n")
+	writeIndentfln(b, 1, "Quote:")
 	for pcrNum, expectedPCR := range expectedPCRs {
 		encPCR := quotes[1].Pcrs.Pcrs[fmt.Sprintf("%d", pcrNum)]
 		actualPCR, err := base64.StdEncoding.DecodeString(encPCR)
 		if err != nil {
 			return fmt.Errorf("decode PCR %d: %w", pcrNum, err)
 		}
-		b.WriteString(fmt.Sprintf("\t\tPCR %d (Strict: %t):\n", pcrNum, !expectedPCR.ValidationOpt))
-		b.WriteString(fmt.Sprintf("\t\t\tExpected:\t%x\n", expectedPCR.Expected))
-		b.WriteString(fmt.Sprintf("\t\t\tActual:\t\t%x\n", actualPCR))
+		writeIndentfln(b, 2, "PCR %d (Strict: %t):", pcrNum, !expectedPCR.ValidationOpt)
+		writeIndentfln(b, 3, "Expected:\t%x", expectedPCR.Expected)
+		writeIndentfln(b, 3, "Actual:\t\t%x", actualPCR)
 	}
 	return nil
 }
@@ -435,4 +435,13 @@ type verifyClient interface {
 
 type grpcInsecureDialer interface {
 	DialInsecure(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error)
+}
+
+// writeIndentfln writes a formatted string to the builder with the given indentation level
+// and a newline at the end.
+func writeIndentfln(b *strings.Builder, indentLvl int, format string, args ...any) {
+	for i := 0; i < indentLvl; i++ {
+		b.WriteByte('\t')
+	}
+	b.WriteString(fmt.Sprintf(format+"\n", args...))
 }
