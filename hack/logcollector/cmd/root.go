@@ -6,8 +6,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +23,6 @@ It prepares filebeat and logstash configurations for deployment.`,
 }
 
 // Execute starts the CLI.
-func Execute() {
-	cmd := newRootCmd()
-	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+func Execute() error {
+	return newRootCmd().Execute()
 }
