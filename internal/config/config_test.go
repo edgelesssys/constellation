@@ -323,8 +323,9 @@ func TestValidate(t *testing.T) {
 				cnf.MicroserviceVersion = semver.NewFromInt(cliVersion.Major()+2, cliVersion.Minor(), cliVersion.Patch(), "")
 				return cnf
 			}(),
-			wantErr:      true,
-			wantErrCount: defaultErrCount + 1,
+			wantErr: true,
+			// This is a very different value from the other error counts because of the way we are checking MicroserviceVersions.
+			wantErrCount: 1,
 		},
 		"v0 is one error": {
 			cnf: func() *Config {
