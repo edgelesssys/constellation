@@ -70,17 +70,15 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	imagefetcher := imagefetcher.New()
 	configFetcher := attestationconfigapi.NewFetcher()
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, migrationExecutor: &tfMigrationClient{log}}
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
 type upgradeApplyCmd struct {
-	upgrader          cloudUpgrader
-	imageFetcher      imageFetcher
-	configFetcher     attestationconfigapi.Fetcher
-	log               debugLog
-	migrationExecutor tfMigrationApplier
-	migrationCmds     []upgrade.TfMigrationCmd
+	upgrader      cloudUpgrader
+	imageFetcher  imageFetcher
+	configFetcher attestationconfigapi.Fetcher
+	log           debugLog
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -110,11 +108,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
 	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
-	}
-	for _, migrationCmd := range u.migrationCmds {
-		if err := u.migrationExecutor.applyMigration(cmd, fileHandler, migrationCmd, flags); err != nil {
-			return fmt.Errorf("executing %s migration: %w", migrationCmd.String(), err)
-		}
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
 	if err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags); err != nil {
@@ -378,8 +371,4 @@ type cloudUpgrader interface {
 	CheckTerraformMigrations() error
 	CleanUpTerraformMigrations() error
 	AddManualStateMigration(migration terraform.StateMigration)
-}
-
-type tfMigrationApplier interface {
-	applyMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd, flags upgradeApplyFlags) error
 }

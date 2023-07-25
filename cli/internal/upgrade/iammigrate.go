@@ -28,7 +28,7 @@ type TfMigrationCmd interface {
 	UpgradeID() string
 }
 
-// IAMMigrateCmd is a terraform migration command for IAM.
+// IAMMigrateCmd is a terraform migration command for IAM. Which is used for the tfMigrationClient.
 type IAMMigrateCmd struct {
 	tf        tfIAMClient
 	upgradeID string
