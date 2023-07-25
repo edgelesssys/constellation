@@ -75,7 +75,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			}
 
 			logger.Infof("Getting logstash pipeline template")
-			tmpl, err := getLogstashTemplate(ctx, logger)
+			tmpl, err := getTemplate(ctx, logger, versions.LogstashImage, "/run/logstash/templates/pipeline.conf", "/run/logstash")
 			if err != nil {
 				logger.Errorf("Getting logstash pipeline template: %v", err)
 				return
@@ -103,7 +103,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 			}
 
 			logger.Infof("Getting logstash config template")
-			tmpl, err = getFilebeatTemplate(ctx, logger)
+			tmpl, err = getTemplate(ctx, logger, versions.FilebeatImage, "/run/filebeat/templates/filebeat.yml", "/run/filebeat")
 			if err != nil {
 				logger.Errorf("Getting filebeat config template: %v", err)
 				return
@@ -124,31 +124,31 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 	}
 }
 
-func getLogstashTemplate(ctx context.Context, logger *logger.Logger) (*template.Template, error) {
+func getTemplate(ctx context.Context, logger *logger.Logger, image, templateDir, destDir string) (*template.Template, error) {
 	createContainerArgs := []string{
 		"create",
 		"--name=template",
-		versions.LogstashImage,
+		image,
 	}
 	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
-	logger.Infof("Creating logstash template container")
+	logger.Infof("Creating template container")
 	if out, err := createContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("creating logstash template container: %w\n%s", err, out)
+		return nil, fmt.Errorf("creating template container: %w\n%s", err, out)
 	}
 
-	if err := os.MkdirAll("/run/logstash", 0o777); err != nil {
-		return nil, fmt.Errorf("creating logstash template dir: %w", err)
+	if err := os.MkdirAll(destDir, 0o777); err != nil {
+		return nil, fmt.Errorf("creating template dir: %w", err)
 	}
 
 	copyFromArgs := []string{
 		"cp",
 		"template:/usr/share/constellogs/templates/",
-		"/run/logstash/",
+		destDir,
 	}
 	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
-	logger.Infof("Copying logstash templates")
+	logger.Infof("Copying templates")
 	if out, err := copyFromCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("copying logstash templates: %w\n%s", err, out)
+		return nil, fmt.Errorf("copying templates: %w\n%s", err, out)
 	}
 
 	removeContainerArgs := []string{
@@ -156,59 +156,14 @@ func getLogstashTemplate(ctx context.Context, logger *logger.Logger) (*template.
 		"template",
 	}
 	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
-	logger.Infof("Removing logstash template container")
+	logger.Infof("Removing template container")
 	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("removing logstash template container: %w\n%s", err, out)
+		return nil, fmt.Errorf("removing template container: %w\n%s", err, out)
 	}
 
-	tmpl, err := template.ParseFiles("/run/logstash/templates/pipeline.conf")
+	tmpl, err := template.ParseFiles(templateDir)
 	if err != nil {
-		return nil, fmt.Errorf("parsing logstash template: %w", err)
-	}
-
-	return tmpl, nil
-}
-
-func getFilebeatTemplate(ctx context.Context, logger *logger.Logger) (*template.Template, error) {
-	createContainerArgs := []string{
-		"create",
-		"--name=template",
-		versions.FilebeatImage,
-	}
-	createContainerCmd := exec.CommandContext(ctx, "podman", createContainerArgs...)
-	logger.Infof("Creating filebeat template container")
-	if out, err := createContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("creating filebeat template container: %w\n%s", err, out)
-	}
-
-	if err := os.MkdirAll("/run/filebeat", 0o777); err != nil {
-		return nil, fmt.Errorf("creating filebeat template dir: %w", err)
-	}
-
-	copyFromArgs := []string{
-		"cp",
-		"template:/usr/share/constellogs/templates/",
-		"/run/filebeat/",
-	}
-	copyFromCmd := exec.CommandContext(ctx, "podman", copyFromArgs...)
-	logger.Infof("Copying filebeat templates")
-	if out, err := copyFromCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("copying filebeat templates: %w\n%s", err, out)
-	}
-
-	removeContainerArgs := []string{
-		"rm",
-		"template",
-	}
-	removeContainerCmd := exec.CommandContext(ctx, "podman", removeContainerArgs...)
-	logger.Infof("Removing filebeat template container")
-	if out, err := removeContainerCmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("removing filebeat template container: %w\n%s", err, out)
-	}
-
-	tmpl, err := template.ParseFiles("/run/filebeat/templates/filebeat.yml")
-	if err != nil {
-		return nil, fmt.Errorf("parsing filebeat template: %w", err)
+		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
 	return tmpl, nil
