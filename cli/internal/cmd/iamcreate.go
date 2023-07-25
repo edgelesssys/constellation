@@ -229,14 +229,14 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 	var conf config.Config
 	if flags.updateConfig {
-		c.log.Debugf("Parsing config %s", flags.configPath)
-		if err = c.fileHandler.ReadYAML(flags.configPath, &conf); err != nil {
+		c.log.Debugf("Parsing config %s", configPath(flags.workspace))
+		if err = c.fileHandler.ReadYAML(configPath(flags.workspace), &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
 		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
 			return err
 		}
-		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", flags.configPath)
+		c.cmd.Printf("The configuration file %q will be automatically updated with the IAM values and zone/region information.\n", configPath(flags.workspace))
 	}
 
 	c.spinner.Start("Creating", false)
@@ -254,12 +254,12 @@ func (c *iamCreator) create(ctx context.Context) error {
 	}
 
 	if flags.updateConfig {
-		c.log.Debugf("Writing IAM configuration to %s", flags.configPath)
+		c.log.Debugf("Writing IAM configuration to %s", configPath(flags.workspace))
 		c.providerCreator.writeOutputValuesToConfig(&conf, flags, iamFile)
-		if err := c.fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
+		if err := c.fileHandler.WriteYAML(configPath(flags.workspace), conf, file.OptOverwrite); err != nil {
 			return err
 		}
-		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", flags.configPath)
+		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", configPath(flags.workspace))
 		return nil
 	}
 
@@ -271,7 +271,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 
 // parseFlagsAndSetupConfig parses the flags of the iam create command and fills the values into the IAM config (output values of the command).
 func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
-	configPath, err := c.cmd.Flags().GetString("config")
+	cwd, err := c.cmd.Flags().GetString("workspace")
 	if err != nil {
 		return iamFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
@@ -285,7 +285,7 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 	}
 
 	flags := iamFlags{
-		configPath:   configPath,
+		workspace:    cwd,
 		yesFlag:      yesFlag,
 		updateConfig: updateConfig,
 	}
@@ -311,7 +311,7 @@ type iamFlags struct {
 	aws          awsFlags
 	azure        azureFlags
 	gcp          gcpFlags
-	configPath   string
+	workspace    string
 	yesFlag      bool
 	updateConfig bool
 }

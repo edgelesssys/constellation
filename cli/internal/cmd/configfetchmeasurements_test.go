@@ -39,7 +39,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 	testCases := map[string]struct {
 		urlFlag          string
 		signatureURLFlag string
-		configFlag       string
+		workspaceFlag    string
 		forceFlag        bool
 		wantFlags        *fetchMeasurementsFlags
 		wantErr          bool
@@ -48,7 +48,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: nil,
 				signatureURL:    nil,
-				configPath:      constants.ConfigFilename,
+				workspace:       "",
 			},
 		},
 		"url": {
@@ -57,7 +57,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: urlMustParse("https://some.other.url/with/path"),
 				signatureURL:    urlMustParse("https://some.other.url/with/path.sig"),
-				configPath:      constants.ConfigFilename,
+				workspace:       "",
 			},
 		},
 		"broken url": {
@@ -65,9 +65,9 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"config": {
-			configFlag: "someOtherConfig.yaml",
+			workspaceFlag: "some/other/dir",
 			wantFlags: &fetchMeasurementsFlags{
-				configPath: "someOtherConfig.yaml",
+				workspace: "some/other/dir",
 			},
 		},
 	}
@@ -78,8 +78,8 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", false, "")                       // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", false, "")    // register persistent flag manually
 
 			if tc.urlFlag != "" {
 				require.NoError(cmd.Flags().Set("url", tc.urlFlag))
@@ -87,8 +87,8 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			if tc.signatureURLFlag != "" {
 				require.NoError(cmd.Flags().Set("signature-url", tc.signatureURLFlag))
 			}
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
 			flags, err := cfm.parseFetchMeasurementsFlags(cmd)
@@ -283,8 +283,8 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			require.NoError(cmd.Flags().Set("insecure", strconv.FormatBool(tc.insecureFlag)))
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 

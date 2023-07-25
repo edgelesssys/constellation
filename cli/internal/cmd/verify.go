@@ -85,8 +85,8 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, configFetcher, flags.force)
+	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	conf, err := config.New(fileHandler, configPath(flags.workspace), configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -138,11 +138,11 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 }
 
 func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Flag 'config' set to %q", configPath)
+	c.log.Debugf("Flag 'workspace' set to %q", cwd)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
@@ -200,24 +200,24 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	}
 
 	return verifyFlags{
-		endpoint:   endpoint,
-		configPath: configPath,
-		ownerID:    ownerID,
-		clusterID:  clusterID,
-		maaURL:     idFile.AttestationURL,
-		rawOutput:  raw,
-		force:      force,
+		endpoint:  endpoint,
+		workspace: cwd,
+		ownerID:   ownerID,
+		clusterID: clusterID,
+		maaURL:    idFile.AttestationURL,
+		rawOutput: raw,
+		force:     force,
 	}, nil
 }
 
 type verifyFlags struct {
-	endpoint   string
-	ownerID    string
-	clusterID  string
-	configPath string
-	maaURL     string
-	rawOutput  bool
-	force      bool
+	endpoint  string
+	ownerID   string
+	clusterID string
+	workspace string
+	maaURL    string
+	rawOutput bool
+	force     bool
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {

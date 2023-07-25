@@ -86,7 +86,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
-	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
+	conf, err := config.New(fileHandler, configPath(flags.workspace), u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -327,7 +327,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upgradeApplyFlags{}, err
 	}
@@ -357,7 +357,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	}
 
 	return upgradeApplyFlags{
-		configPath:        configPath,
+		workspace:         cwd,
 		yes:               yes,
 		upgradeTimeout:    timeout,
 		force:             force,
@@ -366,7 +366,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 }
 
 type upgradeApplyFlags struct {
-	configPath        string
+	workspace         string
 	yes               bool
 	upgradeTimeout    time.Duration
 	force             bool

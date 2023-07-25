@@ -46,7 +46,7 @@ func TestVerify(t *testing.T) {
 		protoClient      *stubVerifyClient
 		formatter        *stubAttDocFormatter
 		nodeEndpointFlag string
-		configFlag       string
+		workspaceFlag    string
 		clusterIDFlag    string
 		idFile           *clusterid.File
 		wantEndpoint     string
@@ -126,7 +126,7 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			clusterIDFlag:    zeroBase64,
 			nodeEndpointFlag: "192.0.2.1:1234",
-			configFlag:       "./file",
+			workspaceFlag:    "./custom-dir",
 			formatter:        &stubAttDocFormatter{},
 			wantErr:          true,
 		},
@@ -163,13 +163,13 @@ func TestVerify(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewVerifyCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))

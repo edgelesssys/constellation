@@ -102,7 +102,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upgradeCheckFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
@@ -133,7 +133,7 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}
 
 	return upgradeCheckFlags{
-		configPath:        configPath,
+		workspace:         cwd,
 		force:             force,
 		updateConfig:      updateConfig,
 		ref:               ref,
@@ -152,7 +152,7 @@ type upgradeCheckCmd struct {
 
 // upgradePlan plans an upgrade of a Constellation cluster.
 func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
-	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
+	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -160,7 +160,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return err
 	}
-	u.log.Debugf("Read configuration from %q", flags.configPath)
+	u.log.Debugf("Read configuration from %q", configPath(flags.workspace))
 
 	if !u.canUpgradeCheck {
 		cmd.PrintErrln("Planning Constellation upgrades automatically is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
@@ -278,7 +278,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	cmd.Print(updateMsg)
 
 	if flags.updateConfig {
-		if err := upgrade.writeConfig(conf, fileHandler, flags.configPath); err != nil {
+		if err := upgrade.writeConfig(conf, fileHandler, configPath(flags.workspace)); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
 		cmd.Println("Config updated successfully.")
@@ -749,7 +749,7 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 }
 
 type upgradeCheckFlags struct {
-	configPath        string
+	workspace         string
 	force             bool
 	updateConfig      bool
 	ref               string

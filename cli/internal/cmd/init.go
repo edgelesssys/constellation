@@ -143,8 +143,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(i.fileHandler, flags.configPath, configFetcher, flags.force)
+	i.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	conf, err := config.New(i.fileHandler, configPath(flags.workspace), configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -467,7 +467,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 		helmWaitMode = helm.WaitModeNone
 	}
 	i.log.Debugf("Helm wait flag is %t", skipHelmWait)
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
@@ -485,7 +485,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	i.log.Debugf("force flag is %t", force)
 
 	return initFlags{
-		configPath:       configPath,
+		workspace:        cwd,
 		conformance:      conformance,
 		helmWaitMode:     helmWaitMode,
 		masterSecretPath: masterSecretPath,
@@ -496,7 +496,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
-	configPath       string
+	workspace        string
 	masterSecretPath string
 	conformance      bool
 	helmWaitMode     helm.WaitMode

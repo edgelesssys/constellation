@@ -70,7 +70,7 @@ func TestRecover(t *testing.T) {
 		doer            *stubDoer
 		masterSecret    testvector.HKDF
 		endpoint        string
-		configFlag      string
+		workspaceFlag   string
 		successfulCalls int
 		wantErr         bool
 	}{
@@ -81,11 +81,11 @@ func TestRecover(t *testing.T) {
 			successfulCalls: 1,
 		},
 		"missing config": {
-			doer:         &stubDoer{returns: []error{nil}},
-			endpoint:     "192.0.2.89",
-			masterSecret: testvector.HKDFZero,
-			configFlag:   "nonexistent-config",
-			wantErr:      true,
+			doer:          &stubDoer{returns: []error{nil}},
+			endpoint:      "192.0.2.89",
+			masterSecret:  testvector.HKDFZero,
+			workspaceFlag: "/does/not/exist/",
+			wantErr:       true,
 		},
 		"success multiple nodes": {
 			doer:            &stubDoer{returns: []error{nil, nil}},
@@ -139,15 +139,15 @@ func TestRecover(t *testing.T) {
 
 			cmd := NewRecoverCmd()
 			cmd.SetContext(context.Background())
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(out)
 			require.NoError(cmd.Flags().Set("endpoint", tc.endpoint))
 
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 
 			fs := afero.NewMemMapFs()
@@ -210,11 +210,11 @@ func TestParseRecoverFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"all args set": {
-			args: []string{"-e", "192.0.2.42:2", "--config", "config-path", "--master-secret", "/path/super-secret.json"},
+			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace", "--master-secret", "/path/super-secret.json"},
 			wantFlags: recoverFlags{
 				endpoint:   "192.0.2.42:2",
 				secretPath: "/path/super-secret.json",
-				configPath: "config-path",
+				workspace:  "./constellation-workspace",
 			},
 		},
 	}
@@ -225,8 +225,8 @@ func TestParseRecoverFlags(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewRecoverCmd()
-			cmd.Flags().String("config", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", false, "") // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", false, "")    // register persistent flag manually
 			require.NoError(cmd.ParseFlags(tc.args))
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())

@@ -22,7 +22,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
@@ -227,7 +226,7 @@ func TestUpgradeCheck(t *testing.T) {
 			checker:      stubUpgradeChecker{},
 			imagefetcher: stubImageFetcher{},
 			flags: upgradeCheckFlags{
-				configPath: constants.ConfigFilename,
+				workspace: "",
 			},
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
@@ -239,7 +238,7 @@ func TestUpgradeCheck(t *testing.T) {
 			},
 			imagefetcher: stubImageFetcher{},
 			flags: upgradeCheckFlags{
-				configPath: constants.ConfigFilename,
+				workspace: "",
 			},
 			csp:        cloudprovider.GCP,
 			cliVersion: "v1.0.0",
@@ -253,7 +252,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
-			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))
+			require.NoError(fileHandler.WriteYAML(configPath(tc.flags.workspace), cfg))
 
 			checkCmd := upgradeCheckCmd{
 				canUpgradeCheck: true,

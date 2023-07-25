@@ -28,19 +28,19 @@ func newConfigMigrateCmd() *cobra.Command {
 
 func runConfigMigrate(cmd *cobra.Command, _ []string) error {
 	handler := file.NewHandler(afero.NewOsFs())
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return fmt.Errorf("parsing config path flag: %w", err)
 	}
-	return configMigrate(cmd, configPath, handler)
+	return configMigrate(cmd, cwd, handler)
 }
 
-func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) error {
+func configMigrate(cmd *cobra.Command, workspace string, handler file.Handler) error {
 	// Make sure we are reading a v2 config
 	var cfgVersion struct {
 		Version string `yaml:"version"`
 	}
-	if err := handler.ReadYAML(configPath, &cfgVersion); err != nil {
+	if err := handler.ReadYAML(configPath(workspace), &cfgVersion); err != nil {
 		return err
 	}
 

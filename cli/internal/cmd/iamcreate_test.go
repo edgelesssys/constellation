@@ -88,7 +88,7 @@ func TestIAMCreateAWS(t *testing.T) {
 		prefixFlag          string
 		yesFlag             bool
 		updateConfigFlag    bool
-		configFlag          string
+		workspaceFlag       string
 		existingConfigFiles []string
 		existingDirs        []string
 		stdin               string
@@ -121,7 +121,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			yesFlag:             true,
-			configFlag:          constants.ConfigFilename,
+			workspaceFlag:       "./",
 			updateConfigFlag:    true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
@@ -160,7 +160,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag: "test",
 			yesFlag:    true,
 		},
-		"iam create aws --update-config with --config": {
+		"iam create aws --update-config with --workspace": {
 			setupFs:             defaultFs,
 			creator:             &stubIAMCreator{id: validIAMIDFile},
 			provider:            cloudprovider.AWS,
@@ -168,10 +168,10 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag:          "test",
 			yesFlag:             true,
 			updateConfigFlag:    true,
-			configFlag:          "custom-config.yaml",
-			existingConfigFiles: []string{"custom-config.yaml"},
+			workspaceFlag:       "custom-dir/",
+			existingConfigFiles: []string{configPath("custom-dir/")},
 		},
-		"iam create aws --update-config --config path doesn't exist": {
+		"iam create aws --update-config --workspace path doesn't exist": {
 			setupFs:          defaultFs,
 			creator:          &stubIAMCreator{id: validIAMIDFile},
 			provider:         cloudprovider.AWS,
@@ -180,7 +180,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:          true,
 			updateConfigFlag: true,
 			wantErr:          true,
-			configFlag:       constants.ConfigFilename,
+			workspaceFlag:    "custom-dir",
 		},
 		"iam create aws existing terraform dir": {
 			setupFs:      defaultFs,
@@ -207,7 +207,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			stdin:               "yes\n",
-			configFlag:          constants.ConfigFilename,
+			workspaceFlag:       "./",
 			updateConfigFlag:    true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
@@ -228,7 +228,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag:          "test",
 			stdin:               "no\n",
 			updateConfigFlag:    true,
-			configFlag:          constants.ConfigFilename,
+			workspaceFlag:       "./",
 			wantAbort:           true,
 			existingConfigFiles: []string{constants.ConfigFilename},
 		},
@@ -250,7 +250,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:          true,
 			updateConfigFlag: true,
 			wantErr:          true,
-			configFlag:       constants.ConfigFilename,
+			workspaceFlag:    "./",
 		},
 	}
 
@@ -265,7 +265,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			// register persistent flags manually
-			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().String("workspace", "", "")
 			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
@@ -283,8 +283,8 @@ func TestIAMCreateAWS(t *testing.T) {
 			if tc.updateConfigFlag {
 				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
@@ -314,7 +314,7 @@ func TestIAMCreateAWS(t *testing.T) {
 
 			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
-				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+				readErr := fileHandler.ReadYAML(configPath(tc.workspaceFlag), readConfig)
 				require.NoError(readErr)
 				assert.Equal(tc.creator.id.AWSOutput.ControlPlaneInstanceProfile, readConfig.Provider.AWS.IAMProfileControlPlane)
 				assert.Equal(tc.creator.id.AWSOutput.WorkerNodeInstanceProfile, readConfig.Provider.AWS.IAMProfileWorkerNodes)
@@ -329,17 +329,7 @@ func TestIAMCreateAWS(t *testing.T) {
 }
 
 func TestIAMCreateAzure(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
-		fs := afero.NewMemMapFs()
-		fileHandler := file.NewHandler(fs)
-		for _, f := range existingConfigFiles {
-			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.Azure), file.OptNone))
-		}
-		for _, d := range existingDirs {
-			require.NoError(fs.MkdirAll(d, 0o755))
-		}
-		return fs
-	}
+	defaultFs := createFSWithConfig(*createConfig(cloudprovider.Azure))
 	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
@@ -362,7 +352,7 @@ func TestIAMCreateAzure(t *testing.T) {
 		resourceGroupFlag    string
 		yesFlag              bool
 		updateConfigFlag     bool
-		configFlag           string
+		workspaceFlag        string
 		existingConfigFiles  []string
 		existingDirs         []string
 		stdin                string
@@ -396,11 +386,11 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			yesFlag:              true,
 			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
-		"iam create azure --update-config with --config": {
+		"iam create azure --update-config with --workspace": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
@@ -408,11 +398,11 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			updateConfigFlag:     true,
-			configFlag:           "custom-config.yaml",
+			workspaceFlag:        "custom-dir/",
 			yesFlag:              true,
-			existingConfigFiles:  []string{"custom-config.yaml"},
+			existingConfigFiles:  []string{configPath("custom-dir/")},
 		},
-		"iam create azure --update-config custom --config path doesn't exist": {
+		"iam create azure --update-config custom --workspace path doesn't exist": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.Azure,
@@ -422,19 +412,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			updateConfigFlag:     true,
 			yesFlag:              true,
 			wantErr:              true,
-			configFlag:           "custom-config.yaml",
-		},
-		"iam create azur --update-config --config path doesn't exists": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.Azure,
-			regionFlag:           "westus",
-			servicePrincipalFlag: "constell-test-sp",
-			resourceGroupFlag:    "constell-test-rg",
-			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
-			wantErr:              true,
+			workspaceFlag:        "custom-dir/",
 		},
 		"iam create azure existing terraform dir": {
 			setupFs:              defaultFs,
@@ -465,7 +443,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
 		"interactive abort": {
@@ -499,7 +477,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			wantErr:              true,
 		},
 	}
@@ -515,7 +493,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			// register persistent flags manually
-			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().String("workspace", "", "")
 			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
@@ -536,8 +514,8 @@ func TestIAMCreateAzure(t *testing.T) {
 			if tc.updateConfigFlag {
 				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
@@ -566,7 +544,7 @@ func TestIAMCreateAzure(t *testing.T) {
 
 			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
-				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+				readErr := fileHandler.ReadYAML(configPath(tc.workspaceFlag), readConfig)
 				require.NoError(readErr)
 				assert.Equal(tc.creator.id.AzureOutput.SubscriptionID, readConfig.Provider.Azure.SubscriptionID)
 				assert.Equal(tc.creator.id.AzureOutput.TenantID, readConfig.Provider.Azure.TenantID)
@@ -582,17 +560,7 @@ func TestIAMCreateAzure(t *testing.T) {
 }
 
 func TestIAMCreateGCP(t *testing.T) {
-	defaultFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
-		fs := afero.NewMemMapFs()
-		fileHandler := file.NewHandler(fs)
-		for _, f := range existingConfigFiles {
-			require.NoError(fileHandler.WriteYAML(f, createConfig(cloudprovider.GCP), file.OptNone))
-		}
-		for _, d := range existingDirs {
-			require.NoError(fs.MkdirAll(d, 0o755))
-		}
-		return fs
-	}
+	defaultFs := createFSWithConfig(*createConfig(cloudprovider.GCP))
 	readOnlyFs := func(require *require.Assertions, provider cloudprovider.Provider, existingConfigFiles []string, existingDirs []string) afero.Fs {
 		fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
 		return fs
@@ -619,7 +587,7 @@ func TestIAMCreateGCP(t *testing.T) {
 		projectIDFlag        string
 		yesFlag              bool
 		updateConfigFlag     bool
-		configFlag           string
+		workspaceFlag        string
 		existingConfigFiles  []string
 		existingDirs         []string
 		stdin                string
@@ -653,11 +621,11 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			yesFlag:              true,
 			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
-		"iam create gcp --update-config with --config": {
+		"iam create gcp --update-config with --workspace": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
@@ -665,11 +633,11 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			updateConfigFlag:     true,
-			configFlag:           "custom-config.yaml",
+			workspaceFlag:        "custom-dir/",
 			yesFlag:              true,
-			existingConfigFiles:  []string{"custom-config.yaml"},
+			existingConfigFiles:  []string{configPath("custom-dir/")},
 		},
-		"iam create gcp --update-config --config path doesn't exists": {
+		"iam create gcp --update-config --workspace path doesn't exists": {
 			setupFs:              defaultFs,
 			creator:              &stubIAMCreator{id: validIAMIDFile},
 			provider:             cloudprovider.GCP,
@@ -677,19 +645,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
-			yesFlag:              true,
-			wantErr:              true,
-		},
-		"iam create gcp --update-config wrong --config path": {
-			setupFs:              defaultFs,
-			creator:              &stubIAMCreator{id: validIAMIDFile},
-			provider:             cloudprovider.GCP,
-			zoneFlag:             "europe-west1-a",
-			serviceAccountIDFlag: "constell-test",
-			projectIDFlag:        "constell-1234",
-			updateConfigFlag:     true,
-			configFlag:           "custom-config.yaml",
+			workspaceFlag:        "custom-dir/",
 			yesFlag:              true,
 			wantErr:              true,
 		},
@@ -740,7 +696,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			stdin:                "yes\n",
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			updateConfigFlag:     true,
 			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
@@ -763,7 +719,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			stdin:                "no\n",
 			wantAbort:            true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			updateConfigFlag:     true,
 			existingConfigFiles:  []string{constants.ConfigFilename},
 		},
@@ -776,7 +732,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			projectIDFlag:        "constell-1234",
 			yesFlag:              true,
 			updateConfigFlag:     true,
-			configFlag:           constants.ConfigFilename,
+			workspaceFlag:        "./",
 			wantErr:              true,
 		},
 	}
@@ -792,7 +748,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			// register persistent flags manually
-			cmd.Flags().String("config", constants.ConfigFilename, "")
+			cmd.Flags().String("workspace", constants.ConfigFilename, "")
 			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
@@ -813,8 +769,8 @@ func TestIAMCreateGCP(t *testing.T) {
 			if tc.updateConfigFlag {
 				require.NoError(cmd.Flags().Set("update-config", "true"))
 			}
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
+			if tc.workspaceFlag != "" {
+				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider, tc.existingConfigFiles, tc.existingDirs))
@@ -843,7 +799,7 @@ func TestIAMCreateGCP(t *testing.T) {
 
 			if tc.updateConfigFlag {
 				readConfig := &config.Config{}
-				readErr := fileHandler.ReadYAML(tc.configFlag, readConfig)
+				readErr := fileHandler.ReadYAML(configPath(tc.workspaceFlag), readConfig)
 				require.NoError(readErr)
 				assert.Equal(constants.GCPServiceAccountKeyFile, readConfig.Provider.GCP.ServiceAccountKeyPath)
 			}
@@ -939,7 +895,7 @@ func createFSWithConfig(cfg config.Config) func(require *require.Assertions, pro
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		for _, f := range existingConfigFiles {
-			require.NoError(fileHandler.WriteYAML(f, cfg, file.OptNone))
+			require.NoError(fileHandler.WriteYAML(f, cfg, file.OptMkdirAll))
 		}
 		for _, d := range existingDirs {
 			require.NoError(fs.MkdirAll(d, 0o755))

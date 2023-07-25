@@ -18,7 +18,6 @@ import (
 	"os/signal"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -43,9 +42,7 @@ func NewRootCmd() *cobra.Command {
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
 
-	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "path to the configuration file")
-	must(rootCmd.MarkPersistentFlagFilename("config", "yaml"))
-
+	rootCmd.PersistentFlags().String("workspace", "", "path to the Constellation workspace")
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
 	rootCmd.PersistentFlags().Bool("force", false, "disable version compatibility checks - might result in corrupted clusters")
 	rootCmd.PersistentFlags().String("tf-log", "NONE", "Terraform log level")
@@ -94,10 +91,4 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 
 func preRunRoot(cmd *cobra.Command, _ []string) {
 	cmd.SilenceUsage = true
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

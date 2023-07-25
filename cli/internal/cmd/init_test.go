@@ -162,8 +162,8 @@ func TestInitialize(t *testing.T) {
 			cmd.SetErr(&errOut)
 
 			// Flags
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 
 			// File system preparation
 			fs := afero.NewMemMapFs()
@@ -491,8 +491,8 @@ func TestAttestation(t *testing.T) {
 	defer initServer.GracefulStop()
 
 	cmd := NewInitCmd()
-	cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-	cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+	cmd.Flags().String("workspace", "", "") // register persistent flag manually
+	cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	var errOut bytes.Buffer

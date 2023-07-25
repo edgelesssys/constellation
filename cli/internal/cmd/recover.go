@@ -83,8 +83,8 @@ func (r *recoverCmd) recover(
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, r.configFetcher, flags.force)
+	r.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	conf, err := config.New(fileHandler, configPath(flags.workspace), r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -213,7 +213,7 @@ func (d *recoverDoer) setURIs(kmsURI, storageURI string) {
 type recoverFlags struct {
 	endpoint   string
 	secretPath string
-	configPath string
+	workspace  string
 	maaURL     string
 	force      bool
 }
@@ -242,11 +242,11 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
 	r.log.Debugf("Master secret flag is %s", masterSecretPath)
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	r.log.Debugf("Configuration path flag is %s", configPath)
+	r.log.Debugf("Workspace set to %q", cwd)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -256,7 +256,7 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	return recoverFlags{
 		endpoint:   endpoint,
 		secretPath: masterSecretPath,
-		configPath: configPath,
+		workspace:  cwd,
 		maaURL:     idFile.AttestationURL,
 		force:      force,
 	}, nil

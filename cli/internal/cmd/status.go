@@ -84,7 +84,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	stableClient := kubernetes.NewStableClient(kubeClient)
 
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return fmt.Errorf("getting config flag: %w", err)
 	}
@@ -93,7 +93,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("getting config flag: %w", err)
 	}
 	fetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, configPath, fetcher, force)
+	conf, err := config.New(fileHandler, configPath(cwd), fetcher, force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())

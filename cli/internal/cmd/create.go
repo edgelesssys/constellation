@@ -75,8 +75,8 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 
-	c.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, fetcher, flags.force)
+	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -187,11 +187,11 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 
-	configPath, err := cmd.Flags().GetString("config")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Configuration path flag is %q", configPath)
+	c.log.Debugf("Workspace set to %q", cwd)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -210,7 +210,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	c.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
 
 	return createFlags{
-		configPath: configPath,
+		workspace:  cwd,
 		tfLogLevel: logLevel,
 		force:      force,
 		yes:        yes,
@@ -219,7 +219,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 
 // createFlags contains the parsed flags of the create command.
 type createFlags struct {
-	configPath string
+	workspace  string
 	tfLogLevel terraform.LogLevel
 	force      bool
 	yes        bool
