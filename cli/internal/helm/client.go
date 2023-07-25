@@ -110,11 +110,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	newReleases := []*chart.Chart{}
-	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo}
-	if config.GetProvider() == cloudprovider.AWS {
-		charts = append(charts, awsLBControllerInfo)
-	}
-	for _, info := range charts {
+	for _, info := range getManagedCharts(config) {
 		c.log.Debugf("Checking release %s", info.releaseName)
 		chart, err := loadChartsDir(helmFS, info.path)
 		if err != nil {
@@ -189,6 +185,17 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 	}
 
 	return errors.Join(upgradeErrs...)
+}
+
+func getManagedCharts(config *config.Config) []chartInfo {
+	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo}
+	if config.GetProvider() == cloudprovider.AWS {
+		charts = append(charts, awsLBControllerInfo)
+	}
+	if config.DeployCSIDriver() {
+		charts = append(charts, csiInfo)
+	}
+	return charts
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
