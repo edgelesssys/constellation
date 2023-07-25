@@ -30,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+	"github.com/google/go-sev-guest/kds"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -316,6 +317,28 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 		b.WriteString(fmt.Sprintf("\t\tNot After: %s\n", cert.NotAfter))
 		b.WriteString(fmt.Sprintf("\t\tSignature Algorithm: %s\n", cert.SignatureAlgorithm))
 		b.WriteString(fmt.Sprintf("\t\tPublic Key Algorithm: %s\n", cert.PublicKeyAlgorithm))
+
+		if certTypeName == "VCEK certificate" {
+			// Extensions documented in Table 8 and Table 9 of
+			// https://www.amd.com/system/files/TechDocs/57230.pdf
+			vcekExts, err := kds.VcekCertificateExtensions(cert)
+			if err != nil {
+				return fmt.Errorf("parsing VCEK certificate extensions: %w", err)
+			}
+
+			b.WriteString(fmt.Sprintf("\t\tStruct version: %d\n", vcekExts.StructVersion))
+			b.WriteString(fmt.Sprintf("\t\tProduct name: %s\n", vcekExts.ProductName))
+			tcb := kds.DecomposeTCBVersion(vcekExts.TCBVersion)
+			b.WriteString(fmt.Sprintf("\t\tSecure Processor bootloader SVN: %d\n", tcb.BlSpl))
+			b.WriteString(fmt.Sprintf("\t\tSecure Processor operating system SVN: %d\n", tcb.TeeSpl))
+			b.WriteString(fmt.Sprintf("\t\tSVN 4 (reserved): %d\n", tcb.Spl4))
+			b.WriteString(fmt.Sprintf("\t\tSVN 5 (reserved): %d\n", tcb.Spl5))
+			b.WriteString(fmt.Sprintf("\t\tSVN 6 (reserved): %d\n", tcb.Spl6))
+			b.WriteString(fmt.Sprintf("\t\tSVN 7 (reserved): %d\n", tcb.Spl7))
+			b.WriteString(fmt.Sprintf("\t\tSEV-SNP firmware SVN: %d\n", tcb.SnpSpl))
+			b.WriteString(fmt.Sprintf("\t\tMicrocode SVN: %d\n", tcb.UcodeSpl))
+			b.WriteString(fmt.Sprintf("\t\tHardware ID: %#x\n", vcekExts.HWID))
+		}
 
 		i++
 	}
