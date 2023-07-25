@@ -118,10 +118,12 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 			return fmt.Errorf("loading chart: %w", err)
 		}
 
-		// define target version the chart is upgraded to
+		// Get version of the chart embedded in the CLI
+		// This is the version we are upgrading to
+		// Since our bundled charts are embedded with version 0.0.0,
+		// we need to update them to the same version as the CLI
 		var upgradeVersion semver.Semver
-		if info == constellationOperatorsInfo || info == constellationServicesInfo {
-			// ensure that the services chart has the same version as the CLI
+		if info == constellationOperatorsInfo || info == constellationServicesInfo || info == csiInfo {
 			updateVersions(chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {

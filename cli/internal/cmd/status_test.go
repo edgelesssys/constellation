@@ -35,7 +35,7 @@ Cluster status: Node version of every node is up to date
 const inProgressOutput = `Target versions:
 	Image: v1.1.0
 	Kubernetes: v1.2.3
-Installed service versions:
+Service versions:
 	Cilium: v1.0.0
 	cert-manager: v1.0.0
 	constellation-operators: v1.1.0
@@ -193,7 +193,7 @@ func TestStatus(t *testing.T) {
 				context.Background(),
 				tc.kubeClient,
 				configMapper,
-				stubGetVersions,
+				stubGetVersions(successOutput),
 				&stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr},
 				variant,
 			)
@@ -239,17 +239,16 @@ func (s *stubDynamicInterface) Update(_ context.Context, _ *unstructured.Unstruc
 	return &s.data, s.err
 }
 
-func stubGetVersions() (fmt.Stringer, error) {
-	return stubServiceVersions{}, nil
+func stubGetVersions(output string) func() (fmt.Stringer, error) {
+	return func() (fmt.Stringer, error) {
+		return stubServiceVersions{output}, nil
+	}
 }
 
-type stubServiceVersions struct{}
+type stubServiceVersions struct {
+	output string
+}
 
-func (stubServiceVersions) String() string {
-	return `Installed service versions:
-	Cilium: v1.0.0
-	cert-manager: v1.0.0
-	constellation-operators: v1.1.0
-	constellation-services: v1.1.0
-`
+func (s stubServiceVersions) String() string {
+	return s.output
 }
