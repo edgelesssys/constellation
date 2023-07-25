@@ -15,7 +15,7 @@ function setup {
 }
 
 function startBazelServer {
-  local containerImage="ghcr.io/edgelesssys/bazel-container:v6.1.2-0"
+  local containerImage="ghcr.io/edgelesssys/bazel-container:v6.2.1-0"
   local containerName="bazeld"
 
   setup

@@ -434,6 +434,13 @@ repo_command(
     command = ":com_github_katexochen_ghh",
 )
 
+sh_template(
+    name = "bazel_container",
+    data = [],
+    substitutions = {},
+    template = "bazel_container.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -446,6 +453,7 @@ multirun(
         ":terraform_fmt",
         ":buf_fmt",
         ":deps_mirror_fix",
+        ":bazel_container",
     ],
     jobs = 1,  # execute sequentially
     visibility = ["//visibility:public"],
