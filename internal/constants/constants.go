@@ -239,7 +239,7 @@ func BinaryVersion() semver.Semver {
 	version, err := semver.New(versionInfo)
 	if err != nil {
 		// This is not user input, unrecoverable, should never happen.
-		panic(fmt.Sprintf("parsing embedded CLI version: %s", err))
+		panic(fmt.Sprintf("parsing embedded version information: %s", err))
 	}
 
 	return version

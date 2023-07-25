@@ -39,7 +39,43 @@ func TestValidateVersionCompatibilityHelper(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateVersionCompatibilityHelper(tc.cli, "image", tc.target)
+			err := validateImageCompatibilityHelper(tc.cli, "image", tc.target)
+			if tc.wantError {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+func TestValidateMicroserviceVersion(t *testing.T) {
+	testCases := map[string]struct {
+		cli       semver.Semver
+		services  semver.Semver
+		wantError bool
+	}{
+		"success": {
+			cli:      semver.NewFromInt(0, 1, 0, ""),
+			services: semver.NewFromInt(0, 0, 0, ""),
+		},
+		"minor version difference > 1": {
+			cli:       semver.NewFromInt(0, 0, 0, ""),
+			services:  semver.NewFromInt(0, 2, 0, "pre.0.20230109121528-d24fac00f018"),
+			wantError: true,
+		},
+		"major version difference": {
+			cli:       semver.NewFromInt(0, 0, 0, ""),
+			services:  semver.NewFromInt(1, 0, 0, ""),
+			wantError: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			err := validateMicroserviceVersion(tc.cli, tc.services)
 			if tc.wantError {
 				assert.Error(err)
 				return

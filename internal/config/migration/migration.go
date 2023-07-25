@@ -29,11 +29,11 @@ const (
 // Config defines configuration used by CLI.
 type Config struct {
 	Version             string         `yaml:"version" validate:"eq=v2"`
-	Image               string         `yaml:"image" validate:"required,version_compatibility"`
+	Image               string         `yaml:"image" validate:"required,image_compatibility"`
 	Name                string         `yaml:"name" validate:"valid_name,required"`
 	StateDiskSizeGB     int            `yaml:"stateDiskSizeGB" validate:"min=0"`
 	KubernetesVersion   string         `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
-	MicroserviceVersion string         `yaml:"microserviceVersion" validate:"required,version_compatibility"`
+	MicroserviceVersion string         `yaml:"microserviceVersion" validate:"required"`
 	DebugCluster        *bool          `yaml:"debugCluster" validate:"required"`
 	AttestationVariant  string         `yaml:"attestationVariant,omitempty" validate:"valid_attestation_variant"`
 	Provider            ProviderConfig `yaml:"provider" validate:"dive"`

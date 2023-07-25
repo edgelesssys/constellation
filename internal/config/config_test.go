@@ -315,6 +315,17 @@ func TestValidate(t *testing.T) {
 			wantErr:      true,
 			wantErrCount: defaultErrCount,
 		},
+		"microservices violate version drift": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Image = ""
+				cliVersion := constants.BinaryVersion()
+				cnf.MicroserviceVersion = semver.NewFromInt(cliVersion.Major()+2, cliVersion.Minor(), cliVersion.Patch(), "")
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 1,
+		},
 		"v0 is one error": {
 			cnf: func() *Config {
 				cnf := Default()
