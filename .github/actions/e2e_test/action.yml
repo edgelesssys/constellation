@@ -256,10 +256,11 @@ runs:
       uses: ./.github/actions/deploy_logcollection
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
-        opensearch-user: ${{ inputs.awsOpenSearchUsers }}
-        opensearch-pwd: ${{ inputs.awsOpenSearchPwd }}
+        opensearchUser: ${{ inputs.awsOpenSearchUsers }}
+        opensearchPwd: ${{ inputs.awsOpenSearchPwd }}
         test: ${{ inputs.test }}
         provider: ${{ inputs.cloudProvider }}
+        isDebugImage: ${{ inputs.isDebugImage }}
     #
     # Test payloads
     #

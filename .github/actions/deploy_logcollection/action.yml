@@ -8,10 +8,10 @@ inputs:
   kubeconfig:
     description: "The kubeconfig of the cluster to deploy to."
     required: true
-  opensearch-user:
+  opensearchUser:
     description: "The username of the opensearch cluster."
     required: true
-  opensearch-pwd:
+  opensearchPwd:
     description: "The password of the opensearch cluster."
     required: true
   test:
@@ -19,6 +19,9 @@ inputs:
     required: true
   provider:
     description: "The CSP of the cluster."
+    required: true
+  isDebugImage:
+    description: "Whether the cluster is a debug cluster / uses a debug image."
     required: true
 
 runs:
@@ -30,8 +33,8 @@ runs:
       run: |
         bazel run //hack/logcollector template -- \
          --dir $(realpath .) \
-         --username ${{ inputs.opensearch-user }} \
-         --password ${{ inputs.opensearch-pwd }} \
+         --username ${{ inputs.opensearchUser }} \
+         --password ${{ inputs.opensearchPwd }} \
          --port ${{ inputs.logstash-port }} \
          --info github.actor="${{ github.triggering_actor }}" \
          --info github.workflow="${{ github.workflow }}" \
@@ -41,7 +44,7 @@ runs:
          --info github.sha="${{ github.sha }}" \
          --info github.runner-os="${{ runner.os }}" \
          --info github.e2e-test-payload="${{ inputs.test }}" \
-         --info github.is-debug-cluster=false \
+         --info github.isDebugImage="${{ inputs.isDebugImage }}" \
          --info github.e2e-test-provider="${{ inputs.provider }}" \
          --info deployment-type="k8s"
 
