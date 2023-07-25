@@ -157,6 +157,7 @@ go_test(
         "//internal/kms/uri",
         "//internal/license",
         "//internal/logger",
+        "//internal/semver",
         "//internal/versions",
         "//operators/constellation-node-operator/api/v1alpha1",
         "//verify/verifyproto",

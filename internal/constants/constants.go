@@ -11,7 +11,10 @@ Constants should never be overwritable by command line flags or configuration fi
 package constants
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 )
 
 const (
@@ -231,9 +234,15 @@ b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 `
 )
 
-// VersionInfo returns the version of a binary.
-func VersionInfo() string {
-	return versionInfo
+// BinaryVersion returns the version of this Binary.
+func BinaryVersion() semver.Semver {
+	version, err := semver.New(versionInfo)
+	if err != nil {
+		// This is not user input, unrecoverable, should never happen.
+		panic(fmt.Sprintf("parsing embedded version information: %s", err))
+	}
+
+	return version
 }
 
 // Timestamp returns the commit timestamp of a binary.

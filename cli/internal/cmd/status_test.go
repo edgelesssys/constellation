@@ -12,6 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -117,7 +118,7 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			helmClient: stubHelmClient{
-				serviceVersions: helm.NewServiceVersions("v1.0.0", "v1.0.0", "v1.1.0", "v1.1.0"),
+				serviceVersions: helm.NewServiceVersions(consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 1, 0, ""), consemver.NewFromInt(1, 1, 0, "")),
 			},
 			nodeVersion: updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
@@ -167,7 +168,7 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			helmClient: stubHelmClient{
-				serviceVersions: helm.NewServiceVersions("v1.0.0", "v1.0.0", "v1.1.0", "v1.1.0"),
+				serviceVersions: helm.NewServiceVersions(consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 1, 0, ""), consemver.NewFromInt(1, 1, 0, "")),
 			},
 			nodeVersion: updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{

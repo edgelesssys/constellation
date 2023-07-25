@@ -40,10 +40,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -63,7 +63,7 @@ type Config struct {
 	Version string `yaml:"version" validate:"eq=v3"`
 	// description: |
 	//   Machine image version used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required,version_compatibility"`
+	Image string `yaml:"image" validate:"required,image_compatibility"`
 	// description: |
 	//   Name of the cluster.
 	Name string `yaml:"name" validate:"valid_name,required"`
@@ -75,7 +75,7 @@ type Config struct {
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
 	// description: |
 	//   Microservice version to be installed into the cluster. Defaults to the version of the CLI.
-	MicroserviceVersion string `yaml:"microserviceVersion" validate:"required,version_compatibility"`
+	MicroserviceVersion semver.Semver `yaml:"microserviceVersion" validate:"required"`
 	// description: |
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
@@ -315,7 +315,7 @@ func Default() *Config {
 		Version:             Version3,
 		Image:               defaultImage,
 		Name:                defaultName,
-		MicroserviceVersion: compatibility.EnsurePrefixV(constants.VersionInfo()),
+		MicroserviceVersion: constants.BinaryVersion(),
 		KubernetesVersion:   string(versions.Default),
 		StateDiskSizeGB:     30,
 		DebugCluster:        toPtr(false),
@@ -725,7 +725,7 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	if err := validate.RegisterTranslation("version_compatibility", trans, registerVersionCompatibilityError, translateVersionCompatibilityError); err != nil {
+	if err := validate.RegisterTranslation("image_compatibility", trans, registerImageCompatibilityError, translateImageCompatibilityError); err != nil {
 		return err
 	}
 
@@ -750,7 +750,7 @@ func (c *Config) Validate(force bool) error {
 	if force {
 		versionCompatibilityValidator = returnsTrue
 	}
-	if err := validate.RegisterValidation("version_compatibility", versionCompatibilityValidator); err != nil {
+	if err := validate.RegisterValidation("image_compatibility", versionCompatibilityValidator); err != nil {
 		return err
 	}
 
@@ -799,6 +799,18 @@ func (c *Config) Validate(force bool) error {
 
 	validate.RegisterStructValidation(validateMeasurement, measurements.Measurement{})
 	validate.RegisterStructValidation(validateAttestation, AttestationConfig{})
+
+	if !force {
+		// Validating MicroserviceVersion separately is required since it is a custom type.
+		// The validation pkg we use does not allow accessing the field name during struct validation.
+		// Because of this we can't print the offending field name in the error message, resulting in
+		// suboptimal UX. Adding the field name to the struct validation of Semver would make it
+		// impossible to use Semver for other fields.
+		if err := validateMicroserviceVersion(constants.BinaryVersion(), c.MicroserviceVersion); err != nil {
+			msg := "microserviceVersion: " + msgFromCompatibilityError(err, constants.BinaryVersion().String(), c.MicroserviceVersion.String())
+			return &ValidationError{validationErrMsgs: []string{msg}}
+		}
+	}
 
 	err := validate.Struct(c)
 	if err == nil {

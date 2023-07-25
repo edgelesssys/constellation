@@ -17,4 +17,5 @@ go_library(
         "timestamp": "{STABLE_STAMP_TIME}",
         "versionInfo": "{STABLE_STAMP_VERSION}",
     },
+    deps = ["//internal/semver"],
 )

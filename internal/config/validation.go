@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -86,11 +87,11 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	configured = compatibility.EnsurePrefixV(configured)
 	switch {
 	case !semver.IsValid(configured):
-		errorMsg = "The configured version is not a valid semantic version"
+		errorMsg = "The configured version is not a valid semantic version\n"
 	case semver.Compare(configured, minVersion) == -1:
-		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s", configured, minVersion)
+		errorMsg = fmt.Sprintf("The configured version %s is older than the oldest version supported by this CLI: %s\n", configured, minVersion)
 	case semver.Compare(configured, maxVersion) == 1:
-		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s", configured, maxVersion)
+		errorMsg = fmt.Sprintf("The configured version %s is newer than the newest version supported by this CLI: %s\n", configured, maxVersion)
 	}
 
 	errorMsg = errorMsg + fmt.Sprintf("Supported versions: %s", strings.Join(validVersionsSorted, " "))
@@ -492,44 +493,21 @@ func K8sVersionFromMajorMinor(version string) string {
 	}
 }
 
-func registerVersionCompatibilityError(ut ut.Translator) error {
-	return ut.Add("version_compatibility", "{0} specifies an invalid version: {1}", true)
-}
-
-func translateVersionCompatibilityError(ut ut.Translator, fe validator.FieldError) string {
-	binaryVersion := constants.VersionInfo()
-	err := validateVersionCompatibilityHelper(binaryVersion, fe.Field(), fe.Value().(string))
-	var msg string
-
-	switch {
-	case errors.Is(err, compatibility.ErrSemVer):
-		msg = fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fe.Value().(string))
-	case errors.Is(err, compatibility.ErrMajorMismatch):
-		msg = fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
-	case errors.Is(err, compatibility.ErrMinorDrift):
-		msg = fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
-	case errors.Is(err, compatibility.ErrOutdatedCLI):
-		msg = fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", constants.VersionInfo(), fe.Value().(string))
-	default:
-		msg = err.Error()
-	}
-
-	t, _ := ut.T("version_compatibility", fe.Field(), msg)
-
-	return t
+func registerImageCompatibilityError(ut ut.Translator) error {
+	return ut.Add("image_compatibility", "{0} specifies an invalid version: {1}", true)
 }
 
 // Check that the validated field and the CLI version are not more than one minor version apart.
 func validateVersionCompatibility(fl validator.FieldLevel) bool {
-	binaryVersion := constants.VersionInfo()
-	if err := validateVersionCompatibilityHelper(binaryVersion, fl.FieldName(), fl.Field().String()); err != nil {
+	binaryVersion := constants.BinaryVersion()
+	if err := validateImageCompatibilityHelper(binaryVersion, fl.FieldName(), fl.Field().String()); err != nil {
 		return false
 	}
 
 	return true
 }
 
-func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVersion string) error {
+func validateImageCompatibilityHelper(binaryVersion consemver.Semver, fieldName, configuredVersion string) error {
 	if fieldName == "image" {
 		imageVersion, err := versionsapi.NewVersionFromShortPath(configuredVersion, versionsapi.VersionKindImage)
 		if err != nil {
@@ -538,15 +516,51 @@ func validateVersionCompatibilityHelper(binaryVersion, fieldName, configuredVers
 		configuredVersion = imageVersion.Version
 	}
 
-	if fieldName == "microserviceVersion" {
-		cliVersion := compatibility.EnsurePrefixV(binaryVersion)
-		serviceVersion := compatibility.EnsurePrefixV(configuredVersion)
-		if semver.Compare(cliVersion, serviceVersion) == -1 {
-			return fmt.Errorf("the CLI's version (%s) is older than the configured version (%s)", cliVersion, serviceVersion)
-		}
+	return compatibility.BinaryWith(binaryVersion.String(), configuredVersion)
+}
+
+func translateImageCompatibilityError(ut ut.Translator, fe validator.FieldError) string {
+	binaryVersion := constants.BinaryVersion()
+	err := validateImageCompatibilityHelper(binaryVersion, fe.Field(), fe.Value().(string))
+
+	msg := msgFromCompatibilityError(err, binaryVersion.String(), fe.Value().(string))
+
+	t, _ := ut.T("image_compatibility", fe.Field(), msg)
+
+	return t
+}
+
+// msgFromCompatibilityError translates compatibility errors into user-facing error messages.
+func msgFromCompatibilityError(err error, binaryVersion, fieldValue string) string {
+	switch {
+	case errors.Is(err, compatibility.ErrSemVer):
+		return fmt.Sprintf("configured version (%s) does not adhere to SemVer syntax", fieldValue)
+	case errors.Is(err, compatibility.ErrMajorMismatch):
+		return fmt.Sprintf("the CLI's major version (%s) has to match your configured major version (%s). Use --force to ignore the version mismatch.", binaryVersion, fieldValue)
+	case errors.Is(err, compatibility.ErrMinorDrift):
+		return fmt.Sprintf("the CLI's minor version (%s) and the configured version (%s) are more than one minor version apart. Use --force to ignore the version mismatch.", binaryVersion, fieldValue)
+	case errors.Is(err, compatibility.ErrOutdatedCLI):
+		return fmt.Sprintf("the CLI's version (%s) is older than the configured version (%s). Use --force to ignore the version mismatch.", binaryVersion, fieldValue)
+	default:
+		return err.Error()
+	}
+}
+
+func validateMicroserviceVersion(binaryVersion, version consemver.Semver) error {
+	// Major versions always have to match.
+	if binaryVersion.Major() != version.Major() {
+		return compatibility.ErrMajorMismatch
+	}
+	// Allow newer CLIs (for upgrades), but dissallow newer service versions.
+	if binaryVersion.Compare(version) == -1 {
+		return compatibility.ErrOutdatedCLI
+	}
+	// Abort if minor version drift between CLI and versionA value is greater than 1.
+	if binaryVersion.Minor()-version.Minor() > 1 {
+		return compatibility.ErrMinorDrift
 	}
 
-	return compatibility.BinaryWith(binaryVersion, configuredVersion)
+	return nil
 }
 
 func returnsTrue(_ validator.FieldLevel) bool {

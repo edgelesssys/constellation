@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 )
 
 const (
@@ -28,11 +29,11 @@ const (
 // Config defines configuration used by CLI.
 type Config struct {
 	Version             string         `yaml:"version" validate:"eq=v2"`
-	Image               string         `yaml:"image" validate:"required,version_compatibility"`
+	Image               string         `yaml:"image" validate:"required,image_compatibility"`
 	Name                string         `yaml:"name" validate:"valid_name,required"`
 	StateDiskSizeGB     int            `yaml:"stateDiskSizeGB" validate:"min=0"`
 	KubernetesVersion   string         `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
-	MicroserviceVersion string         `yaml:"microserviceVersion" validate:"required,version_compatibility"`
+	MicroserviceVersion string         `yaml:"microserviceVersion" validate:"required"`
 	DebugCluster        *bool          `yaml:"debugCluster" validate:"required"`
 	AttestationVariant  string         `yaml:"attestationVariant,omitempty" validate:"valid_attestation_variant"`
 	Provider            ProviderConfig `yaml:"provider" validate:"dive"`
@@ -195,6 +196,11 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 		return fmt.Errorf("reading config file %s using v2 format: %w", path, err)
 	}
 
+	microserviceVersion, err := semver.New(cfgV2.MicroserviceVersion)
+	if err != nil {
+		return fmt.Errorf("parsing microservice version: %w", err)
+	}
+
 	// Migrate to new format
 	var cfgV3 config.Config
 	cfgV3.Version = config.Version3
@@ -202,7 +208,7 @@ func V2ToV3(path string, fileHandler file.Handler) error {
 	cfgV3.Name = cfgV2.Name
 	cfgV3.StateDiskSizeGB = cfgV2.StateDiskSizeGB
 	cfgV3.KubernetesVersion = cfgV2.KubernetesVersion
-	cfgV3.MicroserviceVersion = cfgV2.MicroserviceVersion
+	cfgV3.MicroserviceVersion = microserviceVersion
 	cfgV3.DebugCluster = cfgV2.DebugCluster
 
 	switch {

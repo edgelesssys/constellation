@@ -26,7 +26,7 @@ func main() {
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
-	log.With(zap.String("version", constants.VersionInfo()), zap.String("attestationVariant", *attestationVariant)).
+	log.With(zap.String("version", constants.BinaryVersion().String()), zap.String("attestationVariant", *attestationVariant)).
 		Infof("Constellation Verification Service")
 
 	variant, err := variant.FromString(*attestationVariant)

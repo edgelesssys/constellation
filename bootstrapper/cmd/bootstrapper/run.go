@@ -33,7 +33,7 @@ func run(issuer atls.Issuer, openDevice vtpm.TPMOpenFunc, fileHandler file.Handl
 ) {
 	defer cloudLogger.Close()
 
-	log.With(zap.String("version", constants.VersionInfo())).Infof("Starting bootstrapper")
+	log.With(zap.String("version", constants.BinaryVersion().String())).Infof("Starting bootstrapper")
 	cloudLogger.Disclose("bootstrapper started running...")
 
 	uuid, err := getDiskUUID()

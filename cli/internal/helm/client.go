@@ -77,7 +77,7 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
-func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error {
+func (c *Client) shouldUpgrade(releaseName string, newVersion semver.Semver, force bool) error {
 	currentVersion, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting version for %s: %w", releaseName, err)
@@ -88,14 +88,15 @@ func (c *Client) shouldUpgrade(releaseName, newVersion string, force bool) error
 	// This may break for cert-manager or cilium if we decide to upgrade more than one minor version at a time.
 	// Leaving it as is since it is not clear to me what kind of sanity check we could do.
 	if !force {
-		if err := compatibility.IsValidUpgrade(currentVersion, newVersion); err != nil {
+		if err := newVersion.IsUpgradeTo(currentVersion); err != nil {
 			return err
 		}
 	}
+	cliVersion := constants.BinaryVersion()
 	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
 	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
-		if compatibility.EnsurePrefixV(constants.VersionInfo()) != compatibility.EnsurePrefixV(newVersion) {
-			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", constants.VersionInfo())
+		if cliVersion.Compare(newVersion) != 0 {
+			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", cliVersion.String())
 		}
 	}
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
@@ -118,13 +119,17 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 		}
 
 		// define target version the chart is upgraded to
-		var upgradeVersion string
+		var upgradeVersion semver.Semver
 		if info == constellationOperatorsInfo || info == constellationServicesInfo {
 			// ensure that the services chart has the same version as the CLI
-			updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+			updateVersions(chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {
-			upgradeVersion = chart.Metadata.Version
+			chartVersion, err := semver.New(chart.Metadata.Version)
+			if err != nil {
+				return fmt.Errorf("parsing chart version: %w", err)
+			}
+			upgradeVersion = chartVersion
 		}
 
 		var invalidUpgrade *compatibility.InvalidUpgradeError
@@ -222,49 +227,51 @@ func (c *Client) Versions() (ServiceVersions, error) {
 	}
 
 	res := ServiceVersions{
-		cilium:                 compatibility.EnsurePrefixV(ciliumVersion),
-		certManager:            compatibility.EnsurePrefixV(certManagerVersion),
-		constellationOperators: compatibility.EnsurePrefixV(operatorsVersion),
-		constellationServices:  compatibility.EnsurePrefixV(servicesVersion),
+		cilium:                 ciliumVersion,
+		certManager:            certManagerVersion,
+		constellationOperators: operatorsVersion,
+		constellationServices:  servicesVersion,
+		awsLBController:        awsLBVersion,
 	}
-	if awsLBVersion != "" {
-		res.awsLBController = compatibility.EnsurePrefixV(awsLBVersion)
+	if awsLBVersion != (semver.Semver{}) {
+		res.awsLBController = awsLBVersion
 	}
+
 	return res, nil
 }
 
 // currentVersion returns the version of the currently installed helm release.
-func (c *Client) currentVersion(release string) (string, error) {
+func (c *Client) currentVersion(release string) (semver.Semver, error) {
 	rel, err := c.actions.listAction(release)
 	if err != nil {
-		return "", err
+		return semver.Semver{}, err
 	}
 
 	if len(rel) == 0 {
-		return "", errReleaseNotFound
+		return semver.Semver{}, errReleaseNotFound
 	}
 	if len(rel) > 1 {
-		return "", fmt.Errorf("multiple releases found for %s", release)
+		return semver.Semver{}, fmt.Errorf("multiple releases found for %s", release)
 	}
 
 	if rel[0] == nil || rel[0].Chart == nil || rel[0].Chart.Metadata == nil {
-		return "", fmt.Errorf("received invalid release %s", release)
+		return semver.Semver{}, fmt.Errorf("received invalid release %s", release)
 	}
 
-	return rel[0].Chart.Metadata.Version, nil
+	return semver.New(rel[0].Chart.Metadata.Version)
 }
 
 // ServiceVersions bundles the versions of all services that are part of Constellation.
 type ServiceVersions struct {
-	cilium                 string
-	certManager            string
-	constellationOperators string
-	constellationServices  string
-	awsLBController        string
+	cilium                 semver.Semver
+	certManager            semver.Semver
+	constellationOperators semver.Semver
+	constellationServices  semver.Semver
+	awsLBController        semver.Semver
 }
 
 // NewServiceVersions returns a new ServiceVersions struct.
-func NewServiceVersions(cilium, certManager, constellationOperators, constellationServices string) ServiceVersions {
+func NewServiceVersions(cilium, certManager, constellationOperators, constellationServices semver.Semver) ServiceVersions {
 	return ServiceVersions{
 		cilium:                 cilium,
 		certManager:            certManager,
@@ -274,22 +281,22 @@ func NewServiceVersions(cilium, certManager, constellationOperators, constellati
 }
 
 // Cilium returns the version of the Cilium release.
-func (s ServiceVersions) Cilium() string {
+func (s ServiceVersions) Cilium() semver.Semver {
 	return s.cilium
 }
 
 // CertManager returns the version of the cert-manager release.
-func (s ServiceVersions) CertManager() string {
+func (s ServiceVersions) CertManager() semver.Semver {
 	return s.certManager
 }
 
 // ConstellationOperators returns the version of the constellation-operators release.
-func (s ServiceVersions) ConstellationOperators() string {
+func (s ServiceVersions) ConstellationOperators() semver.Semver {
 	return s.constellationOperators
 }
 
 // ConstellationServices returns the version of the constellation-services release.
-func (s ServiceVersions) ConstellationServices() string {
+func (s ServiceVersions) ConstellationServices() semver.Semver {
 	return s.constellationServices
 }
 
@@ -385,12 +392,8 @@ func (c *Client) applyMigrations(ctx context.Context, releaseName string, values
 	if err != nil {
 		return fmt.Errorf("getting %s version: %w", releaseName, err)
 	}
-	currentV, err := semver.New(current)
-	if err != nil {
-		return fmt.Errorf("parsing current version: %w", err)
-	}
 
-	if currentV.Major == 2 && currentV.Minor == 8 {
+	if current.Major() == 2 && current.Minor() == 8 {
 		// Rename/change the following function to implement any necessary migrations.
 		return migrateFrom2_8(ctx, values, conf, c.kubectl)
 	}

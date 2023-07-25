@@ -25,10 +25,10 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
@@ -175,15 +175,15 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
 	case constellationOperatorsInfo.releaseName:
-		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+		updateVersions(chart, constants.BinaryVersion())
 		values = i.loadOperatorsValues()
 	case constellationServicesInfo.releaseName:
-		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+		updateVersions(chart, constants.BinaryVersion())
 		values = i.loadConstellationServicesValues()
 	case awsLBControllerInfo.releaseName:
 		values = i.loadAWSLBControllerValues()
 	case csiInfo.releaseName:
-		updateVersions(chart, compatibility.EnsurePrefixV(constants.VersionInfo()))
+		updateVersions(chart, constants.BinaryVersion())
 		values = i.loadCSIValues()
 	}
 
@@ -378,19 +378,19 @@ func extendConstellationServicesValues(
 }
 
 // updateVersions changes all versions of direct dependencies that are set to "0.0.0" to newVersion.
-func updateVersions(chart *chart.Chart, newVersion string) {
-	chart.Metadata.Version = newVersion
+func updateVersions(chart *chart.Chart, newVersion semver.Semver) {
+	chart.Metadata.Version = newVersion.String()
 	selectedDeps := chart.Metadata.Dependencies
 	for i := range selectedDeps {
 		if selectedDeps[i].Version == "0.0.0" {
-			selectedDeps[i].Version = newVersion
+			selectedDeps[i].Version = newVersion.String()
 		}
 	}
 
 	deps := chart.Dependencies()
 	for i := range deps {
 		if deps[i].Metadata.Version == "0.0.0" {
-			deps[i].Metadata.Version = newVersion
+			deps[i].Metadata.Version = newVersion.String()
 		}
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -273,52 +274,52 @@ func TestCheckDirClean(t *testing.T) {
 func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 	testCases := map[string]struct {
 		imageVersion        string
-		microServiceVersion string
-		cliVersion          string
+		microServiceVersion consemver.Semver
+		cliVersion          consemver.Semver
 		wantErr             bool
 	}{
 		"empty": {
 			imageVersion:        "",
-			microServiceVersion: "",
-			cliVersion:          "",
+			microServiceVersion: consemver.Semver{},
+			cliVersion:          consemver.Semver{},
 			wantErr:             true,
 		},
 		"invalid when image < CLI": {
 			imageVersion:        "v2.7.1",
-			microServiceVersion: "v2.8.0",
-			cliVersion:          "v2.8.0",
+			microServiceVersion: consemver.NewFromInt(2, 8, 0, ""),
+			cliVersion:          consemver.NewFromInt(2, 8, 0, ""),
 			wantErr:             true,
 		},
 		"invalid when microservice < CLI": {
 			imageVersion:        "v2.8.0",
-			microServiceVersion: "v2.7.1",
-			cliVersion:          "v2.8.0",
+			microServiceVersion: consemver.NewFromInt(2, 7, 1, ""),
+			cliVersion:          consemver.NewFromInt(2, 8, 0, ""),
 			wantErr:             true,
 		},
 		"valid release version": {
 			imageVersion:        "v2.9.0",
-			microServiceVersion: "v2.9.0",
-			cliVersion:          "2.9.0",
+			microServiceVersion: consemver.NewFromInt(2, 9, 0, ""),
+			cliVersion:          consemver.NewFromInt(2, 9, 0, ""),
 		},
 		"valid pre-version": {
 			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.20230626150512-0a36ce61719f",
-			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
-			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
+			cliVersion:          consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
 		},
 		"image version suffix need not be equal to CLI version": {
 			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.19990626150512-9z36ce61799z",
-			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
-			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
+			cliVersion:          consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
 		},
 		"image version can have different patch version": {
 			imageVersion:        "ref/main/stream/nightly/v2.9.1-pre.0.19990626150512-9z36ce61799z",
-			microServiceVersion: "v2.9.0-pre.0.20230626150512-0a36ce61719f",
-			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
+			cliVersion:          consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
 		},
 		"microService version suffix must be equal to CLI version": {
 			imageVersion:        "ref/main/stream/nightly/v2.9.0-pre.0.20230626150512-0a36ce61719f",
-			microServiceVersion: "v2.9.0-pre.0.19990626150512-9z36ce61799z",
-			cliVersion:          "2.9.0-pre.0.20230626150512-0a36ce61719f",
+			microServiceVersion: consemver.NewFromInt(2, 9, 0, "pre.0.19990626150512-9z36ce61799z"),
+			cliVersion:          consemver.NewFromInt(2, 9, 0, "pre.0.20230626150512-0a36ce61719f"),
 			wantErr:             true,
 		},
 	}

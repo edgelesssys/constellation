@@ -140,7 +140,7 @@ func TestNew(t *testing.T) {
 
 func modifyConfigForAzureToPassValidate(c *Config) {
 	c.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-	c.Image = "v" + constants.VersionInfo()
+	c.Image = constants.BinaryVersion().String()
 	c.Provider.Azure.SubscriptionID = "11111111-1111-1111-1111-111111111111"
 	c.Provider.Azure.TenantID = "11111111-1111-1111-1111-111111111111"
 	c.Provider.Azure.Location = "westus"
@@ -308,12 +308,24 @@ func TestValidate(t *testing.T) {
 				cnf.Image = ""
 				ver, err := semver.New(versions.SupportedK8sVersions()[0])
 				require.NoError(t, err)
-				ver.Patch = ver.Patch - 1
+				ver = semver.NewFromInt(ver.Major(), ver.Minor(), ver.Patch()-1, "")
 				cnf.KubernetesVersion = ver.String()
 				return cnf
 			}(),
 			wantErr:      true,
 			wantErrCount: defaultErrCount,
+		},
+		"microservices violate version drift": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Image = ""
+				cliVersion := constants.BinaryVersion()
+				cnf.MicroserviceVersion = semver.NewFromInt(cliVersion.Major()+2, cliVersion.Minor(), cliVersion.Patch(), "")
+				return cnf
+			}(),
+			wantErr: true,
+			// This is a very different value from the other error counts because of the way we are checking MicroserviceVersions.
+			wantErrCount: 1,
 		},
 		"v0 is one error": {
 			cnf: func() *Config {
@@ -350,7 +362,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.Azure)
-				cnf.Image = "v" + constants.VersionInfo()
+				cnf.Image = constants.BinaryVersion().String()
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
@@ -411,7 +423,7 @@ func TestValidate(t *testing.T) {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.RemoveProviderAndAttestationExcept(cloudprovider.GCP)
-				cnf.Image = "v" + constants.VersionInfo()
+				cnf.Image = constants.BinaryVersion().String()
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"
