@@ -5,7 +5,8 @@ The logcollection functionality can be deployed to both [debug](./debug-cluster.
 
 ## Deployment in Debug Clusters
 
-In debug clusters, logcollection functionality should be deployed automatically through the debug daemon `debugd`, which runs *before* the bootstrapper and can therefore, contrary to non-debug clusters, also collect logs of the bootstrapper.
+In debug clusters, logcollection functionality should be deployed automatically through the debug daemon `debugd`, which runs *before* the bootstrapper
+and can therefore, contrary to non-debug clusters, also collect logs of the bootstrapper.
 
 ## Deployment in Non-Debug Clusters
 
@@ -18,14 +19,16 @@ In non-debug clusters, logcollection functionality needs to be explicitly deploy
         --dir $(realpath .) \
         --username <OPENSEARCH_USERNAME> \
         --password <OPENSEARCH_PW> \
-        --info key=value \
-        --info key2=value2
+        --info deployment-type={k8s, debugd}
         ...
     ```
 
-    This will place the templated configuration in the current directory.
-    OpenSearch user credentials can be created by any admin in OpenSearch. Logging in with your company CSP accounts should grant you sufficient permissions to [create a user](https://opensearch.org/docs/latest/security/access-control/users-roles/#create-users) and [grant him the required `all_access` role](https://opensearch.org/docs/latest/security/access-control/users-roles/#map-users-to-roles).
-    One can add additional key-value pairs to the configuration by appending `--info key=value` to the command. These key-value pairs will be attached to the log entries and can be used to filter them in OpenSearch. For example, it might be helpful to add a `test=<xyz>` tag to be able to filter out logs from a specific test run.
+    This will place the templated configuration in the current directory. OpenSearch user credentials can be created by any admin in OpenSearch.
+    Logging in with your company CSP accounts should grant you sufficient permissions to [create a user](https://opensearch.org/docs/latest/security/access-control/users-roles/#create-users)
+    and [grant him the required `all_access` role](https://opensearch.org/docs/latest/security/access-control/users-roles/#map-users-to-roles).
+    One can add additional key-value pairs to the configuration by appending `--info key=value` to the command.
+    These key-value pairs will be attached to the log entries and can be used to filter them in OpenSearch.
+    For example, it might be helpful to add a `test=<xyz>` tag to be able to filter out logs from a specific test run.
 2. Deploy Logstash
 
     ```bash
@@ -51,4 +54,6 @@ To remove Logstash or Filebeat, `cd` into the corresponding directory and run `m
 
 ## Inspecting Logs in OpenSearch
 
-To search through logs in OpenSearch, head to the [discover page](https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com/_dashboards/app/discover) in the OpenSearch dashboard and configure the timeframe selector in the top right accordingly. Click `Refresh`. You can now see all logs recorded in the specified timeframe. To get a less cluttered view, select the fields you want to inspect in the left sidebar.
+To search through logs in OpenSearch, head to the [discover page](https://search-e2e-logs-y46renozy42lcojbvrt3qq7csm.eu-central-1.es.amazonaws.com/_dashboards/app/discover) in the
+OpenSearch dashboard and configure the timeframe selector in the top right accordingly.
+Click `Refresh`. You can now see all logs recorded in the specified timeframe. To get a less cluttered view, select the fields you want to inspect in the left sidebar.
