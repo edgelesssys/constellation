@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +24,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+	helminstaller "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"go.uber.org/zap"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -180,7 +184,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
+	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+	helmDeployments, err := json.Marshal(releases)
+	if err != nil {
+		return err
+	}
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -214,10 +225,107 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Initialization request succeeded")
+
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 
-	return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
+	err = i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
+	if err != nil {
+		return err
+	}
+	// install helm charts
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("init") // TODO: use the same logger as the rest of the CLI
+	defer log.Sync()
+	installer, err := helminstaller.NewInstaller(log, constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("creating Helm installer: %w", err)
+	}
+	//k8sClient := kubectl.New()
+	//kubeconfig, err := os.ReadFile(constants.AdminConfFilename)
+	//if err != nil {
+	//	return fmt.Errorf("reading kubeconfig: %w", err)
+	//}
+	//err = k8sClient.Initialize(kubeconfig)
+	//if err != nil {
+	//	return fmt.Errorf("initializing k8s client: %w", err)
+	//}
+	// load cilium
+	// releases.Cilium
+	//
+
+	// get instance id from tf? (create cmd) or just get metadata from cloud provider
+	//switch provider {
+	//case cloudprovider.AWS:
+	//	// metadataAPI = metadata
+	//}
+	//metadata, err := helminstaller.GetMetadaClient(cmd.Context(), provider) // awscloud.New(cmd.Context())
+	//if err != nil {
+	//	log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
+	//}
+
+	ctx := cmd.Context()
+	serviceVals, err := helminstaller.SetupMicroserviceVals(ctx, masterSecret.Salt)
+
+	log.Infof("Installing cert-manager")
+	if err = installer.InstallChart(ctx, releases.CertManager); err != nil {
+		return fmt.Errorf("installing cert-manager: %w", err)
+	}
+
+	if releases.CSI != nil {
+		var csiVals map[string]any
+		if provider == cloudprovider.OpenStack {
+			creds, err := openstack.AccountKeyFromURI(serviceAccURI)
+			if err != nil {
+				return err
+			}
+			cinderIni := creds.CloudINI().CinderCSIConfiguration()
+			csiVals = map[string]any{
+				"cinder-config": map[string]any{
+					"secretData": cinderIni,
+				},
+			}
+		}
+
+		log.Infof("Installing CSI deployments")
+		if err := installer.InstallChartWithValues(ctx, *releases.CSI, csiVals); err != nil {
+			return fmt.Errorf("installing CSI snapshot CRDs: %w", err)
+		}
+	}
+
+	if releases.AWSLoadBalancerController != nil {
+		log.Infof("Installing AWS Load Balancer Controller")
+		if err = installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
+			return fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
+		}
+	}
+
+	log.Infof("Installing constellation operators")
+	operatorVals, err := helminstaller.SetupOperatorVals(cmd.Context(), idFile.UID)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to set up operator values")
+	}
+	err = installer.InstallChartWithValues(cmd.Context(), releases.ConstellationOperators, operatorVals)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to install constellation operators")
+	}
+	//input, err := helminstaller.GetSetupPodNetwork(cmd.Context(), metadata, provider)
+	//if err != nil {
+	//	return fmt.Errorf("getting setup pod network: %w", err)
+	//}
+	//cmd.Println("Installing Cilium")
+
+	//if err = helminstaller.InstallCilium(cmd.Context(), installer, k8sClient, releases.Cilium, *input); err != nil {
+	//	return fmt.Errorf("installing Cilium: %w", err)
+	//}
+	//cmd.Println("Installed Cilium")
+
+	// installer.InstallChart()
+
+	// i.log.Debugf("Writing Constellation ID file")
+	// idFile.CloudProvider = provider
+
+	// return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
+	return nil
 }
 
 func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {

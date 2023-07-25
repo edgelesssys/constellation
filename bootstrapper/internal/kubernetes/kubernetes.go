@@ -246,51 +246,51 @@ func (k *KubeWrapper) InitCluster(
 
 	// cert-manager provides CRDs used by other deployments,
 	// so it should be installed as early as possible, but after the services cert-manager depends on.
-	log.Infof("Installing cert-manager")
-	if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
-		return nil, fmt.Errorf("installing cert-manager: %w", err)
-	}
+	//log.Infof("Installing cert-manager")
+	//if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
+	//	return nil, fmt.Errorf("installing cert-manager: %w", err)
+	//}
 
 	// Install CSI drivers if enabled by the user.
-	if helmReleases.CSI != nil {
-		var csiVals map[string]any
-		if cloudprovider.FromString(k.cloudProvider) == cloudprovider.OpenStack {
-			creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
-			if err != nil {
-				return nil, err
-			}
-			cinderIni := creds.CloudINI().CinderCSIConfiguration()
-			csiVals = map[string]any{
-				"cinder-config": map[string]any{
-					"secretData": cinderIni,
-				},
-			}
-		}
+	// if helmReleases.CSI != nil {
+	//	var csiVals map[string]any
+	//	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.OpenStack {
+	//		creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//		cinderIni := creds.CloudINI().CinderCSIConfiguration()
+	//		csiVals = map[string]any{
+	//			"cinder-config": map[string]any{
+	//				"secretData": cinderIni,
+	//			},
+	//		}
+	//	}
 
-		log.Infof("Installing CSI deployments")
-		if err := k.helmClient.InstallChartWithValues(ctx, *helmReleases.CSI, csiVals); err != nil {
-			return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
-		}
-	}
+	//	log.Infof("Installing CSI deployments")
+	//	if err := k.helmClient.InstallChartWithValues(ctx, *helmReleases.CSI, csiVals); err != nil {
+	//		return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
+	//	}
+	//}
 
-	if helmReleases.AWSLoadBalancerController != nil {
-		log.Infof("Installing AWS Load Balancer Controller")
-		if err = k.helmClient.InstallChart(ctx, *helmReleases.AWSLoadBalancerController); err != nil {
-			return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
-		}
-	}
+	//if helmReleases.AWSLoadBalancerController != nil {
+	//	log.Infof("Installing AWS Load Balancer Controller")
+	//	if err = k.helmClient.InstallChart(ctx, *helmReleases.AWSLoadBalancerController); err != nil {
+	//		return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
+	//	}
+	//}
 
-	operatorVals, err := k.setupOperatorVals(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("setting up operator vals: %w", err)
-	}
+	//operatorVals, err := k.setupOperatorVals(ctx)
+	//if err != nil {
+	//	return nil, fmt.Errorf("setting up operator vals: %w", err)
+	//}
 
 	// Constellation operators require CRDs from cert-manager.
 	// They must be installed after it.
-	log.Infof("Installing operators")
-	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationOperators, operatorVals); err != nil {
-		return nil, fmt.Errorf("installing operators: %w", err)
-	}
+	//log.Infof("Installing operators")
+	//if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationOperators, operatorVals); err != nil {
+	//	return nil, fmt.Errorf("installing operators: %w", err)
+	//}
 
 	return kubeConfig, nil
 }
