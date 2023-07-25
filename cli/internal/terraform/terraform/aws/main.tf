@@ -275,7 +275,7 @@ module "instance_group" {
   enable_snp           = var.enable_snp
   tags = merge(
     local.tags,
-    { Name = local.name },
+    { Name = "${local.name}-${each.value.role}" },
     { constellation-role = each.value.role },
     { constellation-node-group = each.key },
     { constellation-uid = local.uid },
