@@ -169,7 +169,7 @@ runs:
           --info logcollect.github.runner-os="${{ runner.os }}" \
           --info logcollect.github.e2e-test-payload="${{ inputs.test }}" \
           --info logcollect.github.is-debug-cluster=false \
-          --info logcollect.deployment-type="debugd" } \
+          --info logcollect.deployment-type="debugd" \
           --verbosity=-1 \
           --force
         echo "::endgroup::"
