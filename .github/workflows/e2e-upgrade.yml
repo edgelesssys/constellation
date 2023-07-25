@@ -175,6 +175,9 @@ jobs:
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
+          awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
+          awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
 
       - name: Build CLI
         uses: ./.github/actions/build_cli
