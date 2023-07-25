@@ -99,7 +99,7 @@ func (k *Kubectl) GetCRs(ctx context.Context, gvr schema.GroupVersionResource) (
 	crdClient := k.dynamicClient.Resource(gvr)
 	unstructuredList, err := crdClient.List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("listing CRDs for gvr %+v: %w", crdClient, err)
+		return nil, fmt.Errorf("listing CRs for GroupVersionResource %+v: %w", gvr, err)
 	}
 
 	return unstructuredList.Items, nil
