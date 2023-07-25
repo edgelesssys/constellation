@@ -61,7 +61,7 @@ func init() {
 	ConfigDoc.Fields[4].Description = "Kubernetes version to be installed into the cluster."
 	ConfigDoc.Fields[4].Comments[encoder.LineComment] = "Kubernetes version to be installed into the cluster."
 	ConfigDoc.Fields[5].Name = "microserviceVersion"
-	ConfigDoc.Fields[5].Type = "string"
+	ConfigDoc.Fields[5].Type = "Semver"
 	ConfigDoc.Fields[5].Note = ""
 	ConfigDoc.Fields[5].Description = "Microservice version to be installed into the cluster. Defaults to the version of the CLI."
 	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Microservice version to be installed into the cluster. Defaults to the version of the CLI."
