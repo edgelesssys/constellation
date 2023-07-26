@@ -19,7 +19,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const upgradeRequiresIAMMigration = true // TODO(elchead): needs to be set on every release. Can we automate this?
+func upgradeRequiresIAMMigration(provider cloudprovider.Provider) bool {
+	switch provider {
+	case cloudprovider.AWS:
+		return true // needs to be set on every release. Can we automate this?
+	default:
+		return false
+	}
+}
 
 func newIAMUpgradeCmd() *cobra.Command {
 	cmd := &cobra.Command{

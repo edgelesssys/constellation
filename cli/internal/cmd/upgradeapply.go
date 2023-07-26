@@ -85,7 +85,16 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
-	if upgradeRequiresIAMMigration {
+
+	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
+	if err != nil {
+		return err
+	}
+	if upgradeRequiresIAMMigration(conf.GetProvider()) {
 		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
 		if !flags.yes {
 			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
@@ -97,15 +106,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 				return nil
 			}
 		}
-	}
-
-	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
-	var configValidationErr *config.ValidationError
-	if errors.As(err, &configValidationErr) {
-		cmd.PrintErrln(configValidationErr.LongMessage())
-	}
-	if err != nil {
-		return err
 	}
 
 	if err := handleInvalidK8sPatchVersion(cmd, conf.KubernetesVersion, flags.yes); err != nil {
