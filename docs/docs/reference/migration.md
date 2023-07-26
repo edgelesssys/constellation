@@ -16,7 +16,7 @@ Use [`constellation config migrate`](./cli.md#constellation-config-migrate) to a
 
 ## Migrating from CLI versions before 2.10
 
-- AWS cluster upgrades require additional iam permissions for the newly introduced `aws-load-balancer-controller`. Please perform an upgrade through `iam upgrade apply` which will show the needed changes and ask to confirm them before applying.
+- AWS cluster upgrades require additional IAM permissions for the newly introduced `aws-load-balancer-controller`. Please upgrade your IAM roles using `iam upgrade apply`. This will show necessary changes and apply them, if desired.
 
 ## Migrating from CLI versions before 2.9
 
