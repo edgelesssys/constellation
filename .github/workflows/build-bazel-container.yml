@@ -6,6 +6,7 @@ on:
        - "main"
     paths:
       - "bazel/container/**"
+      - ".github/workflows/build-bazel-container.yml"
   workflow_dispatch:
 
 jobs:
@@ -23,7 +24,7 @@ jobs:
         working-directory: ./bazel/container
         run: |
           version=$(grep "ARG BAZEL_VERSION" Containerfile | cut -d= -f2)
-          echo "version=${version}" | tee -a "$GITHUB_OUTPUT"
+          echo "version=v${version}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta
