@@ -78,7 +78,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, cloudServiceAccountURI, versionString, clusterName string, measurementSalt []byte,
+	ctx context.Context, versionString, clusterName string,
 	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
@@ -227,70 +227,6 @@ func (k *KubeWrapper) InitCluster(
 	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
-
-	//serviceConfig := constellationServicesConfig{
-	//	measurementSalt:        measurementSalt,
-	//	subnetworkPodCIDR:      subnetworkPodCIDR,
-	//	cloudServiceAccountURI: cloudServiceAccountURI,
-	//	loadBalancerIP:         controlPlaneHost,
-	//}
-	//constellationVals, err := k.setupExtraVals(ctx, serviceConfig)
-	//if err != nil {
-	//	return nil, fmt.Errorf("setting up extraVals: %w", err)
-	//}
-	//log.Infof("Installing Constellation microservices")
-	//if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationServices, constellationVals); err != nil {
-	//	return nil, fmt.Errorf("installing constellation-services: %w", err)
-	//}
-
-	// cert-manager provides CRDs used by other deployments,
-	// so it should be installed as early as possible, but after the services cert-manager depends on.
-	//log.Infof("Installing cert-manager")
-	//if err = k.helmClient.InstallChart(ctx, helmReleases.CertManager); err != nil {
-	//	return nil, fmt.Errorf("installing cert-manager: %w", err)
-	//}
-
-	// Install CSI drivers if enabled by the user.
-	// if helmReleases.CSI != nil {
-	//	var csiVals map[string]any
-	//	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.OpenStack {
-	//		creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
-	//		if err != nil {
-	//			return nil, err
-	//		}
-	//		cinderIni := creds.CloudINI().CinderCSIConfiguration()
-	//		csiVals = map[string]any{
-	//			"cinder-config": map[string]any{
-	//				"secretData": cinderIni,
-	//			},
-	//		}
-	//	}
-
-	//	log.Infof("Installing CSI deployments")
-	//	if err := k.helmClient.InstallChartWithValues(ctx, *helmReleases.CSI, csiVals); err != nil {
-	//		return nil, fmt.Errorf("installing CSI snapshot CRDs: %w", err)
-	//	}
-	//}
-
-	//if helmReleases.AWSLoadBalancerController != nil {
-	//	log.Infof("Installing AWS Load Balancer Controller")
-	//	if err = k.helmClient.InstallChart(ctx, *helmReleases.AWSLoadBalancerController); err != nil {
-	//		return nil, fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
-	//	}
-	//}
-
-	//operatorVals, err := k.setupOperatorVals(ctx)
-	//if err != nil {
-	//	return nil, fmt.Errorf("setting up operator vals: %w", err)
-	//}
-
-	// Constellation operators require CRDs from cert-manager.
-	// They must be installed after it.
-	//log.Infof("Installing operators")
-	//if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationOperators, operatorVals); err != nil {
-	//	return nil, fmt.Errorf("installing operators: %w", err)
-	//}
-
 	return kubeConfig, nil
 }
 
@@ -444,120 +380,6 @@ func getIPAddr() (string, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP.String(), nil
-}
-
-// setupExtraVals create a helm values map for consumption by helm-install.
-// Will move to a more dedicated place once that place becomes apparent.
-func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constellationServicesConfig) (map[string]any, error) {
-	extraVals := map[string]any{
-		"join-service": map[string]any{
-			"measurementSalt": base64.StdEncoding.EncodeToString(serviceConfig.measurementSalt),
-		},
-		"verification-service": map[string]any{
-			"loadBalancerIP": serviceConfig.loadBalancerIP,
-		},
-		"konnectivity": map[string]any{
-			"loadBalancerIP": serviceConfig.loadBalancerIP,
-		},
-	}
-
-	instance, err := k.providerMetadata.Self(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving current instance: %w", err)
-	}
-
-	switch cloudprovider.FromString(k.cloudProvider) {
-	case cloudprovider.GCP:
-		uid, err := k.providerMetadata.UID(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting uid: %w", err)
-		}
-
-		projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
-		if err != nil {
-			return nil, fmt.Errorf("splitting providerID: %w", err)
-		}
-
-		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
-		if err != nil {
-			return nil, fmt.Errorf("getting service account key: %w", err)
-		}
-		rawKey, err := json.Marshal(serviceAccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling service account key: %w", err)
-		}
-
-		extraVals["ccm"] = map[string]any{
-			"GCP": map[string]any{
-				"projectID":         projectID,
-				"uid":               uid,
-				"secretData":        string(rawKey),
-				"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
-			},
-		}
-
-	case cloudprovider.Azure:
-		ccmAzure, ok := k.providerMetadata.(ccmConfigGetter)
-		if !ok {
-			return nil, errors.New("invalid cloud provider metadata for Azure")
-		}
-
-		ccmConfig, err := ccmAzure.GetCCMConfig(ctx, instance.ProviderID, serviceConfig.cloudServiceAccountURI)
-		if err != nil {
-			return nil, fmt.Errorf("creating ccm secret: %w", err)
-		}
-
-		extraVals["ccm"] = map[string]any{
-			"Azure": map[string]any{
-				"azureConfig": string(ccmConfig),
-			},
-		}
-
-	case cloudprovider.OpenStack:
-		creds, err := openstack.AccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
-		if err != nil {
-			return nil, err
-		}
-		credsIni := creds.CloudINI().FullConfiguration()
-		networkIDsGetter, ok := k.providerMetadata.(openstackMetadata)
-		if !ok {
-			return nil, errors.New("generating yawol configuration: cloud provider metadata does not implement OpenStack specific methods")
-		}
-		networkIDs, err := networkIDsGetter.GetNetworkIDs(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting network IDs: %w", err)
-		}
-		if len(networkIDs) == 0 {
-			return nil, errors.New("getting network IDs: no network IDs found")
-		}
-		extraVals["ccm"] = map[string]any{
-			"OpenStack": map[string]any{
-				"secretData": credsIni,
-			},
-		}
-		yawolIni := creds.CloudINI().YawolConfiguration()
-		extraVals["yawol-config"] = map[string]any{
-			"secretData": yawolIni,
-		}
-		extraVals["yawol-controller"] = map[string]any{
-			"yawolNetworkID": networkIDs[0],
-			"yawolAPIHost":   fmt.Sprintf("https://%s:%d", serviceConfig.loadBalancerIP, constants.KubernetesPort),
-		}
-	}
-	return extraVals, nil
-}
-
-func (k *KubeWrapper) setupOperatorVals(ctx context.Context) (map[string]any, error) {
-	uid, err := k.providerMetadata.UID(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving constellation UID: %w", err)
-	}
-
-	return map[string]any{
-		"constellation-operator": map[string]any{
-			"constellationUID": uid,
-		},
-	}, nil
 }
 
 func (k *KubeWrapper) setupCiliumVals(ctx context.Context, in k8sapi.SetupPodNetworkInput) (map[string]any, error) {

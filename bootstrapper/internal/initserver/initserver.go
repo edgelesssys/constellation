@@ -213,10 +213,8 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 
 	kubeconfig, err := s.initializer.InitCluster(stream.Context(),
-		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		clusterName,
-		measurementSalt,
 		req.HelmDeployments,
 		req.ConformanceMode,
 		components.NewComponentsFromInitProto(req.KubernetesComponents),
@@ -342,10 +340,8 @@ type ClusterInitializer interface {
 	// InitCluster initializes a new Kubernetes cluster.
 	InitCluster(
 		ctx context.Context,
-		cloudServiceAccountURI string,
 		k8sVersion string,
 		clusterName string,
-		measurementSalt []byte,
 		helmDeployments []byte,
 		conformanceMode bool,
 		kubernetesComponents components.Components,

@@ -21,7 +21,7 @@ type clusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
 func (c *clusterFake) InitCluster(
-	context.Context, string, string, string, []byte,
+	context.Context, string, string,
 	[]byte, bool, components.Components, []string, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
