@@ -40,11 +40,14 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
 
-	serviceVals, err := helm.SetupMicroserviceVals(ctx, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
+	serviceVals, err := helm.SetupMicroserviceVals(ctx, log, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
 	if err != nil {
 		return fmt.Errorf("setting up microservice values: %w", err)
 	}
 	fmt.Println("Installing microservices", serviceVals)
+	if err := installer.InstallChartWithValues(ctx, releases.ConstellationServices, serviceVals); err != nil {
+		return fmt.Errorf("installing microservices: %w", err)
+	}
 
 	log.Infof("Installing cert-manager")
 	if err = installer.InstallChart(ctx, releases.CertManager); err != nil {

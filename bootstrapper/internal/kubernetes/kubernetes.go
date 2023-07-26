@@ -223,26 +223,25 @@ func (k *KubeWrapper) InitCluster(
 		// Continue and don't throw an error here - things might be okay.
 	}
 
-	serviceConfig := constellationServicesConfig{
-		measurementSalt:        measurementSalt,
-		subnetworkPodCIDR:      subnetworkPodCIDR,
-		cloudServiceAccountURI: cloudServiceAccountURI,
-		loadBalancerIP:         controlPlaneHost,
-	}
-	constellationVals, err := k.setupExtraVals(ctx, serviceConfig)
-	if err != nil {
-		return nil, fmt.Errorf("setting up extraVals: %w", err)
-	}
-
 	log.Infof("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
-	log.Infof("Installing Constellation microservices")
-	if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationServices, constellationVals); err != nil {
-		return nil, fmt.Errorf("installing constellation-services: %w", err)
-	}
+	//serviceConfig := constellationServicesConfig{
+	//	measurementSalt:        measurementSalt,
+	//	subnetworkPodCIDR:      subnetworkPodCIDR,
+	//	cloudServiceAccountURI: cloudServiceAccountURI,
+	//	loadBalancerIP:         controlPlaneHost,
+	//}
+	//constellationVals, err := k.setupExtraVals(ctx, serviceConfig)
+	//if err != nil {
+	//	return nil, fmt.Errorf("setting up extraVals: %w", err)
+	//}
+	//log.Infof("Installing Constellation microservices")
+	//if err = k.helmClient.InstallChartWithValues(ctx, helmReleases.ConstellationServices, constellationVals); err != nil {
+	//	return nil, fmt.Errorf("installing constellation-services: %w", err)
+	//}
 
 	// cert-manager provides CRDs used by other deployments,
 	// so it should be installed as early as possible, but after the services cert-manager depends on.

@@ -18,3 +18,16 @@ output "initSecret" {
 output "attestationURL" {
   value = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : ""
 }
+
+// new
+output "networkSecurityGroup" {
+  value = azurerm_network_security_group.network_security_group.name
+}
+
+output "lbName" {
+  value = azurerm_lb.lb.name
+}
+
+output "user_assigned_identity" {
+  value = var.user_assigned_identity
+}

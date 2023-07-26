@@ -418,7 +418,10 @@ go_library(
     deps = [
         "//cli/internal/clusterid",
         "//cli/internal/helm/imageversion",
+        "//cli/internal/terraform",
+        "//internal/cloud/azureshared",
         "//internal/cloud/cloudprovider",
+        "//internal/cloud/gcpshared",
         "//internal/cloud/metadata",
         "//internal/compatibility",
         "//internal/config",
