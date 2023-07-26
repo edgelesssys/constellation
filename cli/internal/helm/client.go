@@ -193,7 +193,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 }
 
 func getManagedCharts(config *config.Config) []chartInfo {
-	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo, csiInfo}
+	charts := []chartInfo{ciliumInfo, certManagerInfo, constellationOperatorsInfo, constellationServicesInfo}
 	if config.GetProvider() == cloudprovider.AWS {
 		charts = append(charts, awsLBControllerInfo)
 	}
