@@ -1,0 +1,9 @@
+name: Constellation IAM upgrade
+description: Upgrade IAM configuration for a Constellation cluster.
+runs:
+  using: "composite"
+  steps:
+    - name: Constellation iam upgrade aws
+      shell: bash
+      run: |
+        constellation iam upgrade apply --yes --debug
