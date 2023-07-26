@@ -34,7 +34,8 @@ func SetupMicroserviceVals(ctx context.Context, log debugLog, provider cloudprov
 	if err != nil {
 		return nil, fmt.Errorf("getting Terraform output: %w", err)
 	}
-	log.Debugf("Terraform cluster output: %+v", output)
+	log.Debugf("Terraform cluster output: %+v", output) // TODO why not working? (propagate debug to logger).
+	fmt.Printf("A Terraform cluster output: %+v\n", output)
 
 	extraVals := map[string]any{
 		"join-service": map[string]any{
@@ -69,7 +70,10 @@ func SetupMicroserviceVals(ctx context.Context, log debugLog, provider cloudprov
 			},
 		}
 	case cloudprovider.Azure:
-		ccmConfig := []byte("") // TODO
+		ccmConfig, err := getCCMConfig(serviceAccURI, output.Azure.UserAssignedIdentity, output.Azure.NetworkSecurityGroupName, output.Azure.LoadBalancerName)
+		if err != nil {
+			return nil, fmt.Errorf("getting Azure CCM config: %w", err)
+		}
 		extraVals["ccm"] = map[string]any{
 			"Azure": map[string]any{
 				"azureConfig": string(ccmConfig),
@@ -101,16 +105,11 @@ type cloudConfig struct {
 }
 
 // GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func getCCMConfig(providerID, uid, cloudServiceAccountURI, uamiClientID, securityGroupName, loadBalancerName string) ([]byte, error) {
-	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+func getCCMConfig(serviceAccURI, uamiClientID, securityGroupName, loadBalancerName string) ([]byte, error) {
+	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)
 	if err != nil {
-		return nil, fmt.Errorf("parsing provider ID: %w", err)
+		return nil, fmt.Errorf("getting service account key: %w", err)
 	}
-	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
-	if err != nil {
-		return nil, fmt.Errorf("parsing service account URI: %w", err)
-	}
-
 	// var uamiClientID string
 	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
 	//if useManagedIdentityExtension {
@@ -123,8 +122,8 @@ func getCCMConfig(providerID, uid, cloudServiceAccountURI, uamiClientID, securit
 	config := cloudConfig{
 		Cloud:                       "AzurePublicCloud",
 		TenantID:                    creds.TenantID,
-		SubscriptionID:              subscriptionID,
-		ResourceGroup:               resourceGroup,
+		SubscriptionID:              creds.SubscriptionID,
+		ResourceGroup:               creds.ResourceGroup,
 		LoadBalancerSku:             "standard",
 		SecurityGroupName:           securityGroupName,
 		LoadBalancerName:            loadBalancerName,

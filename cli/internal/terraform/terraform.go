@@ -234,6 +234,16 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 		}
 	}
 
+	azureUAMI, ok := tfState.Values.Outputs["user_assigned_identity"]
+	if ok {
+		networkSGName := tfState.Values.Outputs["network_security_group_name"]
+		loadBalancerName := tfState.Values.Outputs["loadbalancer_name"]
+		res.Azure = &AzureApplyOutput{
+			UserAssignedIdentity:     azureUAMI.Value.(string),
+			NetworkSecurityGroupName: networkSGName.Value.(string),
+			LoadBalancerName:         loadBalancerName.Value.(string),
+		}
+	}
 	return res, nil
 }
 
@@ -300,6 +310,14 @@ type ApplyOutput struct {
 	// It is only set if the cluster is created on Azure.
 	AttestationURL string
 	GCP            *GCPApplyOutput
+	Azure          *AzureApplyOutput
+}
+
+// AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
+type AzureApplyOutput struct {
+	NetworkSecurityGroupName string
+	LoadBalancerName         string
+	UserAssignedIdentity     string
 }
 
 // GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.

@@ -20,13 +20,14 @@ output "attestationURL" {
 }
 
 // new
-output "networkSecurityGroup" {
-  value = azurerm_network_security_group.network_security_group.name
+output "network_security_group_name" {
+  value = azurerm_network_security_group.security_group.name
 }
 
-output "lbName" {
-  value = azurerm_lb.lb.name
+output "loadbalancer_name" {
+  value = azurerm_lb.loadbalancer.name
 }
+
 
 output "user_assigned_identity" {
   value = var.user_assigned_identity
