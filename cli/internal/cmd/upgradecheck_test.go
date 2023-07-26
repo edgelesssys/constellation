@@ -294,7 +294,7 @@ func (s *stubVersionCollector) newMeasurements(_ context.Context, _ cloudprovide
 	return s.supportedImageVersions, nil
 }
 
-func (s *stubVersionCollector) currentVersions(_ context.Context) (currentVersionInfo, error) {
+func (s *stubVersionCollector) currentVersions(_ context.Context, _ string) (currentVersionInfo, error) {
 	return currentVersionInfo{
 		service: s.currentServicesVersions,
 		image:   s.currentImageVersion,
@@ -347,11 +347,11 @@ func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.Ter
 	return u.tfDiff, u.err
 }
 
-func (u stubUpgradeChecker) CheckTerraformMigrations() error {
+func (u stubUpgradeChecker) CheckTerraformMigrations(_ string) error {
 	return u.err
 }
 
-func (u stubUpgradeChecker) CleanUpTerraformMigrations() error {
+func (u stubUpgradeChecker) CleanUpTerraformMigrations(_ string) error {
 	return u.err
 }
 

@@ -46,17 +46,18 @@ var errReleaseNotFound = errors.New("release not found")
 
 // UpgradeClient handles interaction with helm and the cluster.
 type UpgradeClient struct {
-	config  *action.Configuration
-	kubectl crdClient
-	fs      file.Handler
-	actions actionWrapper
-	log     debugLog
+	config           *action.Configuration
+	kubectl          crdClient
+	fs               file.Handler
+	actions          actionWrapper
+	upgradeWorkspace string
+	log              debugLog
 }
 
-// NewUpgradeClient returns a new initializes upgrade client for the given namespace.
-func NewUpgradeClient(client crdClient, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
+// NewUpgradeClient returns a new initializes client for the namespace Client.
+func NewUpgradeClient(client crdClient, upgradeWorkspace, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
 	settings := cli.New()
-	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
+	settings.KubeConfig = kubeConfigPath
 
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Debugf); err != nil {
@@ -74,7 +75,13 @@ func NewUpgradeClient(client crdClient, kubeConfigPath, helmNamespace string, lo
 		return nil, fmt.Errorf("initializing kubectl: %w", err)
 	}
 
-	return &UpgradeClient{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
+	return &UpgradeClient{
+		kubectl:          client,
+		fs:               fileHandler,
+		actions:          actions{config: actionConfig},
+		upgradeWorkspace: upgradeWorkspace,
+		log:              log,
+	}, nil
 }
 
 func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semver, force bool) error {

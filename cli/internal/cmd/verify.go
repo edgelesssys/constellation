@@ -43,7 +43,7 @@ func NewVerifyCmd() *cobra.Command {
 		Use:   "verify",
 		Short: "Verify the confidential properties of a Constellation cluster",
 		Long: "Verify the confidential properties of a Constellation cluster.\n" +
-			"If arguments aren't specified, values are read from `" + constants.ClusterIDsFileName + "`.",
+			"If arguments aren't specified, values are read from `" + constants.ClusterIDsFilename + "`.",
 		Args: cobra.ExactArgs(0),
 		RunE: runVerify,
 	}
@@ -170,7 +170,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	c.log.Debugf("Flag 'raw' set to %t", force)
 
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
+	if err := fileHandler.ReadJSON(clusterIDsPath(cwd), &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
 		return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
@@ -178,13 +178,13 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", constants.ClusterIDsFileName)
+		c.log.Debugf("Trying to supplement empty flag values from %q", clusterIDsPath(cwd))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", clusterIDsPath(cwd))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", constants.ClusterIDsFileName)
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", clusterIDsPath(cwd))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}

@@ -102,7 +102,10 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind) (*Upgrader, error) {
+func NewUpgrader(
+	ctx context.Context, outWriter io.Writer, upgradeWorkspace, kubeConfigPath string,
+	fileHandler file.Handler, log debugLog, upgradeCmdKind UpgradeCmdKind,
+) (*Upgrader, error) {
 	upgradeID := "upgrade-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
 	if upgradeCmdKind == UpgradeCmdKindCheck {
 		// When performing an upgrade check, the upgrade directory will only be used temporarily to store the
@@ -118,7 +121,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 		upgradeID:    upgradeID,
 	}
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
 	}
@@ -136,13 +139,13 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	}
 	u.dynamicInterface = &NodeVersionClient{client: unstructuredClient}
 
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), upgradeWorkspace, kubeConfigPath, constants.HelmNamespace, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 	u.helmClient = helmClient
 
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir))
+	tfClient, err := terraform.New(ctx, filepath.Join(upgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
@@ -170,14 +173,14 @@ func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
-func (u *Upgrader) CheckTerraformMigrations() error {
-	return u.tfUpgrader.CheckTerraformMigrations(u.upgradeID, constants.TerraformUpgradeBackupDir)
+func (u *Upgrader) CheckTerraformMigrations(upgradeWorkspace string) error {
+	return u.tfUpgrader.CheckTerraformMigrations(upgradeWorkspace, u.upgradeID, constants.TerraformUpgradeBackupDir)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
-func (u *Upgrader) CleanUpTerraformMigrations() error {
-	return u.tfUpgrader.CleanUpTerraformMigrations(u.upgradeID)
+func (u *Upgrader) CleanUpTerraformMigrations(upgradeWorkspace string) error {
+	return u.tfUpgrader.CleanUpTerraformMigrations(upgradeWorkspace, u.upgradeID)
 }
 
 // PlanTerraformMigrations prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade.
@@ -191,7 +194,7 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) error {
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
 	return u.tfUpgrader.ApplyTerraformMigrations(ctx, opts, u.upgradeID)
 }
 

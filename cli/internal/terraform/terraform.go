@@ -38,6 +38,9 @@ import (
 const (
 	tfVersion         = ">= 1.4.6"
 	terraformVarsFile = "terraform.tfvars"
+
+	// terraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
+	terraformUpgradePlanFile = "plan.zip"
 )
 
 // ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
@@ -438,9 +441,10 @@ func (c *Client) ApplyIAMConfig(ctx context.Context, provider cloudprovider.Prov
 	return c.ShowIAM(ctx, provider)
 }
 
-// Plan determines the diff that will be applied by Terraform. The plan output is written to the planFile.
+// Plan determines the diff that will be applied by Terraform.
+// The plan output is written to the Terraform working directory.
 // If there is a diff, the returned bool is true. Otherwise, it is false.
-func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (bool, error) {
+func (c *Client) Plan(ctx context.Context, logLevel LogLevel) (bool, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return false, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -454,18 +458,19 @@ func (c *Client) Plan(ctx context.Context, logLevel LogLevel, planFile string) (
 	}
 
 	opts := []tfexec.PlanOption{
-		tfexec.Out(planFile),
+		tfexec.Out(terraformUpgradePlanFile),
 	}
 	return c.tf.Plan(ctx, opts...)
 }
 
-// ShowPlan formats the diff in planFilePath and writes it to the specified output.
-func (c *Client) ShowPlan(ctx context.Context, logLevel LogLevel, planFilePath string, output io.Writer) error {
+// ShowPlan formats the diff of a plan file in the Terraform working directory,
+// and writes it to the specified output.
+func (c *Client) ShowPlan(ctx context.Context, logLevel LogLevel, output io.Writer) error {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
 
-	planResult, err := c.tf.ShowPlanFileRaw(ctx, planFilePath)
+	planResult, err := c.tf.ShowPlanFileRaw(ctx, terraformUpgradePlanFile)
 	if err != nil {
 		return fmt.Errorf("terraform show plan: %w", err)
 	}
@@ -575,6 +580,9 @@ func (c *Client) setLogLevel(logLevel LogLevel) error {
 		if err := c.tf.SetLog(logLevel.String()); err != nil {
 			return fmt.Errorf("set log level %s: %w", logLevel.String(), err)
 		}
+
+		// Terraform writes its log to the working directory.
+		//  => Set the log path to the parent directory to have it in the user's working directory.
 		if err := c.tf.SetLogPath(filepath.Join("..", constants.TerraformLogFile)); err != nil {
 			return fmt.Errorf("set log path: %w", err)
 		}

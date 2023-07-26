@@ -180,9 +180,9 @@ func TestVerify(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
+			require.NoError(fileHandler.WriteYAML(configPath(""), cfg))
 			if tc.idFile != nil {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), tc.idFile, file.OptNone))
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}

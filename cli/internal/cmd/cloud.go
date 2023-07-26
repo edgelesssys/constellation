@@ -33,10 +33,10 @@ type cloudIAMCreator interface {
 }
 
 type iamDestroyer interface {
-	DestroyIAMConfiguration(ctx context.Context, logLevel terraform.LogLevel) error
-	GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error)
+	DestroyIAMConfiguration(ctx context.Context, tfWorkspace string, logLevel terraform.LogLevel) error
+	GetTfStateServiceAccountKey(ctx context.Context, tfWorkspace string) (gcpshared.ServiceAccountKey, error)
 }
 
 type cloudTerminator interface {
-	Terminate(ctx context.Context, logLevel terraform.LogLevel) error
+	Terminate(ctx context.Context, workspace string, logLevel terraform.LogLevel) error
 }

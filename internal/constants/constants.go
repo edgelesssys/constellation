@@ -74,8 +74,8 @@ const (
 	// Filenames.
 	//
 
-	// ClusterIDsFileName filename that contains Constellation clusterID and IP.
-	ClusterIDsFileName = "constellation-id.json"
+	// ClusterIDsFilename filename that contains Constellation clusterID and IP.
+	ClusterIDsFilename = "constellation-id.json"
 	// ConfigFilename filename of Constellation config file.
 	ConfigFilename = "constellation-conf.yaml"
 	// LicenseFilename filename of Constellation license file.
@@ -88,8 +88,6 @@ const (
 	TerraformWorkingDir = "constellation-terraform"
 	// TerraformIAMWorkingDir is the directory name for the Terraform IAM Client workspace.
 	TerraformIAMWorkingDir = "constellation-iam-terraform"
-	// GCPServiceAccountKeyFile is the file name for the GCP service account key file.
-	GCPServiceAccountKeyFile = "gcpServiceAccountKey.json"
 	// ErrorLog file which contains server errors during init.
 	ErrorLog = "constellation-cluster.log"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
@@ -157,8 +155,6 @@ const (
 	MiniConstellationUID = "mini"
 	// TerraformLogFile is the file name of the Terraform log file.
 	TerraformLogFile = "terraform.log"
-	// TerraformUpgradePlanFile is the file name of the zipfile created by Terraform plan for Constellation upgrades.
-	TerraformUpgradePlanFile = "plan.zip"
 	// TerraformUpgradeWorkingDir is the directory name for the Terraform workspace being used in an upgrade.
 	TerraformUpgradeWorkingDir = "terraform"
 	// TerraformIAMUpgradeWorkingDir is the directory name for the Terraform IAM workspace being used in an upgrade.

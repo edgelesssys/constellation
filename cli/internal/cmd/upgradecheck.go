@@ -65,15 +65,22 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
+
 	flags, err := parseUpgradeCheckFlags(cmd)
 	if err != nil {
 		return err
 	}
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	checker, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindCheck)
+	checker, err := kubernetes.NewUpgrader(
+		cmd.Context(), cmd.OutOrStdout(),
+		upgradeWorkspace(flags.workspace), adminConfPath(flags.workspace),
+		fileHandler, log, kubernetes.UpgradeCmdKindCheck,
+	)
 	if err != nil {
 		return fmt.Errorf("setting up Kubernetes upgrader: %w", err)
 	}
+
 	versionfetcher := versionsapi.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
@@ -172,7 +179,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	u.log.Debugf("Using provider %s with attestation variant %s", csp.String(), attestationVariant.String())
 
-	current, err := u.collect.currentVersions(cmd.Context())
+	current, err := u.collect.currentVersions(cmd.Context(), flags.workspace)
 	if err != nil {
 		return err
 	}
@@ -205,7 +212,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	u.log.Debugf("Planning Terraform migrations")
-	if err := u.checker.CheckTerraformMigrations(); err != nil {
+	if err := u.checker.CheckTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil { // Why is this run twice?????
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -220,7 +227,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		u.checker.AddManualStateMigration(migration)
 	}
 
-	if err := u.checker.CheckTerraformMigrations(); err != nil {
+	if err := u.checker.CheckTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil { // Why is this run twice?????
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -236,9 +243,11 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	u.log.Debugf("Using Terraform variables:\n%v", vars)
 
 	opts := upgrade.TerraformUpgradeOptions{
-		LogLevel: flags.terraformLogLevel,
-		CSP:      conf.GetProvider(),
-		Vars:     vars,
+		LogLevel:         flags.terraformLogLevel,
+		CSP:              conf.GetProvider(),
+		Vars:             vars,
+		TFWorkspace:      terraformClusterWorkspace(flags.workspace),
+		UpgradeWorkspace: upgradeWorkspace(flags.workspace),
 	}
 
 	cmd.Println("The following Terraform migrations are available with this CLI:")
@@ -249,7 +258,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		if err := u.checker.CleanUpTerraformMigrations(); err != nil {
+		if err := u.checker.CleanUpTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil {
 			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
 		}
 	}()
@@ -323,7 +332,7 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 }
 
 type collector interface {
-	currentVersions(ctx context.Context) (currentVersionInfo, error)
+	currentVersions(ctx context.Context, workspace string) (currentVersionInfo, error)
 	supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error)
 	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error)
@@ -382,8 +391,8 @@ type currentVersionInfo struct {
 	cli     consemver.Semver
 }
 
-func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, v.log)
+func (v *versionCollector) currentVersions(ctx context.Context, workspace string) (currentVersionInfo, error) {
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), upgradeWorkspace(workspace), adminConfPath(workspace), constants.HelmNamespace, v.log)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -761,8 +770,8 @@ type upgradeChecker interface {
 	CurrentImage(ctx context.Context) (string, error)
 	CurrentKubernetesVersion(ctx context.Context) (string, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
-	CheckTerraformMigrations() error
-	CleanUpTerraformMigrations() error
+	CheckTerraformMigrations(upgradeWorkspace string) error
+	CleanUpTerraformMigrations(upgradeWorkspace string) error
 	AddManualStateMigration(migration terraform.StateMigration)
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -41,10 +40,7 @@ func runIAMDestroy(cmd *cobra.Command, _ []string) error {
 	}
 	defer log.Sync()
 	spinner := newSpinner(cmd.ErrOrStderr())
-	destroyer, err := cloudcmd.NewIAMDestroyer(cmd.Context())
-	if err != nil {
-		return err
-	}
+	destroyer := cloudcmd.NewIAMDestroyer()
 	fsHandler := file.NewHandler(afero.NewOsFs())
 
 	c := &destroyCmd{log: log}
@@ -63,27 +59,27 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	}
 
 	// check if there is a possibility that the cluster is still running by looking out for specific files
-	c.log.Debugf("Checking if %q exists", constants.AdminConfFilename)
-	_, err = fsHandler.Stat(constants.AdminConfFilename)
+	c.log.Debugf("Checking if %q exists", adminConfPath(flags.workspace))
+	_, err = fsHandler.Stat(adminConfPath(flags.workspace))
 	if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.AdminConfFilename)
+		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", adminConfPath(flags.workspace))
 	}
-	c.log.Debugf("Checking if %q exists", constants.ClusterIDsFileName)
-	_, err = fsHandler.Stat(constants.ClusterIDsFileName)
+	c.log.Debugf("Checking if %q exists", clusterIDsPath(flags.workspace))
+	_, err = fsHandler.Stat(clusterIDsPath(flags.workspace))
 	if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", constants.ClusterIDsFileName)
+		return fmt.Errorf("file %q still exists, please make sure to terminate your cluster before destroying your IAM configuration", clusterIDsPath(flags.workspace))
 	}
 
 	gcpFileExists := false
 
-	c.log.Debugf("Checking if %q exists", constants.GCPServiceAccountKeyFile)
-	_, err = fsHandler.Stat(constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Checking if %q exists", gcpServiceAccountKeyPath(flags.workspace))
+	_, err = fsHandler.Stat(gcpServiceAccountKeyPath(flags.workspace))
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	} else {
-		c.log.Debugf("%q exists", constants.GCPServiceAccountKeyFile)
+		c.log.Debugf("%q exists", gcpServiceAccountKeyPath(flags.workspace))
 		gcpFileExists = true
 	}
 
@@ -91,7 +87,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 		// Confirmation
 		confirmString := "Do you really want to destroy your IAM configuration? Note that this will remove all resources in the resource group."
 		if gcpFileExists {
-			confirmString += fmt.Sprintf("\nThis will also delete %q", constants.GCPServiceAccountKeyFile)
+			confirmString += fmt.Sprintf("\nThis will also delete %q", gcpServiceAccountKeyPath(flags.workspace))
 		}
 		ok, err := askToConfirm(cmd, confirmString)
 		if err != nil {
@@ -104,8 +100,8 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	}
 
 	if gcpFileExists {
-		c.log.Debugf("Starting to delete %q", constants.GCPServiceAccountKeyFile)
-		proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, destroyer, fsHandler)
+		c.log.Debugf("Starting to delete %q", gcpServiceAccountKeyPath(flags.workspace))
+		proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, destroyer, flags.workspace, fsHandler)
 		if err != nil {
 			return err
 		}
@@ -119,7 +115,7 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 
 	spinner.Start("Destroying IAM configuration", false)
 	defer spinner.Stop()
-	if err := destroyer.DestroyIAMConfiguration(cmd.Context(), flags.tfLogLevel); err != nil {
+	if err := destroyer.DestroyIAMConfiguration(cmd.Context(), terraformIAMWorkspace(flags.workspace), flags.tfLogLevel); err != nil {
 		return fmt.Errorf("destroying IAM configuration: %w", err)
 	}
 
@@ -128,36 +124,37 @@ func (c *destroyCmd) iamDestroy(cmd *cobra.Command, spinner spinnerInterf, destr
 	return nil
 }
 
-func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, fsHandler file.Handler) (bool, error) {
+func (c *destroyCmd) deleteGCPServiceAccountKeyFile(cmd *cobra.Command, destroyer iamDestroyer, workspace string, fsHandler file.Handler) (bool, error) {
 	var fileSaKey gcpshared.ServiceAccountKey
 
-	c.log.Debugf("Parsing %q", constants.GCPServiceAccountKeyFile)
-	if err := fsHandler.ReadJSON(constants.GCPServiceAccountKeyFile, &fileSaKey); err != nil {
+	c.log.Debugf("Parsing %q", gcpServiceAccountKeyPath(workspace))
+	if err := fsHandler.ReadJSON(gcpServiceAccountKeyPath(workspace), &fileSaKey); err != nil {
 		return false, err
 	}
 
 	c.log.Debugf("Getting service account key from the tfstate")
-	tfSaKey, err := destroyer.GetTfstateServiceAccountKey(cmd.Context())
+	tfSaKey, err := destroyer.GetTfStateServiceAccountKey(cmd.Context(), terraformIAMWorkspace(workspace))
 	if err != nil {
 		return false, err
 	}
 
 	c.log.Debugf("Checking if keys are the same")
 	if tfSaKey != fileSaKey {
-		cmd.Printf("The key in %q don't match up with your Terraform state. %q will not be deleted.\n", constants.GCPServiceAccountKeyFile, constants.GCPServiceAccountKeyFile)
+		cmd.Printf("The key in %q don't match up with your Terraform state. %q will not be deleted.\n", gcpServiceAccountKeyPath(workspace), gcpServiceAccountKeyPath(workspace))
 		return true, nil
 	}
 
-	if err := fsHandler.Remove(constants.GCPServiceAccountKeyFile); err != nil {
+	if err := fsHandler.Remove(gcpServiceAccountKeyPath(workspace)); err != nil {
 		return false, err
 	}
 
-	c.log.Debugf("Successfully deleted %q", constants.GCPServiceAccountKeyFile)
+	c.log.Debugf("Successfully deleted %q", gcpServiceAccountKeyPath(workspace))
 	return true, nil
 }
 
 type destroyFlags struct {
 	yes        bool
+	workspace  string
 	tfLogLevel terraform.LogLevel
 }
 
@@ -169,6 +166,12 @@ func (c *destroyCmd) parseDestroyFlags(cmd *cobra.Command) (destroyFlags, error)
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 
+	cwd, err := cmd.Flags().GetString("workspace")
+	if err != nil {
+		return destroyFlags{}, fmt.Errorf("parsing workspace string: %w", err)
+	}
+	c.log.Debugf("Workspace set to %q", cwd)
+
 	logLevelString, err := cmd.Flags().GetString("tf-log")
 	if err != nil {
 		return destroyFlags{}, fmt.Errorf("parsing tf-log string: %w", err)
@@ -177,10 +180,11 @@ func (c *destroyCmd) parseDestroyFlags(cmd *cobra.Command) (destroyFlags, error)
 	if err != nil {
 		return destroyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	c.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
+	c.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(cwd), logLevel.String())
 
 	return destroyFlags{
 		tfLogLevel: logLevel,
+		workspace:  cwd,
 		yes:        yes,
 	}, nil
 }

@@ -7,7 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -21,7 +23,7 @@ type tfMigrationClient struct {
 
 // planMigration checks for Terraform migrations and asks for confirmation if there are any. The user input is returned as confirmedDiff.
 // adapted from migrateTerraform().
-func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd) (hasDiff bool, err error) {
+func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler, migrateCmd tfMigrationCmd) (hasDiff bool, err error) {
 	u.log.Debugf("Planning %s", migrateCmd.String())
 	if err := migrateCmd.CheckTerraformMigrations(file); err != nil {
 		return false, fmt.Errorf("checking workspace: %w", err)
@@ -35,7 +37,7 @@ func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler,
 
 // applyMigration plans and then applies the Terraform migration. The user is asked for confirmation if there are any changes.
 // adapted from migrateTerraform().
-func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd, yesFlag bool) error {
+func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, upgradeWorkspace string, file file.Handler, migrateCmd tfMigrationCmd, yesFlag bool) error {
 	hasDiff, err := u.planMigration(cmd, file, migrateCmd)
 	if err != nil {
 		return err
@@ -50,7 +52,7 @@ func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := upgrade.CleanUpTerraformMigrations(migrateCmd.UpgradeID(), file); err != nil {
+				if err := upgrade.CleanUpTerraformMigrations(upgradeWorkspace, migrateCmd.UpgradeID(), file); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
@@ -65,4 +67,13 @@ func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler
 		u.log.Debugf("No Terraform diff detected")
 	}
 	return nil
+}
+
+// tfMigrationCmd is an interface for all terraform upgrade / migration commands.
+type tfMigrationCmd interface {
+	CheckTerraformMigrations(file file.Handler) error
+	Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error)
+	Apply(ctx context.Context, fileHandler file.Handler) error
+	String() string
+	UpgradeID() string
 }

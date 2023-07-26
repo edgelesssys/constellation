@@ -39,8 +39,6 @@ func newMiniUpCmd() *cobra.Command {
 		RunE: runUp,
 	}
 
-	// override global flag so we don't have a default value for the config
-	cmd.Flags().String("workspace", "", "path to the configuration file to use for the cluster")
 	cmd.Flags().Bool("merge-kubeconfig", true, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
 
 	return cmd
@@ -88,7 +86,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
-	err = m.createMiniCluster(cmd.Context(), fileHandler, creator, config, flags.tfLogLevel)
+	err = m.createMiniCluster(cmd.Context(), fileHandler, creator, config, flags)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("creating cluster: %w", err)
@@ -114,7 +112,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
 	m.log.Debugf("Configuration file path is %q", configPath(flags.workspace))
 
-	_, err := fileHandler.Stat(constants.ConfigFilename)
+	_, err := fileHandler.Stat(configPath(flags.workspace))
 	if err == nil {
 		// config already exists, prompt user if they want to use this file
 		cmd.PrintErrln("A config file already exists in the configured workspace.")
@@ -146,7 +144,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	}
 	m.log.Debugf("Prepared configuration")
 
-	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
+	return config, fileHandler.WriteYAML(configPath(flags.workspace), config, file.OptOverwrite)
 }
 
 func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
@@ -165,12 +163,13 @@ func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command, fileHandler file.H
 }
 
 // createMiniCluster creates a new cluster using the given config.
-func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config, tfLogLevel terraform.LogLevel) error {
+func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config, flags upFlags) error {
 	m.log.Debugf("Creating mini cluster")
 	opts := cloudcmd.CreateOptions{
-		Provider:   cloudprovider.QEMU,
-		Config:     config,
-		TFLogLevel: tfLogLevel,
+		Provider:    cloudprovider.QEMU,
+		Config:      config,
+		TFWorkspace: terraformClusterWorkspace(flags.workspace),
+		TFLogLevel:  flags.tfLogLevel,
 	}
 	idFile, err := creator.Create(ctx, opts)
 	if err != nil {
@@ -179,7 +178,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 
 	idFile.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
 	m.log.Debugf("Cluster id file contains %v", idFile)
-	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
+	return fileHandler.WriteJSON(clusterIDsPath(flags.workspace), idFile, file.OptNone)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
@@ -198,7 +197,6 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 	m.log.Debugf("Created new dialer")
-	cmd.Flags().String("master-secret", "", "")
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
@@ -209,7 +207,7 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
 
-	helmInstaller, err := helm.NewInitializer(log)
+	helmInstaller, err := helm.NewInitializer(log, constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
@@ -253,7 +251,7 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
+	m.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(cwd), logLevel.String())
 
 	return upFlags{
 		workspace:  cwd,

@@ -13,32 +13,27 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
-// Initializer installs all Helm charts required for a constellation cluster.
-type Initializer interface {
-	Install(ctx context.Context, releases *Releases) error
-}
-
-type initializationClient struct {
+// InitializationClient installs all Helm charts required for a Constellation cluster.
+type InitializationClient struct {
 	log       debugLog
 	installer installer
 }
 
 // NewInitializer creates a new client to install all Helm charts required for a constellation cluster.
-func NewInitializer(log debugLog) (Initializer, error) {
-	installer, err := NewInstaller(constants.AdminConfFilename, log)
+func NewInitializer(log debugLog, adminConfPath string) (*InitializationClient, error) {
+	installer, err := NewInstaller(adminConfPath, log)
 	if err != nil {
 		return nil, fmt.Errorf("creating Helm installer: %w", err)
 	}
-	return &initializationClient{log: log, installer: installer}, nil
+	return &InitializationClient{log: log, installer: installer}, nil
 }
 
 // Install installs all Helm charts required for a constellation cluster.
-func (h initializationClient) Install(ctx context.Context, releases *Releases,
-) error {
-	if err := h.installer.InstallChart(ctx, releases.Cilium); err != nil {
+func (i InitializationClient) Install(ctx context.Context, releases *Releases) error {
+	if err := i.installer.InstallChart(ctx, releases.Cilium); err != nil {
 		return fmt.Errorf("installing Cilium: %w", err)
 	}
-	h.log.Debugf("Waiting for Cilium to become ready")
+	i.log.Debugf("Waiting for Cilium to become ready")
 	helper, err := newK8sCiliumHelper(constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
@@ -46,43 +41,43 @@ func (h initializationClient) Install(ctx context.Context, releases *Releases,
 	timeToStartWaiting := time.Now()
 	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
 	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
-	if err := helper.WaitForDS(ctx, "kube-system", "cilium", h.log); err != nil {
+	if err := helper.WaitForDS(ctx, "kube-system", "cilium", i.log); err != nil {
 		return fmt.Errorf("waiting for Cilium to become healthy: %w", err)
 	}
 	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
-	h.log.Debugf("Cilium became healthy after %s", timeUntilFinishedWaiting.String())
+	i.log.Debugf("Cilium became healthy after %s", timeUntilFinishedWaiting.String())
 
-	h.log.Debugf("Fix Cilium through restart")
+	i.log.Debugf("Fix Cilium through restart")
 	if err := helper.RestartDS("kube-system", "cilium"); err != nil {
 		return fmt.Errorf("restarting Cilium: %w", err)
 	}
 
-	h.log.Debugf("Installing microservices")
-	if err := h.installer.InstallChart(ctx, releases.ConstellationServices); err != nil {
+	i.log.Debugf("Installing microservices")
+	if err := i.installer.InstallChart(ctx, releases.ConstellationServices); err != nil {
 		return fmt.Errorf("installing microservices: %w", err)
 	}
 
-	h.log.Debugf("Installing cert-manager")
-	if err := h.installer.InstallChart(ctx, releases.CertManager); err != nil {
+	i.log.Debugf("Installing cert-manager")
+	if err := i.installer.InstallChart(ctx, releases.CertManager); err != nil {
 		return fmt.Errorf("installing cert-manager: %w", err)
 	}
 
 	if releases.CSI != nil {
-		h.log.Debugf("Installing CSI deployments")
-		if err := h.installer.InstallChart(ctx, *releases.CSI); err != nil {
+		i.log.Debugf("Installing CSI deployments")
+		if err := i.installer.InstallChart(ctx, *releases.CSI); err != nil {
 			return fmt.Errorf("installing CSI snapshot CRDs: %w", err)
 		}
 	}
 
 	if releases.AWSLoadBalancerController != nil {
-		h.log.Debugf("Installing AWS Load Balancer Controller")
-		if err := h.installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
+		i.log.Debugf("Installing AWS Load Balancer Controller")
+		if err := i.installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
 			return fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}
 
-	h.log.Debugf("Installing constellation operators")
-	if err := h.installer.InstallChart(ctx, releases.ConstellationOperators); err != nil {
+	i.log.Debugf("Installing constellation operators")
+	if err := i.installer.InstallChart(ctx, releases.ConstellationOperators); err != nil {
 		return fmt.Errorf("installing constellation operators: %w", err)
 	}
 	return nil

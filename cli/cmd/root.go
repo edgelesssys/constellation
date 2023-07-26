@@ -47,6 +47,8 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().Bool("force", false, "disable version compatibility checks - might result in corrupted clusters")
 	rootCmd.PersistentFlags().String("tf-log", "NONE", "Terraform log level")
 
+	must(rootCmd.MarkPersistentFlagDirname("workspace"))
+
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
 	rootCmd.AddCommand(cmd.NewInitCmd())
@@ -91,4 +93,10 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 
 func preRunRoot(cmd *cobra.Command, _ []string) {
 	cmd.SilenceUsage = true
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

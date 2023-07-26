@@ -50,12 +50,12 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  runIAMUpgradeApply,
 	}
-	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation\n")
+	cmd.Flags().BoolP("yes", "y", false, "run upgrades without further confirmation")
 	return cmd
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
-	configPath, err := cmd.Flags().GetString("config")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	configFetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, configPath, configFetcher, force)
+	conf, err := config.New(fileHandler, configPath(workspace), configFetcher, force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -75,7 +75,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	upgradeID := "iam-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), terraformIAMWorkspace(workspace), upgradeWorkspace(workspace), upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
@@ -90,7 +90,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	err = migrator.applyMigration(cmd, file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes)
+	err = migrator.applyMigration(cmd, upgradeWorkspace(workspace), file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes)
 	if err != nil {
 		return fmt.Errorf("applying IAM migration: %w", err)
 	}

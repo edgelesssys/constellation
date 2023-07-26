@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -140,8 +139,8 @@ func TestUpgradeApply(t *testing.T) {
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
-			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
-			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
+			require.NoError(handler.WriteYAML(configPath(""), cfg))
+			require.NoError(handler.WriteJSON(clusterIDsPath(""), clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 
@@ -186,11 +185,11 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) CheckTerraformMigrations() error {
+func (u stubUpgrader) CheckTerraformMigrations(_ string) error {
 	return u.checkTerraformErr
 }
 
-func (u stubUpgrader) CleanUpTerraformMigrations() error {
+func (u stubUpgrader) CleanUpTerraformMigrations(_ string) error {
 	return u.cleanTerraformErr
 }
 
@@ -198,8 +197,8 @@ func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.Terraform
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) error {
-	return u.applyTerraformErr
+func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
+	return clusterid.File{}, u.applyTerraformErr
 }
 
 func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {

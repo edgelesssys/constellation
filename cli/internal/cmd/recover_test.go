@@ -154,7 +154,7 @@ func TestRecover(t *testing.T) {
 			fileHandler := file.NewHandler(fs)
 
 			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+			require.NoError(fileHandler.WriteYAML(configPath(""), config))
 
 			require.NoError(fileHandler.WriteJSON(
 				"constellation-mastersecret.json",
@@ -193,15 +193,13 @@ func TestParseRecoverFlags(t *testing.T) {
 	}{
 		"no flags": {
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:9999",
-				secretPath: "constellation-mastersecret.json",
+				endpoint: "192.0.2.42:9999",
 			},
 			writeIDFile: true,
 		},
 		"no flags, no ID file": {
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:9999",
-				secretPath: "constellation-mastersecret.json",
+				endpoint: "192.0.2.42:9999",
 			},
 			wantErr: true,
 		},
@@ -210,11 +208,10 @@ func TestParseRecoverFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"all args set": {
-			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace", "--master-secret", "/path/super-secret.json"},
+			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace"},
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:2",
-				secretPath: "/path/super-secret.json",
-				workspace:  "./constellation-workspace",
+				endpoint:  "192.0.2.42:2",
+				workspace: "./constellation-workspace",
 			},
 		},
 	}
@@ -231,7 +228,7 @@ func TestParseRecoverFlags(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			if tc.writeIDFile {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, &clusterid.File{IP: "192.0.2.42"}))
+				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), &clusterid.File{IP: "192.0.2.42"}))
 			}
 			r := &recoverCmd{log: logger.NewTest(t)}
 			flags, err := r.parseRecoverFlags(cmd, fileHandler)

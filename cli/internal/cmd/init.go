@@ -15,6 +15,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"text/tabwriter"
@@ -65,7 +66,6 @@ func NewInitCmd() *cobra.Command {
 		Args: cobra.ExactArgs(0),
 		RunE: runInitialize,
 	}
-	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	cmd.Flags().Bool("merge-kubeconfig", false, "merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config")
@@ -76,9 +76,8 @@ type initCmd struct {
 	log           debugLog
 	merger        configMerger
 	spinner       spinnerInterf
-	masterSecret  uri.MasterSecret
 	fileHandler   file.Handler
-	helmInstaller helm.Initializer
+	helmInstaller initializer
 	clusterShower clusterShower
 }
 
@@ -87,7 +86,7 @@ type clusterShower interface {
 }
 
 func newInitCmd(
-	clusterShower clusterShower, helmInstaller helm.Initializer, fileHandler file.Handler,
+	clusterShower clusterShower, helmInstaller initializer, fileHandler file.Handler,
 	spinner spinnerInterf, merger configMerger, log debugLog,
 ) *initCmd {
 	return &initCmd{
@@ -121,13 +120,19 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	helmInstaller, err := helm.NewInitializer(log)
+
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
-		return fmt.Errorf("creating Helm installer: %w", err)
+		return fmt.Errorf("parsing workspace flag: %w", err)
 	}
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
+	tfClient, err := terraform.New(ctx, terraformClusterWorkspace(workspace))
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
+	}
+
+	helmInstaller, err := helm.NewInitializer(log, adminConfPath(workspace))
+	if err != nil {
+		return fmt.Errorf("creating Helm installer: %w", err)
 	}
 	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
@@ -163,7 +168,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
-	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+	if err := i.fileHandler.ReadJSON(clusterIDsPath(flags.workspace), &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
@@ -193,15 +198,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf)
+	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf, flags.workspace)
 	if err != nil {
 		return err
 	}
 	i.log.Debugf("Successfully marshaled service account URI")
-	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), flags.masterSecretPath)
-	i.masterSecret = masterSecret
+	masterSecret, err := i.generateMasterSecret(cmd.OutOrStdout(), flags.workspace)
 	if err != nil {
-		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
+		return fmt.Errorf("generating master secret: %w", err)
 	}
 
 	clusterName := clusterid.GetClusterName(conf, idFile)
@@ -239,8 +243,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	idFile.CloudProvider = provider
 
 	bufferedOutput := &bytes.Buffer{}
-	err = i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput)
-	if err != nil {
+	if err := i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput, flags.workspace); err != nil {
 		return err
 	}
 
@@ -388,7 +391,8 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
+	idFile clusterid.File, initResp *initproto.InitSuccessResponse,
+	mergeConfig bool, wr io.Writer, workspace string,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
@@ -399,17 +403,17 @@ func (i *initCmd) writeOutput(
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
-	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
+	writeRow(tw, "Kubernetes configuration", adminConfPath(workspace))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
+	if err := i.fileHandler.Write(adminConfPath(workspace), initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
+	i.log.Debugf("Kubeconfig written to %s", adminConfPath(workspace))
 
 	if mergeConfig {
-		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
+		if err := i.merger.mergeConfigs(adminConfPath(workspace), i.fileHandler); err != nil {
 			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
 			mergeConfig = false // Set to false so we don't print the wrong message below.
 		} else {
@@ -420,14 +424,14 @@ func (i *initCmd) writeOutput(
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
-	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
+	if err := i.fileHandler.WriteJSON(clusterIDsPath(workspace), idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
-	i.log.Debugf("Constellation ID file written to %s", constants.ClusterIDsFileName)
+	i.log.Debugf("Constellation ID file written to %s", clusterIDsPath(workspace))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
-		fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
+		fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", adminConfPath(workspace))
 	} else {
 		fmt.Fprintln(wr, "Constellation kubeconfig merged with default config.")
 
@@ -448,11 +452,6 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
 func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
-	masterSecretPath, err := cmd.Flags().GetString("master-secret")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
-	}
-	i.log.Debugf("Master secret path flag value is %q", masterSecretPath)
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
@@ -485,43 +484,25 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	i.log.Debugf("force flag is %t", force)
 
 	return initFlags{
-		workspace:        cwd,
-		conformance:      conformance,
-		helmWaitMode:     helmWaitMode,
-		masterSecretPath: masterSecretPath,
-		force:            force,
-		mergeConfigs:     mergeConfigs,
+		workspace:    cwd,
+		conformance:  conformance,
+		helmWaitMode: helmWaitMode,
+		force:        force,
+		mergeConfigs: mergeConfigs,
 	}, nil
 }
 
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
-	workspace        string
-	masterSecretPath string
-	conformance      bool
-	helmWaitMode     helm.WaitMode
-	force            bool
-	mergeConfigs     bool
+	workspace    string
+	conformance  bool
+	helmWaitMode helm.WaitMode
+	force        bool
+	mergeConfigs bool
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, filename string) (uri.MasterSecret, error) {
-	if filename != "" {
-		i.log.Debugf("Reading master secret from file %q", filename)
-		var secret uri.MasterSecret
-		if err := i.fileHandler.ReadJSON(filename, &secret); err != nil {
-			return uri.MasterSecret{}, err
-		}
-
-		if len(secret.Key) < crypto.MasterSecretLengthMin {
-			return uri.MasterSecret{}, fmt.Errorf("provided master secret is smaller than the required minimum of %d Bytes", crypto.MasterSecretLengthMin)
-		}
-		if len(secret.Salt) < crypto.RNGLengthDefault {
-			return uri.MasterSecret{}, fmt.Errorf("provided salt is smaller than the required minimum of %d Bytes", crypto.RNGLengthDefault)
-		}
-		return secret, nil
-	}
-
+func (i *initCmd) generateMasterSecret(outWriter io.Writer, workspace string) (uri.MasterSecret, error) {
 	// No file given, generate a new secret, and save it to disk
 	i.log.Debugf("Generating new master secret")
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
@@ -537,19 +518,20 @@ func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, filename strin
 		Salt: salt,
 	}
 	i.log.Debugf("Generated master secret key and salt values")
-	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
+	if err := i.fileHandler.WriteJSON(masterSecretPath(workspace), secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
-	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
+	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", masterSecretPath(workspace))
 	return secret, nil
 }
 
-func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config) (string, error) {
+func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, workspace string,
+) (string, error) {
 	i.log.Debugf("Getting service account URI")
 	switch provider {
 	case cloudprovider.GCP:
 		i.log.Debugf("Handling case for GCP")
-		path := config.Provider.GCP.ServiceAccountKeyPath
+		path := filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath)
 		i.log.Debugf("GCP service account key path %s", path)
 
 		var key gcpshared.ServiceAccountKey
@@ -666,4 +648,8 @@ func (e *nonRetriableError) Error() string {
 // Unwrap returns the wrapped error.
 func (e *nonRetriableError) Unwrap() error {
 	return e.err
+}
+
+type initializer interface {
+	Install(ctx context.Context, releases *helm.Releases) error
 }

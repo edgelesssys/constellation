@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
@@ -28,7 +27,7 @@ func TestCreate(t *testing.T) {
 	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		require.NoError(file.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
 	idFile := clusterid.File{IP: "192.0.2.1"}
@@ -114,8 +113,8 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.Write(adminConfPath(""), []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -129,8 +128,8 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.Write(masterSecretPath(""), []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -163,7 +162,7 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
 			creator:             &stubCloudCreator{},
@@ -214,7 +213,7 @@ func TestCreate(t *testing.T) {
 				} else {
 					assert.True(tc.creator.createCalled)
 					var gotIDFile clusterid.File
-					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFileName, &gotIDFile))
+					require.NoError(fileHandler.ReadJSON(clusterIDsPath(""), &gotIDFile))
 					assert.Equal(gotIDFile, clusterid.File{
 						IP:            idFile.IP,
 						CloudProvider: tc.provider,
@@ -236,17 +235,17 @@ func TestCheckDirClean(t *testing.T) {
 		},
 		"adminconf exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{constants.AdminConfFilename},
+			existingFiles: []string{adminConfPath("")},
 			wantErr:       true,
 		},
 		"master secret exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{constants.MasterSecretFilename},
+			existingFiles: []string{masterSecretPath("")},
 			wantErr:       true,
 		},
 		"multiple exist": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename},
+			existingFiles: []string{adminConfPath(""), masterSecretPath("")},
 			wantErr:       true,
 		},
 	}
@@ -260,7 +259,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			c := &createCmd{log: logger.NewTest(t)}
-			err := c.checkDirClean(tc.fileHandler)
+			err := c.checkDirClean("", tc.fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

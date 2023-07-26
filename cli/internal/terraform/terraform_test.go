@@ -92,7 +92,7 @@ func TestPrepareCluster(t *testing.T) {
 			c := &Client{
 				tf:         &stubTerraform{},
 				file:       file.NewHandler(tc.fs),
-				workingDir: constants.TerraformWorkingDir,
+				workingDir: "unittest",
 			}
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
@@ -445,7 +445,7 @@ func TestCreateCluster(t *testing.T) {
 			c := &Client{
 				tf:         tc.tf,
 				file:       file.NewHandler(tc.fs),
-				workingDir: constants.TerraformWorkingDir,
+				workingDir: "unittest",
 			}
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
@@ -835,7 +835,7 @@ func TestCleanupWorkspace(t *testing.T) {
 			c := &Client{
 				file:       file,
 				tf:         &stubTerraform{},
-				workingDir: constants.TerraformWorkingDir,
+				workingDir: "unittest",
 			}
 
 			err := c.CleanUpWorkspace()
@@ -1019,7 +1019,7 @@ func TestPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			_, err := c.Plan(context.Background(), LogLevelDebug, constants.TerraformUpgradePlanFile)
+			_, err := c.Plan(context.Background(), LogLevelDebug)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -1078,7 +1078,7 @@ func TestShowPlan(t *testing.T) {
 				workingDir: tc.pathBase,
 			}
 
-			err := c.ShowPlan(context.Background(), LogLevelDebug, "", bytes.NewBuffer(nil))
+			err := c.ShowPlan(context.Background(), LogLevelDebug, bytes.NewBuffer(nil))
 			if tc.wantErr {
 				require.Error(err)
 			} else {

@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -102,7 +101,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-2a",
 			prefixFlag:          "test",
 			yesFlag:             true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 		},
 		"iam create aws fails when --zone has no availability zone": {
 			setupFs:             defaultFs,
@@ -111,7 +110,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-1",
 			prefixFlag:          "test",
 			yesFlag:             true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 			wantErr:             true,
 		},
 		"iam create aws --update-config": {
@@ -123,7 +122,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			yesFlag:             true,
 			workspaceFlag:       "./",
 			updateConfigFlag:    true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 		},
 		"iam create aws --update-config fails when --zone is different from zone in config": {
 			setupFs: createFSWithConfig(func() config.Config {
@@ -137,7 +136,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-1a",
 			prefixFlag:          "test",
 			yesFlag:             true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 			updateConfigFlag:    true,
 			wantErr:             true,
 		},
@@ -148,7 +147,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			zoneFlag:            "us-east-1a",
 			prefixFlag:          "test",
 			yesFlag:             true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 			updateConfigFlag:    true,
 			wantErr:             true,
 		},
@@ -190,7 +189,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			prefixFlag:   "test",
 			yesFlag:      true,
 			wantErr:      true,
-			existingDirs: []string{constants.TerraformIAMWorkingDir},
+			existingDirs: []string{terraformIAMWorkspace("")},
 		},
 		"interactive": {
 			setupFs:    defaultFs,
@@ -209,7 +208,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			stdin:               "yes\n",
 			workspaceFlag:       "./",
 			updateConfigFlag:    true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 		},
 		"interactive abort": {
 			setupFs:    defaultFs,
@@ -230,7 +229,7 @@ func TestIAMCreateAWS(t *testing.T) {
 			updateConfigFlag:    true,
 			workspaceFlag:       "./",
 			wantAbort:           true,
-			existingConfigFiles: []string{constants.ConfigFilename},
+			existingConfigFiles: []string{configPath("")},
 		},
 		"invalid zone": {
 			setupFs:    defaultFs,
@@ -376,7 +375,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"iam create azure --update-config": {
 			setupFs:              defaultFs,
@@ -388,7 +387,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			updateConfigFlag:     true,
 			workspaceFlag:        "./",
 			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"iam create azure --update-config with --workspace": {
 			setupFs:              defaultFs,
@@ -423,7 +422,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
 			wantErr:              true,
-			existingDirs:         []string{constants.TerraformIAMWorkingDir},
+			existingDirs:         []string{terraformIAMWorkspace("")},
 		},
 		"interactive": {
 			setupFs:              defaultFs,
@@ -444,7 +443,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "yes\n",
 			updateConfigFlag:     true,
 			workspaceFlag:        "./",
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"interactive abort": {
 			setupFs:              defaultFs,
@@ -466,7 +465,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			stdin:                "no\n",
 			updateConfigFlag:     true,
 			wantAbort:            true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
@@ -611,7 +610,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"iam create gcp --update-config": {
 			setupFs:              defaultFs,
@@ -623,7 +622,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			updateConfigFlag:     true,
 			workspaceFlag:        "./",
 			yesFlag:              true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"iam create gcp --update-config with --workspace": {
 			setupFs:              defaultFs,
@@ -657,7 +656,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			serviceAccountIDFlag: "constell-test",
 			projectIDFlag:        "constell-1234",
 
-			existingDirs: []string{constants.TerraformIAMWorkingDir},
+			existingDirs: []string{terraformIAMWorkspace("")},
 			yesFlag:      true,
 			wantErr:      true,
 		},
@@ -698,7 +697,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			stdin:                "yes\n",
 			workspaceFlag:        "./",
 			updateConfigFlag:     true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"interactive abort": {
 			setupFs:              defaultFs,
@@ -721,7 +720,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			wantAbort:            true,
 			workspaceFlag:        "./",
 			updateConfigFlag:     true,
-			existingConfigFiles:  []string{constants.ConfigFilename},
+			existingConfigFiles:  []string{configPath("")},
 		},
 		"unwritable fs": {
 			setupFs:              readOnlyFs,
@@ -748,7 +747,7 @@ func TestIAMCreateGCP(t *testing.T) {
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			// register persistent flags manually
-			cmd.Flags().String("workspace", constants.ConfigFilename, "")
+			cmd.Flags().String("workspace", "", "")
 			cmd.Flags().Bool("update-config", false, "")
 			cmd.Flags().Bool("yes", false, "")
 			cmd.Flags().String("name", "constell", "")
@@ -801,13 +800,13 @@ func TestIAMCreateGCP(t *testing.T) {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(configPath(tc.workspaceFlag), readConfig)
 				require.NoError(readErr)
-				assert.Equal(constants.GCPServiceAccountKeyFile, readConfig.Provider.GCP.ServiceAccountKeyPath)
+				assert.Equal(gcpServiceAccountKeyPath(""), readConfig.Provider.GCP.ServiceAccountKeyPath)
 			}
 			require.NoError(err)
 			assert.True(tc.creator.createCalled)
 			assert.Equal(tc.creator.id.GCPOutput, validIAMIDFile.GCPOutput)
 			readServiceAccountKey := &map[string]string{}
-			readErr := fileHandler.ReadJSON(constants.GCPServiceAccountKeyFile, readServiceAccountKey)
+			readErr := fileHandler.ReadJSON(gcpServiceAccountKeyPath(""), readServiceAccountKey)
 			require.NoError(readErr)
 			assert.Equal("not_a_secret", (*readServiceAccountKey)["private_key_id"])
 		})

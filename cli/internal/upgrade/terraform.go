@@ -47,14 +47,16 @@ type TerraformUpgradeOptions struct {
 	// CSP is the cloud provider to perform the upgrade on.
 	CSP cloudprovider.Provider
 	// Vars are the Terraform variables used for the upgrade.
-	Vars terraform.Variables
+	Vars             terraform.Variables
+	TFWorkspace      string
+	UpgradeWorkspace string
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
-func checkTerraformMigrations(file file.Handler, upgradeID, upgradeSubDir string) error {
+func checkTerraformMigrations(file file.Handler, upgradeWorkspace, upgradeID, upgradeSubDir string) error {
 	var existingFiles []string
 	filesToCheck := []string{
-		filepath.Join(constants.UpgradeDir, upgradeID, upgradeSubDir),
+		filepath.Join(upgradeWorkspace, upgradeID, upgradeSubDir),
 	}
 
 	for _, f := range filesToCheck {
@@ -71,8 +73,8 @@ func checkTerraformMigrations(file file.Handler, upgradeID, upgradeSubDir string
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 // If the files that will be written during the upgrade already exist, it returns an error.
-func (u *TerraformUpgrader) CheckTerraformMigrations(upgradeID, upgradeSubDir string) error {
-	return checkTerraformMigrations(u.fileHandler, upgradeID, upgradeSubDir)
+func (u *TerraformUpgrader) CheckTerraformMigrations(upgradeWorkspace, upgradeID, upgradeSubDir string) error {
+	return checkTerraformMigrations(u.fileHandler, upgradeWorkspace, upgradeID, upgradeSubDir)
 }
 
 // checkFileExists checks whether a file exists and adds it to the existingFiles slice if it does.
@@ -96,30 +98,22 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 	// Prepare the new Terraform workspace and backup the old one
 	err := u.tf.PrepareUpgradeWorkspace(
 		filepath.Join("terraform", strings.ToLower(opts.CSP.String())),
-		constants.TerraformWorkingDir,
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir),
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeBackupDir),
+		opts.TFWorkspace,
+		filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir),
+		filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeBackupDir),
 		opts.Vars,
 	)
 	if err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
-	// Backup the old constellation-id.json file
-	if err := u.fileHandler.CopyFile(
-		constants.ClusterIDsFileName,
-		filepath.Join(constants.UpgradeDir, upgradeID, constants.ClusterIDsFileName+".old"),
-	); err != nil {
-		return false, fmt.Errorf("backing up %s: %w", constants.ClusterIDsFileName, err)
-	}
-
-	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile)
+	hasDiff, err := u.tf.Plan(ctx, opts.LogLevel)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
 	if hasDiff {
-		if err := u.tf.ShowPlan(ctx, opts.LogLevel, constants.TerraformUpgradePlanFile, u.outWriter); err != nil {
+		if err := u.tf.ShowPlan(ctx, opts.LogLevel, u.outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}
@@ -129,22 +123,16 @@ func (u *TerraformUpgrader) PlanTerraformMigrations(ctx context.Context, opts Te
 
 // CleanUpTerraformMigrations cleans up the Terraform migration workspace, for example when an upgrade is
 // aborted by the user.
-func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeID string) error {
-	return CleanUpTerraformMigrations(upgradeID, u.fileHandler)
+func (u *TerraformUpgrader) CleanUpTerraformMigrations(upgradeWorkspace, upgradeID string) error {
+	return CleanUpTerraformMigrations(upgradeWorkspace, upgradeID, u.fileHandler)
 }
 
 // CleanUpTerraformMigrations cleans up the Terraform upgrade directory.
-func CleanUpTerraformMigrations(upgradeID string, fileHandler file.Handler) error {
-	cleanupFiles := []string{
-		filepath.Join(constants.UpgradeDir, upgradeID),
+func CleanUpTerraformMigrations(upgradeWorkspace, upgradeID string, fileHandler file.Handler) error {
+	upgradeDir := filepath.Join(upgradeWorkspace, upgradeID)
+	if err := fileHandler.RemoveAll(upgradeDir); err != nil {
+		return fmt.Errorf("cleaning up file %s: %w", upgradeDir, err)
 	}
-
-	for _, f := range cleanupFiles {
-		if err := fileHandler.RemoveAll(f); err != nil {
-			return fmt.Errorf("cleaning up file %s: %w", f, err)
-		}
-	}
-
 	return nil
 }
 
@@ -152,68 +140,54 @@ func CleanUpTerraformMigrations(upgradeID string, fileHandler file.Handler) erro
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) error {
+func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) (clusterid.File, error) {
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.CSP, opts.LogLevel)
 	if err != nil {
-		return fmt.Errorf("terraform apply: %w", err)
+		return clusterid.File{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
-	outputFileContents := clusterid.File{
+	clusterID := clusterid.File{
 		CloudProvider:     opts.CSP,
 		InitSecret:        []byte(tfOutput.Secret),
 		IP:                tfOutput.IP,
 		APIServerCertSANs: tfOutput.APIServerCertSANs,
 		UID:               tfOutput.UID,
 	}
-	// AttestationURL is only set for Azure.
+
+	// Patch MAA policy if we applied an Azure upgrade.
 	if tfOutput.Azure != nil {
 		if err := u.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
-			return fmt.Errorf("patching policies: %w", err)
+			return clusterid.File{}, fmt.Errorf("patching policies: %w", err)
 		}
-		outputFileContents.AttestationURL = tfOutput.Azure.AttestationURL
+		clusterID.AttestationURL = tfOutput.Azure.AttestationURL
 	}
 
-	if err := u.fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
-		return fmt.Errorf("removing old terraform directory: %w", err)
+	if err := u.fileHandler.RemoveAll(opts.TFWorkspace); err != nil {
+		return clusterid.File{}, fmt.Errorf("removing old terraform directory: %w", err)
 	}
 
-	if err := u.fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir), constants.TerraformWorkingDir); err != nil {
-		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
+	if err := u.fileHandler.CopyDir(
+		filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir),
+		opts.TFWorkspace,
+	); err != nil {
+		return clusterid.File{}, fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
-	if err := u.fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
-		return fmt.Errorf("removing terraform upgrade directory: %w", err)
+	if err := u.fileHandler.RemoveAll(filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
+		return clusterid.File{}, fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 
-	if err := u.mergeClusterIDFile(outputFileContents); err != nil {
-		return fmt.Errorf("merging migration output into %s: %w", constants.ClusterIDsFileName, err)
-	}
-
-	return nil
-}
-
-// mergeClusterIDFile merges the output of the migration into the constellation-id.json file.
-func (u *TerraformUpgrader) mergeClusterIDFile(migrationOutput clusterid.File) error {
-	idFile := &clusterid.File{}
-	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFileName, idFile); err != nil {
-		return fmt.Errorf("reading %s: %w", constants.ClusterIDsFileName, err)
-	}
-
-	if err := u.fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile.Merge(migrationOutput), file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing %s: %w", constants.ClusterIDsFileName, err)
-	}
-
-	return nil
+	return clusterID, nil
 }
 
 type tfClientCommon interface {
-	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, planFilePath string, output io.Writer) error
-	Plan(ctx context.Context, logLevel terraform.LogLevel, planFile string) (bool, error)
+	ShowPlan(ctx context.Context, logLevel terraform.LogLevel, output io.Writer) error
+	Plan(ctx context.Context, logLevel terraform.LogLevel) (bool, error)
 }
 
 // tfResourceClient is a Terraform client for managing cluster resources.
 type tfResourceClient interface {
-	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
+	PrepareUpgradeWorkspace(embeddedPath, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
 	CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 	tfClientCommon
 }

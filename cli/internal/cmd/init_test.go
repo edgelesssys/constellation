@@ -172,10 +172,10 @@ func TestInitialize(t *testing.T) {
 			if tc.configMutator != nil {
 				tc.configMutator(config)
 			}
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
+			require.NoError(fileHandler.WriteYAML(configPath(""), config, file.OptNone))
 			if tc.idFile != nil {
 				tc.idFile.CloudProvider = tc.provider
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), tc.idFile, file.OptNone))
 			}
 			if tc.serviceAccKey != nil {
 				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
@@ -196,7 +196,7 @@ func TestInitialize(t *testing.T) {
 					assert.Empty(errOut.String())
 				}
 				if !tc.masterSecretShouldExist {
-					_, err = fileHandler.Stat(constants.MasterSecretFilename)
+					_, err = fileHandler.Stat(masterSecretPath(""))
 					assert.Error(err)
 				}
 				return
@@ -205,7 +205,7 @@ func TestInitialize(t *testing.T) {
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
 			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
 			var secret uri.MasterSecret
-			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
+			assert.NoError(fileHandler.ReadJSON(masterSecretPath(""), &secret))
 			assert.NotEmpty(secret.Key)
 			assert.NotEmpty(secret.Salt)
 		})
@@ -301,123 +301,81 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  "cluster-ip",
 	}
-
 	i := newInitCmd(nil, nil, fileHandler, nil, &stubMerger{}, logger.NewTest(t))
-	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out)
+	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out, "")
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), constants.AdminConfFilename)
+	assert.Contains(out.String(), adminConfPath(""))
 
 	afs := afero.Afero{Fs: testFs}
-	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
+	adminConf, err := afs.ReadFile(adminConfPath(""))
 	assert.NoError(err)
 	assert.Equal(string(resp.GetInitSuccess().GetKubeconfig()), string(adminConf))
 
-	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
+	idsFile, err := afs.ReadFile(clusterIDsPath(""))
 	assert.NoError(err)
 	var testIDFile clusterid.File
 	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
 	assert.Equal(expectedIDFile, testIDFile)
-
-	// test config merging
 	out.Reset()
-	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
+	require.NoError(afs.Remove(adminConfPath("")))
+
+	// test custom workspace
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "some/path")
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), constants.AdminConfFilename)
+	assert.Contains(out.String(), adminConfPath("some/path"))
+	out.Reset()
+	require.NoError(afs.Remove(adminConfPath("some/path")))
+
+	// test config merging
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "")
+	require.NoError(err)
+	// assert.Contains(out.String(), ownerID)
+	assert.Contains(out.String(), clusterID)
+	assert.Contains(out.String(), adminConfPath(""))
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
 	assert.Contains(out.String(), "You can now connect to your cluster")
+	out.Reset()
+	require.NoError(afs.Remove(adminConfPath("")))
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	out.Reset()
-	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "")
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), constants.AdminConfFilename)
+	assert.Contains(out.String(), adminConfPath(""))
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
 	assert.Contains(out.String(), "Warning: KUBECONFIG environment variable is set")
 }
 
-func TestReadOrGenerateMasterSecret(t *testing.T) {
+func TestGenerateMasterSecret(t *testing.T) {
 	testCases := map[string]struct {
-		filename       string
 		createFileFunc func(handler file.Handler) error
 		fs             func() afero.Fs
 		wantErr        bool
 	}{
-		"file with secret exists": {
-			filename: "someSecret",
-			fs:       afero.NewMemMapFs,
+		"file already exists": {
+			fs: afero.NewMemMapFs,
 			createFileFunc: func(handler file.Handler) error {
 				return handler.WriteJSON(
-					"someSecret",
+					masterSecretPath(""),
 					uri.MasterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("constellation-32Byte-length-salt")},
 					file.OptNone,
 				)
 			},
-			wantErr: false,
+			wantErr: true,
 		},
-		"no file given": {
-			filename:       "",
+		"file does not exist": {
 			createFileFunc: func(handler file.Handler) error { return nil },
 			fs:             afero.NewMemMapFs,
 			wantErr:        false,
 		},
-		"file does not exist": {
-			filename:       "nonExistingSecret",
-			createFileFunc: func(handler file.Handler) error { return nil },
-			fs:             afero.NewMemMapFs,
-			wantErr:        true,
-		},
-		"file is empty": {
-			filename: "emptySecret",
-			createFileFunc: func(handler file.Handler) error {
-				return handler.Write("emptySecret", []byte{}, file.OptNone)
-			},
-			fs:      afero.NewMemMapFs,
-			wantErr: true,
-		},
-		"salt too short": {
-			filename: "shortSecret",
-			createFileFunc: func(handler file.Handler) error {
-				return handler.WriteJSON(
-					"shortSecret",
-					uri.MasterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("short")},
-					file.OptNone,
-				)
-			},
-			fs:      afero.NewMemMapFs,
-			wantErr: true,
-		},
-		"key too short": {
-			filename: "shortSecret",
-			createFileFunc: func(handler file.Handler) error {
-				return handler.WriteJSON(
-					"shortSecret",
-					uri.MasterSecret{Key: []byte("short"), Salt: []byte("constellation-32Byte-length-salt")},
-					file.OptNone,
-				)
-			},
-			fs:      afero.NewMemMapFs,
-			wantErr: true,
-		},
-		"invalid file content": {
-			filename: "unencodedSecret",
-			createFileFunc: func(handler file.Handler) error {
-				return handler.Write("unencodedSecret", []byte("invalid-constellation-master-secret"), file.OptNone)
-			},
-			fs:      afero.NewMemMapFs,
-			wantErr: true,
-		},
 		"file not writeable": {
-			filename:       "",
 			createFileFunc: func(handler file.Handler) error { return nil },
 			fs:             func() afero.Fs { return afero.NewReadOnlyFs(afero.NewMemMapFs()) },
 			wantErr:        true,
@@ -434,21 +392,17 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 
 			var out bytes.Buffer
 			i := newInitCmd(nil, nil, fileHandler, nil, nil, logger.NewTest(t))
-			secret, err := i.readOrGenerateMasterSecret(&out, tc.filename)
+			secret, err := i.generateMasterSecret(&out, "")
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 
-				if tc.filename == "" {
-					require.Contains(out.String(), constants.MasterSecretFilename)
-					filename := strings.Split(out.String(), "./")
-					tc.filename = strings.Trim(filename[1], "\n")
-				}
+				require.Contains(out.String(), masterSecretPath(""))
 
 				var masterSecret uri.MasterSecret
-				require.NoError(fileHandler.ReadJSON(tc.filename, &masterSecret))
+				require.NoError(fileHandler.ReadJSON(masterSecretPath(""), &masterSecret))
 				assert.Equal(masterSecret.Key, secret.Key)
 				assert.Equal(masterSecret.Salt, secret.Salt)
 			}
@@ -500,7 +454,7 @@ func TestAttestation(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
-	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, existingIDFile, file.OptNone))
+	require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), existingIDFile, file.OptNone))
 
 	cfg := config.Default()
 	cfg.Image = "v0.0.0" // is the default version of the the CLI (before build injects the real version)
@@ -512,7 +466,7 @@ func TestAttestation(t *testing.T) {
 	cfg.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x99, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
+	require.NoError(fileHandler.WriteYAML(configPath(""), cfg, file.OptNone))
 
 	newDialer := func(v atls.Validator) *dialer.Dialer {
 		validator := &testValidator{

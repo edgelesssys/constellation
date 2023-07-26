@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -104,25 +103,26 @@ func TestPrepareWorkspace(t *testing.T) {
 			require := require.New(t)
 
 			file := file.NewHandler(afero.NewMemMapFs())
+			testWorkspace := "unittest"
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
-			err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
+			err := prepareWorkspace(path, file, testWorkspace)
 
 			require.NoError(err)
-			checkFiles(t, file, func(err error) { assert.NoError(err) }, constants.TerraformWorkingDir, tc.fileList)
+			checkFiles(t, file, func(err error) { assert.NoError(err) }, testWorkspace, tc.fileList)
 
 			if tc.testAlreadyUnpacked {
 				// Let's try the same again and check if we don't get a "file already exists" error.
-				require.NoError(file.Remove(filepath.Join(constants.TerraformWorkingDir, "variables.tf")))
-				err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
+				require.NoError(file.Remove(filepath.Join(testWorkspace, "variables.tf")))
+				err := prepareWorkspace(path, file, testWorkspace)
 				assert.NoError(err)
-				checkFiles(t, file, func(err error) { assert.NoError(err) }, constants.TerraformWorkingDir, tc.fileList)
+				checkFiles(t, file, func(err error) { assert.NoError(err) }, testWorkspace, tc.fileList)
 			}
 
-			err = cleanUpWorkspace(file, constants.TerraformWorkingDir)
+			err = cleanUpWorkspace(file, testWorkspace)
 			require.NoError(err)
 
-			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, constants.TerraformWorkingDir, tc.fileList)
+			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, testWorkspace, tc.fileList)
 		})
 	}
 }

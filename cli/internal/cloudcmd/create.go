@@ -23,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 )
 
@@ -31,7 +30,7 @@ import (
 type Creator struct {
 	out                io.Writer
 	image              imageFetcher
-	newTerraformClient func(ctx context.Context) (tfResourceClient, error)
+	newTerraformClient func(ctx context.Context, workspace string) (tfResourceClient, error)
 	newLibvirtRunner   func() libvirtRunner
 	newRawDownloader   func() rawDownloader
 	policyPatcher      policyPatcher
@@ -42,8 +41,8 @@ func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out:   out,
 		image: imagefetcher.New(),
-		newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
-			return terraform.New(ctx, constants.TerraformWorkingDir)
+		newTerraformClient: func(ctx context.Context, workspace string) (tfResourceClient, error) {
+			return terraform.New(ctx, workspace)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
@@ -57,10 +56,11 @@ func NewCreator(out io.Writer) *Creator {
 
 // CreateOptions are the options for creating a Constellation cluster.
 type CreateOptions struct {
-	Provider   cloudprovider.Provider
-	Config     *config.Config
-	image      string
-	TFLogLevel terraform.LogLevel
+	Provider    cloudprovider.Provider
+	Config      *config.Config
+	TFWorkspace string
+	image       string
+	TFLogLevel  terraform.LogLevel
 }
 
 // Create creates the handed amount of instances and all the needed resources.
@@ -74,7 +74,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	}
 	opts.image = image
 
-	cl, err := c.newTerraformClient(ctx)
+	cl, err := c.newTerraformClient(ctx, opts.TFWorkspace)
 	if err != nil {
 		return clusterid.File{}, err
 	}

@@ -52,8 +52,13 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	kubeClient := kubectl.New()
 
+	flags, err := parseStatusFlags(cmd)
+	if err != nil {
+		return fmt.Errorf("parsing flags: %w", err)
+	}
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	kubeConfig, err := fileHandler.Read(constants.AdminConfFilename)
+	kubeConfig, err := fileHandler.Read(adminConfPath(flags.workspace))
 	if err != nil {
 		return fmt.Errorf("reading admin.conf: %w", err)
 	}
@@ -74,7 +79,9 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	// need helm client to fetch service versions.
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
+	// The client used here, doesn't need to know the current workspace.
+	// It should be refactored in the future to be more generic since we just need it for fetching versions.
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), flags.workspace, adminConfPath(flags.workspace), constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -84,16 +91,8 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	stableClient := kubernetes.NewStableClient(kubeClient)
 
-	cwd, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return fmt.Errorf("getting config flag: %w", err)
-	}
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return fmt.Errorf("getting config flag: %w", err)
-	}
 	fetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, configPath(cwd), fetcher, force)
+	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -211,6 +210,26 @@ func targetVersionsString(target kubernetes.TargetVersions) string {
 	builder.WriteString(fmt.Sprintf("\tKubernetes: %s\n", target.Kubernetes()))
 
 	return builder.String()
+}
+
+type statusFlags struct {
+	workspace string
+	force     bool
+}
+
+func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
+	cwd, err := cmd.Flags().GetString("workspace")
+	if err != nil {
+		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
+	}
+	return statusFlags{
+		workspace: cwd,
+		force:     force,
+	}, nil
 }
 
 type kubeClient interface {

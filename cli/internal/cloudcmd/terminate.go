@@ -11,20 +11,19 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // Terminator deletes cloud provider resources.
 type Terminator struct {
-	newTerraformClient func(ctx context.Context) (tfResourceClient, error)
+	newTerraformClient func(ctx context.Context, tfWorkspace string) (tfResourceClient, error)
 	newLibvirtRunner   func() libvirtRunner
 }
 
 // NewTerminator create a new cloud terminator.
 func NewTerminator() *Terminator {
 	return &Terminator{
-		newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
-			return terraform.New(ctx, constants.TerraformWorkingDir)
+		newTerraformClient: func(ctx context.Context, tfWorkspace string) (tfResourceClient, error) {
+			return terraform.New(ctx, tfWorkspace)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
@@ -33,14 +32,14 @@ func NewTerminator() *Terminator {
 }
 
 // Terminate deletes the could provider resources.
-func (t *Terminator) Terminate(ctx context.Context, logLevel terraform.LogLevel) (retErr error) {
+func (t *Terminator) Terminate(ctx context.Context, tfWorkspace string, logLevel terraform.LogLevel) (retErr error) {
 	defer func() {
 		if retErr == nil {
 			retErr = t.newLibvirtRunner().Stop(ctx)
 		}
 	}()
 
-	cl, err := t.newTerraformClient(ctx)
+	cl, err := t.newTerraformClient(ctx, tfWorkspace)
 	if err != nil {
 		return err
 	}
