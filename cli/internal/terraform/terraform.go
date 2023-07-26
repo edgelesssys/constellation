@@ -161,6 +161,7 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 }
 
 // ShowCluster reads the state of Constellation cluster resources from Terraform.
+// TODO add provider (also to CreateCluster) so we can ensure that provider specific outputs are present
 func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
@@ -222,26 +223,62 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 		AttestationURL:    attestationURL,
 	}
 	// TODO add provider
-	gcpProject, ok := tfState.Values.Outputs["project"]
+	gcpProjectOutput, ok := tfState.Values.Outputs["project"]
 	if ok {
-		cidrNodes := tfState.Values.Outputs["ip_cidr_nodes"]
-		cidrPods := tfState.Values.Outputs["ip_cidr_pods"]
-
+		gcpProject, ok := gcpProjectOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in project output: not a string")
+		}
+		cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
+		}
+		cidrNodes, ok := cidrNodesOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+		}
+		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
+		}
+		cidrPods, ok := cidrPodsOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+		}
 		res.GCP = &GCPApplyOutput{
-			ProjectID:  gcpProject.Value.(string),
-			IPCidrNode: cidrNodes.Value.(string),
-			IPCidrPod:  cidrPods.Value.(string), // TODO error handling conversion
+			ProjectID:  gcpProject,
+			IPCidrNode: cidrNodes,
+			IPCidrPod:  cidrPods,
 		}
 	}
 
-	azureUAMI, ok := tfState.Values.Outputs["user_assigned_identity"]
+	azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity"]
 	if ok {
-		networkSGName := tfState.Values.Outputs["network_security_group_name"]
-		loadBalancerName := tfState.Values.Outputs["loadbalancer_name"]
+		azureUAMI, ok := azureUAMIOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity output: not a string")
+		}
+
+		networkSGNameOutput, ok := tfState.Values.Outputs["network_security_group_name"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no network_security_group_name output found")
+		}
+		networkSGName, ok := networkSGNameOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in network_security_group_name output: not a string")
+		}
+		loadBalancerNameOutput, ok := tfState.Values.Outputs["loadbalancer_name"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no loadbalancer_name output found")
+		}
+		loadBalancerName, ok := loadBalancerNameOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in loadbalancer_name output: not a string")
+		}
 		res.Azure = &AzureApplyOutput{
-			UserAssignedIdentity:     azureUAMI.Value.(string),
-			NetworkSecurityGroupName: networkSGName.Value.(string),
-			LoadBalancerName:         loadBalancerName.Value.(string),
+			UserAssignedIdentity:     azureUAMI,
+			NetworkSecurityGroupName: networkSGName,
+			LoadBalancerName:         loadBalancerName,
 		}
 	}
 	return res, nil

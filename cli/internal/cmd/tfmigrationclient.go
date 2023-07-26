@@ -38,7 +38,7 @@ func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler,
 func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd, yesFlag bool) error {
 	hasDiff, err := u.planMigration(cmd, file, migrateCmd)
 	if err != nil {
-		return fmt.Errorf("planning terraform migrations: %w", err)
+		return err
 	}
 	if hasDiff {
 		// If there are any Terraform migrations to apply, ask for confirmation
