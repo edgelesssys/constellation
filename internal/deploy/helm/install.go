@@ -38,7 +38,10 @@ type Installer struct {
 }
 
 // NewInstaller creates a new Installer with the given logger.
-func NewInstaller(log *logger.Logger, kubeconfig string) (*Installer, error) {
+func NewInstaller(kubeconfig string) (*Installer, error) {
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("helm-installer") // TODO(elchead): use the same logger as the rest of the CLI. How to migrate?
+	defer log.Sync()
+
 	settings := cli.New()
 	settings.KubeConfig = kubeconfig
 

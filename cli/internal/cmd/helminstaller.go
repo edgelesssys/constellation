@@ -16,8 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	helminstaller "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"go.uber.org/zap"
 )
 
 type helmInstaller interface {
@@ -27,29 +25,29 @@ type helmInstaller interface {
 	) error
 }
 
-type helmInstallationClient struct{}
+type helmInstallationClient struct {
+	log debugLog
+}
 
 func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 	idFile clusterid.File,
 	serviceAccURI string, releases *helminstaller.Releases,
 ) error {
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("init") // TODO: use the same logger as the rest of the CLI
-	defer log.Sync()
-	installer, err := helminstaller.NewInstaller(log, constants.AdminConfFilename)
+	installer, err := helminstaller.NewInstaller(constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
 
-	serviceVals, err := helm.SetupMicroserviceVals(ctx, log, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
+	serviceVals, err := helm.SetupMicroserviceVals(ctx, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
 	if err != nil {
 		return fmt.Errorf("setting up microservice values: %w", err)
 	}
-	fmt.Println("Installing microservices", serviceVals)
+	h.log.Debugf("Installing microservices", serviceVals)
 	if err := installer.InstallChartWithValues(ctx, releases.ConstellationServices, serviceVals); err != nil {
 		return fmt.Errorf("installing microservices: %w", err)
 	}
 
-	log.Infof("Installing cert-manager")
+	h.log.Debugf("Installing cert-manager")
 	if err = installer.InstallChart(ctx, releases.CertManager); err != nil {
 		return fmt.Errorf("installing cert-manager: %w", err)
 	}
@@ -69,27 +67,27 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 			}
 		}
 
-		log.Infof("Installing CSI deployments")
+		h.log.Debugf("Installing CSI deployments")
 		if err := installer.InstallChartWithValues(ctx, *releases.CSI, csiVals); err != nil {
 			return fmt.Errorf("installing CSI snapshot CRDs: %w", err)
 		}
 	}
 
 	if releases.AWSLoadBalancerController != nil {
-		log.Infof("Installing AWS Load Balancer Controller")
+		h.log.Debugf("Installing AWS Load Balancer Controller")
 		if err = installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
 			return fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}
 
-	log.Infof("Installing constellation operators")
+	h.log.Debugf("Installing constellation operators")
 	operatorVals, err := helm.SetupOperatorVals(ctx, idFile.UID)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to set up operator values")
+		return fmt.Errorf("setting up operator values: %w", err)
 	}
 	err = installer.InstallChartWithValues(ctx, releases.ConstellationOperators, operatorVals)
 	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Failed to install constellation operators")
+		return fmt.Errorf("installing constellation operators: %w", err)
 	}
 
 	// TODO(elchead): AB394 do cilium after version upgrade

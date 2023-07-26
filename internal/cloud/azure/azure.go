@@ -17,7 +17,6 @@ package azure
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -97,61 +96,6 @@ func New(ctx context.Context) (*Cloud, error) {
 		scaleSetsAPI:    scaleSetsAPI,
 		scaleSetsVMAPI:  virtualMachineScaleSetVMsAPI,
 	}, nil
-}
-
-// GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServiceAccountURI string) ([]byte, error) {
-	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return nil, fmt.Errorf("parsing provider ID: %w", err)
-	}
-	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI) // the URI refers to the IAM role but we need the resource group and subscription ID of the cluster
-	if err != nil {
-		return nil, fmt.Errorf("parsing service account URI: %w", err)
-	}
-	uid, err := c.imds.uid(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving instance UID: %w", err)
-	}
-
-	securityGroupName, err := c.getNetworkSecurityGroupName(ctx, resourceGroup, uid)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving network security group name: %w", err)
-	}
-
-	loadBalancer, err := c.getLoadBalancer(ctx, resourceGroup, uid)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving load balancer: %w", err)
-	}
-	if loadBalancer == nil || loadBalancer.Name == nil {
-		return nil, fmt.Errorf("could not dereference load balancer name")
-	}
-
-	var uamiClientID string
-	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
-	if useManagedIdentityExtension {
-		uamiClientID, err = c.getUAMIClientIDFromURI(ctx, providerID, creds.UamiResourceID)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving user-assigned managed identity client ID: %w", err)
-		}
-	}
-
-	config := cloudConfig{
-		Cloud:                       "AzurePublicCloud",
-		TenantID:                    creds.TenantID,
-		SubscriptionID:              subscriptionID,
-		ResourceGroup:               resourceGroup,
-		LoadBalancerSku:             "standard",
-		SecurityGroupName:           securityGroupName,
-		LoadBalancerName:            *loadBalancer.Name,
-		UseInstanceMetadata:         true,
-		VMType:                      "vmss",
-		Location:                    creds.Location,
-		UseManagedIdentityExtension: useManagedIdentityExtension,
-		UserAssignedIdentityID:      uamiClientID,
-	}
-
-	return json.Marshal(config)
 }
 
 // GetLoadBalancerEndpoint retrieves the first load balancer IP from cloud provider metadata.

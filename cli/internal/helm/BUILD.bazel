@@ -453,6 +453,7 @@ go_test(
         "backup_test.go",
         "client_test.go",
         "loader_test.go",
+        "setup_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":helm"],

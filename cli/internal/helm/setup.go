@@ -25,7 +25,7 @@ type ProviderMetadata interface {
 }
 
 // SetupMicroserviceVals returns the values for the microservice chart.
-func SetupMicroserviceVals(ctx context.Context, log debugLog, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
+func SetupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
 	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("creating Terraform client: %w", err)
@@ -34,9 +34,6 @@ func SetupMicroserviceVals(ctx context.Context, log debugLog, provider cloudprov
 	if err != nil {
 		return nil, fmt.Errorf("getting Terraform output: %w", err)
 	}
-	log.Debugf("Terraform cluster output: %+v", output) // TODO why not working? (propagate debug to logger).
-	fmt.Printf("A Terraform cluster output: %+v\n", output)
-
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
@@ -140,45 +137,3 @@ func SetupOperatorVals(_ context.Context, uid string) (map[string]any, error) {
 		},
 	}, nil
 }
-
-//func GetMetadaClient(ctx context.Context, provider cloudprovider.Provider) (metadataAPI ProviderMetadata, err error) {
-//	switch provider {
-//	case cloudprovider.AWS:
-//		metadata, err := aws.New(ctx)
-//		if err != nil {
-//			return nil, fmt.Errorf("creating AWS metadata client: %w", err)
-//			// log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
-//		}
-//		metadataAPI = metadata
-//	case cloudprovider.GCP:
-//		metadata, err := gcp.New(ctx)
-//		if err != nil {
-//			return nil, fmt.Errorf("creating GCP metadata client: %w", err)
-//		}
-//		metadataAPI = metadata
-//	case cloudprovider.Azure:
-//		metadata, err := azure.New(ctx)
-//		if err != nil {
-//			return nil, fmt.Errorf("creating Azure metadata client: %w", err)
-//		}
-//		metadataAPI = metadata
-//	case cloudprovider.QEMU:
-//		metadata := qemu.New()
-//		metadataAPI = metadata
-//	case cloudprovider.OpenStack:
-//		metadata, err := openstack.New(ctx)
-//		if err != nil {
-//			return nil, fmt.Errorf("creating OpenStack metadata client: %w", err)
-//		}
-//		metadataAPI = metadata
-//	default:
-//		return nil, fmt.Errorf("unsupported cloud provider: %s", provider)
-//		// metadataAPI = &providerMetadataFake{}
-//		// cloudLogger = &logging.NopLogger{}
-//		// var simulatedTPMCloser io.Closer
-//		// openDevice, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
-//		// defer simulatedTPMCloser.Close()
-//		// fs = afero.NewMemMapFs()
-//	}
-//	return metadataAPI, nil
-//}

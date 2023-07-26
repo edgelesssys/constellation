@@ -102,7 +102,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstallationClient{}}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstallationClient{log}}
 	fetcher := attestationconfigapi.NewFetcher()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
@@ -231,7 +231,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return err
 	}
-	// install helm charts
 	if i.helmInstaller != nil {
 		if err := i.helmInstaller.Install(cmd.Context(), provider, masterSecret, idFile, serviceAccURI, releases); err != nil {
 			return fmt.Errorf("installing Helm charts: %w", err)
