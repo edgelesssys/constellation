@@ -70,7 +70,10 @@ func SetupMicroserviceVals(ctx context.Context, log debugLog, provider cloudprov
 			},
 		}
 	case cloudprovider.Azure:
-		ccmConfig, err := getCCMConfig(serviceAccURI, output.Azure.UserAssignedIdentity, output.Azure.NetworkSecurityGroupName, output.Azure.LoadBalancerName)
+		if output.Azure == nil {
+			return nil, fmt.Errorf("no Azure output from Terraform")
+		}
+		ccmConfig, err := getCCMConfig(*output.Azure, serviceAccURI)
 		if err != nil {
 			return nil, fmt.Errorf("getting Azure CCM config: %w", err)
 		}
@@ -105,33 +108,25 @@ type cloudConfig struct {
 }
 
 // GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func getCCMConfig(serviceAccURI, uamiClientID, securityGroupName, loadBalancerName string) ([]byte, error) {
+func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]byte, error) {
 	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)
 	if err != nil {
 		return nil, fmt.Errorf("getting service account key: %w", err)
 	}
-	// var uamiClientID string
 	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
-	//if useManagedIdentityExtension {
-	//	uamiClientID, err = c.getUAMIClientIDFromURI(ctx, providerID, creds.UamiResourceID)
-	//	if err != nil {
-	//		return nil, fmt.Errorf("retrieving user-assigned managed identity client ID: %w", err)
-	//	}
-	//}
-
 	config := cloudConfig{
 		Cloud:                       "AzurePublicCloud",
 		TenantID:                    creds.TenantID,
-		SubscriptionID:              creds.SubscriptionID,
-		ResourceGroup:               creds.ResourceGroup,
+		SubscriptionID:              tfOutput.SubscriptionID,
+		ResourceGroup:               tfOutput.ResourceGroup,
 		LoadBalancerSku:             "standard",
-		SecurityGroupName:           securityGroupName,
-		LoadBalancerName:            loadBalancerName,
+		SecurityGroupName:           tfOutput.NetworkSecurityGroupName,
+		LoadBalancerName:            tfOutput.LoadBalancerName,
 		UseInstanceMetadata:         true,
 		VMType:                      "vmss",
 		Location:                    creds.Location,
 		UseManagedIdentityExtension: useManagedIdentityExtension,
-		UserAssignedIdentityID:      uamiClientID,
+		UserAssignedIdentityID:      tfOutput.UserAssignedIdentity,
 	}
 
 	return json.Marshal(config)

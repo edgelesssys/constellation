@@ -105,7 +105,7 @@ func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServic
 	if err != nil {
 		return nil, fmt.Errorf("parsing provider ID: %w", err)
 	}
-	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI) // the URI refers to the IAM role but we need the resource group and subscription ID of the cluster
 	if err != nil {
 		return nil, fmt.Errorf("parsing service account URI: %w", err)
 	}

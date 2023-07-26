@@ -259,6 +259,24 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity output: not a string")
 		}
 
+		rgOutput, ok := tfState.Values.Outputs["resource_group"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no resource_group output found")
+		}
+		rg, ok := rgOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in resource_group output: not a string")
+		}
+
+		subscriptionOutput, ok := tfState.Values.Outputs["subscription_id"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no subscription_id output found")
+		}
+		subscriptionID, ok := subscriptionOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in subscription_id output: not a string")
+		}
+
 		networkSGNameOutput, ok := tfState.Values.Outputs["network_security_group_name"]
 		if !ok {
 			return ApplyOutput{}, errors.New("no network_security_group_name output found")
@@ -276,6 +294,8 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 			return ApplyOutput{}, errors.New("invalid type in loadbalancer_name output: not a string")
 		}
 		res.Azure = &AzureApplyOutput{
+			ResourceGroup:            rg,
+			SubscriptionID:           subscriptionID,
 			UserAssignedIdentity:     azureUAMI,
 			NetworkSecurityGroupName: networkSGName,
 			LoadBalancerName:         loadBalancerName,
@@ -352,6 +372,8 @@ type ApplyOutput struct {
 
 // AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
 type AzureApplyOutput struct {
+	ResourceGroup            string
+	SubscriptionID           string
 	NetworkSecurityGroupName string
 	LoadBalancerName         string
 	UserAssignedIdentity     string

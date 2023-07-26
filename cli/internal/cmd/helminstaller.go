@@ -92,41 +92,6 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 		log.With(zap.Error(err)).Fatalf("Failed to install constellation operators")
 	}
 
-	// TODO(elchead): do cilium later, after upgrade
-	//k8sClient := kubectl.New()
-	//kubeconfig, err := os.ReadFile(constants.AdminConfFilename)
-	//if err != nil {
-	//	return fmt.Errorf("reading kubeconfig: %w", err)
-	//}
-	//err = k8sClient.Initialize(kubeconfig)
-	//if err != nil {
-	//	return fmt.Errorf("initializing k8s client: %w", err)
-	//}
-	// load cilium
-	// releases.Cilium
-	//
-
-	// get instance id from tf? (create cmd) or just get metadata from cloud provider
-	//switch provider {
-	//case cloudprovider.AWS:
-	//	// metadataAPI = metadata
-	//}
-	//metadata, err := helminstaller.GetMetadaClient(cmd.Context(), provider) // awscloud.New(cmd.Context())
-	//if err != nil {
-	//	log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
-	//}
-
-	//input, err := helminstaller.GetSetupPodNetwork(cmd.Context(), metadata, provider)
-	//if err != nil {
-	//	return fmt.Errorf("getting setup pod network: %w", err)
-	//}
-	//cmd.Println("Installing Cilium")
-
-	//if err = helminstaller.InstallCilium(cmd.Context(), installer, k8sClient, releases.Cilium, *input); err != nil {
-	//	return fmt.Errorf("installing Cilium: %w", err)
-	//}
-	//cmd.Println("Installed Cilium")
-
-	// installer.InstallChart()
+	// TODO(elchead): AB394 do cilium after version upgrade
 	return nil
 }
