@@ -60,17 +60,6 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	if upgradeRequiresIAMMigration {
-		yes, err := askToConfirm(cmd, "WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
-		if err != nil {
-			return fmt.Errorf("asking for confirmation: %w", err)
-		}
-		if !yes {
-			cmd.Println("Skipping upgrade.")
-			return nil
-		}
-	}
-
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	upgrader, err := kubernetes.NewUpgrader(cmd.Context(), cmd.OutOrStdout(), fileHandler, log, kubernetes.UpgradeCmdKindApply)
 	if err != nil {
@@ -96,6 +85,20 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
+	if upgradeRequiresIAMMigration {
+		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
+		if !flags.yes {
+			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !yes {
+				cmd.Println("Skipping upgrade.")
+				return nil
+			}
+		}
+	}
+
 	conf, err := config.New(fileHandler, flags.configPath, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
