@@ -162,9 +162,55 @@ jobs:
           enterpriseCLI: true
           outputPath: "build/constellation"
           push: true
+
+      - name: Login to GCP (IAM service account)
+        if: inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/login_gcp
+        with:
+          service_account: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"
+
+      - name: Login to AWS (IAM role)
+        if: inputs.cloudProvider == 'aws'
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2EIAM
+          aws-region: eu-central-1
+          # extend token expiry to 6 hours to ensure constellation can terminate
+          role-duration-seconds: 21600
+
+      - name: Login to Azure (IAM service principal)
+        if: inputs.cloudProvider == 'azure'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
+
+
+          ## IAM upgrade
       - name: Upgrade IAM configuration
         id: constellation-iam-upgrade
         uses: ./.github/actions/constellation_iam_upgrade
+
+      - name: Login to GCP (Cluster service account)
+        if: inputs.cloudProvider == 'gcp'
+        uses: ./.github/actions/login_gcp
+        with:
+          service_account: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
+
+      - name: Login to AWS (Cluster role)
+        if: inputs.cloudProvider == 'aws'
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2ECluster
+          aws-region: eu-central-1
+          # extend token expiry to 6 hours to ensure constellation can terminate
+          role-duration-seconds: 21600
+
+      - name: Login to Azure (Cluster service principal)
+        if: inputs.cloudProvider == 'azure'
+        uses: ./.github/actions/login_azure
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CLUSTER_CREDENTIALS }}
+
       - name: Run upgrade test
         env:
           KUBECONFIG: ${{ steps.e2e_test.outputs.kubeconfig }}
