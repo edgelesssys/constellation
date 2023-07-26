@@ -30,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
+	"github.com/google/go-sev-guest/abi"
 	"github.com/google/go-sev-guest/kds"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -283,22 +284,23 @@ func (f *attestationDocFormatterImpl) format(docString string, PCRsOnly bool, ra
 	if err := f.parseCerts(b, "Certificate chain", instanceInfo.CertChain); err != nil {
 		return "", fmt.Errorf("print certificate chain: %w", err)
 	}
+	if err := f.parseSNPReport(b, instanceInfo.AttestationReport); err != nil {
+		return "", fmt.Errorf("print SNP report: %w", err)
+	}
 
 	return b.String(), nil
 }
 
-// parseCerts parses the base64-encoded PEM certificates and writes their details to the output builder.
-func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, encCertString string) error {
-	certBytes, err := base64.StdEncoding.DecodeString(encCertString)
-	if err != nil {
-		return fmt.Errorf("decode %s: %w", certTypeName, err)
-	}
-	formattedCert := strings.ReplaceAll(string(certBytes[:len(certBytes)-1]), "\n", "\n\t\t") + "\n"
+// parseCerts parses the PEM certificates and writes their details to the output builder.
+func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeName string, cert []byte) error {
+	formattedCert := strings.ReplaceAll(string(cert[:len(cert)-1]), "\n", "\n\t\t") + "\n"
 	b.WriteString(fmt.Sprintf("\tRaw %s:\n\t\t%s", certTypeName, formattedCert))
 
 	f.log.Debugf("Decoding PEM certificate: %s", certTypeName)
 	i := 1
-	for block, rest := pem.Decode(certBytes); block != nil; block, rest = pem.Decode(rest) {
+	var rest []byte
+	var block *pem.Block
+	for block, rest = pem.Decode(cert); block != nil; block, rest = pem.Decode(rest) {
 		f.log.Debugf("Parsing PEM block: %d", i)
 		if block.Type != "CERTIFICATE" {
 			return fmt.Errorf("parse %s: expected PEM block type 'CERTIFICATE', got '%s'", certTypeName, block.Type)
@@ -337,10 +339,14 @@ func (f *attestationDocFormatterImpl) parseCerts(b *strings.Builder, certTypeNam
 			writeIndentfln(b, 2, "SVN 7 (reserved): %d", tcb.Spl7)
 			writeIndentfln(b, 2, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
 			writeIndentfln(b, 2, "Microcode SVN: %d", tcb.UcodeSpl)
-			writeIndentfln(b, 2, "Hardware ID: %#x", vcekExts.HWID)
+			writeIndentfln(b, 2, "Hardware ID: %x", vcekExts.HWID)
 		}
 
 		i++
+	}
+
+	if len(rest) != 0 {
+		return fmt.Errorf("parse %s: remaining PEM block is not a valid certificate: %s", certTypeName, rest)
 	}
 
 	return nil
@@ -359,6 +365,85 @@ func (f *attestationDocFormatterImpl) parseQuotes(b *strings.Builder, quotes []q
 		writeIndentfln(b, 3, "Expected:\t%x", expectedPCR.Expected)
 		writeIndentfln(b, 3, "Actual:\t\t%x", actualPCR)
 	}
+	return nil
+}
+
+func (f *attestationDocFormatterImpl) parseSNPReport(b *strings.Builder, reportBytes []byte) error {
+	report, err := abi.ReportToProto(reportBytes)
+	if err != nil {
+		return fmt.Errorf("parsing report to proto: %w", err)
+	}
+
+	policy, err := abi.ParseSnpPolicy(report.Policy)
+	if err != nil {
+		return fmt.Errorf("parsing policy: %w", err)
+	}
+
+	platformInfo, err := abi.ParseSnpPlatformInfo(report.PlatformInfo)
+	if err != nil {
+		return fmt.Errorf("parsing platform info: %w", err)
+	}
+
+	signature, err := abi.ReportToSignatureDER(reportBytes)
+	if err != nil {
+		return fmt.Errorf("parsing signature: %w", err)
+	}
+
+	writeTCB := func(tcbVersion uint64) {
+		tcb := kds.DecomposeTCBVersion(kds.TCBVersion(tcbVersion))
+		writeIndentfln(b, 3, "Secure Processor bootloader SVN: %d", tcb.BlSpl)
+		writeIndentfln(b, 3, "Secure Processor operating system SVN: %d", tcb.TeeSpl)
+		writeIndentfln(b, 3, "SVN 4 (reserved): %d", tcb.Spl4)
+		writeIndentfln(b, 3, "SVN 5 (reserved): %d", tcb.Spl5)
+		writeIndentfln(b, 3, "SVN 6 (reserved): %d", tcb.Spl6)
+		writeIndentfln(b, 3, "SVN 7 (reserved): %d", tcb.Spl7)
+		writeIndentfln(b, 3, "SEV-SNP firmware SVN: %d", tcb.SnpSpl)
+		writeIndentfln(b, 3, "Microcode SVN: %d", tcb.UcodeSpl)
+	}
+
+	writeIndentfln(b, 1, "SNP Report:")
+	writeIndentfln(b, 2, "Version: %d", report.Version)
+	writeIndentfln(b, 2, "Guest SVN: %d", report.GuestSvn)
+	writeIndentfln(b, 2, "Policy:")
+	writeIndentfln(b, 3, "ABI Minor: %d", policy.ABIMinor)
+	writeIndentfln(b, 3, "ABI Major: %d", policy.ABIMajor)
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled: %t", policy.SMT)
+	writeIndentfln(b, 3, "Migration agent enabled: %t", policy.MigrateMA)
+	writeIndentfln(b, 3, "Debugging enabled (host decryption of VM): %t", policy.Debug)
+	writeIndentfln(b, 3, "Single socket enabled: %t", policy.SingleSocket)
+	writeIndentfln(b, 2, "Family ID: %x", report.FamilyId)
+	writeIndentfln(b, 2, "Image ID: %x", report.ImageId)
+	writeIndentfln(b, 2, "VMPL: %d", report.Vmpl)
+	writeIndentfln(b, 2, "Signature Algorithm: %d", report.SignatureAlgo)
+	writeIndentfln(b, 2, "Current TCB:")
+	writeTCB(report.CurrentTcb)
+	writeIndentfln(b, 2, "Platform Info:")
+	writeIndentfln(b, 3, "Symmetric Multithreading enabled (SMT): %t", platformInfo.SMTEnabled)
+	writeIndentfln(b, 3, "Transparent secure memory encryption (TSME): %t", platformInfo.TSMEEnabled)
+	writeIndentfln(b, 2, "Author Key ID: %x", report.AuthorKeyEn)
+	writeIndentfln(b, 2, "Report Data: %x", report.ReportData)
+	writeIndentfln(b, 2, "Measurement: %x", report.Measurement)
+	writeIndentfln(b, 2, "Host Data: %x", report.HostData)
+	writeIndentfln(b, 2, "ID Key Digest: %x", report.IdKeyDigest)
+	writeIndentfln(b, 2, "Author Key Digest: %x", report.AuthorKeyDigest)
+	writeIndentfln(b, 2, "Report ID: %x", report.ReportId)
+	writeIndentfln(b, 2, "Report ID MA: %x", report.ReportIdMa)
+	writeIndentfln(b, 2, "Reported TCB:")
+	writeTCB(report.ReportedTcb)
+	writeIndentfln(b, 2, "Chip ID: %x", report.ChipId)
+	writeIndentfln(b, 2, "Committed TCB:")
+	writeTCB(report.CommittedTcb)
+	writeIndentfln(b, 2, "Current Build: %d", report.CurrentBuild)
+	writeIndentfln(b, 2, "Current Minor: %d", report.CurrentMinor)
+	writeIndentfln(b, 2, "Current Major: %d", report.CurrentMajor)
+	writeIndentfln(b, 2, "Committed Build: %d", report.CommittedBuild)
+	writeIndentfln(b, 2, "Committed Minor: %d", report.CommittedMinor)
+	writeIndentfln(b, 2, "Committed Major: %d", report.CommittedMajor)
+	writeIndentfln(b, 2, "Launch TCB:")
+	writeTCB(report.LaunchTcb)
+	writeIndentfln(b, 2, "Signature (DER):")
+	writeIndentfln(b, 3, "%x", signature)
+
 	return nil
 }
 
@@ -386,10 +471,11 @@ type quote struct {
 // azureInstanceInfo is the b64-decoded InstanceInfo field of the attestation document.
 // as of now (2023-04-03), it only contains interesting data on Azure.
 type azureInstanceInfo struct {
-	Vcek              string `json:"Vcek"`
-	CertChain         string `json:"CertChain"`
-	AttestationReport string `json:"AttestationReport"`
-	RuntimeData       string `json:"RuntimeData"`
+	Vcek              []byte
+	CertChain         []byte
+	AttestationReport []byte
+	RuntimeData       []byte
+	MAAToken          string
 }
 
 type constellationVerifier struct {
