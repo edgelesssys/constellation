@@ -128,10 +128,6 @@ func setup() error {
 	if _, err := getCLIPath(*cliPath); err != nil {
 		return fmt.Errorf("getting CLI path: %w", err)
 	}
-	if _, err := os.Stat(constants.UpgradeDir); err == nil {
-		return fmt.Errorf("please remove the existing %s folder", constants.UpgradeDir)
-	}
-
 	return nil
 }
 

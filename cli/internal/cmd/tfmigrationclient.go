@@ -35,15 +35,15 @@ func (u *tfMigrationClient) planMigration(cmd *cobra.Command, file file.Handler,
 
 // applyMigration plans and then applies the Terraform migration. The user is asked for confirmation if there are any changes.
 // adapted from migrateTerraform().
-func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd, flags upgradeApplyFlags) error {
+func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, file file.Handler, migrateCmd upgrade.TfMigrationCmd, yesFlag bool) error {
 	hasDiff, err := u.planMigration(cmd, file, migrateCmd)
 	if err != nil {
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	if hasDiff {
 		// If there are any Terraform migrations to apply, ask for confirmation
-		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
-		if !flags.yes {
+		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
+		if !yesFlag {
 			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
 			if err != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
