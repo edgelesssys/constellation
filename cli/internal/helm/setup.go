@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package helm
 
 import (
@@ -10,19 +16,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
-
-// ProviderMetadata implementers read/write cloud provider metadata.
-type ProviderMetadata interface {
-	// UID returns the unique identifier for the constellation.
-	UID(ctx context.Context) (string, error)
-	// Self retrieves the current instance.
-	Self(ctx context.Context) (metadata.InstanceMetadata, error)
-	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
-	GetLoadBalancerEndpoint(ctx context.Context) (host, port string, err error)
-}
 
 // SetupMicroserviceVals returns the values for the microservice chart.
 func SetupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
@@ -84,6 +79,15 @@ func SetupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider,
 	return extraVals, nil
 }
 
+// SetupOperatorVals returns the values for the constellation-operator chart.
+func SetupOperatorVals(_ context.Context, uid string) (map[string]any, error) {
+	return map[string]any{
+		"constellation-operator": map[string]any{
+			"constellationUID": uid,
+		},
+	}, nil
+}
+
 type cloudConfig struct {
 	Cloud                       string `json:"cloud,omitempty"`
 	TenantID                    string `json:"tenantId,omitempty"`
@@ -127,13 +131,4 @@ func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]
 	}
 
 	return json.Marshal(config)
-}
-
-// SetupOperatorVals returns the values for the constellation-operator chart.
-func SetupOperatorVals(_ context.Context, uid string) (map[string]any, error) {
-	return map[string]any{
-		"constellation-operator": map[string]any{
-			"constellationUID": uid,
-		},
-	}, nil
 }

@@ -403,18 +403,3 @@ func (k *KubeWrapper) setupCiliumVals(ctx context.Context, in k8sapi.SetupPodNet
 
 	return vals, nil
 }
-
-type ccmConfigGetter interface {
-	GetCCMConfig(ctx context.Context, providerID, cloudServiceAccountURI string) ([]byte, error)
-}
-
-type constellationServicesConfig struct {
-	measurementSalt        []byte
-	subnetworkPodCIDR      string
-	cloudServiceAccountURI string
-	loadBalancerIP         string
-}
-
-type openstackMetadata interface {
-	GetNetworkIDs(ctx context.Context) ([]string, error)
-}

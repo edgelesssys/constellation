@@ -66,14 +66,6 @@ type Cloud struct {
 	resourceapiClient resourceAPI
 }
 
-func NewLBClient(ctx context.Context, region string) (*elasticloadbalancingv2.Client, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion((region)))
-	if err != nil {
-		return nil, err
-	}
-	return elasticloadbalancingv2.NewFromConfig(cfg), nil
-}
-
 // New initializes a new AWS Metadata client using instance default credentials.
 // Default region is set up using the AWS imds api.
 func New(ctx context.Context) (*Cloud, error) {

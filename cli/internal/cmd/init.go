@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -78,7 +79,7 @@ type initCmd struct {
 	spinner       spinnerInterf
 	masterSecret  uri.MasterSecret
 	fh            *file.Handler
-	helmInstaller helmInstaller
+	helmInstaller helmSuiteInstaller
 }
 
 // runInitialize runs the initialize command.
@@ -102,7 +103,11 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstallationClient{log}}
+	helmInstaller, err := newHelmInstallationClient(log)
+	if err != nil {
+		return fmt.Errorf("creating Helm installer: %w", err)
+	}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstaller}
 	fetcher := attestationconfigapi.NewFetcher()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
@@ -227,7 +232,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 
-	err = i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
+	bufferedOutput := &bytes.Buffer{}
+	err = i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -236,6 +242,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 			return fmt.Errorf("installing Helm charts: %w", err)
 		}
 	}
+	cmd.Println(bufferedOutput.String())
 	return nil
 }
 

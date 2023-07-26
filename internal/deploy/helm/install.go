@@ -37,9 +37,14 @@ type Installer struct {
 	log *logger.Logger
 }
 
+//type debugLog interface {
+//	Debugf(format string, args ...any)
+//	Sync()
+//}
+
 // NewInstaller creates a new Installer with the given logger.
 func NewInstaller(kubeconfig string) (*Installer, error) {
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("helm-installer") // TODO(elchead): use the same logger as the rest of the CLI. How to migrate?
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("helm-installer") // TODO(elchead): discuss: use structured logging as in bootstrapper or use plain Debugf?
 	defer log.Sync()
 
 	settings := cli.New()
@@ -56,8 +61,8 @@ func NewInstaller(kubeconfig string) (*Installer, error) {
 	action.Timeout = timeout
 
 	return &Installer{
-		action,
-		log,
+		Install: action,
+		log:     log,
 	}, nil
 }
 
@@ -152,7 +157,6 @@ type installDoer struct {
 // Do logs which chart is installed and tries to install it.
 func (i installDoer) Do(ctx context.Context) error {
 	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install Helm chart")
-
 	if _, err := i.Installer.RunWithContext(ctx, i.chart, i.values); err != nil {
 		i.log.With(zap.Error(err), zap.String("chart", i.chart.Name())).Errorf("Helm chart installation failed")
 		return err

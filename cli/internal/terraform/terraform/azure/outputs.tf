@@ -19,7 +19,6 @@ output "attestationURL" {
   value = var.create_maa ? azurerm_attestation_provider.attestation_provider[0].attestation_uri : ""
 }
 
-// new
 output "network_security_group_name" {
   value = azurerm_network_security_group.security_group.name
 }

@@ -161,7 +161,7 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 }
 
 // ShowCluster reads the state of Constellation cluster resources from Terraform.
-// TODO add provider (also to CreateCluster) so we can ensure that provider specific outputs are present
+// TODO add provider (also to CreateCluster) so we can ensure that provider specific outputs are present.
 func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
