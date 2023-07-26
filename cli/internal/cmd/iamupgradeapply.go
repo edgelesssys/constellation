@@ -6,13 +6,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
+	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
@@ -52,8 +55,27 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return fmt.Errorf("parsing force argument: %w", err)
+	}
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	configFetcher := attestationconfigapi.NewFetcher()
+	conf, err := config.New(fileHandler, configPath, configFetcher, force)
+	var configValidationErr *config.ValidationError
+	if errors.As(err, &configValidationErr) {
+		cmd.PrintErrln(configValidationErr.LongMessage())
+	}
+	if err != nil {
+		return err
+	}
 	upgradeID := "iam-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID, cloudprovider.AWS, terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
