@@ -21,29 +21,29 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const successOutput = `Target versions:
-	Image: v1.1.0
-	Kubernetes: v1.2.3
-Service versions:
-	Cilium: v1.0.0
-	cert-manager: v1.0.0
-	constellation-operators: v1.1.0
-	constellation-services: v1.1.0
-Cluster status: Node version of every node is up to date
-` + attestationConfigOutput
+const successOutput = targetVersions + versionsOutput + nodesUpToDateOutput + attestationConfigOutput
 
-const inProgressOutput = `Target versions:
+const inProgressOutput = targetVersions + versionsOutput + nodesInProgressOutput + attestationConfigOutput
+
+const targetVersions = `Target versions:
 	Image: v1.1.0
 	Kubernetes: v1.2.3
-Service versions:
-	Cilium: v1.0.0
-	cert-manager: v1.0.0
-	constellation-operators: v1.1.0
-	constellation-services: v1.1.0
-Cluster status: Some node versions are out of date
+`
+
+const nodesUpToDateOutput = `Cluster status: Node version of every node is up to date
+`
+
+const nodesInProgressOutput = `Cluster status: Some node versions are out of date
 	Image: 1/2
 	Kubernetes: 1/2
-` + attestationConfigOutput
+`
+
+const versionsOutput = `Service versions:
+	Cilium: v1.0.0
+	cert-manager: v1.0.0
+	constellation-operators: v1.1.0
+	constellation-services: v1.1.0
+`
 
 const attestationConfigOutput = `Attestation config:
 	measurements:
@@ -193,7 +193,7 @@ func TestStatus(t *testing.T) {
 				context.Background(),
 				tc.kubeClient,
 				configMapper,
-				stubGetVersions(successOutput),
+				stubGetVersions(versionsOutput),
 				&stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr},
 				variant,
 			)
