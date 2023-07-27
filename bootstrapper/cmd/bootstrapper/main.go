@@ -67,7 +67,7 @@ func main() {
 	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-	helmClient, err := helm.NewInstaller(constants.ControlPlaneAdminConfFilename)
+	helmClient, err := helm.NewInstaller(constants.ControlPlaneAdminConfFilename, log)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Helm client could not be initialized")
 	}

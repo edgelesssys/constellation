@@ -14,9 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/retry"
-	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -31,24 +29,25 @@ const (
 	maximumRetryAttempts = 3
 )
 
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
+}
+
 // Installer is a wrapper for a helm install action.
 type Installer struct {
 	*action.Install
-	log *logger.Logger
+	log debugLog
 }
 
-
 // NewInstaller creates a new Installer with the given logger.
-func NewInstaller(kubeconfig string) (*Installer, error) {
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(0)).Named("helm-installer") // TODO(elchead): discuss: use structured logging as in bootstrapper or use plain Debugf?
-	defer log.Sync()
-
+func NewInstaller(kubeconfig string, logger debugLog) (*Installer, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeconfig
 
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace,
-		"secret", log.Infof); err != nil {
+		"secret", logger.Debugf); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +57,7 @@ func NewInstaller(kubeconfig string) (*Installer, error) {
 
 	return &Installer{
 		Install: action,
-		log:     log,
+		log:     logger,
 	}, nil
 }
 
@@ -119,7 +118,7 @@ func (h *Installer) install(ctx context.Context, chartRaw []byte, values map[str
 		return fmt.Errorf("helm install: %w", err)
 	}
 	retryLoopFinishDuration := time.Since(retryLoopStartTime)
-	h.log.With(zap.String("chart", chart.Name()), zap.Duration("duration", retryLoopFinishDuration)).Infof("Helm chart installation finished")
+	h.log.Debugf("Helm chart %q installation finished after %s", chart.Name(), retryLoopFinishDuration)
 
 	return nil
 }
@@ -147,14 +146,14 @@ type installDoer struct {
 	Installer *Installer
 	chart     *chart.Chart
 	values    map[string]any
-	log       *logger.Logger
+	log       debugLog
 }
 
 // Do logs which chart is installed and tries to install it.
 func (i installDoer) Do(ctx context.Context) error {
-	i.log.With(zap.String("chart", i.chart.Name())).Infof("Trying to install Helm chart")
+	i.log.Debugf("Trying to install Helm chart %s", i.chart.Name())
 	if _, err := i.Installer.RunWithContext(ctx, i.chart, i.values); err != nil {
-		i.log.With(zap.Error(err), zap.String("chart", i.chart.Name())).Errorf("Helm chart installation failed")
+		i.log.Debugf("Helm chart installation % failed: %v", i.chart.Name(), err)
 		return err
 	}
 

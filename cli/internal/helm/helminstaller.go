@@ -32,7 +32,7 @@ type helmInstallationClient struct {
 
 // NewInstallationClient creates a new Helm installation client to install all Helm charts required for a constellation cluster.
 func NewInstallationClient(log debugLog) (SuiteInstaller, error) {
-	installer, err := helminstaller.NewInstaller(constants.AdminConfFilename)
+	installer, err := helminstaller.NewInstaller(constants.AdminConfFilename, log)
 	if err != nil {
 		return nil, fmt.Errorf("creating Helm installer: %w", err)
 	}
