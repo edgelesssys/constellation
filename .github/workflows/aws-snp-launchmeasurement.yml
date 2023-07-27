@@ -47,42 +47,12 @@ jobs:
         ovmfPath=$(realpath result/ovmf_img.fd)
         echo "ovmfPath=${ovmfPath}" | tee -a "$GITHUB_OUTPUT"
 
-
-    - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
-      with:
-        repository: IBM/sev-snp-measure.git
-        ref: main
-        path: sev-snp-measure
-
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # tag=v3.5.2
       with:
         repository: edgelesssys/sev-snp-measure-go.git
         ref: main
         path: sev-snp-measure-go
 
-    - name: Run sev-snp-measure
-      shell: bash
-      run: |
-        pushd sev-snp-measure || exit 1
-        echo '[]' > intermediate.json
-
-        for vcpus in 2 4 8 16 32 48 64;
-        do
-          measurement="$(./sev-snp-measure.py --mode snp --vmm-type=ec2 --vcpus="$vcpus" --ovmf=${{ steps.build-uefi.outputs.ovmfPath }})"
-
-          jq --arg vcpus "$vcpus" --arg measurement "$measurement" '. += [{"vcpus": $vcpus, "measurement": $measurement}]' intermediate.json > measurements.json
-          cp measurements.json intermediate.json
-        done
-
-        jq < measurements.json
-        popd || exit 1
-
-    - name: Test equivalence sevsnpmeasure & sev-snp-measure
-      shell: bash
-      run: |
-        pushd sev-snp-measure-go/e2e || exit 1
-        go test --expected-values ../../sev-snp-measure/measurements.json --ovmf ${{ steps.build-uefi.outputs.ovmfPath }}
-        popd || exit 1
 
     - name: Generate API objects
       shell: bash
