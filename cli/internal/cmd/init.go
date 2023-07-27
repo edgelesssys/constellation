@@ -79,7 +79,7 @@ type initCmd struct {
 	spinner       spinnerInterf
 	masterSecret  uri.MasterSecret
 	fh            *file.Handler
-	helmInstaller helmSuiteInstaller
+	helmInstaller helm.SuiteInstaller
 }
 
 // runInitialize runs the initialize command.
@@ -103,7 +103,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	helmInstaller, err := newHelmInstallationClient(log)
+	helmInstaller, err := helm.NewInstallationClient(log)
 	if err != nil {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}

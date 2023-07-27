@@ -3,14 +3,13 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cmd
+package helm
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -18,8 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
-// helmSuiteInstaller installs all Helm charts required for a constellation cluster.
-type helmSuiteInstaller interface {
+// SuiteInstaller installs all Helm charts required for a constellation cluster.
+type SuiteInstaller interface {
 	Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 		idFile clusterid.File,
 		serviceAccURI string, releases *helminstaller.Releases,
@@ -31,7 +30,8 @@ type helmInstallationClient struct {
 	installer helmInstaller
 }
 
-func newHelmInstallationClient(log debugLog) (helmSuiteInstaller, error) {
+// NewInstallationClient creates a new Helm installation client to install all Helm charts required for a constellation cluster.
+func NewInstallationClient(log debugLog) (SuiteInstaller, error) {
 	installer, err := helminstaller.NewInstaller(constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("creating Helm installer: %w", err)
@@ -43,7 +43,7 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	idFile clusterid.File,
 	serviceAccURI string, releases *helminstaller.Releases,
 ) error {
-	serviceVals, err := helm.SetupMicroserviceVals(ctx, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
+	serviceVals, err := setupMicroserviceVals(ctx, provider, masterSecret.Salt, idFile.UID, serviceAccURI)
 	if err != nil {
 		return fmt.Errorf("setting up microservice values: %w", err)
 	}
@@ -52,7 +52,7 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	}
 
 	h.log.Debugf("Installing cert-manager")
-	if err = h.installer.InstallChart(ctx, releases.CertManager); err != nil {
+	if err := h.installer.InstallChart(ctx, releases.CertManager); err != nil {
 		return fmt.Errorf("installing cert-manager: %w", err)
 	}
 
@@ -79,22 +79,18 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 
 	if releases.AWSLoadBalancerController != nil {
 		h.log.Debugf("Installing AWS Load Balancer Controller")
-		if err = h.installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
+		if err := h.installer.InstallChart(ctx, *releases.AWSLoadBalancerController); err != nil {
 			return fmt.Errorf("installing AWS Load Balancer Controller: %w", err)
 		}
 	}
 
 	h.log.Debugf("Installing constellation operators")
-	operatorVals, err := helm.SetupOperatorVals(ctx, idFile.UID)
-	if err != nil {
-		return fmt.Errorf("setting up operator values: %w", err)
-	}
-	err = h.installer.InstallChartWithValues(ctx, releases.ConstellationOperators, operatorVals)
-	if err != nil {
+	operatorVals := setupOperatorVals(ctx, idFile.UID)
+	if err := h.installer.InstallChartWithValues(ctx, releases.ConstellationOperators, operatorVals); err != nil {
 		return fmt.Errorf("installing constellation operators: %w", err)
 	}
 
-	// TODO(elchead): AB#3294 do cilium after version upgrade
+	// TODO(elchead): AB#3301 do cilium after version upgrade
 	return nil
 }
 

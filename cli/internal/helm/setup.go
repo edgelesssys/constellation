@@ -19,8 +19,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
-// SetupMicroserviceVals returns the values for the microservice chart.
-func SetupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
+// setupMicroserviceVals returns the values for the microservice chart.
+func setupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
 	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
 	if err != nil {
 		return nil, fmt.Errorf("creating Terraform client: %w", err)
@@ -79,13 +79,13 @@ func SetupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider,
 	return extraVals, nil
 }
 
-// SetupOperatorVals returns the values for the constellation-operator chart.
-func SetupOperatorVals(_ context.Context, uid string) (map[string]any, error) {
+// setupOperatorVals returns the values for the constellation-operator chart.
+func setupOperatorVals(_ context.Context, uid string) map[string]any {
 	return map[string]any{
 		"constellation-operator": map[string]any{
 			"constellationUID": uid,
 		},
-	}, nil
+	}
 }
 
 type cloudConfig struct {
