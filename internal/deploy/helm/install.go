@@ -37,10 +37,6 @@ type Installer struct {
 	log *logger.Logger
 }
 
-//type debugLog interface {
-//	Debugf(format string, args ...any)
-//	Sync()
-//}
 
 // NewInstaller creates a new Installer with the given logger.
 func NewInstaller(kubeconfig string) (*Installer, error) {
