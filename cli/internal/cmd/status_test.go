@@ -8,11 +8,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	updatev1alpha1 "github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,29 +21,29 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const successOutput = `Target versions:
-	Image: v1.1.0
-	Kubernetes: v1.2.3
-Installed service versions:
-	Cilium: v1.0.0
-	cert-manager: v1.0.0
-	constellation-operators: v1.1.0
-	constellation-services: v1.1.0
-Cluster status: Node version of every node is up to date
-` + attestationConfigOutput
+const successOutput = targetVersions + versionsOutput + nodesUpToDateOutput + attestationConfigOutput
 
-const inProgressOutput = `Target versions:
+const inProgressOutput = targetVersions + versionsOutput + nodesInProgressOutput + attestationConfigOutput
+
+const targetVersions = `Target versions:
 	Image: v1.1.0
 	Kubernetes: v1.2.3
-Installed service versions:
-	Cilium: v1.0.0
-	cert-manager: v1.0.0
-	constellation-operators: v1.1.0
-	constellation-services: v1.1.0
-Cluster status: Some node versions are out of date
+`
+
+const nodesUpToDateOutput = `Cluster status: Node version of every node is up to date
+`
+
+const nodesInProgressOutput = `Cluster status: Some node versions are out of date
 	Image: 1/2
 	Kubernetes: 1/2
-` + attestationConfigOutput
+`
+
+const versionsOutput = `Service versions:
+	Cilium: v1.0.0
+	cert-manager: v1.0.0
+	constellation-operators: v1.1.0
+	constellation-services: v1.1.0
+`
 
 const attestationConfigOutput = `Attestation config:
 	measurements:
@@ -93,7 +92,6 @@ const attestationConfigOutput = `Attestation config:
 func TestStatus(t *testing.T) {
 	testCases := map[string]struct {
 		kubeClient     stubKubeClient
-		helmClient     stubHelmClient
 		nodeVersion    updatev1alpha1.NodeVersion
 		dynamicErr     error
 		expectedOutput string
@@ -116,9 +114,6 @@ func TestStatus(t *testing.T) {
 						},
 					},
 				},
-			},
-			helmClient: stubHelmClient{
-				serviceVersions: helm.NewServiceVersions(consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 1, 0, ""), consemver.NewFromInt(1, 1, 0, "")),
 			},
 			nodeVersion: updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
@@ -167,9 +162,6 @@ func TestStatus(t *testing.T) {
 					},
 				},
 			},
-			helmClient: stubHelmClient{
-				serviceVersions: helm.NewServiceVersions(consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 0, 0, ""), consemver.NewFromInt(1, 1, 0, ""), consemver.NewFromInt(1, 1, 0, "")),
-			},
 			nodeVersion: updatev1alpha1.NodeVersion{
 				Spec: updatev1alpha1.NodeVersionSpec{
 					ImageVersion:             "v1.1.0",
@@ -197,7 +189,14 @@ func TestStatus(t *testing.T) {
 			require.NoError(err)
 			configMapper := stubConfigMapperAWSNitro{}
 			variant := variant.AWSNitroTPM{}
-			output, err := status(context.Background(), tc.kubeClient, configMapper, tc.helmClient, &stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr}, variant)
+			output, err := status(
+				context.Background(),
+				tc.kubeClient,
+				configMapper,
+				stubGetVersions(versionsOutput),
+				&stubDynamicInterface{data: unstructured.Unstructured{Object: raw}, err: tc.dynamicErr},
+				variant,
+			)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -227,15 +226,6 @@ func (s stubKubeClient) GetNodes(_ context.Context) ([]corev1.Node, error) {
 	return s.nodes, s.err
 }
 
-type stubHelmClient struct {
-	serviceVersions helm.ServiceVersions
-	err             error
-}
-
-func (s stubHelmClient) Versions() (helm.ServiceVersions, error) {
-	return s.serviceVersions, s.err
-}
-
 type stubDynamicInterface struct {
 	data unstructured.Unstructured
 	err  error
@@ -247,4 +237,18 @@ func (s *stubDynamicInterface) GetCurrent(_ context.Context, _ string) (*unstruc
 
 func (s *stubDynamicInterface) Update(_ context.Context, _ *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	return &s.data, s.err
+}
+
+func stubGetVersions(output string) func() (fmt.Stringer, error) {
+	return func() (fmt.Stringer, error) {
+		return stubServiceVersions{output}, nil
+	}
+}
+
+type stubServiceVersions struct {
+	output string
+}
+
+func (s stubServiceVersions) String() string {
+	return s.output
 }

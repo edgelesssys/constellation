@@ -118,10 +118,12 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clus
 			return fmt.Errorf("loading chart: %w", err)
 		}
 
-		// define target version the chart is upgraded to
+		// Get version of the chart embedded in the CLI
+		// This is the version we are upgrading to
+		// Since our bundled charts are embedded with version 0.0.0,
+		// we need to update them to the same version as the CLI
 		var upgradeVersion semver.Semver
-		if info == constellationOperatorsInfo || info == constellationServicesInfo {
-			// ensure that the services chart has the same version as the CLI
+		if info == constellationOperatorsInfo || info == constellationServicesInfo || info == csiInfo {
 			updateVersions(chart, constants.BinaryVersion())
 			upgradeVersion = config.MicroserviceVersion
 		} else {
@@ -221,23 +223,26 @@ func (c *Client) Versions() (ServiceVersions, error) {
 	if err != nil {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", constellationServicesInfo.releaseName, err)
 	}
-	awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName)
-	if err != nil && !errors.Is(err, errReleaseNotFound) {
-		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
+	csiVersions, err := c.csiVersions()
+	if err != nil {
+		return ServiceVersions{}, fmt.Errorf("getting CSI versions: %w", err)
 	}
 
-	res := ServiceVersions{
+	serviceVersions := ServiceVersions{
 		cilium:                 ciliumVersion,
 		certManager:            certManagerVersion,
 		constellationOperators: operatorsVersion,
 		constellationServices:  servicesVersion,
-		awsLBController:        awsLBVersion,
-	}
-	if awsLBVersion != (semver.Semver{}) {
-		res.awsLBController = awsLBVersion
+		csiVersions:            csiVersions,
 	}
 
-	return res, nil
+	if awsLBVersion, err := c.currentVersion(awsLBControllerInfo.releaseName); err == nil {
+		serviceVersions.awsLBController = awsLBVersion
+	} else if !errors.Is(err, errReleaseNotFound) {
+		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", awsLBControllerInfo.releaseName, err)
+	}
+
+	return serviceVersions, nil
 }
 
 // currentVersion returns the version of the currently installed helm release.
@@ -261,43 +266,36 @@ func (c *Client) currentVersion(release string) (semver.Semver, error) {
 	return semver.New(rel[0].Chart.Metadata.Version)
 }
 
-// ServiceVersions bundles the versions of all services that are part of Constellation.
-type ServiceVersions struct {
-	cilium                 semver.Semver
-	certManager            semver.Semver
-	constellationOperators semver.Semver
-	constellationServices  semver.Semver
-	awsLBController        semver.Semver
-}
-
-// NewServiceVersions returns a new ServiceVersions struct.
-func NewServiceVersions(cilium, certManager, constellationOperators, constellationServices semver.Semver) ServiceVersions {
-	return ServiceVersions{
-		cilium:                 cilium,
-		certManager:            certManager,
-		constellationOperators: constellationOperators,
-		constellationServices:  constellationServices,
+func (c *Client) csiVersions() (map[string]semver.Semver, error) {
+	packedChartRelease, err := c.actions.listAction(csiInfo.releaseName)
+	if err != nil {
+		return nil, fmt.Errorf("listing %s: %w", csiInfo.releaseName, err)
 	}
-}
 
-// Cilium returns the version of the Cilium release.
-func (s ServiceVersions) Cilium() semver.Semver {
-	return s.cilium
-}
+	csiVersions := make(map[string]semver.Semver)
 
-// CertManager returns the version of the cert-manager release.
-func (s ServiceVersions) CertManager() semver.Semver {
-	return s.certManager
-}
+	// No CSI driver installed
+	if len(packedChartRelease) == 0 {
+		return csiVersions, nil
+	}
 
-// ConstellationOperators returns the version of the constellation-operators release.
-func (s ServiceVersions) ConstellationOperators() semver.Semver {
-	return s.constellationOperators
-}
+	if len(packedChartRelease) > 1 {
+		return nil, fmt.Errorf("multiple releases found for %s", csiInfo.releaseName)
+	}
 
-// ConstellationServices returns the version of the constellation-services release.
-func (s ServiceVersions) ConstellationServices() semver.Semver {
-	return s.constellationServices
+	if packedChartRelease[0] == nil || packedChartRelease[0].Chart == nil {
+		return nil, fmt.Errorf("received invalid release %s", csiInfo.releaseName)
+	}
+
+	dependencies := packedChartRelease[0].Chart.Metadata.Dependencies
+	for _, dep := range dependencies {
+		var err error
+		csiVersions[dep.Name], err = semver.New(dep.Version)
+		if err != nil {
+			return nil, fmt.Errorf("parsing CSI version %q: %w", dep.Name, err)
+		}
+	}
+	return csiVersions, nil
 }
 
 // installNewRelease installs a previously not installed release on the cluster.

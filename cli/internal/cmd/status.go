@@ -78,6 +78,9 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
+	helmVersionGetter := func() (fmt.Stringer, error) {
+		return helmClient.Versions()
+	}
 
 	stableClient := kubernetes.NewStableClient(kubeClient)
 
@@ -97,7 +100,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
-	output, err := status(cmd.Context(), kubeClient, stableClient, helmClient, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
+	output, err := status(cmd.Context(), kubeClient, stableClient, helmVersionGetter, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
 	}
@@ -107,7 +110,10 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 }
 
 // status queries the cluster for the relevant status information and returns the output string.
-func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient, helmClient helmClient, dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant) (string, error) {
+func status(
+	ctx context.Context, kubeClient kubeClient, cmClient configMapClient, getHelmVersions func() (fmt.Stringer, error),
+	dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant,
+) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
 	if err != nil {
 		return "", fmt.Errorf("getting constellation version: %w", err)
@@ -139,7 +145,7 @@ func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient
 		return "", fmt.Errorf("getting configured versions: %w", err)
 	}
 
-	serviceVersions, err := helmClient.Versions()
+	serviceVersions, err := getHelmVersions()
 	if err != nil {
 		return "", fmt.Errorf("getting service versions: %w", err)
 	}
@@ -153,11 +159,14 @@ func status(ctx context.Context, kubeClient kubeClient, cmClient configMapClient
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
-func statusOutput(targetVersions kubernetes.TargetVersions, serviceVersions helm.ServiceVersions, status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string) string {
+func statusOutput(
+	targetVersions kubernetes.TargetVersions, serviceVersions fmt.Stringer,
+	status map[string]kubernetes.NodeStatus, nodeVersion v1alpha1.NodeVersion, rawAttestationConfig string,
+) string {
 	builder := strings.Builder{}
 
 	builder.WriteString(targetVersionsString(targetVersions))
-	builder.WriteString(serviceVersionsString(serviceVersions))
+	builder.WriteString(serviceVersions.String())
 	builder.WriteString(fmt.Sprintf("Cluster status: %s\n", nodeVersion.Status.Conditions[0].Message))
 	builder.WriteString(nodeStatusString(status, targetVersions))
 	builder.WriteString(fmt.Sprintf("Attestation config:\n%s", indentEntireStringWithTab(rawAttestationConfig)))
@@ -194,17 +203,6 @@ func nodeStatusString(status map[string]kubernetes.NodeStatus, targetVersions ku
 	return builder.String()
 }
 
-// serviceVersionsString creates the service versions part of the output string.
-func serviceVersionsString(versions helm.ServiceVersions) string {
-	builder := strings.Builder{}
-	builder.WriteString("Installed service versions:\n")
-	builder.WriteString(fmt.Sprintf("\tCilium: %s\n", versions.Cilium()))
-	builder.WriteString(fmt.Sprintf("\tcert-manager: %s\n", versions.CertManager()))
-	builder.WriteString(fmt.Sprintf("\tconstellation-operators: %s\n", versions.ConstellationOperators()))
-	builder.WriteString(fmt.Sprintf("\tconstellation-services: %s\n", versions.ConstellationServices()))
-	return builder.String()
-}
-
 // targetVersionsString creates the target versions part of the output string.
 func targetVersionsString(target kubernetes.TargetVersions) string {
 	builder := strings.Builder{}
@@ -221,7 +219,4 @@ type kubeClient interface {
 
 type configMapClient interface {
 	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
-}
-type helmClient interface {
-	Versions() (helm.ServiceVersions, error)
 }

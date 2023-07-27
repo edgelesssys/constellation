@@ -48,11 +48,14 @@ type chartInfo struct {
 }
 
 var (
-	ciliumInfo                 = chartInfo{releaseName: "cilium", chartName: "cilium", path: "charts/cilium"}
-	certManagerInfo            = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
+	// Charts we fetch from an upstream with real versions.
+	ciliumInfo          = chartInfo{releaseName: "cilium", chartName: "cilium", path: "charts/cilium"}
+	certManagerInfo     = chartInfo{releaseName: "cert-manager", chartName: "cert-manager", path: "charts/cert-manager"}
+	awsLBControllerInfo = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
+
+	// Bundled charts with embedded with version 0.0.0.
 	constellationOperatorsInfo = chartInfo{releaseName: "constellation-operators", chartName: "constellation-operators", path: "charts/edgeless/operators"}
 	constellationServicesInfo  = chartInfo{releaseName: "constellation-services", chartName: "constellation-services", path: "charts/edgeless/constellation-services"}
-	awsLBControllerInfo        = chartInfo{releaseName: "aws-load-balancer-controller", chartName: "aws-load-balancer-controller", path: "charts/aws-load-balancer-controller"}
 	csiInfo                    = chartInfo{releaseName: "constellation-csi", chartName: "constellation-csi", path: "charts/edgeless/csi"}
 )
 
