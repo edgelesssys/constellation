@@ -371,7 +371,7 @@ func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string) 
 	return u.hasDiff, u.planErr
 }
 
-func (u *stubTerraformClient) CreateCluster(context.Context, terraform.LogLevel) (terraform.ApplyOutput, error) {
+func (u *stubTerraformClient) CreateCluster(context.Context, cloudprovider.Provider, terraform.LogLevel) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{}, u.CreateClusterErr
 }
 

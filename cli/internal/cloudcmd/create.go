@@ -115,15 +115,17 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 	if err != nil {
 		return clusterid.File{}, fmt.Errorf("creating cluster: %w", err)
 	}
-
-	return clusterid.File{
+	res := clusterid.File{
 		CloudProvider:     opts.Provider,
 		IP:                tfOutput.IP,
 		APIServerCertSANs: tfOutput.APIServerCertSANs,
 		InitSecret:        []byte(tfOutput.Secret),
 		UID:               tfOutput.UID,
-		AttestationURL:    tfOutput.AttestationURL,
-	}, nil
+	}
+	if tfOutput.Azure != nil {
+		res.AttestationURL = tfOutput.Azure.AttestationURL
+	}
+	return res, nil
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
@@ -158,7 +160,10 @@ func (c *Creator) createAzure(ctx context.Context, cl tfResourceClient, opts Cre
 
 	if vars.GetCreateMAA() {
 		// Patch the attestation policy to allow the cluster to boot while having secure boot disabled.
-		if err := c.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
+		if tfOutput.Azure == nil {
+			return terraform.ApplyOutput{}, errors.New("no Terraform Azure output found")
+		}
+		if err := c.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
 			return terraform.ApplyOutput{}, err
 		}
 	}
@@ -227,7 +232,7 @@ func runTerraformCreate(ctx context.Context, cl tfResourceClient, provider cloud
 	}
 
 	defer rollbackOnError(outWriter, &retErr, &rollbackerTerraform{client: cl}, loglevel)
-	tfOutput, err := cl.CreateCluster(ctx, loglevel)
+	tfOutput, err := cl.CreateCluster(ctx, provider, loglevel)
 	if err != nil {
 		return terraform.ApplyOutput{}, err
 	}
@@ -300,7 +305,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 	// Allow rollback of QEMU Terraform workspace from this point on
 	qemuRollbacker.createdWorkspace = true
 
-	tfOutput, err = cl.CreateCluster(ctx, opts.TFLogLevel)
+	tfOutput, err = cl.CreateCluster(ctx, opts.Provider, opts.TFLogLevel)
 	if err != nil {
 		return terraform.ApplyOutput{}, fmt.Errorf("create cluster: %w", err)
 	}

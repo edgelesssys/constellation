@@ -25,7 +25,7 @@ func setupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider,
 	if err != nil {
 		return nil, fmt.Errorf("creating Terraform client: %w", err)
 	}
-	output, err := tfClient.ShowCluster(ctx)
+	output, err := tfClient.ShowCluster(ctx, provider)
 	if err != nil {
 		return nil, fmt.Errorf("getting Terraform output: %w", err)
 	}

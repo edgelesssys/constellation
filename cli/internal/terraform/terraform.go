@@ -161,8 +161,7 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 }
 
 // ShowCluster reads the state of Constellation cluster resources from Terraform.
-// TODO add provider (also to CreateCluster) so we can ensure that provider specific outputs are present.
-func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
+func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provider) (ApplyOutput, error) {
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
 		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
@@ -208,56 +207,58 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 		return ApplyOutput{}, errors.New("invalid type in uid output: not a string")
 	}
 
-	var attestationURL string
-	if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
-		if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
-			attestationURL = attestationURLString
-		}
-	}
-
 	res := ApplyOutput{
 		IP:                ip,
 		APIServerCertSANs: apiServerCertSANs,
 		Secret:            secret,
 		UID:               uid,
-		AttestationURL:    attestationURL,
 	}
 	// TODO add provider
-	gcpProjectOutput, ok := tfState.Values.Outputs["project"]
-	if ok {
-		gcpProject, ok := gcpProjectOutput.Value.(string)
-		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in project output: not a string")
+	switch provider {
+	case cloudprovider.GCP:
+		gcpProjectOutput, ok := tfState.Values.Outputs["project"]
+		if ok {
+			gcpProject, ok := gcpProjectOutput.Value.(string)
+			if !ok {
+				return ApplyOutput{}, errors.New("invalid type in project output: not a string")
+			}
+			cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
+			if !ok {
+				return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
+			}
+			cidrNodes, ok := cidrNodesOutput.Value.(string)
+			if !ok {
+				return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+			}
+			cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
+			if !ok {
+				return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
+			}
+			cidrPods, ok := cidrPodsOutput.Value.(string)
+			if !ok {
+				return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+			}
+			res.GCP = &GCPApplyOutput{
+				ProjectID:  gcpProject,
+				IPCidrNode: cidrNodes,
+				IPCidrPod:  cidrPods,
+			}
 		}
-		cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
-		if !ok {
-			return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
+	case cloudprovider.Azure:
+		var attestationURL string
+		if ok {
+			if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
+				if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
+					attestationURL = attestationURLString
+				}
+			}
 		}
-		cidrNodes, ok := cidrNodesOutput.Value.(string)
-		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
-		}
-		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
-		if !ok {
-			return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
-		}
-		cidrPods, ok := cidrPodsOutput.Value.(string)
-		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
-		}
-		res.GCP = &GCPApplyOutput{
-			ProjectID:  gcpProject,
-			IPCidrNode: cidrNodes,
-			IPCidrPod:  cidrPods,
-		}
-	}
 
-	azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity"]
-	if ok {
-		azureUAMI, ok := azureUAMIOutput.Value.(string)
+		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity"]
 		if !ok {
 			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity output: not a string")
 		}
+		azureUAMI, ok := azureUAMIOutput.Value.(string)
 
 		rgOutput, ok := tfState.Values.Outputs["resource_group"]
 		if !ok {
@@ -299,6 +300,7 @@ func (c *Client) ShowCluster(ctx context.Context) (ApplyOutput, error) {
 			UserAssignedIdentity:     azureUAMI,
 			NetworkSecurityGroupName: networkSGName,
 			LoadBalancerName:         loadBalancerName,
+			AttestationURL:           attestationURL,
 		}
 	}
 	return res, nil
@@ -336,7 +338,7 @@ func PrepareIAMUpgradeWorkspace(file file.Handler, path, oldWorkingDir, newWorki
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOutput, error) {
+func (c *Client) CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel LogLevel) (ApplyOutput, error) {
 	if err := c.setLogLevel(logLevel); err != nil {
 		return ApplyOutput{}, fmt.Errorf("set terraform log level %s: %w", logLevel.String(), err)
 	}
@@ -353,7 +355,7 @@ func (c *Client) CreateCluster(ctx context.Context, logLevel LogLevel) (ApplyOut
 		return ApplyOutput{}, fmt.Errorf("terraform apply: %w", err)
 	}
 
-	return c.ShowCluster(ctx)
+	return c.ShowCluster(ctx, provider)
 }
 
 // ApplyOutput contains the Terraform output values of a cluster creation
@@ -363,11 +365,8 @@ type ApplyOutput struct {
 	APIServerCertSANs []string
 	Secret            string
 	UID               string
-	// AttestationURL is the URL of the attestation provider.
-	// It is only set if the cluster is created on Azure.
-	AttestationURL string
-	GCP            *GCPApplyOutput
-	Azure          *AzureApplyOutput
+	GCP               *GCPApplyOutput
+	Azure             *AzureApplyOutput
 }
 
 // AzureApplyOutput contains the Terraform output values of a terraform apply operation on Microsoft Azure.
@@ -377,6 +376,8 @@ type AzureApplyOutput struct {
 	NetworkSecurityGroupName string
 	LoadBalancerName         string
 	UserAssignedIdentity     string
+	// AttestationURL is the URL of the attestation provider.
+	AttestationURL string
 }
 
 // GCPApplyOutput contains the Terraform output values of a terraform apply operation on GCP.
