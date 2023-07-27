@@ -36,15 +36,17 @@ func newTemplateCmd() *cobra.Command {
 }
 
 func runTemplate(cmd *cobra.Command, _ []string) error {
-	fields := fields.Fields{}
-
 	flags, err := parseTemplateFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parse template flags: %w", err)
 	}
 
+	if err := flags.extraFields.Check(); err != nil {
+		return fmt.Errorf("validating extra fields: %w", err)
+	}
+
 	logstashPreparer := internal.NewLogstashPreparer(
-		fields.Extend(flags.extraFields),
+		flags.extraFields,
 		flags.username,
 		flags.password,
 		flags.indexPrefix,

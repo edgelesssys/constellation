@@ -3,14 +3,14 @@ Copyright (c) Edgeless Systems GmbH
 
 SPDX-License-Identifier: AGPL-3.0-only
 */
-package fields
+package logcollector
+
+// THIS FILE IS A DUPLICATE OF hack/logcollector/fields/fields.go
 
 import (
 	"fmt"
 	"strings"
 )
-
-// THIS FILE IS A DUPLICATE OF debugd/internal/debugd/logcollector/fields.go
 
 var (
 	// DebugdLogcollectPrefix is the prefix for all OpenSearch fields specified by the user when starting through debugd.
