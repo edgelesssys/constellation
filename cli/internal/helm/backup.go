@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 )
@@ -56,11 +57,23 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 	c.log.Debugf("Starting CR backup")
 	for _, crd := range crds {
 		c.log.Debugf("Creating backup for resource type: %s", crd.Name)
+
+		// Iterate over all versions of the CRD
+		// TODO: Consider iterating over crd.Status.StoredVersions instead
+		// Currently, we have to ignore not-found errors, because a CRD might define
+		// a version that is not installed in the cluster.
+		// With the StoredVersions field, we could only iterate over the installed versions.
 		for _, version := range crd.Spec.Versions {
+			c.log.Debugf("Creating backup of CRs for %q at version %q", crd.Name, version.Name)
+
 			gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: version.Name, Resource: crd.Spec.Names.Plural}
 			crs, err := c.kubectl.GetCRs(ctx, gvr)
 			if err != nil {
-				return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)
+				if !k8serrors.IsNotFound(err) {
+					return fmt.Errorf("retrieving CR %s: %w", crd.Name, err)
+				}
+				c.log.Debugf("No CRs found for %q at version %q, skipping...", crd.Name, version.Name)
+				continue
 			}
 
 			backupFolder := c.backupFolder(upgradeID)

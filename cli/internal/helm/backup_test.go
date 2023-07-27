@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
@@ -117,6 +118,23 @@ func TestBackupCRs(t *testing.T) {
 			getCRsError: errors.New("api error"),
 			wantError:   true,
 		},
+		"custom resource not found": {
+			upgradeID: "1234",
+			crd: apiextensionsv1.CustomResourceDefinition{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
+						Plural: "foobars",
+					},
+					Group: "some.group",
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+						{
+							Name: "versionZero",
+						},
+					},
+				},
+			},
+			getCRsError: k8serrors.NewNotFound(schema.GroupResource{Group: "some.group"}, "foobars"),
+		},
 	}
 
 	for name, tc := range testCases {
@@ -140,6 +158,10 @@ func TestBackupCRs(t *testing.T) {
 			assert.NoError(err)
 
 			data, err := afero.ReadFile(memFs, filepath.Join(client.backupFolder(tc.upgradeID), tc.crd.Spec.Group, tc.crd.Spec.Versions[0].Name, tc.resource.GetNamespace(), tc.resource.GetKind(), tc.resource.GetName()+".yaml"))
+			if tc.expectedFile == "" {
+				assert.Error(err)
+				return
+			}
 			require.NoError(err)
 			assert.YAMLEq(tc.expectedFile, string(data))
 		})
