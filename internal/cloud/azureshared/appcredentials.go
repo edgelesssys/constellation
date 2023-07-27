@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+var (
+	subscriptionPattern = regexp.MustCompile(`subscriptions/([^/]+)/`)
+	rgPattern           = regexp.MustCompile(`resourceGroups/([^/]+)/`)
+)
+
 // ApplicationCredentials is a set of Azure API credentials.
 // It can contain a client secret and carries the preferred authentication method.
 // It is the equivalent of a service account key in other cloud providers.
@@ -41,9 +46,7 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 	}
 	query := uri.Query()
 
-	subscriptionPattern := regexp.MustCompile(`subscriptions/([^/]+)/`)
 	subscriptionID := getFirstMatchOrEmpty(subscriptionPattern, query.Get("uami_resource_id"))
-	rgPattern := regexp.MustCompile(`resourceGroups/([^/]+)/`)
 	resourceGroup := getFirstMatchOrEmpty(rgPattern, query.Get("uami_resource_id"))
 
 	preferredAuthMethod := FromString(query.Get("preferred_auth_method"))
@@ -62,7 +65,7 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 func getFirstMatchOrEmpty(pattern *regexp.Regexp, str string) string {
 	subscriptionMatches := pattern.FindStringSubmatch(str)
 	var subscriptionID string
-	if len(subscriptionMatches) > 0 {
+	if len(subscriptionMatches) > 1 {
 		subscriptionID = subscriptionMatches[1]
 	}
 	return subscriptionID
