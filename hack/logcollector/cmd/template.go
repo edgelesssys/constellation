@@ -87,9 +87,9 @@ func parseTemplateFlags(cmd *cobra.Command) (templateFlags, error) {
 		return templateFlags{}, fmt.Errorf("parse index-prefix string: %w", err)
 	}
 
-	extraFields, err := cmd.Flags().GetStringToString("info")
+	extraFields, err := cmd.Flags().GetStringToString("fields")
 	if err != nil {
-		return templateFlags{}, fmt.Errorf("parse info map: %w", err)
+		return templateFlags{}, fmt.Errorf("parse fields map: %w", err)
 	}
 
 	port, err := cmd.Flags().GetInt("port")
