@@ -102,12 +102,11 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 }
 
 func TestUpdateURLs(t *testing.T) {
-	ver := versionsapi.Version{
-		Ref:     "foo",
-		Stream:  "nightly",
-		Version: "v7.7.7",
-		Kind:    versionsapi.VersionKindImage,
-	}
+	require := require.New(t)
+
+	ver, err := versionsapi.NewVersion("foo", "nightly", "v7.7.7", versionsapi.VersionKindImage)
+	require.NoError(err)
+
 	testCases := map[string]struct {
 		conf                   *config.Config
 		flags                  *fetchMeasurementsFlags

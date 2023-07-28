@@ -27,40 +27,40 @@ func TestNewVersionFromShortPath(t *testing.T) {
 			path: "v9.9.9",
 			kind: VersionKindImage,
 			wantVer: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 		},
 		"release debug image": {
 			path: "stream/debug/v9.9.9",
 			kind: VersionKindImage,
 			wantVer: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 		},
 		"stable release cli": {
 			path: "v9.9.9",
 			kind: VersionKindCLI,
 			wantVer: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 		},
 		"release debug cli": {
 			path: "stream/debug/v9.9.9",
 			kind: VersionKindCLI,
 			wantVer: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 		},
 		"unknown kind": {
@@ -102,55 +102,55 @@ func TestVersionShortPath(t *testing.T) {
 	}{
 		"stable release image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			want: "v9.9.9",
 		},
 		"release debug image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			want: "stream/debug/v9.9.9",
 		},
 		"branch image": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			want: "ref/foo/stream/debug/v9.9.9",
 		},
 		"stable release cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			want: "v9.9.9",
 		},
 		"release debug cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			want: "stream/debug/v9.9.9",
 		},
 		"branch cli": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			want: "ref/foo/stream/debug/v9.9.9",
 		},
@@ -173,71 +173,71 @@ func TestVersionValidate(t *testing.T) {
 	}{
 		"valid image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 		},
 		"invalid ref image": {
 			ver: Version{
-				Ref:     "foo/bar",
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     "foo/bar",
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			wantErr: true,
 		},
 		"invalid stream image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "foo/bar",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "foo/bar",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			wantErr: true,
 		},
 		"invalid version image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9/foo",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9/foo",
+				kind:    VersionKindImage,
 			},
 			wantErr: true,
 		},
 		"valid cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 		},
 		"invalid ref cli": {
 			ver: Version{
-				Ref:     "foo/bar",
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     "foo/bar",
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			wantErr: true,
 		},
 		"invalid stream cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "foo/bar",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "foo/bar",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			wantErr: true,
 		},
 		"invalid version cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9/foo",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9/foo",
+				kind:    VersionKindCLI,
 			},
 			wantErr: true,
 		},
@@ -268,7 +268,7 @@ func TestVersionMajor(t *testing.T) {
 		t.Run(version, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ver := Version{Version: version}
+			ver := Version{version: version}
 			assert.Equal(major, ver.Major())
 		})
 	}
@@ -285,7 +285,7 @@ func TestVersionMajorMinor(t *testing.T) {
 		t.Run(version, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ver := Version{Version: version}
+			ver := Version{version: version}
 			assert.Equal(major, ver.MajorMinor())
 		})
 	}
@@ -333,7 +333,7 @@ func TestVersionWithGranularity(t *testing.T) {
 		t.Run(tc.ver, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ver := Version{Version: tc.ver}
+			ver := Version{version: tc.ver}
 			assert.Equal(tc.want, ver.WithGranularity(tc.gran))
 		})
 	}
@@ -348,32 +348,32 @@ func TestVersionListPathURL(t *testing.T) {
 	}{
 		"release image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMajor,
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/versions/major/v9/image.json",
-			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/versions/major/v9/image.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/versions/major/v9/image.json",
+			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/versions/major/v9/image.json",
 		},
 		"release with minor image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMinor,
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/versions/minor/v9.9/image.json",
-			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/versions/minor/v9.9/image.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/versions/minor/v9.9/image.json",
+			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/versions/minor/v9.9/image.json",
 		},
 		"release with patch image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityPatch,
 			wantPath: "",
@@ -381,10 +381,10 @@ func TestVersionListPathURL(t *testing.T) {
 		},
 		"release with unknown image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityUnknown,
 			wantPath: "",
@@ -392,32 +392,32 @@ func TestVersionListPathURL(t *testing.T) {
 		},
 		"release debug stream image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMajor,
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/versions/major/v9/image.json",
-			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/versions/major/v9/image.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/versions/major/v9/image.json",
+			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/versions/major/v9/image.json",
 		},
 		"release debug stream with minor image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMinor,
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/versions/minor/v9.9/image.json",
-			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/versions/minor/v9.9/image.json",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/versions/minor/v9.9/image.json",
+			wantURL:  constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/versions/minor/v9.9/image.json",
 		},
 		"branch ref image": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMajor,
 			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/versions/major/v9/image.json",
@@ -425,10 +425,10 @@ func TestVersionListPathURL(t *testing.T) {
 		},
 		"branch ref with minor image": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			gran:     GranularityMinor,
 			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/versions/minor/v9.9/image.json",
@@ -463,10 +463,10 @@ func TestVersionArtifactURL(t *testing.T) {
 	}{
 		"nightly-feature": {
 			ver: Version{
-				Ref:     "feat-some-feature",
-				Stream:  "nightly",
-				Version: "v2.6.0-pre.0.20230217095603-193dd48ca19f",
-				Kind:    VersionKindImage,
+				ref:     "feat-some-feature",
+				stream:  "nightly",
+				version: "v2.6.0-pre.0.20230217095603-193dd48ca19f",
+				kind:    VersionKindImage,
 			},
 			csp:                cloudprovider.GCP,
 			wantMeasurementURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefixV2 + "/ref/feat-some-feature/stream/nightly/v2.6.0-pre.0.20230217095603-193dd48ca19f/image/measurements.json",
@@ -474,7 +474,7 @@ func TestVersionArtifactURL(t *testing.T) {
 		},
 		"fail for wrong kind": {
 			ver: Version{
-				Kind: VersionKindCLI,
+				kind: VersionKindCLI,
 			},
 			wantErr: true,
 		},
@@ -503,55 +503,55 @@ func TestVersionArtifactPathURL(t *testing.T) {
 	}{
 		"release image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/v9.9.9",
 		},
 		"release debug stream image": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/v9.9.9",
 		},
 		"branch ref image": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindImage,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindImage,
 			},
 			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/v9.9.9",
 		},
 		"release cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "stable",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "stable",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/stable/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/stable/v9.9.9",
 		},
 		"release debug stream cli": {
 			ver: Version{
-				Ref:     ReleaseRef,
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     constants.ReleaseRef,
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
-			wantPath: constants.CDNAPIPrefix + "/ref/" + ReleaseRef + "/stream/debug/v9.9.9",
+			wantPath: constants.CDNAPIPrefix + "/ref/" + constants.ReleaseRef + "/stream/debug/v9.9.9",
 		},
 		"branch ref cli": {
 			ver: Version{
-				Ref:     "foo",
-				Stream:  "debug",
-				Version: "v9.9.9",
-				Kind:    VersionKindCLI,
+				ref:     "foo",
+				stream:  "debug",
+				version: "v9.9.9",
+				kind:    VersionKindCLI,
 			},
 			wantPath: constants.CDNAPIPrefix + "/ref/foo/stream/debug/v9.9.9",
 		},
@@ -659,14 +659,14 @@ func TestGranularityFromString(t *testing.T) {
 
 func TestCanonicalRef(t *testing.T) {
 	testCases := map[string]string{
-		"feat/foo": "feat-foo",
-		"feat-foo": "feat-foo",
-		"feat$foo": "feat-foo",
-		"3234":     "3234",
-		"feat foo": "feat-foo",
-		"/../":     "----",
-		ReleaseRef: ReleaseRef,
-		".":        "",
+		"feat/foo":           "feat-foo",
+		"feat-foo":           "feat-foo",
+		"feat$foo":           "feat-foo",
+		"3234":               "3234",
+		"feat foo":           "feat-foo",
+		"/../":               "----",
+		constants.ReleaseRef: constants.ReleaseRef,
+		".":                  "",
 	}
 
 	for ref, want := range testCases {
@@ -742,17 +742,17 @@ func TestShortPath(t *testing.T) {
 		version string
 	}{
 		"v9.9.9": {
-			ref:     ReleaseRef,
+			ref:     constants.ReleaseRef,
 			stream:  "stable",
 			version: "v9.9.9",
 		},
 		"v9.9.9-foo": {
-			ref:     ReleaseRef,
+			ref:     constants.ReleaseRef,
 			stream:  "stable",
 			version: "v9.9.9-foo",
 		},
 		"stream/debug/v9.9.9": {
-			ref:     ReleaseRef,
+			ref:     constants.ReleaseRef,
 			stream:  "debug",
 			version: "v9.9.9",
 		},
@@ -786,17 +786,17 @@ func TestParseShortPath(t *testing.T) {
 		wantErr     bool
 	}{
 		"v9.9.9": {
-			wantRef:     ReleaseRef,
+			wantRef:     constants.ReleaseRef,
 			wantStream:  "stable",
 			wantVersion: "v9.9.9",
 		},
 		"v9.9.9-foo": {
-			wantRef:     ReleaseRef,
+			wantRef:     constants.ReleaseRef,
 			wantStream:  "stable",
 			wantVersion: "v9.9.9-foo",
 		},
 		"stream/debug/v9.9.9": {
-			wantRef:     ReleaseRef,
+			wantRef:     constants.ReleaseRef,
 			wantStream:  "debug",
 			wantVersion: "v9.9.9",
 		},

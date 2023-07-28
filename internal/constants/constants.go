@@ -232,6 +232,14 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELcPl4Ik+qZuH4K049wksoXK/Os3Z
 b92PDCpM7FZAINQF88s1TZS/HmRXYk62UJ4eqPduvUnJmXhNikhLbMi6fw==
 -----END PUBLIC KEY-----
 `
+
+	// ReleaseRef is the ref used for release versions.
+	// TODO (derpsteb): move this back into versionsapi all Fetch calls that validate signatures are replaced with FetchAndVerify.
+	// Located in this global pkg at the moment because versionsapi and sigstore should not import each other.
+	// Previously sigstore imported versionsapi to access the ReleaseRef constant.
+	// internal/api needs to import sigstore to create and verify signatures.
+	// Currently, we creating signature in different places. This could move into internal/api.
+	ReleaseRef = "-"
 )
 
 // BinaryVersion returns the version of this Binary.

@@ -43,9 +43,9 @@ func uploadImage(ctx context.Context, archiveC archivist, uploadC uploader, req 
 	}
 
 	imageInfo := versionsapi.ImageInfo{
-		Ref:     req.Version.Ref,
-		Stream:  req.Version.Stream,
-		Version: req.Version.Version,
+		Ref:     req.Version.Ref(),
+		Stream:  req.Version.Stream(),
+		Version: req.Version.Version(),
 		List:    imageReferences,
 	}
 

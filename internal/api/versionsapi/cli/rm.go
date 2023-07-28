@@ -26,6 +26,7 @@ import (
 	"github.com/aws/smithy-go"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
@@ -181,7 +182,7 @@ func deleteRef(ctx context.Context, clients rmImageClients, ref string, dryrun b
 
 	for _, ver := range vers {
 		if err := deleteImage(ctx, clients, ver, dryrun, log); err != nil {
-			retErr = errors.Join(retErr, fmt.Errorf("deleting images for version %s: %w", ver.Version, err))
+			retErr = errors.Join(retErr, fmt.Errorf("deleting images for version %s: %w", ver.Version(), err))
 		}
 	}
 
@@ -197,9 +198,9 @@ func deleteImage(ctx context.Context, clients rmImageClients, ver versionsapi.Ve
 	var retErr error
 
 	imageInfo := versionsapi.ImageInfo{
-		Ref:     ver.Ref,
-		Stream:  ver.Stream,
-		Version: ver.Version,
+		Ref:     ver.Ref(),
+		Stream:  ver.Stream(),
+		Version: ver.Version(),
 	}
 	imageInfo, err := clients.version.FetchImageInfo(ctx, imageInfo)
 	var notFound *apiclient.NotFoundError
@@ -265,7 +266,7 @@ type rmFlags struct {
 }
 
 func (f *rmFlags) validate() error {
-	if f.ref == versionsapi.ReleaseRef {
+	if f.ref == constants.ReleaseRef {
 		return fmt.Errorf("cannot delete from release ref")
 	}
 
@@ -291,14 +292,9 @@ func (f *rmFlags) validate() error {
 		return nil
 	}
 
-	ver := versionsapi.Version{
-		Ref:     f.ref,
-		Stream:  f.stream,
-		Version: f.version,
-		Kind:    versionsapi.VersionKindImage,
-	}
-	if err := ver.Validate(); err != nil {
-		return fmt.Errorf("invalid version: %w", err)
+	ver, err := versionsapi.NewVersion(f.ref, f.stream, f.version, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("creating version: %w", err)
 	}
 	f.ver = ver
 

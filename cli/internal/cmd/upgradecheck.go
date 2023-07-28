@@ -52,7 +52,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("update-config", "u", false, "update the specified config file with the suggested versions")
-	cmd.Flags().String("ref", versionsapi.ReleaseRef, "the reference to use for querying new versions")
+	cmd.Flags().String("ref", constants.ReleaseRef, "the reference to use for querying new versions")
 	cmd.Flags().String("stream", "stable", "the stream to use for querying new versions")
 
 	return cmd
@@ -301,7 +301,7 @@ func sortedMapKeys[T any](a map[string]T) []string {
 func filterImageUpgrades(currentVersion string, newVersions []versionsapi.Version) []versionsapi.Version {
 	newImages := []versionsapi.Version{}
 	for i := range newVersions {
-		if err := compatibility.IsValidUpgrade(currentVersion, newVersions[i].Version); err != nil {
+		if err := compatibility.IsValidUpgrade(currentVersion, newVersions[i].Version()); err != nil {
 			continue
 		}
 		newImages = append(newImages, newVersions[i])

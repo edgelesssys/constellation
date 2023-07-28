@@ -28,7 +28,7 @@ func TestLatestJSONPath(t *testing.T) {
 		},
 		"latest list release": {
 			list: Latest{
-				Ref:    ReleaseRef,
+				Ref:    constants.ReleaseRef,
 				Stream: "stable",
 				Kind:   VersionKindImage,
 			},
@@ -59,7 +59,7 @@ func TestLatestURL(t *testing.T) {
 		},
 		"latest list release": {
 			list: Latest{
-				Ref:    ReleaseRef,
+				Ref:    constants.ReleaseRef,
 				Stream: "stable",
 				Kind:   VersionKindImage,
 			},

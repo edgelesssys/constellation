@@ -332,6 +332,11 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 	// -----END ENCRYPTED COSIGN PRIVATE KEY-----
 	cosignPublicKey := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
+	v1Test, err := versionsapi.NewVersion("-", "stable", "v1.0.0-test", versionsapi.VersionKindImage)
+	require.NoError(t, err)
+	v1AnotherImage, err := versionsapi.NewVersion("-", "stable", "v1.0.0-another-image", versionsapi.VersionKindImage)
+	require.NoError(t, err)
+
 	testCases := map[string]struct {
 		measurements       string
 		csp                cloudprovider.Provider
@@ -347,7 +352,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"json measurements": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
@@ -359,7 +364,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"404 measurements": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusNotFound,
 			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
@@ -368,7 +373,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"404 signature": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusNotFound,
@@ -377,7 +382,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"broken signature": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusOK,
 			signature:          "AAAAAAA1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
@@ -386,7 +391,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"metadata CSP mismatch": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.GCP,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
@@ -395,7 +400,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"metadata image mismatch": {
 			measurements:       `{"version":"v1.0.0-test","ref":"-","stream":"stable","list":[{"csp":"Unknown","attestationVariant":"dummy","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}]}`,
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-another-image", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1AnotherImage,
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIHuW2420EqN4Kj6OEaVMmufH7d01vyR1J+SWg8H4elyBAiEA1Ki5Hfq0iI70qpViYbrTFrd8e840NjtdAxGqJKiJgbA=",
 			signatureStatus:    http.StatusOK,
@@ -404,7 +409,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		"not json": {
 			measurements:       "This is some content to be signed!\n",
 			csp:                cloudprovider.Unknown,
-			imageVersion:       versionsapi.Version{Ref: "-", Stream: "stable", Version: "v1.0.0-test", Kind: versionsapi.VersionKindImage},
+			imageVersion:       v1Test,
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIQCGA/lSu5qCJgNNvgMaTKJ9rj6vQMecUDaQo3ukaiAfUgIgWoxXRoDKLY9naN7YgxokM7r2fwnyYk3M2WKJJO1g6yo=",
 			signatureStatus:    http.StatusOK,

@@ -13,6 +13,7 @@ import (
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
@@ -61,14 +62,9 @@ func runAdd(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 
 	log.Debugf("Creating version struct")
-	ver := versionsapi.Version{
-		Ref:     flags.ref,
-		Stream:  flags.stream,
-		Version: flags.version,
-		Kind:    flags.kind,
-	}
-	if err := ver.Validate(); err != nil {
-		return err
+	ver, err := versionsapi.NewVersion(flags.ref, flags.stream, flags.version, flags.kind)
+	if err != nil {
+		return fmt.Errorf("creating version: %w", err)
 	}
 
 	log.Debugf("Creating versions API client")
@@ -108,8 +104,8 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 	log *logger.Logger,
 ) error {
 	verListReq := versionsapi.List{
-		Ref:         ver.Ref,
-		Stream:      ver.Stream,
+		Ref:         ver.Ref(),
+		Stream:      ver.Stream(),
 		Granularity: gran,
 		Base:        ver.WithGranularity(gran),
 		Kind:        kind,
@@ -146,28 +142,28 @@ func ensureVersion(ctx context.Context, client *versionsapi.Client, kind version
 
 func updateLatest(ctx context.Context, client *versionsapi.Client, kind versionsapi.VersionKind, ver versionsapi.Version, log *logger.Logger) error {
 	latest := versionsapi.Latest{
-		Ref:    ver.Ref,
-		Stream: ver.Stream,
+		Ref:    ver.Ref(),
+		Stream: ver.Stream(),
 		Kind:   kind,
 	}
 	latest, err := client.FetchVersionLatest(ctx, latest)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		log.Debugf("Latest version for ref %q and stream %q not found", ver.Ref, ver.Stream)
+		log.Debugf("Latest version for ref %q and stream %q not found", ver.Ref(), ver.Stream())
 	} else if err != nil {
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
-	if latest.Version == ver.Version {
+	if latest.Version == ver.Version() {
 		log.Infof("Version %q is already latest version", ver)
 		return nil
 	}
 
 	log.Infof("Setting %q as latest version", ver)
 	latest = versionsapi.Latest{
-		Ref:     ver.Ref,
-		Stream:  ver.Stream,
-		Version: ver.Version,
+		Ref:     ver.Ref(),
+		Stream:  ver.Stream(),
+		Version: ver.Version(),
 		Kind:    kind,
 	}
 	if err := client.UpdateVersionLatest(ctx, latest); err != nil {
@@ -208,8 +204,8 @@ func (f *addFlags) validate(log *logger.Logger) error {
 	}
 
 	if f.release {
-		log.Debugf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
-		f.ref = versionsapi.ReleaseRef
+		log.Debugf("Setting ref to %q, as release flag is set", constants.ReleaseRef)
+		f.ref = constants.ReleaseRef
 	} else {
 		log.Debugf("Setting latest to true, as release flag is not set")
 		f.latest = true // always set latest for non-release versions

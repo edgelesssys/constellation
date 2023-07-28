@@ -308,11 +308,9 @@ func (m *M) fromImageMeasurementsV2(
 	measurements ImageMeasurementsV2, wantVersion versionsapi.Version,
 	csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) error {
-	gotVersion := versionsapi.Version{
-		Ref:     measurements.Ref,
-		Stream:  measurements.Stream,
-		Version: measurements.Version,
-		Kind:    versionsapi.VersionKindImage,
+	gotVersion, err := versionsapi.NewVersion(measurements.Ref, measurements.Stream, measurements.Version, versionsapi.VersionKindImage)
+	if err != nil {
+		return fmt.Errorf("invalid metadata version: %w", err)
 	}
 	if !wantVersion.Equal(gotVersion) {
 		return fmt.Errorf("invalid measurement metadata: version mismatch: expected %s, got %s", wantVersion.ShortPath(), gotVersion.ShortPath())

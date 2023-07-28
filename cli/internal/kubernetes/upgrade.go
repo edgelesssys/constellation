@@ -224,7 +224,7 @@ func (u *Upgrader) UpgradeNodeVersion(ctx context.Context, conf *config.Config, 
 	upgradeErrs := []error{}
 	var upgradeErr *compatibility.InvalidUpgradeError
 
-	err = u.updateImage(&nodeVersion, imageReference, imageVersion.Version, force)
+	err = u.updateImage(&nodeVersion, imageReference, imageVersion.Version(), force)
 	switch {
 	case errors.As(err, &upgradeErr):
 		upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping image upgrades: %w", err))

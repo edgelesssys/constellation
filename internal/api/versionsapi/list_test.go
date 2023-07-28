@@ -344,10 +344,10 @@ func TestListStructuredVersions(t *testing.T) {
 
 	verStrs := make([]string, len(versions))
 	for i, v := range versions {
-		assert.Equal(list.Ref, v.Ref)
-		assert.Equal(list.Stream, v.Stream)
-		assert.Equal(list.Kind, v.Kind)
-		verStrs[i] = v.Version
+		assert.Equal(list.Ref, v.Ref())
+		assert.Equal(list.Stream, v.Stream())
+		assert.Equal(list.Kind, v.Kind())
+		verStrs[i] = v.version
 	}
 
 	assert.ElementsMatch(list.Versions, verStrs)

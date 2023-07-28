@@ -67,9 +67,9 @@ func runEnvelopeMeasurements(cmd *cobra.Command, _ []string) error {
 	}
 
 	enveloped := measurements.ImageMeasurementsV2{
-		Ref:     flags.version.Ref,
-		Stream:  flags.version.Stream,
-		Version: flags.version.Version,
+		Ref:     flags.version.Ref(),
+		Stream:  flags.version.Stream(),
+		Version: flags.version.Version(),
 		List: []measurements.ImageMeasurementsV2Entry{
 			{
 				CSP:                flags.csp,

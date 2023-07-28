@@ -151,21 +151,17 @@ func TestGetCurrentImageVersion(t *testing.T) {
 
 func TestGetCompatibleImageMeasurements(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 
 	csp := cloudprovider.Azure
 	attestationVariant := variant.AzureSEVSNP{}
-	zero := versionsapi.Version{
-		Ref:     "-",
-		Stream:  "stable",
-		Version: "v0.0.0",
-		Kind:    versionsapi.VersionKindImage,
-	}
-	one := versionsapi.Version{
-		Ref:     "-",
-		Stream:  "stable",
-		Version: "v1.0.0",
-		Kind:    versionsapi.VersionKindImage,
-	}
+
+	zero, err := versionsapi.NewVersion("-", "stable", "v0.0.0", versionsapi.VersionKindImage)
+	require.NoError(err)
+
+	one, err := versionsapi.NewVersion("-", "stable", "v1.0.0", versionsapi.VersionKindImage)
+	require.NoError(err)
+
 	images := []versionsapi.Version{zero, one}
 
 	client := newTestClient(func(req *http.Request) *http.Response {
@@ -215,18 +211,13 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 }
 
 func TestUpgradeCheck(t *testing.T) {
-	v2_3 := versionsapi.Version{
-		Ref:     "-",
-		Stream:  "stable",
-		Version: "v2.3.0",
-		Kind:    versionsapi.VersionKindImage,
-	}
-	v2_5 := versionsapi.Version{
-		Ref:     "-",
-		Stream:  "stable",
-		Version: "v2.5.0",
-		Kind:    versionsapi.VersionKindImage,
-	}
+	require := require.New(t)
+	v2_3, err := versionsapi.NewVersion("-", "stable", "v2.3.0", versionsapi.VersionKindImage)
+	require.NoError(err)
+
+	v2_5, err := versionsapi.NewVersion("-", "stable", "v2.5.0", versionsapi.VersionKindImage)
+	require.NoError(err)
+
 	collector := stubVersionCollector{
 		supportedServicesVersions: consemver.NewFromInt(2, 5, 0, ""),
 		supportedImages:           []versionsapi.Version{v2_3},
@@ -279,7 +270,6 @@ func TestUpgradeCheck(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)

@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	sigsig "github.com/sigstore/sigstore/pkg/signature"
@@ -55,11 +54,8 @@ func (CosignVerifier) VerifySignature(content, signature, publicKey []byte) erro
 }
 
 // CosignPublicKeyForVersion returns the public key for the given version.
-func CosignPublicKeyForVersion(ver versionsapi.Version) ([]byte, error) {
-	if err := ver.Validate(); err != nil {
-		return nil, fmt.Errorf("selecting public key: invalid version %s: %w", ver.ShortPath(), err)
-	}
-	if ver.Ref == versionsapi.ReleaseRef && ver.Stream == "stable" {
+func CosignPublicKeyForVersion(v version) ([]byte, error) {
+	if v.Ref() == constants.ReleaseRef && v.Stream() == "stable" {
 		return []byte(constants.CosignPublicKeyReleases), nil
 	}
 	return []byte(constants.CosignPublicKeyDev), nil
