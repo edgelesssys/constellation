@@ -1790,6 +1790,14 @@ def go_dependencies():
         sum = "h1:Q2TI34V/NCLGQQkdc0/KmPx/7ix9YnGDUQDT+gqvDw0=",
         version = "v0.0.0-20230530085549-fd2878a4dead",
     )
+    go_repository(
+        name = "com_github_edgelesssys_sev_snp_measure_go",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/edgelesssys/sev-snp-measure-go",
+        sum = "h1:M+QLxYKZm+fbPEH8G47GOmHbbL8k1ct04GYZbq0R3VY=",
+        version = "v0.0.0-20230727111429-1dabef884532",
+    )
 
     go_repository(
         name = "com_github_edsrzf_mmap_go",
@@ -5710,8 +5718,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/stretchr/testify",
-        sum = "h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=",
-        version = "v1.8.3",
+        sum = "h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=",
+        version = "v1.8.4",
     )
     go_repository(
         name = "com_github_subosito_gotenv",

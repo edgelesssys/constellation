@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "attestation.go",
         "attestationversion.go",
+        "aws.go",
         "azure.go",
         "config.go",
         "config_doc.go",
@@ -30,6 +31,7 @@ go_library(
         "//internal/constants",
         "//internal/file",
         "//internal/versions",
+        "@com_github_edgelesssys_sev_snp_measure_go//ovmf",
         "@com_github_go_playground_locales//en",
         "@com_github_go_playground_universal_translator//:universal-translator",
         "@com_github_go_playground_validator_v10//:validator",

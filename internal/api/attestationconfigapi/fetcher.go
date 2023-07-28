@@ -28,6 +28,9 @@ type Fetcher interface {
 	FetchAzureSEVSNPVersion(ctx context.Context, azureVersion AzureSEVSNPVersionAPI) (AzureSEVSNPVersionAPI, error)
 	FetchAzureSEVSNPVersionList(ctx context.Context, attestation AzureSEVSNPVersionList) (AzureSEVSNPVersionList, error)
 	FetchAzureSEVSNPVersionLatest(ctx context.Context, now time.Time) (AzureSEVSNPVersionAPI, error)
+	FetchAWSFirmwareMetadata(ctx context.Context, firmwareMetadata AWSFirmwareMetadata) (AWSFirmwareMetadata, error)
+	FetchAWSFirmwareMetadataList(ctx context.Context, attestation AWSFirmwareMetadataList) (AWSFirmwareMetadataList, error)
+	FetchAWSFirmwareMetadataLatest(ctx context.Context, now time.Time) (AWSFirmwareMetadata, error)
 }
 
 // fetcher fetches AttestationCfg API resources without authentication.

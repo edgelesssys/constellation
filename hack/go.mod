@@ -48,7 +48,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cobra v1.7.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	go.uber.org/goleak v1.2.1
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
@@ -129,6 +129,7 @@ require (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0 // indirect
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f // indirect
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead // indirect
+	github.com/edgelesssys/sev-snp-measure-go v0.0.0-20230727111429-1dabef884532 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect

@@ -398,6 +398,8 @@ github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f 
 github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f/go.mod h1:hX9gZBSvliJcBEAyrJDh7990hLRg/Is+6PBpDZWSMoc=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead h1:Q2TI34V/NCLGQQkdc0/KmPx/7ix9YnGDUQDT+gqvDw0=
 github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead/go.mod h1:IC72qyykUIWl0ZmSk53L4xbLCFDBEGZVaujUmPQOEyw=
+github.com/edgelesssys/sev-snp-measure-go v0.0.0-20230727111429-1dabef884532 h1:M+QLxYKZm+fbPEH8G47GOmHbbL8k1ct04GYZbq0R3VY=
+github.com/edgelesssys/sev-snp-measure-go v0.0.0-20230727111429-1dabef884532/go.mod h1:uvD6SNOxfV1BYqPv1PYTVBjsc+NoiDynRr/X4RjGutM=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/emicklei/go-restful/v3 v3.10.1 h1:rc42Y5YTp7Am7CS630D7JmhRjq4UlEUuEKfrDac4bSQ=
 github.com/emicklei/go-restful/v3 v3.10.1/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
@@ -1322,8 +1324,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
-github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
+github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc/go.mod h1:eyZnKCc955uh98WQvzOm0dgAeLnf2O0Rz0LPoC5ze+0=
 github.com/theupdateframework/go-tuf v0.5.2 h1:habfDzTmpbzBLIFGWa2ZpVhYvFBoK0C1onC3a4zuPRA=

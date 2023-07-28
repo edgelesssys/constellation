@@ -73,6 +73,7 @@ require (
 	github.com/edgelesssys/constellation/v2/operators/constellation-node-operator/v2/api v0.0.0
 	github.com/edgelesssys/go-azguestattestation v0.0.0-20230303085714-62ede861d33f
 	github.com/edgelesssys/go-tdx-qpl v0.0.0-20230530085549-fd2878a4dead
+	github.com/edgelesssys/sev-snp-measure-go v0.0.0-20230727111429-1dabef884532
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -99,7 +100,7 @@ require (
 	github.com/sigstore/sigstore v1.6.4
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cobra v1.7.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	go.uber.org/goleak v1.2.1
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.9.0
