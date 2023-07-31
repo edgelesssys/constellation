@@ -14,10 +14,6 @@ import (
 
 type templatePreparer struct{}
 
-func newTemplatePreparer() templatePreparer {
-	return templatePreparer{}
-}
-
 func (p templatePreparer) template(fs embed.FS, templateFile string, templateData any) (*bytes.Buffer, error) {
 	templates, err := template.ParseFS(fs, templateFile)
 	if err != nil {

@@ -37,8 +37,8 @@ var (
 	}
 )
 
-// FieldsFromMap returns new Fields from the given map.
-func FieldsFromMap(m map[string]string) Fields {
+// FromMap returns new Fields from the given map.
+func FromMap(m map[string]string) Fields {
 	return Fields(m)
 }
 
