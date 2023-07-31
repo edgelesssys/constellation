@@ -16,19 +16,32 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
+// lb_port: everywhere hardcoded in TF 6443, for host use ip
+// TODO(malt3): switch over to DNS name on AWS and Azure
+// soon as every apiserver certificate of every control-plane node
+// has the dns endpoint in its SAN list.
+func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sHelmHelper, output terraform.ApplyOutput) map[string]any {
+	vals := map[string]any{
+		"k8sServiceHost": output.IP,
+		"k8sServicePort": 6443, // TODO take from tf?
+	}
+
+	// GCP requires extra configuration for Cilium
+	if provider == cloudprovider.GCP {
+		// TODO(elchead): remove?
+		//if err := helper.PatchNode(ctx, output.GCP.IPCidrNode); err != nil {
+		//	return nil, fmt.Errorf("patching GCP node: %w", err)
+		//}
+		vals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
+		vals["strictModeCIDR"] = output.GCP.IPCidrPod
+	}
+	return vals
+}
+
 // setupMicroserviceVals returns the values for the microservice chart.
-func setupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string) (map[string]any, error) {
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
-	if err != nil {
-		return nil, fmt.Errorf("creating Terraform client: %w", err)
-	}
-	output, err := tfClient.ShowCluster(ctx, provider)
-	if err != nil {
-		return nil, fmt.Errorf("getting Terraform output: %w", err)
-	}
+func setupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string, output terraform.ApplyOutput) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),

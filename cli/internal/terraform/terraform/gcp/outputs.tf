@@ -30,3 +30,8 @@ output "ip_cidr_nodes" {
 output "ip_cidr_pods" {
   value = local.cidr_vpc_subnet_pods
 }
+
+// TODO(elchead): should use instead of hardcoded ports?
+output "lb_port_kube" {
+  value = local.ports_kubernetes
+}
