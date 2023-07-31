@@ -175,7 +175,7 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &placeholderHelmInstaller{}}
+			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &stubHelmInstaller{}}
 			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
 
 			if tc.wantErr {
@@ -668,9 +668,9 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	return res, err
 }
 
-type placeholderHelmInstaller struct{}
+type stubHelmInstaller struct{}
 
-func (i *placeholderHelmInstaller) Install(_ context.Context, _ cloudprovider.Provider, _ uri.MasterSecret,
+func (i *stubHelmInstaller) Install(_ context.Context, _ cloudprovider.Provider, _ uri.MasterSecret,
 	_ clusterid.File,
 	_ string, _ *helminstaller.Releases,
 ) error {
