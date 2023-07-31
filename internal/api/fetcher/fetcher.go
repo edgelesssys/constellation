@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 )
 
 // NewHTTPClient returns a new http client.
@@ -71,6 +73,32 @@ func Fetch[T apiObject](ctx context.Context, c HTTPClient, obj T) (T, error) {
 	return newObj, nil
 }
 
+// FetchAndVerify fetches the given apiObject, checks if it can fetch an accompanying signature and verifies if the signature matches the found object.
+// The public key used to verify the signature is embedded in the verifier argument.
+// FetchAndVerify uses a generic to return a new object of type T.
+// Otherwise the caller would have to cast the interface type to a concrete object, which could fail.
+func FetchAndVerify[T apiObject](ctx context.Context, c HTTPClient, obj T, cosignVerifier sigstore.Verifier) (T, error) {
+	fetchedObj, err := Fetch(ctx, c, obj)
+	if err != nil {
+		return fetchedObj, fmt.Errorf("fetching object: %w", err)
+	}
+	marshalledObj, err := json.Marshal(fetchedObj)
+	if err != nil {
+		return fetchedObj, fmt.Errorf("marshalling object: %w", err)
+	}
+
+	signature, err := Fetch(ctx, c, signature{Signed: fetchedObj})
+	if err != nil {
+		return fetchedObj, fmt.Errorf("fetching signature: %w", err)
+	}
+
+	err = cosignVerifier.VerifySignature(marshalledObj, signature.Signature)
+	if err != nil {
+		return fetchedObj, fmt.Errorf("verifying signature: %w", err)
+	}
+	return fetchedObj, nil
+}
+
 // NotFoundError is an error that is returned when a resource is not found.
 type NotFoundError struct {
 	err error
@@ -93,4 +121,31 @@ type apiObject interface {
 	ValidateRequest() error
 	Validate() error
 	URL() (string, error)
+}
+
+// signature wraps another APIObject and adds a signature to it.
+type signature struct {
+	// Signed is the object that is signed.
+	Signed apiObject `json:"-"`
+	// Signature is the signature of `Signed`.
+	Signature []byte `json:"signature"`
+}
+
+// URL returns the URL for the request to the config api.
+func (s signature) URL() (string, error) {
+	url, err := s.Signed.URL()
+	if err != nil {
+		return "", err
+	}
+	return url + ".sig", nil
+}
+
+// ValidateRequest validates the request.
+func (s signature) ValidateRequest() error {
+	return s.Signed.ValidateRequest()
+}
+
+// Validate is a No-Op at the moment.
+func (s signature) Validate() error {
+	return s.Signed.Validate()
 }
