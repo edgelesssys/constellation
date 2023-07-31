@@ -39,6 +39,10 @@ type stubCosignVerifier struct {
 	verifyError error
 }
 
-func (v *stubCosignVerifier) VerifySignature(_, _, _ []byte) error {
+func (v *stubCosignVerifier) SetPublicKey(_ []byte) error {
+	return nil
+}
+
+func (v *stubCosignVerifier) VerifySignature(_, _ []byte) error {
 	return v.verifyError
 }

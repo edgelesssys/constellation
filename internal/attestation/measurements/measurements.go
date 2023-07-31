@@ -29,7 +29,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
@@ -137,14 +136,10 @@ func (m *M) FetchAndVerify(
 	measurementsURL, signatureURL *url.URL,
 	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
-	publicKey, err := sigstore.CosignPublicKeyForVersion(version)
-	if err != nil {
-		return "", fmt.Errorf("getting public key: %w", err)
-	}
 	return m.fetchAndVerify(
 		ctx, client, verifier,
 		measurementsURL, signatureURL,
-		publicKey, version, csp, attestationVariant,
+		version, csp, attestationVariant,
 	)
 }
 
@@ -153,7 +148,7 @@ func (m *M) FetchAndVerify(
 // The hash of the fetched measurements is returned.
 func (m *M) fetchAndVerify(
 	ctx context.Context, client *http.Client, verifier cosignVerifier,
-	measurementsURL, signatureURL *url.URL, publicKey []byte,
+	measurementsURL, signatureURL *url.URL,
 	version versionsapi.Version, csp cloudprovider.Provider, attestationVariant variant.Variant,
 ) (string, error) {
 	measurementsRaw, err := getFromURL(ctx, client, measurementsURL)
@@ -164,7 +159,7 @@ func (m *M) fetchAndVerify(
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
-	if err := verifier.VerifySignature(measurementsRaw, signature, publicKey); err != nil {
+	if err := verifier.VerifySignature(measurementsRaw, signature); err != nil {
 		return "", err
 	}
 
@@ -551,5 +546,6 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 }
 
 type cosignVerifier interface {
-	VerifySignature(content, signature, publicKey []byte) error
+	SetPublicKey(pem []byte) error
+	VerifySignature(content, signature []byte) error
 }

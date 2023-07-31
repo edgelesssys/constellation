@@ -43,7 +43,13 @@ func NewFetcher() Fetcher {
 
 // NewFetcherWithClient returns a new fetcher with custom http client.
 func NewFetcherWithClient(client apifetcher.HTTPClient) Fetcher {
-	return newFetcherWithClientAndVerifier(client, sigstore.CosignVerifier{})
+	verifier := sigstore.CosignVerifier{}
+	err := verifier.SetPublicKey([]byte(cosignPublicKey))
+	if err != nil {
+		// This relies on an embedded public key. If this key can not be validated, there is no way to recover from this.
+		panic(fmt.Errorf("creating cosign verifier: %w", err))
+	}
+	return newFetcherWithClientAndVerifier(client, verifier)
 }
 
 func newFetcherWithClientAndVerifier(client apifetcher.HTTPClient, cosignVerifier sigstore.Verifier) Fetcher {
@@ -73,7 +79,7 @@ func (f *fetcher) FetchAzureSEVSNPVersion(ctx context.Context, azureVersion Azur
 		return fetchedVersion, fmt.Errorf("fetch version %s signature: %w", azureVersion.Version, err)
 	}
 
-	err = f.verifier.VerifySignature(versionBytes, signature.Signature, []byte(cosignPublicKey))
+	err = f.verifier.VerifySignature(versionBytes, signature.Signature)
 	if err != nil {
 		return fetchedVersion, fmt.Errorf("verify version %s signature: %w", azureVersion.Version, err)
 	}

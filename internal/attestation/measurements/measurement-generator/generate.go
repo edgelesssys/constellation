@@ -122,10 +122,21 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, provider c
 		panic(err)
 	}
 
+	publicKey, err := sigstore.CosignPublicKeyForVersion(imageVersion)
+	if err != nil {
+		panic(fmt.Errorf("getting public key: %w", err))
+	}
+
+	cosignVerifier := sigstore.CosignVerifier{}
+	err = cosignVerifier.SetPublicKey(publicKey)
+	if err != nil {
+		panic(fmt.Errorf("creating cosign verifier: %w", err))
+	}
+
 	log.Println("Fetching measurements from", measurementsURL, "and signature from", signatureURL)
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
-		ctx, http.DefaultClient, sigstore.CosignVerifier{},
+		ctx, http.DefaultClient, &cosignVerifier,
 		measurementsURL,
 		signatureURL,
 		imageVersion,

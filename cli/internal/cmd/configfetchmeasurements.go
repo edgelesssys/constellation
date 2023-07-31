@@ -69,7 +69,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient)
-	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, &sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
@@ -115,6 +115,15 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	imageVersion, err := versionsapi.NewVersionFromShortPath(conf.Image, versionsapi.VersionKindImage)
 	if err != nil {
 		return err
+	}
+
+	publicKey, err := sigstore.CosignPublicKeyForVersion(imageVersion)
+	if err != nil {
+		return fmt.Errorf("getting public key: %w", err)
+	}
+	err = cosign.SetPublicKey(publicKey)
+	if err != nil {
+		return fmt.Errorf("setting public key: %w", err)
 	}
 
 	var fetchedMeasurements measurements.M
@@ -245,5 +254,6 @@ type rekorVerifier interface {
 }
 
 type cosignVerifier interface {
-	VerifySignature(content, signature, publicKey []byte) error
+	SetPublicKey(pem []byte) error
+	VerifySignature(content, signature []byte) error
 }

@@ -86,7 +86,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			verListFetcher: versionfetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
-			cosign:         sigstore.CosignVerifier{},
+			cosign:         &sigstore.CosignVerifier{},
 			rekor:          rekor,
 			flags:          flags,
 			cliVersion:     constants.BinaryVersion(),
@@ -623,6 +623,16 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 
 		var fetchedMeasurements measurements.M
 		log.Debugf("Fetching for measurement url: %s", measurementsURL)
+
+		publicKey, err := sigstore.CosignPublicKeyForVersion(version)
+		if err != nil {
+			return nil, fmt.Errorf("getting public key: %w", err)
+		}
+		err = cosign.SetPublicKey(publicKey)
+		if err != nil {
+			return nil, fmt.Errorf("setting public key: %w", err)
+		}
+
 		hash, err := fetchedMeasurements.FetchAndVerify(
 			ctx, client, cosign,
 			measurementsURL,

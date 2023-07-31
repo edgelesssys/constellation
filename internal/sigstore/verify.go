@@ -19,29 +19,43 @@ import (
 
 // Verifier checks if the signature of content can be verified.
 type Verifier interface {
-	VerifySignature(content, signature, publicKey []byte) error
+	VerifySignature(content, signature []byte) error
 }
 
-// CosignVerifier checks if the signature of content can be verified
-// using a cosign public key.
-type CosignVerifier struct{}
+// CosignVerifier wraps a public key that can be used for verifying signatures.
+type CosignVerifier struct {
+	publicKey crypto.PublicKey
+}
+
+// SetPublicKey parses the pem encoded public key, validates it's parameters and updates the object if necessary.
+func (c *CosignVerifier) SetPublicKey(pem []byte) error {
+	pubkey, err := cryptoutils.UnmarshalPEMToPublicKey(pem)
+	if err != nil {
+		return fmt.Errorf("unable to parse public key: %w", err)
+	}
+	if err := cryptoutils.ValidatePubKey(pubkey); err != nil {
+		return fmt.Errorf("unable to validate public key: %w", err)
+	}
+
+	c.publicKey = pubkey
+
+	return nil
+}
 
 // VerifySignature checks if the signature of content can be verified
 // using publicKey.
 // signature is expected to be base64 encoded.
 // publicKey is expected to be PEM encoded.
-func (CosignVerifier) VerifySignature(content, signature, publicKey []byte) error {
+func (c CosignVerifier) VerifySignature(content, signature []byte) error {
+	// LoadVerifier would also error if no public key is set.
+	// However, this error message should be easier to debug.
+	if c.publicKey == nil {
+		return fmt.Errorf("no public key set")
+	}
+
 	sigRaw := base64.NewDecoder(base64.StdEncoding, bytes.NewReader(signature))
 
-	pubKeyRaw, err := cryptoutils.UnmarshalPEMToPublicKey(publicKey)
-	if err != nil {
-		return fmt.Errorf("unable to parse public key: %w", err)
-	}
-	if err := cryptoutils.ValidatePubKey(pubKeyRaw); err != nil {
-		return fmt.Errorf("unable to validate public key: %w", err)
-	}
-
-	verifier, err := sigsig.LoadVerifier(pubKeyRaw, crypto.SHA256)
+	verifier, err := sigsig.LoadVerifier(c.publicKey, crypto.SHA256)
 	if err != nil {
 		return fmt.Errorf("unable to load verifier: %w", err)
 	}

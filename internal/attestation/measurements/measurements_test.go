@@ -423,6 +423,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			if tc.attestationVariant == nil {
 				tc.attestationVariant = variant.Dummy{}
@@ -452,10 +453,13 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 
 			m := M{}
 
+			verifier := sigstore.CosignVerifier{}
+			err := verifier.SetPublicKey(cosignPublicKey)
+			require.NoError(err)
+
 			hash, err := m.fetchAndVerify(
-				context.Background(), client, sigstore.CosignVerifier{},
+				context.Background(), client, &verifier,
 				measurementsURL, signatureURL,
-				cosignPublicKey,
 				tc.imageVersion,
 				tc.csp,
 				tc.attestationVariant,

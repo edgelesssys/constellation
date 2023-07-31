@@ -10,7 +10,44 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewCosignVerifier(t *testing.T) {
+	testCases := map[string]struct {
+		publicKey []byte
+		wantErr   bool
+	}{
+		"success": {
+			publicKey: []byte(`-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElWUhon39eAqzEC+/GP03oY4/MQg+
+gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
+-----END PUBLIC KEY-----`),
+		},
+		"broken public key": {
+			publicKey: []byte(`-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIthisIsNotAValidPublicAtAllUhon39eAqzEC+/GP03oY4/MQg+
+gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
+-----END PUBLIC KEY-----`),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			verifier := CosignVerifier{}
+			err := verifier.SetPublicKey(tc.publicKey)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.NotEqual(verifier, CosignVerifier{})
+		})
+	}
+}
 
 func TestVerifySignature(t *testing.T) {
 	testCases := map[string]struct {
@@ -19,7 +56,7 @@ func TestVerifySignature(t *testing.T) {
 		publicKey []byte
 		wantErr   bool
 	}{
-		"good verification": {
+		"success": {
 			content:   []byte("This is some content to be signed!\n"),
 			signature: []byte("MEUCIQDzMN3yaiO9sxLGAaSA9YD8rLwzvOaZKWa/bzkcjImUFAIgXLLGzClYUd1dGbuEiY3O/g/eiwQYlyxqLQalxjFmz+8="),
 			publicKey: []byte(`-----BEGIN PUBLIC KEY-----
@@ -36,24 +73,6 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 -----END PUBLIC KEY-----`),
 			wantErr: true,
 		},
-		"broken public key": {
-			content:   []byte("This is some content to be signed!\n"),
-			signature: []byte("MEUCIQDzMN3yaiO9sxLGAaSA9YD8rLwzvOaZKWa/bzkcjImUFAIgXLLGzClYUd1dGbuEiY3O/g/eiwQYlyxqLQalxjFmz+8="),
-			publicKey: []byte(`-----BEGIN PUBLIC KEY-----
-			MFkwEwYHKoZIthisIsNotAValidPublicAtAllUhon39eAqzEC+/GP03oY4/MQg+
-			gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
-			-----END PUBLIC KEY-----`),
-			wantErr: true,
-		},
-		"valid content and sig, but mismatching public key": {
-			content:   []byte("This is some content to be signed!\n"),
-			signature: []byte("MEUCIQDzMN3yaiO9sxLGAaSA9YD8rLwzvOaZKWa/bzkcjImUFAIgXLLGzClYUd1dGbuEiY3O/g/eiwQYlyxqLQalxjFmz+8="),
-			publicKey: []byte(`-----BEGIN PUBLIC KEY-----
-		MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFARL653CK4xicoxqwr4M9A2A/3hz
-		hQaKKRsnjc2LITnxKYmQ4CYqTOAMfZ3agxpW/ndillUox4eDYcidZSXvWw==
-		-----END PUBLIC KEY-----`),
-			wantErr: true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -61,7 +80,9 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 			assert := assert.New(t)
 
 			cosign := CosignVerifier{}
-			err := cosign.VerifySignature(tc.content, tc.signature, tc.publicKey)
+			err := cosign.SetPublicKey(tc.publicKey)
+			require.NoError(t, err)
+			err = cosign.VerifySignature(tc.content, tc.signature)
 			if tc.wantErr {
 				assert.Error(err)
 				return
