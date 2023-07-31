@@ -11,10 +11,8 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/constants",
-        "//internal/logger",
         "//internal/retry",
         "@io_k8s_apimachinery//pkg/util/wait",
-        "@org_uber_go_zap//:zap",
         "@sh_helm_helm_v3//pkg/action",
         "@sh_helm_helm_v3//pkg/chart",
         "@sh_helm_helm_v3//pkg/chart/loader",

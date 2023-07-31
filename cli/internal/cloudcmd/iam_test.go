@@ -17,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,7 +82,7 @@ func TestIAMCreator(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		tfClient       terraformClient
+		tfClient       tfIAMClient
 		newTfClientErr error
 		config         *IAMConfigOptions
 		provider       cloudprovider.Provider
@@ -125,7 +124,7 @@ func TestIAMCreator(t *testing.T) {
 
 			creator := &IAMCreator{
 				out: &bytes.Buffer{},
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context) (tfIAMClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 			}
@@ -225,13 +224,9 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 	}{
 		"valid": {
 			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{
-							"sa_key": {
-								Value: gcpFileB64,
-							},
-						},
+				iamOutput: terraform.IAMOutput{
+					GCP: terraform.GCPIAMOutput{
+						SaKey: gcpFileB64,
 					},
 				},
 			},
@@ -247,31 +242,16 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		},
 		"nil tfstate values": {
 			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: nil,
-				},
-			},
-			wantErr:        true,
-			wantShowCalled: true,
-		},
-		"no key": {
-			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: &tfjson.StateValues{},
-				},
+				iamOutput: terraform.IAMOutput{},
 			},
 			wantErr:        true,
 			wantShowCalled: true,
 		},
 		"invalid base64": {
 			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{
-							"sa_key": {
-								Value: "iamnotvalid",
-							},
-						},
+				iamOutput: terraform.IAMOutput{
+					GCP: terraform.GCPIAMOutput{
+						SaKey: "iamnotvalid",
 					},
 				},
 			},
@@ -280,28 +260,9 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		},
 		"valid base64 invalid json": {
 			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{
-							"sa_key": {
-								Value: base64.StdEncoding.EncodeToString([]byte("asdf")),
-							},
-						},
-					},
-				},
-			},
-			wantErr:        true,
-			wantShowCalled: true,
-		},
-		"not string": {
-			cl: &stubTerraformClient{
-				tfjsonState: &tfjson.State{
-					Values: &tfjson.StateValues{
-						Outputs: map[string]*tfjson.StateOutput{
-							"sa_key": {
-								Value: 1,
-							},
-						},
+				iamOutput: terraform.IAMOutput{
+					GCP: terraform.GCPIAMOutput{
+						SaKey: base64.StdEncoding.EncodeToString([]byte("asdf")),
 					},
 				},
 			},

@@ -9,13 +9,21 @@ package azureshared
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
+)
+
+var (
+	subscriptionPattern = regexp.MustCompile(`subscriptions/([^/]+)/`)
+	rgPattern           = regexp.MustCompile(`resourceGroups/([^/]+)/`)
 )
 
 // ApplicationCredentials is a set of Azure API credentials.
 // It can contain a client secret and carries the preferred authentication method.
 // It is the equivalent of a service account key in other cloud providers.
 type ApplicationCredentials struct {
+	SubscriptionID      string
+	ResourceGroup       string
 	TenantID            string
 	AppClientID         string
 	ClientSecretValue   string
@@ -37,8 +45,14 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 		return ApplicationCredentials{}, fmt.Errorf("invalid service account URI: invalid host: %s", uri.Host)
 	}
 	query := uri.Query()
+
+	subscriptionID := getFirstMatchOrEmpty(subscriptionPattern, query.Get("uami_resource_id"))
+	resourceGroup := getFirstMatchOrEmpty(rgPattern, query.Get("uami_resource_id"))
+
 	preferredAuthMethod := FromString(query.Get("preferred_auth_method"))
 	return ApplicationCredentials{
+		SubscriptionID:      subscriptionID,
+		ResourceGroup:       resourceGroup,
 		TenantID:            query.Get("tenant_id"),
 		AppClientID:         query.Get("client_id"),
 		ClientSecretValue:   query.Get("client_secret"),
@@ -46,6 +60,15 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 		UamiResourceID:      query.Get("uami_resource_id"),
 		PreferredAuthMethod: preferredAuthMethod,
 	}, nil
+}
+
+func getFirstMatchOrEmpty(pattern *regexp.Regexp, str string) string {
+	subscriptionMatches := pattern.FindStringSubmatch(str)
+	var subscriptionID string
+	if len(subscriptionMatches) > 1 {
+		subscriptionID = subscriptionMatches[1]
+	}
+	return subscriptionID
 }
 
 // ToCloudServiceAccountURI converts the ApplicationCredentials into a cloud service account URI.

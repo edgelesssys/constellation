@@ -24,7 +24,7 @@ import (
 
 // IAMDestroyer destroys an IAM configuration.
 type IAMDestroyer struct {
-	client terraformClient
+	client tfIAMClient
 }
 
 // NewIAMDestroyer creates a new IAM Destroyer.
@@ -38,35 +38,23 @@ func NewIAMDestroyer(ctx context.Context) (*IAMDestroyer, error) {
 
 // GetTfstateServiceAccountKey returns the sa_key output from the terraform state.
 func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
-	tfState, err := d.client.Show(ctx)
+	tfState, err := d.client.ShowIAM(ctx, cloudprovider.GCP)
 	if err != nil {
-		return gcpshared.ServiceAccountKey{}, err
+		return gcpshared.ServiceAccountKey{}, fmt.Errorf("getting terraform state: %w", err)
 	}
+	if saKeyString := tfState.GCP.SaKey; saKeyString != "" {
+		saKey, err := base64.StdEncoding.DecodeString(saKeyString)
+		if err != nil {
+			return gcpshared.ServiceAccountKey{}, err
+		}
+		var tfSaKey gcpshared.ServiceAccountKey
+		if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
+			return gcpshared.ServiceAccountKey{}, err
+		}
 
-	if tfState.Values == nil {
-		return gcpshared.ServiceAccountKey{}, errors.New("no Values field in terraform state")
+		return tfSaKey, nil
 	}
-
-	saKeyJSON := tfState.Values.Outputs["sa_key"]
-	if saKeyJSON == nil {
-		return gcpshared.ServiceAccountKey{}, errors.New("no sa_key in outputs of the terraform state")
-	}
-
-	saKeyString, ok := saKeyJSON.Value.(string)
-	if !ok {
-		return gcpshared.ServiceAccountKey{}, errors.New("sa_key field in terraform state is not a string")
-	}
-	saKey, err := base64.StdEncoding.DecodeString(saKeyString)
-	if err != nil {
-		return gcpshared.ServiceAccountKey{}, err
-	}
-
-	var tfSaKey gcpshared.ServiceAccountKey
-	if err := json.Unmarshal(saKey, &tfSaKey); err != nil {
-		return gcpshared.ServiceAccountKey{}, err
-	}
-
-	return tfSaKey, nil
+	return gcpshared.ServiceAccountKey{}, errors.New("no saKey in terraform state")
 }
 
 // DestroyIAMConfiguration destroys the previously created IAM configuration and deletes the local IAM terraform files.
@@ -80,7 +68,7 @@ func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context, logLevel ter
 // IAMCreator creates the IAM configuration on the cloud provider.
 type IAMCreator struct {
 	out                io.Writer
-	newTerraformClient func(ctx context.Context) (terraformClient, error)
+	newTerraformClient func(ctx context.Context) (tfIAMClient, error)
 }
 
 // IAMConfigOptions holds the necessary values for IAM configuration.
@@ -116,7 +104,7 @@ type AWSIAMConfig struct {
 func NewIAMCreator(out io.Writer) *IAMCreator {
 	return &IAMCreator{
 		out: out,
-		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+		newTerraformClient: func(ctx context.Context) (tfIAMClient, error) {
 			return terraform.New(ctx, constants.TerraformIAMWorkingDir)
 		},
 	}
@@ -152,7 +140,7 @@ func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider
 }
 
 // createGCP creates the IAM configuration on GCP.
-func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createGCP(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.GCPIAMVariables{
@@ -180,7 +168,7 @@ func (c *IAMCreator) createGCP(ctx context.Context, cl terraformClient, opts *IA
 }
 
 // createAzure creates the IAM configuration on Azure.
-func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createAzure(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AzureIAMVariables{
@@ -209,7 +197,7 @@ func (c *IAMCreator) createAzure(ctx context.Context, cl terraformClient, opts *
 }
 
 // createAWS creates the IAM configuration on AWS.
-func (c *IAMCreator) createAWS(ctx context.Context, cl terraformClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
+func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMConfigOptions) (retFile iamid.File, retErr error) {
 	defer rollbackOnError(c.out, &retErr, &rollbackerTerraform{client: cl}, opts.TFLogLevel)
 
 	vars := terraform.AWSIAMVariables{

@@ -27,12 +27,16 @@ func TestApplicationCredentialsFromURI(t *testing.T) {
 		Location:            "location",
 		UamiResourceID:      "subscriptions/9b352db0-82af-408c-a02c-36fbffbf7015/resourceGroups/resourceGroupName/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMIName",
 		PreferredAuthMethod: AuthMethodServicePrincipal,
+		SubscriptionID:      "9b352db0-82af-408c-a02c-36fbffbf7015",
+		ResourceGroup:       "resourceGroupName",
 	}
 	credsWithoutSecret := ApplicationCredentials{
 		TenantID:            "tenant-id",
 		Location:            "location",
 		UamiResourceID:      "subscriptions/9b352db0-82af-408c-a02c-36fbffbf7015/resourceGroups/resourceGroupName/providers/Microsoft.ManagedIdentity/userAssignedIdentities/UAMIName",
 		PreferredAuthMethod: AuthMethodUserAssignedIdentity,
+		SubscriptionID:      "9b352db0-82af-408c-a02c-36fbffbf7015",
+		ResourceGroup:       "resourceGroupName",
 	}
 	credsWithoutPreferrredAuthMethod := ApplicationCredentials{
 		TenantID:          "tenant-id",

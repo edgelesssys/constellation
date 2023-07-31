@@ -14,7 +14,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	tfjson "github.com/hashicorp/terraform-json"
 
 	"go.uber.org/goleak"
 )
@@ -32,7 +31,7 @@ type stubTerraformClient struct {
 	iamOutput              terraform.IAMOutput
 	uid                    string
 	attestationURL         string
-	tfjsonState            *tfjson.State
+	applyOutput            terraform.ApplyOutput
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyCalled          bool
@@ -45,12 +44,14 @@ type stubTerraformClient struct {
 	showErr                error
 }
 
-func (c *stubTerraformClient) CreateCluster(_ context.Context, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
+func (c *stubTerraformClient) CreateCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{
-		IP:             c.ip,
-		Secret:         c.initSecret,
-		UID:            c.uid,
-		AttestationURL: c.attestationURL,
+		IP:     c.ip,
+		Secret: c.initSecret,
+		UID:    c.uid,
+		Azure: &terraform.AzureApplyOutput{
+			AttestationURL: c.attestationURL,
+		},
 	}, c.createClusterErr
 }
 
@@ -76,9 +77,14 @@ func (c *stubTerraformClient) RemoveInstaller() {
 	c.removeInstallerCalled = true
 }
 
-func (c *stubTerraformClient) Show(_ context.Context) (*tfjson.State, error) {
+func (c *stubTerraformClient) ShowCluster(_ context.Context, _ cloudprovider.Provider) (terraform.ApplyOutput, error) {
 	c.showCalled = true
-	return c.tfjsonState, c.showErr
+	return c.applyOutput, c.showErr
+}
+
+func (c *stubTerraformClient) ShowIAM(_ context.Context, _ cloudprovider.Provider) (terraform.IAMOutput, error) {
+	c.showCalled = true
+	return c.iamOutput, c.showErr
 }
 
 type stubLibvirtRunner struct {

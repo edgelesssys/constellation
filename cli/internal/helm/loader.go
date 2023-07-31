@@ -110,6 +110,19 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
+	releases, err := i.LoadReleases(config, conformanceMode, helmWaitMode, masterSecret, salt)
+	if err != nil {
+		return nil, fmt.Errorf("loading releases: %w", err)
+	}
+	rel, err := json.Marshal(releases)
+	if err != nil {
+		return nil, err
+	}
+	return rel, nil
+}
+
+// LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
+func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) (*helm.Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
@@ -150,12 +163,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 		}
 		releases.CSI = &csi
 	}
-
-	rel, err := json.Marshal(releases)
-	if err != nil {
-		return nil, err
-	}
-	return rel, nil
+	return &releases, nil
 }
 
 // loadRelease loads the embedded chart and values depending on the given info argument.

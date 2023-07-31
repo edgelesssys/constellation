@@ -277,6 +277,9 @@ module "scale_set_group" {
   ]
 }
 
+data "azurerm_subscription" "current" {
+}
+
 moved {
   from = module.scale_set_control_plane
   to   = module.scale_set_group["control_plane_default"]

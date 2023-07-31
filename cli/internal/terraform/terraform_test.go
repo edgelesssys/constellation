@@ -248,6 +248,21 @@ func TestCreateCluster(t *testing.T) {
 					"api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
+					"user_assigned_identity": {
+						Value: "test_uami_id",
+					},
+					"resource_group": {
+						Value: "test_rg",
+					},
+					"subscription_id": {
+						Value: "test_subscription_id",
+					},
+					"network_security_group_name": {
+						Value: "test_nsg_name",
+					},
+					"loadbalancer_name": {
+						Value: "test_lb_name",
+					},
 				},
 			},
 		}
@@ -435,7 +450,7 @@ func TestCreateCluster(t *testing.T) {
 
 			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
 			require.NoError(c.PrepareWorkspace(path, tc.vars))
-			tfOutput, err := c.CreateCluster(context.Background(), LogLevelDebug)
+			tfOutput, err := c.CreateCluster(context.Background(), tc.provider, LogLevelDebug)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -445,7 +460,9 @@ func TestCreateCluster(t *testing.T) {
 			assert.Equal("192.0.2.100", tfOutput.IP)
 			assert.Equal("initSecret", tfOutput.Secret)
 			assert.Equal("12345abc", tfOutput.UID)
-			assert.Equal(tc.expectedAttestationURL, tfOutput.AttestationURL)
+			if tc.provider == cloudprovider.Azure {
+				assert.Equal(tc.expectedAttestationURL, tfOutput.Azure.AttestationURL)
+			}
 		})
 	}
 }

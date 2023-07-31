@@ -17,7 +17,6 @@ package azure
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -97,61 +96,6 @@ func New(ctx context.Context) (*Cloud, error) {
 		scaleSetsAPI:    scaleSetsAPI,
 		scaleSetsVMAPI:  virtualMachineScaleSetVMsAPI,
 	}, nil
-}
-
-// GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServiceAccountURI string) ([]byte, error) {
-	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return nil, fmt.Errorf("parsing provider ID: %w", err)
-	}
-	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
-	if err != nil {
-		return nil, fmt.Errorf("parsing service account URI: %w", err)
-	}
-	uid, err := c.imds.uid(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving instance UID: %w", err)
-	}
-
-	securityGroupName, err := c.getNetworkSecurityGroupName(ctx, resourceGroup, uid)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving network security group name: %w", err)
-	}
-
-	loadBalancer, err := c.getLoadBalancer(ctx, resourceGroup, uid)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving load balancer: %w", err)
-	}
-	if loadBalancer == nil || loadBalancer.Name == nil {
-		return nil, fmt.Errorf("could not dereference load balancer name")
-	}
-
-	var uamiClientID string
-	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
-	if useManagedIdentityExtension {
-		uamiClientID, err = c.getUAMIClientIDFromURI(ctx, providerID, creds.UamiResourceID)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving user-assigned managed identity client ID: %w", err)
-		}
-	}
-
-	config := cloudConfig{
-		Cloud:                       "AzurePublicCloud",
-		TenantID:                    creds.TenantID,
-		SubscriptionID:              subscriptionID,
-		ResourceGroup:               resourceGroup,
-		LoadBalancerSku:             "standard",
-		SecurityGroupName:           securityGroupName,
-		LoadBalancerName:            *loadBalancer.Name,
-		UseInstanceMetadata:         true,
-		VMType:                      "vmss",
-		Location:                    creds.Location,
-		UseManagedIdentityExtension: useManagedIdentityExtension,
-		UserAssignedIdentityID:      uamiClientID,
-	}
-
-	return json.Marshal(config)
 }
 
 // GetLoadBalancerEndpoint retrieves the first load balancer IP from cloud provider metadata.
@@ -284,24 +228,6 @@ func (c *Cloud) getInstance(ctx context.Context, providerID string) (metadata.In
 	}
 
 	return instance, nil
-}
-
-func (c *Cloud) getUAMIClientIDFromURI(ctx context.Context, providerID, resourceID string) (string, error) {
-	// userAssignedIdentityURI := "/subscriptions/{subscription-id}/resourcegroups/{resource-group}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{identity-name}"
-	_, resourceGroup, scaleSet, instanceID, err := azureshared.ScaleSetInformationFromProviderID(providerID)
-	if err != nil {
-		return "", fmt.Errorf("invalid provider ID: %w", err)
-	}
-	vmResp, err := c.scaleSetsVMAPI.Get(ctx, resourceGroup, scaleSet, instanceID, nil)
-	if err != nil {
-		return "", fmt.Errorf("retrieving instance: %w", err)
-	}
-	for rID, v := range vmResp.Identity.UserAssignedIdentities {
-		if rID == resourceID {
-			return *v.ClientID, nil
-		}
-	}
-	return "", fmt.Errorf("no user assinged identity found for resource ID %s", resourceID)
 }
 
 // getNetworkSecurityGroupName returns the security group name of the resource group.
@@ -461,26 +387,6 @@ func (c *Cloud) getLoadBalancerDNSName(ctx context.Context) (string, error) {
 	return *resp.Properties.DNSSettings.Fqdn, nil
 }
 */
-
-type cloudConfig struct {
-	Cloud                       string `json:"cloud,omitempty"`
-	TenantID                    string `json:"tenantId,omitempty"`
-	SubscriptionID              string `json:"subscriptionId,omitempty"`
-	ResourceGroup               string `json:"resourceGroup,omitempty"`
-	Location                    string `json:"location,omitempty"`
-	SubnetName                  string `json:"subnetName,omitempty"`
-	SecurityGroupName           string `json:"securityGroupName,omitempty"`
-	SecurityGroupResourceGroup  string `json:"securityGroupResourceGroup,omitempty"`
-	LoadBalancerName            string `json:"loadBalancerName,omitempty"`
-	LoadBalancerSku             string `json:"loadBalancerSku,omitempty"`
-	VNetName                    string `json:"vnetName,omitempty"`
-	VNetResourceGroup           string `json:"vnetResourceGroup,omitempty"`
-	CloudProviderBackoff        bool   `json:"cloudProviderBackoff,omitempty"`
-	UseInstanceMetadata         bool   `json:"useInstanceMetadata,omitempty"`
-	VMType                      string `json:"vmType,omitempty"`
-	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension,omitempty"`
-	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty"`
-}
 
 // convertToInstanceMetadata converts a armcomputev2.VirtualMachineScaleSetVM to a metadata.InstanceMetadata.
 func convertToInstanceMetadata(vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface,

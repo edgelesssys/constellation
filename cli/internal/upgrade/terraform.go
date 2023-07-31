@@ -153,16 +153,9 @@ func CleanUpTerraformMigrations(upgradeID string, fileHandler file.Handler) erro
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
 func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) error {
-	tfOutput, err := u.tf.CreateCluster(ctx, opts.LogLevel)
+	tfOutput, err := u.tf.CreateCluster(ctx, opts.CSP, opts.LogLevel)
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
-	}
-
-	// AttestationURL is only set for Azure.
-	if tfOutput.AttestationURL != "" {
-		if err := u.policyPatcher.Patch(ctx, tfOutput.AttestationURL); err != nil {
-			return fmt.Errorf("patching policies: %w", err)
-		}
 	}
 
 	outputFileContents := clusterid.File{
@@ -171,7 +164,13 @@ func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts T
 		IP:                tfOutput.IP,
 		APIServerCertSANs: tfOutput.APIServerCertSANs,
 		UID:               tfOutput.UID,
-		AttestationURL:    tfOutput.AttestationURL,
+	}
+	// AttestationURL is only set for Azure.
+	if tfOutput.Azure != nil {
+		if err := u.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
+			return fmt.Errorf("patching policies: %w", err)
+		}
+		outputFileContents.AttestationURL = tfOutput.Azure.AttestationURL
 	}
 
 	if err := u.fileHandler.RemoveAll(constants.TerraformWorkingDir); err != nil {
@@ -215,7 +214,7 @@ type tfClientCommon interface {
 // tfResourceClient is a Terraform client for managing cluster resources.
 type tfResourceClient interface {
 	PrepareUpgradeWorkspace(path, oldWorkingDir, newWorkingDir, backupDir string, vars terraform.Variables) error
-	CreateCluster(ctx context.Context, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
+	CreateCluster(ctx context.Context, provider cloudprovider.Provider, logLevel terraform.LogLevel) (terraform.ApplyOutput, error)
 	tfClientCommon
 }
 

@@ -35,8 +35,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitCluster(t *testing.T) {
-	serviceAccountURI := "some-service-account-uri"
-
 	nodeName := "node-name"
 	providerID := "provider-id"
 	privateIP := "192.0.2.1"
@@ -193,8 +191,8 @@ func TestInitCluster(t *testing.T) {
 			}
 
 			_, err := kube.InitCluster(
-				context.Background(), serviceAccountURI, string(tc.k8sVersion), "kubernetes",
-				nil, []byte("{}"), false, nil, nil, logger.NewTest(t),
+				context.Background(), string(tc.k8sVersion), "kubernetes",
+				[]byte("{}"), false, nil, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {

@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -72,11 +74,12 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log          debugLog
-	merger       configMerger
-	spinner      spinnerInterf
-	masterSecret uri.MasterSecret
-	fh           *file.Handler
+	log           debugLog
+	merger        configMerger
+	spinner       spinnerInterf
+	masterSecret  uri.MasterSecret
+	fh            *file.Handler
+	helmInstaller helm.SuiteInstaller
 }
 
 // runInitialize runs the initialize command.
@@ -100,7 +103,11 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler}
+	helmInstaller, err := helm.NewInstallationClient(log)
+	if err != nil {
+		return fmt.Errorf("creating Helm installer: %w", err)
+	}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstaller}
 	fetcher := attestationconfigapi.NewFetcher()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
@@ -180,7 +187,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
 	i.log.Debugf("Created new Helm loader")
-	helmDeployments, err := helmLoader.Load(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
+	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+	helmDeployments, err := json.Marshal(releases)
+	if err != nil {
+		return err
+	}
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -214,10 +228,20 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Initialization request succeeded")
+
 	i.log.Debugf("Writing Constellation ID file")
 	idFile.CloudProvider = provider
 
-	return i.writeOutput(idFile, resp, flags.mergeConfigs, cmd.OutOrStdout(), fileHandler)
+	bufferedOutput := &bytes.Buffer{}
+	err = i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput, fileHandler)
+	if err != nil {
+		return err
+	}
+	if err := i.helmInstaller.Install(cmd.Context(), provider, masterSecret, idFile, serviceAccURI, releases); err != nil {
+		return fmt.Errorf("installing Helm charts: %w", err)
+	}
+	cmd.Println(bufferedOutput.String())
+	return nil
 }
 
 func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitSuccessResponse, error) {

@@ -28,7 +28,7 @@ func TestCreator(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		tfClient              terraformClient
+		tfClient              tfResourceClient
 		newTfClientErr        error
 		libvirt               *stubLibvirtRunner
 		provider              cloudprovider.Provider
@@ -203,7 +203,7 @@ func TestCreator(t *testing.T) {
 				image: &stubImageFetcher{
 					reference: "some-image",
 				},
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
