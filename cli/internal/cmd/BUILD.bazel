@@ -151,6 +151,7 @@ go_test(
         "//internal/config",
         "//internal/constants",
         "//internal/crypto/testvector",
+        "//internal/deploy/helm",
         "//internal/file",
         "//internal/grpc/atlscredentials",
         "//internal/grpc/dialer",

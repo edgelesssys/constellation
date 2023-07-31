@@ -62,7 +62,6 @@ func NewInstaller(kubeconfig string, logger debugLog) (*Installer, error) {
 }
 
 // InstallChart is the generic install function for helm charts.
-// When timeout is nil, the default timeout is used.
 func (h *Installer) InstallChart(ctx context.Context, release Release) error {
 	return h.InstallChartWithValues(ctx, release, nil)
 }

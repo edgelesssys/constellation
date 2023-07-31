@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	helminstaller "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -174,7 +175,7 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
+			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &placeholderHelmInstaller{}}
 			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
 
 			if tc.wantErr {
@@ -665,4 +666,13 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 	}
 
 	return res, err
+}
+
+type placeholderHelmInstaller struct{}
+
+func (i *placeholderHelmInstaller) Install(_ context.Context, _ cloudprovider.Provider, _ uri.MasterSecret,
+	_ clusterid.File,
+	_ string, _ *helminstaller.Releases,
+) error {
+	return nil
 }

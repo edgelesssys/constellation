@@ -237,10 +237,8 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return err
 	}
-	if i.helmInstaller != nil {
-		if err := i.helmInstaller.Install(cmd.Context(), provider, masterSecret, idFile, serviceAccURI, releases); err != nil {
-			return fmt.Errorf("installing Helm charts: %w", err)
-		}
+	if err := i.helmInstaller.Install(cmd.Context(), provider, masterSecret, idFile, serviceAccURI, releases); err != nil {
+		return fmt.Errorf("installing Helm charts: %w", err)
 	}
 	cmd.Println(bufferedOutput.String())
 	return nil
