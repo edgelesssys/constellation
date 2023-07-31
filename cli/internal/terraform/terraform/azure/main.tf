@@ -38,6 +38,8 @@ locals {
   // wildcard_lb_dns_name is the DNS name of the load balancer with a wildcard for the name.
   // example: given "name-1234567890.location.cloudapp.azure.com" it will return "*.location.cloudapp.azure.com"
   wildcard_lb_dns_name = replace(data.azurerm_public_ip.loadbalancer_ip.fqdn, "/^[^.]*\\./", "*.")
+  uai_resource_group   = element(split("/", var.user_assigned_identity), 4)                                                  // deduce from format /$ID/resourceGroups/$RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/$NAME"
+  uai_name             = element(split("/", var.user_assigned_identity), length(split("/", var.user_assigned_identity)) - 1) // deduce as above
 }
 
 resource "random_id" "uid" {
@@ -278,6 +280,11 @@ module "scale_set_group" {
 }
 
 data "azurerm_subscription" "current" {
+}
+
+data "azurerm_user_assigned_identity" "uaid" {
+  name                = local.uai_name
+  resource_group_name = local.uai_resource_group
 }
 
 moved {

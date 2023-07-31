@@ -29,7 +29,7 @@ output "loadbalancer_name" {
 
 
 output "user_assigned_identity" {
-  value = var.user_assigned_identity
+  value = data.azurerm_user_assigned_identity.uaid.client_id
 }
 
 output "resource_group" {

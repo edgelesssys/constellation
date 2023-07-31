@@ -7,5 +7,6 @@ output "tenant_id" {
 }
 
 output "uami_id" {
-  value = azurerm_user_assigned_identity.identity_uami.id
+  description = "Outputs the id in the format: /$ID/resourceGroups/$RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/$NAME. Not to be confused with the client_id"
+  value       = azurerm_user_assigned_identity.identity_uami.id
 }
