@@ -14,11 +14,13 @@ jobs:
       uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       with:
         ref: ${{ github.head_ref }}
+        path: constellation
+
     - name: Install necessary tools
       run: |
         sudo apt-get update
         sudo apt-get install -y python3 python3-pip
-        sudo python3 -m pip install --user --require-hashes -r .github/workflows/aws-snp-launchmeasurements-requirements.txt
+        sudo python3 -m pip install --user --require-hashes -r constellation/.github/workflows/aws-snp-launchmeasurements-requirements.txt
 
     - name: Install Nix
       uses: cachix/install-nix-action@6ed004b9ccb68dbc28e7c85bee15fa93dbd214ac # v22
@@ -46,6 +48,7 @@ jobs:
 
         ovmfPath=$(realpath result/ovmf_img.fd)
         echo "ovmfPath=${ovmfPath}" | tee -a "$GITHUB_OUTPUT"
+        popd || exit 1
 
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # tag=v3.5.2
       with:
@@ -63,3 +66,5 @@ jobs:
         ./sevsnpmeasure parse-metadata ${{ steps.build-uefi.outputs.ovmfPath }} -o metadata.json
 
         jq < metadata.json
+
+        popd || exit 1
