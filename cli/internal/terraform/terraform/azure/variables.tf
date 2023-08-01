@@ -59,7 +59,7 @@ variable "resource_group" {
 }
 variable "user_assigned_identity" {
   type        = string
-  description = "The name of the user assigned identity to attache to the nodes of the cluster."
+  description = "The name of the user assigned identity to attach to the nodes of the cluster. Should be of format: /subscriptions/$ID/resourceGroups/$RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/$NAME"
 }
 
 variable "custom_endpoint" {

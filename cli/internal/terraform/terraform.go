@@ -254,13 +254,13 @@ func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provide
 			}
 		}
 
-		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity"]
+		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity_client_id"]
 		if !ok {
-			return ApplyOutput{}, errors.New("no user_assigned_identity output found")
+			return ApplyOutput{}, errors.New("no user_assigned_identity_client_id output found")
 		}
 		azureUAMI, ok := azureUAMIOutput.Value.(string)
 		if !ok {
-			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity output: not a string")
+			return ApplyOutput{}, errors.New("invalid type in user_assigned_identity_client_id output: not a string")
 		}
 
 		rgOutput, ok := tfState.Values.Outputs["resource_group"]
