@@ -5,8 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // Package keyselect is used to select the correct public key for signature verification.
-// The content of keyselect was moved from internal/sigstore to this subpackage because keyselect relies on internal/api/versionsapi.
-// Since internal/api relies on internal/sigstore, we need to separate the functions that rely on versionsapi.
+// The content of keyselect must be kept separate from internal/sigstore because keyselect relies on internal/api/versionsapi.
+// Since internal/api relies on internal/sigstore, we need to separate the functions to avoid import cycles.
 package keyselect
 
 import (
