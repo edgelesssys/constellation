@@ -11,7 +11,10 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -20,7 +23,7 @@ type k8sDsClient struct {
 	clientset *kubernetes.Clientset
 }
 
-func newK8sHelmHelper(kubeconfigPath string) (*k8sDsClient, error) {
+func newK8sCiliumHelper(kubeconfigPath string) (*k8sDsClient, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, err
@@ -30,6 +33,30 @@ func newK8sHelmHelper(kubeconfigPath string) (*k8sDsClient, error) {
 		return nil, err
 	}
 	return &k8sDsClient{clientset: clientset}, nil
+}
+
+func (h *k8sDsClient) PatchNode(ctx context.Context, podCIDR string) error {
+	selector := labels.Set{"node-role.kubernetes.io/control-plane": ""}.AsSelector()
+	controlPlaneList, err := h.clientset.CoreV1().Nodes().List(ctx, v1.ListOptions{LabelSelector: selector.String()})
+	if err != nil {
+		return err
+	}
+	if len(controlPlaneList.Items) != 1 {
+		return fmt.Errorf("expected 1 control-plane node, got %d", len(controlPlaneList.Items))
+	}
+	nodeName := controlPlaneList.Items[0].Name
+	// Get the current node
+	node, err := h.clientset.CoreV1().Nodes().Get(context.Background(), nodeName, v1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return fmt.Errorf("node %s not found", nodeName)
+		}
+		return err
+	}
+	// Update the node's spec
+	node.Spec.PodCIDR = podCIDR
+	_, err = h.clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, types.MergePatchType, []byte(fmt.Sprintf(`{"spec":{"podCIDR":"%s"}}`, podCIDR)), v1.PatchOptions{})
+	return err
 }
 
 // WaitForDS waits for a DaemonSet to become ready.

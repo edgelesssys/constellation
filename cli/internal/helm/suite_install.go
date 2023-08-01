@@ -57,11 +57,14 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
 
-	helper, err := newK8sHelmHelper(constants.AdminConfFilename)
+	helper, err := newK8sCiliumHelper(constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
-	ciliumVals := setupCiliumVals(ctx, provider, helper, output)
+	ciliumVals, err := setupCiliumVals(ctx, provider, helper, output)
+	if err != nil {
+		return fmt.Errorf("setting up Cilium values: %w", err)
+	}
 	if err := h.installer.InstallChartWithValues(ctx, releases.Cilium, ciliumVals); err != nil {
 		return fmt.Errorf("installing Cilium: %w", err)
 	}
@@ -139,7 +142,7 @@ type helmInstaller interface {
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
 // has the dns endpoint in its SAN list.
-func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sDsClient, output terraform.ApplyOutput) map[string]any {
+func setupCiliumVals(ctx context.Context, provider cloudprovider.Provider, dsClient *k8sDsClient, output terraform.ApplyOutput) (map[string]any, error) {
 	vals := map[string]any{
 		"k8sServiceHost": output.IP,
 		"k8sServicePort": 6443, // TODO take from tf?
@@ -148,13 +151,13 @@ func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sD
 	// GCP requires extra configuration for Cilium
 	if provider == cloudprovider.GCP {
 		// TODO(elchead): remove?
-		//if err := helper.PatchNode(ctx, output.GCP.IPCidrNode); err != nil {
-		//	return nil, fmt.Errorf("patching GCP node: %w", err)
-		//}
+		if err := dsClient.PatchNode(ctx, output.GCP.IPCidrNode); err != nil {
+			return nil, fmt.Errorf("patching GCP node: %w", err)
+		}
 		vals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
 		vals["strictModeCIDR"] = output.GCP.IPCidrPod
 	}
-	return vals
+	return vals, nil
 }
 
 // setupMicroserviceVals returns the values for the microservice chart.
