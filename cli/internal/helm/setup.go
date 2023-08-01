@@ -41,7 +41,7 @@ func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sH
 }
 
 // setupMicroserviceVals returns the values for the microservice chart.
-func setupMicroserviceVals(ctx context.Context, provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string, output terraform.ApplyOutput) (map[string]any, error) {
+func setupMicroserviceVals(provider cloudprovider.Provider, measurementSalt []byte, uid, serviceAccURI string, output terraform.ApplyOutput) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),

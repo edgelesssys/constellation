@@ -45,7 +45,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	helmdeploy "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
@@ -441,9 +440,9 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing skip-helm-wait flag: %w", err)
 	}
-	helmWaitMode := helmdeploy.WaitModeAtomic
+	helmWaitMode := helm.WaitModeAtomic
 	if skipHelmWait {
-		helmWaitMode = helmdeploy.WaitModeNone
+		helmWaitMode = helm.WaitModeNone
 	}
 	i.log.Debugf("Helm wait flag is %t", skipHelmWait)
 	configPath, err := cmd.Flags().GetString("config")
@@ -478,7 +477,7 @@ type initFlags struct {
 	configPath       string
 	masterSecretPath string
 	conformance      bool
-	helmWaitMode     helmdeploy.WaitMode
+	helmWaitMode     helm.WaitMode
 	force            bool
 	mergeConfigs     bool
 }

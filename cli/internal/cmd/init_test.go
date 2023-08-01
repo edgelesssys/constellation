@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -28,7 +29,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	helminstaller "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -672,7 +672,7 @@ type stubHelmInstaller struct{}
 
 func (i *stubHelmInstaller) Install(_ context.Context, _ cloudprovider.Provider, _ uri.MasterSecret,
 	_ clusterid.File,
-	_ string, _ *helminstaller.Releases,
+	_ string, _ *helm.Releases,
 ) error {
 	return nil
 }

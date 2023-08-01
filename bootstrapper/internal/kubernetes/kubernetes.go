@@ -9,7 +9,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"regexp"
@@ -20,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -47,7 +45,6 @@ type kubeAPIWaiter interface {
 type KubeWrapper struct {
 	cloudProvider    string
 	clusterUtil      clusterUtil
-	helmClient       helmClient
 	kubeAPIWaiter    kubeAPIWaiter
 	configProvider   configurationProvider
 	client           k8sapi.Client
@@ -57,12 +54,11 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
+	providerMetadata ProviderMetadata, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:    cloudProvider,
 		clusterUtil:      clusterUtil,
-		helmClient:       helmClient,
 		kubeAPIWaiter:    kubeAPIWaiter,
 		configProvider:   configProvider,
 		client:           client,
@@ -73,15 +69,13 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, versionString, clusterName string,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
+	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
 
-	var nodePodCIDR string
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
@@ -100,10 +94,6 @@ func (k *KubeWrapper) InitCluster(
 
 	nodeIP := instance.VPCIP
 	subnetworkPodCIDR := instance.SecondaryIPRange
-	if len(instance.AliasIPRanges) > 0 {
-		nodePodCIDR = instance.AliasIPRanges[0]
-		fmt.Println("nodePodCIDR: ", nodePodCIDR) // TODO(elchead): remove all commented code
-	}
 
 	// this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
 	// TODO(malt3): switch over to DNS name on AWS and Azure
@@ -175,50 +165,6 @@ func (k *KubeWrapper) InitCluster(
 	); err != nil {
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}
-
-	// Step 3: configure & start kubernetes controllers
-	log.Infof("Starting Kubernetes controllers and deployments")
-	//setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
-	//	CloudProvider:     k.cloudProvider,
-	//	NodeName:          nodeName,
-	//	FirstNodePodCIDR:  nodePodCIDR,
-	//	SubnetworkPodCIDR: subnetworkPodCIDR,
-	//	LoadBalancerHost:  controlPlaneHost,
-	//	LoadBalancerPort:  controlPlanePort,
-	//}
-
-	var helmReleases helm.Releases
-	if err := json.Unmarshal(helmReleasesRaw, &helmReleases); err != nil {
-		return nil, fmt.Errorf("unmarshalling helm releases: %w", err)
-	}
-
-	log.Infof("Installing Cilium")
-	//ciliumVals, err := k.setupCiliumVals(ctx, setupPodNetworkInput)
-	//if err != nil {
-	//	return nil, fmt.Errorf("setting up cilium vals: %w", err)
-	//}
-	//log.Infof("ciliumVals: %+v\n", ciliumVals)
-	//if err := k.helmClient.InstallChartWithValues(ctx, helmReleases.Cilium, ciliumVals); err != nil {
-	//	return nil, fmt.Errorf("installing cilium pod network: %w", err)
-	//}
-
-	//log.Infof("Waiting for Cilium to become healthy")
-	//timeToStartWaiting := time.Now()
-	//// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
-	//// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
-	//waitCtx, cancel = context.WithTimeout(ctx, 20*time.Minute)
-	//defer cancel()
-	//if err := k.clusterUtil.WaitForCilium(waitCtx, log); err != nil {
-	//	return nil, fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	//}
-	//timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
-	//log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("Cilium became healthy")
-
-	//log.Infof("Restarting Cilium")
-	//if err := k.clusterUtil.FixCilium(ctx); err != nil {
-	//	log.With(zap.Error(err)).Errorf("FixCilium failed")
-	//	// Continue and don't throw an error here - things might be okay.
-	//}
 
 	log.Infof("Setting up internal-config ConfigMap")
 	if err := k.setupInternalConfigMap(ctx); err != nil {

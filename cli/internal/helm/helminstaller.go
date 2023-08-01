@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	helminstaller "github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
@@ -23,7 +22,7 @@ import (
 type SuiteInstaller interface {
 	Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 		idFile clusterid.File,
-		serviceAccURI string, releases *helminstaller.Releases,
+		serviceAccURI string, releases *Releases,
 	) error
 }
 
@@ -34,7 +33,7 @@ type helmInstallationClient struct {
 
 // NewInstallationClient creates a new Helm installation client to install all Helm charts required for a constellation cluster.
 func NewInstallationClient(log debugLog) (SuiteInstaller, error) {
-	installer, err := helminstaller.NewInstaller(constants.AdminConfFilename, log)
+	installer, err := NewInstaller(constants.AdminConfFilename, log)
 	if err != nil {
 		return nil, fmt.Errorf("creating Helm installer: %w", err)
 	}
@@ -43,7 +42,7 @@ func NewInstallationClient(log debugLog) (SuiteInstaller, error) {
 
 func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 	idFile clusterid.File,
-	serviceAccURI string, releases *helminstaller.Releases,
+	serviceAccURI string, releases *Releases,
 ) error {
 	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
 	if err != nil {
@@ -82,7 +81,7 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	}
 
 	h.log.Debugf("Installing microservices")
-	serviceVals, err := setupMicroserviceVals(ctx, provider, masterSecret.Salt, idFile.UID, serviceAccURI, output)
+	serviceVals, err := setupMicroserviceVals(provider, masterSecret.Salt, idFile.UID, serviceAccURI, output)
 	if err != nil {
 		return fmt.Errorf("setting up microservice values: %w", err)
 	}
@@ -134,6 +133,6 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 }
 
 type helmInstaller interface {
-	InstallChart(context.Context, helminstaller.Release) error
-	InstallChartWithValues(ctx context.Context, release helminstaller.Release, extraValues map[string]any) error
+	InstallChart(context.Context, Release) error
+	InstallChartWithValues(ctx context.Context, release Release, extraValues map[string]any) error
 }

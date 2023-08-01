@@ -27,7 +27,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
@@ -109,7 +108,7 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 }
 
 // Load the embedded helm charts.
-func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) ([]byte, error) {
+func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret, salt []byte) ([]byte, error) {
 	releases, err := i.LoadReleases(config, conformanceMode, helmWaitMode, masterSecret, salt)
 	if err != nil {
 		return nil, fmt.Errorf("loading releases: %w", err)
@@ -122,7 +121,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, helmWait
 }
 
 // LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
-func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode helm.WaitMode, masterSecret, salt []byte) (*helm.Releases, error) {
+func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret, salt []byte) (*Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
@@ -147,7 +146,7 @@ func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, 
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
 
-	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
+	releases := Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
 	if config.HasProvider(cloudprovider.AWS) {
 		awsRelease, err := i.loadRelease(awsLBControllerInfo, helmWaitMode)
 		if err != nil {
@@ -168,10 +167,10 @@ func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, 
 
 // loadRelease loads the embedded chart and values depending on the given info argument.
 // IMPORTANT: .helmignore rules specifying files in subdirectories are not applied (e.g. crds/kustomization.yaml).
-func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (helm.Release, error) {
+func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Release, error) {
 	chart, err := loadChartsDir(helmFS, info.path)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
+		return Release{}, fmt.Errorf("loading %s chart: %w", info.releaseName, err)
 	}
 
 	var values map[string]any
@@ -181,7 +180,7 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 		var ok bool
 		values, ok = ciliumVals[i.csp.String()]
 		if !ok {
-			return helm.Release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
+			return Release{}, fmt.Errorf("cilium values for csp %q not found", i.csp.String())
 		}
 	case certManagerInfo.releaseName:
 		values = i.loadCertManagerValues()
@@ -200,10 +199,10 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode helm.WaitMode) (h
 
 	chartRaw, err := i.marshalChart(chart)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("packaging %s chart: %w", info.releaseName, err)
+		return Release{}, fmt.Errorf("packaging %s chart: %w", info.releaseName, err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
+	return Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 
 func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {

@@ -29,7 +29,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 )
 
 // TestLoad checks if the serialized format that Load returns correctly preserves the dependencies of the loaded chart.
@@ -39,10 +38,10 @@ func TestLoad(t *testing.T) {
 
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	release, err := chartLoader.Load(config, true, helm.WaitModeAtomic, []byte("secret"), []byte("salt"))
+	release, err := chartLoader.Load(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 
-	var helmReleases helm.Releases
+	var helmReleases Releases
 	err = json.Unmarshal(release, &helmReleases)
 	require.NoError(err)
 	reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)

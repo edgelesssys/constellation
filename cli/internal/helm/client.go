@@ -13,20 +13,20 @@ import (
 	"strings"
 	"time"
 
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
+
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/release"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -423,7 +423,7 @@ func (c *Client) mergeClusterValues(localValues map[string]any, releaseName stri
 		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
 	}
 
-	return helm.MergeMaps(clusterValues, localValues), nil
+	return MergeMaps(clusterValues, localValues), nil
 }
 
 // GetValues queries the cluster for the values of the given release.
@@ -454,11 +454,6 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 		}
 	}
 	return nil
-}
-
-type debugLog interface {
-	Debugf(format string, args ...any)
-	Sync()
 }
 
 type crdClient interface {
