@@ -19,7 +19,7 @@ message InitRequest {
   string kubernetes_version = 8;
   // repeated SSHUserKey ssh_user_keys = 9; removed
   // bytes salt = 10; removed
-  bytes helm_deployments = 11;
+  // bytes helm_deployments = 11; removed
   // repeated uint32 enforced_pcrs = 12; removed
   // bool enforce_idkeydigest = 13; removed
   bool conformance_mode = 14;

@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -190,10 +189,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
-	helmDeployments, err := json.Marshal(releases)
-	if err != nil {
-		return err
-	}
 	i.log.Debugf("Loaded Helm deployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -207,7 +202,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
-		HelmDeployments:        helmDeployments,
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
 		ClusterName:            clusterName,
