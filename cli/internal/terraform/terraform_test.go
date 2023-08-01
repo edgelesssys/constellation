@@ -248,7 +248,7 @@ func TestCreateCluster(t *testing.T) {
 					"api_server_cert_sans": {
 						Value: []any{"192.0.2.100"},
 					},
-					"user_assigned_identity": {
+					"user_assigned_identity_client_id": {
 						Value: "test_uami_id",
 					},
 					"resource_group": {

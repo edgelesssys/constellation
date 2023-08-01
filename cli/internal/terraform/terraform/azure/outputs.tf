@@ -28,7 +28,7 @@ output "loadbalancer_name" {
 }
 
 
-output "user_assigned_identity" {
+output "user_assigned_identity_client_id" {
   value = data.azurerm_user_assigned_identity.uaid.client_id
 }
 
