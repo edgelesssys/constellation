@@ -13,7 +13,6 @@ import (
 
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
@@ -204,8 +203,8 @@ func (f *addFlags) validate(log *logger.Logger) error {
 	}
 
 	if f.release {
-		log.Debugf("Setting ref to %q, as release flag is set", constants.ReleaseRef)
-		f.ref = constants.ReleaseRef
+		log.Debugf("Setting ref to %q, as release flag is set", versionsapi.ReleaseRef)
+		f.ref = versionsapi.ReleaseRef
 	} else {
 		log.Debugf("Setting latest to true, as release flag is not set")
 		f.latest = true // always set latest for non-release versions

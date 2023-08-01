@@ -28,7 +28,7 @@ func TestImageInfoJSONPath(t *testing.T) {
 		},
 		"image info release": {
 			info: ImageInfo{
-				Ref:     constants.ReleaseRef,
+				Ref:     ReleaseRef,
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
@@ -59,7 +59,7 @@ func TestImageInfoURL(t *testing.T) {
 		},
 		"image info release": {
 			info: ImageInfo{
-				Ref:     constants.ReleaseRef,
+				Ref:     ReleaseRef,
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},

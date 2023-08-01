@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	sigsig "github.com/sigstore/sigstore/pkg/signature"
 )
@@ -63,12 +62,4 @@ func (c CosignVerifier) VerifySignature(content, signature []byte) error {
 	}
 
 	return nil
-}
-
-// CosignPublicKeyForVersion returns the public key for the given version.
-func CosignPublicKeyForVersion(v version) ([]byte, error) {
-	if v.Ref() == constants.ReleaseRef && v.Stream() == "stable" {
-		return []byte(constants.CosignPublicKeyReleases), nil
-	}
-	return []byte(constants.CosignPublicKeyDev), nil
 }

@@ -28,12 +28,7 @@ import (
 )
 
 // VerifyWithRekor checks if the hash of a signature is present in Rekor.
-func VerifyWithRekor(ctx context.Context, version version, verifier rekorVerifier, hash string) error {
-	publicKey, err := CosignPublicKeyForVersion(version)
-	if err != nil {
-		return fmt.Errorf("getting public key: %w", err)
-	}
-
+func VerifyWithRekor(ctx context.Context, publicKey []byte, verifier rekorVerifier, hash string) error {
 	uuids, err := verifier.SearchByHash(ctx, hash)
 	if err != nil {
 		return fmt.Errorf("searching Rekor for hash: %w", err)
@@ -226,9 +221,4 @@ func isEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
 type rekorVerifier interface {
 	SearchByHash(context.Context, string) ([]string, error)
 	VerifyEntry(context.Context, string, string) error
-}
-
-type version interface {
-	Ref() string
-	Stream() string
 }

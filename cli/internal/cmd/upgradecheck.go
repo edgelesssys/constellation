@@ -35,6 +35,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
@@ -52,7 +53,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolP("update-config", "u", false, "update the specified config file with the suggested versions")
-	cmd.Flags().String("ref", constants.ReleaseRef, "the reference to use for querying new versions")
+	cmd.Flags().String("ref", versionsapi.ReleaseRef, "the reference to use for querying new versions")
 	cmd.Flags().String("stream", "stable", "the stream to use for querying new versions")
 
 	return cmd
@@ -351,7 +352,7 @@ func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovide
 		v.log.Debugf("Fetching measurements for image: %s", version)
 		shortPath := version.ShortPath()
 
-		publicKey, err := sigstore.CosignPublicKeyForVersion(version)
+		publicKey, err := keyselect.CosignPublicKeyForVersion(version)
 		if err != nil {
 			return nil, fmt.Errorf("getting public key: %w", err)
 		}
@@ -649,7 +650,12 @@ func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, clien
 		return nil, fmt.Errorf("fetching measurements: %w", err)
 	}
 
-	if err = sigstore.VerifyWithRekor(ctx, version, rekor, hash); err != nil {
+	pubkey, err := keyselect.CosignPublicKeyForVersion(version)
+	if err != nil {
+		return nil, fmt.Errorf("getting public key: %w", err)
+	}
+
+	if err = sigstore.VerifyWithRekor(ctx, pubkey, rekor, hash); err != nil {
 		if _, err := fmt.Fprintf(writer, "Warning: Unable to verify '%s' in Rekor.\nMake sure measurements are correct.\n", hash); err != nil {
 			return nil, fmt.Errorf("writing to buffer: %w", err)
 		}

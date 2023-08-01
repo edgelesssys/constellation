@@ -26,7 +26,6 @@ import (
 	"github.com/aws/smithy-go"
 	apiclient "github.com/edgelesssys/constellation/v2/internal/api/client"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 	"github.com/spf13/cobra"
@@ -266,7 +265,7 @@ type rmFlags struct {
 }
 
 func (f *rmFlags) validate() error {
-	if f.ref == constants.ReleaseRef {
+	if f.ref == versionsapi.ReleaseRef {
 		return fmt.Errorf("cannot delete from release ref")
 	}
 

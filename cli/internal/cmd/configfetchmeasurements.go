@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -117,7 +118,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return err
 	}
 
-	publicKey, err := sigstore.CosignPublicKeyForVersion(imageVersion)
+	publicKey, err := keyselect.CosignPublicKeyForVersion(imageVersion)
 	if err != nil {
 		return fmt.Errorf("getting public key: %w", err)
 	}
@@ -156,7 +157,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 		cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
-		if err := sigstore.VerifyWithRekor(cmd.Context(), imageVersion, rekor, hash); err != nil {
+		if err := sigstore.VerifyWithRekor(cmd.Context(), publicKey, rekor, hash); err != nil {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 		}

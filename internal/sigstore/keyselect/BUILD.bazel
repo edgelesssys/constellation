@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "foo",
+    srcs = ["foo.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore/foo",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/versionsapi",
+        "//internal/constants",
+    ],
+)
+
+go_library(
+    name = "keyselect",
+    srcs = ["keyselect.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/api/versionsapi",
+        "//internal/constants",
+    ],
+)

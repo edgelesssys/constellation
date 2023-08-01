@@ -20,6 +20,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
+// ReleaseRef is the ref used for release versions.
+const ReleaseRef = "-"
+
 // Version represents a version. A version has a ref, stream, version string and kind.
 //
 // Notice that version is a meta object to the versions API and there isn't an
@@ -321,13 +324,13 @@ var notAZ09Regexp = regexp.MustCompile("[^a-zA-Z0-9-]")
 
 // CanonicalizeRef returns the canonicalized ref for the given ref.
 func CanonicalizeRef(ref string) string {
-	if ref == constants.ReleaseRef {
+	if ref == ReleaseRef {
 		return ref
 	}
 
 	canRef := notAZ09Regexp.ReplaceAllString(ref, "-")
 
-	if canRef == constants.ReleaseRef {
+	if canRef == ReleaseRef {
 		return "" // No ref should be cannonicalized to the release ref.
 	}
 
@@ -357,7 +360,7 @@ func ValidateStream(ref, stream string) error {
 	validReleaseStreams := []string{"stable", "console", "debug"}
 	validStreams := []string{"nightly", "console", "debug"}
 
-	if ref == constants.ReleaseRef {
+	if ref == ReleaseRef {
 		validStreams = validReleaseStreams
 	}
 
@@ -404,7 +407,7 @@ var (
 
 func shortPath(ref, stream, version string) string {
 	var sp string
-	if ref != constants.ReleaseRef {
+	if ref != ReleaseRef {
 		return path.Join("ref", ref, "stream", stream, version)
 	}
 
@@ -444,11 +447,11 @@ func parseShortPath(shortPath string) (ref, stream, version string, err error) {
 		if !semver.IsValid(version) {
 			return "", "", "", fmt.Errorf("invalid version %q", version)
 		}
-		return constants.ReleaseRef, stream, version, nil
+		return ReleaseRef, stream, version, nil
 	}
 
 	if semver.IsValid(shortPath) {
-		return constants.ReleaseRef, "stable", shortPath, nil
+		return ReleaseRef, "stable", shortPath, nil
 	}
 
 	return "", "", "", fmt.Errorf("invalid short path %q", shortPath)

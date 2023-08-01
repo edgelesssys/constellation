@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -122,7 +123,7 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, provider c
 		panic(err)
 	}
 
-	publicKey, err := sigstore.CosignPublicKeyForVersion(imageVersion)
+	publicKey, err := keyselect.CosignPublicKeyForVersion(imageVersion)
 	if err != nil {
 		panic(fmt.Errorf("getting public key: %w", err))
 	}
@@ -145,7 +146,7 @@ func mustGetMeasurements(ctx context.Context, verifier rekorVerifier, provider c
 	if err != nil {
 		panic(err)
 	}
-	if err := sigstore.VerifyWithRekor(ctx, imageVersion, verifier, hash); err != nil {
+	if err := sigstore.VerifyWithRekor(ctx, publicKey, verifier, hash); err != nil {
 		panic(err)
 	}
 	return fetchedMeasurements

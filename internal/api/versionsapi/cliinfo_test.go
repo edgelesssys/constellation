@@ -28,7 +28,7 @@ func TestCLIInfoJSONPath(t *testing.T) {
 		},
 		"cli info release": {
 			info: CLIInfo{
-				Ref:     constants.ReleaseRef,
+				Ref:     ReleaseRef,
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
@@ -59,7 +59,7 @@ func TestCLIInfoURL(t *testing.T) {
 		},
 		"cli info release": {
 			info: CLIInfo{
-				Ref:     constants.ReleaseRef,
+				Ref:     ReleaseRef,
 				Stream:  "stable",
 				Version: "v1.0.0",
 			},
