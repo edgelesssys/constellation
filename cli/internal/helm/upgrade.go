@@ -423,7 +423,7 @@ func (c *Client) mergeClusterValues(localValues map[string]any, releaseName stri
 		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
 	}
 
-	return MergeMaps(clusterValues, localValues), nil
+	return mergeMaps(clusterValues, localValues), nil
 }
 
 // GetValues queries the cluster for the values of the given release.

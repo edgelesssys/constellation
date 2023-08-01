@@ -68,7 +68,7 @@ func (h *Installer) InstallChart(ctx context.Context, release Release) error {
 
 // InstallChartWithValues is the generic install function for helm charts with custom values.
 func (h *Installer) InstallChartWithValues(ctx context.Context, release Release, extraValues map[string]any) error {
-	mergedVals := MergeMaps(release.Values, extraValues)
+	mergedVals := mergeMaps(release.Values, extraValues)
 	h.ReleaseName = release.ReleaseName
 	if err := h.SetWaitMode(release.WaitMode); err != nil {
 		return err
