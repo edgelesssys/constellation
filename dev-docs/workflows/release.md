@@ -66,7 +66,7 @@ Releases should be performed using [the automated release pipeline](https://gith
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
 3.  If the release is a minor version release, bump the pre-release version in the `version.txt` file.
-4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version (`grep "fromVersion: \[.*\]" -R .github`).
+4. Update the `fromVersion` in `e2e-test-release.yml` and `e2e-test-weekly.yaml` to the newly released version. To check the current values, run: `grep "fromVersion: \[.*\]" -R .github`.
 
 ## Pipeline cleanup
 
