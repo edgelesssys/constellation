@@ -149,9 +149,10 @@ func setupCiliumVals(ctx context.Context, provider cloudprovider.Provider, dsCli
 	}
 
 	// GCP requires extra configuration for Cilium
+	firstNodePodCIDR := "10.10.1.0/24" // TODO how to get this?
 	if provider == cloudprovider.GCP {
 		// TODO(elchead): remove?
-		if err := dsClient.PatchNode(ctx, output.GCP.IPCidrNode); err != nil {
+		if err := dsClient.PatchNode(ctx, firstNodePodCIDR); err != nil {
 			return nil, fmt.Errorf("patching GCP node: %w", err)
 		}
 		vals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
