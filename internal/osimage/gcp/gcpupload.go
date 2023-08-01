@@ -225,16 +225,16 @@ func (u *Uploader) blobURL(blobName string) string {
 }
 
 func (u *Uploader) imageName(version versionsapi.Version, attestationVariant string) string {
-	return strings.ReplaceAll(version.Version, ".", "-") + "-" + attestationVariant + "-" + version.Stream
+	return strings.ReplaceAll(version.Version(), ".", "-") + "-" + attestationVariant + "-" + version.Stream()
 }
 
 func (u *Uploader) imageFamily(version versionsapi.Version) string {
-	if version.Stream == "stable" {
+	if version.Stream() == "stable" {
 		return "constellation"
 	}
-	truncatedRef := version.Ref
-	if len(version.Ref) > 45 {
-		truncatedRef = version.Ref[:45]
+	truncatedRef := version.Ref()
+	if len(version.Ref()) > 45 {
+		truncatedRef = version.Ref()[:45]
 	}
 	return "constellation-" + truncatedRef
 }

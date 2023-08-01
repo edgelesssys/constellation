@@ -307,7 +307,7 @@ func validateCLIandConstellationVersionAreEqual(cliVersion semver.Semver, imageV
 		return fmt.Errorf("parsing image version: %w", err)
 	}
 
-	semImage, err := semver.New(parsedImageVersion.Version)
+	semImage, err := semver.New(parsedImageVersion.Version())
 	if err != nil {
 		return fmt.Errorf("parsing image semantical version: %w", err)
 	}

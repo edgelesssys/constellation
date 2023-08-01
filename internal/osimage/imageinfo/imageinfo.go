@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -67,13 +68,11 @@ func (a *Uploader) Close(ctx context.Context) error {
 
 // Upload marshals the image info to JSON and uploads it to S3.
 func (a *Uploader) Upload(ctx context.Context, imageInfo versionsapi.ImageInfo) (string, error) {
-	ver := versionsapi.Version{
-		Ref:     imageInfo.Ref,
-		Stream:  imageInfo.Stream,
-		Version: imageInfo.Version,
-		Kind:    versionsapi.VersionKindImage,
+	ver, err := versionsapi.NewVersion(imageInfo.Ref, imageInfo.Stream, imageInfo.Version, versionsapi.VersionKindImage)
+	if err != nil {
+		return "", fmt.Errorf("creating version: %w", err)
 	}
-	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind.String(), "info.json")
+	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), "info.json")
 	if err != nil {
 		return "", err
 	}

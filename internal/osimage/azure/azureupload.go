@@ -95,9 +95,9 @@ func New(subscription, location, resourceGroup string, log *logger.Logger) (*Upl
 // Upload uploads an OS image to Azure.
 func (u *Uploader) Upload(ctx context.Context, req *osimage.UploadRequest) ([]versionsapi.ImageInfoEntry, error) {
 	formattedTime := req.Timestamp.Format(timestampFormat)
-	diskName := fmt.Sprintf("constellation-%s-%s-%s", req.Version.Stream, formattedTime, req.AttestationVariant)
+	diskName := fmt.Sprintf("constellation-%s-%s-%s", req.Version.Stream(), formattedTime, req.AttestationVariant)
 	var sigName string
-	switch req.Version.Stream {
+	switch req.Version.Stream() {
 	case "stable":
 		sigName = sigNameStable
 	case "debug":
@@ -517,12 +517,12 @@ func uploadChunk(ctx context.Context, uploader azurePageblobAPI, chunk io.ReadSe
 
 func imageOffer(version versionsapi.Version) string {
 	switch {
-	case version.Stream == "stable":
+	case version.Stream() == "stable":
 		return "constellation"
-	case version.Stream == "debug" && version.Ref == "-":
-		return version.Version
+	case version.Stream() == "debug" && version.Ref() == "-":
+		return version.Version()
 	}
-	return version.Ref + "-" + version.Stream
+	return version.Ref() + "-" + version.Stream()
 }
 
 // imageVersion determines the semantic version string used inside a sig image.
@@ -530,10 +530,10 @@ func imageOffer(version versionsapi.Version) string {
 // Otherwise, the version is derived from the commit timestamp.
 func imageVersion(version versionsapi.Version, timestamp time.Time) (string, error) {
 	switch {
-	case version.Stream == "stable":
+	case version.Stream() == "stable":
 		fallthrough
-	case version.Stream == "debug" && version.Ref == "-":
-		return strings.TrimLeft(version.Version, "v"), nil
+	case version.Stream() == "debug" && version.Ref() == "-":
+		return strings.TrimLeft(version.Version(), "v"), nil
 	}
 
 	formattedTime := timestamp.Format(timestampFormat)

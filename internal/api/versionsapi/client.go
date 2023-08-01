@@ -131,18 +131,18 @@ func (c *Client) DeleteRef(ctx context.Context, ref string) error {
 func (c *Client) DeleteVersion(ctx context.Context, ver Version) error {
 	var retErr error
 
-	c.Client.Log.Debugf("Deleting version %s from minor version list", ver.Version)
+	c.Client.Log.Debugf("Deleting version %s from minor version list", ver.version)
 	possibleNewLatest, err := c.deleteVersionFromMinorVersionList(ctx, ver)
 	if err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("removing from minor version list: %w", err))
 	}
 
-	c.Client.Log.Debugf("Checking latest version for %s", ver.Version)
+	c.Client.Log.Debugf("Checking latest version for %s", ver.version)
 	if err := c.deleteVersionFromLatest(ctx, ver, possibleNewLatest); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("updating latest version: %w", err))
 	}
 
-	c.Client.Log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(APIV1), ver.Version)
+	c.Client.Log.Debugf("Deleting artifact path %s for %s", ver.ArtifactPath(APIV1), ver.version)
 	if err := c.Client.DeletePath(ctx, ver.ArtifactPath(APIV1)); err != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("deleting artifact path: %w", err))
 	}
@@ -153,32 +153,32 @@ func (c *Client) DeleteVersion(ctx context.Context, ver Version) error {
 func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Version,
 ) (*Latest, error) {
 	minorList := List{
-		Ref:         ver.Ref,
-		Stream:      ver.Stream,
+		Ref:         ver.ref,
+		Stream:      ver.stream,
 		Granularity: GranularityMinor,
 		Base:        ver.WithGranularity(GranularityMinor),
 		Kind:        VersionKindImage,
 	}
-	c.Client.Log.Debugf("Fetching minor version list for version %s", ver.Version)
+	c.Client.Log.Debugf("Fetching minor version list for version %s", ver.version)
 	minorList, err := c.FetchVersionList(ctx, minorList)
 	var notFoundErr *apiclient.NotFoundError
 	if errors.As(err, &notFoundErr) {
-		c.Client.Log.Warnf("Minor version list for version %s not found", ver.Version)
+		c.Client.Log.Warnf("Minor version list for version %s not found", ver.version)
 		c.Client.Log.Warnf("Skipping update of minor version list")
 		return nil, nil
 	} else if err != nil {
-		return nil, fmt.Errorf("fetching minor version list for version %s: %w", ver.Version, err)
+		return nil, fmt.Errorf("fetching minor version list for version %s: %w", ver.version, err)
 	}
 
-	if !minorList.Contains(ver.Version) {
-		c.Client.Log.Warnf("Version %s is not in minor version list %s", ver.Version, minorList.JSONPath())
+	if !minorList.Contains(ver.version) {
+		c.Client.Log.Warnf("Version %s is not in minor version list %s", ver.version, minorList.JSONPath())
 		c.Client.Log.Warnf("Skipping update of minor version list")
 		return nil, nil
 	}
 
 	semver.Sort(minorList.Versions)
 	for i, v := range minorList.Versions {
-		if v == ver.Version {
+		if v == ver.version {
 			minorList.Versions = append(minorList.Versions[:i], minorList.Versions[i+1:]...)
 			break
 		}
@@ -187,8 +187,8 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Vers
 	var latest *Latest
 	if len(minorList.Versions) != 0 {
 		latest = &Latest{
-			Ref:     ver.Ref,
-			Stream:  ver.Stream,
+			Ref:     ver.ref,
+			Stream:  ver.stream,
 			Kind:    VersionKindImage,
 			Version: minorList.Versions[len(minorList.Versions)-1],
 		}
@@ -205,15 +205,15 @@ func (c *Client) deleteVersionFromMinorVersionList(ctx context.Context, ver Vers
 		return latest, fmt.Errorf("updating minor version list %s: %w", minorList.JSONPath(), err)
 	}
 
-	c.Client.Log.Debugf("Removed version %s from minor version list %s", ver.Version, minorList.JSONPath())
+	c.Client.Log.Debugf("Removed version %s from minor version list %s", ver.version, minorList.JSONPath())
 	return latest, nil
 }
 
 func (c *Client) deleteVersionFromLatest(ctx context.Context, ver Version, possibleNewLatest *Latest,
 ) error {
 	latest := Latest{
-		Ref:    ver.Ref,
-		Stream: ver.Stream,
+		Ref:    ver.ref,
+		Stream: ver.stream,
 		Kind:   VersionKindImage,
 	}
 	c.Client.Log.Debugf("Fetching latest version from %s", latest.JSONPath())
@@ -226,8 +226,8 @@ func (c *Client) deleteVersionFromLatest(ctx context.Context, ver Version, possi
 		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
-	if latest.Version != ver.Version {
-		c.Client.Log.Debugf("Latest version is %s, not the deleted version %s", latest.Version, ver.Version)
+	if latest.Version != ver.version {
+		c.Client.Log.Debugf("Latest version is %s, not the deleted version %s", latest.Version, ver.version)
 		return nil
 	}
 

@@ -578,7 +578,7 @@ func (c *Config) IsNamedLikeDebugImage() bool {
 	if err != nil {
 		return false
 	}
-	return v.Stream == "debug"
+	return v.Stream() == "debug"
 }
 
 // GetProvider returns the configured cloud provider.

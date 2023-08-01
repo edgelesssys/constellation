@@ -161,6 +161,6 @@ func (f *fakeConfigAPIHandler) RoundTrip(req *http.Request) (*http.Response, err
 
 type dummyVerifier struct{}
 
-func (s dummyVerifier) VerifySignature(_, _, _ []byte) error {
+func (s dummyVerifier) VerifySignature(_, _ []byte) error {
 	return nil
 }

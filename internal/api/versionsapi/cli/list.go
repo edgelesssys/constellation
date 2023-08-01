@@ -91,7 +91,7 @@ func runList(cmd *cobra.Command, _ []string) error {
 		log.Debugf("Printing versions as JSON")
 		var vers []string
 		for _, v := range patchVersions {
-			vers = append(vers, v.Version)
+			vers = append(vers, v.Version())
 		}
 		raw, err := json.Marshal(vers)
 		if err != nil {

@@ -33,12 +33,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"time"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"go.uber.org/zap"
 )
@@ -249,6 +251,50 @@ func Update(ctx context.Context, c *Client, obj APIObject) error {
 	return nil
 }
 
+// SignAndUpdate signs the given apiObject and updates the object and it's signature in the API.
+// This function should be used in favor of manually managing signatures.
+// The signing is specified as part of the signer argument.
+func SignAndUpdate(ctx context.Context, c *Client, obj APIObject, signer sigstore.Signer) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return fmt.Errorf("marshaling %T: %w", obj, err)
+	}
+
+	dataSignature, err := signer.Sign(data)
+	if err != nil {
+		return fmt.Errorf("sign version file: %w", err)
+	}
+
+	signature := signature{
+		Signed:    obj,
+		Signature: dataSignature,
+	}
+
+	if err := Update(ctx, c, obj); err != nil {
+		return fmt.Errorf("updating %T: %w", obj, err)
+	}
+
+	if err := Update(ctx, c, signature); err != nil {
+		return fmt.Errorf("updating %T: %w", obj, err)
+	}
+
+	return nil
+}
+
+// DeleteWithSignature deletes the given apiObject and it's signature from the public Constellation API.
+func DeleteWithSignature(ctx context.Context, c *Client, obj APIObject) error {
+	if err := Delete(ctx, c, obj); err != nil {
+		return fmt.Errorf("deleting %T: %w", obj, err)
+	}
+
+	sig := signature{Signed: obj}
+	if err := Delete(ctx, c, sig); err != nil {
+		return fmt.Errorf("deleting %T: %w", sig, err)
+	}
+
+	return nil
+}
+
 // Delete deletes the given apiObject from the public Constellation API.
 func Delete(ctx context.Context, c *Client, obj APIObject) error {
 	if err := obj.ValidateRequest(); err != nil {
@@ -303,3 +349,26 @@ type uploadClient interface {
 
 // CloseFunc is a function that closes the client.
 type CloseFunc func(ctx context.Context) error
+
+// signature wraps another APIObject and adds a signature to it.
+type signature struct {
+	// Signed is the object that is signed.
+	Signed APIObject
+	// Signature is the signature of `Signed`.
+	Signature []byte `json:"signature"`
+}
+
+// JSONPath returns the path to the JSON file for the request to the config api.
+func (s signature) JSONPath() string {
+	return path.Join(s.Signed.JSONPath() + ".sig")
+}
+
+// ValidateRequest validates the request.
+func (s signature) ValidateRequest() error {
+	return s.Signed.ValidateRequest()
+}
+
+// Validate is a No-Op at the moment.
+func (s signature) Validate() error {
+	return s.Signed.Validate()
+}

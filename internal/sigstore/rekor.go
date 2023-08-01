@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/sigstore/rekor/pkg/client"
 	genclient "github.com/sigstore/rekor/pkg/generated/client"
 	"github.com/sigstore/rekor/pkg/generated/client/entries"
@@ -29,12 +28,7 @@ import (
 )
 
 // VerifyWithRekor checks if the hash of a signature is present in Rekor.
-func VerifyWithRekor(ctx context.Context, version versionsapi.Version, verifier rekorVerifier, hash string) error {
-	publicKey, err := CosignPublicKeyForVersion(version)
-	if err != nil {
-		return fmt.Errorf("getting public key: %w", err)
-	}
-
+func VerifyWithRekor(ctx context.Context, publicKey []byte, verifier rekorVerifier, hash string) error {
 	uuids, err := verifier.SearchByHash(ctx, hash)
 	if err != nil {
 		return fmt.Errorf("searching Rekor for hash: %w", err)

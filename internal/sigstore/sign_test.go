@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSignSignature(t *testing.T) {
@@ -50,8 +51,10 @@ func TestSignSignature(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				verifier := CosignVerifier{}
-				assert.NoError(verifier.VerifySignature(tc.content, signature, publicKey))
+
+				verifier, err := NewCosignVerifier(publicKey)
+				require.NoError(t, err)
+				assert.NoError(verifier.VerifySignature(tc.content, signature))
 
 			}
 		})

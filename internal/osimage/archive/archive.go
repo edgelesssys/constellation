@@ -67,7 +67,7 @@ func (a *Archivist) Close(ctx context.Context) error {
 
 // Archive reads the OS image in img and uploads it as key.
 func (a *Archivist) Archive(ctx context.Context, version versionsapi.Version, csp, attestationVariant string, img io.Reader) (string, error) {
-	key, err := url.JoinPath(version.ArtifactPath(versionsapi.APIV1), version.Kind.String(), "csp", csp, attestationVariant, "image.raw")
+	key, err := url.JoinPath(version.ArtifactPath(versionsapi.APIV1), version.Kind().String(), "csp", csp, attestationVariant, "image.raw")
 	if err != nil {
 		return "", err
 	}

@@ -163,10 +163,10 @@ func (l List) StructuredVersions() []Version {
 	versions := make([]Version, len(l.Versions))
 	for i, v := range l.Versions {
 		versions[i] = Version{
-			Ref:     l.Ref,
-			Stream:  l.Stream,
-			Version: v,
-			Kind:    l.Kind,
+			ref:     l.Ref,
+			stream:  l.Stream,
+			version: v,
+			kind:    l.Kind,
 		}
 	}
 	return versions

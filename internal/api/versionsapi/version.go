@@ -28,11 +28,30 @@ const ReleaseRef = "-"
 // Notice that version is a meta object to the versions API and there isn't an
 // actual corresponding object in the S3 bucket.
 // Therefore, the version object doesn't have a URL or JSON path.
+//
+// Versions fields are private so the type can be used in other packages by
+// defining private interfaces.
 type Version struct {
-	Ref     string
-	Stream  string
-	Version string
-	Kind    VersionKind
+	ref     string
+	stream  string
+	version string
+	kind    VersionKind
+}
+
+// NewVersion creates a new Version object and validates it.
+func NewVersion(ref, stream, version string, kind VersionKind) (Version, error) {
+	ver := Version{
+		ref:     ref,
+		stream:  stream,
+		version: version,
+		kind:    kind,
+	}
+
+	if err := ver.Validate(); err != nil {
+		return Version{}, err
+	}
+
+	return ver, nil
 }
 
 // NewVersionFromShortPath creates a new Version from a version short path.
@@ -43,10 +62,10 @@ func NewVersionFromShortPath(shortPath string, kind VersionKind) (Version, error
 	}
 
 	ver := Version{
-		Ref:     ref,
-		Stream:  stream,
-		Version: version,
-		Kind:    kind,
+		ref:     ref,
+		stream:  stream,
+		version: version,
+		kind:    kind,
 	}
 
 	if err := ver.Validate(); err != nil {
@@ -56,27 +75,47 @@ func NewVersionFromShortPath(shortPath string, kind VersionKind) (Version, error
 	return ver, nil
 }
 
+// Ref returns the ref of the version.
+func (v Version) Ref() string {
+	return v.ref
+}
+
+// Stream returns the stream of the version.
+func (v Version) Stream() string {
+	return v.stream
+}
+
+// Version returns the version string of the version.
+func (v Version) Version() string {
+	return v.version
+}
+
+// Kind returns the kind of the version.
+func (v Version) Kind() VersionKind {
+	return v.kind
+}
+
 // ShortPath returns the short path of the version.
 func (v Version) ShortPath() string {
-	return shortPath(v.Ref, v.Stream, v.Version)
+	return shortPath(v.ref, v.stream, v.version)
 }
 
 // Validate validates the version.
 func (v Version) Validate() error {
 	var retErr error
-	if err := ValidateRef(v.Ref); err != nil {
+	if err := ValidateRef(v.ref); err != nil {
 		retErr = errors.Join(retErr, err)
 	}
-	if err := ValidateStream(v.Ref, v.Stream); err != nil {
+	if err := ValidateStream(v.ref, v.stream); err != nil {
 		retErr = errors.Join(retErr, err)
 	}
-	if !semver.IsValid(v.Version) {
-		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semantic version", v.Version))
+	if !semver.IsValid(v.version) {
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a valid semantic version", v.version))
 	}
-	if semver.Canonical(v.Version) != v.Version {
-		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a canonical semantic version", v.Version))
+	if semver.Canonical(v.version) != v.version {
+		retErr = errors.Join(retErr, fmt.Errorf("version %q is not a canonical semantic version", v.version))
 	}
-	if v.Kind == VersionKindUnknown {
+	if v.kind == VersionKindUnknown {
 		retErr = errors.Join(retErr, errors.New("version kind is unknown"))
 	}
 	return retErr
@@ -84,29 +123,29 @@ func (v Version) Validate() error {
 
 // Equal returns true if the versions are equal.
 func (v Version) Equal(other Version) bool {
-	return v.Ref == other.Ref &&
-		v.Stream == other.Stream &&
-		v.Version == other.Version &&
-		v.Kind == other.Kind
+	return v.ref == other.ref &&
+		v.stream == other.stream &&
+		v.version == other.version &&
+		v.kind == other.kind
 }
 
 // Major returns the major version corresponding to the version.
 // For example, if the version is "v1.2.3", the major version is "v1".
 func (v Version) Major() string {
-	return semver.Major(v.Version)
+	return semver.Major(v.version)
 }
 
 // MajorMinor returns the major and minor version corresponding to the version.
 // For example, if the version is "v1.2.3", the major and minor version is "v1.2".
 func (v Version) MajorMinor() string {
-	return semver.MajorMinor(v.Version)
+	return semver.MajorMinor(v.version)
 }
 
 // WithGranularity returns the version with the given granularity.
 //
 // For example, if the version is "v1.2.3" and the granularity is GranularityMajor,
 // the returned version is "v1".
-// This is a helper function for Major() and MajorMinor() and v.Version.
+// This is a helper function for Major() and MajorMinor() and v.version.
 // In case of an unknown granularity, an empty string is returned.
 func (v Version) WithGranularity(gran Granularity) string {
 	switch gran {
@@ -115,7 +154,7 @@ func (v Version) WithGranularity(gran Granularity) string {
 	case GranularityMinor:
 		return v.MajorMinor()
 	case GranularityPatch:
-		return v.Version
+		return v.version
 	default:
 		return ""
 	}
@@ -144,11 +183,11 @@ func (v Version) ListPath(gran Granularity) string {
 	}
 	return path.Join(
 		constants.CDNAPIPrefix,
-		"ref", v.Ref,
-		"stream", v.Stream,
+		"ref", v.ref,
+		"stream", v.stream,
 		"versions",
 		gran.String(), v.WithGranularity(gran),
-		v.Kind.String()+".json",
+		v.kind.String()+".json",
 	)
 }
 
@@ -164,9 +203,9 @@ func (v Version) ArtifactPath(apiVer apiVersion) string {
 	return path.Join(
 		constants.CDNAPIBase,
 		apiVer.String(),
-		"ref", v.Ref,
-		"stream", v.Stream,
-		v.Version,
+		"ref", v.ref,
+		"stream", v.stream,
+		v.version,
 	)
 }
 
@@ -336,8 +375,8 @@ func ValidateStream(ref, stream string) error {
 
 // MeasurementURL builds the measurement and signature URLs for the given version.
 func MeasurementURL(version Version) (measurementURL, signatureURL *url.URL, err error) {
-	if version.Kind != VersionKindImage {
-		return &url.URL{}, &url.URL{}, fmt.Errorf("kind %q is not supported", version.Kind)
+	if version.kind != VersionKindImage {
+		return &url.URL{}, &url.URL{}, fmt.Errorf("kind %q is not supported", version.kind)
 	}
 
 	measurementPath, err := url.JoinPath(version.ArtifactsURL(APIV2), "image", constants.CDNMeasurementsFile)

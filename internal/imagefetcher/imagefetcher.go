@@ -51,9 +51,9 @@ func (f *Fetcher) FetchReference(ctx context.Context,
 	}
 
 	imgInfoReq := versionsapi.ImageInfo{
-		Ref:     ver.Ref,
-		Stream:  ver.Stream,
-		Version: ver.Version,
+		Ref:     ver.Ref(),
+		Stream:  ver.Stream(),
+		Version: ver.Version(),
 	}
 
 	url, err := imgInfoReq.URL()

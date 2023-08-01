@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -69,11 +70,11 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient)
-	return cfm.configFetchMeasurements(cmd, sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, sigstore.NewCosignVerifier, rekor, fileHandler, fetcher, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
+	cmd *cobra.Command, newCosignVerifier cosignVerifierConstructor, rekor rekorVerifier,
 	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
@@ -117,6 +118,15 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return err
 	}
 
+	publicKey, err := keyselect.CosignPublicKeyForVersion(imageVersion)
+	if err != nil {
+		return fmt.Errorf("getting public key: %w", err)
+	}
+	cosign, err := newCosignVerifier(publicKey)
+	if err != nil {
+		return fmt.Errorf("creating cosign verifier: %w", err)
+	}
+
 	var fetchedMeasurements measurements.M
 	var hash string
 	if flags.insecure {
@@ -147,7 +157,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 			return fmt.Errorf("fetching and verifying measurements: %w", err)
 		}
 		cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
-		if err := sigstore.VerifyWithRekor(cmd.Context(), imageVersion, rekor, hash); err != nil {
+		if err := sigstore.VerifyWithRekor(cmd.Context(), publicKey, rekor, hash); err != nil {
 			cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 			cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 		}
@@ -244,6 +254,4 @@ type rekorVerifier interface {
 	VerifyEntry(context.Context, string, string) error
 }
 
-type cosignVerifier interface {
-	VerifySignature(content, signature, publicKey []byte) error
-}
+type cosignVerifierConstructor func([]byte) (sigstore.Verifier, error)

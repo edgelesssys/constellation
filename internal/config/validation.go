@@ -513,7 +513,7 @@ func validateImageCompatibilityHelper(binaryVersion consemver.Semver, fieldName,
 		if err != nil {
 			return err
 		}
-		configuredVersion = imageVersion.Version
+		configuredVersion = imageVersion.Version()
 	}
 
 	return compatibility.BinaryWith(binaryVersion.String(), configuredVersion)

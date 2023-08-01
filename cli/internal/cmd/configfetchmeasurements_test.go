@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,12 +103,11 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 }
 
 func TestUpdateURLs(t *testing.T) {
-	ver := versionsapi.Version{
-		Ref:     "foo",
-		Stream:  "nightly",
-		Version: "v7.7.7",
-		Kind:    versionsapi.VersionKindImage,
-	}
+	require := require.New(t)
+
+	ver, err := versionsapi.NewVersion("foo", "nightly", "v7.7.7", versionsapi.VersionKindImage)
+	require.NoError(err)
+
 	testCases := map[string]struct {
 		conf                   *config.Config
 		flags                  *fetchMeasurementsFlags
@@ -234,39 +234,43 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		cosign       cosignVerifier
+		cosign       cosignVerifierConstructor
 		rekor        rekorVerifier
 		insecureFlag bool
 		wantErr      bool
 	}{
 		"success": {
-			cosign: &stubCosignVerifier{},
+			cosign: newStubCosignVerifier,
 			rekor:  singleUUIDVerifier(),
 		},
 		"success without cosign": {
 			insecureFlag: true,
-			cosign: &stubCosignVerifier{
-				verifyError: assert.AnError,
+			cosign: func(_ []byte) (sigstore.Verifier, error) {
+				return &stubCosignVerifier{
+					verifyError: assert.AnError,
+				}, nil
 			},
 			rekor: singleUUIDVerifier(),
 		},
 		"failing search should not result in error": {
-			cosign: &stubCosignVerifier{},
+			cosign: newStubCosignVerifier,
 			rekor: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{},
 				SearchByHashError: assert.AnError,
 			},
 		},
 		"failing verify should not result in error": {
-			cosign: &stubCosignVerifier{},
+			cosign: newStubCosignVerifier,
 			rekor: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  assert.AnError,
 			},
 		},
 		"signature verification failure": {
-			cosign: &stubCosignVerifier{
-				verifyError: assert.AnError,
+			cosign: func(_ []byte) (sigstore.Verifier, error) {
+				return &stubCosignVerifier{
+					verifyError: assert.AnError,
+				}, nil
 			},
 			rekor:   singleUUIDVerifier(),
 			wantErr: true,

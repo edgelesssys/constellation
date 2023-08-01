@@ -78,17 +78,15 @@ func (a *Uploader) Upload(ctx context.Context, rawMeasurement, signature io.Read
 		return "", "", err
 	}
 
-	ver := versionsapi.Version{
-		Ref:     measurements.Ref,
-		Stream:  measurements.Stream,
-		Version: measurements.Version,
-		Kind:    versionsapi.VersionKindImage,
+	ver, err := versionsapi.NewVersion(measurements.Ref, measurements.Stream, measurements.Version, versionsapi.VersionKindImage)
+	if err != nil {
+		return "", "", fmt.Errorf("creating version: %w", err)
 	}
-	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind.String(), "measurements.json")
+	key, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), "measurements.json")
 	if err != nil {
 		return "", "", err
 	}
-	sigKey, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind.String(), "measurements.json.sig")
+	sigKey, err := url.JoinPath(ver.ArtifactPath(versionsapi.APIV2), ver.Kind().String(), "measurements.json.sig")
 	if err != nil {
 		return "", "", err
 	}
