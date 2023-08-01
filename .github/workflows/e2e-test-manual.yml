@@ -35,7 +35,6 @@ on:
           - "verify"
           - "recover"
           - "nop"
-          - "iamcreate"
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
