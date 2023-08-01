@@ -27,19 +27,17 @@ type CosignVerifier struct {
 	publicKey crypto.PublicKey
 }
 
-// SetPublicKey parses the pem encoded public key, validates it's parameters and updates the object if necessary.
-func (c *CosignVerifier) SetPublicKey(pem []byte) error {
+// NewCosignVerifier unmarshalls and validates the given pem encoded public key and returns a new CosignVerifier.
+func NewCosignVerifier(pem []byte) (Verifier, error) {
 	pubkey, err := cryptoutils.UnmarshalPEMToPublicKey(pem)
 	if err != nil {
-		return fmt.Errorf("unable to parse public key: %w", err)
+		return CosignVerifier{}, fmt.Errorf("unable to parse public key: %w", err)
 	}
 	if err := cryptoutils.ValidatePubKey(pubkey); err != nil {
-		return fmt.Errorf("unable to validate public key: %w", err)
+		return CosignVerifier{}, fmt.Errorf("unable to validate public key: %w", err)
 	}
 
-	c.publicKey = pubkey
-
-	return nil
+	return CosignVerifier{pubkey}, nil
 }
 
 // VerifySignature checks if the signature of content can be verified

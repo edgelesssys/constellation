@@ -6,7 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package cmd
 
-import "context"
+import (
+	"context"
+
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+)
 
 // singleUUIDVerifier constructs a RekorVerifier that returns a single UUID and no errors,
 // and should work for most tests on the happy path.
@@ -39,8 +43,8 @@ type stubCosignVerifier struct {
 	verifyError error
 }
 
-func (v *stubCosignVerifier) SetPublicKey(_ []byte) error {
-	return nil
+func newStubCosignVerifier(_ []byte) (sigstore.Verifier, error) {
+	return &stubCosignVerifier{}, nil
 }
 
 func (v *stubCosignVerifier) VerifySignature(_, _ []byte) error {

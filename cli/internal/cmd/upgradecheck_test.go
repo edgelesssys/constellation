@@ -156,41 +156,21 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 	csp := cloudprovider.Azure
 	attestationVariant := variant.AzureSEVSNP{}
 
-	zero, err := versionsapi.NewVersion("-", "stable", "v0.0.0", versionsapi.VersionKindImage)
+	versionZero, err := versionsapi.NewVersion("-", "stable", "v0.0.0", versionsapi.VersionKindImage)
 	require.NoError(err)
-
-	one, err := versionsapi.NewVersion("-", "stable", "v1.0.0", versionsapi.VersionKindImage)
-	require.NoError(err)
-
-	images := []versionsapi.Version{zero, one}
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if strings.HasSuffix(req.URL.String(), "v0.0.0/azure/measurements.json") {
+		if strings.HasSuffix(req.URL.String(), "v0.0.0/image/measurements.json") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v0.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
+				Body:       io.NopCloser(strings.NewReader(`{"version": "v0.0.0","ref": "-","stream": "stable","list": [{"csp": "Azure","attestationVariant": "azure-sev-snp","measurements": {"0": {"expected": "0000000000000000000000000000000000000000000000000000000000000000","warnOnly": false}}}]}`)),
 				Header:     make(http.Header),
 			}
 		}
-		if strings.HasSuffix(req.URL.String(), "v0.0.0/azure/measurements.json.sig") {
+		if strings.HasSuffix(req.URL.String(), "v0.0.0/image/measurements.json.sig") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(strings.NewReader("MEQCIGRR7RaSMs892Ta06/Tz7LqPUxI05X4wQcP+nFFmZtmaAiBNl9X8mUKmUBfxg13LQBfmmpw6JwYQor5hOwM3NFVPAg==")),
-				Header:     make(http.Header),
-			}
-		}
-
-		if strings.HasSuffix(req.URL.String(), "v1.0.0/azure/measurements.json") {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
-				Header:     make(http.Header),
-			}
-		}
-		if strings.HasSuffix(req.URL.String(), "v1.0.0/azure/measurements.json.sig") {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader("MEQCIFh8CVELp/Da2U2Jt404OXsUeDfqtrf3pqGRuvxnxhI8AiBTHF9tHEPwFedYG3Jgn2ELOxss+Ybc6135vEtClBrbpg==")),
 				Header:     make(http.Header),
 			}
 		}
@@ -202,7 +182,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, images, logger.NewTest(t))
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &bytes.Buffer{}, client, &stubCosignVerifier{}, singleUUIDVerifier(), csp, attestationVariant, versionZero, logger.NewTest(t))
 	assert.NoError(err)
 
 	for _, measurement := range upgrades {

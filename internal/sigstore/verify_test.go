@@ -37,8 +37,7 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			verifier := CosignVerifier{}
-			err := verifier.SetPublicKey(tc.publicKey)
+			verifier, err := NewCosignVerifier(tc.publicKey)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -79,8 +78,7 @@ gCDlEzkuOCybCHf+q766bve799L7Y5y5oRsHY1MrUCUwYF/tL7Sg7EYMsA==
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			cosign := CosignVerifier{}
-			err := cosign.SetPublicKey(tc.publicKey)
+			cosign, err := NewCosignVerifier(tc.publicKey)
 			require.NoError(t, err)
 			err = cosign.VerifySignature(tc.content, tc.signature)
 			if tc.wantErr {

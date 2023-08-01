@@ -69,11 +69,11 @@ func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
 	cfm := &configFetchMeasurementsCmd{log: log, canFetchMeasurements: featureset.CanFetchMeasurements}
 
 	fetcher := attestationconfigapi.NewFetcherWithClient(http.DefaultClient)
-	return cfm.configFetchMeasurements(cmd, &sigstore.CosignVerifier{}, rekor, fileHandler, fetcher, http.DefaultClient)
+	return cfm.configFetchMeasurements(cmd, sigstore.NewCosignVerifier, rekor, fileHandler, fetcher, http.DefaultClient)
 }
 
 func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
-	cmd *cobra.Command, cosign cosignVerifier, rekor rekorVerifier,
+	cmd *cobra.Command, newCosignVerifier cosignVerifierConstructor, rekor rekorVerifier,
 	fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, client *http.Client,
 ) error {
 	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
@@ -121,9 +121,9 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err != nil {
 		return fmt.Errorf("getting public key: %w", err)
 	}
-	err = cosign.SetPublicKey(publicKey)
+	cosign, err := newCosignVerifier(publicKey)
 	if err != nil {
-		return fmt.Errorf("setting public key: %w", err)
+		return fmt.Errorf("creating cosign verifier: %w", err)
 	}
 
 	var fetchedMeasurements measurements.M
@@ -253,7 +253,4 @@ type rekorVerifier interface {
 	VerifyEntry(context.Context, string, string) error
 }
 
-type cosignVerifier interface {
-	SetPublicKey(pem []byte) error
-	VerifySignature(content, signature []byte) error
-}
+type cosignVerifierConstructor func([]byte) (sigstore.Verifier, error)

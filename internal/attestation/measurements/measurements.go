@@ -546,6 +546,5 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 }
 
 type cosignVerifier interface {
-	SetPublicKey(pem []byte) error
 	VerifySignature(content, signature []byte) error
 }

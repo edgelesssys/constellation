@@ -43,8 +43,7 @@ func NewFetcher() Fetcher {
 
 // NewFetcherWithClient returns a new fetcher with custom http client.
 func NewFetcherWithClient(client apifetcher.HTTPClient) Fetcher {
-	verifier := sigstore.CosignVerifier{}
-	err := verifier.SetPublicKey([]byte(cosignPublicKey))
+	verifier, err := sigstore.NewCosignVerifier([]byte(cosignPublicKey))
 	if err != nil {
 		// This relies on an embedded public key. If this key can not be validated, there is no way to recover from this.
 		panic(fmt.Errorf("creating cosign verifier: %w", err))

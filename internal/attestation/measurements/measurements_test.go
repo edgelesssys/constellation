@@ -453,12 +453,11 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 
 			m := M{}
 
-			verifier := sigstore.CosignVerifier{}
-			err := verifier.SetPublicKey(cosignPublicKey)
+			verifier, err := sigstore.NewCosignVerifier(cosignPublicKey)
 			require.NoError(err)
 
 			hash, err := m.fetchAndVerify(
-				context.Background(), client, &verifier,
+				context.Background(), client, verifier,
 				measurementsURL, signatureURL,
 				tc.imageVersion,
 				tc.csp,

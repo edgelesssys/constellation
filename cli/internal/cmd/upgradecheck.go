@@ -86,7 +86,6 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 			verListFetcher: versionfetcher,
 			fileHandler:    fileHandler,
 			client:         http.DefaultClient,
-			cosign:         &sigstore.CosignVerifier{},
 			rekor:          rekor,
 			flags:          flags,
 			cliVersion:     constants.BinaryVersion(),
@@ -338,7 +337,6 @@ type versionCollector struct {
 	verListFetcher versionListFetcher
 	fileHandler    file.Handler
 	client         *http.Client
-	cosign         cosignVerifier
 	rekor          rekorVerifier
 	flags          upgradeCheckFlags
 	versionsapi    versionFetcher
@@ -346,11 +344,30 @@ type versionCollector struct {
 	log            debugLog
 }
 
-func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error) {
+func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, versions []versionsapi.Version) (map[string]measurements.M, error) {
 	// get expected measurements for each image
-	upgrades, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, v.cosign, v.rekor, csp, attestationVariant, images, v.log)
-	if err != nil {
-		return nil, fmt.Errorf("fetching measurements for compatible images: %w", err)
+	upgrades := make(map[string]measurements.M)
+	for _, version := range versions {
+		v.log.Debugf("Fetching measurements for image: %s", version)
+		shortPath := version.ShortPath()
+
+		publicKey, err := sigstore.CosignPublicKeyForVersion(version)
+		if err != nil {
+			return nil, fmt.Errorf("getting public key: %w", err)
+		}
+		cosign, err := sigstore.NewCosignVerifier(publicKey)
+		if err != nil {
+			return nil, fmt.Errorf("setting public key: %w", err)
+		}
+
+		measurements, err := getCompatibleImageMeasurements(ctx, v.writer, v.client, cosign, v.rekor, csp, attestationVariant, version, v.log)
+		if err != nil {
+			if _, err := fmt.Fprintf(v.writer, "Skipping compatible image %q: %s\n", shortPath, err); err != nil {
+				return nil, fmt.Errorf("writing to buffer: %w", err)
+			}
+			continue
+		}
+		upgrades[shortPath] = measurements
 	}
 	v.log.Debugf("Compatible image measurements are %v", upgrades)
 
@@ -609,59 +626,36 @@ func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (s
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, cosign cosignVerifier, rekor rekorVerifier,
-	csp cloudprovider.Provider, attestationVariant variant.Variant, versions []versionsapi.Version, log debugLog,
-) (map[string]measurements.M, error) {
-	upgrades := make(map[string]measurements.M)
-	for _, version := range versions {
-		log.Debugf("Fetching measurements for image: %s", version)
-		shortPath := version.ShortPath()
-		measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version)
-		if err != nil {
-			return nil, err
-		}
-
-		var fetchedMeasurements measurements.M
-		log.Debugf("Fetching for measurement url: %s", measurementsURL)
-
-		publicKey, err := sigstore.CosignPublicKeyForVersion(version)
-		if err != nil {
-			return nil, fmt.Errorf("getting public key: %w", err)
-		}
-		err = cosign.SetPublicKey(publicKey)
-		if err != nil {
-			return nil, fmt.Errorf("setting public key: %w", err)
-		}
-
-		hash, err := fetchedMeasurements.FetchAndVerify(
-			ctx, client, cosign,
-			measurementsURL,
-			signatureURL,
-			version,
-			csp,
-			attestationVariant,
-		)
-		if err != nil {
-			if _, err := fmt.Fprintf(writer, "Skipping compatible image %q: %s\n", shortPath, err); err != nil {
-				return nil, fmt.Errorf("writing to buffer: %w", err)
-			}
-			continue
-		}
-
-		if err = sigstore.VerifyWithRekor(ctx, version, rekor, hash); err != nil {
-			if _, err := fmt.Fprintf(writer, "Warning: Unable to verify '%s' in Rekor.\n", hash); err != nil {
-				return nil, fmt.Errorf("writing to buffer: %w", err)
-			}
-			if _, err := fmt.Fprintf(writer, "Make sure measurements are correct.\n"); err != nil {
-				return nil, fmt.Errorf("writing to buffer: %w", err)
-			}
-		}
-
-		upgrades[shortPath] = fetchedMeasurements
-
+func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, cosign sigstore.Verifier, rekor rekorVerifier,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, version versionsapi.Version, log debugLog,
+) (measurements.M, error) {
+	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version)
+	if err != nil {
+		return nil, err
 	}
 
-	return upgrades, nil
+	var fetchedMeasurements measurements.M
+	log.Debugf("Fetching for measurement url: %s", measurementsURL)
+
+	hash, err := fetchedMeasurements.FetchAndVerify(
+		ctx, client, cosign,
+		measurementsURL,
+		signatureURL,
+		version,
+		csp,
+		attestationVariant,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("fetching measurements: %w", err)
+	}
+
+	if err = sigstore.VerifyWithRekor(ctx, version, rekor, hash); err != nil {
+		if _, err := fmt.Fprintf(writer, "Warning: Unable to verify '%s' in Rekor.\nMake sure measurements are correct.\n", hash); err != nil {
+			return nil, fmt.Errorf("writing to buffer: %w", err)
+		}
+	}
+
+	return fetchedMeasurements, nil
 }
 
 type versionFetcher interface {

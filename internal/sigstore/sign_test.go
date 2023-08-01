@@ -51,8 +51,8 @@ func TestSignSignature(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				verifier := CosignVerifier{}
-				err := verifier.SetPublicKey(publicKey)
+
+				verifier, err := NewCosignVerifier(publicKey)
 				require.NoError(t, err)
 				assert.NoError(verifier.VerifySignature(tc.content, signature))
 
