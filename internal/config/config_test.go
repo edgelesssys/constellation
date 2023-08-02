@@ -149,6 +149,24 @@ func modifyConfigForAzureToPassValidate(c *Config) {
 	c.Attestation.AzureSEVSNP.Measurements = measurements.M{
 		0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 	}
+	c.NodeGroups = map[string]NodeGroup{
+		constants.ControlPlaneDefault: {
+			Role:            "control-plane",
+			Zone:            "",
+			InstanceType:    "Standard_DC4as_v5",
+			StateDiskSizeGB: 30,
+			StateDiskType:   "StandardSSD_LRS",
+			InitialCount:    3,
+		},
+		constants.WorkerDefault: {
+			Role:            "worker",
+			Zone:            "",
+			InstanceType:    "Standard_DC4as_v5",
+			StateDiskSizeGB: 30,
+			StateDiskType:   "StandardSSD_LRS",
+			InitialCount:    3,
+		},
+	}
 }
 
 func TestReadConfigFile(t *testing.T) {
@@ -233,11 +251,12 @@ func TestFromFile(t *testing.T) {
 		},
 		"custom config from default file": {
 			config: &Config{
-				Version: Version3,
+				Version: Version4,
 			},
 			configName: constants.ConfigFilename,
 			wantResult: &Config{
-				Version: Version3,
+				Version:    Version4,
+				NodeGroups: map[string]NodeGroup{},
 			},
 		},
 		"modify default config": {
@@ -280,10 +299,10 @@ func TestFromFile(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 33 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 37 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 7
-	const awsErrCount = 6
-	const gcpErrCount = 6
+	const awsErrCount = 8
+	const gcpErrCount = 8
 
 	// TODO(AB#3132,3u13r): refactor config validation tests
 	// Note that the `cnf.Image = ""` is a hack to align `bazel test` with `go test` behavior
@@ -337,12 +356,12 @@ func TestValidate(t *testing.T) {
 			wantErr:      true,
 			wantErrCount: defaultErrCount + 1,
 		},
-		"v0 and negative state disk are two errors": {
+		"v0 and long name are two errors": {
 			cnf: func() *Config {
 				cnf := Default()
 				cnf.Image = ""
 				cnf.Version = "v0"
-				cnf.StateDiskSizeGB = -1
+				cnf.Name = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 				return cnf
 			}(),
 			wantErr:      true,
@@ -374,6 +393,7 @@ func TestValidate(t *testing.T) {
 				cnf.Attestation.AzureSEVSNP.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
 				}
+				modifyConfigForAzureToPassValidate(cnf)
 				return cnf
 			}(),
 		},
@@ -395,7 +415,7 @@ func TestValidate(t *testing.T) {
 				return cnf
 			}(),
 			wantErr:      true,
-			wantErrCount: awsErrCount - 2,
+			wantErrCount: awsErrCount - 4,
 		},
 		"AWS config with wrong region and zone format": {
 			cnf: func() *Config {
@@ -433,6 +453,24 @@ func TestValidate(t *testing.T) {
 				cnf.Provider.GCP = gcp
 				cnf.Attestation.GCPSEVES.Measurements = measurements.M{
 					0: measurements.WithAllBytes(0x00, measurements.Enforce, measurements.PCRMeasurementLength),
+				}
+				cnf.NodeGroups = map[string]NodeGroup{
+					constants.ControlPlaneDefault: {
+						Role:            "control-plane",
+						Zone:            "europe-west1-b",
+						InstanceType:    "n2d-standard-4",
+						StateDiskSizeGB: 30,
+						StateDiskType:   "pd-ssd",
+						InitialCount:    3,
+					},
+					constants.WorkerDefault: {
+						Role:            "worker",
+						Zone:            "europe-west1-b",
+						InstanceType:    "n2d-standard-4",
+						StateDiskSizeGB: 30,
+						StateDiskType:   "pd-ssd",
+						InitialCount:    3,
+					},
 				}
 				return cnf
 			}(),
@@ -889,7 +927,7 @@ func TestValidateProvider(t *testing.T) {
 }
 
 func TestConfigVersionCompatibility(t *testing.T) {
-	t.Skip() // TODO(daniel-weisse): re-enable and re-write for config v3
+	t.Skip() // TODO(daniel-weisse): re-enable and re-write for config v4
 	testCases := map[string]struct {
 		config         string
 		expectedConfig *Config
@@ -899,7 +937,6 @@ func TestConfigVersionCompatibility(t *testing.T) {
 			expectedConfig: &Config{
 				Version:           "v2",
 				Image:             "v2.5.0",
-				StateDiskSizeGB:   16,
 				KubernetesVersion: "1.23",
 				DebugCluster:      toPtr(false),
 				Provider: ProviderConfig{
@@ -908,8 +945,6 @@ func TestConfigVersionCompatibility(t *testing.T) {
 						Region:                "europe-west3",
 						Zone:                  "europe-west3-b",
 						ServiceAccountKeyPath: "serviceAccountKey.json",
-						InstanceType:          "n2d-standard-4",
-						StateDiskType:         "pd-ssd",
 						DeployCSIDriver:       toPtr(true),
 					},
 				},
@@ -920,15 +955,12 @@ func TestConfigVersionCompatibility(t *testing.T) {
 			expectedConfig: &Config{
 				Version:           "v2",
 				Image:             "v2.5.0",
-				StateDiskSizeGB:   16,
 				KubernetesVersion: "1.23",
 				DebugCluster:      toPtr(false),
 				Provider: ProviderConfig{
 					AWS: &AWSConfig{
 						Region:                 "us-east-2",
 						Zone:                   "us-east-2a",
-						InstanceType:           "c5.xlarge",
-						StateDiskType:          "gp2",
 						IAMProfileControlPlane: "control_plane_instance_profile",
 						IAMProfileWorkerNodes:  "node_instance_profile",
 					},
