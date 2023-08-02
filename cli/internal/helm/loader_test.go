@@ -20,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
 
@@ -66,17 +65,11 @@ func fakeServiceAccURI(provider cloudprovider.Provider) string {
 func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-	// filehandler := file.NewHandler(afero.NewOsFs())
-	// var key gcpshared.ServiceAccountKey
-	// filehandler.ReadJSON("/Users/adria/work/constellation/build/gcp/gcpServiceAccountKey.json", &key)
-	// fmt.Println(key.ToCloudServiceAccountURI())
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
 	helmReleases, err := chartLoader.LoadReleases(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"), fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}})
 	require.NoError(err)
-	reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
-	chart, err := loader.LoadArchive(reader)
-	require.NoError(err)
+	chart := helmReleases.ConstellationServices.Chart
 	assert.NotNil(chart.Dependencies())
 }
 

@@ -11,7 +11,6 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -19,7 +18,6 @@ import (
 	"helm.sh/helm/pkg/ignore"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
@@ -192,13 +190,7 @@ func (i *ChartLoader) loadRelease(info chartInfo, helmWaitMode WaitMode) (Releas
 		updateVersions(chart, constants.BinaryVersion())
 		values = i.loadCSIValues()
 	}
-
-	chartRaw, err := i.marshalChart(chart)
-	if err != nil {
-		return Release{}, fmt.Errorf("packaging %s chart: %w", info.releaseName, err)
-	}
-
-	return Release{Chart: chartRaw, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
+	return Release{Chart: chart, Values: values, ReleaseName: info.releaseName, WaitMode: helmWaitMode}, nil
 }
 
 func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
@@ -330,29 +322,6 @@ func updateVersions(chart *chart.Chart, newVersion semver.Semver) {
 			deps[i].Metadata.Version = newVersion.String()
 		}
 	}
-}
-
-// marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
-// We currently need to take this approach of marshaling as dependencies are not marshaled correctly with json.Marshal.
-// This stems from the fact that chart.Chart does not export the dependencies property.
-func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
-	// A separate tmpdir path is necessary since during unit testing multiple go routines are accessing the same path, possibly deleting files for other routines.
-	tmpDirPath, err := os.MkdirTemp("", "*")
-	defer os.Remove(tmpDirPath)
-	if err != nil {
-		return nil, fmt.Errorf("creating tmp dir: %w", err)
-	}
-
-	path, err := chartutil.Save(chart, tmpDirPath)
-	defer os.Remove(path)
-	if err != nil {
-		return nil, fmt.Errorf("chartutil save: %w", err)
-	}
-	chartRaw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading packaged chart: %w", err)
-	}
-	return chartRaw, nil
 }
 
 // taken from loader.LoadDir from the helm go module

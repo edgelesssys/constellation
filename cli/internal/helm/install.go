@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package helm
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -17,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -79,7 +77,7 @@ func (h *Installer) InstallChartWithValues(ctx context.Context, release Release,
 // install tries to install the given chart and aborts after ~5 tries.
 // The function will wait 30 seconds before retrying a failed installation attempt.
 // After 3 tries, the retrier will be canceled and the function returns with an error.
-func (h *Installer) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
+func (h *Installer) install(ctx context.Context, chart *chart.Chart, values map[string]any) error {
 	var retries int
 	retriable := func(err error) bool {
 		// abort after maximumRetryAttempts tries.
@@ -97,13 +95,6 @@ func (h *Installer) install(ctx context.Context, chartRaw []byte, values map[str
 		return wait.Interrupted(err) ||
 			strings.Contains(err.Error(), "connection refused")
 	}
-
-	reader := bytes.NewReader(chartRaw)
-	chart, err := loader.LoadArchive(reader)
-	if err != nil {
-		return fmt.Errorf("helm load archive: %w", err)
-	}
-
 	doer := installDoer{
 		h,
 		chart,
