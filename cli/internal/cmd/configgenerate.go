@@ -108,7 +108,10 @@ func createConfigWithAttestationVariant(provider cloudprovider.Provider, rawProv
 
 	// set a lower default for QEMU's state disk
 	if provider == cloudprovider.QEMU {
-		conf.StateDiskSizeGB = 10
+		for groupName, group := range conf.NodeGroups {
+			group.StateDiskSizeGB = 10
+			conf.NodeGroups[groupName] = group
+		}
 	}
 
 	if provider == cloudprovider.Unknown {
