@@ -128,7 +128,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 
     ```bash
-    constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+    constellation create -y
     ```
 
     This should give the following output:

@@ -7,7 +7,7 @@ This document describes how to deploy NFS in Constellation using Rook.
 The cluster needs at least 3 worker nodes, default machines are powerful enough.
 
 ```bash
-constellation create --name nfs -c 1 -w 3
+constellation create --name nfs
 ```
 
 ## Deploy CSI Driver

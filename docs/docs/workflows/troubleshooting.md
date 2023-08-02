@@ -31,7 +31,7 @@ Afterward, set `ARM_SKIP_PROVIDER_REGISTRATION=true` as an environment variable 
 For example:
 
 ```bash
-ARM_SKIP_PROVIDER_REGISTRATION=true constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+ARM_SKIP_PROVIDER_REGISTRATION=true constellation create -y
 ```
 
 Or alternatively, for `terminate`:

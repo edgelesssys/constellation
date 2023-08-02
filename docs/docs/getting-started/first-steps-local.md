@@ -103,7 +103,7 @@ attaching persistent storage, or autoscaling aren't available.
 2. Now you can create your cluster and its nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
 
   ```bash
-  constellation create --control-plane-nodes 1 --worker-nodes 1
+  constellation create
   ```
 
   This will create 2 VMs: one worker node, and one control plane node.

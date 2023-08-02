@@ -33,7 +33,7 @@ Choose the initial size of your cluster.
 The following command creates a cluster with one control-plane and two worker nodes:
 
 ```bash
-constellation create --control-plane-nodes 1 --worker-nodes 2
+constellation create
 ```
 
 For details on the flags, consult the command help via `constellation create -h`.
