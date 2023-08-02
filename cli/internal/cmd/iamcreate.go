@@ -548,10 +548,10 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Zone:\t\t\t%s\n\n", flags.gcp.zone)
 }
 
-func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, _ iamFlags, _ iamid.File) {
-	cmd.Printf("projectID:\t\t%s\n", gcpServiceAccountKeyPath(c.workspace))
-	cmd.Printf("region:\t\t\t%s\n", gcpServiceAccountKeyPath(c.workspace))
-	cmd.Printf("zone:\t\t\t%s\n", gcpServiceAccountKeyPath(c.workspace))
+func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ iamid.File) {
+	cmd.Printf("projectID:\t\t%s\n", flags.gcp.projectID)
+	cmd.Printf("region:\t\t\t%s\n", flags.gcp.region)
+	cmd.Printf("zone:\t\t\t%s\n", flags.gcp.zone)
 	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", gcpServiceAccountKeyPath(c.workspace))
 }
 
