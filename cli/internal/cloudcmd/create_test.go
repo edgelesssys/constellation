@@ -218,12 +218,9 @@ func TestCreator(t *testing.T) {
 			}
 
 			opts := CreateOptions{
-				Provider:          tc.provider,
-				Config:            tc.config,
-				InsType:           "type",
-				ControlPlaneCount: 2,
-				WorkerCount:       3,
-				TFLogLevel:        terraform.LogLevelNone,
+				Provider:   tc.provider,
+				Config:     tc.config,
+				TFLogLevel: terraform.LogLevelNone,
 			}
 			idFile, err := creator.Create(context.Background(), opts)
 
