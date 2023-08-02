@@ -61,14 +61,11 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	if err != nil {
 		return fmt.Errorf("creating Kubernetes client: %w", err)
 	}
-	ciliumVals, err := setupCiliumVals(ctx, provider, helper, output)
-	if err != nil {
-		return fmt.Errorf("setting up Cilium values: %w", err)
-	}
+	ciliumVals := setupCiliumVals(ctx, provider, helper, output)
 	if err := h.installer.InstallChartWithValues(ctx, releases.Cilium, ciliumVals); err != nil {
 		return fmt.Errorf("installing Cilium: %w", err)
 	}
-	h.log.Debugf("Waiting for Cilium to become healthy")
+	h.log.Debugf("Waiting for Cilium to become ready")
 	timeToStartWaiting := time.Now()
 	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
 	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
@@ -78,7 +75,7 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
 	h.log.Debugf("Cilium became healthy after %s", timeUntilFinishedWaiting.String())
 
-	h.log.Debugf("Restarting Cilium")
+	h.log.Debugf("Fix Cilium through restart")
 	if err := helper.RestartDS("kube-system", "cilium"); err != nil {
 		return fmt.Errorf("restarting Cilium: %w", err)
 	}
@@ -142,23 +139,16 @@ type helmInstaller interface {
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
 // has the dns endpoint in its SAN list.
-func setupCiliumVals(ctx context.Context, provider cloudprovider.Provider, dsClient *k8sDsClient, output terraform.ApplyOutput) (map[string]any, error) {
+func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sDsClient, output terraform.ApplyOutput) map[string]any {
 	vals := map[string]any{
 		"k8sServiceHost": output.IP,
 		"k8sServicePort": 6443, // TODO take from tf?
 	}
-
-	// GCP requires extra configuration for Cilium
-	firstNodePodCIDR := "10.10.1.0/24" // TODO how to get this?
 	if provider == cloudprovider.GCP {
-		// TODO(elchead): remove?
-		if err := dsClient.PatchNode(ctx, firstNodePodCIDR); err != nil {
-			return nil, fmt.Errorf("patching GCP node: %w", err)
-		}
 		vals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
 		vals["strictModeCIDR"] = output.GCP.IPCidrPod
 	}
-	return vals, nil
+	return vals
 }
 
 // setupMicroserviceVals returns the values for the microservice chart.

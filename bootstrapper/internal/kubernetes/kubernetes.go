@@ -159,6 +159,17 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
+	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP {
+		// GCP uses direct routing, so we need to set the pod CIDR of the first control-plane node for Cilium.
+		var nodePodCIDR string
+		if len(instance.AliasIPRanges) > 0 {
+			nodePodCIDR = instance.AliasIPRanges[0]
+		}
+		if err := k.client.PatchFirstNodePodCIDR(ctx, nodePodCIDR); err != nil {
+			return nil, fmt.Errorf("patching first node pod CIDR: %w", err)
+		}
+	}
+
 	// Annotate Node with the hash of the installed components
 	if err := k.client.AnnotateNode(ctx, nodeName,
 		constants.NodeKubernetesComponentsAnnotationKey, k8sComponentsConfigMap,

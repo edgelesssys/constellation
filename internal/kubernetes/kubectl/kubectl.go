@@ -19,9 +19,11 @@ import (
 	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/scale/scheme"
@@ -128,6 +130,22 @@ func (k *Kubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, ann
 		_, err = k.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
 		return err
 	})
+}
+
+// PatchFirstNodePodCIDR patches the firstNodePodCIDR of the first control-plane node for Cilium.
+func (k *Kubectl) PatchFirstNodePodCIDR(ctx context.Context, firstNodePodCIDR string) error {
+	selector := labels.Set{"node-role.kubernetes.io/control-plane": ""}.AsSelector()
+	controlPlaneList, err := k.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
+	if err != nil {
+		return err
+	}
+	if len(controlPlaneList.Items) != 1 {
+		return fmt.Errorf("expected 1 control-plane node, got %d", len(controlPlaneList.Items))
+	}
+	nodeName := controlPlaneList.Items[0].Name
+	// Update the node's spec
+	_, err = k.CoreV1().Nodes().Patch(context.Background(), nodeName, types.MergePatchType, []byte(fmt.Sprintf(`{"spec":{"podCIDR":"%s"}}`, firstNodePodCIDR)), metav1.PatchOptions{})
+	return err
 }
 
 // ListAllNamespaces returns all namespaces in the cluster.

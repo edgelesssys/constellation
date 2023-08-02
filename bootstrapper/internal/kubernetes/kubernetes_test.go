@@ -534,6 +534,10 @@ func (s *stubKubectl) AnnotateNode(_ context.Context, _, _, _ string) error {
 	return s.annotateNodeErr
 }
 
+func (s *stubKubectl) PatchFirstNodePodCIDR(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubKubectl) WaitForCRDs(_ context.Context, _ []string) error {
 	return s.waitForCRDsErr
 }
