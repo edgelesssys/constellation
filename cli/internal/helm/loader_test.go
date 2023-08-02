@@ -24,19 +24,55 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/idkeydigest"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
+
+func fakeServiceAccURI(provider cloudprovider.Provider) string {
+	switch provider {
+	case cloudprovider.GCP:
+		cred := gcpshared.ServiceAccountKey{
+			Type:                    "service_account",
+			ProjectID:               "project_id",
+			PrivateKeyID:            "key_id",
+			PrivateKey:              "key",
+			ClientEmail:             "client_email",
+			ClientID:                "client_id",
+			AuthURI:                 "auth_uri",
+			TokenURI:                "token_uri",
+			AuthProviderX509CertURL: "cert",
+			ClientX509CertURL:       "client_cert",
+		}
+		return cred.ToCloudServiceAccountURI()
+	case cloudprovider.Azure:
+		creds := azureshared.ApplicationCredentials{
+			TenantID:            "TenantID",
+			Location:            "Location",
+			PreferredAuthMethod: azureshared.AuthMethodUserAssignedIdentity,
+			UamiResourceID:      "uid",
+		}
+		return creds.ToCloudServiceAccountURI()
+	default:
+		return ""
+	}
+}
 
 func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
-
+	// filehandler := file.NewHandler(afero.NewOsFs())
+	// var key gcpshared.ServiceAccountKey
+	// filehandler.ReadJSON("/Users/adria/work/constellation/build/gcp/gcpServiceAccountKey.json", &key)
+	// fmt.Println(key.ToCloudServiceAccountURI())
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	helmReleases, err := chartLoader.LoadReleases(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"))
+	helmReleases, err := chartLoader.LoadReleases(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"), fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}})
 	require.NoError(err)
 	reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
 	chart, err := loader.LoadArchive(reader)
@@ -146,8 +182,13 @@ func TestConstellationServices(t *testing.T) {
 			chart, err := loadChartsDir(helmFS, constellationServicesInfo.path)
 			require.NoError(err)
 			values := chartLoader.loadConstellationServicesValues()
-			err = extendConstellationServicesValues(values, tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			serviceAccURI := fakeServiceAccURI(tc.config.GetProvider())
+			extraVals, err := extraConstellationServicesValues(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "uid", serviceAccURI, terraform.ApplyOutput{
+				Azure: &terraform.AzureApplyOutput{},
+				GCP:   &terraform.GCPApplyOutput{},
+			})
 			require.NoError(err)
+			values = mergeMaps(values, extraVals)
 
 			options := chartutil.ReleaseOptions{
 				Name:      "testRelease",

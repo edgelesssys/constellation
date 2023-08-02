@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
@@ -54,7 +55,16 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
-		Type: "service_account",
+		Type:                    "service_account",
+		ProjectID:               "project_id",
+		PrivateKeyID:            "key_id",
+		PrivateKey:              "key",
+		ClientEmail:             "client_email",
+		ClientID:                "client_id",
+		AuthURI:                 "auth_uri",
+		TokenURI:                "token_uri",
+		AuthProviderX509CertURL: "cert",
+		ClientX509CertURL:       "client_cert",
 	}
 	testInitResp := &initproto.InitSuccessResponse{
 		Kubeconfig: []byte("kubeconfig"),
@@ -175,7 +185,7 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &stubHelmInstaller{}}
+			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &stubHelmInstaller{}, tfClient: &stubShowCluster{}}
 			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
 
 			if tc.wantErr {
@@ -670,9 +680,19 @@ func (c stubInitClient) Recv() (*initproto.InitResponse, error) {
 
 type stubHelmInstaller struct{}
 
-func (i *stubHelmInstaller) Install(_ context.Context, _ cloudprovider.Provider, _ uri.MasterSecret,
-	_ clusterid.File,
-	_ string, _ *helm.Releases,
-) error {
+func (i *stubHelmInstaller) Install(_ context.Context, _ *helm.Releases) error {
 	return nil
+}
+
+type stubShowCluster struct{}
+
+func (s *stubShowCluster) ShowCluster(_ context.Context, csp cloudprovider.Provider) (terraform.ApplyOutput, error) {
+	res := terraform.ApplyOutput{}
+	switch csp {
+	case cloudprovider.Azure:
+		res.Azure = &terraform.AzureApplyOutput{}
+	case cloudprovider.GCP:
+		res.GCP = &terraform.GCPApplyOutput{}
+	}
+	return res, nil
 }

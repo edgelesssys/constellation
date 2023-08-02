@@ -9,8 +9,6 @@ package helm
 import (
 	"bytes"
 	"embed"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -23,7 +21,9 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm/imageversion"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -108,12 +108,13 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion, 
 }
 
 // LoadReleases loads the embedded helm charts and returns them as a HelmReleases object.
-func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret, salt []byte) (*Releases, error) {
+func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, helmWaitMode WaitMode, masterSecret, salt []byte, serviceAccURI string, idFile clusterid.File, output terraform.ApplyOutput) (*Releases, error) {
 	ciliumRelease, err := i.loadRelease(ciliumInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
-	extendCiliumValues(ciliumRelease.Values, conformanceMode)
+	ciliumVals := extraCiliumValues(config.GetProvider(), conformanceMode, output)
+	ciliumRelease.Values = mergeMaps(ciliumRelease.Values, ciliumVals)
 
 	certManagerRelease, err := i.loadRelease(certManagerInfo, helmWaitMode)
 	if err != nil {
@@ -124,14 +125,17 @@ func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, 
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
+	operatorRelease.Values = mergeMaps(operatorRelease.Values, extraOperatorValues(idFile.UID))
 
 	conServicesRelease, err := i.loadRelease(constellationServicesInfo, helmWaitMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
-	if err := extendConstellationServicesValues(conServicesRelease.Values, config, masterSecret, salt); err != nil {
+	svcVals, err := extraConstellationServicesValues(config, masterSecret, salt, idFile.UID, serviceAccURI, output)
+	if err != nil {
 		return nil, fmt.Errorf("extending constellation-services values: %w", err)
 	}
+	conServicesRelease.Values = mergeMaps(conServicesRelease.Values, svcVals)
 
 	releases := Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, ConstellationOperators: operatorRelease, ConstellationServices: conServicesRelease}
 	if config.HasProvider(cloudprovider.AWS) {
@@ -143,11 +147,16 @@ func (i *ChartLoader) LoadReleases(config *config.Config, conformanceMode bool, 
 	}
 
 	if config.DeployCSIDriver() {
-		csi, err := i.loadRelease(csiInfo, helmWaitMode)
+		csiRelease, err := i.loadRelease(csiInfo, helmWaitMode)
 		if err != nil {
 			return nil, fmt.Errorf("loading snapshot CRDs: %w", err)
 		}
-		releases.CSI = &csi
+		extraCSIvals, err := extraCSIValues(config.GetProvider(), serviceAccURI)
+		if err != nil {
+			return nil, fmt.Errorf("extending CSI values: %w", err)
+		}
+		csiRelease.Values = mergeMaps(csiRelease.Values, extraCSIvals)
+		releases.CSI = &csiRelease
 	}
 	return &releases, nil
 }
@@ -197,22 +206,6 @@ func (i *ChartLoader) loadAWSLBControllerValues() map[string]any {
 		"clusterName":  i.clusterName,
 		"tolerations":  controlPlaneTolerations,
 		"nodeSelector": controlPlaneNodeSelector,
-	}
-}
-
-// extendCiliumValues extends the given values map by some values depending on user input.
-// This extra step of separating the application of user input is necessary since service upgrades should
-// reuse user input from the init step. However, we can't rely on reuse-values, because
-// during upgrades we all values need to be set locally as they might have changed.
-// Also, the charts are not rendered correctly without all of these values.
-func extendCiliumValues(in map[string]any, conformanceMode bool) {
-	if conformanceMode {
-		in["kubeProxyReplacementHealthzBindAddr"] = ""
-		in["kubeProxyReplacement"] = "partial"
-		in["sessionAffinity"] = true
-		in["cni"] = map[string]any{
-			"chainingMode": "portmap",
-		}
 	}
 }
 
@@ -319,59 +312,6 @@ func (i *ChartLoader) cspTags() map[string]any {
 	return map[string]any{
 		i.csp.String(): true,
 	}
-}
-
-// extendConstellationServicesValues extends the given values map by some values depending on user input.
-// Values set inside this function are only applied during init, not during upgrade.
-func extendConstellationServicesValues(
-	in map[string]any, cfg *config.Config, masterSecret, salt []byte,
-) error {
-	keyServiceValues, ok := in["key-service"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'key-service' key")
-	}
-	keyServiceValues["masterSecret"] = base64.StdEncoding.EncodeToString(masterSecret)
-	keyServiceValues["salt"] = base64.StdEncoding.EncodeToString(salt)
-
-	joinServiceVals, ok := in["join-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid join-service values")
-	}
-	joinServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
-
-	// attestation config is updated separately during upgrade,
-	// so we only set them in Helm during init.
-	attestationConfigJSON, err := json.Marshal(cfg.GetAttestationConfig())
-	if err != nil {
-		return fmt.Errorf("marshalling measurements: %w", err)
-	}
-	joinServiceVals["attestationConfig"] = string(attestationConfigJSON)
-
-	verifyServiceVals, ok := in["verification-service"].(map[string]any)
-	if !ok {
-		return errors.New("invalid verification-service values")
-	}
-	verifyServiceVals["attestationVariant"] = cfg.GetAttestationConfig().GetVariant().String()
-
-	csp := cfg.GetProvider()
-	switch csp {
-	case cloudprovider.OpenStack:
-		in["openstack"] = map[string]any{
-			"deployYawolLoadBalancer": cfg.DeployYawolLoadBalancer(),
-		}
-		if cfg.DeployYawolLoadBalancer() {
-			in["yawol-controller"] = map[string]any{
-				"yawolOSSecretName": "yawolkey",
-				// has to be larger than ~30s to account for slow OpenStack API calls.
-				"openstackTimeout": "1m",
-				"yawolFloatingID":  cfg.Provider.OpenStack.FloatingIPPoolID,
-				"yawolFlavorID":    cfg.Provider.OpenStack.YawolFlavorID,
-				"yawolImageID":     cfg.Provider.OpenStack.YawolImageID,
-			}
-		}
-	}
-
-	return nil
 }
 
 // updateVersions changes all versions of direct dependencies that are set to "0.0.0" to newVersion.
