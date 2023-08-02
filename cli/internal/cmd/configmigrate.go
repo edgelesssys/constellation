@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/config/migration"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -45,17 +44,12 @@ func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) 
 		return err
 	}
 
+	// TODO(malt3): add migration from v3 to v4
 	switch cfgVersion.Version {
-	case config.Version3:
-		cmd.Printf("Config already at version %s, nothing to do\n", config.Version3)
-		return nil
-	case migration.Version2:
-		if err := migration.V2ToV3(configPath, handler); err != nil {
-			return fmt.Errorf("migrating config: %w", err)
-		}
-		cmd.Printf("Successfully migrated config to %s\n", config.Version3)
+	case config.Version4:
+		cmd.Printf("Config already at version %s, nothing to do\n", config.Version4)
 		return nil
 	default:
-		return fmt.Errorf("cannot convert config version %s to %s", cfgVersion.Version, config.Version3)
+		return fmt.Errorf("cannot convert config version %s to %s", cfgVersion.Version, config.Version4)
 	}
 }
