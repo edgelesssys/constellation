@@ -161,12 +161,9 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config, tfLogLevel terraform.LogLevel) error {
 	m.log.Debugf("Creating mini cluster")
 	opts := cloudcmd.CreateOptions{
-		Provider:          cloudprovider.QEMU,
-		Config:            config,
-		InsType:           "",
-		ControlPlaneCount: 1,
-		WorkerCount:       1,
-		TFLogLevel:        tfLogLevel,
+		Provider:   cloudprovider.QEMU,
+		Config:     config,
+		TFLogLevel: tfLogLevel,
 	}
 	idFile, err := creator.Create(ctx, opts)
 	if err != nil {

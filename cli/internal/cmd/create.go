@@ -16,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -35,10 +34,11 @@ func NewCreateCmd() *cobra.Command {
 		RunE:  runCreate,
 	}
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
-	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes (required)")
-	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
-	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes (required)")
-	must(cobra.MarkFlagRequired(cmd.Flags(), "worker-nodes"))
+	// TODO(malt3): remove deprecated flags in v2.11+
+	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes")
+	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes")
+	must(cmd.Flags().MarkDeprecated("control-plane-nodes", "configure the number of control-plane nodes in the configuration file"))
+	must(cmd.Flags().MarkDeprecated("worker-nodes", "configure the number of worker nodes in the configuration file"))
 	return cmd
 }
 
@@ -120,32 +120,34 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	provider := conf.GetProvider()
-	var instanceType string
-	switch provider {
-	case cloudprovider.AWS:
-		c.log.Debugf("Configuring instance type for AWS")
-		instanceType = conf.Provider.AWS.InstanceType
-	case cloudprovider.Azure:
-		c.log.Debugf("Configuring instance type for Azure")
-		instanceType = conf.Provider.Azure.InstanceType
-	case cloudprovider.GCP:
-		c.log.Debugf("Configuring instance type for GCP")
-		instanceType = conf.Provider.GCP.InstanceType
-	case cloudprovider.OpenStack:
-		c.log.Debugf("Configuring instance type for OpenStack")
-		instanceType = conf.Provider.OpenStack.FlavorID
-	case cloudprovider.QEMU:
-		c.log.Debugf("Configuring instance type for QEMU")
-		cpus := conf.Provider.QEMU.VCPUs
-		instanceType = fmt.Sprintf("%d-vCPU", cpus)
+
+	controlPlaneGroup, ok := conf.NodeGroups[constants.DefaultControlPlaneGroupName]
+	if !ok {
+		return fmt.Errorf("default control-plane node group %q not found in configuration", constants.DefaultControlPlaneGroupName)
 	}
-	c.log.Debugf("Configured with instance type %q", instanceType)
+	workerGroup, ok := conf.NodeGroups[constants.DefaultWorkerGroupName]
+	if !ok {
+		return fmt.Errorf("default worker node group %q not found in configuration", constants.DefaultWorkerGroupName)
+	}
+	otherGroupNames := make([]string, 0, len(conf.NodeGroups)-2)
+	for groupName := range conf.NodeGroups {
+		if groupName != constants.DefaultControlPlaneGroupName && groupName != constants.DefaultWorkerGroupName {
+			otherGroupNames = append(otherGroupNames, groupName)
+		}
+	}
+	if len(otherGroupNames) > 0 {
+		c.log.Debugf("Creating %d additional node groups: %v", len(otherGroupNames), otherGroupNames)
+	}
 
 	if !flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
-		cmd.Printf("%d control-plane node%s of type %s will be created.\n", flags.controllerCount, isPlural(flags.controllerCount), instanceType)
-		cmd.Printf("%d worker node%s of type %s will be created.\n", flags.workerCount, isPlural(flags.workerCount), instanceType)
+		cmd.Printf("  %d control-plane node%s of type %s will be created.\n", controlPlaneGroup.InitialCount, isPlural(controlPlaneGroup.InitialCount), controlPlaneGroup.InstanceType)
+		cmd.Printf("  %d worker node%s of type %s will be created.\n", workerGroup.InitialCount, isPlural(workerGroup.InitialCount), workerGroup.InstanceType)
+		for _, groupName := range otherGroupNames {
+			group := conf.NodeGroups[groupName]
+			cmd.Printf("  group %s with %d node%s of type %s will be created.\n", groupName, group.InitialCount, isPlural(group.InitialCount), group.InstanceType)
+		}
 		ok, err := askToConfirm(cmd, "Do you want to create this cluster?")
 		if err != nil {
 			return err
@@ -158,12 +160,9 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 
 	spinner.Start("Creating", false)
 	opts := cloudcmd.CreateOptions{
-		Provider:          provider,
-		Config:            conf,
-		InsType:           instanceType,
-		ControlPlaneCount: flags.controllerCount,
-		WorkerCount:       flags.workerCount,
-		TFLogLevel:        flags.tfLogLevel,
+		Provider:   provider,
+		Config:     conf,
+		TFLogLevel: flags.tfLogLevel,
 	}
 	idFile, err := creator.Create(cmd.Context(), opts)
 	spinner.Stop()
@@ -182,24 +181,6 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 
 // parseCreateFlags parses the flags of the create command.
 func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
-	controllerCount, err := cmd.Flags().GetInt("control-plane-nodes")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing number of control-plane nodes: %w", err)
-	}
-	c.log.Debugf("Control-plane nodes flag is %d", controllerCount)
-	if controllerCount < constants.MinControllerCount {
-		return createFlags{}, fmt.Errorf("number of control-plane nodes must be at least %d", constants.MinControllerCount)
-	}
-
-	workerCount, err := cmd.Flags().GetInt("worker-nodes")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
-	}
-	c.log.Debugf("Worker nodes flag is %d", workerCount)
-	if workerCount < constants.MinWorkerCount {
-		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
-	}
-
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing yes bool: %w", err)
@@ -229,23 +210,19 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	c.log.Debugf("Terraform logs will be written into %s at level %s", constants.TerraformLogFile, logLevel.String())
 
 	return createFlags{
-		controllerCount: controllerCount,
-		workerCount:     workerCount,
-		configPath:      configPath,
-		tfLogLevel:      logLevel,
-		force:           force,
-		yes:             yes,
+		configPath: configPath,
+		tfLogLevel: logLevel,
+		force:      force,
+		yes:        yes,
 	}, nil
 }
 
 // createFlags contains the parsed flags of the create command.
 type createFlags struct {
-	controllerCount int
-	workerCount     int
-	configPath      string
-	tfLogLevel      terraform.LogLevel
-	force           bool
-	yes             bool
+	configPath string
+	tfLogLevel terraform.LogLevel
+	force      bool
+	yes        bool
 }
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
