@@ -57,16 +57,15 @@ func (h initializationClient) Install(ctx context.Context, provider cloudprovide
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
-
-	helper, err := newK8sCiliumHelper(constants.AdminConfFilename)
-	if err != nil {
-		return fmt.Errorf("creating Kubernetes client: %w", err)
-	}
-	ciliumVals := setupCiliumVals(ctx, provider, helper, output)
+	ciliumVals := setupCiliumVals(provider, output)
 	if err := h.installer.InstallChartWithValues(ctx, releases.Cilium, ciliumVals); err != nil {
 		return fmt.Errorf("installing Cilium: %w", err)
 	}
 	h.log.Debugf("Waiting for Cilium to become ready")
+	helper, err := newK8sCiliumHelper(constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("creating Kubernetes client: %w", err)
+	}
 	timeToStartWaiting := time.Now()
 	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
 	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
@@ -141,7 +140,7 @@ type installer interface {
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
 // has the dns endpoint in its SAN list.
-func setupCiliumVals(_ context.Context, provider cloudprovider.Provider, _ *k8sDsClient, output terraform.ApplyOutput) map[string]any {
+func setupCiliumVals(provider cloudprovider.Provider, output terraform.ApplyOutput) map[string]any {
 	vals := map[string]any{
 		"k8sServiceHost": output.IP,
 		"k8sServicePort": 6443, // TODO take from tf?
