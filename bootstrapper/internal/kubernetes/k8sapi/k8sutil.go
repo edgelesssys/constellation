@@ -54,6 +54,7 @@ type Client interface {
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
 	EnforceCoreDNSSpread(ctx context.Context) error
+	PatchFirstNodePodCIDR(ctx context.Context, firstNodePodCIDR string) error
 }
 
 type componentsInstaller interface {

@@ -136,7 +136,7 @@ func NewUpgrader(ctx context.Context, outWriter io.Writer, fileHandler file.Hand
 	}
 	u.dynamicInterface = &NodeVersionClient{client: unstructuredClient}
 
-	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}

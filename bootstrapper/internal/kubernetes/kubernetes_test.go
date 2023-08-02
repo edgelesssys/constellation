@@ -17,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -43,7 +42,6 @@ func TestInitCluster(t *testing.T) {
 
 	testCases := map[string]struct {
 		clusterUtil      stubClusterUtil
-		helmClient       stubHelmClient
 		kubectl          stubKubectl
 		kubeAPIWaiter    stubKubeAPIWaiter
 		providerMetadata ProviderMetadata
@@ -131,14 +129,12 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when deploying cilium": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{ciliumError: assert.AnError},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
 			clusterUtil:      stubClusterUtil{kubeconfig: []byte("someKubeconfig")},
-			helmClient:       stubHelmClient{installChartError: assert.AnError},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -182,7 +178,6 @@ func TestInitCluster(t *testing.T) {
 			kube := KubeWrapper{
 				cloudProvider:    "aws", // provide a valid cloud provider for cilium installation
 				clusterUtil:      &tc.clusterUtil,
-				helmClient:       &tc.helmClient,
 				providerMetadata: tc.providerMetadata,
 				kubeAPIWaiter:    &tc.kubeAPIWaiter,
 				configProvider:   &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
@@ -192,7 +187,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), string(tc.k8sVersion), "kubernetes",
-				[]byte("{}"), false, nil, nil, logger.NewTest(t),
+				false, nil, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -539,6 +534,10 @@ func (s *stubKubectl) AnnotateNode(_ context.Context, _, _, _ string) error {
 	return s.annotateNodeErr
 }
 
+func (s *stubKubectl) PatchFirstNodePodCIDR(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubKubectl) WaitForCRDs(_ context.Context, _ []string) error {
 	return s.waitForCRDsErr
 }
@@ -549,24 +548,6 @@ func (s *stubKubectl) ListAllNamespaces(_ context.Context) (*corev1.NamespaceLis
 
 func (s *stubKubectl) EnforceCoreDNSSpread(_ context.Context) error {
 	return s.enforceCoreDNSSpreadErr
-}
-
-type stubHelmClient struct {
-	ciliumError       error
-	installChartError error
-}
-
-func (s *stubHelmClient) InstallChart(ctx context.Context, release helm.Release) error {
-	return s.InstallChartWithValues(ctx, release, release.Values)
-}
-
-func (s *stubHelmClient) InstallChartWithValues(_ context.Context, release helm.Release, _ map[string]any) error {
-	switch release.ReleaseName {
-	case "cilium":
-		return s.ciliumError
-	default:
-		return s.installChartError
-	}
 }
 
 type stubKubeAPIWaiter struct {

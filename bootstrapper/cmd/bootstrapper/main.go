@@ -32,7 +32,6 @@ import (
 	openstackcloud "github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes/kubectl"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -67,11 +66,6 @@ func main() {
 	var openDevice vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-	helmClient, err := helm.NewInstaller(constants.ControlPlaneAdminConfFilename, log)
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Helm client could not be initialized")
-	}
-
 	attestVariant, err := variant.FromString(os.Getenv(constants.AttestationVariant))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to parse attestation variant")
@@ -96,7 +90,7 @@ func main() {
 
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -116,7 +110,7 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openDevice = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -134,7 +128,7 @@ func main() {
 		metadataAPI = metadata
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
 		openDevice = vtpm.OpenVTPM
@@ -145,7 +139,7 @@ func main() {
 		metadata := qemucloud.New()
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 
@@ -168,7 +162,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"openstack", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 		openDevice = vtpm.OpenVTPM

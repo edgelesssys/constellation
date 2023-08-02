@@ -10,7 +10,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions/components"
@@ -23,11 +22,4 @@ type clusterUtil interface {
 	WaitForCilium(ctx context.Context, log *logger.Logger) error
 	FixCilium(ctx context.Context) error
 	StartKubelet() error
-}
-
-// helmClient bundles functions related to microservice deployment.
-// Only microservices that can be deployed purely via Helm are deployed with this interface.
-type helmClient interface {
-	InstallChart(context.Context, helm.Release) error
-	InstallChartWithValues(ctx context.Context, release helm.Release, extraValues map[string]any) error
 }

@@ -74,7 +74,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	// need helm client to fetch service versions.
-	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}

@@ -102,7 +102,7 @@ func TestMergeMaps(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			newVals := MergeMaps(tc.vals, tc.extraVals)
+			newVals := mergeMaps(tc.vals, tc.extraVals)
 			assert.Equal(tc.expected, newVals)
 		})
 	}

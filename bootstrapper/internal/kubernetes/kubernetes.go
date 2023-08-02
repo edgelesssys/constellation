@@ -9,11 +9,8 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -22,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubewaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -49,7 +45,6 @@ type kubeAPIWaiter interface {
 type KubeWrapper struct {
 	cloudProvider    string
 	clusterUtil      clusterUtil
-	helmClient       helmClient
 	kubeAPIWaiter    kubeAPIWaiter
 	configProvider   configurationProvider
 	client           k8sapi.Client
@@ -59,12 +54,11 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
+	providerMetadata ProviderMetadata, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:    cloudProvider,
 		clusterUtil:      clusterUtil,
-		helmClient:       helmClient,
 		kubeAPIWaiter:    kubeAPIWaiter,
 		configProvider:   configProvider,
 		client:           client,
@@ -75,15 +69,13 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, versionString, clusterName string,
-	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
+	ctx context.Context, versionString, clusterName string, conformanceMode bool, kubernetesComponents components.Components, apiServerCertSANs []string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", versionString)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
 
-	var nodePodCIDR string
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
@@ -102,9 +94,6 @@ func (k *KubeWrapper) InitCluster(
 
 	nodeIP := instance.VPCIP
 	subnetworkPodCIDR := instance.SecondaryIPRange
-	if len(instance.AliasIPRanges) > 0 {
-		nodePodCIDR = instance.AliasIPRanges[0]
-	}
 
 	// this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
 	// TODO(malt3): switch over to DNS name on AWS and Azure
@@ -170,54 +159,22 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
+	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP {
+		// GCP uses direct routing, so we need to set the pod CIDR of the first control-plane node for Cilium.
+		var nodePodCIDR string
+		if len(instance.AliasIPRanges) > 0 {
+			nodePodCIDR = instance.AliasIPRanges[0]
+		}
+		if err := k.client.PatchFirstNodePodCIDR(ctx, nodePodCIDR); err != nil {
+			return nil, fmt.Errorf("patching first node pod CIDR: %w", err)
+		}
+	}
+
 	// Annotate Node with the hash of the installed components
 	if err := k.client.AnnotateNode(ctx, nodeName,
 		constants.NodeKubernetesComponentsAnnotationKey, k8sComponentsConfigMap,
 	); err != nil {
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
-	}
-
-	// Step 3: configure & start kubernetes controllers
-	log.Infof("Starting Kubernetes controllers and deployments")
-	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
-		CloudProvider:     k.cloudProvider,
-		NodeName:          nodeName,
-		FirstNodePodCIDR:  nodePodCIDR,
-		SubnetworkPodCIDR: subnetworkPodCIDR,
-		LoadBalancerHost:  controlPlaneHost,
-		LoadBalancerPort:  controlPlanePort,
-	}
-
-	var helmReleases helm.Releases
-	if err := json.Unmarshal(helmReleasesRaw, &helmReleases); err != nil {
-		return nil, fmt.Errorf("unmarshalling helm releases: %w", err)
-	}
-
-	log.Infof("Installing Cilium")
-	ciliumVals, err := k.setupCiliumVals(ctx, setupPodNetworkInput)
-	if err != nil {
-		return nil, fmt.Errorf("setting up cilium vals: %w", err)
-	}
-	if err := k.helmClient.InstallChartWithValues(ctx, helmReleases.Cilium, ciliumVals); err != nil {
-		return nil, fmt.Errorf("installing cilium pod network: %w", err)
-	}
-
-	log.Infof("Waiting for Cilium to become healthy")
-	timeToStartWaiting := time.Now()
-	// TODO(3u13r): Reduce the timeout when we switched the package repository - this is only this high because we once
-	// saw polling times of ~16 minutes when hitting a slow PoP from Fastly (GitHub's / ghcr.io CDN).
-	waitCtx, cancel = context.WithTimeout(ctx, 20*time.Minute)
-	defer cancel()
-	if err := k.clusterUtil.WaitForCilium(waitCtx, log); err != nil {
-		return nil, fmt.Errorf("waiting for Cilium to become healthy: %w", err)
-	}
-	timeUntilFinishedWaiting := time.Since(timeToStartWaiting)
-	log.With(zap.Duration("duration", timeUntilFinishedWaiting)).Infof("Cilium became healthy")
-
-	log.Infof("Restarting Cilium")
-	if err := k.clusterUtil.FixCilium(ctx); err != nil {
-		log.With(zap.Error(err)).Errorf("FixCilium failed")
-		// Continue and don't throw an error here - things might be okay.
 	}
 
 	log.Infof("Setting up internal-config ConfigMap")
@@ -377,29 +334,4 @@ func getIPAddr() (string, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP.String(), nil
-}
-
-func (k *KubeWrapper) setupCiliumVals(ctx context.Context, in k8sapi.SetupPodNetworkInput) (map[string]any, error) {
-	vals := map[string]any{
-		"k8sServiceHost": in.LoadBalancerHost,
-		"k8sServicePort": in.LoadBalancerPort,
-	}
-
-	// GCP requires extra configuration for Cilium
-	if cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP {
-		if out, err := exec.CommandContext(
-			ctx, constants.KubectlPath,
-			"--kubeconfig", constants.ControlPlaneAdminConfFilename,
-			"patch", "node", in.NodeName, "-p", "{\"spec\":{\"podCIDR\": \""+in.FirstNodePodCIDR+"\"}}",
-		).CombinedOutput(); err != nil {
-			err = errors.New(string(out))
-			return nil, fmt.Errorf("%s: %w", out, err)
-		}
-
-		vals["ipv4NativeRoutingCIDR"] = in.SubnetworkPodCIDR
-		vals["strictModeCIDR"] = in.SubnetworkPodCIDR
-
-	}
-
-	return vals, nil
 }

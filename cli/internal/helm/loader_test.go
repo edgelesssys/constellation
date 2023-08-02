@@ -8,7 +8,6 @@ package helm
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -29,21 +28,15 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 )
 
-// TestLoad checks if the serialized format that Load returns correctly preserves the dependencies of the loaded chart.
-func TestLoad(t *testing.T) {
+func TestLoadReleases(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	release, err := chartLoader.Load(config, true, helm.WaitModeAtomic, []byte("secret"), []byte("salt"))
-	require.NoError(err)
-
-	var helmReleases helm.Releases
-	err = json.Unmarshal(release, &helmReleases)
+	helmReleases, err := chartLoader.LoadReleases(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 	reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
 	chart, err := loader.LoadArchive(reader)

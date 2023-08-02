@@ -35,7 +35,6 @@ go_library(
         "//internal/cloud/openstack",
         "//internal/cloud/qemu",
         "//internal/constants",
-        "//internal/deploy/helm",
         "//internal/file",
         "//internal/grpc/dialer",
         "//internal/kubernetes/kubectl",
