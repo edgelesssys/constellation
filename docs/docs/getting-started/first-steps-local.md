@@ -103,15 +103,13 @@ attaching persistent storage, or autoscaling aren't available.
 2. Now you can create your cluster and its nodes. `constellation create` uses the options set in `constellation-conf.yaml`.
 
   ```bash
-  constellation create --control-plane-nodes 1 --worker-nodes 1
+  constellation create
   ```
-
-  This will create 2 VMs: one worker node, and one control plane node.
 
   The Output should look like the following:
 
   ```shell-session
-  $ constellation create ...
+  $ constellation create
   Your Constellation cluster was created successfully.
   ```
 
@@ -166,7 +164,7 @@ NAME              STATUS   ROLES           AGE   VERSION
 control-plane-0   Ready    control-plane   66s   v1.24.6
 ```
 
-A worker node will request to join the cluster shortly. Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
+Additional nodes will request to join the cluster shortly. Before each additional node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/microservices.md#joinservice).
 If verification passes successfully, the new node receives keys and certificates to join the cluster.
 
 You can follow this process by viewing the logs of the JoinService:
@@ -178,7 +176,7 @@ $ kubectl logs -n kube-system daemonsets/join-service -f
 ...
 ```
 
-Once the worker node has joined your cluster, it may take a couple of minutes for all resources to become available.
+Once all nodes have joined your cluster, it may take a couple of minutes for all resources to become available.
 You can check on the state of your cluster by running the following:
 
 ```shell-session

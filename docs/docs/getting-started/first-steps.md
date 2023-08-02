@@ -118,7 +118,7 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 -->
 
-3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+3. Create the cluster. `constellation create` uses options set in `constellation-conf.yaml`.
     If you want to manually use [Terraform](../reference/terraform.md) for managing the cloud resources instead, follow the corresponding instructions in the [Create workflow](../workflows/create.md).
 
     :::tip
@@ -128,13 +128,13 @@ If you encounter any problem with the following steps, make sure to use the [lat
     :::
 
     ```bash
-    constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+    constellation create -y
     ```
 
     This should give the following output:
 
     ```shell-session
-    $ constellation create ...
+    $ constellation create -y
     Your Constellation cluster was created successfully.
     ```
 
