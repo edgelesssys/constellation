@@ -136,14 +136,13 @@ type installer interface {
 	InstallChartWithValues(ctx context.Context, release Release, extraValues map[string]any) error
 }
 
-// lb_port: everywhere hardcoded in TF 6443, for host use ip
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
 // has the dns endpoint in its SAN list.
 func setupCiliumVals(provider cloudprovider.Provider, output terraform.ApplyOutput) map[string]any {
 	vals := map[string]any{
 		"k8sServiceHost": output.IP,
-		"k8sServicePort": 6443, // TODO take from tf?
+		"k8sServicePort": constants.KubernetesPort,
 	}
 	if provider == cloudprovider.GCP {
 		vals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
