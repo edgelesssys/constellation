@@ -25,8 +25,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
+	"github.com/edgelesssys/constellation/v2/internal/config/disktypes"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
@@ -101,20 +103,6 @@ func translateInvalidK8sVersionError(ut ut.Translator, fe validator.FieldError) 
 	return t
 }
 
-func (c *Config) validateAWSInstanceType(fl validator.FieldLevel) bool {
-	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AWSNitroTPM{})
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.AWS)
-}
-
-func (c *Config) validateAzureInstanceType(fl validator.FieldLevel) bool {
-	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{})
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
-}
-
-func validateGCPInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
-}
-
 func validateAWSRegionField(fl validator.FieldLevel) bool {
 	return ValidateAWSRegion(fl.Field().String())
 }
@@ -123,10 +111,39 @@ func validateAWSZoneField(fl validator.FieldLevel) bool {
 	return ValidateAWSZone(fl.Field().String())
 }
 
+func validateAzureZoneField(fl validator.FieldLevel) bool {
+	return ValidateAzureZone(fl.Field().String())
+}
+
+func validateGCPZoneField(fl validator.FieldLevel) bool {
+	return ValidateGCPZone(fl.Field().String())
+}
+
+func validateOpenStackRegionField(fl validator.FieldLevel) bool {
+	return ValidateOpenStackRegion(fl.Field().String())
+}
+
 // ValidateAWSZone validates that the zone is in the correct format.
 func ValidateAWSZone(zone string) bool {
 	awsZoneRegex := regexp.MustCompile(`^\w+-\w+-[1-9][abc]$`)
 	return awsZoneRegex.MatchString(zone)
+}
+
+// ValidateAzureZone validates that the zone is in the correct format.
+func ValidateAzureZone(zone string) bool {
+	azureZoneRegex := regexp.MustCompile(`^$|^\d+(?:,\d+)*$`)
+	return azureZoneRegex.MatchString(zone)
+}
+
+// ValidateGCPZone validates that the zone is in the correct format.
+func ValidateGCPZone(zone string) bool {
+	gcpZoneRegex := regexp.MustCompile(`^[\w-]+-[a-z]$`)
+	return gcpZoneRegex.MatchString(zone)
+}
+
+// ValidateOpenStackRegion validates that the region is in the correct format.
+func ValidateOpenStackRegion(region string) bool {
+	return len(region) > 0
 }
 
 // ValidateAWSRegion validates that the region is in the correct format.
@@ -193,6 +210,33 @@ func validateAttestation(sl validator.StructLevel) {
 	}
 }
 
+func validateNodeGroups(sl validator.StructLevel) {
+	nodeGroups := sl.Current().Interface().(Config).NodeGroups
+	defaultControlPlaneGroup, hasDefaultControlPlaneGroup := nodeGroups[constants.DefaultControlPlaneGroupName]
+	defaultWorkerGroup, hasDefaultWorkerGroup := nodeGroups[constants.DefaultWorkerGroupName]
+
+	if !hasDefaultControlPlaneGroup {
+		sl.ReportError(nodeGroups, "NodeGroups", "NodeGroups", "no_default_control_plane_group", "")
+	}
+	if !hasDefaultWorkerGroup {
+		sl.ReportError(nodeGroups, "NodeGroups", "NodeGroups", "no_default_worker_group", "")
+	}
+
+	if hasDefaultControlPlaneGroup {
+		if defaultControlPlaneGroup.Role != role.ControlPlane.TFString() {
+			sl.ReportError(nodeGroups, "NodeGroups", "NodeGroups", "control_plane_group_role_mismatch", "")
+		}
+		if defaultControlPlaneGroup.InitialCount < 1 {
+			sl.ReportError(nodeGroups, "NodeGroups", "NodeGroups", "control_plane_group_initial_count", "")
+		}
+	}
+	if hasDefaultWorkerGroup {
+		if defaultWorkerGroup.Role != role.Worker.TFString() {
+			sl.ReportError(nodeGroups, "NodeGroups", "NodeGroups", "worker_group_role_mismatch", "")
+		}
+	}
+}
+
 func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) string {
 	t, _ := ut.T("no_attestation", fe.Field())
 
@@ -201,6 +245,75 @@ func translateNoAttestationError(ut ut.Translator, fe validator.FieldError) stri
 
 func registerNoAttestationError(ut ut.Translator) error {
 	return ut.Add("no_attestation", "{0}: No attestation has been defined (requires either awsSEVSNP, awsNitroTPM, azureSEVSNP, azureTrustedLaunch, gcpSEVES, or qemuVTPM)", true)
+}
+
+func translateNoDefaultControlPlaneGroupError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("no_default_control_plane_group", fe.Field())
+
+	return t
+}
+
+func registerNoDefaultControlPlaneGroupError(ut ut.Translator) error {
+	return ut.Add("no_default_control_plane_group", "{0}: No default control plane group (control_plane_default) has been defined", true)
+}
+
+func translateNoDefaultWorkerGroupError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("no_default_worker_group", fe.Field())
+
+	return t
+}
+
+func registerNoDefaultWorkerGroupError(ut ut.Translator) error {
+	return ut.Add("no_default_worker_group", "{0}: No default worker group (worker_default) has been defined", true)
+}
+
+func translateControlPlaneGroupInitialCountError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("control_plane_group_initial_count", fe.Field())
+
+	return t
+}
+
+func registerControlPlaneGroupInitialCountError(ut ut.Translator) error {
+	return ut.Add("control_plane_group_initial_count", "{0}: The default control plane group (control_plane_default) must have at least one node", true)
+}
+
+func translateControlPlaneGroupRoleMismatchError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("control_plane_group_role_mismatch", fe.Field())
+
+	return t
+}
+
+func registerControlPlaneGroupRoleMismatchError(ut ut.Translator) error {
+	return ut.Add("control_plane_group_role_mismatch", "{0}: The default control plane group (control_plane_default) must have the \"control-plane\" role", true)
+}
+
+func translateWorkerGroupRoleMismatchError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("worker_group_role_mismatch", fe.Field())
+
+	return t
+}
+
+func registerWorkerGroupRoleMismatchError(ut ut.Translator) error {
+	return ut.Add("worker_group_role_mismatch", "{0}: The default worker group (worker_default) must have the \"worker\" role", true)
+}
+
+func registerValidZoneError(ut ut.Translator) error {
+	return ut.Add("valid_zone", "{0}: has invalid format: {1}", true)
+}
+
+func (c *Config) translateValidZoneError(ut ut.Translator, fe validator.FieldError) string {
+	var t string
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		t, _ = ut.T("valid_zone", fe.Field(), "field must be of format eu-central-1a")
+	case cloudprovider.Azure:
+		t, _ = ut.T("valid_zone", fe.Field(), "field must be a comma separated list of zones: 1,2,3 (or empty for all zones)")
+	case cloudprovider.GCP:
+		t, _ = ut.T("valid_zone", fe.Field(), "field must be of format europe-west3-b")
+	default:
+		t, _ = ut.T("valid_zone", fe.Field(), "field must not be empty")
+	}
+	return t
 }
 
 func registerAWSRegionError(ut ut.Translator) error {
@@ -254,8 +367,53 @@ func (c *Config) translateMoreThanOneAttestationError(ut ut.Translator, fe valid
 	return t
 }
 
+func registerTranslateDiskTypeError(ut ut.Translator) error {
+	return ut.Add("disk_type", "{0} must be one of {1}", true)
+}
+
+func (c *Config) translateDiskTypeError(ut ut.Translator, fe validator.FieldError) string {
+	var supported []string
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		supported = disktypes.AWSDiskTypes
+	case cloudprovider.Azure:
+		supported = disktypes.AzureDiskTypes
+	case cloudprovider.GCP:
+		supported = disktypes.GCPDiskTypes
+	}
+
+	t, _ := ut.T("disk_type", fe.Field(), fmt.Sprintf("%v", supported))
+	return t
+}
+
+func (c *Config) registerTranslateInstanceTypeError(ut ut.Translator) error {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return registerTranslateAWSInstanceTypeError(ut)
+	case cloudprovider.Azure:
+		return registerTranslateAzureInstanceTypeError(ut)
+	case cloudprovider.GCP:
+		return registerTranslateGCPInstanceTypeError(ut)
+	}
+	return ut.Add("instance_type", "{0} is an invalid instance type", true)
+}
+
+func (c *Config) translateInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return c.translateAWSInstanceTypeError(ut, fe)
+	case cloudprovider.Azure:
+		return c.translateAzureInstanceTypeError(ut, fe)
+	case cloudprovider.GCP:
+		return translateGCPInstanceTypeError(ut, fe)
+	}
+	t, _ := ut.T("instance_type", fe.Field())
+
+	return t
+}
+
 func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("aws_instance_type", "{0} must be an instance from one of the following families types with size xlarge or higher: {1}", true)
+	return ut.Add("instance_type", "{0} must be an instance from one of the following families types with size xlarge or higher: {1}", true)
 }
 
 func (c *Config) translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
@@ -268,24 +426,24 @@ func (c *Config) translateAWSInstanceTypeError(ut ut.Translator, fe validator.Fi
 		instances = instancetypes.AWSSupportedInstanceFamilies
 	}
 
-	t, _ = ut.T("aws_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
+	t, _ = ut.T("instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
 
 func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("gcp_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.GCPInstanceTypes), true)
+	return ut.Add("instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.GCPInstanceTypes), true)
 }
 
 func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("gcp_instance_type", fe.Field())
+	t, _ := ut.T("instance_type", fe.Field())
 
 	return t
 }
 
 // Validation translation functions for Azure & GCP instance type errors.
 func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
+	return ut.Add("instance_type", "{0} must be one of {1}", true)
 }
 
 func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
@@ -299,7 +457,7 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 		instances = instancetypes.AzureTrustedLaunchInstanceTypes
 	}
 
-	t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instances))
+	t, _ = ut.T("instance_type", fe.Field(), fmt.Sprintf("%v", instances))
 
 	return t
 }
@@ -371,6 +529,8 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 			}
 		}
 		return false
+	case cloudprovider.OpenStack, cloudprovider.QEMU:
+		return true
 	default:
 		return false
 	}
@@ -598,5 +758,82 @@ func warnDeprecated(fl validator.FieldLevel) bool {
 		"WARNING: The config key %q is deprecated and will be removed in an upcoming version.\n",
 		fl.FieldName(),
 	)
+	return true
+}
+
+func (c *Config) validateNodeGroupZoneField(fl validator.FieldLevel) bool {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return validateAWSZoneField(fl)
+	case cloudprovider.Azure:
+		return validateAzureZoneField(fl)
+	case cloudprovider.GCP:
+		return validateGCPZoneField(fl)
+	case cloudprovider.OpenStack:
+		return validateOpenStackRegionField(fl)
+	case cloudprovider.QEMU:
+		// QEMU does not use zones
+		return true
+	case cloudprovider.Unknown:
+		return true
+	}
+	// this indicates we are missing a case for a new provider
+	return false
+}
+
+func (c *Config) validateInstanceType(fl validator.FieldLevel) bool {
+	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{})
+	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, c.GetProvider())
+}
+
+func (c *Config) validateStateDiskTypeField(fl validator.FieldLevel) bool {
+	switch c.GetProvider() {
+	case cloudprovider.AWS:
+		return validateAWSStateDiskField(fl)
+	case cloudprovider.Azure:
+		return validateAzureStateDiskField(fl)
+	case cloudprovider.GCP:
+		return validateGCPStateDiskField(fl)
+	case cloudprovider.OpenStack:
+		return validateOpenStackStateDiskField(fl)
+	case cloudprovider.QEMU:
+		return validateQEMUStateDiskField(fl)
+	case cloudprovider.Unknown:
+		return true
+
+	}
+	// this indicates we are missing a case for a new provider
+	return false
+}
+
+func validateAWSStateDiskField(fl validator.FieldLevel) bool {
+	switch fl.Field().String() {
+	case "standard", "gp2", "gp3", "st1", "sc1", "io1":
+		return true
+	}
+	return false
+}
+
+func validateAzureStateDiskField(fl validator.FieldLevel) bool {
+	switch fl.Field().String() {
+	case "Premium_LRS", "Premium_ZRS", "Standard_LRS", "StandardSSD_LRS", "StandardSSD_ZRS":
+		return true
+	}
+	return false
+}
+
+func validateGCPStateDiskField(fl validator.FieldLevel) bool {
+	switch fl.Field().String() {
+	case "pd-standard", "pd-balanced", "pd-ssd":
+		return true
+	}
+	return false
+}
+
+func validateOpenStackStateDiskField(fl validator.FieldLevel) bool {
+	return len(fl.Field().String()) > 0
+}
+
+func validateQEMUStateDiskField(_ validator.FieldLevel) bool {
 	return true
 }
