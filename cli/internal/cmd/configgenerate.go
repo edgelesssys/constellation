@@ -14,7 +14,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/compatibility"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
@@ -35,7 +34,6 @@ func newConfigGenerateCmd() *cobra.Command {
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
 	}
-	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
 
@@ -150,10 +148,11 @@ func supportedVersions() string {
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
-	file, err := cmd.Flags().GetString("file")
+	cwd, err := cmd.Flags().GetString("workspace")
 	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing file flag: %w", err)
+		return generateFlags{}, fmt.Errorf("parsing workspace flag: %w", err)
 	}
+	file := configPath(cwd)
 	k8sVersion, err := cmd.Flags().GetString("kubernetes")
 	if err != nil {
 		return generateFlags{}, fmt.Errorf("parsing kuberentes flag: %w", err)

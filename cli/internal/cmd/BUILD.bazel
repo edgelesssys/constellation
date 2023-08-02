@@ -169,7 +169,6 @@ go_test(
         "@com_github_spf13_cobra//:cobra",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@in_gopkg_yaml_v3//:yaml_v3",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
