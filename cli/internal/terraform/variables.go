@@ -74,8 +74,8 @@ type AWSNodeGroup struct {
 	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
 	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
 	// InitialCount is the initial number of nodes to create in the node group.
-	// During upgrades this value is not set.
-	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
+	// During upgrades this value ignored.
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
 	// Zone is the AWS availability-zone to use in the given region.
 	Zone string `hcl:"zone" cty:"zone"`
 	// InstanceType is the type of the EC2 instance to use.
@@ -141,8 +141,8 @@ type GCPNodeGroup struct {
 	// StateDiskSizeGB is the size of the state disk to allocate to each node, in GB.
 	StateDiskSizeGB int `hcl:"disk_size" cty:"disk_size"`
 	// InitialCount is the initial number of nodes to create in the node group.
-	// During upgrades this value is not set.
-	InitialCount *int   `hcl:"initial_count" cty:"initial_count"`
+	// During upgrades this value ignored.
+	InitialCount int    `hcl:"initial_count" cty:"initial_count"`
 	Zone         string `hcl:"zone" cty:"zone"`
 	InstanceType string `hcl:"instance_type" cty:"instance_type"`
 	DiskType     string `hcl:"disk_type" cty:"disk_type"`
@@ -219,11 +219,11 @@ type AzureNodeGroup struct {
 	// Role is the role of the node group.
 	Role string `hcl:"role" cty:"role"`
 	// InitialCount is optional for upgrades.
-	InitialCount *int      `hcl:"initial_count" cty:"initial_count"`
-	InstanceType string    `hcl:"instance_type" cty:"instance_type"`
-	DiskSizeGB   int       `hcl:"disk_size" cty:"disk_size"`
-	DiskType     string    `hcl:"disk_type" cty:"disk_type"`
-	Zones        *[]string `hcl:"zones" cty:"zones"`
+	InitialCount int      `hcl:"initial_count" cty:"initial_count"`
+	InstanceType string   `hcl:"instance_type" cty:"instance_type"`
+	DiskSizeGB   int      `hcl:"disk_size" cty:"disk_size"`
+	DiskType     string   `hcl:"disk_type" cty:"disk_type"`
+	Zones        []string `hcl:"zones" cty:"zones"`
 }
 
 // AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
@@ -371,7 +371,7 @@ type QEMUNodeGroup struct {
 	// InitialCount is the number of instances to create.
 	// InitialCount is optional for upgrades.
 	// Upgrades are not implemented for QEMU. The type is similar to other NodeGroup types for consistency.
-	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
 	// DiskSize is the size of the disk to allocate to each node, in GiB.
 	DiskSize int `hcl:"disk_size" cty:"disk_size"`
 	// CPUCount is the number of CPUs to allocate to each node.
