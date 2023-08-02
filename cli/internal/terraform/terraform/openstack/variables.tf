@@ -2,6 +2,7 @@ variable "node_groups" {
   type = map(object({
     role            = string
     initial_count   = number // number of instances in the node group
+    flavor_id       = string // flavor (machine type) to use for instances
     state_disk_size = number // size of state disk (GiB)
     state_disk_type = string // type of state disk. Can be 'standard' or 'premium'
     zone            = string // availability zone
@@ -35,11 +36,6 @@ variable "image_url" {
 variable "direct_download" {
   type        = bool
   description = "If enabled, downloads OS image directly from source URL to OpenStack. Otherwise, downloads image to local machine and uploads to OpenStack."
-}
-
-variable "flavor_id" {
-  type        = string
-  description = "The flavor (machine type) to use for cluster nodes."
 }
 
 variable "floating_ip_pool_id" {
