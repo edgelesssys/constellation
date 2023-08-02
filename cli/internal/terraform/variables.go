@@ -254,8 +254,6 @@ type OpenStackClusterVariables struct {
 	NodeGroups map[string]OpenStackNodeGroup `hcl:"node_groups" cty:"node_groups"`
 	// Cloud is the (optional) name of the OpenStack cloud to use when reading the "clouds.yaml" configuration file. If empty, environment variables are used.
 	Cloud *string `hcl:"cloud" cty:"cloud"`
-	// Flavor is the ID of the OpenStack flavor (machine type) to use.
-	FlavorID string `hcl:"flavor_id" cty:"flavor_id"`
 	// FloatingIPPoolID is the ID of the OpenStack floating IP pool to use for public IPs.
 	FloatingIPPoolID string `hcl:"floating_ip_pool_id" cty:"floating_ip_pool_id"`
 	// ImageURL is the URL of the OpenStack image to use.
@@ -293,7 +291,9 @@ type OpenStackNodeGroup struct {
 	Role string `hcl:"role" cty:"role"`
 	// InitialCount is the number of instances to create.
 	// InitialCount is optional for upgrades. OpenStack does not support upgrades yet but might in the future.
-	InitialCount *int `hcl:"initial_count" cty:"initial_count"`
+	InitialCount int `hcl:"initial_count" cty:"initial_count"`
+	// Flavor is the ID of the OpenStack flavor (machine type) to use.
+	FlavorID string `hcl:"flavor_id" cty:"flavor_id"`
 	// Zone is the OpenStack availability zone to use.
 	Zone string `hcl:"zone" cty:"zone"`
 	// StateDiskType is the OpenStack disk type to use for the state disk.

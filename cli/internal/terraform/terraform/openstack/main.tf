@@ -159,7 +159,6 @@ resource "openstack_compute_secgroup_v2" "vpc_secgroup" {
 }
 
 module "instance_group" {
-
   source                     = "./modules/instance_group"
   for_each                   = var.node_groups
   base_name                  = local.name
@@ -170,7 +169,7 @@ module "instance_group" {
   state_disk_type            = each.value.state_disk_type
   availability_zone          = each.value.zone
   image_id                   = openstack_images_image_v2.constellation_os_image.image_id
-  flavor_id                  = var.flavor_id
+  flavor_id                  = each.value.flavor_id
   security_groups            = [openstack_compute_secgroup_v2.vpc_secgroup.id]
   tags                       = local.tags
   uid                        = local.uid
