@@ -141,9 +141,13 @@ runs:
       if: inputs.machineType && inputs.machineType != 'default'
       shell: bash
       run: |
-        yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
-        yq eval -i "(.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
-        yq eval -i "(.provider | select(. | has(\"aws\")).aws.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+        yq eval -i "(.nodeGroups[] | .instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+
+    - name: Set node count
+      shell: bash
+      run: |
+        yq eval -i "(.nodeGroups[] | select(.role == \"control-plane\") | .initialCount) = ${{ inputs.controlNodesCount }}" constellation-conf.yaml
+        yq eval -i "(.nodeGroups[] | select(.role == \"worker\") | .initialCount) = ${{ inputs.workerNodesCount }}" constellation-conf.yaml
 
     - name: Create serviceAccountKey.json
       if: inputs.cloudProvider == 'gcp' && !inputs.existingConfig # Skip if using existing config. serviceAccountKey.json is already present in that case.
@@ -173,7 +177,7 @@ runs:
         if [[ $output == *"tf-log"* ]]; then
           TFFLAG="--tf-log=DEBUG"
         fi
-        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -y --force --debug ${TFFLAG:-}
+        constellation create -y --force --debug ${TFFLAG:-}
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'

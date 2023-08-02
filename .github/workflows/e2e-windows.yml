@@ -68,7 +68,7 @@ jobs:
       - name: Create cluster
         shell: pwsh
         run: |
-          .\constellation.exe create --control-plane-nodes 1 --worker-nodes 2 --debug -y
+          .\constellation.exe create --debug -y
 
       - name: Initialize cluster
         shell: pwsh
