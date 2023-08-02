@@ -8,12 +8,12 @@ package cloudcmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -21,13 +21,13 @@ import (
 func TerraformUpgradeVars(conf *config.Config, imageRef string) (terraform.Variables, error) {
 	switch conf.GetProvider() {
 	case cloudprovider.AWS:
-		vars := awsTerraformVars(conf, imageRef, nil, nil)
+		vars := awsTerraformVars(conf, imageRef)
 		return vars, nil
 	case cloudprovider.Azure:
-		vars := azureTerraformVars(conf, imageRef, nil, nil)
+		vars := azureTerraformVars(conf, imageRef)
 		return vars, nil
 	case cloudprovider.GCP:
-		vars := gcpTerraformVars(conf, imageRef, nil, nil)
+		vars := gcpTerraformVars(conf, imageRef)
 		return vars, nil
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", conf.GetProvider())
@@ -36,27 +36,21 @@ func TerraformUpgradeVars(conf *config.Config, imageRef string) (terraform.Varia
 
 // awsTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the AWS variables.
-func awsTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, workerCount *int) *terraform.AWSClusterVariables {
+func awsTerraformVars(conf *config.Config, imageRef string) *terraform.AWSClusterVariables {
+	nodeGroups := make(map[string]terraform.AWSNodeGroup)
+	for groupName, group := range conf.NodeGroups {
+		nodeGroups[groupName] = terraform.AWSNodeGroup{
+			Role:            role.FromString(group.Role).TFString(),
+			StateDiskSizeGB: group.StateDiskSizeGB,
+			InitialCount:    group.InitialCount,
+			Zone:            group.Zone,
+			InstanceType:    group.InstanceType,
+			DiskType:        group.StateDiskType,
+		}
+	}
 	return &terraform.AWSClusterVariables{
-		Name: conf.Name,
-		NodeGroups: map[string]terraform.AWSNodeGroup{
-			constants.ControlPlaneDefault: {
-				Role:            role.ControlPlane.TFString(),
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-				InitialCount:    controlPlaneCount,
-				Zone:            conf.Provider.AWS.Zone,
-				InstanceType:    conf.Provider.AWS.InstanceType,
-				DiskType:        conf.Provider.AWS.StateDiskType,
-			},
-			constants.WorkerDefault: {
-				Role:            role.Worker.TFString(),
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-				InitialCount:    workerCount,
-				Zone:            conf.Provider.AWS.Zone,
-				InstanceType:    conf.Provider.AWS.InstanceType,
-				DiskType:        conf.Provider.AWS.StateDiskType,
-			},
-		},
+		Name:                   conf.Name,
+		NodeGroups:             nodeGroups,
 		Region:                 conf.Provider.AWS.Region,
 		Zone:                   conf.Provider.AWS.Zone,
 		AMIImageID:             imageRef,
@@ -70,27 +64,25 @@ func awsTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, w
 
 // azureTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the Azure variables.
-func azureTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, workerCount *int) *terraform.AzureClusterVariables {
+func azureTerraformVars(conf *config.Config, imageRef string) *terraform.AzureClusterVariables {
+	nodeGroups := make(map[string]terraform.AzureNodeGroup)
+	for groupName, group := range conf.NodeGroups {
+		zones := strings.Split(group.Zone, ",")
+		if len(zones) == 0 || (len(zones) == 1 && zones[0] == "") {
+			zones = nil
+		}
+		nodeGroups[groupName] = terraform.AzureNodeGroup{
+			Role:         role.FromString(group.Role).TFString(),
+			InitialCount: group.InitialCount,
+			InstanceType: group.InstanceType,
+			DiskSizeGB:   group.StateDiskSizeGB,
+			DiskType:     group.StateDiskType,
+			Zones:        zones,
+		}
+	}
 	vars := &terraform.AzureClusterVariables{
-		Name: conf.Name,
-		NodeGroups: map[string]terraform.AzureNodeGroup{
-			constants.ControlPlaneDefault: {
-				Role:         "control-plane",
-				InitialCount: controlPlaneCount,
-				InstanceType: conf.Provider.Azure.InstanceType,
-				DiskSizeGB:   conf.StateDiskSizeGB,
-				DiskType:     conf.Provider.Azure.StateDiskType,
-				Zones:        nil, // TODO(elchead): support zones AB#3225. check if lifecycle arg is required.
-			},
-			constants.WorkerDefault: {
-				Role:         "worker",
-				InitialCount: workerCount,
-				InstanceType: conf.Provider.Azure.InstanceType,
-				DiskSizeGB:   conf.StateDiskSizeGB,
-				DiskType:     conf.Provider.Azure.StateDiskType,
-				Zones:        nil,
-			},
-		},
+		Name:                 conf.Name,
+		NodeGroups:           nodeGroups,
 		Location:             conf.Provider.Azure.Location,
 		ImageID:              imageRef,
 		CreateMAA:            toPtr(conf.GetAttestationConfig().GetVariant().Equal(variant.AzureSEVSNP{})),
@@ -108,27 +100,21 @@ func azureTerraformVars(conf *config.Config, imageRef string, controlPlaneCount,
 
 // gcpTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the GCP variables.
-func gcpTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, workerCount *int) *terraform.GCPClusterVariables {
+func gcpTerraformVars(conf *config.Config, imageRef string) *terraform.GCPClusterVariables {
+	nodeGroups := make(map[string]terraform.GCPNodeGroup)
+	for groupName, group := range conf.NodeGroups {
+		nodeGroups[groupName] = terraform.GCPNodeGroup{
+			Role:            role.FromString(group.Role).TFString(),
+			StateDiskSizeGB: group.StateDiskSizeGB,
+			InitialCount:    group.InitialCount,
+			Zone:            group.Zone,
+			InstanceType:    group.InstanceType,
+			DiskType:        group.StateDiskType,
+		}
+	}
 	return &terraform.GCPClusterVariables{
-		Name: conf.Name,
-		NodeGroups: map[string]terraform.GCPNodeGroup{
-			constants.ControlPlaneDefault: {
-				Role:            role.ControlPlane.TFString(),
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-				InitialCount:    controlPlaneCount,
-				Zone:            conf.Provider.GCP.Zone,
-				InstanceType:    conf.Provider.GCP.InstanceType,
-				DiskType:        conf.Provider.GCP.StateDiskType,
-			},
-			constants.WorkerDefault: {
-				Role:            role.Worker.TFString(),
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-				InitialCount:    workerCount,
-				Zone:            conf.Provider.GCP.Zone,
-				InstanceType:    conf.Provider.GCP.InstanceType,
-				DiskType:        conf.Provider.GCP.StateDiskType,
-			},
-		},
+		Name:           conf.Name,
+		NodeGroups:     nodeGroups,
 		Project:        conf.Provider.GCP.Project,
 		Region:         conf.Provider.GCP.Region,
 		Zone:           conf.Provider.GCP.Zone,
@@ -140,11 +126,21 @@ func gcpTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, w
 
 // openStackTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the OpenStack variables.
-func openStackTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, workerCount *int) *terraform.OpenStackClusterVariables {
+func openStackTerraformVars(conf *config.Config, imageRef string) *terraform.OpenStackClusterVariables {
+	nodeGroups := make(map[string]terraform.OpenStackNodeGroup)
+	for groupName, group := range conf.NodeGroups {
+		nodeGroups[groupName] = terraform.OpenStackNodeGroup{
+			Role:            role.FromString(group.Role).TFString(),
+			StateDiskSizeGB: group.StateDiskSizeGB,
+			InitialCount:    group.InitialCount,
+			FlavorID:        group.InstanceType,
+			Zone:            group.Zone,
+			StateDiskType:   group.StateDiskType,
+		}
+	}
 	return &terraform.OpenStackClusterVariables{
 		Name:                    conf.Name,
 		Cloud:                   toPtr(conf.Provider.OpenStack.Cloud),
-		FlavorID:                conf.Provider.OpenStack.FlavorID,
 		FloatingIPPoolID:        conf.Provider.OpenStack.FloatingIPPoolID,
 		ImageURL:                imageRef,
 		DirectDownload:          *conf.Provider.OpenStack.DirectDownload,
@@ -152,54 +148,34 @@ func openStackTerraformVars(conf *config.Config, imageRef string, controlPlaneCo
 		OpenstackUsername:       conf.Provider.OpenStack.Username,
 		OpenstackPassword:       conf.Provider.OpenStack.Password,
 		Debug:                   conf.IsDebugCluster(),
-		NodeGroups: map[string]terraform.OpenStackNodeGroup{
-			constants.ControlPlaneDefault: {
-				Role:            role.ControlPlane.TFString(),
-				InitialCount:    controlPlaneCount,
-				Zone:            conf.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
-				StateDiskType:   conf.Provider.OpenStack.StateDiskType,
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-			},
-			constants.WorkerDefault: {
-				Role:            role.Worker.TFString(),
-				InitialCount:    workerCount,
-				Zone:            conf.Provider.OpenStack.AvailabilityZone, // TODO(elchead): make configurable AB#3225
-				StateDiskType:   conf.Provider.OpenStack.StateDiskType,
-				StateDiskSizeGB: conf.StateDiskSizeGB,
-			},
-		},
-		CustomEndpoint: conf.CustomEndpoint,
+		NodeGroups:              nodeGroups,
+		CustomEndpoint:          conf.CustomEndpoint,
 	}
 }
 
 // qemuTerraformVars provides variables required to execute the Terraform scripts.
 // It should be the only place to declare the QEMU variables.
-func qemuTerraformVars(conf *config.Config, imageRef string, controlPlaneCount, workerCount *int, libvirtURI, libvirtSocketPath, metadataLibvirtURI string) *terraform.QEMUVariables {
+func qemuTerraformVars(conf *config.Config, imageRef string, libvirtURI, libvirtSocketPath, metadataLibvirtURI string) *terraform.QEMUVariables {
+	nodeGroups := make(map[string]terraform.QEMUNodeGroup)
+	for groupName, group := range conf.NodeGroups {
+		nodeGroups[groupName] = terraform.QEMUNodeGroup{
+			Role:         role.FromString(group.Role).TFString(),
+			InitialCount: group.InitialCount,
+			DiskSize:     group.StateDiskSizeGB,
+			CPUCount:     conf.Provider.QEMU.VCPUs,
+			MemorySize:   conf.Provider.QEMU.Memory,
+		}
+	}
 	return &terraform.QEMUVariables{
 		Name:              conf.Name,
 		LibvirtURI:        libvirtURI,
 		LibvirtSocketPath: libvirtSocketPath,
 		// TODO(malt3): auto select boot mode based on attestation variant.
 		// requires image info v2.
-		BootMode:    "uefi",
-		ImagePath:   imageRef,
-		ImageFormat: conf.Provider.QEMU.ImageFormat,
-		NodeGroups: map[string]terraform.QEMUNodeGroup{
-			constants.ControlPlaneDefault: {
-				Role:         role.ControlPlane.TFString(),
-				InitialCount: controlPlaneCount,
-				DiskSize:     conf.StateDiskSizeGB,
-				CPUCount:     conf.Provider.QEMU.VCPUs,
-				MemorySize:   conf.Provider.QEMU.Memory,
-			},
-			constants.WorkerDefault: {
-				Role:         role.Worker.TFString(),
-				InitialCount: workerCount,
-				DiskSize:     conf.StateDiskSizeGB,
-				CPUCount:     conf.Provider.QEMU.VCPUs,
-				MemorySize:   conf.Provider.QEMU.Memory,
-			},
-		},
+		BootMode:           "uefi",
+		ImagePath:          imageRef,
+		ImageFormat:        conf.Provider.QEMU.ImageFormat,
+		NodeGroups:         nodeGroups,
 		Machine:            "q35", // TODO(elchead): make configurable AB#3225
 		MetadataAPIImage:   conf.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,

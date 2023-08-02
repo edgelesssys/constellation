@@ -22,7 +22,7 @@ func TestAWSClusterVariables(t *testing.T) {
 			constants.ControlPlaneDefault: {
 				Role:            role.ControlPlane.TFString(),
 				StateDiskSizeGB: 30,
-				InitialCount:    toPtr(1),
+				InitialCount:    1,
 				Zone:            "eu-central-1b",
 				InstanceType:    "x1.foo",
 				DiskType:        "foodisk",
@@ -30,7 +30,7 @@ func TestAWSClusterVariables(t *testing.T) {
 			constants.WorkerDefault: {
 				Role:            role.Worker.TFString(),
 				StateDiskSizeGB: 30,
-				InitialCount:    toPtr(2),
+				InitialCount:    2,
 				Zone:            "eu-central-1c",
 				InstanceType:    "x1.bar",
 				DiskType:        "bardisk",
@@ -105,7 +105,7 @@ func TestGCPClusterVariables(t *testing.T) {
 			constants.ControlPlaneDefault: {
 				Role:            "control-plane",
 				StateDiskSizeGB: 30,
-				InitialCount:    toPtr(1),
+				InitialCount:    1,
 				Zone:            "eu-central-1a",
 				InstanceType:    "n2d-standard-4",
 				DiskType:        "pd-ssd",
@@ -113,7 +113,7 @@ func TestGCPClusterVariables(t *testing.T) {
 			constants.WorkerDefault: {
 				Role:            "worker",
 				StateDiskSizeGB: 10,
-				InitialCount:    toPtr(1),
+				InitialCount:    1,
 				Zone:            "eu-central-1b",
 				InstanceType:    "n2d-standard-8",
 				DiskType:        "pd-ssd",
@@ -177,7 +177,7 @@ func TestAzureClusterVariables(t *testing.T) {
 		NodeGroups: map[string]AzureNodeGroup{
 			constants.ControlPlaneDefault: {
 				Role:         "ControlPlane",
-				InitialCount: to.Ptr(1),
+				InitialCount: 1,
 				InstanceType: "Standard_D2s_v3",
 				DiskType:     "StandardSSD_LRS",
 				DiskSizeGB:   100,
@@ -238,7 +238,6 @@ func TestOpenStackClusterVariables(t *testing.T) {
 	vars := OpenStackClusterVariables{
 		Name:                    "cluster-name",
 		Cloud:                   toPtr("my-cloud"),
-		FlavorID:                "flavor-0123456789abcdef",
 		FloatingIPPoolID:        "fip-pool-0123456789abcdef",
 		ImageURL:                "https://example.com/image.raw",
 		DirectDownload:          true,
@@ -249,7 +248,8 @@ func TestOpenStackClusterVariables(t *testing.T) {
 		NodeGroups: map[string]OpenStackNodeGroup{
 			constants.ControlPlaneDefault: {
 				Role:            "control-plane",
-				InitialCount:    toPtr(1),
+				InitialCount:    1,
+				FlavorID:        "flavor-0123456789abcdef",
 				Zone:            "az-01",
 				StateDiskType:   "performance-8",
 				StateDiskSizeGB: 30,
@@ -262,6 +262,7 @@ func TestOpenStackClusterVariables(t *testing.T) {
 	want := `name = "cluster-name"
 node_groups = {
   control_plane_default = {
+    flavor_id       = "flavor-0123456789abcdef"
     initial_count   = 1
     role            = "control-plane"
     state_disk_size = 30
@@ -270,7 +271,6 @@ node_groups = {
   }
 }
 cloud                      = "my-cloud"
-flavor_id                  = "flavor-0123456789abcdef"
 floating_ip_pool_id        = "fip-pool-0123456789abcdef"
 image_url                  = "https://example.com/image.raw"
 direct_download            = true
@@ -290,7 +290,7 @@ func TestQEMUClusterVariables(t *testing.T) {
 		NodeGroups: map[string]QEMUNodeGroup{
 			"control-plane": {
 				Role:         role.ControlPlane.TFString(),
-				InitialCount: toPtr(1),
+				InitialCount: 1,
 				DiskSize:     30,
 				CPUCount:     4,
 				MemorySize:   8192,
