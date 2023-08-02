@@ -219,10 +219,8 @@ constellation create [flags]
 ### Options
 
 ```
-  -c, --control-plane-nodes int   number of control-plane nodes (required)
-  -h, --help                      help for create
-  -w, --worker-nodes int          number of worker nodes (required)
-  -y, --yes                       create the cluster without further confirmation
+  -h, --help   help for create
+  -y, --yes    create the cluster without further confirmation
 ```
 
 ### Options inherited from parent commands

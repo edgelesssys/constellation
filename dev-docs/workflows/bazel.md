@@ -28,7 +28,7 @@ bazel build //cli:cli_oss_darwin_arm64 # cross compile CLI for mac arm64
 
 ### Run
 
-* `bazel run --run_under="cd $PWD &&" //cli:cli_oss -- create -c 1 -w 1` - build + run a target with arguments in current working directory
+* `bazel run --run_under="cd $PWD &&" //cli:cli_oss -- create --yes` - build + run a target with arguments in current working directory
 
 ### Pre-PR checks
 

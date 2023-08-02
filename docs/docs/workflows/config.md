@@ -78,7 +78,7 @@ SNP-based attestation will be enabled as soon as a fix is verified.
 </tabItem>
 </tabs>
 
-Fill the desired VM type into the **instanceType** field in the `constellation-conf.yml` file.
+Fill the desired VM type into the **instanceType** fields in the `constellation-conf.yml` file.
 
 ## Choosing a Kubernetes version
 

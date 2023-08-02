@@ -29,14 +29,9 @@ Before you create the cluster, make sure to have a [valid configuration file](./
 <tabs groupId="provider">
 <tabItem value="cli" label="CLI">
 
-Choose the initial size of your cluster.
-The following command creates a cluster with one control-plane and two worker nodes:
-
 ```bash
-constellation create --control-plane-nodes 1 --worker-nodes 2
+constellation create
 ```
-
-For details on the flags, consult the command help via `constellation create -h`.
 
 *create* stores your cluster's state in a [`constellation-terraform`](../architecture/orchestration.md#cluster-creation-process) directory in your workspace.
 
