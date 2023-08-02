@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.63.0"
+      version = "3.67.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -65,7 +65,7 @@ resource "azurerm_attestation_provider" "attestation_provider" {
     # To prevent them from being set to null when applying an upgrade, ignore the changes until the issue
     # is resolved by Azure.
     # Related issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/21998
-    ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64]
+    ignore_changes = [open_enclave_policy_base64, sgx_enclave_policy_base64, tpm_policy_base64, sev_snp_policy_base64]
   }
 }
 
