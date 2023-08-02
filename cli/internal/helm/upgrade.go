@@ -44,8 +44,8 @@ var ErrConfirmationMissing = errors.New("action requires user confirmation")
 
 var errReleaseNotFound = errors.New("release not found")
 
-// Client handles interaction with helm and the cluster.
-type Client struct {
+// UpgradeClient handles interaction with helm and the cluster.
+type UpgradeClient struct {
 	config  *action.Configuration
 	kubectl crdClient
 	fs      file.Handler
@@ -53,8 +53,8 @@ type Client struct {
 	log     debugLog
 }
 
-// NewClient returns a new initializes client for the namespace Client.
-func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debugLog) (*Client, error) {
+// NewUpgradeClient returns a new initializes upgrade client for the given namespace.
+func NewUpgradeClient(client crdClient, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
 
@@ -74,10 +74,10 @@ func NewClient(client crdClient, kubeConfigPath, helmNamespace string, log debug
 		return nil, fmt.Errorf("initializing kubectl: %w", err)
 	}
 
-	return &Client{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
+	return &UpgradeClient{kubectl: client, fs: fileHandler, actions: actions{config: actionConfig}, log: log}, nil
 }
 
-func (c *Client) shouldUpgrade(releaseName string, newVersion semver.Semver, force bool) error {
+func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semver, force bool) error {
 	currentVersion, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting version for %s: %w", releaseName, err)
@@ -107,7 +107,7 @@ func (c *Client) shouldUpgrade(releaseName string, newVersion semver.Semver, for
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
+func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string) error {
 	upgradeErrs := []error{}
 	upgradeReleases := []*chart.Chart{}
 	newReleases := []*chart.Chart{}
@@ -206,7 +206,7 @@ func getManagedCharts(config *config.Config) []chartInfo {
 }
 
 // Versions queries the cluster for running versions and returns a map of releaseName -> version.
-func (c *Client) Versions() (ServiceVersions, error) {
+func (c *UpgradeClient) Versions() (ServiceVersions, error) {
 	ciliumVersion, err := c.currentVersion(ciliumInfo.releaseName)
 	if err != nil {
 		return ServiceVersions{}, fmt.Errorf("getting %s version: %w", ciliumInfo.releaseName, err)
@@ -246,7 +246,7 @@ func (c *Client) Versions() (ServiceVersions, error) {
 }
 
 // currentVersion returns the version of the currently installed helm release.
-func (c *Client) currentVersion(release string) (semver.Semver, error) {
+func (c *UpgradeClient) currentVersion(release string) (semver.Semver, error) {
 	rel, err := c.actions.listAction(release)
 	if err != nil {
 		return semver.Semver{}, err
@@ -266,7 +266,7 @@ func (c *Client) currentVersion(release string) (semver.Semver, error) {
 	return semver.New(rel[0].Chart.Metadata.Version)
 }
 
-func (c *Client) csiVersions() (map[string]semver.Semver, error) {
+func (c *UpgradeClient) csiVersions() (map[string]semver.Semver, error) {
 	packedChartRelease, err := c.actions.listAction(csiInfo.releaseName)
 	if err != nil {
 		return nil, fmt.Errorf("listing %s: %w", csiInfo.releaseName, err)
@@ -299,7 +299,7 @@ func (c *Client) csiVersions() (map[string]semver.Semver, error) {
 }
 
 // installNewRelease installs a previously not installed release on the cluster.
-func (c *Client) installNewRelease(
+func (c *UpgradeClient) installNewRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) error {
 	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
@@ -310,7 +310,7 @@ func (c *Client) installNewRelease(
 }
 
 // upgradeRelease upgrades a release running on the cluster.
-func (c *Client) upgradeRelease(
+func (c *UpgradeClient) upgradeRelease(
 	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) error {
 	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
@@ -327,7 +327,7 @@ func (c *Client) upgradeRelease(
 }
 
 // loadUpgradeValues loads values for a chart required for running an upgrade.
-func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
+func (c *UpgradeClient) loadUpgradeValues(ctx context.Context, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
 ) (string, map[string]any, error) {
 	// We need to load all values that can be statically loaded before merging them with the cluster
 	// values. Otherwise the templates are not rendered correctly.
@@ -385,7 +385,7 @@ func (c *Client) loadUpgradeValues(ctx context.Context, conf *config.Config, idF
 // applyMigrations checks the from version and applies the necessary migrations.
 // The function assumes the caller has verified that our version drift restriction is not violated,
 // Currently, this is done during config validation.
-func (c *Client) applyMigrations(ctx context.Context, releaseName string, values map[string]any, conf *config.Config) error {
+func (c *UpgradeClient) applyMigrations(ctx context.Context, releaseName string, values map[string]any, conf *config.Config) error {
 	current, err := c.currentVersion(releaseName)
 	if err != nil {
 		return fmt.Errorf("getting %s version: %w", releaseName, err)
@@ -413,7 +413,7 @@ func migrateFrom2_8(_ context.Context, _ map[string]any, _ *config.Config, _ crd
 // and merging the fetched values with the locally found values.
 // This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
 // reuse-values does not ensure this.
-func (c *Client) mergeClusterValues(localValues map[string]any, releaseName string) (map[string]any, error) {
+func (c *UpgradeClient) mergeClusterValues(localValues map[string]any, releaseName string) (map[string]any, error) {
 	// Ensure installCRDs is set for cert-manager chart.
 	if releaseName == certManagerInfo.releaseName {
 		localValues["installCRDs"] = true
@@ -427,7 +427,7 @@ func (c *Client) mergeClusterValues(localValues map[string]any, releaseName stri
 }
 
 // GetValues queries the cluster for the values of the given release.
-func (c *Client) GetValues(release string) (map[string]any, error) {
+func (c *UpgradeClient) GetValues(release string) (map[string]any, error) {
 	client := action.NewGetValues(c.config)
 	// Version corresponds to the releases revision. Specifying a Version <= 0 yields the latest release.
 	client.Version = 0
@@ -441,7 +441,7 @@ func (c *Client) GetValues(release string) (map[string]any, error) {
 // updateCRDs walks through the dependencies of the given chart and applies
 // the files in the dependencie's 'crds' folder.
 // This function is NOT recursive!
-func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
+func (c *UpgradeClient) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {

@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensionsv1.CustomResourceDefinition, error) {
+func (c *UpgradeClient) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensionsv1.CustomResourceDefinition, error) {
 	c.log.Debugf("Starting CRD backup")
 	crds, err := c.kubectl.GetCRDs(ctx)
 	if err != nil {
@@ -53,7 +53,7 @@ func (c *Client) backupCRDs(ctx context.Context, upgradeID string) ([]apiextensi
 	return crds, nil
 }
 
-func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeID string) error {
+func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomResourceDefinition, upgradeID string) error {
 	c.log.Debugf("Starting CR backup")
 	for _, crd := range crds {
 		c.log.Debugf("Creating backup for resource type: %s", crd.Name)
@@ -99,10 +99,10 @@ func (c *Client) backupCRs(ctx context.Context, crds []apiextensionsv1.CustomRes
 	return nil
 }
 
-func (c *Client) backupFolder(upgradeID string) string {
+func (c *UpgradeClient) backupFolder(upgradeID string) string {
 	return filepath.Join(constants.UpgradeDir, upgradeID, "backups") + string(filepath.Separator)
 }
 
-func (c *Client) crdBackupFolder(upgradeID string) string {
+func (c *UpgradeClient) crdBackupFolder(upgradeID string) string {
 	return filepath.Join(c.backupFolder(upgradeID), "crds") + string(filepath.Separator)
 }

@@ -52,7 +52,7 @@ func TestBackupCRDs(t *testing.T) {
 			crd := apiextensionsv1.CustomResourceDefinition{}
 			err := yaml.Unmarshal([]byte(tc.crd), &crd)
 			require.NoError(err)
-			client := Client{
+			client := UpgradeClient{
 				config:  nil,
 				kubectl: stubCrdClient{crds: []apiextensionsv1.CustomResourceDefinition{crd}, getCRDsError: tc.getCRDsError},
 				fs:      file.NewHandler(memFs),
@@ -143,7 +143,7 @@ func TestBackupCRs(t *testing.T) {
 			require := require.New(t)
 			memFs := afero.NewMemMapFs()
 
-			client := Client{
+			client := UpgradeClient{
 				config:  nil,
 				kubectl: stubCrdClient{crs: []unstructured.Unstructured{tc.resource}, getCRsError: tc.getCRsError},
 				fs:      file.NewHandler(memFs),

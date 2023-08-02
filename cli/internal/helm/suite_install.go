@@ -22,29 +22,30 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
-// SuiteInstaller installs all Helm charts required for a constellation cluster.
-type SuiteInstaller interface {
+// Initializer installs all Helm charts required for a constellation cluster.
+type Initializer interface {
 	Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 		idFile clusterid.File,
 		serviceAccURI string, releases *Releases,
 	) error
 }
 
-type helmInstallationClient struct {
+type initializationClient struct {
 	log       debugLog
-	installer helmInstaller
+	installer installer
 }
 
-// NewInstallationClient creates a new Helm installation client to install all Helm charts required for a constellation cluster.
-func NewInstallationClient(log debugLog) (SuiteInstaller, error) {
+// NewInitializer creates a new client to install all Helm charts required for a constellation cluster.
+func NewInitializer(log debugLog) (Initializer, error) {
 	installer, err := NewInstaller(constants.AdminConfFilename, log)
 	if err != nil {
 		return nil, fmt.Errorf("creating Helm installer: %w", err)
 	}
-	return &helmInstallationClient{log: log, installer: installer}, nil
+	return &initializationClient{log: log, installer: installer}, nil
 }
 
-func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
+// Install installs all Helm charts required for a constellation cluster.
+func (h initializationClient) Install(ctx context.Context, provider cloudprovider.Provider, masterSecret uri.MasterSecret,
 	idFile clusterid.File,
 	serviceAccURI string, releases *Releases,
 ) error {
@@ -130,7 +131,8 @@ func (h helmInstallationClient) Install(ctx context.Context, provider cloudprovi
 	return nil
 }
 
-type helmInstaller interface {
+// installer is the interface for installing a single Helm chart.
+type installer interface {
 	InstallChart(context.Context, Release) error
 	InstallChartWithValues(ctx context.Context, release Release, extraValues map[string]any) error
 }

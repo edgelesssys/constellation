@@ -365,7 +365,7 @@ type currentVersionInfo struct {
 }
 
 func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
-	helmClient, err := helm.NewClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, v.log)
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.AdminConfFilename, constants.HelmNamespace, v.log)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}

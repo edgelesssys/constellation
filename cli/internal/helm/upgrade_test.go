@@ -46,7 +46,7 @@ func TestShouldUpgrade(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			client := Client{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
+			client := UpgradeClient{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
@@ -77,7 +77,7 @@ func TestUpgradeRelease(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			client := Client{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
+			client := UpgradeClient{kubectl: nil, actions: &stubActionWrapper{version: tc.version}, log: logger.NewTest(t)}
 
 			chart, err := loadChartsDir(helmFS, certManagerInfo.path)
 			require.NoError(err)
