@@ -37,7 +37,7 @@ func runConfigMigrate(cmd *cobra.Command, _ []string) error {
 }
 
 func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) error {
-	// Make sure we are reading a v2 config
+	// Make sure we are reading a v3 config
 	var cfgVersion struct {
 		Version string `yaml:"version"`
 	}
@@ -46,16 +46,16 @@ func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) 
 	}
 
 	switch cfgVersion.Version {
-	case config.Version3:
-		cmd.Printf("Config already at version %s, nothing to do\n", config.Version3)
+	case config.Version4:
+		cmd.Printf("Config already at version %s, nothing to do\n", config.Version4)
 		return nil
-	case migration.Version2:
-		if err := migration.V2ToV3(configPath, handler); err != nil {
+	case migration.Version3:
+		if err := migration.V3ToV4(configPath, handler); err != nil {
 			return fmt.Errorf("migrating config: %w", err)
 		}
-		cmd.Printf("Successfully migrated config to %s\n", config.Version3)
+		cmd.Printf("Successfully migrated config to %s\n", config.Version4)
 		return nil
 	default:
-		return fmt.Errorf("cannot convert config version %s to %s", cfgVersion.Version, config.Version3)
+		return fmt.Errorf("cannot convert config version %s to %s", cfgVersion.Version, config.Version4)
 	}
 }
