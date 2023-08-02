@@ -80,17 +80,17 @@ type Config struct {
 	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images.
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
-	//   Supported cloud providers and their specific configurations.
-	Provider ProviderConfig `yaml:"provider" validate:"dive"`
-	// description: |
-	//   Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee the docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
-	Attestation AttestationConfig `yaml:"attestation" validate:"dive"`
-	// description: |
 	//   Optional custom endpoint (DNS name) for the Constellation API server.
 	//   This can be used to point a custom dns name at the Constellation API server
 	//   and is added to the Subject Alternative Name (SAN) field of the TLS certificate used by the API server.
 	//   A fallback to DNS name is always available.
 	CustomEndpoint string `yaml:"customEndpoint" validate:"omitempty,hostname_rfc1123"`
+	// description: |
+	//   Supported cloud providers and their specific configurations.
+	Provider ProviderConfig `yaml:"provider" validate:"dive"`
+	// description: |
+	//   Configuration for attestation validation. This configuration provides sensible defaults for the Constellation version it was created for.\nSee the docs for an overview on attestation: https://docs.edgeless.systems/constellation/architecture/attestation
+	Attestation AttestationConfig `yaml:"attestation" validate:"dive"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
