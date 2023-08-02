@@ -57,13 +57,10 @@ func NewCreator(out io.Writer) *Creator {
 
 // CreateOptions are the options for creating a Constellation cluster.
 type CreateOptions struct {
-	Provider          cloudprovider.Provider
-	Config            *config.Config
-	InsType           string
-	ControlPlaneCount int
-	WorkerCount       int
-	image             string
-	TFLogLevel        terraform.LogLevel
+	Provider   cloudprovider.Provider
+	Config     *config.Config
+	image      string
+	TFLogLevel terraform.LogLevel
 }
 
 // Create creates the handed amount of instances and all the needed resources.
@@ -129,7 +126,7 @@ func (c *Creator) Create(ctx context.Context, opts CreateOptions) (clusterid.Fil
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
-	vars := awsTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
+	vars := awsTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.AWS, vars, c.out, opts.TFLogLevel)
 	if err != nil {
@@ -140,7 +137,7 @@ func (c *Creator) createAWS(ctx context.Context, cl tfResourceClient, opts Creat
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
-	vars := gcpTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
+	vars := gcpTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.GCP, vars, c.out, opts.TFLogLevel)
 	if err != nil {
@@ -151,7 +148,7 @@ func (c *Creator) createGCP(ctx context.Context, cl tfResourceClient, opts Creat
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl tfResourceClient, opts CreateOptions) (tfOutput terraform.ApplyOutput, retErr error) {
-	vars := azureTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
+	vars := azureTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.Azure, vars, c.out, opts.TFLogLevel)
 	if err != nil {
@@ -216,7 +213,7 @@ func (c *Creator) createOpenStack(ctx context.Context, cl tfResourceClient, opts
 		)
 	}
 
-	vars := openStackTerraformVars(opts.Config, opts.image, &opts.ControlPlaneCount, &opts.WorkerCount)
+	vars := openStackTerraformVars(opts.Config, opts.image)
 
 	tfOutput, err := runTerraformCreate(ctx, cl, cloudprovider.OpenStack, vars, c.out, opts.TFLogLevel)
 	if err != nil {
@@ -292,7 +289,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl tfResourceClient, lv libvir
 		metadataLibvirtURI = "qemu:///system"
 	}
 
-	vars := qemuTerraformVars(opts.Config, imagePath, &opts.ControlPlaneCount, &opts.WorkerCount, libvirtURI, libvirtSocketPath, metadataLibvirtURI)
+	vars := qemuTerraformVars(opts.Config, imagePath, libvirtURI, libvirtSocketPath, metadataLibvirtURI)
 
 	if opts.Config.Provider.QEMU.Firmware != "" {
 		vars.Firmware = toPtr(opts.Config.Provider.QEMU.Firmware)
