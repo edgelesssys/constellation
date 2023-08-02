@@ -409,6 +409,10 @@ func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	conf.Provider.AWS.Zone = flags.aws.zone
 	conf.Provider.AWS.IAMProfileControlPlane = iamFile.AWSOutput.ControlPlaneInstanceProfile
 	conf.Provider.AWS.IAMProfileWorkerNodes = iamFile.AWSOutput.WorkerNodeInstanceProfile
+	for groupName, group := range conf.NodeGroups {
+		group.Zone = flags.aws.zone
+		conf.NodeGroups[groupName] = group
+	}
 }
 
 func (c *awsIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
@@ -548,6 +552,10 @@ func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	conf.Provider.GCP.ServiceAccountKeyPath = constants.GCPServiceAccountKeyFile
 	conf.Provider.GCP.Region = flags.gcp.region
 	conf.Provider.GCP.Zone = flags.gcp.zone
+	for groupName, group := range conf.NodeGroups {
+		group.Zone = flags.gcp.zone
+		conf.NodeGroups[groupName] = group
+	}
 }
 
 func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
