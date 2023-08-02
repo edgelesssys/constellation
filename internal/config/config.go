@@ -48,8 +48,8 @@ import (
 )
 
 const (
-	// Version3 is the third version number for Constellation config file.
-	Version3 = "v3"
+	// Version4 is the fourth version number for Constellation config file.
+	Version4 = "v4"
 
 	defaultName = "constell"
 
@@ -60,16 +60,13 @@ const (
 type Config struct {
 	// description: |
 	//   Schema version of this configuration file.
-	Version string `yaml:"version" validate:"eq=v3"`
+	Version string `yaml:"version" validate:"eq=v4"`
 	// description: |
 	//   Machine image version used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required,image_compatibility"`
 	// description: |
 	//   Name of the cluster.
 	Name string `yaml:"name" validate:"valid_name,required"`
-	// description: |
-	//   Size (in GB) of a node's disk to store the non-volatile state.
-	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
 	//   Kubernetes version to be installed into the cluster.
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"required,supported_k8s_version"`
@@ -91,6 +88,9 @@ type Config struct {
 	//   and is added to the Subject Alternative Name (SAN) field of the TLS certificate used by the API server.
 	//   A fallback to DNS name is always available.
 	CustomEndpoint string `yaml:"customEndpoint" validate:"omitempty,hostname_rfc1123"`
+	// description: |
+	//   Node groups to be created in the cluster.
+	NodeGroups map[string]NodeGroup `yaml:"nodeGroups" validate:"required,dive"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
@@ -123,12 +123,6 @@ type AWSConfig struct {
 	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
 	Zone string `yaml:"zone" validate:"required,aws_zone"`
 	// description: |
-	//   VM instance type to use for Constellation nodes. Needs to support NitroTPM. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html
-	InstanceType string `yaml:"instanceType" validate:"lowercase,aws_instance_type"`
-	// description: |
-	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html
-	StateDiskType string `yaml:"stateDiskType" validate:"oneof=standard gp2 gp3 st1 sc1 io1"`
-	// description: |
 	//   Name of the IAM profile to use for the control-plane nodes.
 	IAMProfileControlPlane string `yaml:"iamProfileControlPlane" validate:"required"`
 	// description: |
@@ -157,12 +151,6 @@ type AzureConfig struct {
 	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
-	//   VM instance type to use for Constellation nodes.
-	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
-	// description: |
-	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
-	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
-	// description: |
 	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
@@ -185,12 +173,6 @@ type GCPConfig struct {
 	//   Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization
 	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath" validate:"required"`
 	// description: |
-	//   VM instance type to use for Constellation nodes.
-	InstanceType string `yaml:"instanceType" validate:"gcp_instance_type"`
-	// description: |
-	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
-	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
-	// description: |
 	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 }
@@ -204,14 +186,8 @@ type OpenStackConfig struct {
 	//   Availability zone to place the VMs in. For details see: https://docs.openstack.org/nova/latest/admin/availability-zones.html
 	AvailabilityZone string `yaml:"availabilityZone" validate:"required"`
 	// description: |
-	//   Flavor ID (machine type) to use for the VMs. For details see: https://docs.openstack.org/nova/latest/admin/flavors.html
-	FlavorID string `yaml:"flavorID" validate:"required"`
-	// description: |
 	//   Floating IP pool to use for the VMs. For details see: https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html
 	FloatingIPPoolID string `yaml:"floatingIPPoolID" validate:"required"`
-	// description: |
-	//   Type of a node's state disk. The type influences boot time and I/O performance. Use `openstack volume type list` to get a list of available types.
-	StateDiskType string `yaml:"stateDiskType" validate:"required"`
 	// description: |
 	// AuthURL is the OpenStack Identity endpoint to use inside the cluster.
 	AuthURL string `yaml:"authURL" validate:"required"`
@@ -308,22 +284,42 @@ type AttestationConfig struct {
 	QEMUVTPM *QEMUVTPM `yaml:"qemuVTPM,omitempty" validate:"omitempty,dive"`
 }
 
+// NodeGroup defines a group of nodes with the same role and configuration.
+// Cloud providers use scaling groups to manage nodes of a group.
+type NodeGroup struct {
+	// description: |
+	//   Role of the nodes in this group. Valid values are "control-plane" and "worker".
+	Role string `yaml:"role" validate:"required,oneof=control-plane worker"`
+	// description: |
+	//   Availability zone to place the VMs in.
+	Zone string `yaml:"zone" validate:"valid_zone"`
+	// description: |
+	//   VM instance type to use for the nodes.
+	InstanceType string `yaml:"instanceType" validate:"instance_type"`
+	// description: |
+	//   Size (in GB) of a node's disk to store the non-volatile state.
+	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
+	// description: |
+	//   Type of a node's state disk. The type influences boot time and I/O performance.
+	StateDiskType string `yaml:"stateDiskType" validate:"disk_type"`
+	// description: |
+	//   Number of nodes to be initially created.
+	InitialCount int `yaml:"initialCount" validate:"min=0"`
+}
+
 // Default returns a struct with the default config.
 // IMPORTANT: Ensure that any state mutation is followed by a call to Validate() to ensure that the config is always in a valid state. Avoid usage outside of tests.
 func Default() *Config {
 	return &Config{
-		Version:             Version3,
+		Version:             Version4,
 		Image:               defaultImage,
 		Name:                defaultName,
 		MicroserviceVersion: constants.BinaryVersion(),
 		KubernetesVersion:   string(versions.Default),
-		StateDiskSizeGB:     30,
 		DebugCluster:        toPtr(false),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",
-				InstanceType:           "m6a.xlarge",
-				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				DeployCSIDriver:        toPtr(true),
@@ -334,8 +330,6 @@ func Default() *Config {
 				Location:             "",
 				UserAssignedIdentity: "",
 				ResourceGroup:        "",
-				InstanceType:         "Standard_DC4as_v5",
-				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      toPtr(true),
 				SecureBoot:           toPtr(false),
 			},
@@ -344,8 +338,6 @@ func Default() *Config {
 				Region:                "",
 				Zone:                  "",
 				ServiceAccountKeyPath: "",
-				InstanceType:          "n2d-standard-4",
-				StateDiskType:         "pd-ssd",
 				DeployCSIDriver:       toPtr(true),
 			},
 			OpenStack: &OpenStackConfig{
@@ -377,6 +369,24 @@ func Default() *Config {
 			GCPSEVES:           &GCPSEVES{Measurements: measurements.DefaultsFor(cloudprovider.GCP, variant.GCPSEVES{})},
 			QEMUVTPM:           &QEMUVTPM{Measurements: measurements.DefaultsFor(cloudprovider.QEMU, variant.QEMUVTPM{})},
 		},
+		NodeGroups: map[string]NodeGroup{
+			"control_plane_default": {
+				Role:            "control-plane",
+				Zone:            "",
+				InstanceType:    "",
+				StateDiskSizeGB: 30,
+				StateDiskType:   "",
+				InitialCount:    3,
+			},
+			"worker_default": {
+				Role:            "worker",
+				Zone:            "",
+				InstanceType:    "",
+				StateDiskSizeGB: 30,
+				StateDiskType:   "",
+				InitialCount:    1,
+			},
+		},
 	}
 }
 
@@ -385,7 +395,11 @@ func MiniDefault() (*Config, error) {
 	config := Default()
 	config.Name = constants.MiniConstellationUID
 	config.RemoveProviderAndAttestationExcept(cloudprovider.QEMU)
-	config.StateDiskSizeGB = 8
+	for groupName, group := range config.NodeGroups {
+		group.StateDiskSizeGB = 8
+		group.InitialCount = 1
+		config.NodeGroups[groupName] = group
+	}
 	// only release images (e.g. v2.7.0) use the production NVRAM
 	if !config.IsReleaseImage() {
 		config.Provider.QEMU.NVRAM = "testing"
@@ -514,6 +528,8 @@ func (c *Config) UpdateMeasurements(newMeasurements measurements.M) {
 func (c *Config) RemoveProviderAndAttestationExcept(provider cloudprovider.Provider) {
 	c.RemoveProviderExcept(provider)
 	c.SetAttestation(variant.GetDefaultAttestation(provider))
+	// TODO(malt3): update csp specific node group fields with defaults:
+	// instanceType, stateDiskType
 }
 
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
@@ -541,21 +557,21 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 
 // SetAttestation sets the attestation config for the given attestation variant and removes all other attestation configs.
 func (c *Config) SetAttestation(attestation variant.Variant) {
-	currentAttetationConfigs := c.Attestation
+	currentAttestationConfigs := c.Attestation
 	c.Attestation = AttestationConfig{}
 	switch attestation.(type) {
 	case variant.AzureSEVSNP:
-		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttetationConfigs.AzureSEVSNP}
+		c.Attestation = AttestationConfig{AzureSEVSNP: currentAttestationConfigs.AzureSEVSNP}
 	case variant.AWSSEVSNP:
-		c.Attestation = AttestationConfig{AWSSEVSNP: currentAttetationConfigs.AWSSEVSNP}
+		c.Attestation = AttestationConfig{AWSSEVSNP: currentAttestationConfigs.AWSSEVSNP}
 	case variant.AWSNitroTPM:
-		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttetationConfigs.AWSNitroTPM}
+		c.Attestation = AttestationConfig{AWSNitroTPM: currentAttestationConfigs.AWSNitroTPM}
 	case variant.AzureTrustedLaunch:
-		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttetationConfigs.AzureTrustedLaunch}
+		c.Attestation = AttestationConfig{AzureTrustedLaunch: currentAttestationConfigs.AzureTrustedLaunch}
 	case variant.GCPSEVES:
-		c.Attestation = AttestationConfig{GCPSEVES: currentAttetationConfigs.GCPSEVES}
+		c.Attestation = AttestationConfig{GCPSEVES: currentAttestationConfigs.GCPSEVES}
 	case variant.QEMUVTPM:
-		c.Attestation = AttestationConfig{QEMUVTPM: currentAttetationConfigs.QEMUVTPM}
+		c.Attestation = AttestationConfig{QEMUVTPM: currentAttestationConfigs.QEMUVTPM}
 	}
 }
 
@@ -696,15 +712,7 @@ func (c *Config) Validate(force bool) error {
 	})
 
 	// Register AWS, Azure & GCP InstanceType validation error types
-	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, c.translateAWSInstanceTypeError); err != nil {
-		return err
-	}
-
-	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
-		return err
-	}
-
-	if err := validate.RegisterTranslation("gcp_instance_type", trans, registerTranslateGCPInstanceTypeError, translateGCPInstanceTypeError); err != nil {
+	if err := validate.RegisterTranslation("instance_type", trans, c.registerTranslateInstanceTypeError, c.translateInstanceTypeError); err != nil {
 		return err
 	}
 
@@ -754,18 +762,14 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
-	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
-	if err := validate.RegisterValidation("aws_instance_type", c.validateAWSInstanceType); err != nil {
+	if err := validate.RegisterValidation("disk_type", c.validateStateDiskTypeField); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("disk_type", trans, registerTranslateDiskTypeError, c.translateDiskTypeError); err != nil {
 		return err
 	}
 
-	// register custom validator with label azure_instance_type to validate the Azure instance type from config input.
-	if err := validate.RegisterValidation("azure_instance_type", c.validateAzureInstanceType); err != nil {
-		return err
-	}
-
-	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
-	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
+	if err := validate.RegisterValidation("instance_type", c.validateInstanceType); err != nil {
 		return err
 	}
 
@@ -776,6 +780,26 @@ func (c *Config) Validate(force bool) error {
 	// Register provider validation
 	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
 
+	// Register NodeGroup validation error types
+	if err := validate.RegisterTranslation("no_default_control_plane_group", trans, registerNoDefaultControlPlaneGroupError, translateNoDefaultControlPlaneGroupError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("no_default_worker_group", trans, registerNoDefaultWorkerGroupError, translateNoDefaultWorkerGroupError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("control_plane_group_initial_count", trans, registerControlPlaneGroupInitialCountError, translateControlPlaneGroupInitialCountError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("control_plane_group_role_mismatch", trans, registerControlPlaneGroupRoleMismatchError, translateControlPlaneGroupRoleMismatchError); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("worker_group_role_mismatch", trans, registerWorkerGroupRoleMismatchError, translateWorkerGroupRoleMismatchError); err != nil {
+		return err
+	}
+
+	// Register NodeGroup validation
+	validate.RegisterStructValidation(validateNodeGroups, Config{})
+
 	// Register Attestation validation error types
 	if err := validate.RegisterTranslation("no_attestation", trans, registerNoAttestationError, translateNoAttestationError); err != nil {
 		return err
@@ -784,10 +808,16 @@ func (c *Config) Validate(force bool) error {
 		return err
 	}
 
+	if err := validate.RegisterValidation("valid_zone", c.validateNodeGroupZoneField); err != nil {
+		return err
+	}
 	if err := validate.RegisterValidation("aws_region", validateAWSRegionField); err != nil {
 		return err
 	}
 	if err := validate.RegisterValidation("aws_zone", validateAWSZoneField); err != nil {
+		return err
+	}
+	if err := validate.RegisterTranslation("valid_zone", trans, registerValidZoneError, c.translateValidZoneError); err != nil {
 		return err
 	}
 	if err := validate.RegisterTranslation("aws_region", trans, registerAWSRegionError, translateAWSRegionError); err != nil {
@@ -836,9 +866,7 @@ func (c *Config) WithOpenStackProviderDefaults(openStackProvider string) *Config
 	switch openStackProvider {
 	case "stackit":
 		c.Provider.OpenStack.Cloud = "stackit"
-		c.Provider.OpenStack.FlavorID = "2715eabe-3ffc-4c36-b02a-efa8c141a96a"
 		c.Provider.OpenStack.FloatingIPPoolID = "970ace5c-458f-484a-a660-0903bcfd91ad"
-		c.Provider.OpenStack.StateDiskType = "storage_premium_perf6"
 		c.Provider.OpenStack.AuthURL = "https://keystone.api.iaas.eu01.stackit.cloud/v3"
 		c.Provider.OpenStack.UserDomainName = "portal_mvp"
 		c.Provider.OpenStack.ProjectDomainName = "portal_mvp"

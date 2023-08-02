@@ -36,6 +36,10 @@ const (
 	ConstellationVerifyServiceUserData = "VerifyService"
 	// AttestationVariant is the name of the environment variable that contains the attestation variant.
 	AttestationVariant = "CONSTEL_ATTESTATION_VARIANT"
+	// DefaultControlPlaneGroupName is the name of the default control plane node group.
+	DefaultControlPlaneGroupName = "control_plane_default"
+	// DefaultWorkerGroupName is the name of the default worker node group.
+	DefaultWorkerGroupName = "worker_default"
 
 	//
 	// Ports.
