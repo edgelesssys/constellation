@@ -45,7 +45,7 @@ runs:
                 echo "$output"
                 i=$(echo "$output" | grep -o "Pushed recovery key." | wc -l | sed 's/ //g')
                 recovered=$((recovered+i))
-                if [[ $recovered -eq ${{ inputs.controlNodesCount }} ]]; then
+                if [[ $recovered -gt ${{ inputs.controlNodesCount }}/2 ]]; then
                     break
                 fi
             fi
@@ -56,7 +56,7 @@ runs:
                 exit 1
             fi
 
-            echo "Did not recover all nodes yet, retrying in 5 seconds [$recovered/${{ inputs.controlNodesCount }}]"
+            echo "Did not recover a quorum (>${{inputs.controlNodesCount}}/2) of control-plane nodes yet, retrying in 5 seconds [$recovered/${{ inputs.controlNodesCount }}]"
             sleep 5
         done
     - name: Wait for control plane to get back up
