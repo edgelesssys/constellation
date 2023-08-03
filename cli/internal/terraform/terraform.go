@@ -213,45 +213,49 @@ func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provide
 		Secret:            secret,
 		UID:               uid,
 	}
-	// TODO add provider
+
 	switch provider {
 	case cloudprovider.GCP:
 		gcpProjectOutput, ok := tfState.Values.Outputs["project"]
-		if ok {
-			gcpProject, ok := gcpProjectOutput.Value.(string)
-			if !ok {
-				return ApplyOutput{}, errors.New("invalid type in project output: not a string")
-			}
-			cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
-			if !ok {
-				return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
-			}
-			cidrNodes, ok := cidrNodesOutput.Value.(string)
-			if !ok {
-				return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
-			}
-			cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
-			if !ok {
-				return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
-			}
-			cidrPods, ok := cidrPodsOutput.Value.(string)
-			if !ok {
-				return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
-			}
-			res.GCP = &GCPApplyOutput{
-				ProjectID:  gcpProject,
-				IPCidrNode: cidrNodes,
-				IPCidrPod:  cidrPods,
-			}
+		if !ok {
+			return ApplyOutput{}, errors.New("no project output found")
+		}
+		gcpProject, ok := gcpProjectOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in project output: not a string")
+		}
+
+		cidrNodesOutput, ok := tfState.Values.Outputs["ip_cidr_nodes"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no ip_cidr_nodes output found")
+		}
+		cidrNodes, ok := cidrNodesOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in ip_cidr_nodes output: not a string")
+		}
+
+		cidrPodsOutput, ok := tfState.Values.Outputs["ip_cidr_pods"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no ip_cidr_pods output found")
+		}
+		cidrPods, ok := cidrPodsOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in ip_cidr_pods output: not a string")
+		}
+
+		res.GCP = &GCPApplyOutput{
+			ProjectID:  gcpProject,
+			IPCidrNode: cidrNodes,
+			IPCidrPod:  cidrPods,
 		}
 	case cloudprovider.Azure:
-		var attestationURL string
-		if ok {
-			if attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]; ok {
-				if attestationURLString, ok := attestationURLOutput.Value.(string); ok {
-					attestationURL = attestationURLString
-				}
-			}
+		attestationURLOutput, ok := tfState.Values.Outputs["attestationURL"]
+		if !ok {
+			return ApplyOutput{}, errors.New("no attestationURL output found")
+		}
+		attestationURL, ok := attestationURLOutput.Value.(string)
+		if !ok {
+			return ApplyOutput{}, errors.New("invalid type in attestationURL output: not a string")
 		}
 
 		azureUAMIOutput, ok := tfState.Values.Outputs["user_assigned_identity_client_id"]
