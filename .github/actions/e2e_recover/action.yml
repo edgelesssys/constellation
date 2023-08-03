@@ -17,22 +17,24 @@ runs:
   steps:
     - name: Restart worker node
       shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         WORKER_NODE=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o json | jq '.items[0].metadata.name' -r)
         kubectl debug node/$WORKER_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
         kubectl wait --for=condition=Ready=false --timeout=10m node/$WORKER_NODE
         kubectl wait --for=condition=Ready=true --timeout=10m --all nodes
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
+      
     - name: Restart all control plane nodes
       shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         CONTROL_PLANE_NODES=$(kubectl get nodes --selector='node-role.kubernetes.io/control-plane' -o json | jq '.items[].metadata.name' -r)
         for CONTROL_PLANE_NODE in ${CONTROL_PLANE_NODES}; do
           kubectl debug node/$CONTROL_PLANE_NODE --image=ubuntu -- bash -c "echo reboot > reboot.sh && chroot /host < reboot.sh"
         done
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
+      
     - name: Constellation recover
       shell: bash
       run: |
@@ -59,8 +61,11 @@ runs:
             echo "Did not recover a quorum (>${{inputs.controlNodesCount}}/2) of control-plane nodes yet, retrying in 5 seconds [$recovered/${{ inputs.controlNodesCount }}]"
             sleep 5
         done
+
     - name: Wait for control plane to get back up
       shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
       run: |
         timeout=600
         start_time=$(date +%s)
@@ -80,5 +85,3 @@ runs:
           echo "Cannot reach control plane, retrying in 10 seconds"
           sleep 10
         done
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
