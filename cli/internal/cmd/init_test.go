@@ -172,10 +172,10 @@ func TestInitialize(t *testing.T) {
 			if tc.configMutator != nil {
 				tc.configMutator(config)
 			}
-			require.NoError(fileHandler.WriteYAML(configPath(""), config, file.OptNone))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
 			if tc.idFile != nil {
 				tc.idFile.CloudProvider = tc.provider
-				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), tc.idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, tc.idFile, file.OptNone))
 			}
 			if tc.serviceAccKey != nil {
 				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
@@ -196,7 +196,7 @@ func TestInitialize(t *testing.T) {
 					assert.Empty(errOut.String())
 				}
 				if !tc.masterSecretShouldExist {
-					_, err = fileHandler.Stat(masterSecretPath(""))
+					_, err = fileHandler.Stat(constants.MasterSecretFilename)
 					assert.Error(err)
 				}
 				return
@@ -205,7 +205,7 @@ func TestInitialize(t *testing.T) {
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
 			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
 			var secret uri.MasterSecret
-			assert.NoError(fileHandler.ReadJSON(masterSecretPath(""), &secret))
+			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
 			assert.NotEmpty(secret.Salt)
 		})
@@ -306,21 +306,21 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), adminConfPath(""))
+	assert.Contains(out.String(), constants.AdminConfFilename)
 
 	afs := afero.Afero{Fs: testFs}
-	adminConf, err := afs.ReadFile(adminConfPath(""))
+	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
 	assert.Equal(string(resp.GetInitSuccess().GetKubeconfig()), string(adminConf))
 
-	idsFile, err := afs.ReadFile(clusterIDsPath(""))
+	idsFile, err := afs.ReadFile(constants.ClusterIDsFilename)
 	assert.NoError(err)
 	var testIDFile clusterid.File
 	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
 	assert.Equal(expectedIDFile, testIDFile)
 	out.Reset()
-	require.NoError(afs.Remove(adminConfPath("")))
+	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test custom workspace
 	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "some/path")
@@ -329,18 +329,19 @@ func TestWriteOutput(t *testing.T) {
 	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), adminConfPath("some/path"))
 	out.Reset()
-	require.NoError(afs.Remove(adminConfPath("some/path")))
+	// File is written to current working dir, we simply pass the workspace for generating readable user output
+	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test config merging
 	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "")
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), adminConfPath(""))
+	assert.Contains(out.String(), constants.AdminConfFilename)
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
 	assert.Contains(out.String(), "You can now connect to your cluster")
 	out.Reset()
-	require.NoError(afs.Remove(adminConfPath("")))
+	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
@@ -348,7 +349,7 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), adminConfPath(""))
+	assert.Contains(out.String(), constants.AdminConfFilename)
 	assert.Contains(out.String(), "Constellation kubeconfig merged with default config")
 	assert.Contains(out.String(), "Warning: KUBECONFIG environment variable is set")
 }
@@ -363,7 +364,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 			fs: afero.NewMemMapFs,
 			createFileFunc: func(handler file.Handler) error {
 				return handler.WriteJSON(
-					masterSecretPath(""),
+					constants.MasterSecretFilename,
 					uri.MasterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("constellation-32Byte-length-salt")},
 					file.OptNone,
 				)
@@ -399,10 +400,10 @@ func TestGenerateMasterSecret(t *testing.T) {
 			} else {
 				assert.NoError(err)
 
-				require.Contains(out.String(), masterSecretPath(""))
+				require.Contains(out.String(), constants.MasterSecretFilename)
 
 				var masterSecret uri.MasterSecret
-				require.NoError(fileHandler.ReadJSON(masterSecretPath(""), &masterSecret))
+				require.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret))
 				assert.Equal(masterSecret.Key, secret.Key)
 				assert.Equal(masterSecret.Salt, secret.Salt)
 			}
@@ -454,7 +455,7 @@ func TestAttestation(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
-	require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), existingIDFile, file.OptNone))
+	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, existingIDFile, file.OptNone))
 
 	cfg := config.Default()
 	cfg.Image = "v0.0.0" // is the default version of the the CLI (before build injects the real version)
@@ -466,7 +467,7 @@ func TestAttestation(t *testing.T) {
 	cfg.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x99, measurements.Enforce, measurements.PCRMeasurementLength)
 	cfg.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-	require.NoError(fileHandler.WriteYAML(configPath(""), cfg, file.OptNone))
+	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
 
 	newDialer := func(v atls.Validator) *dialer.Dialer {
 		validator := &testValidator{

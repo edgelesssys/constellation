@@ -32,24 +32,20 @@ func newMiniDownCmd() *cobra.Command {
 }
 
 func runDown(cmd *cobra.Command, args []string) error {
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return err
-	}
-	if err := checkForMiniCluster(workspace, file.NewHandler(afero.NewOsFs())); err != nil {
+	if err := checkForMiniCluster(file.NewHandler(afero.NewOsFs())); err != nil {
 		return fmt.Errorf("failed to destroy cluster: %w. Are you in the correct working directory?", err)
 	}
 
-	err = runTerminate(cmd, args)
-	if removeErr := os.Remove(masterSecretPath(workspace)); removeErr != nil && !os.IsNotExist(removeErr) {
+	err := runTerminate(cmd, args)
+	if removeErr := os.Remove(constants.MasterSecretFilename); removeErr != nil && !os.IsNotExist(removeErr) {
 		err = errors.Join(err, removeErr)
 	}
 	return err
 }
 
-func checkForMiniCluster(workspace string, fileHandler file.Handler) error {
+func checkForMiniCluster(fileHandler file.Handler) error {
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(clusterIDsPath(workspace), &idFile); err != nil {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return err
 	}
 	if idFile.CloudProvider != cloudprovider.QEMU {

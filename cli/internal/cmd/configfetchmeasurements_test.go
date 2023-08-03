@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
@@ -38,7 +39,6 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 	testCases := map[string]struct {
 		urlFlag          string
 		signatureURLFlag string
-		workspaceFlag    string
 		forceFlag        bool
 		wantFlags        *fetchMeasurementsFlags
 		wantErr          bool
@@ -47,7 +47,6 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: nil,
 				signatureURL:    nil,
-				workspace:       "",
 			},
 		},
 		"url": {
@@ -56,18 +55,11 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: urlMustParse("https://some.other.url/with/path"),
 				signatureURL:    urlMustParse("https://some.other.url/with/path.sig"),
-				workspace:       "",
 			},
 		},
 		"broken url": {
 			urlFlag: "%notaurl%",
 			wantErr: true,
-		},
-		"config": {
-			workspaceFlag: "some/other/dir",
-			wantFlags: &fetchMeasurementsFlags{
-				workspace: "some/other/dir",
-			},
 		},
 	}
 
@@ -85,9 +77,6 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			}
 			if tc.signatureURLFlag != "" {
 				require.NoError(cmd.Flags().Set("signature-url", tc.signatureURLFlag))
-			}
-			if tc.workspaceFlag != "" {
-				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
 			}
 			cfm := &configFetchMeasurementsCmd{log: logger.NewTest(t)}
 			flags, err := cfm.parseFetchMeasurementsFlags(cmd)
@@ -290,7 +279,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 			gcpConfig.Image = "v999.999.999"
 
-			err := fileHandler.WriteYAML(configPath(""), gcpConfig, file.OptMkdirAll)
+			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 			cfm := &configFetchMeasurementsCmd{canFetchMeasurements: true, log: logger.NewTest(t)}
 

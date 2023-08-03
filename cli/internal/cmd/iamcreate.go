@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -190,7 +191,7 @@ func newIAMCreator(cmd *cobra.Command, workspace string, logLevel terraform.LogL
 		creator:     cloudcmd.NewIAMCreator(spinner),
 		fileHandler: file.NewHandler(afero.NewOsFs()),
 		iamConfig: &cloudcmd.IAMConfigOptions{
-			TFWorkspace: terraformIAMWorkspace(workspace),
+			TFWorkspace: constants.TerraformIAMWorkingDir,
 			TFLogLevel:  logLevel,
 		},
 	}, nil
@@ -236,7 +237,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	var conf config.Config
 	if flags.updateConfig {
 		c.log.Debugf("Parsing config %s", configPath(flags.workspace))
-		if err = c.fileHandler.ReadYAML(configPath(flags.workspace), &conf); err != nil {
+		if err = c.fileHandler.ReadYAML(constants.ConfigFilename, &conf); err != nil {
 			return fmt.Errorf("error reading the configuration file: %w", err)
 		}
 		if err := validateConfigWithFlagCompatibility(c.provider, conf, flags); err != nil {
@@ -262,7 +263,7 @@ func (c *iamCreator) create(ctx context.Context) error {
 	if flags.updateConfig {
 		c.log.Debugf("Writing IAM configuration to %s", configPath(flags.workspace))
 		c.providerCreator.writeOutputValuesToConfig(&conf, flags, iamFile)
-		if err := c.fileHandler.WriteYAML(configPath(flags.workspace), conf, file.OptOverwrite); err != nil {
+		if err := c.fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 			return err
 		}
 		c.cmd.Printf("Your IAM configuration was created and filled into %s successfully.\n", configPath(flags.workspace))
@@ -306,7 +307,7 @@ func (c *iamCreator) parseFlagsAndSetupConfig() (iamFlags, error) {
 
 // checkWorkingDir checks if the current working directory already contains a Terraform dir.
 func (c *iamCreator) checkWorkingDir(workspace string) error {
-	if _, err := c.fileHandler.Stat(terraformIAMWorkspace(workspace)); err == nil {
+	if _, err := c.fileHandler.Stat(constants.TerraformIAMWorkingDir); err == nil {
 		return fmt.Errorf("the current working directory already contains the Terraform workspace directory %q. Please run the command in a different directory or destroy the existing workspace", terraformIAMWorkspace(workspace))
 	}
 	return nil
@@ -573,7 +574,7 @@ func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file
 		return err
 	}
 
-	return fileHandler.WriteJSON(gcpServiceAccountKeyPath(c.workspace), tmpOut, file.OptNone)
+	return fileHandler.WriteJSON(gcpServiceAccountKeyFile, tmpOut, file.OptNone)
 }
 
 // parseIDFile parses the given base64 encoded JSON string of the GCP service account key and returns a map.

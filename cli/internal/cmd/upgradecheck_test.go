@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
@@ -214,7 +215,6 @@ func TestUpgradeCheck(t *testing.T) {
 
 	testCases := map[string]struct {
 		collector    stubVersionCollector
-		flags        upgradeCheckFlags
 		csp          cloudprovider.Provider
 		checker      stubUpgradeChecker
 		imagefetcher stubImageFetcher
@@ -225,11 +225,8 @@ func TestUpgradeCheck(t *testing.T) {
 			collector:    collector,
 			checker:      stubUpgradeChecker{},
 			imagefetcher: stubImageFetcher{},
-			flags: upgradeCheckFlags{
-				workspace: "",
-			},
-			csp:        cloudprovider.GCP,
-			cliVersion: "v1.0.0",
+			csp:          cloudprovider.GCP,
+			cliVersion:   "v1.0.0",
 		},
 		"terraform err": {
 			collector: collector,
@@ -237,12 +234,9 @@ func TestUpgradeCheck(t *testing.T) {
 				err: assert.AnError,
 			},
 			imagefetcher: stubImageFetcher{},
-			flags: upgradeCheckFlags{
-				workspace: "",
-			},
-			csp:        cloudprovider.GCP,
-			cliVersion: "v1.0.0",
-			wantError:  true,
+			csp:          cloudprovider.GCP,
+			cliVersion:   "v1.0.0",
+			wantError:    true,
 		},
 	}
 
@@ -252,7 +246,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
-			require.NoError(fileHandler.WriteYAML(configPath(tc.flags.workspace), cfg))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 
 			checkCmd := upgradeCheckCmd{
 				canUpgradeCheck: true,
@@ -264,7 +258,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, tc.flags)
+			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -294,7 +288,7 @@ func (s *stubVersionCollector) newMeasurements(_ context.Context, _ cloudprovide
 	return s.supportedImageVersions, nil
 }
 
-func (s *stubVersionCollector) currentVersions(_ context.Context, _ string) (currentVersionInfo, error) {
+func (s *stubVersionCollector) currentVersions(_ context.Context) (currentVersionInfo, error) {
 	return currentVersionInfo{
 		service: s.currentServicesVersions,
 		image:   s.currentImageVersion,

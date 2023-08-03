@@ -58,7 +58,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	kubeConfig, err := fileHandler.Read(adminConfPath(flags.workspace))
+	kubeConfig, err := fileHandler.Read(constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("reading admin.conf: %w", err)
 	}
@@ -80,8 +80,8 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 	// need helm client to fetch service versions.
 	// The client used here, doesn't need to know the current workspace.
-	// It should be refactored in the future to be more generic since we just need it for fetching versions.
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), flags.workspace, adminConfPath(flags.workspace), constants.HelmNamespace, log)
+	// It may be refactored in the future for easier usage.
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, log)
 	if err != nil {
 		return fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -92,7 +92,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	stableClient := kubernetes.NewStableClient(kubeClient)
 
 	fetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -218,7 +218,7 @@ type statusFlags struct {
 }
 
 func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
 	}
@@ -227,7 +227,7 @@ func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
 		return statusFlags{}, fmt.Errorf("getting config flag: %w", err)
 	}
 	return statusFlags{
-		workspace: cwd,
+		workspace: workspace,
 		force:     force,
 	}, nil
 }

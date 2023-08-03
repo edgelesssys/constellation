@@ -86,7 +86,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	c.log.Debugf("Using flags: %+v", flags)
 
 	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
-	conf, err := config.New(fileHandler, configPath(flags.workspace), configFetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -138,11 +138,11 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 }
 
 func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Flag 'workspace' set to %q", cwd)
+	c.log.Debugf("Flag 'workspace' set to %q", workspace)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
@@ -170,7 +170,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	c.log.Debugf("Flag 'raw' set to %t", force)
 
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(clusterIDsPath(cwd), &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
 		return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
@@ -178,13 +178,13 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", clusterIDsPath(cwd))
+		c.log.Debugf("Trying to supplement empty flag values from %q", clusterIDsPath(workspace))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", clusterIDsPath(cwd))
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", clusterIDsPath(workspace))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", clusterIDsPath(cwd))
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", clusterIDsPath(workspace))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}
@@ -201,7 +201,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 
 	return verifyFlags{
 		endpoint:  endpoint,
-		workspace: cwd,
+		workspace: workspace,
 		ownerID:   ownerID,
 		clusterID: clusterID,
 		maaURL:    idFile.AttestationURL,

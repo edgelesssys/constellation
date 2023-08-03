@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
@@ -19,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore/keyselect"
@@ -47,8 +49,8 @@ type fetchMeasurementsFlags struct {
 	measurementsURL *url.URL
 	signatureURL    *url.URL
 	insecure        bool
-	workspace       string
 	force           bool
+	workspace       string
 }
 
 type configFetchMeasurementsCmd struct {
@@ -88,9 +90,9 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 		return errors.New("fetching measurements is not supported")
 	}
 
-	cfm.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	cfm.log.Debugf("Loading configuration file from %q", filepath.Join(flags.workspace, constants.ConfigFilename))
 
-	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -168,7 +170,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 
 	cfm.log.Debugf("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
-	if err := fileHandler.WriteYAML(configPath(flags.workspace), conf, file.OptOverwrite); err != nil {
+	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
 	cfm.log.Debugf("Configuration written to %s", configPath(flags.workspace))
@@ -192,6 +194,10 @@ func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag str
 }
 
 func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, error) {
+	workspace, err := cmd.Flags().GetString("workspace")
+	if err != nil {
+		return nil, fmt.Errorf("parsing workspace argument: %w", err)
+	}
 	measurementsURL, err := cfm.parseURLFlag(cmd, "url")
 	if err != nil {
 		return nil, err
@@ -210,12 +216,6 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 	}
 	cfm.log.Debugf("Insecure flag is %v", insecure)
 
-	cwd, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return nil, fmt.Errorf("parsing config path argument: %w", err)
-	}
-	cfm.log.Debugf("Workspace set to %q", cwd)
-
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return nil, fmt.Errorf("parsing force argument: %w", err)
@@ -225,8 +225,8 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 		measurementsURL: measurementsURL,
 		signatureURL:    measurementsSignatureURL,
 		insecure:        insecure,
-		workspace:       cwd,
 		force:           force,
+		workspace:       workspace,
 	}, nil
 }
 

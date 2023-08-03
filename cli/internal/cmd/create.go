@@ -76,7 +76,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 
 	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
-	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -163,7 +163,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		Provider:    provider,
 		Config:      conf,
 		TFLogLevel:  flags.tfLogLevel,
-		TFWorkspace: terraformClusterWorkspace(flags.workspace),
+		TFWorkspace: constants.TerraformWorkingDir,
 	}
 	idFile, err := creator.Create(cmd.Context(), opts)
 	spinner.Stop()
@@ -172,7 +172,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
-	if err := fileHandler.WriteJSON(clusterIDsPath(flags.workspace), idFile, file.OptNone); err != nil {
+	if err := fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone); err != nil {
 		return err
 	}
 
@@ -188,11 +188,11 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Workspace set to %q", cwd)
+	c.log.Debugf("Workspace set to %q", workspace)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -208,10 +208,10 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	c.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(cwd), logLevel.String())
+	c.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
 
 	return createFlags{
-		workspace:  cwd,
+		workspace:  workspace,
 		tfLogLevel: logLevel,
 		force:      force,
 		yes:        yes,
@@ -229,15 +229,15 @@ type createFlags struct {
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
 func (c *createCmd) checkDirClean(workspace string, fileHandler file.Handler) error {
 	c.log.Debugf("Checking admin configuration file")
-	if _, err := fileHandler.Stat(adminConfPath(workspace)); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", adminConfPath(workspace))
 	}
 	c.log.Debugf("Checking master secrets file")
-	if _, err := fileHandler.Stat(masterSecretPath(workspace)); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", masterSecretPath(workspace))
 	}
 	c.log.Debugf("Checking cluster IDs file")
-	if _, err := fileHandler.Stat(clusterIDsPath(workspace)); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := fileHandler.Stat(constants.ClusterIDsFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", clusterIDsPath(workspace))
 	}
 

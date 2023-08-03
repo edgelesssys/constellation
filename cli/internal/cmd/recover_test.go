@@ -67,12 +67,12 @@ func TestRecover(t *testing.T) {
 	lbErr := grpcstatus.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp`)
 
 	testCases := map[string]struct {
-		doer            *stubDoer
-		masterSecret    testvector.HKDF
-		endpoint        string
-		workspaceFlag   string
-		successfulCalls int
-		wantErr         bool
+		doer               *stubDoer
+		masterSecret       testvector.HKDF
+		endpoint           string
+		successfulCalls    int
+		skipConfigCreation bool
+		wantErr            bool
 	}{
 		"works": {
 			doer:            &stubDoer{returns: []error{nil}},
@@ -81,11 +81,11 @@ func TestRecover(t *testing.T) {
 			successfulCalls: 1,
 		},
 		"missing config": {
-			doer:          &stubDoer{returns: []error{nil}},
-			endpoint:      "192.0.2.89",
-			masterSecret:  testvector.HKDFZero,
-			workspaceFlag: "/does/not/exist/",
-			wantErr:       true,
+			doer:               &stubDoer{returns: []error{nil}},
+			endpoint:           "192.0.2.89",
+			masterSecret:       testvector.HKDFZero,
+			skipConfigCreation: true,
+			wantErr:            true,
 		},
 		"success multiple nodes": {
 			doer:            &stubDoer{returns: []error{nil, nil}},
@@ -146,15 +146,13 @@ func TestRecover(t *testing.T) {
 			cmd.SetErr(out)
 			require.NoError(cmd.Flags().Set("endpoint", tc.endpoint))
 
-			if tc.workspaceFlag != "" {
-				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
-			}
-
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
-			require.NoError(fileHandler.WriteYAML(configPath(""), config))
+			if !tc.skipConfigCreation {
+				config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+			}
 
 			require.NoError(fileHandler.WriteJSON(
 				"constellation-mastersecret.json",
@@ -228,7 +226,7 @@ func TestParseRecoverFlags(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			if tc.writeIDFile {
-				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), &clusterid.File{IP: "192.0.2.42"}))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, &clusterid.File{IP: "192.0.2.42"}))
 			}
 			r := &recoverCmd{log: logger.NewTest(t)}
 			flags, err := r.parseRecoverFlags(cmd, fileHandler)

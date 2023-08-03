@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -76,7 +77,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
 
 	var readConfig config.Config
-	err := fileHandler.ReadYAML(configPath(""), &readConfig)
+	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
 	assert.Equal(*config.Default(), readConfig)
 }
@@ -105,7 +106,7 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 			require.NoError(cg.configGenerate(cmd, fileHandler, provider, ""))
 
 			var readConfig config.Config
-			err := fileHandler.ReadYAML(configPath(""), &readConfig)
+			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 			assert.NoError(err)
 			assert.Equal(*wantConf, readConfig)
 		})
@@ -131,7 +132,7 @@ func TestConfigGenerateWithStackIt(t *testing.T) {
 			require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.OpenStack, openStackProvider))
 
 			var readConfig config.Config
-			err := fileHandler.ReadYAML(configPath(""), &readConfig)
+			err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 			assert.NoError(err)
 			assert.Equal(*wantConf, readConfig)
 		})
@@ -142,7 +143,7 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	require := require.New(t)
 
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fileHandler.Write(configPath(""), []byte("foobar"), file.OptNone))
+	require.NoError(fileHandler.Write(constants.ConfigFilename, []byte("foobar"), file.OptNone))
 	cmd := newConfigGenerateCmd()
 	cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
@@ -277,7 +278,7 @@ func TestAttestationArgument(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				var readConfig config.Config
-				require.NoError(fileHandler.ReadYAML(configPath(""), &readConfig))
+				require.NoError(fileHandler.ReadYAML(constants.ConfigFilename, &readConfig))
 
 				assert.Equal(test.expectedCfg, readConfig.Attestation)
 			}

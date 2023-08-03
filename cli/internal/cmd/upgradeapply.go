@@ -62,13 +62,9 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return err
-	}
 	upgrader, err := kubernetes.NewUpgrader(
 		cmd.Context(), cmd.OutOrStdout(),
-		upgradeWorkspace(workspace), adminConfPath(workspace),
+		constants.UpgradeDir, constants.AdminConfFilename,
 		fileHandler, log, kubernetes.UpgradeCmdKindApply,
 	)
 	if err != nil {
@@ -95,7 +91,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
-	conf, err := config.New(fileHandler, configPath(flags.workspace), u.configFetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -122,7 +118,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(clusterIDsPath(flags.workspace), &idFile); err != nil {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
@@ -137,7 +133,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 	// reload idFile after terraform migration
 	// it might have been updated by the migration
-	if err := fileHandler.ReadJSON(clusterIDsPath(flags.workspace), &idFile); err != nil {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading updated cluster ID file: %w", err)
 	}
 
@@ -191,7 +187,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 ) error {
 	u.log.Debugf("Planning Terraform migrations")
 
-	if err := u.upgrader.CheckTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil {
+	if err := u.upgrader.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -221,8 +217,8 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		LogLevel:         flags.terraformLogLevel,
 		CSP:              conf.GetProvider(),
 		Vars:             vars,
-		TFWorkspace:      terraformClusterWorkspace(flags.workspace),
-		UpgradeWorkspace: upgradeWorkspace(flags.workspace),
+		TFWorkspace:      constants.TerraformWorkingDir,
+		UpgradeWorkspace: constants.UpgradeDir,
 	}
 
 	// Check if there are any Terraform migrations to apply
@@ -241,7 +237,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 			}
 			if !ok {
 				cmd.Println("Aborting upgrade.")
-				if err := u.upgrader.CleanUpTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil {
+				if err := u.upgrader.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
 					return fmt.Errorf("cleaning up workspace: %w", err)
 				}
 				return fmt.Errorf("aborted by user")
@@ -253,7 +249,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		if err != nil {
 			return fmt.Errorf("applying terraform migrations: %w", err)
 		}
-		if err := mergeClusterIDFile(clusterIDsPath(flags.workspace), newIDFile, fileHandler); err != nil {
+		if err := mergeClusterIDFile(constants.ClusterIDsFilename, newIDFile, fileHandler); err != nil {
 			return fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
@@ -345,7 +341,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upgradeApplyFlags{}, err
 	}
@@ -375,7 +371,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	}
 
 	return upgradeApplyFlags{
-		workspace:         cwd,
+		workspace:         workspace,
 		yes:               yes,
 		upgradeTimeout:    timeout,
 		force:             force,

@@ -36,6 +36,7 @@ go_library(
         "validargs.go",
         "verify.go",
         "version.go",
+        "workspace.go",
     ],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cmd",
     visibility = ["//cli:__subpackages__"],

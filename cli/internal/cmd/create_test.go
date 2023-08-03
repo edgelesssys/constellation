@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	consemver "github.com/edgelesssys/constellation/v2/internal/semver"
@@ -27,7 +28,7 @@ func TestCreate(t *testing.T) {
 	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
 	idFile := clusterid.File{IP: "192.0.2.1"}
@@ -40,7 +41,6 @@ func TestCreate(t *testing.T) {
 		yesFlag             bool
 		controllerCountFlag *int
 		workerCountFlag     *int
-		workspaceFlag       string
 		stdin               string
 		wantErr             bool
 		wantAbort           bool
@@ -113,8 +113,8 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(adminConfPath(""), []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -128,8 +128,8 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(masterSecretPath(""), []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -140,13 +140,12 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"config does not exist": {
-			setupFs:             fsWithDefaultConfig,
+			setupFs:             func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			yesFlag:             true,
-			workspaceFlag:       "/does/not/exist",
 			wantErr:             true,
 		},
 		"create error": {
@@ -162,7 +161,7 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteYAML(configPath(""), defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
 			creator:             &stubCloudCreator{},
@@ -190,9 +189,6 @@ func TestCreate(t *testing.T) {
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
-			if tc.workspaceFlag != "" {
-				require.NoError(cmd.Flags().Set("workspace", tc.workspaceFlag))
-			}
 			if tc.controllerCountFlag != nil {
 				require.NoError(cmd.Flags().Set("control-plane-nodes", strconv.Itoa(*tc.controllerCountFlag)))
 			}
@@ -213,7 +209,7 @@ func TestCreate(t *testing.T) {
 				} else {
 					assert.True(tc.creator.createCalled)
 					var gotIDFile clusterid.File
-					require.NoError(fileHandler.ReadJSON(clusterIDsPath(""), &gotIDFile))
+					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFilename, &gotIDFile))
 					assert.Equal(gotIDFile, clusterid.File{
 						IP:            idFile.IP,
 						CloudProvider: tc.provider,
@@ -235,17 +231,17 @@ func TestCheckDirClean(t *testing.T) {
 		},
 		"adminconf exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{adminConfPath("")},
+			existingFiles: []string{constants.AdminConfFilename},
 			wantErr:       true,
 		},
 		"master secret exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{masterSecretPath("")},
+			existingFiles: []string{constants.MasterSecretFilename},
 			wantErr:       true,
 		},
 		"multiple exist": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{adminConfPath(""), masterSecretPath("")},
+			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename},
 			wantErr:       true,
 		},
 	}

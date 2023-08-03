@@ -54,7 +54,7 @@ type UpgradeClient struct {
 	log              debugLog
 }
 
-// NewUpgradeClient returns a new initializes client for the namespace Client.
+// NewUpgradeClient returns a newly initialized UpgradeClient for the given namespace.
 func NewUpgradeClient(client crdClient, upgradeWorkspace, kubeConfigPath, helmNamespace string, log debugLog) (*UpgradeClient, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath

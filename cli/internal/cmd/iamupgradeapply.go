@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
@@ -55,18 +56,13 @@ func newIAMUpgradeApplyCmd() *cobra.Command {
 }
 
 func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return err
-	}
-
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return fmt.Errorf("parsing force argument: %w", err)
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	configFetcher := attestationconfigapi.NewFetcher()
-	conf, err := config.New(fileHandler, configPath(workspace), configFetcher, force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -75,7 +71,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	upgradeID := "iam-" + time.Now().Format("20060102150405") + "-" + strings.Split(uuid.New().String(), "-")[0]
-	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), terraformIAMWorkspace(workspace), upgradeWorkspace(workspace), upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
+	iamMigrateCmd, err := upgrade.NewIAMMigrateCmd(cmd.Context(), constants.TerraformIAMWorkingDir, constants.UpgradeDir, upgradeID, conf.GetProvider(), terraform.LogLevelDebug)
 	if err != nil {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
@@ -90,7 +86,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	err = migrator.applyMigration(cmd, upgradeWorkspace(workspace), file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes)
+	err = migrator.applyMigration(cmd, constants.UpgradeDir, file.NewHandler(afero.NewOsFs()), iamMigrateCmd, yes)
 	if err != nil {
 		return fmt.Errorf("applying IAM migration: %w", err)
 	}

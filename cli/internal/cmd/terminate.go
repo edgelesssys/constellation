@@ -16,6 +16,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
@@ -68,7 +69,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	spinner.Start("Terminating", false)
-	err = terminator.Terminate(cmd.Context(), terraformClusterWorkspace(flags.workspace), flags.logLevel)
+	err = terminator.Terminate(cmd.Context(), constants.TerraformWorkingDir, flags.logLevel)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -77,11 +78,11 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	cmd.Println("Your Constellation cluster was terminated successfully.")
 
 	var removeErr error
-	if err := fileHandler.Remove(adminConfPath(flags.workspace)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", adminConfPath(flags.workspace)))
 	}
 
-	if err := fileHandler.Remove(clusterIDsPath(flags.workspace)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := fileHandler.Remove(constants.ClusterIDsFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", clusterIDsPath(flags.workspace)))
 	}
 
@@ -107,14 +108,14 @@ func parseTerminateFlags(cmd *cobra.Command) (terminateFlags, error) {
 	if err != nil {
 		return terminateFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return terminateFlags{}, fmt.Errorf("parsing workspace string: %w", err)
 	}
 
 	return terminateFlags{
 		yes:       yes,
-		workspace: cwd,
+		workspace: workspace,
 		logLevel:  logLevel,
 	}, nil
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -139,8 +140,8 @@ func TestUpgradeApply(t *testing.T) {
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
-			require.NoError(handler.WriteYAML(configPath(""), cfg))
-			require.NoError(handler.WriteJSON(clusterIDsPath(""), clusterid.File{}))
+			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
+			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 

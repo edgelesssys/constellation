@@ -28,7 +28,6 @@ go_library(
         "//internal/cloud/cloudprovider",
         "//internal/cloud/gcpshared",
         "//internal/config",
-        "//internal/constants",
         "//internal/imagefetcher",
         "//internal/role",
         "@com_github_azure_azure_sdk_for_go//profiles/latest/attestation/attestation",

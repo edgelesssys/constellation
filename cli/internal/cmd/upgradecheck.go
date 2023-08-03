@@ -74,7 +74,7 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	checker, err := kubernetes.NewUpgrader(
 		cmd.Context(), cmd.OutOrStdout(),
-		upgradeWorkspace(flags.workspace), adminConfPath(flags.workspace),
+		constants.UpgradeDir, constants.AdminConfFilename,
 		fileHandler, log, kubernetes.UpgradeCmdKindCheck,
 	)
 	if err != nil {
@@ -109,10 +109,6 @@ func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
 }
 
 func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
-	cwd, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return upgradeCheckFlags{}, fmt.Errorf("parsing config string: %w", err)
-	}
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return upgradeCheckFlags{}, fmt.Errorf("parsing force bool: %w", err)
@@ -140,7 +136,6 @@ func parseUpgradeCheckFlags(cmd *cobra.Command) (upgradeCheckFlags, error) {
 	}
 
 	return upgradeCheckFlags{
-		workspace:         cwd,
 		force:             force,
 		updateConfig:      updateConfig,
 		ref:               ref,
@@ -159,7 +154,7 @@ type upgradeCheckCmd struct {
 
 // upgradePlan plans an upgrade of a Constellation cluster.
 func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Handler, fetcher attestationconfigapi.Fetcher, flags upgradeCheckFlags) error {
-	conf, err := config.New(fileHandler, configPath(flags.workspace), fetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -167,7 +162,6 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	if err != nil {
 		return err
 	}
-	u.log.Debugf("Read configuration from %q", configPath(flags.workspace))
 
 	if !u.canUpgradeCheck {
 		cmd.PrintErrln("Planning Constellation upgrades automatically is not supported in the OSS build of the Constellation CLI. Consult the documentation for instructions on where to download the enterprise version.")
@@ -179,7 +173,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	attestationVariant := conf.GetAttestationConfig().GetVariant()
 	u.log.Debugf("Using provider %s with attestation variant %s", csp.String(), attestationVariant.String())
 
-	current, err := u.collect.currentVersions(cmd.Context(), flags.workspace)
+	current, err := u.collect.currentVersions(cmd.Context())
 	if err != nil {
 		return err
 	}
@@ -212,7 +206,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	u.log.Debugf("Planning Terraform migrations")
-	if err := u.checker.CheckTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil { // Why is this run twice?????
+	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil { // Why is this run twice?????
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -227,7 +221,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		u.checker.AddManualStateMigration(migration)
 	}
 
-	if err := u.checker.CheckTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil { // Why is this run twice?????
+	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil { // Why is this run twice?????
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -246,8 +240,8 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		LogLevel:         flags.terraformLogLevel,
 		CSP:              conf.GetProvider(),
 		Vars:             vars,
-		TFWorkspace:      terraformClusterWorkspace(flags.workspace),
-		UpgradeWorkspace: upgradeWorkspace(flags.workspace),
+		TFWorkspace:      constants.TerraformWorkingDir,
+		UpgradeWorkspace: constants.UpgradeDir,
 	}
 
 	cmd.Println("The following Terraform migrations are available with this CLI:")
@@ -258,7 +252,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("planning terraform migrations: %w", err)
 	}
 	defer func() {
-		if err := u.checker.CleanUpTerraformMigrations(upgradeWorkspace(flags.workspace)); err != nil {
+		if err := u.checker.CleanUpTerraformMigrations(constants.UpgradeDir); err != nil {
 			u.log.Debugf("Failed to clean up Terraform migrations: %v", err)
 		}
 	}()
@@ -287,7 +281,7 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	cmd.Print(updateMsg)
 
 	if flags.updateConfig {
-		if err := upgrade.writeConfig(conf, fileHandler, configPath(flags.workspace)); err != nil {
+		if err := upgrade.writeConfig(conf, fileHandler, constants.ConfigFilename); err != nil {
 			return fmt.Errorf("writing config: %w", err)
 		}
 		cmd.Println("Config updated successfully.")
@@ -332,7 +326,7 @@ func filterK8sUpgrades(currentVersion string, newVersions []string) []string {
 }
 
 type collector interface {
-	currentVersions(ctx context.Context, workspace string) (currentVersionInfo, error)
+	currentVersions(ctx context.Context) (currentVersionInfo, error)
 	supportedVersions(ctx context.Context, version, currentK8sVersion string) (supportedVersionInfo, error)
 	newImages(ctx context.Context, version string) ([]versionsapi.Version, error)
 	newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, images []versionsapi.Version) (map[string]measurements.M, error)
@@ -391,8 +385,8 @@ type currentVersionInfo struct {
 	cli     consemver.Semver
 }
 
-func (v *versionCollector) currentVersions(ctx context.Context, workspace string) (currentVersionInfo, error) {
-	helmClient, err := helm.NewUpgradeClient(kubectl.New(), upgradeWorkspace(workspace), adminConfPath(workspace), constants.HelmNamespace, v.log)
+func (v *versionCollector) currentVersions(ctx context.Context) (currentVersionInfo, error) {
+	helmClient, err := helm.NewUpgradeClient(kubectl.New(), constants.UpgradeDir, constants.AdminConfFilename, constants.HelmNamespace, v.log)
 	if err != nil {
 		return currentVersionInfo{}, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -758,7 +752,6 @@ func (v *versionCollector) filterCompatibleCLIVersions(ctx context.Context, cliP
 }
 
 type upgradeCheckFlags struct {
-	workspace         string
 	force             bool
 	updateConfig      bool
 	ref               string

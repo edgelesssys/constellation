@@ -110,9 +110,7 @@ func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinner
 
 // prepareConfig reads a given config, or creates a new minimal QEMU config.
 func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
-	m.log.Debugf("Configuration file path is %q", configPath(flags.workspace))
-
-	_, err := fileHandler.Stat(configPath(flags.workspace))
+	_, err := fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user if they want to use this file
 		cmd.PrintErrln("A config file already exists in the configured workspace.")
@@ -144,11 +142,11 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	}
 	m.log.Debugf("Prepared configuration")
 
-	return config, fileHandler.WriteYAML(configPath(flags.workspace), config, file.OptOverwrite)
+	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
 }
 
 func (m *miniUpCmd) prepareExistingConfig(cmd *cobra.Command, fileHandler file.Handler, flags upFlags) (*config.Config, error) {
-	conf, err := config.New(fileHandler, configPath(flags.workspace), m.configFetcher, flags.force)
+	conf, err := config.New(fileHandler, constants.ConfigFilename, m.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -168,7 +166,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 	opts := cloudcmd.CreateOptions{
 		Provider:    cloudprovider.QEMU,
 		Config:      config,
-		TFWorkspace: terraformClusterWorkspace(flags.workspace),
+		TFWorkspace: constants.TerraformWorkingDir,
 		TFLogLevel:  flags.tfLogLevel,
 	}
 	idFile, err := creator.Create(ctx, opts)
@@ -178,7 +176,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 
 	idFile.UID = constants.MiniConstellationUID // use UID "mini" to identify MiniConstellation clusters.
 	m.log.Debugf("Cluster id file contains %v", idFile)
-	return fileHandler.WriteJSON(clusterIDsPath(flags.workspace), idFile, file.OptNone)
+	return fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
@@ -225,14 +223,13 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 }
 
 type upFlags struct {
-	workspace  string
 	force      bool
 	tfLogLevel terraform.LogLevel
 }
 
 func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	m.log.Debugf("Preparing configuration")
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
@@ -251,10 +248,9 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(cwd), logLevel.String())
+	m.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
 
 	return upFlags{
-		workspace:  cwd,
 		force:      force,
 		tfLogLevel: logLevel,
 	}, nil

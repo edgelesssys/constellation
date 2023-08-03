@@ -121,16 +121,11 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	workspace, err := cmd.Flags().GetString("workspace")
-	if err != nil {
-		return fmt.Errorf("parsing workspace flag: %w", err)
-	}
-	tfClient, err := terraform.New(ctx, terraformClusterWorkspace(workspace))
+	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
-
-	helmInstaller, err := helm.NewInitializer(log, adminConfPath(workspace))
+	helmInstaller, err := helm.NewInitializer(log, constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
@@ -149,7 +144,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	i.log.Debugf("Using flags: %+v", flags)
 	i.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
-	conf, err := config.New(i.fileHandler, configPath(flags.workspace), configFetcher, flags.force)
+	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -168,7 +163,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
-	if err := i.fileHandler.ReadJSON(clusterIDsPath(flags.workspace), &idFile); err != nil {
+	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
@@ -407,13 +402,13 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := i.fileHandler.Write(adminConfPath(workspace), initResp.GetKubeconfig(), file.OptNone); err != nil {
+	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", adminConfPath(workspace))
 
 	if mergeConfig {
-		if err := i.merger.mergeConfigs(adminConfPath(workspace), i.fileHandler); err != nil {
+		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
 			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
 			mergeConfig = false // Set to false so we don't print the wrong message below.
 		} else {
@@ -424,7 +419,7 @@ func (i *initCmd) writeOutput(
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
-	if err := i.fileHandler.WriteJSON(clusterIDsPath(workspace), idFile, file.OptOverwrite); err != nil {
+	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
 	i.log.Debugf("Constellation ID file written to %s", clusterIDsPath(workspace))
@@ -466,7 +461,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 		helmWaitMode = helm.WaitModeNone
 	}
 	i.log.Debugf("Helm wait flag is %t", skipHelmWait)
-	cwd, err := cmd.Flags().GetString("workspace")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
@@ -484,7 +479,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	i.log.Debugf("force flag is %t", force)
 
 	return initFlags{
-		workspace:    cwd,
+		workspace:    workspace,
 		conformance:  conformance,
 		helmWaitMode: helmWaitMode,
 		force:        force,
@@ -518,7 +513,7 @@ func (i *initCmd) generateMasterSecret(outWriter io.Writer, workspace string) (u
 		Salt: salt,
 	}
 	i.log.Debugf("Generated master secret key and salt values")
-	if err := i.fileHandler.WriteJSON(masterSecretPath(workspace), secret, file.OptNone); err != nil {
+	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", masterSecretPath(workspace))
@@ -531,12 +526,11 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 	switch provider {
 	case cloudprovider.GCP:
 		i.log.Debugf("Handling case for GCP")
-		path := filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath)
-		i.log.Debugf("GCP service account key path %s", path)
+		i.log.Debugf("GCP service account key path %s", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath))
 
 		var key gcpshared.ServiceAccountKey
-		if err := i.fileHandler.ReadJSON(path, &key); err != nil {
-			return "", fmt.Errorf("reading service account key from path %q: %w", path, err)
+		if err := i.fileHandler.ReadJSON(config.Provider.GCP.ServiceAccountKeyPath, &key); err != nil {
+			return "", fmt.Errorf("reading service account key from path %q: %w", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath), err)
 		}
 		i.log.Debugf("Read GCP service account key from path")
 		return key.ToCloudServiceAccountURI(), nil

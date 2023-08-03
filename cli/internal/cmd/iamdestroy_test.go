@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
@@ -23,7 +24,7 @@ func TestIAMDestroy(t *testing.T) {
 
 	newFsExists := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(gcpServiceAccountKeyPath(""), []byte("{}")))
+		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("{}")))
 		return fh
 	}
 	newFsMissing := func() file.Handler {
@@ -32,12 +33,12 @@ func TestIAMDestroy(t *testing.T) {
 	}
 	newFsWithAdminConf := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(adminConfPath(""), []byte("")))
+		require.NoError(fh.Write(constants.AdminConfFilename, []byte("")))
 		return fh
 	}
 	newFsWithClusterIDFile := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(clusterIDsPath(""), []byte("")))
+		require.NoError(fh.Write(constants.ClusterIDsFilename, []byte("")))
 		return fh
 	}
 
@@ -146,12 +147,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 	newFs := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.Write(gcpServiceAccountKeyPath(""), []byte(gcpFile)))
+		require.NoError(fs.Write(gcpServiceAccountKeyFile, []byte(gcpFile)))
 		return fs
 	}
 	newFsInvalidJSON := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(gcpServiceAccountKeyPath(""), []byte("asdf")))
+		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("asdf")))
 		return fh
 	}
 

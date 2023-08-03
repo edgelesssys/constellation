@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -49,8 +50,8 @@ func TestTerminate(t *testing.T) {
 	setupFs := func(require *require.Assertions, idFile clusterid.File) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
-		require.NoError(fileHandler.Write(adminConfPath(""), []byte{1, 2}, file.OptNone))
-		require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), idFile, file.OptNone))
+		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
+		require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone))
 		return fs
 	}
 	someErr := errors.New("failed")
@@ -88,7 +89,7 @@ func TestTerminate(t *testing.T) {
 			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteJSON(clusterIDsPath(""), idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptNone))
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
@@ -106,7 +107,7 @@ func TestTerminate(t *testing.T) {
 			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(adminConfPath(""), []byte{1, 2}, file.OptNone))
+				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
@@ -155,9 +156,9 @@ func TestTerminate(t *testing.T) {
 					assert.False(tc.terminator.Called())
 				} else {
 					assert.True(tc.terminator.Called())
-					_, err = fileHandler.Stat(adminConfPath(""))
+					_, err = fileHandler.Stat(constants.AdminConfFilename)
 					assert.Error(err)
-					_, err = fileHandler.Stat(clusterIDsPath(""))
+					_, err = fileHandler.Stat(constants.ClusterIDsFilename)
 					assert.Error(err)
 				}
 			}
