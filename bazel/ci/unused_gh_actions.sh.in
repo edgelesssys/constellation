@@ -19,41 +19,41 @@ cd "${BUILD_WORKSPACE_DIRECTORY}"
 # .github/actions that are not used in any workflow or action YAML.
 # We only want directory of that exact level and ignore subdirectories.
 actionNames=$(
-    find .github/actions \
-        -maxdepth 2 \
-        -type d \
-        ! -name actions
+  find .github/actions \
+    -maxdepth 2 \
+    -type d \
+    ! -name actions
 )
 
 actionYMLs=$(
-    find .github/actions \
-        ! -name actions \
-        -type f \
-        -name '*.yml'
+  find .github/actions \
+    ! -name actions \
+    -type f \
+    -name '*.yml'
 )
 
 workflowYMLs=$(
-    find .github/workflows \
-        -type f \
-        -name '*.yml'
+  find .github/workflows \
+    -type f \
+    -name '*.yml'
 )
 
 exitcode=0
 
 for action in ${actionNames}; do
-    used=false
+  used=false
 
-    for yml in ${actionYMLs} ${workflowYMLs}; do
-        if grep -q "${action}" "${yml}"; then
-            used=true
-            break
-        fi
-    done
-
-    if ! ${used}; then
-        echo "Action ${action} is unused"
-        exitcode=1
+  for yml in ${actionYMLs} ${workflowYMLs}; do
+    if grep -q "${action}" "${yml}"; then
+      used=true
+      break
     fi
+  done
+
+  if ! ${used}; then
+    echo "Action ${action} is unused"
+    exitcode=1
+  fi
 done
 
 exit "${exitcode}"
