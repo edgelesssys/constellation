@@ -1,4 +1,4 @@
-FROM golang:1.20.6@sha256:832f2f74baa3e2b00ace688cb2fa934dffeade39f5b4c0cc8b1cff8d3fb084a0 as builder
+FROM golang:1.20.7@sha256:bc5f0b5e43282627279fe5262ae275fecb3d2eae3b33977a7fd200c7a760d6f1 as builder
 
 # Download project root dependencies
 WORKDIR /workspace
