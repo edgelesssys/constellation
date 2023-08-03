@@ -7,9 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 // Package helm provides types and functions shared across services.
 package helm
 
+import "helm.sh/helm/v3/pkg/chart"
+
 // Release bundles all information necessary to create a helm release.
 type Release struct {
-	Chart       []byte
+	Chart       *chart.Chart
 	Values      map[string]any
 	ReleaseName string
 	WaitMode    WaitMode

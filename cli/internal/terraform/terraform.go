@@ -166,6 +166,9 @@ func (c *Client) ShowCluster(ctx context.Context, provider cloudprovider.Provide
 	if err != nil {
 		return ApplyOutput{}, fmt.Errorf("terraform show: %w", err)
 	}
+	if tfState.Values == nil {
+		return ApplyOutput{}, errors.New("terraform show: no values returned")
+	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {

@@ -37,6 +37,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -78,6 +79,11 @@ type initCmd struct {
 	masterSecret  uri.MasterSecret
 	fh            *file.Handler
 	helmInstaller helm.Initializer
+	tfClient      showClusterer
+}
+
+type showClusterer interface {
+	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
 }
 
 // runInitialize runs the initialize command.
@@ -105,7 +111,11 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating Helm installer: %w", err)
 	}
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstaller}
+	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir)
+	if err != nil {
+		return fmt.Errorf("creating Terraform client: %w", err)
+	}
+	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstaller, tfClient: tfClient}
 	fetcher := attestationconfigapi.NewFetcher()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
@@ -183,17 +193,6 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
 
-	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
-	i.log.Debugf("Created new Helm loader")
-	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt)
-	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
-	}
-	i.log.Debugf("Loaded Helm deployments")
-	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
-	}
-
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	i.spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
@@ -230,7 +229,22 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return err
 	}
-	if err := i.helmInstaller.Install(cmd.Context(), provider, masterSecret, idFile, serviceAccURI, releases); err != nil {
+
+	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
+	i.log.Debugf("Created new Helm loader")
+	output, err := i.tfClient.ShowCluster(cmd.Context(), conf.GetProvider())
+	if err != nil {
+		return fmt.Errorf("getting Terraform output: %w", err)
+	}
+	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt, serviceAccURI, idFile, output)
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+	i.log.Debugf("Loaded Helm deployments")
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+	if err := i.helmInstaller.Install(cmd.Context(), releases); err != nil {
 		return fmt.Errorf("installing Helm charts: %w", err)
 	}
 	cmd.Println(bufferedOutput.String())
