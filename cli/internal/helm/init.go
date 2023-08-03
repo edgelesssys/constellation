@@ -7,12 +7,9 @@ package helm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
@@ -115,29 +112,4 @@ type cloudConfig struct {
 	VMType                      string `json:"vmType,omitempty"`
 	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension,omitempty"`
 	UserAssignedIdentityID      string `json:"userAssignedIdentityID,omitempty"`
-}
-
-// GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
-func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]byte, error) {
-	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)
-	if err != nil {
-		return nil, fmt.Errorf("getting service account key: %w", err)
-	}
-	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
-	config := cloudConfig{
-		Cloud:                       "AzurePublicCloud",
-		TenantID:                    creds.TenantID,
-		SubscriptionID:              tfOutput.SubscriptionID,
-		ResourceGroup:               tfOutput.ResourceGroup,
-		LoadBalancerSku:             "standard",
-		SecurityGroupName:           tfOutput.NetworkSecurityGroupName,
-		LoadBalancerName:            tfOutput.LoadBalancerName,
-		UseInstanceMetadata:         true,
-		VMType:                      "vmss",
-		Location:                    creds.Location,
-		UseManagedIdentityExtension: useManagedIdentityExtension,
-		UserAssignedIdentityID:      tfOutput.UserAssignedIdentity,
-	}
-
-	return json.Marshal(config)
 }

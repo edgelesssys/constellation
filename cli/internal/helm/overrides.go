@@ -14,13 +14,14 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
-// lb_port: everywhere hardcoded in TF 6443, for host use ip
 // TODO(malt3): switch over to DNS name on AWS and Azure
 // soon as every apiserver certificate of every control-plane node
 // has the dns endpoint in its SAN list.
@@ -41,7 +42,7 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 	}
 
 	extraVals["k8sServiceHost"] = output.IP
-	extraVals["k8sServicePort"] = 6443 // TODO take from tf?
+	extraVals["k8sServicePort"] = constants.KubernetesPort
 	if provider == cloudprovider.GCP {
 		extraVals["ipv4NativeRoutingCIDR"] = output.GCP.IPCidrPod
 		extraVals["strictModeCIDR"] = output.GCP.IPCidrPod
@@ -126,6 +127,31 @@ func extraConstellationServicesValues(cfg *config.Config, masterSecret, salt []b
 	}
 
 	return extraVals, nil
+}
+
+// getCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
+func getCCMConfig(tfOutput terraform.AzureApplyOutput, serviceAccURI string) ([]byte, error) {
+	creds, err := azureshared.ApplicationCredentialsFromURI(serviceAccURI)
+	if err != nil {
+		return nil, fmt.Errorf("getting service account key: %w", err)
+	}
+	useManagedIdentityExtension := creds.PreferredAuthMethod == azureshared.AuthMethodUserAssignedIdentity
+	config := cloudConfig{
+		Cloud:                       "AzurePublicCloud",
+		TenantID:                    creds.TenantID,
+		SubscriptionID:              tfOutput.SubscriptionID,
+		ResourceGroup:               tfOutput.ResourceGroup,
+		LoadBalancerSku:             "standard",
+		SecurityGroupName:           tfOutput.NetworkSecurityGroupName,
+		LoadBalancerName:            tfOutput.LoadBalancerName,
+		UseInstanceMetadata:         true,
+		VMType:                      "vmss",
+		Location:                    creds.Location,
+		UseManagedIdentityExtension: useManagedIdentityExtension,
+		UserAssignedIdentityID:      tfOutput.UserAssignedIdentity,
+	}
+
+	return json.Marshal(config)
 }
 
 // extraOperatorValues returns the values for the constellation-operator chart.
