@@ -65,7 +65,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         with:
-          go-version: "1.20.6"
+          go-version: "1.20.7"
           cache: true
 
       - name: Setup bazel
@@ -954,7 +954,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
         with:
-          go-version: "1.20.6"
+          go-version: "1.20.7"
           cache: true
 
       - name: Create CLI compatibility information artifact
