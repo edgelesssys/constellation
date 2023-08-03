@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/featureset"
+	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -203,8 +204,18 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	}
 	m.log.Debugf("Created new logger")
 	defer log.Sync()
-	i := &initCmd{log: log, merger: &kubeconfigMerger{log: log}, spinner: spinner}
-	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient(), m.configFetcher); err != nil {
+
+	helmInstaller, err := helm.NewInitializer(log)
+	if err != nil {
+		return fmt.Errorf("creating Helm installer: %w", err)
+	}
+	tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
+	if err != nil {
+		return fmt.Errorf("creating Terraform client: %w", err)
+	}
+
+	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
+	if err := i.initialize(cmd, newDialer, license.NewClient(), m.configFetcher); err != nil {
 		return err
 	}
 	m.log.Debugf("Initialized mini cluster")

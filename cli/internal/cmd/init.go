@@ -77,13 +77,26 @@ type initCmd struct {
 	merger        configMerger
 	spinner       spinnerInterf
 	masterSecret  uri.MasterSecret
-	fh            *file.Handler
+	fh            file.Handler
 	helmInstaller helm.Initializer
-	tfClient      showClusterer
+	tfClient      clusterShower
 }
 
-type showClusterer interface {
+type clusterShower interface {
 	ShowCluster(ctx context.Context, provider cloudprovider.Provider) (terraform.ApplyOutput, error)
+}
+
+func newInitCmd(
+	tfClient clusterShower, helmInstaller helm.Initializer, fh file.Handler,
+	spinner spinnerInterf, merger configMerger, log debugLog,
+) *initCmd {
+	return &initCmd{
+		log:           log,
+		merger:        merger,
+		spinner:       spinner,
+		fh:            fh,
+		helmInstaller: helmInstaller,
+	}
 }
 
 // runInitialize runs the initialize command.
@@ -115,7 +128,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating Terraform client: %w", err)
 	}
-	i := &initCmd{log: log, spinner: spinner, merger: &kubeconfigMerger{log: log}, fh: &fileHandler, helmInstaller: helmInstaller, tfClient: tfClient}
+	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
 	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
 }
