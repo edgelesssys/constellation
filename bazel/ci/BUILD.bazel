@@ -441,6 +441,13 @@ sh_template(
     template = "bazel_container.sh.in",
 )
 
+sh_template(
+    name = "unused_gh_actions",
+    data = [],
+    substitutions = {},
+    template = "unused_gh_actions.sh.in",
+)
+
 multirun(
     name = "tidy",
     commands = [
@@ -472,6 +479,7 @@ multirun(
         ":govulncheck",
         ":deps_mirror_check",
         ":proto_targets_check",
+        ":unused_gh_actions",
     ] + select({
         "@io_bazel_rules_go//go/platform:darwin_arm64": [
             ":shellcheck_noop_warning",
