@@ -77,9 +77,9 @@ type initCmd struct {
 	merger        configMerger
 	spinner       spinnerInterf
 	masterSecret  uri.MasterSecret
-	fh            file.Handler
+	fileHandler   file.Handler
 	helmInstaller helm.Initializer
-	tfClient      clusterShower
+	clusterShower clusterShower
 }
 
 type clusterShower interface {
@@ -87,15 +87,16 @@ type clusterShower interface {
 }
 
 func newInitCmd(
-	tfClient clusterShower, helmInstaller helm.Initializer, fh file.Handler,
+	clusterShower clusterShower, helmInstaller helm.Initializer, fileHandler file.Handler,
 	spinner spinnerInterf, merger configMerger, log debugLog,
 ) *initCmd {
 	return &initCmd{
 		log:           log,
 		merger:        merger,
 		spinner:       spinner,
-		fh:            fh,
+		fileHandler:   fileHandler,
 		helmInstaller: helmInstaller,
+		clusterShower: clusterShower,
 	}
 }
 
@@ -130,12 +131,12 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 	}
 	i := newInitCmd(tfClient, helmInstaller, fileHandler, spinner, &kubeconfigMerger{log: log}, log)
 	fetcher := attestationconfigapi.NewFetcher()
-	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), fetcher)
+	return i.initialize(cmd, newDialer, license.NewClient(), fetcher)
 }
 
 // initialize initializes a Constellation.
 func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.Validator) *dialer.Dialer,
-	fileHandler file.Handler, quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
+	quotaChecker license.QuotaChecker, configFetcher attestationconfigapi.Fetcher,
 ) error {
 	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
@@ -143,7 +144,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	}
 	i.log.Debugf("Using flags: %+v", flags)
 	i.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, configFetcher, flags.force)
+	conf, err := config.New(i.fileHandler, flags.configPath, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -162,7 +163,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+	if err := i.fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
@@ -179,7 +180,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 
 	provider := conf.GetProvider()
 	i.log.Debugf("Got provider %s", provider.String())
-	checker := license.NewChecker(quotaChecker, fileHandler)
+	checker := license.NewChecker(quotaChecker, i.fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), provider, conf.Provider, cmd.Printf); err != nil {
 		cmd.PrintErrf("License check failed: %v", err)
 	}
@@ -192,12 +193,12 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf, fileHandler)
+	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf)
 	if err != nil {
 		return err
 	}
 	i.log.Debugf("Successfully marshaled service account URI")
-	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
+	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), flags.masterSecretPath)
 	i.masterSecret = masterSecret
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
@@ -238,14 +239,14 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	idFile.CloudProvider = provider
 
 	bufferedOutput := &bytes.Buffer{}
-	err = i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput, fileHandler)
+	err = i.writeOutput(idFile, resp, flags.mergeConfigs, bufferedOutput)
 	if err != nil {
 		return err
 	}
 
 	helmLoader := helm.NewLoader(provider, k8sVersion, clusterName)
 	i.log.Debugf("Created new Helm loader")
-	output, err := i.tfClient.ShowCluster(cmd.Context(), conf.GetProvider())
+	output, err := i.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
@@ -387,7 +388,7 @@ func (d *initDoer) handleGRPCStateChanges(ctx context.Context, wg *sync.WaitGrou
 }
 
 func (i *initCmd) writeOutput(
-	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer, fileHandler file.Handler,
+	idFile clusterid.File, initResp *initproto.InitSuccessResponse, mergeConfig bool, wr io.Writer,
 ) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
@@ -402,13 +403,13 @@ func (i *initCmd) writeOutput(
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
+	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 	i.log.Debugf("Kubeconfig written to %s", constants.AdminConfFilename)
 
 	if mergeConfig {
-		if err := i.merger.mergeConfigs(constants.AdminConfFilename, fileHandler); err != nil {
+		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
 			writeRow(tw, "Failed to automatically merge kubeconfig", err.Error())
 			mergeConfig = false // Set to false so we don't print the wrong message below.
 		} else {
@@ -419,7 +420,7 @@ func (i *initCmd) writeOutput(
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
-	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
+	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
 	i.log.Debugf("Constellation ID file written to %s", constants.ClusterIDsFileName)
@@ -504,11 +505,11 @@ type initFlags struct {
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (uri.MasterSecret, error) {
+func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, filename string) (uri.MasterSecret, error) {
 	if filename != "" {
 		i.log.Debugf("Reading master secret from file %q", filename)
 		var secret uri.MasterSecret
-		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
+		if err := i.fileHandler.ReadJSON(filename, &secret); err != nil {
 			return uri.MasterSecret{}, err
 		}
 
@@ -536,14 +537,14 @@ func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler fi
 		Salt: salt,
 	}
 	i.log.Debugf("Generated master secret key and salt values")
-	if err := fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
+	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return secret, nil
 }
 
-func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
+func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config) (string, error) {
 	i.log.Debugf("Getting service account URI")
 	switch provider {
 	case cloudprovider.GCP:
@@ -552,7 +553,7 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 		i.log.Debugf("GCP service account key path %s", path)
 
 		var key gcpshared.ServiceAccountKey
-		if err := fileHandler.ReadJSON(path, &key); err != nil {
+		if err := i.fileHandler.ReadJSON(path, &key); err != nil {
 			return "", fmt.Errorf("reading service account key from path %q: %w", path, err)
 		}
 		i.log.Debugf("Read GCP service account key from path")
