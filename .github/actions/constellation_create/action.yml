@@ -115,13 +115,6 @@ runs:
           yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
         fi
 
-    - name: Update measurements for non-stable images
-      if: inputs.fetchMeasurements
-      shell: bash
-      run: |
-        constellation config fetch-measurements --debug --insecure
-        cat constellation-conf.yaml
-
     - name: Set image
       id: setImage
       shell: bash
@@ -137,6 +130,12 @@ runs:
 
         yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
         echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Update measurements for non-stable images
+      if: inputs.fetchMeasurements
+      shell: bash
+      run: |
+        constellation config fetch-measurements --debug --insecure
 
     - name: Set instanceType
       if: inputs.machineType && inputs.machineType != 'default'
