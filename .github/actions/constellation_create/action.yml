@@ -26,12 +26,12 @@ inputs:
   artifactNameSuffix:
     description: "Suffix for artifact naming."
     required: true
-  keepMeasurements:
-    default: "false"
-    description: "Keep measurements embedded in the CLI."
   existingConfig:
     default: "false"
     description: "Use existing config file."
+  fetchMeasurements:
+    default: "false"
+    description: "Update measurements via the 'constellation config fetch-measurements' command."
   #
   # GCP specific inputs
   #
@@ -115,53 +115,6 @@ runs:
           yq eval -i "(.kubernetesVersion) = \"${{ inputs.kubernetesVersion }}\"" constellation-conf.yaml
         fi
 
-    - name: Remove embedded measurements
-      if: inputs.keepMeasurements == 'false'
-      shell: bash
-      run: |
-        if [[ $(yq '.version' constellation-conf.yaml) == "v2" ]]
-        then
-          yq eval -i \
-            "(.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.provider | select(. | has(\"azure\")).azure.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.provider | select(. | has(\"gcp\")).gcp.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.provider | select(. | has(\"qemu\")).qemu.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-        else
-          yq eval -i \
-            "(.attestation | select(. | has(\"awsNitroTPM\")).awsNitroTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.attestation | select(. | has(\"awsSEVSNP\")).awsSEVSNP.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.attestation | select(. | has(\"azureSEVSNP\")).azureSEVSNP.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.attestation | select(. | has(\"azureTrustedLaunch\")).azureTrustedLaunch.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.attestation | select(. | has(\"gcpSEVES\")).gcpSEVES.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
-            constellation-conf.yaml
-
-          yq eval -i \
-            "(.attestation | select(. | has(\"qemuVTPM\")).qemuVTPM.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
-            constellation-conf.yaml
-        fi
-
     - name: Set image
       id: setImage
       shell: bash
@@ -177,6 +130,12 @@ runs:
 
         yq eval -i "(.image) = \"${imageInput}\"" constellation-conf.yaml
         echo "image=${imageInput}" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Update measurements for non-stable images
+      if: inputs.fetchMeasurements
+      shell: bash
+      run: |
+        constellation config fetch-measurements --debug --insecure
 
     - name: Set instanceType
       if: inputs.machineType && inputs.machineType != 'default'

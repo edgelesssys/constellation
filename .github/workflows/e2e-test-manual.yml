@@ -40,11 +40,6 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.26"
         required: true
-      keepMeasurements:
-        description: "Keep measurements embedded in the CLI."
-        type: boolean
-        default: false
-        required: false
       cliVersion:
         description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
         type: string
@@ -86,10 +81,6 @@ on:
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
         type: string
-        required: true
-      keepMeasurements:
-        description: "Keep measurements embedded in the CLI."
-        type: boolean
         required: true
       cliVersion:
         description: "Version of a released CLI to download. Leave empty to build the CLI from the checked out ref."
@@ -247,7 +238,6 @@ jobs:
           gcpInClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ inputs.test }}
           kubernetesVersion: ${{ inputs.kubernetesVersion }}
-          keepMeasurements: ${{ inputs.keepMeasurements }}
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
@@ -259,6 +249,7 @@ jobs:
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          fetchMeasurements: ${{ contains(needs.find-latest-image.outputs.image, '/stream/stable/') }}
 
       - name: Always terminate cluster
         if: always()

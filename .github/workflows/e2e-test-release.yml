@@ -189,7 +189,6 @@ jobs:
           cloudProvider: ${{ matrix.provider }}
           cliVersion: ""
           kubernetesVersion: ${{ matrix.kubernetes-version }}
-          keepMeasurements: "true"
           osImage: ""
           isDebugImage: "false"
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
@@ -205,7 +204,6 @@ jobs:
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Always terminate cluster
         if: always()
         uses: ./.github/actions/constellation_destroy

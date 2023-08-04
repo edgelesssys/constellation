@@ -29,9 +29,6 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
-  keepMeasurements:
-    default: "false"
-    description: "Keep measurements embedded in the CLI."
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
@@ -74,7 +71,10 @@ inputs:
   githubToken:
     description: "GitHub authorization token"
     required: true
-
+  fetchMeasurements:
+    default: "false"
+    description: "Update measurements via the 'constellation config fetch-measurements' command."
+    
 outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
@@ -237,9 +237,9 @@ runs:
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
-        keepMeasurements: ${{ inputs.keepMeasurements }}
         existingConfig: ${{ steps.constellation-iam-create.outputs.existingConfig }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
+        fetchMeasurements: ${{ inputs.fetchMeasurements }}
 
     #
     # Test payloads

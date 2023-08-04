@@ -164,6 +164,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 
 		cfm.log.Debugf("Verified measurements with Rekor")
 	}
+	cfm.log.Debugf("Measurements:\n", fetchedMeasurements)
 
 	cfm.log.Debugf("Updating measurements in configuration")
 	conf.UpdateMeasurements(fetchedMeasurements)
