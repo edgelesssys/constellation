@@ -87,6 +87,9 @@ func (c *Client) ShowIAM(ctx context.Context, provider cloudprovider.Provider) (
 	if err != nil {
 		return IAMOutput{}, err
 	}
+	if tfState == nil || tfState.Values == nil {
+		return IAMOutput{}, errors.New("terraform show: no values returned")
+	}
 
 	switch provider {
 	case cloudprovider.GCP:
