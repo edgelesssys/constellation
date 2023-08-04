@@ -201,7 +201,7 @@ type stubAttDocFormatter struct {
 	formatErr error
 }
 
-func (f *stubAttDocFormatter) format(_ string, _ bool, _ bool, _ measurements.M) (string, error) {
+func (f *stubAttDocFormatter) format(_ context.Context, _ string, _ bool, _ bool, _ measurements.M, _ string) (string, error) {
 	return "", f.formatErr
 }
 
@@ -226,7 +226,7 @@ func TestFormat(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := tc.formatter.format(tc.doc, false, false, nil)
+			_, err := tc.formatter.format(context.Background(), tc.doc, false, false, nil, "")
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
