@@ -4481,8 +4481,8 @@ def go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/rogpeppe/go-internal",
-        sum = "h1:3RPlVWzZ/PDqmVuf/FKHARG5EMid/tl7cv54Sw/QRVY=",
-        version = "v1.10.1-0.20230524175051-ec119421bb97",
+        sum = "h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=",
+        version = "v1.11.0",
     )
     go_repository(
         name = "com_github_rs_cors",

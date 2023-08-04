@@ -92,6 +92,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pkg/errors v0.9.1
+	github.com/rogpeppe/go-internal v1.11.0
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/siderolabs/talos/pkg/machinery v1.4.6
 	github.com/sigstore/rekor v1.2.2

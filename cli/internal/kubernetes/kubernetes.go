@@ -40,7 +40,6 @@ type StableInterface interface {
 	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 	UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
 	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
-	DeleteConfigMap(ctx context.Context, name string) error
 	KubernetesVersion() (string, error)
 }
 
@@ -70,10 +69,6 @@ func (u *stableClient) GetCurrentConfigMap(ctx context.Context, name string) (*c
 // UpdateConfigMap updates the given ConfigMap.
 func (u *stableClient) UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
-}
-
-func (u *stableClient) DeleteConfigMap(ctx context.Context, name string) error {
-	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // CreateConfigMap creates the given ConfigMap.
