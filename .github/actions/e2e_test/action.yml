@@ -296,6 +296,7 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         osImage: ${{ steps.constellation-create.outputs.osImageUsed }}
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
 
     - name: Run recover test
       if: inputs.test == 'recover'
