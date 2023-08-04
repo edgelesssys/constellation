@@ -476,6 +476,7 @@ go_test(
         "//internal/compatibility",
         "//internal/config",
         "//internal/file",
+        "//internal/kms/uri",
         "//internal/logger",
         "//internal/semver",
         "@com_github_pkg_errors//:errors",
