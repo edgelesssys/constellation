@@ -222,9 +222,17 @@ func (v *Validator) Validate(ctx context.Context, attDocRaw []byte, nonce []byte
 	for idx, pcr := range v.expected {
 		if !bytes.Equal(pcr.Expected[:], attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
 			if pcr.ValidationOpt == measurements.Enforce {
-				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
+				return nil, fmt.Errorf(
+					"untrusted PCR value %x at index %d",
+					attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx],
+					idx,
+				)
 			}
-			v.log.Warnf("Encountered untrusted PCR value at index %d", idx)
+			v.log.Warnf(
+				"Encountered untrusted PCR value %x at index %d",
+				attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx],
+				idx,
+			)
 		}
 	}
 
