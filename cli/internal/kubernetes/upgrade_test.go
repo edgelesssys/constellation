@@ -38,7 +38,7 @@ import (
 func TestUpgradeNodeVersion(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		stable                *stubStableClient
+		stable                *fakeStableClient
 		conditions            []metav1.Condition
 		currentImageVersion   string
 		newImageReference     string
@@ -61,7 +61,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -77,7 +77,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -98,7 +98,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -119,7 +119,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &stubStableClient{},
+			stable:                &fakeStableClient{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				var upgradeErr *compatibility.InvalidUpgradeError
@@ -139,7 +139,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &stubStableClient{},
+			stable:                &fakeStableClient{},
 			wantErr:               true,
 			assertCorrectError: func(t *testing.T, err error) bool {
 				return assert.ErrorIs(t, err, ErrInProgress)
@@ -158,7 +158,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}},
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable:                &stubStableClient{},
+			stable:                &fakeStableClient{},
 			force:                 true,
 			wantUpdate:            true,
 		},
@@ -184,7 +184,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -206,7 +206,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			newImageReference:     "path/to/image:v1.4.2",
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -224,7 +224,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
 			badImageVersion:       "v3.2.1",
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -245,7 +245,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -266,7 +266,7 @@ func TestUpgradeNodeVersion(t *testing.T) {
 			}(),
 			currentImageVersion:   "v1.2.2",
 			currentClusterVersion: versions.SupportedK8sVersions()[0],
-			stable: &stubStableClient{
+			stable: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`),
 				},
@@ -340,13 +340,13 @@ func TestUpgradeNodeVersion(t *testing.T) {
 func TestUpdateMeasurements(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		updater    *stubStableClient
+		updater    *fakeStableClient
 		newConfig  config.AttestationCfg
 		wantUpdate bool
 		wantErr    bool
 	}{
 		"success": {
-			updater: &stubStableClient{
+			updater: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
@@ -359,7 +359,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantUpdate: true,
 		},
 		"measurements are the same": {
-			updater: &stubStableClient{
+			updater: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
@@ -371,7 +371,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 		},
 		"setting warnOnly to true is allowed": {
-			updater: &stubStableClient{
+			updater: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
@@ -384,7 +384,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantUpdate: true,
 		},
 		"setting warnOnly to false is allowed": {
-			updater: &stubStableClient{
+			updater: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}}`),
 				},
@@ -397,7 +397,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantUpdate: true,
 		},
 		"getCurrent error": {
-			updater: &stubStableClient{getErr: someErr},
+			updater: &fakeStableClient{getErr: someErr},
 			newConfig: &config.GCPSEVES{
 				Measurements: measurements.M{
 					0: measurements.WithAllBytes(0xBB, measurements.Enforce, measurements.PCRMeasurementLength),
@@ -406,7 +406,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantErr: true,
 		},
 		"update error": {
-			updater: &stubStableClient{
+			updater: &fakeStableClient{
 				configMaps: map[string]*corev1.ConfigMap{
 					constants.JoinConfigMap: newJoinConfigMap(`{"measurements":{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}}`),
 				},
@@ -616,7 +616,7 @@ func (u *stubDynamicClient) Update(_ context.Context, updatedObject *unstructure
 	return u.updatedObject, u.updateErr
 }
 
-type stubStableClient struct {
+type fakeStableClient struct {
 	configMaps        map[string]*corev1.ConfigMap
 	updatedConfigMaps map[string]*corev1.ConfigMap
 	k8sVersion        string
@@ -626,11 +626,11 @@ type stubStableClient struct {
 	k8sErr            error
 }
 
-func (s *stubStableClient) GetCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
+func (s *fakeStableClient) GetCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
 	return s.configMaps[name], s.getErr
 }
 
-func (s *stubStableClient) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *fakeStableClient) UpdateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	if s.updatedConfigMaps == nil {
 		s.updatedConfigMaps = map[string]*corev1.ConfigMap{}
 	}
@@ -638,7 +638,7 @@ func (s *stubStableClient) UpdateConfigMap(_ context.Context, configMap *corev1.
 	return s.updatedConfigMaps[configMap.ObjectMeta.Name], s.updateErr
 }
 
-func (s *stubStableClient) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (s *fakeStableClient) CreateConfigMap(_ context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	if s.configMaps == nil {
 		s.configMaps = map[string]*corev1.ConfigMap{}
 	}
@@ -646,11 +646,7 @@ func (s *stubStableClient) CreateConfigMap(_ context.Context, configMap *corev1.
 	return s.configMaps[configMap.ObjectMeta.Name], s.createErr
 }
 
-func (s *stubStableClient) DeleteConfigMap(_ context.Context, _ string) error {
-	return nil
-}
-
-func (s *stubStableClient) KubernetesVersion() (string, error) {
+func (s *fakeStableClient) KubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
 }
 
