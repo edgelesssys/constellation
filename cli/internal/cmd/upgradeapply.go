@@ -28,8 +28,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/imagefetcher"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/rogpeppe/go-internal/diff"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -83,11 +85,15 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
+type getConfigMapper interface {
+	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+}
+
 type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
-	stableClient  kubernetes.StableInterface
+	stableClient  getConfigMapper
 	log           debugLog
 }
 
@@ -118,32 +124,6 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 			}
 		}
 	}
-	remoteAttestationCfg, err := getAttestationConfig(cmd.Context(), u.stableClient, conf.GetAttestationConfig().GetVariant())
-	if err != nil {
-		return fmt.Errorf("getting remote attestation config: %w", err)
-	}
-	attestationIsEqual, err := conf.GetAttestationConfig().EqualTo(remoteAttestationCfg)
-	if err != nil {
-		return fmt.Errorf("comparing attestation configs: %w", err)
-	}
-	if !attestationIsEqual {
-		cmd.Println("WARNING: The attestation config in the cluster is different from the local attestation config. Applying a wrong attestation config can lead to a loss of access to your cluster")
-		if !flags.yes {
-			yes, err := askToConfirm(cmd, "Do you really want to override the attestation config?")
-			if err != nil {
-				return fmt.Errorf("asking for confirmation: %w", err)
-			}
-			if !yes {
-				cmd.Println("Skipping upgrade.")
-				return nil
-			}
-		}
-		u.log.Debugf("Deleting join-config")
-		if err := u.stableClient.DeleteConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
-			return fmt.Errorf("deleting join-config: %w", err)
-		}
-	}
-
 	if err := handleInvalidK8sPatchVersion(cmd, conf.KubernetesVersion, flags.yes); err != nil {
 		return err
 	}
@@ -201,6 +181,20 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	return nil
+}
+
+func diffAttestationCfg(currentAttestationCfg config.AttestationCfg, newAttestationCfg config.AttestationCfg) (string, error) {
+	// cannot compare structs directly with go-cmp because of unexported fields in the attestation config
+	currentYml, err := yaml.Marshal(currentAttestationCfg)
+	if err != nil {
+		return "", fmt.Errorf("marshalling remote attestation config: %w", err)
+	}
+	newYml, err := yaml.Marshal(newAttestationCfg)
+	if err != nil {
+		return "", fmt.Errorf("marshalling local attestation config: %w", err)
+	}
+	diff := string(diff.Diff("current", currentYml, "new", newYml))
+	return diff, nil
 }
 
 func getImage(ctx context.Context, conf *config.Config, fetcher imageFetcher) (string, error) {
@@ -322,7 +316,7 @@ type imageFetcher interface {
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
 func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
-	clusterAttestationConfig, _, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
+	clusterAttestationConfig, err := getAttestationConfig(cmd.Context(), u.stableClient, newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
@@ -336,7 +330,14 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 	}
 
 	if !flags.yes {
-		ok, err := askToConfirm(cmd, "You are about to change your cluster's attestation config. Are you sure you want to continue?")
+		cmd.Println("The configured attestation config is different from the attestation config in the cluster.")
+		diffStr, err := diffAttestationCfg(clusterAttestationConfig, newConfig)
+		if err != nil {
+			return fmt.Errorf("diffing attestation configs: %w", err)
+		}
+		cmd.Println("The following changes will be applied to the attestation config:")
+		cmd.Println(diffStr)
+		ok, err := askToConfirm(cmd, "Are you sure you want to change your cluster's attestation config?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
