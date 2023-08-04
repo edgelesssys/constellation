@@ -646,6 +646,10 @@ func (s *stubStableClient) CreateConfigMap(_ context.Context, configMap *corev1.
 	return s.configMaps[configMap.ObjectMeta.Name], s.createErr
 }
 
+func (s *stubStableClient) DeleteConfigMap(_ context.Context, _ string) error {
+	return nil
+}
+
 func (s *stubStableClient) KubernetesVersion() (string, error) {
 	return s.k8sVersion, s.k8sErr
 }

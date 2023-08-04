@@ -74,7 +74,12 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	imagefetcher := imagefetcher.New()
 	configFetcher := attestationconfigapi.NewFetcher()
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
+	stableClient, err := kubernetes.NewStableClient()
+	if err != nil {
+		return fmt.Errorf("creating stable client: %w", err)
+	}
+
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
@@ -82,6 +87,7 @@ type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
+	stableClient  kubernetes.StableInterface
 	log           debugLog
 }
 
@@ -110,6 +116,31 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 				cmd.Println("Skipping upgrade.")
 				return nil
 			}
+		}
+	}
+	remoteAttestationCfg, err := getAttestationConfig(cmd.Context(), u.stableClient, conf.GetAttestationConfig().GetVariant())
+	if err != nil {
+		return fmt.Errorf("getting remote attestation config: %w", err)
+	}
+	attestationIsEqual, err := conf.GetAttestationConfig().EqualTo(remoteAttestationCfg)
+	if err != nil {
+		return fmt.Errorf("comparing attestation configs: %w", err)
+	}
+	if !attestationIsEqual {
+		cmd.Println("WARNING: The attestation config in the cluster is different from the local attestation config. Applying a wrong attestation config can lead to a loss of access to your cluster")
+		if !flags.yes {
+			yes, err := askToConfirm(cmd, "Do you really want to override the attestation config?")
+			if err != nil {
+				return fmt.Errorf("asking for confirmation: %w", err)
+			}
+			if !yes {
+				cmd.Println("Skipping upgrade.")
+				return nil
+			}
+		}
+		u.log.Debugf("Deleting join-config")
+		if err := u.stableClient.DeleteConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
+			return fmt.Errorf("deleting join-config: %w", err)
 		}
 	}
 
