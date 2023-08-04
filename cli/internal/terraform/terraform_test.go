@@ -207,7 +207,6 @@ func TestPrepareIAM(t *testing.T) {
 }
 
 func TestCreateCluster(t *testing.T) {
-	someErr := errors.New("failed")
 	newQEMUState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
@@ -307,7 +306,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -315,7 +314,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -323,7 +322,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -331,7 +330,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{setLogErr: someErr},
+			tf:       &stubTerraform{setLogErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -339,7 +338,7 @@ func TestCreateCluster(t *testing.T) {
 			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
-			tf:       &stubTerraform{setLogPathErr: someErr},
+			tf:       &stubTerraform{setLogPathErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -468,7 +467,6 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestCreateIAM(t *testing.T) {
-	someErr := errors.New("failed")
 	newTestState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
@@ -530,7 +528,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{setLogErr: someErr},
+			tf:       &stubTerraform{setLogErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -538,7 +536,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{setLogPathErr: someErr},
+			tf:       &stubTerraform{setLogPathErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -554,7 +552,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -562,7 +560,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -570,7 +568,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.GCP,
 			vars:     gcpVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -618,7 +616,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -626,7 +624,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -634,7 +632,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.Azure,
 			vars:     azureVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -681,7 +679,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{initErr: someErr},
+			tf:       &stubTerraform{initErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -689,7 +687,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{applyErr: someErr},
+			tf:       &stubTerraform{applyErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -697,7 +695,7 @@ func TestCreateIAM(t *testing.T) {
 			pathBase: path.Join("terraform", "iam"),
 			provider: cloudprovider.AWS,
 			vars:     awsVars,
-			tf:       &stubTerraform{showErr: someErr},
+			tf:       &stubTerraform{showErr: assert.AnError},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
@@ -757,7 +755,6 @@ func TestCreateIAM(t *testing.T) {
 }
 
 func TestDestroyInstances(t *testing.T) {
-	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		tf      *stubTerraform
 		wantErr bool
@@ -766,15 +763,15 @@ func TestDestroyInstances(t *testing.T) {
 			tf: &stubTerraform{},
 		},
 		"destroy fails": {
-			tf:      &stubTerraform{destroyErr: someErr},
+			tf:      &stubTerraform{destroyErr: assert.AnError},
 			wantErr: true,
 		},
 		"setLog fails": {
-			tf:      &stubTerraform{setLogErr: someErr},
+			tf:      &stubTerraform{setLogErr: assert.AnError},
 			wantErr: true,
 		},
 		"setLogPath fails": {
-			tf:      &stubTerraform{setLogPathErr: someErr},
+			tf:      &stubTerraform{setLogPathErr: assert.AnError},
 			wantErr: true,
 		},
 	}
