@@ -153,7 +153,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 	}
 
 	// generate values for cluster attestation
-	measurementSalt, clusterID, err := deriveMeasurementValues(stream.Context(), cloudKms)
+	clusterID, err := deriveMeasurementValues(stream.Context(), req.MeasurementSalt, cloudKms)
 	if err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "deriving measurement values: %s", err)); e != nil {
 			err = errors.Join(err, e)
@@ -198,7 +198,7 @@ func (s *Server) Init(req *initproto.InitRequest, stream initproto.API_InitServe
 
 	state := nodestate.NodeState{
 		Role:            role.ControlPlane,
-		MeasurementSalt: measurementSalt,
+		MeasurementSalt: req.MeasurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
 		if e := s.sendLogsWithMessage(stream, status.Errorf(codes.Internal, "persisting node state: %s", err)); e != nil {
@@ -317,21 +317,17 @@ func (s *Server) setupDisk(ctx context.Context, cloudKms kms.CloudKMS) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
-func deriveMeasurementValues(ctx context.Context, cloudKms kms.CloudKMS) (salt, clusterID []byte, err error) {
-	salt, err = crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
-	if err != nil {
-		return nil, nil, err
-	}
+func deriveMeasurementValues(ctx context.Context, measurementSalt []byte, cloudKms kms.CloudKMS) (clusterID []byte, err error) {
 	secret, err := cloudKms.GetDEK(ctx, crypto.DEKPrefix+crypto.MeasurementSecretKeyID, crypto.DerivedKeyLengthDefault)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	clusterID, err = attestation.DeriveClusterID(secret, salt)
+	clusterID, err = attestation.DeriveClusterID(secret, measurementSalt)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return salt, clusterID, nil
+	return clusterID, nil
 }
 
 // ClusterInitializer has the ability to initialize a cluster.

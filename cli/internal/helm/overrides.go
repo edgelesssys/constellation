@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
 // TODO(malt3): switch over to DNS name on AWS and Azure
@@ -52,7 +53,8 @@ func extraCiliumValues(provider cloudprovider.Provider, conformanceMode bool, ou
 
 // extraConstellationServicesValues extends the given values map by some values depending on user input.
 // Values set inside this function are only applied during init, not during upgrade.
-func extraConstellationServicesValues(cfg *config.Config, masterSecret, salt []byte, uid, serviceAccURI string, output terraform.ApplyOutput,
+func extraConstellationServicesValues(
+	cfg *config.Config, masterSecret uri.MasterSecret, measurementSalt []byte, uid, serviceAccURI string, output terraform.ApplyOutput,
 ) (map[string]any, error) {
 	attestationConfigJSON, err := json.Marshal(cfg.GetAttestationConfig())
 	if err != nil {
@@ -60,7 +62,7 @@ func extraConstellationServicesValues(cfg *config.Config, masterSecret, salt []b
 	}
 	extraVals := map[string]any{}
 	extraVals["join-service"] = map[string]any{
-		"measurementSalt":    base64.StdEncoding.EncodeToString(salt),
+		"measurementSalt":    base64.StdEncoding.EncodeToString(measurementSalt),
 		"attestationVariant": cfg.GetAttestationConfig().GetVariant().String(),
 		"attestationConfig":  string(attestationConfigJSON),
 	}
@@ -73,8 +75,8 @@ func extraConstellationServicesValues(cfg *config.Config, masterSecret, salt []b
 	}
 
 	extraVals["key-service"] = map[string]any{
-		"masterSecret": base64.StdEncoding.EncodeToString(masterSecret),
-		"salt":         base64.StdEncoding.EncodeToString(salt),
+		"masterSecret": base64.StdEncoding.EncodeToString(masterSecret.Key),
+		"salt":         base64.StdEncoding.EncodeToString(masterSecret.Salt),
 	}
 	switch cfg.GetProvider() {
 	case cloudprovider.OpenStack:

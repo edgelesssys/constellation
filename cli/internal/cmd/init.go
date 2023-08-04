@@ -198,10 +198,18 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Successfully marshaled service account URI")
+
+	i.log.Debugf("Generating master secret")
 	masterSecret, err := i.generateMasterSecret(cmd.OutOrStdout(), flags.workspace)
 	if err != nil {
 		return fmt.Errorf("generating master secret: %w", err)
 	}
+	i.log.Debugf("Generated measurement salt")
+	measurementSalt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	if err != nil {
+		return fmt.Errorf("generating measurement salt: %w", err)
+	}
+	i.log.Debugf("Measurement salt: %x", measurementSalt)
 
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
@@ -211,6 +219,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	req := &initproto.InitRequest{
 		KmsUri:                 masterSecret.EncodeToURI(),
 		StorageUri:             uri.NoStoreURI,
+		MeasurementSalt:        measurementSalt,
 		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      versions.VersionConfigs[k8sVersion].ClusterVersion,
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
@@ -248,7 +257,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
-	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret.Key, masterSecret.Salt, serviceAccURI, idFile, output)
+	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret, measurementSalt, serviceAccURI, idFile, output)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
