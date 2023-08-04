@@ -5,5 +5,12 @@ go_library(
     srcs = ["migration.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/config/migration",
     visibility = ["//:__subpackages__"],
-    deps = ["//internal/file"],
+    deps = [
+        "//internal/attestation/idkeydigest",
+        "//internal/attestation/measurements",
+        "//internal/config",
+        "//internal/file",
+        "//internal/role",
+        "//internal/semver",
+    ],
 )
