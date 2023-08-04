@@ -185,8 +185,8 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}, helmInstaller: &stubHelmInstaller{}, tfClient: &stubShowCluster{}}
-			err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
+			i := newInitCmd(&stubShowCluster{}, &stubHelmInstaller{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -301,11 +301,9 @@ func TestWriteOutput(t *testing.T) {
 		UID: "test-uid",
 		IP:  "cluster-ip",
 	}
-	i := &initCmd{
-		log:    logger.NewTest(t),
-		merger: &stubMerger{},
-	}
-	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out, fileHandler)
+
+	i := newInitCmd(nil, nil, fileHandler, nil, &stubMerger{}, logger.NewTest(t))
+	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -326,7 +324,7 @@ func TestWriteOutput(t *testing.T) {
 	// test config merging
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -338,7 +336,7 @@ func TestWriteOutput(t *testing.T) {
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
 	out.Reset()
 	require.NoError(afs.Remove(constants.AdminConfFilename))
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, fileHandler)
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -435,8 +433,8 @@ func TestReadOrGenerateMasterSecret(t *testing.T) {
 			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
-			i := &initCmd{log: logger.NewTest(t)}
-			secret, err := i.readOrGenerateMasterSecret(&out, fileHandler, tc.filename)
+			i := newInitCmd(nil, nil, fileHandler, nil, nil, logger.NewTest(t))
+			secret, err := i.readOrGenerateMasterSecret(&out, tc.filename)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -529,8 +527,8 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := &initCmd{log: logger.NewTest(t), spinner: &nopSpinner{}}
-	err := i.initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, stubAttestationFetcher{})
+	i := newInitCmd(nil, nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
+	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
