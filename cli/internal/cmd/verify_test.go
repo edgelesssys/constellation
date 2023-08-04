@@ -42,15 +42,15 @@ func TestVerify(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		provider         cloudprovider.Provider
-		protoClient      *stubVerifyClient
-		formatter        *stubAttDocFormatter
-		nodeEndpointFlag string
-		configFlag       string
-		clusterIDFlag    string
-		idFile           *clusterid.File
-		wantEndpoint     string
-		wantErr          bool
+		provider           cloudprovider.Provider
+		protoClient        *stubVerifyClient
+		formatter          *stubAttDocFormatter
+		nodeEndpointFlag   string
+		clusterIDFlag      string
+		idFile             *clusterid.File
+		wantEndpoint       string
+		skipConfigCreation bool
+		wantErr            bool
 	}{
 		"gcp": {
 			provider:         cloudprovider.GCP,
@@ -123,12 +123,12 @@ func TestVerify(t *testing.T) {
 			formatter:        &stubAttDocFormatter{},
 		},
 		"config file not existing": {
-			provider:         cloudprovider.GCP,
-			clusterIDFlag:    zeroBase64,
-			nodeEndpointFlag: "192.0.2.1:1234",
-			configFlag:       "./file",
-			formatter:        &stubAttDocFormatter{},
-			wantErr:          true,
+			provider:           cloudprovider.GCP,
+			clusterIDFlag:      zeroBase64,
+			nodeEndpointFlag:   "192.0.2.1:1234",
+			formatter:          &stubAttDocFormatter{},
+			skipConfigCreation: true,
+			wantErr:            true,
 		},
 		"error protoClient GetState": {
 			provider:         cloudprovider.Azure,
@@ -163,14 +163,11 @@ func TestVerify(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewVerifyCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
-			}
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))
 			}
@@ -179,10 +176,12 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
-			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
+			if !tc.skipConfigCreation {
+				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
+			}
 			if tc.idFile != nil {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, tc.idFile, file.OptNone))
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}

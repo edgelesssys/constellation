@@ -41,7 +41,6 @@ func TestCreate(t *testing.T) {
 		yesFlag             bool
 		controllerCountFlag *int
 		workerCountFlag     *int
-		configFlag          string
 		stdin               string
 		wantErr             bool
 		wantAbort           bool
@@ -141,13 +140,12 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"config does not exist": {
-			setupFs:             fsWithDefaultConfig,
+			setupFs:             func(a *require.Assertions, p cloudprovider.Provider) afero.Fs { return afero.NewMemMapFs() },
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			yesFlag:             true,
-			configFlag:          "/does/not/exist",
 			wantErr:             true,
 		},
 		"create error": {
@@ -184,15 +182,12 @@ func TestCreate(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
-			cmd.Flags().String("tf-log", "NONE", "")                   // register persistent flag manually
+			cmd.Flags().String("workspace", "", "")  // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")      // register persistent flag manually
+			cmd.Flags().String("tf-log", "NONE", "") // register persistent flag manually
 
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
-			}
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 			if tc.controllerCountFlag != nil {
 				require.NoError(cmd.Flags().Set("control-plane-nodes", strconv.Itoa(*tc.controllerCountFlag)))
@@ -214,7 +209,7 @@ func TestCreate(t *testing.T) {
 				} else {
 					assert.True(tc.creator.createCalled)
 					var gotIDFile clusterid.File
-					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFileName, &gotIDFile))
+					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFilename, &gotIDFile))
 					assert.Equal(gotIDFile, clusterid.File{
 						IP:            idFile.IP,
 						CloudProvider: tc.provider,
@@ -260,7 +255,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			c := &createCmd{log: logger.NewTest(t)}
-			err := c.checkDirClean(tc.fileHandler)
+			err := c.checkDirClean("", tc.fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

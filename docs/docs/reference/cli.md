@@ -56,10 +56,10 @@ Work with the Constellation configuration file.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation config generate
@@ -78,7 +78,6 @@ constellation config generate {aws|azure|gcp|openstack|qemu|stackit} [flags]
 
 ```
   -a, --attestation string   attestation variant to use {aws-sev-snp|aws-nitro-tpm|azure-sev-snp|azure-trustedlaunch|gcp-sev-es|qemu-vtpm}. If not specified, the default for the cloud provider is used
-  -f, --file string          path to output file, or '-' for stdout (default "constellation-conf.yaml")
   -h, --help                 help for generate
   -k, --kubernetes string    Kubernetes version to use in format MAJOR.MINOR (default "v1.26")
 ```
@@ -86,10 +85,10 @@ constellation config generate {aws|azure|gcp|openstack|qemu|stackit} [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation config fetch-measurements
@@ -117,10 +116,10 @@ constellation config fetch-measurements [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation config instance-types
@@ -144,10 +143,10 @@ constellation config instance-types [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation config kubernetes-versions
@@ -171,10 +170,10 @@ constellation config kubernetes-versions [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation config migrate
@@ -198,10 +197,10 @@ constellation config migrate [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation create
@@ -226,10 +225,10 @@ constellation create [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation init
@@ -249,20 +248,19 @@ constellation init [flags]
 ### Options
 
 ```
-      --conformance            enable conformance mode
-  -h, --help                   help for init
-      --master-secret string   path to base64-encoded master secret
-      --merge-kubeconfig       merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
-      --skip-helm-wait         install helm charts without waiting for deployments to be ready
+      --conformance        enable conformance mode
+  -h, --help               help for init
+      --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config
+      --skip-helm-wait     install helm charts without waiting for deployments to be ready
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation mini
@@ -282,10 +280,10 @@ Manage MiniConstellation clusters.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation mini up
@@ -305,7 +303,6 @@ constellation mini up [flags]
 ### Options
 
 ```
-      --config string      path to the configuration file to use for the cluster
   -h, --help               help for up
       --merge-kubeconfig   merge Constellation kubeconfig file with default kubeconfig file in $HOME/.kube/config (default true)
 ```
@@ -313,9 +310,10 @@ constellation mini up [flags]
 ### Options inherited from parent commands
 
 ```
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation mini down
@@ -340,10 +338,10 @@ constellation mini down [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation status
@@ -369,10 +367,10 @@ constellation status [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation verify
@@ -400,10 +398,10 @@ constellation verify [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation upgrade
@@ -423,10 +421,10 @@ Find and apply upgrades to your Constellation cluster.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation upgrade check
@@ -453,10 +451,10 @@ constellation upgrade check [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation upgrade apply
@@ -483,10 +481,10 @@ constellation upgrade apply [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation recover
@@ -506,18 +504,17 @@ constellation recover [flags]
 ### Options
 
 ```
-  -e, --endpoint string        endpoint of the instance, passed as HOST[:PORT]
-  -h, --help                   help for recover
-      --master-secret string   path to master secret file (default "constellation-mastersecret.json")
+  -e, --endpoint string   endpoint of the instance, passed as HOST[:PORT]
+  -h, --help              help for recover
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation terminate
@@ -544,10 +541,10 @@ constellation terminate [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation iam
@@ -567,10 +564,10 @@ Work with the IAM configuration on your cloud provider.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation iam create
@@ -592,10 +589,10 @@ Create IAM configuration on a cloud platform for your Constellation cluster.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation iam create aws
@@ -622,12 +619,12 @@ constellation iam create aws [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
-      --update-config   update the config file with the specific IAM information
-  -y, --yes             create the IAM configuration without further confirmation
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+      --update-config      update the config file with the specific IAM information
+  -C, --workspace string   path to the Constellation workspace
+  -y, --yes                create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create azure
@@ -654,12 +651,12 @@ constellation iam create azure [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
-      --update-config   update the config file with the specific IAM information
-  -y, --yes             create the IAM configuration without further confirmation
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+      --update-config      update the config file with the specific IAM information
+  -C, --workspace string   path to the Constellation workspace
+  -y, --yes                create the IAM configuration without further confirmation
 ```
 
 ## constellation iam create gcp
@@ -689,12 +686,12 @@ constellation iam create gcp [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
-      --update-config   update the config file with the specific IAM information
-  -y, --yes             create the IAM configuration without further confirmation
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+      --update-config      update the config file with the specific IAM information
+  -C, --workspace string   path to the Constellation workspace
+  -y, --yes                create the IAM configuration without further confirmation
 ```
 
 ## constellation iam destroy
@@ -719,10 +716,10 @@ constellation iam destroy [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation iam upgrade
@@ -742,10 +739,10 @@ Find and apply upgrades to your IAM profile.
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation iam upgrade apply
@@ -765,16 +762,15 @@ constellation iam upgrade apply [flags]
 ```
   -h, --help   help for apply
   -y, --yes    run upgrades without further confirmation
-               
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 
 ## constellation version
@@ -798,9 +794,9 @@ constellation version [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-      --debug           enable debug logging
-      --force           disable version compatibility checks - might result in corrupted clusters
-      --tf-log string   Terraform log level (default "NONE")
+      --debug              enable debug logging
+      --force              disable version compatibility checks - might result in corrupted clusters
+      --tf-log string      Terraform log level (default "NONE")
+  -C, --workspace string   path to the Constellation workspace
 ```
 

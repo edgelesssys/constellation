@@ -19,34 +19,29 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
-// TfMigrationCmd is an interface for all terraform upgrade / migration commands.
-type TfMigrationCmd interface {
-	CheckTerraformMigrations(file file.Handler) error
-	Plan(ctx context.Context, file file.Handler, outWriter io.Writer) (bool, error)
-	Apply(ctx context.Context, fileHandler file.Handler) error
-	String() string
-	UpgradeID() string
-}
-
 // IAMMigrateCmd is a terraform migration command for IAM. Which is used for the tfMigrationClient.
 type IAMMigrateCmd struct {
-	tf        tfIAMClient
-	upgradeID string
-	csp       cloudprovider.Provider
-	logLevel  terraform.LogLevel
+	tf               tfIAMClient
+	upgradeID        string
+	iamWorkspace     string
+	upgradeWorkspace string
+	csp              cloudprovider.Provider
+	logLevel         terraform.LogLevel
 }
 
 // NewIAMMigrateCmd creates a new IAMMigrateCmd.
-func NewIAMMigrateCmd(ctx context.Context, upgradeID string, csp cloudprovider.Provider, logLevel terraform.LogLevel) (*IAMMigrateCmd, error) {
-	tfClient, err := terraform.New(ctx, filepath.Join(constants.UpgradeDir, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
+func NewIAMMigrateCmd(ctx context.Context, iamWorkspace, upgradeWorkspace, upgradeID string, csp cloudprovider.Provider, logLevel terraform.LogLevel) (*IAMMigrateCmd, error) {
+	tfClient, err := terraform.New(ctx, filepath.Join(upgradeWorkspace, upgradeID, constants.TerraformIAMUpgradeWorkingDir))
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
 	return &IAMMigrateCmd{
-		tf:        tfClient,
-		upgradeID: upgradeID,
-		csp:       csp,
-		logLevel:  logLevel,
+		tf:               tfClient,
+		upgradeID:        upgradeID,
+		iamWorkspace:     iamWorkspace,
+		upgradeWorkspace: upgradeWorkspace,
+		csp:              csp,
+		logLevel:         logLevel,
 	}, nil
 }
 
@@ -62,7 +57,7 @@ func (c *IAMMigrateCmd) UpgradeID() string {
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.
 func (c *IAMMigrateCmd) CheckTerraformMigrations(file file.Handler) error {
-	return checkTerraformMigrations(file, c.upgradeID, constants.TerraformIAMUpgradeBackupDir)
+	return checkTerraformMigrations(file, c.upgradeWorkspace, c.upgradeID, constants.TerraformIAMUpgradeBackupDir)
 }
 
 // Plan prepares the upgrade workspace and plans the Terraform migrations for the Constellation upgrade, writing the plan to the outWriter.
@@ -70,20 +65,20 @@ func (c *IAMMigrateCmd) Plan(ctx context.Context, file file.Handler, outWriter i
 	templateDir := filepath.Join("terraform", "iam", strings.ToLower(c.csp.String()))
 	if err := terraform.PrepareIAMUpgradeWorkspace(file,
 		templateDir,
-		constants.TerraformIAMWorkingDir,
-		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),
-		filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeBackupDir),
+		c.iamWorkspace,
+		filepath.Join(c.upgradeWorkspace, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),
+		filepath.Join(c.upgradeWorkspace, c.upgradeID, constants.TerraformIAMUpgradeBackupDir),
 	); err != nil {
 		return false, fmt.Errorf("preparing terraform workspace: %w", err)
 	}
 
-	hasDiff, err := c.tf.Plan(ctx, c.logLevel, constants.TerraformUpgradePlanFile)
+	hasDiff, err := c.tf.Plan(ctx, c.logLevel)
 	if err != nil {
 		return false, fmt.Errorf("terraform plan: %w", err)
 	}
 
 	if hasDiff {
-		if err := c.tf.ShowPlan(ctx, c.logLevel, constants.TerraformUpgradePlanFile, outWriter); err != nil {
+		if err := c.tf.ShowPlan(ctx, c.logLevel, outWriter); err != nil {
 			return false, fmt.Errorf("terraform show plan: %w", err)
 		}
 	}
@@ -97,14 +92,17 @@ func (c *IAMMigrateCmd) Apply(ctx context.Context, fileHandler file.Handler) err
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	if err := fileHandler.RemoveAll(constants.TerraformIAMWorkingDir); err != nil {
+	if err := fileHandler.RemoveAll(c.iamWorkspace); err != nil {
 		return fmt.Errorf("removing old terraform directory: %w", err)
 	}
-	if err := fileHandler.CopyDir(filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir), constants.TerraformIAMWorkingDir); err != nil {
+	if err := fileHandler.CopyDir(
+		filepath.Join(c.upgradeWorkspace, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir),
+		c.iamWorkspace,
+	); err != nil {
 		return fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
 
-	if err := fileHandler.RemoveAll(filepath.Join(constants.UpgradeDir, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir)); err != nil {
+	if err := fileHandler.RemoveAll(filepath.Join(c.upgradeWorkspace, c.upgradeID, constants.TerraformIAMUpgradeWorkingDir)); err != nil {
 		return fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
 

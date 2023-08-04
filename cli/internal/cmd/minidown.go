@@ -45,7 +45,7 @@ func runDown(cmd *cobra.Command, args []string) error {
 
 func checkForMiniCluster(fileHandler file.Handler) error {
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return err
 	}
 	if idFile.CloudProvider != cloudprovider.QEMU {

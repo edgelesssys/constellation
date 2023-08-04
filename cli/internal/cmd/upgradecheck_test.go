@@ -215,7 +215,6 @@ func TestUpgradeCheck(t *testing.T) {
 
 	testCases := map[string]struct {
 		collector    stubVersionCollector
-		flags        upgradeCheckFlags
 		csp          cloudprovider.Provider
 		checker      stubUpgradeChecker
 		imagefetcher stubImageFetcher
@@ -226,11 +225,8 @@ func TestUpgradeCheck(t *testing.T) {
 			collector:    collector,
 			checker:      stubUpgradeChecker{},
 			imagefetcher: stubImageFetcher{},
-			flags: upgradeCheckFlags{
-				configPath: constants.ConfigFilename,
-			},
-			csp:        cloudprovider.GCP,
-			cliVersion: "v1.0.0",
+			csp:          cloudprovider.GCP,
+			cliVersion:   "v1.0.0",
 		},
 		"terraform err": {
 			collector: collector,
@@ -238,12 +234,9 @@ func TestUpgradeCheck(t *testing.T) {
 				err: assert.AnError,
 			},
 			imagefetcher: stubImageFetcher{},
-			flags: upgradeCheckFlags{
-				configPath: constants.ConfigFilename,
-			},
-			csp:        cloudprovider.GCP,
-			cliVersion: "v1.0.0",
-			wantError:  true,
+			csp:          cloudprovider.GCP,
+			cliVersion:   "v1.0.0",
+			wantError:    true,
 		},
 	}
 
@@ -253,7 +246,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
-			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 
 			checkCmd := upgradeCheckCmd{
 				canUpgradeCheck: true,
@@ -265,7 +258,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, tc.flags)
+			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return
@@ -348,11 +341,11 @@ func (u stubUpgradeChecker) PlanTerraformMigrations(context.Context, upgrade.Ter
 	return u.tfDiff, u.err
 }
 
-func (u stubUpgradeChecker) CheckTerraformMigrations() error {
+func (u stubUpgradeChecker) CheckTerraformMigrations(_ string) error {
 	return u.err
 }
 
-func (u stubUpgradeChecker) CleanUpTerraformMigrations() error {
+func (u stubUpgradeChecker) CleanUpTerraformMigrations(_ string) error {
 	return u.err
 }
 

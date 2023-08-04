@@ -44,7 +44,6 @@ func NewRecoverCmd() *cobra.Command {
 		RunE: runRecover,
 	}
 	cmd.Flags().StringP("endpoint", "e", "", "endpoint of the instance, passed as HOST[:PORT]")
-	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to master secret file")
 	return cmd
 }
 
@@ -78,13 +77,13 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", flags.secretPath)
-	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
+	r.log.Debugf("Loading master secret file from %s", masterSecretPath(flags.workspace))
+	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", flags.configPath)
-	conf, err := config.New(fileHandler, flags.configPath, r.configFetcher, flags.force)
+	r.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -211,16 +210,21 @@ func (d *recoverDoer) setURIs(kmsURI, storageURI string) {
 }
 
 type recoverFlags struct {
-	endpoint   string
-	secretPath string
-	configPath string
-	maaURL     string
-	force      bool
+	endpoint  string
+	workspace string
+	maaURL    string
+	force     bool
 }
 
 func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
+	workspace, err := cmd.Flags().GetString("workspace")
+	if err != nil {
+		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
+	}
+	r.log.Debugf("Workspace set to %q", workspace)
+
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil && !errors.Is(err, afero.ErrFileNotFound) {
 		return recoverFlags{}, err
 	}
 
@@ -237,16 +241,6 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 	r.log.Debugf("Endpoint value after parsing is %s", endpoint)
-	masterSecretPath, err := cmd.Flags().GetString("master-secret")
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
-	}
-	r.log.Debugf("Master secret flag is %s", masterSecretPath)
-	configPath, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
-	}
-	r.log.Debugf("Configuration path flag is %s", configPath)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -254,11 +248,10 @@ func (r *recoverCmd) parseRecoverFlags(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	return recoverFlags{
-		endpoint:   endpoint,
-		secretPath: masterSecretPath,
-		configPath: configPath,
-		maaURL:     idFile.AttestationURL,
-		force:      force,
+		endpoint:  endpoint,
+		workspace: workspace,
+		maaURL:    idFile.AttestationURL,
+		force:     force,
 	}, nil
 }
 

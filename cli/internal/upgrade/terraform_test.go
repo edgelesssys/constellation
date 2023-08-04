@@ -58,7 +58,7 @@ func TestCheckTerraformMigrations(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			u := upgrader(tc.workspace)
-			err := u.CheckTerraformMigrations(tc.upgradeID, constants.TerraformUpgradeBackupDir)
+			err := u.CheckTerraformMigrations(constants.UpgradeDir, tc.upgradeID, constants.TerraformUpgradeBackupDir)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -95,14 +95,14 @@ func TestPlanTerraformMigrations(t *testing.T) {
 		"success no diff": {
 			upgradeID: "1234",
 			tf:        &stubTerraformClient{},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			workspace: workspace([]string{}),
 		},
 		"success diff": {
 			upgradeID: "1234",
 			tf: &stubTerraformClient{
 				hasDiff: true,
 			},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			workspace: workspace([]string{}),
 			want:      true,
 		},
 		"prepare workspace error": {
@@ -110,26 +110,14 @@ func TestPlanTerraformMigrations(t *testing.T) {
 			tf: &stubTerraformClient{
 				prepareWorkspaceErr: assert.AnError,
 			},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
-			wantErr:   true,
-		},
-		"constellation-id.json does not exist": {
-			upgradeID: "1234",
-			tf:        &stubTerraformClient{},
-			workspace: workspace(nil),
-			wantErr:   true,
-		},
-		"constellation-id backup already exists": {
-			upgradeID: "1234",
-			tf:        &stubTerraformClient{},
-			workspace: workspace([]string{filepath.Join(constants.UpgradeDir, "1234", constants.ClusterIDsFileName+".old")}),
+			workspace: workspace([]string{}),
 			wantErr:   true,
 		},
 		"plan error": {
 			tf: &stubTerraformClient{
 				planErr: assert.AnError,
 			},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			workspace: workspace([]string{}),
 			wantErr:   true,
 		},
 		"show plan error no diff": {
@@ -137,7 +125,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 			tf: &stubTerraformClient{
 				showErr: assert.AnError,
 			},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			workspace: workspace([]string{}),
 		},
 		"show plan error diff": {
 			upgradeID: "1234",
@@ -145,7 +133,7 @@ func TestPlanTerraformMigrations(t *testing.T) {
 				showErr: assert.AnError,
 				hasDiff: true,
 			},
-			workspace: workspace([]string{constants.ClusterIDsFileName}),
+			workspace: workspace([]string{}),
 			wantErr:   true,
 		},
 	}
@@ -196,12 +184,11 @@ func TestApplyTerraformMigrations(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		upgradeID          string
-		tf                 tfResourceClient
-		policyPatcher      stubPolicyPatcher
-		fs                 file.Handler
-		skipIDFileCreation bool // if true, do not create the constellation-id.json file
-		wantErr            bool
+		upgradeID     string
+		tf            tfResourceClient
+		policyPatcher stubPolicyPatcher
+		fs            file.Handler
+		wantErr       bool
 	}{
 		"success": {
 			upgradeID:     "1234",
@@ -218,14 +205,6 @@ func TestApplyTerraformMigrations(t *testing.T) {
 			policyPatcher: stubPolicyPatcher{},
 			wantErr:       true,
 		},
-		"constellation-id.json does not exist": {
-			upgradeID:          "1234",
-			tf:                 &stubTerraformClient{},
-			fs:                 fileHandler("1234"),
-			policyPatcher:      stubPolicyPatcher{},
-			skipIDFileCreation: true,
-			wantErr:            true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -234,21 +213,15 @@ func TestApplyTerraformMigrations(t *testing.T) {
 
 			u := upgrader(tc.tf, tc.fs)
 
-			if !tc.skipIDFileCreation {
-				require.NoError(
-					tc.fs.Write(
-						filepath.Join(constants.ClusterIDsFileName),
-						[]byte("{}"),
-					))
-			}
-
 			opts := TerraformUpgradeOptions{
-				LogLevel: terraform.LogLevelDebug,
-				CSP:      cloudprovider.Unknown,
-				Vars:     &terraform.QEMUVariables{},
+				LogLevel:         terraform.LogLevelDebug,
+				CSP:              cloudprovider.Unknown,
+				Vars:             &terraform.QEMUVariables{},
+				TFWorkspace:      "test",
+				UpgradeWorkspace: constants.UpgradeDir,
 			}
 
-			err := u.ApplyTerraformMigrations(context.Background(), opts, tc.upgradeID)
+			_, err := u.ApplyTerraformMigrations(context.Background(), opts, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 			} else {
@@ -328,7 +301,7 @@ func TestCleanUpTerraformMigrations(t *testing.T) {
 			workspace := workspace(tc.workspaceFiles)
 			u := upgrader(workspace)
 
-			err := u.CleanUpTerraformMigrations(tc.upgradeID)
+			err := u.CleanUpTerraformMigrations(constants.UpgradeDir, tc.upgradeID)
 			if tc.wantErr {
 				require.Error(err)
 				return
@@ -359,19 +332,19 @@ type stubTerraformClient struct {
 	CreateClusterErr    error
 }
 
-func (u *stubTerraformClient) PrepareUpgradeWorkspace(string, string, string, string, terraform.Variables) error {
+func (u *stubTerraformClient) PrepareUpgradeWorkspace(_, _, _, _ string, _ terraform.Variables) error {
 	return u.prepareWorkspaceErr
 }
 
-func (u *stubTerraformClient) ShowPlan(context.Context, terraform.LogLevel, string, io.Writer) error {
+func (u *stubTerraformClient) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
 	return u.showErr
 }
 
-func (u *stubTerraformClient) Plan(context.Context, terraform.LogLevel, string) (bool, error) {
+func (u *stubTerraformClient) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
 	return u.hasDiff, u.planErr
 }
 
-func (u *stubTerraformClient) CreateCluster(context.Context, cloudprovider.Provider, terraform.LogLevel) (terraform.ApplyOutput, error) {
+func (u *stubTerraformClient) CreateCluster(_ context.Context, _ cloudprovider.Provider, _ terraform.LogLevel) (terraform.ApplyOutput, error) {
 	return terraform.ApplyOutput{}, u.CreateClusterErr
 }
 
@@ -379,6 +352,6 @@ type stubPolicyPatcher struct {
 	patchErr error
 }
 
-func (p *stubPolicyPatcher) PatchPolicy(context.Context, string) error {
+func (p *stubPolicyPatcher) PatchPolicy(_ context.Context, _ string) error {
 	return p.patchErr
 }

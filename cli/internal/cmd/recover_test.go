@@ -67,12 +67,12 @@ func TestRecover(t *testing.T) {
 	lbErr := grpcstatus.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed: read tcp`)
 
 	testCases := map[string]struct {
-		doer            *stubDoer
-		masterSecret    testvector.HKDF
-		endpoint        string
-		configFlag      string
-		successfulCalls int
-		wantErr         bool
+		doer               *stubDoer
+		masterSecret       testvector.HKDF
+		endpoint           string
+		successfulCalls    int
+		skipConfigCreation bool
+		wantErr            bool
 	}{
 		"works": {
 			doer:            &stubDoer{returns: []error{nil}},
@@ -81,11 +81,11 @@ func TestRecover(t *testing.T) {
 			successfulCalls: 1,
 		},
 		"missing config": {
-			doer:         &stubDoer{returns: []error{nil}},
-			endpoint:     "192.0.2.89",
-			masterSecret: testvector.HKDFZero,
-			configFlag:   "nonexistent-config",
-			wantErr:      true,
+			doer:               &stubDoer{returns: []error{nil}},
+			endpoint:           "192.0.2.89",
+			masterSecret:       testvector.HKDFZero,
+			skipConfigCreation: true,
+			wantErr:            true,
 		},
 		"success multiple nodes": {
 			doer:            &stubDoer{returns: []error{nil, nil}},
@@ -139,22 +139,20 @@ func TestRecover(t *testing.T) {
 
 			cmd := NewRecoverCmd()
 			cmd.SetContext(context.Background())
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")     // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(out)
 			require.NoError(cmd.Flags().Set("endpoint", tc.endpoint))
 
-			if tc.configFlag != "" {
-				require.NoError(cmd.Flags().Set("config", tc.configFlag))
-			}
-
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+			if !tc.skipConfigCreation {
+				config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+			}
 
 			require.NoError(fileHandler.WriteJSON(
 				"constellation-mastersecret.json",
@@ -193,15 +191,13 @@ func TestParseRecoverFlags(t *testing.T) {
 	}{
 		"no flags": {
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:9999",
-				secretPath: "constellation-mastersecret.json",
+				endpoint: "192.0.2.42:9999",
 			},
 			writeIDFile: true,
 		},
 		"no flags, no ID file": {
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:9999",
-				secretPath: "constellation-mastersecret.json",
+				endpoint: "192.0.2.42:9999",
 			},
 			wantErr: true,
 		},
@@ -210,11 +206,10 @@ func TestParseRecoverFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"all args set": {
-			args: []string{"-e", "192.0.2.42:2", "--config", "config-path", "--master-secret", "/path/super-secret.json"},
+			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace"},
 			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.42:2",
-				secretPath: "/path/super-secret.json",
-				configPath: "config-path",
+				endpoint:  "192.0.2.42:2",
+				workspace: "./constellation-workspace",
 			},
 		},
 	}
@@ -225,13 +220,13 @@ func TestParseRecoverFlags(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewRecoverCmd()
-			cmd.Flags().String("config", "", "") // register persistent flag manually
-			cmd.Flags().Bool("force", false, "") // register persistent flag manually
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
+			cmd.Flags().Bool("force", false, "")    // register persistent flag manually
 			require.NoError(cmd.ParseFlags(tc.args))
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			if tc.writeIDFile {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, &clusterid.File{IP: "192.0.2.42"}))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFilename, &clusterid.File{IP: "192.0.2.42"}))
 			}
 			r := &recoverCmd{log: logger.NewTest(t)}
 			flags, err := r.parseRecoverFlags(cmd, fileHandler)

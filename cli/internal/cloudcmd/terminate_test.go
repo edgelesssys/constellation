@@ -55,7 +55,7 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
+				newTerraformClient: func(_ context.Context, _ string) (tfResourceClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
@@ -63,7 +63,7 @@ func TestTerminator(t *testing.T) {
 				},
 			}
 
-			err := terminator.Terminate(context.Background(), terraform.LogLevelNone)
+			err := terminator.Terminate(context.Background(), "", terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)

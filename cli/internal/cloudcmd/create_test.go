@@ -203,7 +203,7 @@ func TestCreator(t *testing.T) {
 				image: &stubImageFetcher{
 					reference: "some-image",
 				},
-				newTerraformClient: func(ctx context.Context) (tfResourceClient, error) {
+				newTerraformClient: func(_ context.Context, _ string) (tfResourceClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {

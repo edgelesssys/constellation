@@ -46,7 +46,7 @@ type stubCloudTerminator struct {
 	terminateErr error
 }
 
-func (c *stubCloudTerminator) Terminate(_ context.Context, _ terraform.LogLevel) error {
+func (c *stubCloudTerminator) Terminate(_ context.Context, _ string, _ terraform.LogLevel) error {
 	c.called = true
 	return c.terminateErr
 }
@@ -73,18 +73,18 @@ func (c *stubIAMCreator) Create(
 
 type stubIAMDestroyer struct {
 	destroyCalled       bool
-	getTfstateKeyCalled bool
+	getTfStateKeyCalled bool
 	gcpSaKey            gcpshared.ServiceAccountKey
 	destroyErr          error
-	getTfstateKeyErr    error
+	getTfStateKeyErr    error
 }
 
-func (d *stubIAMDestroyer) DestroyIAMConfiguration(_ context.Context, _ terraform.LogLevel) error {
+func (d *stubIAMDestroyer) DestroyIAMConfiguration(_ context.Context, _ string, _ terraform.LogLevel) error {
 	d.destroyCalled = true
 	return d.destroyErr
 }
 
-func (d *stubIAMDestroyer) GetTfstateServiceAccountKey(_ context.Context) (gcpshared.ServiceAccountKey, error) {
-	d.getTfstateKeyCalled = true
-	return d.gcpSaKey, d.getTfstateKeyErr
+func (d *stubIAMDestroyer) GetTfStateServiceAccountKey(_ context.Context, _ string) (gcpshared.ServiceAccountKey, error) {
+	d.getTfStateKeyCalled = true
+	return d.gcpSaKey, d.getTfStateKeyErr
 }

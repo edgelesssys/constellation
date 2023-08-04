@@ -28,7 +28,14 @@ func TestIAMMigrate(t *testing.T) {
 	fs, file := setupMemFSAndFileHandler(t, []string{"terraform.tfvars", "terraform.tfstate"}, []byte("OLD"))
 	// act
 	fakeTfClient := &tfClientStub{upgradeID, file}
-	sut := &IAMMigrateCmd{fakeTfClient, upgradeID, cloudprovider.AWS, terraform.LogLevelDebug}
+	sut := &IAMMigrateCmd{
+		tf:               fakeTfClient,
+		upgradeID:        upgradeID,
+		csp:              cloudprovider.AWS,
+		logLevel:         terraform.LogLevelDebug,
+		iamWorkspace:     constants.TerraformIAMWorkingDir,
+		upgradeWorkspace: constants.UpgradeDir,
+	}
 	hasDiff, err := sut.Plan(context.Background(), file, bytes.NewBuffer(nil))
 	// assert
 	assert.NoError(t, err)
@@ -82,11 +89,11 @@ type tfClientStub struct {
 	file      file.Handler
 }
 
-func (t *tfClientStub) Plan(_ context.Context, _ terraform.LogLevel, _ string) (bool, error) {
+func (t *tfClientStub) Plan(_ context.Context, _ terraform.LogLevel) (bool, error) {
 	return false, nil
 }
 
-func (t *tfClientStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ string, _ io.Writer) error {
+func (t *tfClientStub) ShowPlan(_ context.Context, _ terraform.LogLevel, _ io.Writer) error {
 	return nil
 }
 

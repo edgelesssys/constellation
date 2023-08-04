@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -28,19 +29,15 @@ func newConfigMigrateCmd() *cobra.Command {
 
 func runConfigMigrate(cmd *cobra.Command, _ []string) error {
 	handler := file.NewHandler(afero.NewOsFs())
-	configPath, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return fmt.Errorf("parsing config path flag: %w", err)
-	}
-	return configMigrate(cmd, configPath, handler)
+	return configMigrate(cmd, handler)
 }
 
-func configMigrate(cmd *cobra.Command, configPath string, handler file.Handler) error {
+func configMigrate(cmd *cobra.Command, handler file.Handler) error {
 	// Make sure we are reading a v2 config
 	var cfgVersion struct {
 		Version string `yaml:"version"`
 	}
-	if err := handler.ReadYAML(configPath, &cfgVersion); err != nil {
+	if err := handler.ReadYAML(constants.ConfigFilename, &cfgVersion); err != nil {
 		return err
 	}
 

@@ -80,7 +80,7 @@ func TestUpgrade(t *testing.T) {
 
 	// Migrate config if necessary.
 	log.Println("Migrating config if needed.")
-	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--config", constants.ConfigFilename, "--debug")
+	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--debug")
 	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	log.Println(string(stdout))

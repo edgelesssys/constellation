@@ -129,9 +129,9 @@ func TestUpgradeApply(t *testing.T) {
 			require := require.New(t)
 			cmd := newUpgradeApplyCmd()
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			cmd.Flags().Bool("force", true, "")                        // register persistent flag manually
-			cmd.Flags().String("tf-log", "DEBUG", "")                  // register persistent flag manually
+			cmd.Flags().String("workspace", "", "")   // register persistent flag manually
+			cmd.Flags().Bool("force", true, "")       // register persistent flag manually
+			cmd.Flags().String("tf-log", "DEBUG", "") // register persistent flag manually
 
 			if tc.yesFlag {
 				err := cmd.Flags().Set("yes", "true")
@@ -141,7 +141,7 @@ func TestUpgradeApply(t *testing.T) {
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
-			require.NoError(handler.WriteJSON(constants.ClusterIDsFileName, clusterid.File{}))
+			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 
@@ -186,11 +186,11 @@ func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.V
 	return u.currentConfig, &corev1.ConfigMap{}, nil
 }
 
-func (u stubUpgrader) CheckTerraformMigrations() error {
+func (u stubUpgrader) CheckTerraformMigrations(_ string) error {
 	return u.checkTerraformErr
 }
 
-func (u stubUpgrader) CleanUpTerraformMigrations() error {
+func (u stubUpgrader) CleanUpTerraformMigrations(_ string) error {
 	return u.cleanTerraformErr
 }
 
@@ -198,8 +198,8 @@ func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.Terraform
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) error {
-	return u.applyTerraformErr
+func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
+	return clusterid.File{}, u.applyTerraformErr
 }
 
 func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {

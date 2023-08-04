@@ -24,7 +24,7 @@ func TestIAMDestroy(t *testing.T) {
 
 	newFsExists := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(constants.GCPServiceAccountKeyFile, []byte("{}")))
+		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("{}")))
 		return fh
 	}
 	newFsMissing := func() file.Handler {
@@ -38,7 +38,7 @@ func TestIAMDestroy(t *testing.T) {
 	}
 	newFsWithClusterIDFile := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(constants.ClusterIDsFileName, []byte("")))
+		require.NoError(fh.Write(constants.ClusterIDsFilename, []byte("")))
 		return fh
 	}
 
@@ -92,7 +92,7 @@ func TestIAMDestroy(t *testing.T) {
 		"gcp delete error": {
 			fh:           newFsExists(),
 			yesFlag:      "true",
-			iamDestroyer: &stubIAMDestroyer{getTfstateKeyErr: someError},
+			iamDestroyer: &stubIAMDestroyer{getTfStateKeyErr: someError},
 			wantErr:      true,
 		},
 	}
@@ -108,6 +108,7 @@ func TestIAMDestroy(t *testing.T) {
 
 			// register persistent flags manually
 			cmd.Flags().String("tf-log", "NONE", "")
+			cmd.Flags().String("workspace", "", "")
 
 			assert.NoError(cmd.Flags().Set("yes", tc.yesFlag))
 
@@ -146,12 +147,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 	newFs := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.Write(constants.GCPServiceAccountKeyFile, []byte(gcpFile)))
+		require.NoError(fs.Write(gcpServiceAccountKeyFile, []byte(gcpFile)))
 		return fs
 	}
 	newFsInvalidJSON := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(constants.GCPServiceAccountKeyFile, []byte("asdf")))
+		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("asdf")))
 		return fh
 	}
 
@@ -169,7 +170,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			wantErr:   true,
 		},
 		"error getting key terraform": {
-			destroyer:          &stubIAMDestroyer{getTfstateKeyErr: someError},
+			destroyer:          &stubIAMDestroyer{getTfStateKeyErr: someError},
 			fsHandler:          newFs(),
 			wantErr:            true,
 			wantGetSaKeyCalled: true,
@@ -201,7 +202,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 			c := &destroyCmd{log: logger.NewTest(t)}
 
-			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
+			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, "", tc.fsHandler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -209,7 +210,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 			}
 
 			assert.Equal(tc.wantProceed, proceed)
-			assert.Equal(tc.wantGetSaKeyCalled, tc.destroyer.getTfstateKeyCalled)
+			assert.Equal(tc.wantGetSaKeyCalled, tc.destroyer.getTfStateKeyCalled)
 		})
 	}
 }

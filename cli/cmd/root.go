@@ -18,7 +18,6 @@ import (
 	"os/signal"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -34,21 +33,21 @@ func Execute() error {
 // NewRootCmd creates the root command.
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:              "constellation",
-		Short:            "Manage your Constellation cluster",
-		Long:             "Manage your Constellation cluster.",
-		PersistentPreRun: preRunRoot,
+		Use:               "constellation",
+		Short:             "Manage your Constellation cluster",
+		Long:              "Manage your Constellation cluster.",
+		PersistentPreRunE: preRunRoot,
 	}
 
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
 
-	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "path to the configuration file")
-	must(rootCmd.MarkPersistentFlagFilename("config", "yaml"))
-
+	rootCmd.PersistentFlags().StringP("workspace", "C", "", "path to the Constellation workspace")
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
 	rootCmd.PersistentFlags().Bool("force", false, "disable version compatibility checks - might result in corrupted clusters")
 	rootCmd.PersistentFlags().String("tf-log", "NONE", "Terraform log level")
+
+	must(rootCmd.MarkPersistentFlagDirname("workspace"))
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())
@@ -92,8 +91,22 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 	return sigCtx, cancelFunc
 }
 
-func preRunRoot(cmd *cobra.Command, _ []string) {
+func preRunRoot(cmd *cobra.Command, _ []string) error {
 	cmd.SilenceUsage = true
+
+	workspace, err := cmd.Flags().GetString("workspace")
+	if err != nil {
+		return fmt.Errorf("getting workspace flag: %w", err)
+	}
+
+	// Change to workspace directory if set.
+	if workspace != "" {
+		if err := os.Chdir(workspace); err != nil {
+			return fmt.Errorf("changing from current directory to workspace %q: %w", workspace, err)
+		}
+	}
+
+	return nil
 }
 
 func must(err error) {

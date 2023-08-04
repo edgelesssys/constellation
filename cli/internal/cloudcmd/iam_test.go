@@ -22,8 +22,6 @@ import (
 )
 
 func TestIAMCreator(t *testing.T) {
-	someErr := errors.New("failed")
-
 	validGCPIAMConfig := GCPIAMConfig{
 		Region:           "europe-west1",
 		Zone:             "europe-west1-a",
@@ -91,30 +89,32 @@ func TestIAMCreator(t *testing.T) {
 	}{
 		"new terraform client err": {
 			tfClient:       &stubTerraformClient{},
-			newTfClientErr: someErr,
+			newTfClientErr: assert.AnError,
 			wantErr:        true,
+			config:         &IAMConfigOptions{TFWorkspace: "test"},
 		},
 		"create iam config err": {
-			tfClient: &stubTerraformClient{iamOutputErr: someErr},
+			tfClient: &stubTerraformClient{iamOutputErr: assert.AnError},
 			wantErr:  true,
+			config:   &IAMConfigOptions{TFWorkspace: "test"},
 		},
 		"gcp": {
 			tfClient:      &stubTerraformClient{iamOutput: validGCPIAMOutput},
 			wantIAMIDFile: validGCPIAMIDFile,
 			provider:      cloudprovider.GCP,
-			config:        &IAMConfigOptions{GCP: validGCPIAMConfig},
+			config:        &IAMConfigOptions{GCP: validGCPIAMConfig, TFWorkspace: "test"},
 		},
 		"azure": {
 			tfClient:      &stubTerraformClient{iamOutput: validAzureIAMOutput},
 			wantIAMIDFile: validAzureIAMIDFile,
 			provider:      cloudprovider.Azure,
-			config:        &IAMConfigOptions{Azure: validAzureIAMConfig},
+			config:        &IAMConfigOptions{Azure: validAzureIAMConfig, TFWorkspace: "test"},
 		},
 		"aws": {
 			tfClient:      &stubTerraformClient{iamOutput: validAWSIAMOutput},
 			wantIAMIDFile: validAWSIAMIDFile,
 			provider:      cloudprovider.AWS,
-			config:        &IAMConfigOptions{AWS: validAWSIAMConfig},
+			config:        &IAMConfigOptions{AWS: validAWSIAMConfig, TFWorkspace: "test"},
 		},
 	}
 
@@ -124,7 +124,7 @@ func TestIAMCreator(t *testing.T) {
 
 			creator := &IAMCreator{
 				out: &bytes.Buffer{},
-				newTerraformClient: func(ctx context.Context) (tfIAMClient, error) {
+				newTerraformClient: func(_ context.Context, _ string) (tfIAMClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 			}
@@ -181,9 +181,11 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			destroyer := &IAMDestroyer{client: tc.tfClient}
+			destroyer := &IAMDestroyer{newTerraformClient: func(_ context.Context, _ string) (tfIAMClient, error) {
+				return tc.tfClient, nil
+			}}
 
-			err := destroyer.DestroyIAMConfiguration(context.Background(), terraform.LogLevelNone)
+			err := destroyer.DestroyIAMConfiguration(context.Background(), "", terraform.LogLevelNone)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -198,8 +200,6 @@ func TestDestroyIAMConfiguration(t *testing.T) {
 }
 
 func TestGetTfstateServiceAccountKey(t *testing.T) {
-	someError := errors.New("failed")
-
 	gcpFile := `
 	{
 		"auth_provider_x509_cert_url": "",
@@ -235,7 +235,7 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		},
 		"show error": {
 			cl: &stubTerraformClient{
-				showErr: someError,
+				showErr: assert.AnError,
 			},
 			wantErr:        true,
 			wantShowCalled: true,
@@ -275,9 +275,11 @@ func TestGetTfstateServiceAccountKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			destroyer := IAMDestroyer{client: tc.cl}
+			destroyer := IAMDestroyer{newTerraformClient: func(_ context.Context, _ string) (tfIAMClient, error) {
+				return tc.cl, nil
+			}}
 
-			saKey, err := destroyer.GetTfstateServiceAccountKey(context.Background())
+			saKey, err := destroyer.GetTfStateServiceAccountKey(context.Background(), "")
 
 			if tc.wantErr {
 				assert.Error(err)

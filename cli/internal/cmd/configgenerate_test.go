@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
-	"gopkg.in/yaml.v3"
 )
 
 func TestConfigGenerateKubernetesVersion(t *testing.T) {
@@ -51,6 +49,7 @@ func TestConfigGenerateKubernetesVersion(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 			err := cmd.Flags().Set("kubernetes", tc.version)
 			require.NoError(err)
 
@@ -72,6 +71,7 @@ func TestConfigGenerateDefault(t *testing.T) {
 
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
+	cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
@@ -97,6 +97,7 @@ func TestConfigGenerateDefaultProviderSpecific(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
 			wantConf := config.Default()
 			wantConf.RemoveProviderAndAttestationExcept(provider)
@@ -122,6 +123,7 @@ func TestConfigGenerateWithStackIt(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			cmd := newConfigGenerateCmd()
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
 			wantConf := config.Default().WithOpenStackProviderDefaults(openStackProvider)
 			wantConf.RemoveProviderAndAttestationExcept(cloudprovider.OpenStack)
@@ -143,40 +145,10 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	require.NoError(fileHandler.Write(constants.ConfigFilename, []byte("foobar"), file.OptNone))
 	cmd := newConfigGenerateCmd()
+	cmd.Flags().String("workspace", "", "") // register persistent flag manually
 
 	cg := &configGenerateCmd{log: logger.NewTest(t)}
 	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
-}
-
-func TestConfigGenerateFileFlagRemoved(t *testing.T) {
-	require := require.New(t)
-
-	fileHandler := file.NewHandler(afero.NewMemMapFs())
-	cmd := newConfigGenerateCmd()
-	cmd.ResetFlags()
-
-	cg := &configGenerateCmd{log: logger.NewTest(t)}
-	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
-}
-
-func TestConfigGenerateStdOut(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	fileHandler := file.NewHandler(afero.NewMemMapFs())
-
-	var outBuffer bytes.Buffer
-	cmd := newConfigGenerateCmd()
-	cmd.SetOut(&outBuffer)
-	require.NoError(cmd.Flags().Set("file", "-"))
-
-	cg := &configGenerateCmd{log: logger.NewTest(t)}
-	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown, ""))
-
-	var readConfig config.Config
-	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
-
-	assert.Equal(*config.Default(), readConfig)
 }
 
 func TestNoValidProviderAttestationCombination(t *testing.T) {
@@ -294,6 +266,7 @@ func TestAttestationArgument(t *testing.T) {
 			assert := assert.New(t)
 
 			cmd := newConfigGenerateCmd()
+			cmd.Flags().String("workspace", "", "") // register persistent flag manually
 			require.NoError(test.setFlag(cmd))
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())

@@ -143,7 +143,7 @@ type installDoer struct {
 func (i installDoer) Do(ctx context.Context) error {
 	i.log.Debugf("Trying to install Helm chart %s", i.chart.Name())
 	if _, err := i.Installer.RunWithContext(ctx, i.chart, i.values); err != nil {
-		i.log.Debugf("Helm chart installation % failed: %v", i.chart.Name(), err)
+		i.log.Debugf("Helm chart installation %s failed: %v", i.chart.Name(), err)
 		return err
 	}
 

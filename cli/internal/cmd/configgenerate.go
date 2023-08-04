@@ -17,7 +17,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/siderolabs/talos/pkg/machinery/config/encoder"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
@@ -35,7 +34,6 @@ func newConfigGenerateCmd() *cobra.Command {
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
 	}
-	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 	cmd.Flags().StringP("kubernetes", "k", semver.MajorMinor(config.Default().KubernetesVersion), "Kubernetes version to use in format MAJOR.MINOR")
 	cmd.Flags().StringP("attestation", "a", "", fmt.Sprintf("attestation variant to use %s. If not specified, the default for the cloud provider is used", printFormattedSlice(variant.GetAvailableAttestationVariants())))
 
@@ -43,7 +41,7 @@ func newConfigGenerateCmd() *cobra.Command {
 }
 
 type generateFlags struct {
-	file               string
+	workspace          string
 	k8sVersion         string
 	attestationVariant variant.Variant
 }
@@ -77,23 +75,12 @@ func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file
 		return fmt.Errorf("creating config: %w", err)
 	}
 	conf.KubernetesVersion = flags.k8sVersion
-	if flags.file == "-" {
-		content, err := encoder.NewEncoder(conf).Encode()
-		if err != nil {
-			return fmt.Errorf("encoding config content: %w", err)
-		}
-
-		cg.log.Debugf("Writing YAML data to stdout")
-		_, err = cmd.OutOrStdout().Write(content)
-		return err
-	}
-
 	cg.log.Debugf("Writing YAML data to configuration file")
-	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
+	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptMkdirAll); err != nil {
 		return err
 	}
 
-	cmd.Println("Config file written to", flags.file)
+	cmd.Println("Config file written to", configPath(flags.workspace))
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
 	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
@@ -150,9 +137,9 @@ func supportedVersions() string {
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
-	file, err := cmd.Flags().GetString("file")
+	workspace, err := cmd.Flags().GetString("workspace")
 	if err != nil {
-		return generateFlags{}, fmt.Errorf("parsing file flag: %w", err)
+		return generateFlags{}, fmt.Errorf("parsing workspace flag: %w", err)
 	}
 	k8sVersion, err := cmd.Flags().GetString("kubernetes")
 	if err != nil {
@@ -179,7 +166,7 @@ func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 		}
 	}
 	return generateFlags{
-		file:               file,
+		workspace:          workspace,
 		k8sVersion:         resolvedVersion,
 		attestationVariant: attestationVariant,
 	}, nil

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -100,7 +99,7 @@ func (c *UpgradeClient) backupCRs(ctx context.Context, crds []apiextensionsv1.Cu
 }
 
 func (c *UpgradeClient) backupFolder(upgradeID string) string {
-	return filepath.Join(constants.UpgradeDir, upgradeID, "backups") + string(filepath.Separator)
+	return filepath.Join(c.upgradeWorkspace, upgradeID, "backups") + string(filepath.Separator)
 }
 
 func (c *UpgradeClient) crdBackupFolder(upgradeID string) string {

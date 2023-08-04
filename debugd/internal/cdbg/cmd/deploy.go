@@ -113,7 +113,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	}
 	if len(ips) == 0 {
 		var idFile clusterIDsFile
-		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 			return fmt.Errorf("reading cluster IDs file: %w", err)
 		}
 		ips = []string{idFile.IP}

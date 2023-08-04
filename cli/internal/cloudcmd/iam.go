@@ -19,26 +19,26 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // IAMDestroyer destroys an IAM configuration.
 type IAMDestroyer struct {
-	client tfIAMClient
+	newTerraformClient newTFIAMClientFunc
 }
 
 // NewIAMDestroyer creates a new IAM Destroyer.
-func NewIAMDestroyer(ctx context.Context) (*IAMDestroyer, error) {
-	cl, err := terraform.New(ctx, constants.TerraformIAMWorkingDir)
-	if err != nil {
-		return nil, err
-	}
-	return &IAMDestroyer{client: cl}, nil
+func NewIAMDestroyer() *IAMDestroyer {
+	return &IAMDestroyer{newTerraformClient: newTerraformIAMClient}
 }
 
-// GetTfstateServiceAccountKey returns the sa_key output from the terraform state.
-func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshared.ServiceAccountKey, error) {
-	tfState, err := d.client.ShowIAM(ctx, cloudprovider.GCP)
+// GetTfStateServiceAccountKey returns the sa_key output from the terraform state.
+func (d *IAMDestroyer) GetTfStateServiceAccountKey(ctx context.Context, tfWorkspace string) (gcpshared.ServiceAccountKey, error) {
+	client, err := d.newTerraformClient(ctx, tfWorkspace)
+	if err != nil {
+		return gcpshared.ServiceAccountKey{}, err
+	}
+
+	tfState, err := client.ShowIAM(ctx, cloudprovider.GCP)
 	if err != nil {
 		return gcpshared.ServiceAccountKey{}, fmt.Errorf("getting terraform state: %w", err)
 	}
@@ -58,25 +58,31 @@ func (d *IAMDestroyer) GetTfstateServiceAccountKey(ctx context.Context) (gcpshar
 }
 
 // DestroyIAMConfiguration destroys the previously created IAM configuration and deletes the local IAM terraform files.
-func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context, logLevel terraform.LogLevel) error {
-	if err := d.client.Destroy(ctx, logLevel); err != nil {
+func (d *IAMDestroyer) DestroyIAMConfiguration(ctx context.Context, tfWorkspace string, logLevel terraform.LogLevel) error {
+	client, err := d.newTerraformClient(ctx, tfWorkspace)
+	if err != nil {
 		return err
 	}
-	return d.client.CleanUpWorkspace()
+
+	if err := client.Destroy(ctx, logLevel); err != nil {
+		return err
+	}
+	return client.CleanUpWorkspace()
 }
 
 // IAMCreator creates the IAM configuration on the cloud provider.
 type IAMCreator struct {
 	out                io.Writer
-	newTerraformClient func(ctx context.Context) (tfIAMClient, error)
+	newTerraformClient newTFIAMClientFunc
 }
 
 // IAMConfigOptions holds the necessary values for IAM configuration.
 type IAMConfigOptions struct {
-	GCP        GCPIAMConfig
-	Azure      AzureIAMConfig
-	AWS        AWSIAMConfig
-	TFLogLevel terraform.LogLevel
+	GCP         GCPIAMConfig
+	Azure       AzureIAMConfig
+	AWS         AWSIAMConfig
+	TFLogLevel  terraform.LogLevel
+	TFWorkspace string
 }
 
 // GCPIAMConfig holds the necessary values for GCP IAM configuration.
@@ -103,36 +109,25 @@ type AWSIAMConfig struct {
 // NewIAMCreator creates a new IAM creator.
 func NewIAMCreator(out io.Writer) *IAMCreator {
 	return &IAMCreator{
-		out: out,
-		newTerraformClient: func(ctx context.Context) (tfIAMClient, error) {
-			return terraform.New(ctx, constants.TerraformIAMWorkingDir)
-		},
+		out:                out,
+		newTerraformClient: newTerraformIAMClient,
 	}
 }
 
 // Create prepares and hands over the corresponding providers IAM creator.
 func (c *IAMCreator) Create(ctx context.Context, provider cloudprovider.Provider, opts *IAMConfigOptions) (iamid.File, error) {
+	cl, err := c.newTerraformClient(ctx, opts.TFWorkspace)
+	if err != nil {
+		return iamid.File{}, err
+	}
+	defer cl.RemoveInstaller()
+
 	switch provider {
 	case cloudprovider.GCP:
-		cl, err := c.newTerraformClient(ctx)
-		if err != nil {
-			return iamid.File{}, err
-		}
-		defer cl.RemoveInstaller()
 		return c.createGCP(ctx, cl, opts)
 	case cloudprovider.Azure:
-		cl, err := c.newTerraformClient(ctx)
-		if err != nil {
-			return iamid.File{}, err
-		}
-		defer cl.RemoveInstaller()
 		return c.createAzure(ctx, cl, opts)
 	case cloudprovider.AWS:
-		cl, err := c.newTerraformClient(ctx)
-		if err != nil {
-			return iamid.File{}, err
-		}
-		defer cl.RemoveInstaller()
 		return c.createAWS(ctx, cl, opts)
 	default:
 		return iamid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
@@ -221,4 +216,10 @@ func (c *IAMCreator) createAWS(ctx context.Context, cl tfIAMClient, opts *IAMCon
 			ControlPlaneInstanceProfile: iamOutput.AWS.ControlPlaneInstanceProfile,
 		},
 	}, nil
+}
+
+type newTFIAMClientFunc func(ctx context.Context, workspace string) (tfIAMClient, error)
+
+func newTerraformIAMClient(ctx context.Context, workspace string) (tfIAMClient, error) {
+	return terraform.New(ctx, workspace)
 }
