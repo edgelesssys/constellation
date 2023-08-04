@@ -45,7 +45,7 @@ spec:
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: cluster.local
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443
