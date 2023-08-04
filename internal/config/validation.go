@@ -782,7 +782,15 @@ func (c *Config) validateNodeGroupZoneField(fl validator.FieldLevel) bool {
 }
 
 func (c *Config) validateInstanceType(fl validator.FieldLevel) bool {
-	acceptNonCVM := c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{})
+	acceptNonCVM := false
+
+	if c.GetAttestationConfig().GetVariant().Equal(variant.AzureTrustedLaunch{}) {
+		acceptNonCVM = true
+	}
+	if c.GetAttestationConfig().GetVariant().Equal(variant.AWSNitroTPM{}) {
+		acceptNonCVM = true
+	}
+
 	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, c.GetProvider())
 }
 
