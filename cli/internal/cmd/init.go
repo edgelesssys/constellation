@@ -73,9 +73,9 @@ func NewInitCmd() *cobra.Command {
 }
 
 type initCmd struct {
-	log           debugLog
+	log           DebugLog
 	merger        configMerger
-	spinner       spinnerInterf
+	spinner       Spinner
 	fileHandler   file.Handler
 	helmInstaller initializer
 	clusterShower clusterShower
@@ -87,7 +87,7 @@ type clusterShower interface {
 
 func newInitCmd(
 	clusterShower clusterShower, helmInstaller initializer, fileHandler file.Handler,
-	spinner spinnerInterf, merger configMerger, log debugLog,
+	spinner Spinner, merger configMerger, log DebugLog,
 ) *initCmd {
 	return &initCmd{
 		log:           log,
@@ -101,7 +101,7 @@ func newInitCmd(
 
 // runInitialize runs the initialize command.
 func runInitialize(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -111,7 +111,7 @@ func runInitialize(cmd *cobra.Command, _ []string) error {
 		return dialer.New(nil, validator, &net.Dialer{})
 	}
 
-	spinner, err := newSpinnerOrStderr(cmd)
+	spinner, err := NewSpinnerOrStderr(cmd)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	i.log.Debugf("Using flags: %+v", flags)
-	i.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	i.log.Debugf("Loading configuration file from %q", ConfigPath(flags.workspace))
 	conf, err := config.New(i.fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -153,7 +153,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return err
 	}
 	if !flags.force {
-		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
+		if err := ValidateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
 	}
@@ -293,8 +293,8 @@ type initDoer struct {
 	endpoint      string
 	req           *initproto.InitRequest
 	resp          *initproto.InitSuccessResponse
-	log           debugLog
-	spinner       spinnerInterf
+	log           DebugLog
+	spinner       Spinner
 	connectedOnce bool
 	fh            file.Handler
 }
@@ -398,14 +398,14 @@ func (i *initCmd) writeOutput(
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster identifier", clusterID)
-	writeRow(tw, "Kubernetes configuration", adminConfPath(workspace))
+	writeRow(tw, "Kubernetes configuration", AdminConfPath(workspace))
 	tw.Flush()
 	fmt.Fprintln(wr)
 
 	if err := i.fileHandler.Write(constants.AdminConfFilename, initResp.GetKubeconfig(), file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-	i.log.Debugf("Kubeconfig written to %s", adminConfPath(workspace))
+	i.log.Debugf("Kubeconfig written to %s", AdminConfPath(workspace))
 
 	if mergeConfig {
 		if err := i.merger.mergeConfigs(constants.AdminConfFilename, i.fileHandler); err != nil {
@@ -422,11 +422,11 @@ func (i *initCmd) writeOutput(
 	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation ID file: %w", err)
 	}
-	i.log.Debugf("Constellation ID file written to %s", clusterIDsPath(workspace))
+	i.log.Debugf("Constellation ID file written to %s", ClusterIDsPath(workspace))
 
 	if !mergeConfig {
 		fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
-		fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", adminConfPath(workspace))
+		fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", AdminConfPath(workspace))
 	} else {
 		fmt.Fprintln(wr, "Constellation kubeconfig merged with default config.")
 
@@ -465,7 +465,7 @@ func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
-	i.log.Debugf("Configuration path flag is %q", configPath)
+	i.log.Debugf("Configuration path flag is %q", ConfigPath)
 	mergeConfigs, err := cmd.Flags().GetBool("merge-kubeconfig")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing merge-kubeconfig flag: %w", err)
@@ -516,7 +516,7 @@ func (i *initCmd) generateMasterSecret(outWriter io.Writer, workspace string) (u
 	if err := i.fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return uri.MasterSecret{}, err
 	}
-	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", masterSecretPath(workspace))
+	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", MasterSecretPath(workspace))
 	return secret, nil
 }
 
@@ -579,7 +579,7 @@ type configMerger interface {
 }
 
 type kubeconfigMerger struct {
-	log debugLog
+	log DebugLog
 }
 
 func (c *kubeconfigMerger) mergeConfigs(configPath string, fileHandler file.Handler) error {

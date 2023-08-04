@@ -55,7 +55,7 @@ func newUpgradeApplyCmd() *cobra.Command {
 }
 
 func runUpgradeApply(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -82,7 +82,7 @@ type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
-	log           debugLog
+	log           DebugLog
 }
 
 func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
@@ -102,7 +102,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	if upgradeRequiresIAMMigration(conf.GetProvider()) {
 		cmd.Println("WARNING: This upgrade requires an IAM migration. Please make sure you have applied the IAM migration using `iam upgrade apply` before continuing.")
 		if !flags.yes {
-			yes, err := askToConfirm(cmd, "Did you upgrade the IAM resources?")
+			yes, err := AskToConfirm(cmd, "Did you upgrade the IAM resources?")
 			if err != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}
@@ -231,7 +231,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		// If there are any Terraform migrations to apply, ask for confirmation
 		fmt.Fprintln(cmd.OutOrStdout(), "The upgrade requires a migration of Constellation cloud resources by applying an updated Terraform template. Please manually review the suggested changes below.")
 		if !flags.yes {
-			ok, err := askToConfirm(cmd, "Do you want to apply the Terraform migrations?")
+			ok, err := AskToConfirm(cmd, "Do you want to apply the Terraform migrations?")
 			if err != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}
@@ -255,7 +255,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
-			clusterIDsPath(flags.workspace), filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir))
+			ClusterIDsPath(flags.workspace), filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir))
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -269,7 +269,7 @@ func handleInvalidK8sPatchVersion(cmd *cobra.Command, version string, yes bool) 
 	valid := err == nil
 
 	if !valid && !yes {
-		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
+		confirmed, err := AskToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
@@ -305,7 +305,7 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 	}
 
 	if !flags.yes {
-		ok, err := askToConfirm(cmd, "You are about to change your cluster's attestation config. Are you sure you want to continue?")
+		ok, err := AskToConfirm(cmd, "You are about to change your cluster's attestation config. Are you sure you want to continue?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
@@ -325,7 +325,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
-			ok, askErr := askToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
+			ok, askErr := AskToConfirm(cmd, "Do you want to upgrade cert-manager anyway?")
 			if askErr != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}

@@ -18,7 +18,7 @@ import (
 
 // tfMigrationClient is a client for planning and applying Terraform migrations.
 type tfMigrationClient struct {
-	log debugLog
+	log DebugLog
 }
 
 // planMigration checks for Terraform migrations and asks for confirmation if there are any. The user input is returned as confirmedDiff.
@@ -46,7 +46,7 @@ func (u *tfMigrationClient) applyMigration(cmd *cobra.Command, upgradeWorkspace 
 		// If there are any Terraform migrations to apply, ask for confirmation
 		fmt.Fprintf(cmd.OutOrStdout(), "The %s upgrade requires a migration by applying an updated Terraform template. Please manually review the suggested changes below.\n", migrateCmd.String())
 		if !yesFlag {
-			ok, err := askToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
+			ok, err := AskToConfirm(cmd, fmt.Sprintf("Do you want to apply the %s?", migrateCmd.String()))
 			if err != nil {
 				return fmt.Errorf("asking for confirmation: %w", err)
 			}

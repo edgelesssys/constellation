@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel/go:go_test.bzl", "go_test")
+
+go_library(
+    name = "create",
+    srcs = ["create.go"],
+    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cmd/create",
+    visibility = ["//cli:__subpackages__"],
+    deps = [
+        "//cli/internal/cloudcmd",
+        "//cli/internal/clusterid",
+        "//cli/internal/cmd",
+        "//cli/internal/terraform",
+        "//internal/api/attestationconfigapi",
+        "//internal/attestation/variant",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/file",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)
+
+go_test(
+    name = "create_test",
+    srcs = ["create_test.go"],
+    embed = [":create"],
+    deps = [
+        "//cli/internal/cloudcmd",
+        "//cli/internal/clusterid",
+        "//cli/internal/cmd",
+        "//internal/cloud/cloudprovider",
+        "//internal/config",
+        "//internal/constants",
+        "//internal/file",
+        "//internal/logger",
+        "//internal/semver",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

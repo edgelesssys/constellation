@@ -245,7 +245,7 @@ func TestUpgradeCheck(t *testing.T) {
 			assert := assert.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
+			cfg := DefaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 
 			checkCmd := upgradeCheckCmd{
@@ -258,7 +258,7 @@ func TestUpgradeCheck(t *testing.T) {
 
 			cmd := newUpgradeCheckCmd()
 
-			err := checkCmd.upgradeCheck(cmd, fileHandler, stubAttestationFetcher{}, upgradeCheckFlags{})
+			err := checkCmd.upgradeCheck(cmd, fileHandler, StubAttestationFetcher{}, upgradeCheckFlags{})
 			if tc.wantError {
 				assert.Error(err)
 				return

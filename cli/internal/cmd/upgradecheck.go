@@ -60,7 +60,7 @@ func newUpgradeCheckCmd() *cobra.Command {
 }
 
 func runUpgradeCheck(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -149,7 +149,7 @@ type upgradeCheckCmd struct {
 	collect         collector
 	checker         upgradeChecker
 	imagefetcher    imageFetcher
-	log             debugLog
+	log             DebugLog
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
@@ -345,7 +345,7 @@ type versionCollector struct {
 	flags          upgradeCheckFlags
 	versionsapi    versionFetcher
 	cliVersion     consemver.Semver
-	log            debugLog
+	log            DebugLog
 }
 
 func (v *versionCollector) newMeasurements(ctx context.Context, csp cloudprovider.Provider, attestationVariant variant.Variant, versions []versionsapi.Version) (map[string]measurements.M, error) {
@@ -631,7 +631,7 @@ func getCurrentKubernetesVersion(ctx context.Context, checker upgradeChecker) (s
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
 func getCompatibleImageMeasurements(ctx context.Context, writer io.Writer, client *http.Client, cosign sigstore.Verifier, rekor rekorVerifier,
-	csp cloudprovider.Provider, attestationVariant variant.Variant, version versionsapi.Version, log debugLog,
+	csp cloudprovider.Provider, attestationVariant variant.Variant, version versionsapi.Version, log DebugLog,
 ) (measurements.M, error) {
 	measurementsURL, signatureURL, err := versionsapi.MeasurementURL(version)
 	if err != nil {

@@ -4,22 +4,23 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cmd
+package create
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	cmdpkg "github.com/edgelesssys/constellation/v2/cli/internal/cmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
-	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/variant"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/semver"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -37,22 +38,22 @@ func NewCreateCmd() *cobra.Command {
 	// TODO(malt3): remove deprecated flags in v2.11+
 	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes")
 	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes")
-	must(cmd.Flags().MarkDeprecated("control-plane-nodes", "configure the number of control-plane nodes in the configuration file"))
-	must(cmd.Flags().MarkDeprecated("worker-nodes", "configure the number of worker nodes in the configuration file"))
+	cmdpkg.Must(cmd.Flags().MarkDeprecated("control-plane-nodes", "configure the number of control-plane nodes in the configuration file"))
+	cmdpkg.Must(cmd.Flags().MarkDeprecated("worker-nodes", "configure the number of worker nodes in the configuration file"))
 	return cmd
 }
 
 type createCmd struct {
-	log debugLog
+	log cmdpkg.DebugLog
 }
 
 func runCreate(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := cmdpkg.NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	spinner, err := newSpinnerOrStderr(cmd)
+	spinner, err := cmdpkg.NewSpinnerOrStderr(cmd)
 	if err != nil {
 		return fmt.Errorf("creating spinner: %w", err)
 	}
@@ -65,7 +66,14 @@ func runCreate(cmd *cobra.Command, _ []string) error {
 	return c.create(cmd, creator, fileHandler, spinner, fetcher)
 }
 
-func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf, fetcher attestationconfigapi.Fetcher) (retErr error) {
+type cloudCreator interface {
+	Create(
+		ctx context.Context,
+		opts cloudcmd.CreateOptions,
+	) (clusterid.File, error)
+}
+
+func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner cmdpkg.Spinner, fetcher attestationconfigapi.Fetcher) (retErr error) {
 	flags, err := c.parseCreateFlags(cmd)
 	if err != nil {
 		return err
@@ -75,7 +83,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 
-	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	c.log.Debugf("Loading configuration file from %q", cmdpkg.ConfigPath(flags.workspace))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
@@ -86,7 +94,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 	if !flags.force {
-		if err := validateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
+		if err := cmdpkg.ValidateCLIandConstellationVersionAreEqual(constants.BinaryVersion(), conf.Image, conf.MicroserviceVersion); err != nil {
 			return err
 		}
 	}
@@ -148,7 +156,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 			group := conf.NodeGroups[groupName]
 			cmd.Printf("  group %s with %d node%s of type %s will be created.\n", groupName, group.InitialCount, isPlural(group.InitialCount), group.InstanceType)
 		}
-		ok, err := askToConfirm(cmd, "Do you want to create this cluster?")
+		ok, err := cmdpkg.AskToConfirm(cmd, "Do you want to create this cluster?")
 		if err != nil {
 			return err
 		}
@@ -208,7 +216,7 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	c.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
+	c.log.Debugf("Terraform logs will be written into %s at level %s", cmdpkg.TerraformLogPath(workspace), logLevel.String())
 
 	return createFlags{
 		workspace:  workspace,
@@ -230,15 +238,15 @@ type createFlags struct {
 func (c *createCmd) checkDirClean(workspace string, fileHandler file.Handler) error {
 	c.log.Debugf("Checking admin configuration file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", adminConfPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", cmdpkg.AdminConfPath(workspace))
 	}
 	c.log.Debugf("Checking master secrets file")
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", masterSecretPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", cmdpkg.MasterSecretPath(workspace))
 	}
 	c.log.Debugf("Checking cluster IDs file")
 	if _, err := fileHandler.Stat(constants.ClusterIDsFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", clusterIDsPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", cmdpkg.ClusterIDsPath(workspace))
 	}
 
 	return nil
@@ -250,14 +258,14 @@ func translateCreateErrors(cmd *cobra.Command, workspace string, err error) erro
 		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which does not match the expected state.")
 		cmd.PrintErrln("This can be due to a mix up between providers, versions or an otherwise corrupted workspace.")
 		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
-		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", terraformClusterWorkspace(workspace))
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", cmdpkg.TerraformClusterWorkspace(workspace))
 		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
 		return err
 	case errors.Is(err, terraform.ErrTerraformWorkspaceExistsWithDifferentVariables):
 		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which was initiated with different input variables.")
 		cmd.PrintErrln("This can be the case if you have tried to create a cluster before with different options which did not complete, or the workspace is corrupted.")
 		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
-		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", terraformClusterWorkspace(workspace))
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", cmdpkg.TerraformClusterWorkspace(workspace))
 		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
 		return err
 	default:
@@ -270,31 +278,4 @@ func isPlural(count int) string {
 		return ""
 	}
 	return "s"
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-// validateCLIandConstellationVersionAreEqual checks if the image and microservice version are equal (down to patch level) to the CLI version.
-func validateCLIandConstellationVersionAreEqual(cliVersion semver.Semver, imageVersion string, microserviceVersion semver.Semver) error {
-	parsedImageVersion, err := versionsapi.NewVersionFromShortPath(imageVersion, versionsapi.VersionKindImage)
-	if err != nil {
-		return fmt.Errorf("parsing image version: %w", err)
-	}
-
-	semImage, err := semver.New(parsedImageVersion.Version())
-	if err != nil {
-		return fmt.Errorf("parsing image semantical version: %w", err)
-	}
-
-	if !cliVersion.MajorMinorEqual(semImage) {
-		return fmt.Errorf("image version %q does not match the major and minor version of the cli version %q", semImage.String(), cliVersion.String())
-	}
-	if cliVersion.Compare(microserviceVersion) != 0 {
-		return fmt.Errorf("cli version %q does not match microservice version %q", cliVersion.String(), microserviceVersion.String())
-	}
-	return nil
 }

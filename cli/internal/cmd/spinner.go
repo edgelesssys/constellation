@@ -30,7 +30,7 @@ var (
 	dotsStates    = []string{".  ", ".. ", "..."}
 )
 
-type spinnerInterf interface {
+type Spinner interface {
 	Start(text string, showDots bool)
 	Stop()
 	io.Writer
@@ -44,14 +44,14 @@ type spinner struct {
 	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool)
 }
 
-func newSpinnerOrStderr(cmd *cobra.Command) (spinnerInterf, error) {
+func NewSpinnerOrStderr(cmd *cobra.Command) (Spinner, error) {
 	debug, err := cmd.Flags().GetBool("debug")
 	noSpinner := os.Getenv(constants.EnvVarNoSpinner)
 	if err != nil {
 		return nil, err
 	}
 	if debug || noSpinner != "" {
-		return &nopSpinner{cmd.ErrOrStderr()}, nil
+		return &NopSpinner{cmd.ErrOrStderr()}, nil
 	}
 	return newSpinner(cmd.ErrOrStderr()), nil
 }
@@ -122,14 +122,4 @@ func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Du
 func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *atomic.Bool, _ time.Duration, text string, _ bool) {
 	defer wg.Done()
 	fmt.Fprintln(out, text+"...")
-}
-
-type nopSpinner struct {
-	io.Writer
-}
-
-func (s *nopSpinner) Start(string, bool) {}
-func (s *nopSpinner) Stop()              {}
-func (s *nopSpinner) Write(p []byte) (n int, err error) {
-	return s.Writer.Write(p)
 }

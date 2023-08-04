@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -24,21 +23,6 @@ func TestMain(m *testing.M) {
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
 	)
-}
-
-type stubCloudCreator struct {
-	createCalled bool
-	id           clusterid.File
-	createErr    error
-}
-
-func (c *stubCloudCreator) Create(
-	_ context.Context,
-	opts cloudcmd.CreateOptions,
-) (clusterid.File, error) {
-	c.createCalled = true
-	c.id.CloudProvider = opts.Provider
-	return c.id, c.createErr
 }
 
 type stubCloudTerminator struct {

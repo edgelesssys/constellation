@@ -45,17 +45,17 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 type miniUpCmd struct {
-	log           debugLog
+	log           DebugLog
 	configFetcher attestationconfigapi.Fetcher
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
 	defer log.Sync()
-	spinner, err := newSpinnerOrStderr(cmd)
+	spinner, err := NewSpinnerOrStderr(cmd)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	return m.up(cmd, creator, spinner)
 }
 
-func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
+func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner Spinner) error {
 	if err := m.checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
@@ -114,7 +114,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 	if err == nil {
 		// config already exists, prompt user if they want to use this file
 		cmd.PrintErrln("A config file already exists in the configured workspace.")
-		ok, err := askToConfirm(cmd, "Do you want to create the Constellation using that config?")
+		ok, err := AskToConfirm(cmd, "Do you want to create the Constellation using that config?")
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler, 
 		}
 
 		// user declined to reuse config file, prompt if they want to overwrite it
-		ok, err = askToConfirm(cmd, "Do you want to overwrite it and create a new config?")
+		ok, err = AskToConfirm(cmd, "Do you want to overwrite it and create a new config?")
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +180,7 @@ func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Hand
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
-func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner spinnerInterf) (retErr error) {
+func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner Spinner) (retErr error) {
 	m.log.Debugf("Initializing mini cluster")
 	// clean up cluster resources if initialization fails
 	defer func() {
@@ -198,7 +198,7 @@ func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.H
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
 	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -233,12 +233,12 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing config string: %w", err)
 	}
-	m.log.Debugf("Configuration path is %q", configPath)
+	m.log.Debugf("Configuration path is %q", ConfigPath)
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing force bool: %w", err)
 	}
-	m.log.Debugf("force flag is %q", configPath)
+	m.log.Debugf("force flag is %q", ConfigPath)
 
 	logLevelString, err := cmd.Flags().GetString("tf-log")
 	if err != nil {
@@ -248,7 +248,7 @@ func (m *miniUpCmd) parseUpFlags(cmd *cobra.Command) (upFlags, error) {
 	if err != nil {
 		return upFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	m.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
+	m.log.Debugf("Terraform logs will be written into %s at level %s", TerraformLogPath(workspace), logLevel.String())
 
 	return upFlags{
 		force:      force,

@@ -168,7 +168,7 @@ func TestInitialize(t *testing.T) {
 			// File system preparation
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+			config := DefaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 			if tc.configMutator != nil {
 				tc.configMutator(config)
 			}
@@ -185,8 +185,8 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 			cmd.SetContext(ctx)
-			i := newInitCmd(&stubShowCluster{}, &stubHelmInstaller{}, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
+			i := newInitCmd(&stubShowCluster{}, &stubHelmInstaller{}, fileHandler, &NopSpinner{}, nil, logger.NewTest(t))
+			err := i.initialize(cmd, newDialer, &stubLicenseClient{}, StubAttestationFetcher{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -327,7 +327,7 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), adminConfPath("some/path"))
+	assert.Contains(out.String(), AdminConfPath("some/path"))
 	out.Reset()
 	// File is written to current working dir, we simply pass the workspace for generating readable user output
 	require.NoError(afs.Remove(constants.AdminConfFilename))
@@ -482,8 +482,8 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	i := newInitCmd(nil, nil, fileHandler, &nopSpinner{}, nil, logger.NewTest(t))
-	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, stubAttestationFetcher{})
+	i := newInitCmd(nil, nil, fileHandler, &NopSpinner{}, nil, logger.NewTest(t))
+	err := i.initialize(cmd, newDialer, &stubLicenseClient{}, StubAttestationFetcher{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -551,54 +551,6 @@ func (m *stubMerger) mergeConfigs(string, file.Handler) error {
 
 func (m *stubMerger) kubeconfigEnvVar() string {
 	return m.envVar
-}
-
-func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, csp cloudprovider.Provider) *config.Config {
-	t.Helper()
-
-	conf.RemoveProviderAndAttestationExcept(csp)
-
-	conf.Image = constants.BinaryVersion().String()
-	conf.Name = "kubernetes"
-
-	var zone, instanceType, diskType string
-	switch csp {
-	case cloudprovider.Azure:
-		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
-		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
-		conf.Provider.Azure.Location = "test-location"
-		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
-		conf.Provider.Azure.ResourceGroup = "test-resource-group"
-		conf.Attestation.AzureSEVSNP.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.AzureSEVSNP.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.AzureSEVSNP.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-		instanceType = "Standard_DC4as_v5"
-		diskType = "StandardSSD_LRS"
-	case cloudprovider.GCP:
-		conf.Provider.GCP.Region = "test-region"
-		conf.Provider.GCP.Project = "test-project"
-		conf.Provider.GCP.Zone = "test-zone"
-		conf.Provider.GCP.ServiceAccountKeyPath = "test-key-path"
-		conf.Attestation.GCPSEVES.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.GCPSEVES.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.GCPSEVES.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-		zone = "europe-west3-b"
-		instanceType = "n2d-standard-4"
-		diskType = "pd-ssd"
-	case cloudprovider.QEMU:
-		conf.Attestation.QEMUVTPM.Measurements[4] = measurements.WithAllBytes(0x44, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.QEMUVTPM.Measurements[9] = measurements.WithAllBytes(0x11, measurements.Enforce, measurements.PCRMeasurementLength)
-		conf.Attestation.QEMUVTPM.Measurements[12] = measurements.WithAllBytes(0xcc, measurements.Enforce, measurements.PCRMeasurementLength)
-	}
-
-	for groupName, group := range conf.NodeGroups {
-		group.Zone = zone
-		group.InstanceType = instanceType
-		group.StateDiskType = diskType
-		conf.NodeGroups[groupName] = group
-	}
-
-	return conf
 }
 
 type stubLicenseClient struct{}

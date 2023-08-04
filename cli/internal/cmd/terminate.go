@@ -37,7 +37,7 @@ func NewTerminateCmd() *cobra.Command {
 // runTerminate runs the terminate command.
 func runTerminate(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	spinner, err := newSpinnerOrStderr(cmd)
+	spinner, err := NewSpinnerOrStderr(cmd)
 	if err != nil {
 		return fmt.Errorf("creating spinner: %w", err)
 	}
@@ -47,7 +47,7 @@ func runTerminate(cmd *cobra.Command, _ []string) error {
 	return terminate(cmd, terminator, fileHandler, spinner)
 }
 
-func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
+func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner Spinner,
 ) error {
 	flags, err := parseTerminateFlags(cmd)
 	if err != nil {
@@ -58,7 +58,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		cmd.Println("You are about to terminate a Constellation cluster.")
 		cmd.Println("All of its associated resources will be DESTROYED.")
 		cmd.Println("This action is irreversible and ALL DATA WILL BE LOST.")
-		ok, err := askToConfirm(cmd, "Do you want to continue?")
+		ok, err := AskToConfirm(cmd, "Do you want to continue?")
 		if err != nil {
 			return err
 		}
@@ -79,11 +79,11 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 
 	var removeErr error
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", adminConfPath(flags.workspace)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", AdminConfPath(flags.workspace)))
 	}
 
 	if err := fileHandler.Remove(constants.ClusterIDsFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", clusterIDsPath(flags.workspace)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", ClusterIDsPath(flags.workspace)))
 	}
 
 	return removeErr

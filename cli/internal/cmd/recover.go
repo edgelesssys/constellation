@@ -48,12 +48,12 @@ func NewRecoverCmd() *cobra.Command {
 }
 
 type recoverCmd struct {
-	log           debugLog
+	log           DebugLog
 	configFetcher attestationconfigapi.Fetcher
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -77,12 +77,12 @@ func (r *recoverCmd) recover(
 	r.log.Debugf("Using flags: %+v", flags)
 
 	var masterSecret uri.MasterSecret
-	r.log.Debugf("Loading master secret file from %s", masterSecretPath(flags.workspace))
+	r.log.Debugf("Loading master secret file from %s", MasterSecretPath(flags.workspace))
 	if err := fileHandler.ReadJSON(constants.MasterSecretFilename, &masterSecret); err != nil {
 		return err
 	}
 
-	r.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	r.log.Debugf("Loading configuration file from %q", ConfigPath(flags.workspace))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, r.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -170,7 +170,7 @@ type recoverDoer struct {
 	endpoint   string
 	kmsURI     string // encodes masterSecret
 	storageURI string
-	log        debugLog
+	log        DebugLog
 }
 
 // Do performs the recover streaming rpc.

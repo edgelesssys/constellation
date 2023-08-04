@@ -150,7 +150,7 @@ func TestRecover(t *testing.T) {
 			fileHandler := file.NewHandler(fs)
 
 			if !tc.skipConfigCreation {
-				config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
+				config := DefaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			}
 
@@ -161,7 +161,7 @@ func TestRecover(t *testing.T) {
 			))
 
 			newDialer := func(atls.Validator) *dialer.Dialer { return nil }
-			r := &recoverCmd{log: logger.NewTest(t), configFetcher: stubAttestationFetcher{}}
+			r := &recoverCmd{log: logger.NewTest(t), configFetcher: StubAttestationFetcher{}}
 			err := r.recover(cmd, fileHandler, time.Millisecond, tc.doer, newDialer)
 			if tc.wantErr {
 				assert.Error(err)

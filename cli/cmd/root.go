@@ -18,6 +18,8 @@ import (
 	"os/signal"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/create"
+
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +52,7 @@ func NewRootCmd() *cobra.Command {
 	must(rootCmd.MarkPersistentFlagDirname("workspace"))
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
-	rootCmd.AddCommand(cmd.NewCreateCmd())
+	rootCmd.AddCommand(create.NewCreateCmd())
 	rootCmd.AddCommand(cmd.NewInitCmd())
 	rootCmd.AddCommand(cmd.NewMiniCmd())
 	rootCmd.AddCommand(cmd.NewStatusCmd())

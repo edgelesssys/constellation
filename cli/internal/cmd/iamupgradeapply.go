@@ -76,7 +76,7 @@ func runIAMUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up IAM migration command: %w", err)
 	}
 
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("setting up logger: %w", err)
 	}

@@ -17,10 +17,10 @@ import (
 // ErrInvalidInput is an error where user entered invalid input.
 var ErrInvalidInput = errors.New("user made invalid input")
 
-// askToConfirm asks user to confirm an action.
+// AskToConfirm asks user to confirm an action.
 // The user will be asked the handed question and can answer with
 // yes or no.
-func askToConfirm(cmd *cobra.Command, question string) (bool, error) {
+func AskToConfirm(cmd *cobra.Command, question string) (bool, error) {
 	reader := bufio.NewReader(cmd.InOrStdin())
 	cmd.Printf("%s [y/n]: ", question)
 	for i := 0; i < 3; i++ {

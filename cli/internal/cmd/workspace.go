@@ -19,36 +19,36 @@ import (
 // The MUST not be used when accessing files, as the workspace is changed
 // using os.Chdir() before the command is executed.
 
-func adminConfPath(workspace string) string {
+func AdminConfPath(workspace string) string {
 	return filepath.Join(workspace, constants.AdminConfFilename)
 }
 
-func configPath(workspace string) string {
+func ConfigPath(workspace string) string {
 	return filepath.Join(workspace, constants.ConfigFilename)
 }
 
-func clusterIDsPath(workspace string) string {
+func ClusterIDsPath(workspace string) string {
 	return filepath.Join(workspace, constants.ClusterIDsFilename)
 }
 
-func masterSecretPath(workspace string) string {
+func MasterSecretPath(workspace string) string {
 	return filepath.Join(workspace, constants.MasterSecretFilename)
 }
 
-func terraformClusterWorkspace(workspace string) string {
+func TerraformClusterWorkspace(workspace string) string {
 	return filepath.Join(workspace, constants.TerraformWorkingDir)
 }
 
-func terraformIAMWorkspace(workspace string) string {
+func TerraformIAMWorkspace(workspace string) string {
 	return filepath.Join(workspace, constants.TerraformIAMWorkingDir)
 }
 
-func terraformLogPath(workspace string) string {
+func TerraformLogPath(workspace string) string {
 	return filepath.Join(workspace, constants.TerraformLogFile)
 }
 
 const gcpServiceAccountKeyFile = "gcpServiceAccountKey.json"
 
-func gcpServiceAccountKeyPath(workspace string) string {
+func GcpServiceAccountKeyPath(workspace string) string {
 	return filepath.Join(workspace, gcpServiceAccountKeyFile)
 }

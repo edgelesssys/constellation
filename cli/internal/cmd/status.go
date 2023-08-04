@@ -44,7 +44,7 @@ func NewStatusCmd() *cobra.Command {
 
 // runStatus runs the terminate command.
 func runStatus(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}

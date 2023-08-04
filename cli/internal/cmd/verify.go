@@ -54,11 +54,11 @@ func NewVerifyCmd() *cobra.Command {
 }
 
 type verifyCmd struct {
-	log debugLog
+	log DebugLog
 }
 
 func runVerify(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -85,7 +85,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	c.log.Debugf("Loading configuration file from %q", ConfigPath(flags.workspace))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -178,13 +178,13 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", clusterIDsPath(workspace))
+		c.log.Debugf("Trying to supplement empty flag values from %q", ClusterIDsPath(workspace))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", clusterIDsPath(workspace))
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", ClusterIDsPath(workspace))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", clusterIDsPath(workspace))
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", ClusterIDsPath(workspace))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}
@@ -244,7 +244,7 @@ type attestationDocFormatter interface {
 }
 
 type attestationDocFormatterImpl struct {
-	log debugLog
+	log DebugLog
 }
 
 // format returns the raw or formatted attestation doc depending on the rawOutput argument.
@@ -480,7 +480,7 @@ type azureInstanceInfo struct {
 
 type constellationVerifier struct {
 	dialer grpcInsecureDialer
-	log    debugLog
+	log    DebugLog
 }
 
 // Verify retrieves an attestation statement from the Constellation and verifies it using the validator.

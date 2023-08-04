@@ -114,7 +114,7 @@ func TestIAMDestroy(t *testing.T) {
 
 			c := &destroyCmd{log: logger.NewTest(t)}
 
-			err := c.iamDestroy(cmd, &nopSpinner{}, tc.iamDestroyer, tc.fh)
+			err := c.iamDestroy(cmd, &NopSpinner{}, tc.iamDestroyer, tc.fh)
 
 			if tc.wantErr {
 				assert.Error(err)

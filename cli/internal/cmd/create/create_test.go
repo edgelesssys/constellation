@@ -4,15 +4,18 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cmd
+package create
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"strconv"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	cmdpkg "github.com/edgelesssys/constellation/v2/cli/internal/cmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -28,7 +31,7 @@ func TestCreate(t *testing.T) {
 	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		file := file.NewHandler(fs)
-		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		require.NoError(file.WriteYAML(constants.ConfigFilename, cmdpkg.DefaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
 	idFile := clusterid.File{IP: "192.0.2.1"}
@@ -114,7 +117,7 @@ func TestCreate(t *testing.T) {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cmdpkg.DefaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -129,7 +132,7 @@ func TestCreate(t *testing.T) {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cmdpkg.DefaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -161,7 +164,7 @@ func TestCreate(t *testing.T) {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cmdpkg.DefaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
 			creator:             &stubCloudCreator{},
@@ -198,7 +201,7 @@ func TestCreate(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 			c := &createCmd{log: logger.NewTest(t)}
-			err := c.create(cmd, tc.creator, fileHandler, &nopSpinner{}, stubAttestationFetcher{})
+			err := c.create(cmd, tc.creator, fileHandler, &cmdpkg.NopSpinner{}, cmdpkg.StubAttestationFetcher{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -322,7 +325,7 @@ func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateCLIandConstellationVersionAreEqual(tc.cliVersion, tc.imageVersion, tc.microServiceVersion)
+			err := cmdpkg.ValidateCLIandConstellationVersionAreEqual(tc.cliVersion, tc.imageVersion, tc.microServiceVersion)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -335,4 +338,19 @@ func TestValidateCLIandConstellationVersionCompatibility(t *testing.T) {
 
 func intPtr(i int) *int {
 	return &i
+}
+
+type stubCloudCreator struct {
+	createCalled bool
+	id           clusterid.File
+	createErr    error
+}
+
+func (c *stubCloudCreator) Create(
+	_ context.Context,
+	opts cloudcmd.CreateOptions,
+) (clusterid.File, error) {
+	c.createCalled = true
+	c.id.CloudProvider = opts.Provider
+	return c.id, c.createErr
 }

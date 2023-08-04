@@ -12,12 +12,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type debugLog interface {
+type DebugLog interface {
 	Debugf(format string, args ...any)
 	Sync()
 }
 
-func newCLILogger(cmd *cobra.Command) (debugLog, error) {
+func NewCLILogger(cmd *cobra.Command) (DebugLog, error) {
 	logLvl := zapcore.InfoLevel
 	debugLog, err := cmd.Flags().GetBool("debug")
 	if err != nil {

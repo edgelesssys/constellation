@@ -40,7 +40,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 	cmd.Flags().StringP("url", "u", "", "alternative URL to fetch measurements from")
 	cmd.Flags().StringP("signature-url", "s", "", "alternative URL to fetch measurements' signature from")
 	cmd.Flags().Bool("insecure", false, "skip the measurement signature verification")
-	must(cmd.Flags().MarkHidden("insecure"))
+	Must(cmd.Flags().MarkHidden("insecure"))
 
 	return cmd
 }
@@ -55,11 +55,11 @@ type fetchMeasurementsFlags struct {
 
 type configFetchMeasurementsCmd struct {
 	canFetchMeasurements bool
-	log                  debugLog
+	log                  DebugLog
 }
 
 func runConfigFetchMeasurements(cmd *cobra.Command, _ []string) error {
-	log, err := newCLILogger(cmd)
+	log, err := NewCLILogger(cmd)
 	if err != nil {
 		return fmt.Errorf("creating logger: %w", err)
 	}
@@ -173,7 +173,7 @@ func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	if err := fileHandler.WriteYAML(constants.ConfigFilename, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-	cfm.log.Debugf("Configuration written to %s", configPath(flags.workspace))
+	cfm.log.Debugf("Configuration written to %s", ConfigPath(flags.workspace))
 	cmd.Print("Successfully fetched measurements and updated Configuration\n")
 	return nil
 }

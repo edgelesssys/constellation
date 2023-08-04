@@ -139,11 +139,11 @@ func TestUpgradeApply(t *testing.T) {
 			}
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
+			cfg := DefaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: StubAttestationFetcher{}}
 
 			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {

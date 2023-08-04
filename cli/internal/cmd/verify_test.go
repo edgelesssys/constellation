@@ -177,7 +177,7 @@ func TestVerify(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			if !tc.skipConfigCreation {
-				cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
+				cfg := DefaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg))
 			}
 			if tc.idFile != nil {
@@ -185,7 +185,7 @@ func TestVerify(t *testing.T) {
 			}
 
 			v := &verifyCmd{log: logger.NewTest(t)}
-			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, stubAttestationFetcher{})
+			err := v.verify(cmd, fileHandler, tc.protoClient, tc.formatter, StubAttestationFetcher{})
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
