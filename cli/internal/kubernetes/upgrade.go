@@ -200,7 +200,11 @@ func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.Te
 
 // UpgradeHelmServices upgrade helm services.
 func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string) error {
-	output, err := u.tfClient.ShowCluster(ctx, config.GetProvider())
+	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir) // TODO(elchead): use prior apply output instead of new client? u.TfClient not working because upgrade dir is already deleted
+	if err != nil {
+		return fmt.Errorf("setting up terraform client: %w", err)
+	}
+	output, err := tfClient.ShowCluster(ctx, config.GetProvider())
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}

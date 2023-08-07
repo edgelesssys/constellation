@@ -136,7 +136,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.shouldUpgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
@@ -314,9 +314,9 @@ type imageFetcher interface {
 	) (string, error)
 }
 
-// upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
-// If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
-func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+// shouldUpgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
+// If so the function will ask the user to confirm (if --yes is not set).
+func (u *upgradeApplyCmd) shouldUpgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, err := getAttestationConfig(cmd.Context(), u.stableClient, newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
@@ -343,12 +343,8 @@ func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfi
 			return fmt.Errorf("asking for confirmation: %w", err)
 		}
 		if !ok {
-			cmd.Println("Skipping upgrade.")
-			return nil
+			return errors.New("aborting upgrade since attestation config is different")
 		}
-	}
-	if err := u.upgrader.UpdateAttestationConfig(cmd.Context(), newConfig); err != nil {
-		return fmt.Errorf("updating attestation config: %w", err)
 	}
 	return nil
 }

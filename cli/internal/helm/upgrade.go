@@ -159,7 +159,10 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 			c.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
 			newReleases = append(newReleases, release)
 		case errors.As(err, &invalidUpgrade):
-			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
+			// TODO(elchead): remove invalid upgrade since we allow any upgrade now? previously even this was invalid: skipping constellation-operators upgrade: upgrading from v2.10.0-pre.0.20230807122325-630c24084cbd to v2.10.0-pre.0.20230807122325-630c24084cbd is not a valid upgrade: current version newer than or equal to new version
+			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
+			upgradeReleases = append(upgradeReleases, release)
+		// upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
 		case err != nil:
 			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
@@ -190,7 +193,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 
 	for _, release := range upgradeReleases {
 		c.log.Debugf("Upgrading release %s", release.Chart.Metadata.Name)
-		if err := c.upgradeRelease(ctx, timeout, config, idFile, release.Chart); err != nil {
+		if err := c.upgradeRelease(ctx, timeout, config, idFile, release); err != nil {
 			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
 	}
@@ -329,19 +332,19 @@ func (c *UpgradeClient) installNewRelease(
 
 // upgradeRelease upgrades a release running on the cluster.
 func (c *UpgradeClient) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, release Release,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
-	if err != nil {
-		return fmt.Errorf("loading values: %w", err)
-	}
+	//releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, release)
+	//if err != nil {
+	//	return fmt.Errorf("loading values: %w", err)
+	//}
 
-	values, err = c.mergeClusterValues(values, releaseName)
-	if err != nil {
-		return fmt.Errorf("preparing values: %w", err)
-	}
+	//values, err = c.mergeClusterValues(values, releaseName)
+	//if err != nil {
+	//	return fmt.Errorf("preparing values: %w", err)
+	//}
 
-	return c.actions.upgradeAction(ctx, releaseName, chart, values, timeout)
+	return c.actions.upgradeAction(ctx, release.ReleaseName, release.Chart, release.Values, timeout)
 }
 
 // loadUpgradeValues loads values for a chart required for running an upgrade.
