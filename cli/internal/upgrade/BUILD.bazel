@@ -12,7 +12,6 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//cli/internal/cloudcmd",
-        "//cli/internal/clusterid",
         "//cli/internal/terraform",
         "//internal/cloud/cloudprovider",
         "//internal/constants",

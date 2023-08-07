@@ -17,7 +17,6 @@ package semver
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -143,8 +142,8 @@ func (v Semver) MajorMinorEqual(other Semver) bool {
 // IsUpgradeTo returns if a version is an upgrade to another version.
 // It checks if the version of v is greater than the version of other and allows a drift of at most one minor version.
 func (v Semver) IsUpgradeTo(other Semver) error {
-	if v.Compare(other) <= 0 {
-		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), errors.New("current version newer than or equal to new version"))
+	if v.Compare(other) < 0 { // allow an upgrade of the same version, because a devbuild might not have a newer version tag
+		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), fmt.Errorf("current version %q  newer than new version %q", v.String(), other.String()))
 	}
 	if v.major != other.major {
 		return compatibility.NewInvalidUpgradeError(v.String(), other.String(), compatibility.ErrMajorMismatch)

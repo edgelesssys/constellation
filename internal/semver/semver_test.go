@@ -225,7 +225,7 @@ func TestCanUpgrade(t *testing.T) {
 		"equal": {
 			version1:    v1_18_0,
 			version2:    v1_18_0,
-			wantUpgrade: false,
+			wantUpgrade: true,
 		},
 		"patch less than": {
 			version1:    v1_18_0,
@@ -265,7 +265,7 @@ func TestCanUpgrade(t *testing.T) {
 		"prerelease equal": {
 			version1:    v1_18_0Pre,
 			version2:    v1_18_0Pre,
-			wantUpgrade: false,
+			wantUpgrade: true,
 		},
 		"prerelease extra": {
 			version1:    v1_18_0Pre,
