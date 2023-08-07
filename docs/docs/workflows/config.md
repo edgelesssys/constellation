@@ -80,6 +80,50 @@ SNP-based attestation will be enabled as soon as a fix is verified.
 
 Fill the desired VM type into the **instanceType** fields in the `constellation-conf.yml` file.
 
+## Creating additional node groups
+
+By default, Constellation will create the node groups `control_plane_default` and `worker_default` for control-plane nodes and workers respectively.
+If you require additional control-plane or worker groups with different instance types, zone placements or disk sizes, you can add additional node groups to the `constellation-conf.yml` file.
+Each node group can be scaled individually.
+
+
+Consider the following example for AWS:
+
+```yaml
+nodeGroups:
+  control_plane_default:
+    role: control-plane
+    instanceType: c6a.xlarge
+    stateDiskSizeGB: 30
+    stateDiskType: gp3
+    zone: eu-west-1c
+    initialCount: 3
+  worker_default:
+    role: worker
+    instanceType: c6a.xlarge
+    stateDiskSizeGB: 30
+    stateDiskType: gp3
+    zone: eu-west-1c
+    initialCount: 2
+  high_cpu:
+    role: worker
+    instanceType: c6a.24xlarge
+    stateDiskSizeGB: 128
+    stateDiskType: gp3
+    zone: eu-west-1c
+    initialCount: 1
+```
+
+This configuration creates an additional node group `high_cpu` with a larger instance type and disk.
+
+The field `zone` can be used to specify what availability zone nodes of the group are placed in.
+On Azure, this field is empty by default and nodes are automatically spread across availability zones.
+Consult the documentation of your cloud provider for more information:
+
+- [AWS](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
+- [Azure](https://azure.microsoft.com/en-us/explore/global-infrastructure/availability-zones)
+- [GCP](https://cloud.google.com/compute/docs/regions-zones)
+
 ## Choosing a Kubernetes version
 
 To learn which Kubernetes versions can be installed with your current CLI, you can run `constellation config kubernetes-versions`.
