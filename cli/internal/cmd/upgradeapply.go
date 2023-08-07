@@ -127,7 +127,8 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 			}
 		}
 	}
-	if err := handleInvalidK8sPatchVersion(cmd, conf.KubernetesVersion, flags.yes); err != nil {
+	validK8sVersion, err := validK8sVersion(cmd, conf.KubernetesVersion, flags.yes)
+	if err != nil {
 		return err
 	}
 
@@ -163,7 +164,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		var upgradeErr *compatibility.InvalidUpgradeError
-		err = u.handleServiceUpgrade(cmd, conf, idFile, fileHandler, tfOutput, flags)
+		err = u.handleServiceUpgrade(cmd, conf, idFile, fileHandler, tfOutput, validK8sVersion, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -316,22 +317,25 @@ func newIDFile(opts upgrade.TerraformUpgradeOptions, tfOutput terraform.ApplyOut
 	return newIDFile
 }
 
-// handleInvalidK8sPatchVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
-func handleInvalidK8sPatchVersion(cmd *cobra.Command, version string, yes bool) error {
-	_, err := versions.NewValidK8sVersion(version, true)
+// validK8sVersion checks if the Kubernetes patch version is supported and asks for confirmation if not.
+func validK8sVersion(cmd *cobra.Command, version string, yes bool) (validVersion versions.ValidK8sVersion, err error) {
+	validVersion, err = versions.NewValidK8sVersion(version, true)
+	if versions.IsPreviewK8sVersion(validVersion) {
+		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", validVersion)
+	} // TODO(elchead): copied from init, should we also use it here?
 	valid := err == nil
 
 	if !valid && !yes {
 		confirmed, err := askToConfirm(cmd, fmt.Sprintf("WARNING: The Kubernetes patch version %s is not supported. If you continue, Kubernetes upgrades will be skipped. Do you want to continue anyway?", version))
 		if err != nil {
-			return fmt.Errorf("asking for confirmation: %w", err)
+			return validVersion, fmt.Errorf("asking for confirmation: %w", err)
 		}
 		if !confirmed {
-			return fmt.Errorf("aborted by user")
+			return validVersion, fmt.Errorf("aborted by user")
 		}
 	}
 
-	return nil
+	return validVersion, nil
 }
 
 type imageFetcher interface {
@@ -376,7 +380,7 @@ func (u *upgradeApplyCmd) shouldUpgradeAttestConfigIfDiff(cmd *cobra.Command, ne
 	return nil
 }
 
-func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, fileHandler file.Handler, tfOutput terraform.ApplyOutput, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, fileHandler file.Handler, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
 	var secret uri.MasterSecret
 	if err := fileHandler.ReadJSON(masterSecretPath(flags.workspace), &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
@@ -385,7 +389,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
-	err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.DenyDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, tfOutput)
+	err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.DenyDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -398,7 +402,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 				return nil
 			}
 		}
-		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.AllowDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, tfOutput)
+		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.AllowDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, validK8sVersion, tfOutput)
 	}
 
 	return err
@@ -482,7 +486,7 @@ type upgradeApplyFlags struct {
 
 type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
-	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, tfOutput terraform.ApplyOutput) error
+	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput) error
 	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
 	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)

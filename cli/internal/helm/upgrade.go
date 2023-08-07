@@ -115,21 +115,13 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, output terraform.ApplyOutput) error {
+func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive, force bool, upgradeID string, conformance bool, helmWaitMode WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, output terraform.ApplyOutput) error {
 	upgradeErrs := []error{}
-	upgradeReleases := []Release{} //*chart.Chart{}
-	newReleases := []Release{}     //*chart.Chart{}
+	upgradeReleases := []Release{}
+	newReleases := []Release{}
 
-	k8sVersion, err := versions.NewValidK8sVersion(compatibility.EnsurePrefixV(config.KubernetesVersion), true)
-	if err != nil {
-		return err
-	}
-	c.log.Debugf("Validated k8s version as %s", k8sVersion)
-	if versions.IsPreviewK8sVersion(k8sVersion) {
-		c.log.Debugf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion) // TODO(elchead): move to cmd
-	}
 	clusterName := clusterid.GetClusterName(config, idFile)
-	helmLoader := NewLoader(config.GetProvider(), k8sVersion, clusterName)
+	helmLoader := NewLoader(config.GetProvider(), validK8sVersion, clusterName)
 	c.log.Debugf("Created new Helm loader")
 
 	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret.Key, masterSecret.Salt, serviceAccURI, idFile, output)
