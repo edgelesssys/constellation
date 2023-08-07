@@ -8,27 +8,31 @@ service API {
   rpc Init(InitRequest) returns (stream InitResponse);
 }
 
+// InitRequest is the rpc message sent to the Constellation bootstrapper to initiate the cluster bootstrapping.
 message InitRequest {
-  // repeated string autoscaling_node_groups = 1; removed
-  // bytes master_secret = 2; removed
-  string kms_uri = 3;
-  string storage_uri = 4;
-  // string key_encryption_key_id = 5; removed
-  // bool use_existing_kek = 6; removed
-  string cloud_service_account_uri = 7;
-  string kubernetes_version = 8;
-  // repeated SSHUserKey ssh_user_keys = 9; removed
-  // bytes salt = 10; removed
-  // bytes helm_deployments = 11; removed
-  // repeated uint32 enforced_pcrs = 12; removed
-  // bool enforce_idkeydigest = 13; removed
-  bool conformance_mode = 14;
-  repeated KubernetesComponent kubernetes_components = 15;
-  bytes init_secret = 16;
-  string cluster_name = 17;
-  repeated string apiserver_cert_sans = 18;
+  // KmsUri is an URI encoding access to the KMS service or master secret.
+  string kms_uri = 1;
+  // StorageUri is an URI encoding access to the storage service.
+  string storage_uri = 2;
+  // MeasurementSalt is a salt used to generate the clusterID for the initial bootstrapping node.
+  bytes measurement_salt = 3;
+  // CloudServiceAccountUri is an URI encoding the cloud service account.
+  string cloud_service_account_uri = 4;
+  // KubernetesVersion is the version of Kubernetes to install.
+  string kubernetes_version = 5;
+  // ConformanceMode is a flag to indicate whether the cluster should be bootstrapped for Kubernetes conformance testing.
+  bool conformance_mode = 6;
+  // KubernetesComponents is a list of Kubernetes components to install.
+  repeated KubernetesComponent kubernetes_components = 7;
+  // InitSecret is a secret used to authenticate the initial bootstrapping node.
+  bytes init_secret = 8;
+  // ClusterName is the name of the cluster.
+  string cluster_name = 9;
+  // ApiserverCertSans is a list of Subject Alternative Names to add to the apiserver certificate.
+  repeated string apiserver_cert_sans = 10;
 }
 
+// InitResponse is the rpc message sent by the Constellation bootstrapper in response to the InitRequest.
 message InitResponse {
   oneof kind {
     InitSuccessResponse init_success = 1;
@@ -37,23 +41,36 @@ message InitResponse {
   }
 }
 
+// InitSuccessResponse is the rpc message sent by the Constellation bootstrapper in response to the InitRequest when the bootstrapping was successful.
 message InitSuccessResponse {
+  // Kubeconfig is the kubeconfig for the bootstrapped cluster.
   bytes kubeconfig = 1;
+  // OwnerID is the owner ID of the bootstrapped cluster.
   bytes owner_id = 2;
+  // ClusterID is the cluster ID of the bootstrapped cluster.
   bytes cluster_id = 3;
 }
 
+// InitFailureResponse is the rpc message sent by the Constellation bootstrapper in response to the InitRequest when the bootstrapping failed.
 message InitFailureResponse {
+  // Error is the error message.
   string error = 1;
 }
 
+// LogResponseType is the rpc message sent by the Constellation bootstrapper to stream log messages.
 message LogResponseType {
+  // Log are the journald logs of the node.
   bytes log = 1;
 }
 
+// KubernetesComponent is a Kubernetes component to install.
 message KubernetesComponent {
+  // Url to the component.
   string url = 1;
+  // Hash of the component.
   string hash = 2;
+  // InstallPath is the path to install the component to.
   string install_path = 3;
+  // Extract is a flag to indicate whether the component should be extracted.
   bool extract = 4;
 }

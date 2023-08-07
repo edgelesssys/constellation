@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 )
 
 func fakeServiceAccURI(provider cloudprovider.Provider) string {
@@ -67,7 +68,11 @@ func TestLoadReleases(t *testing.T) {
 	require := require.New(t)
 	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
 	chartLoader := ChartLoader{csp: config.GetProvider()}
-	helmReleases, err := chartLoader.LoadReleases(config, true, WaitModeAtomic, []byte("secret"), []byte("salt"), fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}})
+	helmReleases, err := chartLoader.LoadReleases(
+		config, true, WaitModeAtomic,
+		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}, []byte("salt"),
+		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
+	)
 	require.NoError(err)
 	chart := helmReleases.ConstellationServices.Chart
 	assert.NotNil(chart.Dependencies())
@@ -176,10 +181,16 @@ func TestConstellationServices(t *testing.T) {
 			require.NoError(err)
 			values := chartLoader.loadConstellationServicesValues()
 			serviceAccURI := fakeServiceAccURI(tc.config.GetProvider())
-			extraVals, err := extraConstellationServicesValues(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), "uid", serviceAccURI, terraform.ApplyOutput{
-				Azure: &terraform.AzureApplyOutput{},
-				GCP:   &terraform.GCPApplyOutput{},
-			})
+			extraVals, err := extraConstellationServicesValues(
+				tc.config, uri.MasterSecret{
+					Key:  []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+					Salt: []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+				},
+				[]byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+				"uid", serviceAccURI, terraform.ApplyOutput{
+					Azure: &terraform.AzureApplyOutput{},
+					GCP:   &terraform.GCPApplyOutput{},
+				})
 			require.NoError(err)
 			values = mergeMaps(values, extraVals)
 
