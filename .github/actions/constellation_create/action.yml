@@ -2,6 +2,7 @@ name: Constellation create
 description: Create a new Constellation cluster using latest OS image.
 
 inputs:
+  # TODO(elchead): remove once 2.10 is released
   workerNodesCount:
     description: "Number of worker nodes to spawn."
     required: true
@@ -14,6 +15,9 @@ inputs:
   machineType:
     description: "Machine type of VM to spawn."
     required: false
+  cliVersion:
+    description: "Version of the CLI"
+    required: true
   osImage:
     description: "OS image to use."
     required: true
@@ -144,6 +148,7 @@ runs:
         yq eval -i "(.nodeGroups[] | .instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Set node count
+      if: inputs.cliVersion  != 'v2.9.0' && inputs.cliVersion  != 'v2.9.1'
       shell: bash
       run: |
         yq eval -i "(.nodeGroups[] | select(.role == \"control-plane\") | .initialCount) = ${{ inputs.controlNodesCount }}" constellation-conf.yaml
