@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -140,44 +139,30 @@ func CleanUpTerraformMigrations(upgradeWorkspace, upgradeID string, fileHandler 
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) (clusterid.File, error) {
+func (u *TerraformUpgrader) ApplyTerraformMigrations(ctx context.Context, opts TerraformUpgradeOptions, upgradeID string) (terraform.ApplyOutput, error) {
 	tfOutput, err := u.tf.CreateCluster(ctx, opts.CSP, opts.LogLevel)
 	if err != nil {
-		return clusterid.File{}, fmt.Errorf("terraform apply: %w", err)
+		return tfOutput, fmt.Errorf("terraform apply: %w", err)
 	}
-
-	clusterID := clusterid.File{
-		CloudProvider:     opts.CSP,
-		InitSecret:        []byte(tfOutput.Secret),
-		IP:                tfOutput.IP,
-		APIServerCertSANs: tfOutput.APIServerCertSANs,
-		UID:               tfOutput.UID,
-	}
-
-	// Patch MAA policy if we applied an Azure upgrade.
 	if tfOutput.Azure != nil {
 		if err := u.policyPatcher.Patch(ctx, tfOutput.Azure.AttestationURL); err != nil {
-			return clusterid.File{}, fmt.Errorf("patching policies: %w", err)
+			return tfOutput, fmt.Errorf("patching policies: %w", err)
 		}
-		clusterID.AttestationURL = tfOutput.Azure.AttestationURL
 	}
-
 	if err := u.fileHandler.RemoveAll(opts.TFWorkspace); err != nil {
-		return clusterid.File{}, fmt.Errorf("removing old terraform directory: %w", err)
+		return tfOutput, fmt.Errorf("removing old terraform directory: %w", err)
 	}
 
 	if err := u.fileHandler.CopyDir(
 		filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir),
 		opts.TFWorkspace,
 	); err != nil {
-		return clusterid.File{}, fmt.Errorf("replacing old terraform directory with new one: %w", err)
+		return tfOutput, fmt.Errorf("replacing old terraform directory with new one: %w", err)
 	}
-
 	if err := u.fileHandler.RemoveAll(filepath.Join(opts.UpgradeWorkspace, upgradeID, constants.TerraformUpgradeWorkingDir)); err != nil {
-		return clusterid.File{}, fmt.Errorf("removing terraform upgrade directory: %w", err)
+		return tfOutput, fmt.Errorf("removing terraform upgrade directory: %w", err)
 	}
-
-	return clusterID, nil
+	return tfOutput, nil
 }
 
 type tfClientCommon interface {

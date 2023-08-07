@@ -194,20 +194,12 @@ func (u *Upgrader) PlanTerraformMigrations(ctx context.Context, opts upgrade.Ter
 // If PlanTerraformMigrations has not been executed before, it will return an error.
 // In case of a successful upgrade, the output will be written to the specified file and the old Terraform directory is replaced
 // By the new one.
-func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
+func (u *Upgrader) ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
 	return u.tfUpgrader.ApplyTerraformMigrations(ctx, opts, u.upgradeID)
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string) error {
-	tfClient, err := terraform.New(ctx, constants.TerraformWorkingDir) // TODO(elchead): use prior apply output instead of new client? u.TfClient not working because upgrade dir is already deleted
-	if err != nil {
-		return fmt.Errorf("setting up terraform client: %w", err)
-	}
-	output, err := tfClient.ShowCluster(ctx, config.GetProvider())
-	if err != nil {
-		return fmt.Errorf("getting Terraform output: %w", err)
-	}
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, output terraform.ApplyOutput) error {
 	return u.helmClient.Upgrade(ctx, config, idFile, timeout, allowDestructive, force, u.upgradeID, conformance, helmWaitMode, masterSecret, serviceAccURI, output)
 }
 

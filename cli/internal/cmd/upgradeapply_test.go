@@ -222,8 +222,8 @@ func (u stubUpgrader) PlanTerraformMigrations(context.Context, upgrade.Terraform
 	return u.terraformDiff, u.planTerraformErr
 }
 
-func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (clusterid.File, error) {
-	return clusterid.File{}, u.applyTerraformErr
+func (u stubUpgrader) ApplyTerraformMigrations(context.Context, upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error) {
+	return terraform.ApplyOutput{}, u.applyTerraformErr
 }
 
 func (u stubUpgrader) ExtendClusterConfigCertSANs(_ context.Context, _ []string) error {
