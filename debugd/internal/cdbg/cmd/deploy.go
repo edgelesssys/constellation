@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,11 +45,12 @@ func newDeployCmd() *cobra.Command {
 	If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
 	Specifying --bootstrapper will upload the bootstrapper from the specified path.`,
 		RunE:    runDeploy,
-		Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
+		Example: "cdbg deploy\ncdbg deploy -C /path/to/workspace --bindir $(pwd)\ncdbg deploy -C /path/to/workspace --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3",
 	}
 	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
-	deployCmd.Flags().String("bootstrapper", "./bootstrapper", "override the path to the bootstrapper binary uploaded to instances")
-	deployCmd.Flags().String("upgrade-agent", "./upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
+	deployCmd.Flags().String("bindir", "", "override the base path that binaries are read from")
+	deployCmd.Flags().String("bootstrapper", "bootstrapper", "override the path to the bootstrapper binary uploaded to instances")
+	deployCmd.Flags().String("upgrade-agent", "upgrade-agent", "override the path to the upgrade-agent binary uploaded to instances")
 	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
 	deployCmd.Flags().Int("verbosity", 0, logger.CmdLineVerbosityDescription)
 	return deployCmd
@@ -60,10 +62,6 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	log := logger.New(logger.PlainLog, logger.VerbosityFromInt(verbosity))
-	configName, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return fmt.Errorf("parsing config path argument: %w", err)
-	}
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return fmt.Errorf("getting force flag: %w", err)
@@ -73,7 +71,7 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(fs)
 	streamer := streamer.New(fs)
 	transfer := filetransfer.New(log, streamer, filetransfer.ShowProgress)
-	constellationConfig, err := config.New(fileHandler, configName, attestationconfigapi.NewFetcher(), force)
+	constellationConfig, err := config.New(fileHandler, constants.ConfigFilename, attestationconfigapi.NewFetcher(), force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -88,6 +86,10 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	transfer fileTransferer,
 	log *logger.Logger,
 ) error {
+	binDir, err := cmd.Flags().GetString("bindir")
+	if err != nil {
+		return err
+	}
 	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err
@@ -129,13 +131,13 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 
 	files := []filetransfer.FileStat{
 		{
-			SourcePath:          bootstrapperPath,
+			SourcePath:          prependBinDir(binDir, bootstrapperPath),
 			TargetPath:          debugd.BootstrapperDeployFilename,
 			Mode:                debugd.BinaryAccessMode,
 			OverrideServiceUnit: "constellation-bootstrapper",
 		},
 		{
-			SourcePath:          upgradeAgentPath,
+			SourcePath:          prependBinDir(binDir, upgradeAgentPath),
 			TargetPath:          debugd.UpgradeAgentDeployFilename,
 			Mode:                debugd.BinaryAccessMode,
 			OverrideServiceUnit: "constellation-upgrade-agent",
@@ -156,6 +158,13 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	}
 
 	return nil
+}
+
+func prependBinDir(bindDir, binary string) string {
+	if len(bindDir) == 0 || filepath.IsAbs(binary) {
+		return binary
+	}
+	return filepath.Join(bindDir, binary)
 }
 
 type deployOnEndpointInput struct {
