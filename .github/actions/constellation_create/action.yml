@@ -177,7 +177,8 @@ runs:
         if [[ $output == *"tf-log"* ]]; then
           TFFLAG="--tf-log=DEBUG"
         fi
-        constellation create -y --force --debug ${TFFLAG:-}
+        constellation create -y --force --debug ${TFFLAG:-} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }}
+      # TODO(elchead): remove -c and -w once 2.10 is released, such that a fromVersion upgrade E2E no longer requires these flags
 
     - name: Cdbg deploy
       if: inputs.isDebugImage == 'true'
