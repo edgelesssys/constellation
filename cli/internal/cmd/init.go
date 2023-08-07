@@ -15,7 +15,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"text/tabwriter"
@@ -39,10 +38,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/openstack"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -193,7 +189,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf, flags.workspace)
+	serviceAccURI, err := getMarshaledServiceAccountURI(provider, conf, flags.workspace, i.log, i.fileHandler)
 	if err != nil {
 		return err
 	}
@@ -505,9 +501,8 @@ type initFlags struct {
 	mergeConfigs bool
 }
 
-// readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
+// generateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
 func (i *initCmd) generateMasterSecret(outWriter io.Writer, workspace string) (uri.MasterSecret, error) {
-	// No file given, generate a new secret, and save it to disk
 	i.log.Debugf("Generating new master secret")
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
@@ -527,59 +522,6 @@ func (i *initCmd) generateMasterSecret(outWriter io.Writer, workspace string) (u
 	}
 	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to %q\n", masterSecretPath(workspace))
 	return secret, nil
-}
-
-func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, workspace string,
-) (string, error) {
-	i.log.Debugf("Getting service account URI")
-	switch provider {
-	case cloudprovider.GCP:
-		i.log.Debugf("Handling case for GCP")
-		i.log.Debugf("GCP service account key path %s", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath))
-
-		var key gcpshared.ServiceAccountKey
-		if err := i.fileHandler.ReadJSON(config.Provider.GCP.ServiceAccountKeyPath, &key); err != nil {
-			return "", fmt.Errorf("reading service account key from path %q: %w", filepath.Join(workspace, config.Provider.GCP.ServiceAccountKeyPath), err)
-		}
-		i.log.Debugf("Read GCP service account key from path")
-		return key.ToCloudServiceAccountURI(), nil
-
-	case cloudprovider.AWS:
-		i.log.Debugf("Handling case for AWS")
-		return "", nil // AWS does not need a service account URI
-	case cloudprovider.Azure:
-		i.log.Debugf("Handling case for Azure")
-
-		authMethod := azureshared.AuthMethodUserAssignedIdentity
-
-		creds := azureshared.ApplicationCredentials{
-			TenantID:            config.Provider.Azure.TenantID,
-			Location:            config.Provider.Azure.Location,
-			PreferredAuthMethod: authMethod,
-			UamiResourceID:      config.Provider.Azure.UserAssignedIdentity,
-		}
-		return creds.ToCloudServiceAccountURI(), nil
-
-	case cloudprovider.OpenStack:
-		creds := openstack.AccountKey{
-			AuthURL:           config.Provider.OpenStack.AuthURL,
-			Username:          config.Provider.OpenStack.Username,
-			Password:          config.Provider.OpenStack.Password,
-			ProjectID:         config.Provider.OpenStack.ProjectID,
-			ProjectName:       config.Provider.OpenStack.ProjectName,
-			UserDomainName:    config.Provider.OpenStack.UserDomainName,
-			ProjectDomainName: config.Provider.OpenStack.ProjectDomainName,
-			RegionName:        config.Provider.OpenStack.RegionName,
-		}
-		return creds.ToCloudServiceAccountURI(), nil
-
-	case cloudprovider.QEMU:
-		i.log.Debugf("Handling case for QEMU")
-		return "", nil // QEMU does not use service account keys
-
-	default:
-		return "", fmt.Errorf("unsupported cloud provider %q", provider)
-	}
 }
 
 type configMerger interface {

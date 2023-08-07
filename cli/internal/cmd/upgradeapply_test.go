@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
@@ -23,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -141,6 +143,7 @@ func TestUpgradeApply(t *testing.T) {
 			}
 
 			handler := file.NewHandler(afero.NewMemMapFs())
+
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 
 			if tc.remoteAttestationCfg == nil {
@@ -195,7 +198,7 @@ func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ 
 	return u.nodeVersionErr
 }
 
-func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _ bool) error {
+func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _, _ bool, _ helm.WaitMode, _ uri.MasterSecret, _ string) error {
 	return u.helmErr
 }
 
