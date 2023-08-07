@@ -50,6 +50,8 @@ func newUpgradeApplyCmd() *cobra.Command {
 		"WARNING: might unintentionally overwrite measurements in the running cluster.")
 	cmd.Flags().Duration("timeout", 5*time.Minute, "change helm upgrade timeout\n"+
 		"Might be useful for slow connections or big clusters.")
+	cmd.Flags().Bool("conformance", false, "enable conformance mode")
+	cmd.Flags().Bool("skip-helm-wait", false, "install helm charts without waiting for deployments to be ready")
 	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
 		panic(err)
 	}
@@ -383,9 +385,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
-	conformance := true           // TODO need  flags.conformance, flags.helmWaitMode
-	helmWait := helm.WaitModeNone // TODO
-	err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.DenyDestructive, flags.force, conformance, helmWait, secret, serviceAccURI, tfOutput)
+	err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.DenyDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, tfOutput)
 	if errors.Is(err, helm.ErrConfirmationMissing) {
 		if !flags.yes {
 			cmd.PrintErrln("WARNING: Upgrading cert-manager will destroy all custom resources you have manually created that are based on the current version of cert-manager.")
@@ -398,7 +398,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 				return nil
 			}
 		}
-		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.AllowDestructive, flags.force, conformance, helmWait, secret, serviceAccURI, tfOutput)
+		err = u.upgrader.UpgradeHelmServices(cmd.Context(), conf, idFile, flags.upgradeTimeout, helm.AllowDestructive, flags.force, flags.conformance, flags.helmWaitMode, secret, serviceAccURI, tfOutput)
 	}
 
 	return err
@@ -434,12 +434,26 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 		return upgradeApplyFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
 
+	conformance, err := cmd.Flags().GetBool("conformance")
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing conformance flag: %w", err)
+	}
+	skipHelmWait, err := cmd.Flags().GetBool("skip-helm-wait")
+	if err != nil {
+		return upgradeApplyFlags{}, fmt.Errorf("parsing skip-helm-wait flag: %w", err)
+	}
+	helmWaitMode := helm.WaitModeAtomic
+	if skipHelmWait {
+		helmWaitMode = helm.WaitModeNone
+	}
 	return upgradeApplyFlags{
 		workspace:         workspace,
 		yes:               yes,
 		upgradeTimeout:    timeout,
 		force:             force,
 		terraformLogLevel: logLevel,
+		conformance:       conformance,
+		helmWaitMode:      helmWaitMode,
 	}, nil
 }
 
@@ -462,6 +476,8 @@ type upgradeApplyFlags struct {
 	upgradeTimeout    time.Duration
 	force             bool
 	terraformLogLevel terraform.LogLevel
+	conformance       bool
+	helmWaitMode      helm.WaitMode
 }
 
 type cloudUpgrader interface {

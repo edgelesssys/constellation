@@ -21,6 +21,5 @@ func NewUpgradeCmd() *cobra.Command {
 
 	cmd.AddCommand(newUpgradeCheckCmd())
 	cmd.AddCommand(newUpgradeApplyCmd())
-
 	return cmd
 }
