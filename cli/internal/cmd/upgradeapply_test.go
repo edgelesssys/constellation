@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/kms/uri"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -151,8 +152,9 @@ func TestUpgradeApply(t *testing.T) {
 			}
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
+			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, stableClient: stubGetConfigMap{tc.remoteAttestationCfg}}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, stableClient: stubGetConfigMap{tc.remoteAttestationCfg}, clusterShower: &stubShowCluster{}}
 
 			err := upgrader.upgradeApply(cmd, handler)
 			if tc.wantErr {
@@ -198,7 +200,7 @@ func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ 
 	return u.nodeVersionErr
 }
 
-func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _, _ bool, _ helm.WaitMode, _ uri.MasterSecret, _ string) error {
+func (u stubUpgrader) UpgradeHelmServices(_ context.Context, _ *config.Config, _ clusterid.File, _ time.Duration, _, _, _ bool, _ helm.WaitMode, _ uri.MasterSecret, _ string, _ versions.ValidK8sVersion, _ terraform.ApplyOutput) error {
 	return u.helmErr
 }
 

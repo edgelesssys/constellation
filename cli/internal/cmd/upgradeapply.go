@@ -83,8 +83,12 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("creating stable client: %w", err)
 	}
+	tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
+	if err != nil {
+		return fmt.Errorf("setting up terraform client: %w", err)
+	}
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient}
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient, clusterShower: tfClient}
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
@@ -97,6 +101,7 @@ type upgradeApplyCmd struct {
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
 	stableClient  getConfigMapper
+	clusterShower clusterShower
 	log           debugLog
 }
 
@@ -289,18 +294,13 @@ func (u *upgradeApplyCmd) migrateTerraform(
 			"A backup of the pre-upgrade state has been written to: %s\n",
 			clusterIDsPath(flags.workspace), filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir))
 		return tfOutput, nil
-	} else {
-		tfClient, err := terraform.New(cmd.Context(), constants.TerraformWorkingDir)
-		if err != nil {
-			return res, fmt.Errorf("setting up terraform client: %w", err)
-		}
-		u.log.Debugf("No Terraform diff detected")
-		tfOutput, err := tfClient.ShowCluster(cmd.Context(), conf.GetProvider())
-		if err != nil {
-			return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
-		}
-		return tfOutput, nil
 	}
+	u.log.Debugf("No Terraform diff detected")
+	tfOutput, err := u.clusterShower.ShowCluster(cmd.Context(), conf.GetProvider())
+	if err != nil {
+		return tfOutput, fmt.Errorf("getting Terraform output: %w", err)
+	}
+	return tfOutput, nil
 }
 
 func newIDFile(opts upgrade.TerraformUpgradeOptions, tfOutput terraform.ApplyOutput) clusterid.File {

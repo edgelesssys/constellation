@@ -182,7 +182,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 
 	for _, release := range upgradeReleases {
 		c.log.Debugf("Upgrading release %s", release.Chart.Metadata.Name)
-		if err := c.upgradeRelease(ctx, timeout, config, idFile, release); err != nil {
+		if err := c.upgradeRelease(ctx, timeout, release); err != nil {
 			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
 	}
@@ -321,18 +321,8 @@ func (c *UpgradeClient) installNewRelease(
 
 // upgradeRelease upgrades a release running on the cluster.
 func (c *UpgradeClient) upgradeRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, release Release,
+	ctx context.Context, timeout time.Duration, release Release,
 ) error {
-	//releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, release)
-	//if err != nil {
-	//	return fmt.Errorf("loading values: %w", err)
-	//}
-
-	//values, err = c.mergeClusterValues(values, releaseName)
-	//if err != nil {
-	//	return fmt.Errorf("preparing values: %w", err)
-	//}
-
 	return c.actions.upgradeAction(ctx, release.ReleaseName, release.Chart, release.Values, timeout)
 }
 
@@ -416,24 +406,6 @@ func (c *UpgradeClient) applyMigrations(ctx context.Context, releaseName string,
 // migrateFrom2_8 should NOT be applied for v2.8.0 --> v2.9.x.
 func migrateFrom2_8(_ context.Context, _ map[string]any, _ *config.Config, _ crdClient) error {
 	return nil
-}
-
-// mergeClusterValues returns a values map as required for helm-upgrade.
-// It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
-// and merging the fetched values with the locally found values.
-// This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
-// reuse-values does not ensure this.
-func (c *UpgradeClient) mergeClusterValues(localValues map[string]any, releaseName string) (map[string]any, error) {
-	// Ensure installCRDs is set for cert-manager chart.
-	if releaseName == certManagerInfo.releaseName {
-		localValues["installCRDs"] = true
-	}
-	clusterValues, err := c.actions.getValues(releaseName)
-	if err != nil {
-		return nil, fmt.Errorf("getting values for %s: %w", releaseName, err)
-	}
-
-	return mergeMaps(clusterValues, localValues), nil
 }
 
 // GetValues queries the cluster for the values of the given release.
