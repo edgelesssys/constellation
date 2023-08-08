@@ -9,6 +9,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -73,9 +74,9 @@ func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
 			return fmt.Errorf("invalid version value: %s", s)
 		}
 	case int:
-		v.Value = uint8(s)
-	// yaml spec allows "1" as float64, so version number might come as a float:  https://github.com/go-yaml/yaml/issues/430
-	case float64:
+		if s > math.MaxUint8 || s < 0 {
+			return fmt.Errorf("invalid version value: %d", s)
+		}
 		v.Value = uint8(s)
 	default:
 		return fmt.Errorf("invalid version value type: %s", s)

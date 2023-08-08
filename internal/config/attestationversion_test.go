@@ -44,3 +44,68 @@ func TestVersionMarshalYAML(t *testing.T) {
 		})
 	}
 }
+
+func TestVersionUnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		sut     string
+		want    AttestationVersion
+		wantErr bool
+	}{
+		{
+			name: "latest resolves to isLatest",
+			sut:  "latest",
+			want: AttestationVersion{
+				Value:      0,
+				WantLatest: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "1 resolves to value 1",
+			sut:  "1",
+			want: AttestationVersion{
+				Value:      1,
+				WantLatest: false,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "max uint8+1 errors",
+			sut:     "256",
+			wantErr: true,
+		},
+		{
+			name:    "-1 errors",
+			sut:     "-1",
+			wantErr: true,
+		},
+		{
+			name:    "2.6 errors",
+			sut:     "2.6",
+			wantErr: true,
+		},
+		{
+			name:    "2.0 errors",
+			sut:     "2.0",
+			wantErr: true,
+		},
+		{
+			name:    "09 errors",
+			sut:     "09",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var sut AttestationVersion
+			err := yaml.Unmarshal([]byte(tt.sut), &sut)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, sut)
+		})
+	}
+}
