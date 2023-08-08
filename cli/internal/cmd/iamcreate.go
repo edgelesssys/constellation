@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -350,13 +349,13 @@ type providerIAMCreator interface {
 	// printConfirmValues prints the values that will be created on the cloud provider and need to be confirmed by the user.
 	printConfirmValues(cmd *cobra.Command, flags iamFlags)
 	// printOutputValues prints the values that were created on the cloud provider.
-	printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File)
+	printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput)
 	// writeOutputValuesToConfig writes the output values of the IAM creation to the constellation config file.
-	writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File)
+	writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput)
 	// parseFlagsAndSetupConfig parses the provider-specific flags and fills the values into the IAM config (output values of the command).
 	parseFlagsAndSetupConfig(cmd *cobra.Command, flags iamFlags, iamConfig *cloudcmd.IAMConfigOptions) (iamFlags, error)
 	// parseAndWriteIDFile parses the GCP service account key and writes it to a keyfile. It is only implemented for GCP.
-	parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error
+	parseAndWriteIDFile(iamFile cloudcmd.IAMOutput, fileHandler file.Handler) error
 }
 
 // awsIAMCreator implements the providerIAMCreator interface for AWS.
@@ -404,14 +403,14 @@ func (c *awsIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Name Prefix:\t%s\n\n", flags.aws.prefix)
 }
 
-func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
+func (c *awsIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	cmd.Printf("region:\t\t\t%s\n", flags.aws.region)
 	cmd.Printf("zone:\t\t\t%s\n", flags.aws.zone)
 	cmd.Printf("iamProfileControlPlane:\t%s\n", iamFile.AWSOutput.ControlPlaneInstanceProfile)
 	cmd.Printf("iamProfileWorkerNodes:\t%s\n\n", iamFile.AWSOutput.WorkerNodeInstanceProfile)
 }
 
-func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	conf.Provider.AWS.Region = flags.aws.region
 	conf.Provider.AWS.Zone = flags.aws.zone
 	conf.Provider.AWS.IAMProfileControlPlane = iamFile.AWSOutput.ControlPlaneInstanceProfile
@@ -422,7 +421,7 @@ func (c *awsIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	}
 }
 
-func (c *awsIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
+func (c *awsIAMCreator) parseAndWriteIDFile(_ cloudcmd.IAMOutput, _ file.Handler) error {
 	return nil
 }
 
@@ -467,7 +466,7 @@ func (c *azureIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags)
 	cmd.Printf("Service Principal:\t%s\n\n", flags.azure.servicePrincipal)
 }
 
-func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile iamid.File) {
+func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	cmd.Printf("subscription:\t\t%s\n", iamFile.AzureOutput.SubscriptionID)
 	cmd.Printf("tenant:\t\t\t%s\n", iamFile.AzureOutput.TenantID)
 	cmd.Printf("location:\t\t%s\n", flags.azure.region)
@@ -475,7 +474,7 @@ func (c *azureIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, 
 	cmd.Printf("userAssignedIdentity:\t%s\n", iamFile.AzureOutput.UAMIID)
 }
 
-func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile iamid.File) {
+func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, iamFile cloudcmd.IAMOutput) {
 	conf.Provider.Azure.SubscriptionID = iamFile.AzureOutput.SubscriptionID
 	conf.Provider.Azure.TenantID = iamFile.AzureOutput.TenantID
 	conf.Provider.Azure.Location = flags.azure.region
@@ -483,7 +482,7 @@ func (c *azureIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags i
 	conf.Provider.Azure.UserAssignedIdentity = iamFile.AzureOutput.UAMIID
 }
 
-func (c *azureIAMCreator) parseAndWriteIDFile(_ iamid.File, _ file.Handler) error {
+func (c *azureIAMCreator) parseAndWriteIDFile(_ cloudcmd.IAMOutput, _ file.Handler) error {
 	return nil
 }
 
@@ -549,14 +548,14 @@ func (c *gcpIAMCreator) printConfirmValues(cmd *cobra.Command, flags iamFlags) {
 	cmd.Printf("Zone:\t\t\t%s\n\n", flags.gcp.zone)
 }
 
-func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ iamid.File) {
+func (c *gcpIAMCreator) printOutputValues(cmd *cobra.Command, flags iamFlags, _ cloudcmd.IAMOutput) {
 	cmd.Printf("projectID:\t\t%s\n", flags.gcp.projectID)
 	cmd.Printf("region:\t\t\t%s\n", flags.gcp.region)
 	cmd.Printf("zone:\t\t\t%s\n", flags.gcp.zone)
 	cmd.Printf("serviceAccountKeyPath:\t%s\n\n", gcpServiceAccountKeyPath(c.workspace))
 }
 
-func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ iamid.File) {
+func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iamFlags, _ cloudcmd.IAMOutput) {
 	conf.Provider.GCP.Project = flags.gcp.projectID
 	conf.Provider.GCP.ServiceAccountKeyPath = gcpServiceAccountKeyFile // File was created in workspace, so only the filename is needed.
 	conf.Provider.GCP.Region = flags.gcp.region
@@ -567,7 +566,7 @@ func (c *gcpIAMCreator) writeOutputValuesToConfig(conf *config.Config, flags iam
 	}
 }
 
-func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile iamid.File, fileHandler file.Handler) error {
+func (c *gcpIAMCreator) parseAndWriteIDFile(iamFile cloudcmd.IAMOutput, fileHandler file.Handler) error {
 	// GCP needs to write the service account key to a file.
 	tmpOut, err := parseIDFile(iamFile.GCPOutput.ServiceAccountKey)
 	if err != nil {
