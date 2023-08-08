@@ -255,7 +255,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 			c := &createCmd{log: logger.NewTest(t)}
-			err := c.checkDirClean("", tc.fileHandler)
+			err := c.checkDirClean(tc.fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)

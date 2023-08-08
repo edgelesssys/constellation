@@ -24,6 +24,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -89,7 +90,7 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 	}
 	c.log.Debugf("Using flags: %+v", flags)
 
-	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	c.log.Debugf("Loading configuration file from %q", flags.pf.PrefixPath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
@@ -149,11 +150,12 @@ func (c *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyC
 }
 
 func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Flag 'workspace' set to %q", workspace)
+	c.log.Debugf("Flag 'workspace' set to %q", workDir)
+	pf := pathprefix.New(workDir)
 
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
@@ -189,13 +191,13 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
-		c.log.Debugf("Trying to supplement empty flag values from %q", clusterIDsPath(workspace))
+		c.log.Debugf("Trying to supplement empty flag values from %q", pf.PrefixPath(constants.ClusterIDsFilename))
 		if emptyEndpoint {
-			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", clusterIDsPath(workspace))
+			cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", pf.PrefixPath(constants.ClusterIDsFilename))
 			endpoint = idFile.IP
 		}
 		if emptyIDs {
-			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", clusterIDsPath(workspace))
+			cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", pf.PrefixPath(constants.ClusterIDsFilename))
 			ownerID = idFile.OwnerID
 			clusterID = idFile.ClusterID
 		}
@@ -212,7 +214,7 @@ func (c *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handle
 
 	return verifyFlags{
 		endpoint:  endpoint,
-		workspace: workspace,
+		pf:        pf,
 		ownerID:   ownerID,
 		clusterID: clusterID,
 		maaURL:    idFile.AttestationURL,
@@ -225,10 +227,10 @@ type verifyFlags struct {
 	endpoint  string
 	ownerID   string
 	clusterID string
-	workspace string
 	maaURL    string
 	rawOutput bool
 	force     bool
+	pf        pathprefix.PathPrefixer
 }
 
 func addPortIfMissing(endpoint string, defaultPort int) (string, error) {

@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -53,6 +54,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
+	pf := pathprefix.New(flags.workspace)
 
 	if !flags.yes {
 		cmd.Println("You are about to terminate a Constellation cluster.")
@@ -79,11 +81,11 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 
 	var removeErr error
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", adminConfPath(flags.workspace)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPath(constants.AdminConfFilename)))
 	}
 
 	if err := fileHandler.Remove(constants.ClusterIDsFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", clusterIDsPath(flags.workspace)))
+		removeErr = errors.Join(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", pf.PrefixPath(constants.ClusterIDsFilename)))
 	}
 
 	return removeErr

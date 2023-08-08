@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -284,7 +285,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 		cmd.Printf("Terraform migrations applied successfully and output written to: %s\n"+
 			"A backup of the pre-upgrade state has been written to: %s\n",
-			clusterIDsPath(flags.workspace), filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir))
+			flags.pf.PrefixPath(constants.ClusterIDsFilename), flags.pf.PrefixPath(filepath.Join(opts.UpgradeWorkspace, u.upgrader.GetUpgradeID(), constants.TerraformUpgradeBackupDir)))
 	} else {
 		u.log.Debugf("No Terraform diff detected")
 	}
@@ -377,7 +378,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 }
 
 func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return upgradeApplyFlags{}, err
 	}
@@ -407,7 +408,7 @@ func parseUpgradeApplyFlags(cmd *cobra.Command) (upgradeApplyFlags, error) {
 	}
 
 	return upgradeApplyFlags{
-		workspace:         workspace,
+		pf:                pathprefix.New(workDir),
 		yes:               yes,
 		upgradeTimeout:    timeout,
 		force:             force,
@@ -429,7 +430,7 @@ func mergeClusterIDFile(clusterIDPath string, newIDFile clusterid.File, fileHand
 }
 
 type upgradeApplyFlags struct {
-	workspace         string
+	pf                pathprefix.PathPrefixer
 	yes               bool
 	upgradeTimeout    time.Duration
 	force             bool

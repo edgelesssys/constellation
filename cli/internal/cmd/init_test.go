@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -302,7 +303,7 @@ func TestWriteOutput(t *testing.T) {
 		IP:  "cluster-ip",
 	}
 	i := newInitCmd(nil, nil, fileHandler, nil, &stubMerger{}, logger.NewTest(t))
-	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out, "")
+	err := i.writeOutput(idFile, resp.GetInitSuccess(), false, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -323,17 +324,19 @@ func TestWriteOutput(t *testing.T) {
 	require.NoError(afs.Remove(constants.AdminConfFilename))
 
 	// test custom workspace
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "some/path")
+	i.pf = pathprefix.New("/some/path")
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
-	assert.Contains(out.String(), adminConfPath("some/path"))
+	assert.Contains(out.String(), i.pf.PrefixPath(constants.AdminConfFilename))
 	out.Reset()
 	// File is written to current working dir, we simply pass the workspace for generating readable user output
 	require.NoError(afs.Remove(constants.AdminConfFilename))
+	i.pf = pathprefix.PathPrefixer{}
 
 	// test config merging
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "")
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -345,7 +348,7 @@ func TestWriteOutput(t *testing.T) {
 
 	// test config merging with env vars set
 	i.merger = &stubMerger{envVar: "/some/path/to/kubeconfig"}
-	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out, "")
+	err = i.writeOutput(idFile, resp.GetInitSuccess(), true, &out)
 	require.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -393,7 +396,7 @@ func TestGenerateMasterSecret(t *testing.T) {
 
 			var out bytes.Buffer
 			i := newInitCmd(nil, nil, fileHandler, nil, nil, logger.NewTest(t))
-			secret, err := i.generateMasterSecret(&out, "")
+			secret, err := i.generateMasterSecret(&out)
 
 			if tc.wantErr {
 				assert.Error(err)

@@ -208,8 +208,7 @@ func TestParseRecoverFlags(t *testing.T) {
 		"all args set": {
 			args: []string{"-e", "192.0.2.42:2", "--workspace", "./constellation-workspace"},
 			wantFlags: recoverFlags{
-				endpoint:  "192.0.2.42:2",
-				workspace: "./constellation-workspace",
+				endpoint: "192.0.2.42:2",
 			},
 		},
 	}
