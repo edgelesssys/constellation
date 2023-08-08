@@ -385,7 +385,7 @@ func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.
 	if err := fileHandler.ReadJSON(masterSecretPath(flags.workspace), &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
-	serviceAccURI, err := getMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.workspace, u.log, fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.workspace, u.log, fileHandler)
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}

@@ -124,7 +124,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	helmLoader := NewLoader(config.GetProvider(), validK8sVersion, clusterName)
 	c.log.Debugf("Created new Helm loader")
 
-	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret.Key, masterSecret.Salt, serviceAccURI, idFile, output)
+	releases, err := helmLoader.LoadReleases(config, conformance, helmWaitMode, masterSecret, masterSecret.Salt, serviceAccURI, idFile, output)
 	if err != nil {
 		return fmt.Errorf("loading releases: %w", err)
 	}

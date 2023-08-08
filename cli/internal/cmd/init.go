@@ -189,7 +189,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 		return fmt.Errorf("creating new validator: %w", err)
 	}
 	i.log.Debugf("Created a new validator")
-	serviceAccURI, err := getMarshaledServiceAccountURI(provider, conf, flags.workspace, i.log, i.fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(provider, conf, flags.workspace, i.log, i.fileHandler)
 	if err != nil {
 		return err
 	}
