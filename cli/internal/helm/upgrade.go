@@ -103,8 +103,8 @@ func (c *UpgradeClient) shouldUpgrade(releaseName string, newVersion semver.Semv
 	cliVersion := constants.BinaryVersion()
 	// at this point we conclude that the release should be upgraded. check that this CLI supports the upgrade.
 	if releaseName == constellationOperatorsInfo.releaseName || releaseName == constellationServicesInfo.releaseName {
-		if err := cliVersion.IsUpgradeTo(newVersion); err != nil {
-			return fmt.Errorf("checking new chart version compatible with CLI: %w", err)
+		if cliVersion.Compare(newVersion) != 0 {
+			return fmt.Errorf("this CLI only supports microservice version %s for upgrading", cliVersion.String())
 		}
 	}
 	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, newVersion)
@@ -151,7 +151,10 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 			c.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
 			newReleases = append(newReleases, release)
 		case errors.As(err, &invalidUpgrade):
-			upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
+			// TODO(elchead): remove invalid upgrade since we allow any upgrade now? previously even this was invalid: skipping constellation-operators upgrade: upgrading from v2.10.0-pre.0.20230807122325-630c24084cbd to v2.10.0-pre.0.20230807122325-630c24084cbd is not a valid upgrade: current version newer than or equal to new version
+			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
+			upgradeReleases = append(upgradeReleases, release)
+		// upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
 		case err != nil:
 			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
