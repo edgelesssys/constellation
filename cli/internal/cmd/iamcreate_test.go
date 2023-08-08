@@ -707,13 +707,13 @@ func TestIAMCreateGCP(t *testing.T) {
 				readConfig := &config.Config{}
 				readErr := fileHandler.ReadYAML(constants.ConfigFilename, readConfig)
 				require.NoError(readErr)
-				assert.Equal(gcpServiceAccountKeyFile, readConfig.Provider.GCP.ServiceAccountKeyPath)
+				assert.Equal(constants.GCPServiceAccountKeyFilename, readConfig.Provider.GCP.ServiceAccountKeyPath)
 			}
 			require.NoError(err)
 			assert.True(tc.creator.createCalled)
 			assert.Equal(tc.creator.id.GCPOutput, validIAMIDFile.GCPOutput)
 			readServiceAccountKey := &map[string]string{}
-			readErr := fileHandler.ReadJSON(gcpServiceAccountKeyFile, readServiceAccountKey)
+			readErr := fileHandler.ReadJSON(constants.GCPServiceAccountKeyFilename, readServiceAccountKey)
 			require.NoError(readErr)
 			assert.Equal("not_a_secret", (*readServiceAccountKey)["private_key_id"])
 		})

@@ -88,6 +88,8 @@ const (
 	TerraformWorkingDir = "constellation-terraform"
 	// TerraformIAMWorkingDir is the directory name for the Terraform IAM Client workspace.
 	TerraformIAMWorkingDir = "constellation-iam-terraform"
+	// GCPServiceAccountKeyFilename is the file name for the GCP service account key file.
+	GCPServiceAccountKeyFilename = "gcpServiceAccountKey.json"
 	// ErrorLog file which contains server errors during init.
 	ErrorLog = "constellation-cluster.log"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.

@@ -12,6 +12,7 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
@@ -44,6 +45,7 @@ func NewCreateCmd() *cobra.Command {
 
 type createCmd struct {
 	log debugLog
+	pf  pathprefix.PathPrefixer
 }
 
 func runCreate(cmd *cobra.Command, _ []string) error {
@@ -71,11 +73,11 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 		return err
 	}
 	c.log.Debugf("Using flags: %+v", flags)
-	if err := c.checkDirClean(flags.workspace, fileHandler); err != nil {
+	if err := c.checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
-	c.log.Debugf("Loading configuration file from %q", configPath(flags.workspace))
+	c.log.Debugf("Loading configuration file from %q", c.pf.PrefixPath(constants.ConfigFilename))
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	c.log.Debugf("Configuration file loaded: %+v", conf)
 	var configValidationErr *config.ValidationError
@@ -168,7 +170,7 @@ func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler
 	idFile, err := creator.Create(cmd.Context(), opts)
 	spinner.Stop()
 	if err != nil {
-		return translateCreateErrors(cmd, flags.workspace, err)
+		return translateCreateErrors(cmd, c.pf, err)
 	}
 	c.log.Debugf("Successfully created the cloud resources for the cluster")
 
@@ -188,11 +190,12 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	c.log.Debugf("Yes flag is %t", yes)
 
-	workspace, err := cmd.Flags().GetString("workspace")
+	workDir, err := cmd.Flags().GetString("workspace")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	c.log.Debugf("Workspace set to %q", workspace)
+	c.log.Debugf("Workspace set to %q", workDir)
+	c.pf = pathprefix.New(workDir)
 
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
@@ -208,10 +211,9 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing Terraform log level %s: %w", logLevelString, err)
 	}
-	c.log.Debugf("Terraform logs will be written into %s at level %s", terraformLogPath(workspace), logLevel.String())
+	c.log.Debugf("Terraform logs will be written into %s at level %s", c.pf.PrefixPath(constants.TerraformLogFile), logLevel.String())
 
 	return createFlags{
-		workspace:  workspace,
 		tfLogLevel: logLevel,
 		force:      force,
 		yes:        yes,
@@ -220,44 +222,43 @@ func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 
 // createFlags contains the parsed flags of the create command.
 type createFlags struct {
-	workspace  string
 	tfLogLevel terraform.LogLevel
 	force      bool
 	yes        bool
 }
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
-func (c *createCmd) checkDirClean(workspace string, fileHandler file.Handler) error {
+func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
 	c.log.Debugf("Checking admin configuration file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", adminConfPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", c.pf.PrefixPath(constants.AdminConfFilename))
 	}
 	c.log.Debugf("Checking master secrets file")
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", masterSecretPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPath(constants.MasterSecretFilename))
 	}
 	c.log.Debugf("Checking cluster IDs file")
 	if _, err := fileHandler.Stat(constants.ClusterIDsFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", clusterIDsPath(workspace))
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", c.pf.PrefixPath(constants.ClusterIDsFilename))
 	}
 
 	return nil
 }
 
-func translateCreateErrors(cmd *cobra.Command, workspace string, err error) error {
+func translateCreateErrors(cmd *cobra.Command, pf pathprefix.PathPrefixer, err error) error {
 	switch {
 	case errors.Is(err, terraform.ErrTerraformWorkspaceDifferentFiles):
 		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which does not match the expected state.")
 		cmd.PrintErrln("This can be due to a mix up between providers, versions or an otherwise corrupted workspace.")
 		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
-		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", terraformClusterWorkspace(workspace))
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", pf.PrefixPath(constants.TerraformWorkingDir))
 		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
 		return err
 	case errors.Is(err, terraform.ErrTerraformWorkspaceExistsWithDifferentVariables):
 		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which was initiated with different input variables.")
 		cmd.PrintErrln("This can be the case if you have tried to create a cluster before with different options which did not complete, or the workspace is corrupted.")
 		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
-		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", terraformClusterWorkspace(workspace))
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", pf.PrefixPath(constants.TerraformWorkingDir))
 		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
 		return err
 	default:

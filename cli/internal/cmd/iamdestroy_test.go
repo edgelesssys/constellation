@@ -24,7 +24,7 @@ func TestIAMDestroy(t *testing.T) {
 
 	newFsExists := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("{}")))
+		require.NoError(fh.Write(constants.GCPServiceAccountKeyFilename, []byte("{}")))
 		return fh
 	}
 	newFsMissing := func() file.Handler {
@@ -147,12 +147,12 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 	newFs := func() file.Handler {
 		fs := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fs.Write(gcpServiceAccountKeyFile, []byte(gcpFile)))
+		require.NoError(fs.Write(constants.GCPServiceAccountKeyFilename, []byte(gcpFile)))
 		return fs
 	}
 	newFsInvalidJSON := func() file.Handler {
 		fh := file.NewHandler(afero.NewMemMapFs())
-		require.NoError(fh.Write(gcpServiceAccountKeyFile, []byte("asdf")))
+		require.NoError(fh.Write(constants.GCPServiceAccountKeyFilename, []byte("asdf")))
 		return fh
 	}
 
@@ -202,7 +202,7 @@ func TestDeleteGCPServiceAccountKeyFile(t *testing.T) {
 
 			c := &destroyCmd{log: logger.NewTest(t)}
 
-			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, "", tc.fsHandler)
+			proceed, err := c.deleteGCPServiceAccountKeyFile(cmd, tc.destroyer, tc.fsHandler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
