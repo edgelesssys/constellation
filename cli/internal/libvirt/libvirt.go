@@ -4,7 +4,11 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-// Package libvirt is used to start and stop containerized libvirt instances.
+/*
+Package libvirt is used to start and stop containerized libvirt instances.
+
+The code in this package should be kept minimal, and likely won't need to be changed unless we do a major refactoring of our QEMU/libvirt installation.
+*/
 package libvirt
 
 import (

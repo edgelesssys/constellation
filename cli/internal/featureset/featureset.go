@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 // package featureset provides a way to check whether a feature is enabled in the current build.
+// This package should not implement any logic itself, but only define constants that are set at build time.
 package featureset
 
 // Edition is the edition of a build.

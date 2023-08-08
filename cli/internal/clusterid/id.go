@@ -4,6 +4,8 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
+// package clusterid defines the structure of the Constellation cluster ID file.
+// Logic in this package should be kept minimal.
 package clusterid
 
 import (
