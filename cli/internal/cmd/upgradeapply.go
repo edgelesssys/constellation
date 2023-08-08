@@ -145,7 +145,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	if err := u.shouldUpgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	if err := u.confirmIfUpgradeAttestConfigHasDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
@@ -346,9 +346,9 @@ type imageFetcher interface {
 	) (string, error)
 }
 
-// shouldUpgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
+// confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set).
-func (u *upgradeApplyCmd) shouldUpgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
 	clusterAttestationConfig, err := getAttestationConfig(cmd.Context(), u.stableClient, newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
