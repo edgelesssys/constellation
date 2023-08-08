@@ -89,8 +89,6 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return helmClient.Versions()
 	}
 
-	stableClient := kubernetes.NewStableClient(kubeClient)
-
 	fetcher := attestationconfigapi.NewFetcher()
 	conf, err := config.New(fileHandler, constants.ConfigFilename, fetcher, flags.force)
 	var configValidationErr *config.ValidationError
@@ -99,6 +97,10 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
+	stableClient, err := kubernetes.NewStableClient(constants.AdminConfFilename)
+	if err != nil {
+		return fmt.Errorf("setting up stable client: %w", err)
+	}
 	output, err := status(cmd.Context(), kubeClient, stableClient, helmVersionGetter, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)
@@ -121,18 +123,9 @@ func status(
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
 	}
 
-	// attestation version
-	joinConfig, err := cmClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	attestationConfig, err := getAttestationConfig(ctx, cmClient, attestVariant)
 	if err != nil {
-		return "", fmt.Errorf("getting current config map: %w", err)
-	}
-	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
-	if !ok {
-		return "", fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
-	}
-	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
-	if err != nil {
-		return "", fmt.Errorf("unmarshalling attestation config: %w", err)
+		return "", fmt.Errorf("getting attestation config: %w", err)
 	}
 	prettyYAML, err := yaml.Marshal(attestationConfig)
 	if err != nil {
@@ -155,6 +148,22 @@ func status(
 	}
 
 	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
+}
+
+func getAttestationConfig(ctx context.Context, cmClient configMapClient, attestVariant variant.Variant) (config.AttestationCfg, error) {
+	joinConfig, err := cmClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return nil, fmt.Errorf("getting current config map: %w", err)
+	}
+	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
+	if !ok {
+		return nil, fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
+	}
+	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling attestation config: %w", err)
+	}
+	return attestationConfig, nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.

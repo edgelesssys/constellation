@@ -9,6 +9,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -32,11 +33,12 @@ import (
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		upgrader stubUpgrader
-		fetcher  stubImageFetcher
-		wantErr  bool
-		yesFlag  bool
-		stdin    string
+		upgrader             stubUpgrader
+		fetcher              stubImageFetcher
+		wantErr              bool
+		yesFlag              bool
+		stdin                string
+		remoteAttestationCfg config.AttestationCfg // attestation config returned by the stub Kubernetes client
 	}{
 		"success": {
 			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
@@ -140,12 +142,19 @@ func TestUpgradeApply(t *testing.T) {
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
+
+			if tc.remoteAttestationCfg == nil {
+				tc.remoteAttestationCfg = fakeAttestationConfigFromCluster(cmd.Context(), t, cloudprovider.Azure)
+			}
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 
-			err := upgrader.upgradeApply(cmd, handler)
+			stubStableClientFactory := func(_ string) (getConfigMapper, error) {
+				return stubGetConfigMap{tc.remoteAttestationCfg}, nil
+			}
+			err := upgrader.upgradeApply(cmd, handler, stubStableClientFactory)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -153,6 +162,21 @@ func TestUpgradeApply(t *testing.T) {
 			}
 		})
 	}
+}
+
+type stubGetConfigMap struct {
+	attestationCfg config.AttestationCfg
+}
+
+func (s stubGetConfigMap) GetCurrentConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
+	data, err := json.Marshal(s.attestationCfg)
+	if err != nil {
+		return nil, err
+	}
+	dataMap := map[string]string{
+		constants.AttestationConfigFilename: string(data),
+	}
+	return &corev1.ConfigMap{Data: dataMap}, nil
 }
 
 type stubUpgrader struct {
@@ -221,4 +245,12 @@ func (f stubImageFetcher) FetchReference(_ context.Context,
 	_, _ string,
 ) (string, error) {
 	return "", f.fetchReferenceErr
+}
+
+func fakeAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {
+	cpCfg := defaultConfigWithExpectedMeasurements(t, config.Default(), provider)
+	// the cluster attestation config needs to have real version numbers that are translated from "latest" as defined in config.Default()
+	err := cpCfg.Attestation.AzureSEVSNP.FetchAndSetLatestVersionNumbers(ctx, stubAttestationFetcher{}, time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	return cpCfg.GetAttestationConfig()
 }

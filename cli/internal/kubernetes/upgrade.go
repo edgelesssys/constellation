@@ -42,7 +42,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 	kubeadmv1beta3 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -121,18 +120,17 @@ func NewUpgrader(
 		upgradeID:    upgradeID,
 	}
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	kubeClient, err := newClient(kubeConfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("building kubernetes config: %w", err)
-	}
-
-	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("setting up kubernetes client: %w", err)
+		return nil, err
 	}
 	u.stableInterface = &stableClient{client: kubeClient}
 
 	// use unstructured client to avoid importing the operator packages
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("building kubernetes config: %w", err)
+	}
 	unstructuredClient, err := dynamic.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
@@ -552,47 +550,6 @@ func upgradeInProgress(nodeVersion updatev1alpha1.NodeVersion) bool {
 		}
 	}
 	return false
-}
-
-// StableInterface is an interface to interact with stable resources.
-type StableInterface interface {
-	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
-	UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
-	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
-	KubernetesVersion() (string, error)
-}
-
-// NewStableClient returns a new StableInterface.
-func NewStableClient(client kubernetes.Interface) StableInterface {
-	return &stableClient{client: client}
-}
-
-type stableClient struct {
-	client kubernetes.Interface
-}
-
-// GetCurrentConfigMap returns a ConfigMap given it's name.
-func (u *stableClient) GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
-	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
-}
-
-// UpdateConfigMap updates the given ConfigMap.
-func (u *stableClient) UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
-}
-
-// CreateConfigMap creates the given ConfigMap.
-func (u *stableClient) CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Create(ctx, configMap, metav1.CreateOptions{})
-}
-
-// KubernetesVersion returns the Kubernetes version of the cluster.
-func (u *stableClient) KubernetesVersion() (string, error) {
-	serverVersion, err := u.client.Discovery().ServerVersion()
-	if err != nil {
-		return "", err
-	}
-	return serverVersion.GitVersion, nil
 }
 
 type helmInterface interface {
