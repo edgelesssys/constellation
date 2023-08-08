@@ -5,9 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 */
 
 /*
-Package kubernetes provides functions to interact with a live cluster to the CLI.
+Package kubernetes provides functions to interact with a Kubernetes cluster to the CLI.
+The package should be used for:
 
-Currently it is used to implement the status and upgrade commands.
+  - Fetching status information about the cluster
+  - Creating, deleting, or migrating resources not managed by Helm
+
+The package should not be used for anything that doesn't just require the Kubernetes API.
+For example, Terraform and Helm actions should not be accessed by this package.
 */
 package kubernetes
 
