@@ -10,7 +10,7 @@ inputs:
     description: "Number of control-plane nodes to spawn."
     required: true
   cloudProvider:
-    description: "Either 'gcp' or 'azure'."
+    description: "Either 'gcp', 'aws' or 'azure'."
     required: true
   machineType:
     description: "Machine type of VM to spawn."
@@ -33,6 +33,9 @@ inputs:
   fetchMeasurements:
     default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
+  azureSNPEnforcementPolicy:
+    required: false
+    description: "Azure SNP enforcement policy."
 
 outputs:
   kubeconfig:
@@ -49,6 +52,17 @@ runs:
       shell: bash
       run: |
         yq eval -i "(.name) = \"e2e-test\"" constellation-conf.yaml
+
+    - name: Set Azure SNP enforcement policy
+      if: inputs.azureSNPEnforcementPolicy != ''
+      shell: bash
+      run: |
+        if [[ ${{ inputs.cloudProvider }} != 'azure' ]]; then
+          echo "SNP enforcement policy is only supported for Azure"
+          exit 1
+        fi
+        yq eval -i "(.attestation.azureSEVSNP.firmwareSignerConfig.enforcementPolicy) \
+          = \"${{ inputs.azureSNPEnforcementPolicy }}\"" constellation-conf.yaml
 
     - name: Set image
       id: setImage
