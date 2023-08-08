@@ -98,6 +98,50 @@ pkgsite
 You can now view the documentation on <http://localhost:8080/github.com/edgelesssys/constellation/v2>
 </details>
 
+## Adding to a package
+
+Adding new functionality to a package is often required whenever new features for Constellation are implemented.
+
+Before adding to a package, ask yourself:
+
+* Does this feature implement functionality outside the scope of this package?
+  * Keep in mind the design goals of the package you are proposing to edit
+  * If yes, consider adding it to a different package, or [add a new one](#adding-new-packages)
+* Does another package already provide this functionality?
+  * If yes, use that package instead
+* Do other parts of Constellation (binaries, tools, etc.) also require this feature?
+  * If yes, consider adding it an existing, or create a new package, in the global [`internal`](../internal/) package instead.
+* Do other parts of Constellation already implement this feature?
+  * If yes, evaluate if you can reasonably move the functionality from that part of Constellation to the global [`internal`](../internal/) package to avoid code duplication.
+
+If the answer to all of the questions was "No", extend the package with your chosen functionality.
+
+Remember to:
+
+* Update the package description if the package received any major changes
+* Add unit tests
+
+## Adding new packages
+
+If you are implementing a feature you might find yourself adding code that does not share anything with the existing packages of the binary/tool you are working on.
+In that case you might need to add a new package.
+
+Before adding a new package, ask yourself:
+
+* Does your new package provide functionality that could reasonably be added to one of the existing packages?
+  * Keep in mind the design goals of the existing package: Don't add out of scope functionality to an existing package to avoid creating a new one.
+* Do other parts of Constellation (binaries, tools, etc.) also require this feature?
+  * If yes, consider adding the new package to the global [`internal`](../internal/) package.
+* Do other parts of Constellation already implement this feature?
+  * If yes, evaluate if you can reasonably move the functionality from that part of Constellation to the global [`internal`](../internal/) package to avoid code duplication.
+
+If the answer to all of the questions was "No', add the new package to the binary/tool you are working on.
+
+Remember to:
+
+* Add a description to your new package
+* Add unit tests
+
 ## CLI reference
 
 The command reference within the CLI should follow the following conventions:
