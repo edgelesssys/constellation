@@ -12,7 +12,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -57,7 +56,7 @@ func (c *stubCloudTerminator) Called() bool {
 
 type stubIAMCreator struct {
 	createCalled bool
-	id           iamid.File
+	id           cloudcmd.IAMOutput
 	createErr    error
 }
 
@@ -65,7 +64,7 @@ func (c *stubIAMCreator) Create(
 	_ context.Context,
 	provider cloudprovider.Provider,
 	_ *cloudcmd.IAMConfigOptions,
-) (iamid.File, error) {
+) (cloudcmd.IAMOutput, error) {
 	c.createCalled = true
 	c.id.CloudProvider = provider
 	return c.id, c.createErr

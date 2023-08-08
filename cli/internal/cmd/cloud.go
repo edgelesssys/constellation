@@ -11,7 +11,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
-	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -29,7 +28,7 @@ type cloudIAMCreator interface {
 		ctx context.Context,
 		provider cloudprovider.Provider,
 		opts *cloudcmd.IAMConfigOptions,
-	) (iamid.File, error)
+	) (cloudcmd.IAMOutput, error)
 }
 
 type iamDestroyer interface {
