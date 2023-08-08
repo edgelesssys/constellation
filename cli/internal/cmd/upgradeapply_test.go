@@ -154,9 +154,12 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, stableClient: stubGetConfigMap{tc.remoteAttestationCfg}, clusterShower: &stubShowCluster{}, fileHandler: handler}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
 
-			err := upgrader.upgradeApply(cmd)
+			stubStableClientFactory := func(_ string) (configMapGetter, error) {
+				return stubGetConfigMap{tc.remoteAttestationCfg}, nil
+			}
+			err := upgrader.upgradeApply(cmd, stubStableClientFactory)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
