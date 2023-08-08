@@ -81,12 +81,9 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 type stableClientFactory func(kubeconfigPath string) (getConfigMapper, error)
 
+// needed because StableClient returns the bigger kubernetes.StableInterface
 func stableClientFactoryImpl(kubeconfigPath string) (getConfigMapper, error) {
-	client, err := kubernetes.NewClient(kubeconfigPath)
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewStableClient(client), nil
+	return kubernetes.NewStableClient(kubeconfigPath)
 }
 
 type getConfigMapper interface {

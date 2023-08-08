@@ -120,7 +120,7 @@ func NewUpgrader(
 		upgradeID:    upgradeID,
 	}
 
-	kubeClient, err := NewClient(kubeConfigPath)
+	kubeClient, err := newClient(kubeConfigPath)
 	if err != nil {
 		return nil, err
 	}
