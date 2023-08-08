@@ -88,8 +88,8 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("setting up terraform client: %w", err)
 	}
 
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient, clusterShower: tfClient}
-	return applyCmd.upgradeApply(cmd, fileHandler)
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient, clusterShower: tfClient, fileHandler: fileHandler}
+	return applyCmd.upgradeApply(cmd)
 }
 
 type configMapGetter interface {
@@ -102,16 +102,17 @@ type upgradeApplyCmd struct {
 	configFetcher attestationconfigapi.Fetcher
 	stableClient  configMapGetter
 	clusterShower clusterShower
+	fileHandler   file.Handler
 	log           debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
-	conf, err := config.New(fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
+	conf, err := config.New(u.fileHandler, constants.ConfigFilename, u.configFetcher, flags.force)
 	var configValidationErr *config.ValidationError
 	if errors.As(err, &configValidationErr) {
 		cmd.PrintErrln(configValidationErr.LongMessage())
@@ -138,7 +139,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
+	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 	conf.UpdateMAAURL(idFile.AttestationURL)
@@ -148,13 +149,13 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
-	tfOutput, err := u.migrateTerraform(cmd, u.imageFetcher, conf, fileHandler, flags)
+	tfOutput, err := u.migrateTerraform(cmd, u.imageFetcher, conf, flags)
 	if err != nil {
 		return fmt.Errorf("performing Terraform migrations: %w", err)
 	}
 	// reload idFile after terraform migration
 	// it might have been updated by the migration
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
+	if err := u.fileHandler.ReadJSON(constants.ClusterIDsFilename, &idFile); err != nil {
 		return fmt.Errorf("reading updated cluster ID file: %w", err)
 	}
 
@@ -169,7 +170,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 
 	if conf.GetProvider() == cloudprovider.Azure || conf.GetProvider() == cloudprovider.GCP || conf.GetProvider() == cloudprovider.AWS {
 		var upgradeErr *compatibility.InvalidUpgradeError
-		err = u.handleServiceUpgrade(cmd, conf, idFile, fileHandler, tfOutput, validK8sVersion, flags)
+		err = u.handleServiceUpgrade(cmd, conf, idFile, tfOutput, validK8sVersion, flags)
 		switch {
 		case errors.As(err, &upgradeErr):
 			cmd.PrintErrln(err)
@@ -218,7 +219,7 @@ func getImage(ctx context.Context, conf *config.Config, fetcher imageFetcher) (s
 // migrateTerraform checks if the Constellation version the cluster is being upgraded to requires a migration
 // of cloud resources with Terraform. If so, the migration is performed.
 func (u *upgradeApplyCmd) migrateTerraform(
-	cmd *cobra.Command, fetcher imageFetcher, conf *config.Config, fileHandler file.Handler, flags upgradeApplyFlags,
+	cmd *cobra.Command, fetcher imageFetcher, conf *config.Config, flags upgradeApplyFlags,
 ) (res terraform.ApplyOutput, err error) {
 	u.log.Debugf("Planning Terraform migrations")
 
@@ -286,7 +287,7 @@ func (u *upgradeApplyCmd) migrateTerraform(
 
 		// Patch MAA policy if we applied an Azure upgrade.
 		newIDFile := newIDFile(opts, tfOutput)
-		if err := mergeClusterIDFile(constants.ClusterIDsFilename, newIDFile, fileHandler); err != nil {
+		if err := mergeClusterIDFile(constants.ClusterIDsFilename, newIDFile, u.fileHandler); err != nil {
 			return tfOutput, fmt.Errorf("merging cluster ID files: %w", err)
 		}
 
@@ -380,12 +381,12 @@ func (u *upgradeApplyCmd) shouldUpgradeAttestConfigIfDiff(cmd *cobra.Command, ne
 	return nil
 }
 
-func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, fileHandler file.Handler, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
+func (u *upgradeApplyCmd) handleServiceUpgrade(cmd *cobra.Command, conf *config.Config, idFile clusterid.File, tfOutput terraform.ApplyOutput, validK8sVersion versions.ValidK8sVersion, flags upgradeApplyFlags) error {
 	var secret uri.MasterSecret
-	if err := fileHandler.ReadJSON(masterSecretPath(flags.workspace), &secret); err != nil {
+	if err := u.fileHandler.ReadJSON(masterSecretPath(flags.workspace), &secret); err != nil {
 		return fmt.Errorf("reading master secret: %w", err)
 	}
-	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.workspace, u.log, fileHandler)
+	serviceAccURI, err := cloudcmd.GetMarshaledServiceAccountURI(conf.GetProvider(), conf, flags.workspace, u.log, u.fileHandler)
 	if err != nil {
 		return fmt.Errorf("getting service account URI: %w", err)
 	}
