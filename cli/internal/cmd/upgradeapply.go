@@ -81,7 +81,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 type stableClientFactory func(kubeconfigPath string) (getConfigMapper, error)
 
-// needed because StableClient returns the bigger kubernetes.StableInterface
+// needed because StableClient returns the bigger kubernetes.StableInterface.
 func stableClientFactoryImpl(kubeconfigPath string) (getConfigMapper, error) {
 	return kubernetes.NewStableClient(kubeconfigPath)
 }
@@ -135,7 +135,7 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	stableClient, err := stableClientFactory(adminConfPath(flags.workspace))
+	stableClient, err := stableClientFactory(constants.AdminConfFilename)
 	if err != nil {
 		return fmt.Errorf("creating stable client: %w", err)
 	}
