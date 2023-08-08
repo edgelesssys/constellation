@@ -74,6 +74,8 @@ inputs:
   fetchMeasurements:
     default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
+  azureSNPEnforcementPolicy:
+    description: "Enable security policy for the cluster."
 
 outputs:
   kubeconfig:
@@ -239,6 +241,7 @@ runs:
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
         fetchMeasurements: ${{ inputs.fetchMeasurements }}
         cliVersion: ${{ inputs.cliVersion }}
+        azureSNPEnforcementPolicy: ${{ inputs.azureSNPEnforcementPolicy }}
 
     #
     # Test payloads
