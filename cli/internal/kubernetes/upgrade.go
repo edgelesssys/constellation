@@ -340,7 +340,7 @@ func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig 
 // GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the attestation config.
 func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
-	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
 	}
@@ -402,7 +402,7 @@ func (u *Upgrader) ExtendClusterConfigCertSANs(ctx context.Context, alternativeN
 // GetClusterConfiguration fetches the kubeadm-config configmap from the cluster, extracts the config
 // and returns both the full configmap and the ClusterConfiguration.
 func (u *Upgrader) GetClusterConfiguration(ctx context.Context) (kubeadmv1beta3.ClusterConfiguration, *corev1.ConfigMap, error) {
-	existingConf, err := u.stableInterface.GetCurrentConfigMap(ctx, constants.KubeadmConfigMap)
+	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.KubeadmConfigMap)
 	if err != nil {
 		return kubeadmv1beta3.ClusterConfiguration{}, nil, fmt.Errorf("retrieving current kubeadm-config: %w", err)
 	}

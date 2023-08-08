@@ -92,15 +92,15 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	return applyCmd.upgradeApply(cmd, fileHandler)
 }
 
-type getConfigMapper interface {
-	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+type configMapGetter interface {
+	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 }
 
 type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
-	stableClient  getConfigMapper
+	stableClient  configMapGetter
 	clusterShower clusterShower
 	log           debugLog
 }

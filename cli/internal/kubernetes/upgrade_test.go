@@ -626,7 +626,7 @@ type fakeStableClient struct {
 	k8sErr            error
 }
 
-func (s *fakeStableClient) GetCurrentConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
+func (s *fakeStableClient) GetConfigMap(_ context.Context, name string) (*corev1.ConfigMap, error) {
 	return s.configMaps[name], s.getErr
 }
 

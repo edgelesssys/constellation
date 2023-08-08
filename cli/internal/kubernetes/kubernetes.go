@@ -37,7 +37,7 @@ func newClient() (kubernetes.Interface, error) {
 
 // StableInterface is an interface to interact with stable resources.
 type StableInterface interface {
-	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 	UpdateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
 	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
 	KubernetesVersion() (string, error)
@@ -61,8 +61,8 @@ type stableClient struct {
 	client kubernetes.Interface
 }
 
-// GetCurrentConfigMap returns a ConfigMap given it's name.
-func (u *stableClient) GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
+// GetConfigMap returns a ConfigMap given it's name.
+func (u *stableClient) GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
 }
 

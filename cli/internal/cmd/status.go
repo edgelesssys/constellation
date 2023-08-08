@@ -148,7 +148,7 @@ func status(
 }
 
 func getAttestationConfig(ctx context.Context, cmClient configMapClient, attestVariant variant.Variant) (config.AttestationCfg, error) {
-	joinConfig, err := cmClient.GetCurrentConfigMap(ctx, constants.JoinConfigMap)
+	joinConfig, err := cmClient.GetConfigMap(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return nil, fmt.Errorf("getting current config map: %w", err)
 	}
@@ -243,5 +243,5 @@ type kubeClient interface {
 }
 
 type configMapClient interface {
-	GetCurrentConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
+	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 }

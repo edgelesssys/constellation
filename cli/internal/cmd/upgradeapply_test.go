@@ -170,7 +170,7 @@ type stubGetConfigMap struct {
 	attestationCfg config.AttestationCfg
 }
 
-func (s stubGetConfigMap) GetCurrentConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
+func (s stubGetConfigMap) GetConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
 	data, err := json.Marshal(s.attestationCfg)
 	if err != nil {
 		return nil, err
