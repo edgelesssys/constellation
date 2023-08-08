@@ -217,16 +217,15 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	cmd.PrintErrln("Note: If you just created the cluster, it can take a few minutes to connect.")
 	i.spinner.Start("Connecting ", false)
 	req := &initproto.InitRequest{
-		KmsUri:                 masterSecret.EncodeToURI(),
-		StorageUri:             uri.NoStoreURI,
-		MeasurementSalt:        measurementSalt,
-		CloudServiceAccountUri: serviceAccURI,
-		KubernetesVersion:      versions.VersionConfigs[k8sVersion].ClusterVersion,
-		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
-		ConformanceMode:        flags.conformance,
-		InitSecret:             idFile.InitSecret,
-		ClusterName:            clusterName,
-		ApiserverCertSans:      idFile.APIServerCertSANs,
+		KmsUri:               masterSecret.EncodeToURI(),
+		StorageUri:           uri.NoStoreURI,
+		MeasurementSalt:      measurementSalt,
+		KubernetesVersion:    versions.VersionConfigs[k8sVersion].ClusterVersion,
+		KubernetesComponents: versions.VersionConfigs[k8sVersion].KubernetesComponents.ToInitProto(),
+		ConformanceMode:      flags.conformance,
+		InitSecret:           idFile.InitSecret,
+		ClusterName:          clusterName,
+		ApiserverCertSans:    idFile.APIServerCertSANs,
 	}
 	i.log.Debugf("Sending initialization request")
 	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
