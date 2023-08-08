@@ -75,14 +75,18 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	imagefetcher := imagefetcher.New()
 	configFetcher := attestationconfigapi.NewFetcher()
+	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher}
+	return applyCmd.upgradeApply(cmd, fileHandler, stableClientFactoryImpl)
+}
 
-	stableClient, err := kubernetes.NewStableClient()
+type stableClientFactory func(kubeconfigPath string) (getConfigMapper, error)
+
+func stableClientFactoryImpl(kubeconfigPath string) (getConfigMapper, error) {
+	client, err := kubernetes.NewClient(kubeconfigPath)
 	if err != nil {
-		return fmt.Errorf("creating stable client: %w", err)
+		return nil, err
 	}
-
-	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, stableClient: stableClient}
-	return applyCmd.upgradeApply(cmd, fileHandler)
+	return kubernetes.NewStableClient(client), nil
 }
 
 type getConfigMapper interface {
@@ -93,11 +97,10 @@ type upgradeApplyCmd struct {
 	upgrader      cloudUpgrader
 	imageFetcher  imageFetcher
 	configFetcher attestationconfigapi.Fetcher
-	stableClient  getConfigMapper
 	log           debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler) error {
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Handler, stableClientFactory stableClientFactory) error {
 	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
@@ -135,7 +138,11 @@ func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, fileHandler file.Hand
 	conf.UpdateMAAURL(idFile.AttestationURL)
 
 	// If an image upgrade was just executed there won't be a diff. The function will return nil in that case.
-	if err := u.upgradeAttestConfigIfDiff(cmd, conf.GetAttestationConfig(), flags); err != nil {
+	stableClient, err := stableClientFactory(adminConfPath(flags.workspace))
+	if err != nil {
+		return fmt.Errorf("creating stable client: %w", err)
+	}
+	if err := u.upgradeAttestConfigIfDiff(cmd, stableClient, conf.GetAttestationConfig(), flags); err != nil {
 		return fmt.Errorf("upgrading measurements: %w", err)
 	}
 	// not moving existing Terraform migrator because of planned apply refactor
@@ -315,8 +322,8 @@ type imageFetcher interface {
 
 // upgradeAttestConfigIfDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set) and upgrade the measurements only.
-func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
-	clusterAttestationConfig, err := getAttestationConfig(cmd.Context(), u.stableClient, newConfig.GetVariant())
+func (u *upgradeApplyCmd) upgradeAttestConfigIfDiff(cmd *cobra.Command, stableClient getConfigMapper, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+	clusterAttestationConfig, err := getAttestationConfig(cmd.Context(), stableClient, newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}

@@ -120,18 +120,17 @@ func NewUpgrader(
 		upgradeID:    upgradeID,
 	}
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("building kubernetes config: %w", err)
-	}
-
-	kubeClient, err := newClient()
+	kubeClient, err := NewClient(kubeConfigPath)
 	if err != nil {
 		return nil, err
 	}
 	u.stableInterface = &stableClient{client: kubeClient}
 
 	// use unstructured client to avoid importing the operator packages
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("building kubernetes config: %w", err)
+	}
 	unstructuredClient, err := dynamic.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)

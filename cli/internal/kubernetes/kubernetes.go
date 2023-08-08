@@ -22,8 +22,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func newClient() (kubernetes.Interface, error) {
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
+// NewClient returns a new Kubernetes client.
+func NewClient(kubeconfigPath string) (kubernetes.Interface, error) {
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
 	}
@@ -43,17 +44,8 @@ type StableInterface interface {
 	KubernetesVersion() (string, error)
 }
 
-// NewStableClient returns a new StableClient.
-func NewStableClient() (StableInterface, error) {
-	client, err := newClient()
-	if err != nil {
-		return nil, err
-	}
-	return NewStableClientWithK8sClient(client), nil
-}
-
-// NewStableClientWithK8sClient returns a new StableInterface.
-func NewStableClientWithK8sClient(client kubernetes.Interface) StableInterface {
+// NewStableClient returns a new StableInterface.
+func NewStableClient(client kubernetes.Interface) StableInterface {
 	return &stableClient{client: client}
 }
 

@@ -97,7 +97,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	}
 	variant := conf.GetAttestationConfig().GetVariant()
 
-	stableClient := kubernetes.NewStableClientWithK8sClient(kubeClient)
+	stableClient := kubernetes.NewStableClient(kubeClient)
 	output, err := status(cmd.Context(), kubeClient, stableClient, helmVersionGetter, kubernetes.NewNodeVersionClient(unstructuredClient), variant)
 	if err != nil {
 		return fmt.Errorf("getting status: %w", err)

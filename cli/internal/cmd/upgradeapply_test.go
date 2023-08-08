@@ -149,9 +149,12 @@ func TestUpgradeApply(t *testing.T) {
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
-			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, stableClient: stubGetConfigMap{tc.remoteAttestationCfg}}
+			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 
-			err := upgrader.upgradeApply(cmd, handler)
+			stubStableClientFactory := func(_ string) (getConfigMapper, error) {
+				return stubGetConfigMap{tc.remoteAttestationCfg}, nil
+			}
+			err := upgrader.upgradeApply(cmd, handler, stubStableClientFactory)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
