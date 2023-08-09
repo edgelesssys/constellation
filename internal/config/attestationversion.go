@@ -9,6 +9,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 )
 
@@ -38,7 +40,7 @@ func (v AttestationVersion) MarshalYAML() (any, error) {
 
 // UnmarshalYAML implements a custom unmarshaller to resolve "atest" values.
 func (v *AttestationVersion) UnmarshalYAML(unmarshal func(any) error) error {
-	var rawUnmarshal any
+	var rawUnmarshal string
 	if err := unmarshal(&rawUnmarshal); err != nil {
 		return fmt.Errorf("raw unmarshal: %w", err)
 	}
@@ -56,29 +58,29 @@ func (v AttestationVersion) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements a custom unmarshaller to resolve "latest" values.
 func (v *AttestationVersion) UnmarshalJSON(data []byte) (err error) {
-	var rawUnmarshal any
+	var rawUnmarshal string
 	if err := json.Unmarshal(data, &rawUnmarshal); err != nil {
 		return fmt.Errorf("raw unmarshal: %w", err)
 	}
 	return v.parseRawUnmarshal(rawUnmarshal)
 }
 
-func (v *AttestationVersion) parseRawUnmarshal(rawUnmarshal any) error {
-	switch s := rawUnmarshal.(type) {
-	case string:
-		if strings.ToLower(s) == "latest" {
-			v.WantLatest = true
-			v.Value = placeholderVersionValue
-		} else {
-			return fmt.Errorf("invalid version value: %s", s)
+func (v *AttestationVersion) parseRawUnmarshal(str string) error {
+	if strings.HasPrefix(str, "0") {
+		return fmt.Errorf("no format with prefixed 0 (octal, hexadecimal) allowed: %s", str)
+	}
+	if strings.ToLower(str) == "latest" {
+		v.WantLatest = true
+		v.Value = placeholderVersionValue
+	} else {
+		ui, err := strconv.ParseUint(str, 10, 8)
+		if err != nil {
+			return fmt.Errorf("invalid version value: %s", str)
 		}
-	case int:
-		v.Value = uint8(s)
-	// yaml spec allows "1" as float64, so version number might come as a float:  https://github.com/go-yaml/yaml/issues/430
-	case float64:
-		v.Value = uint8(s)
-	default:
-		return fmt.Errorf("invalid version value type: %s", s)
+		if ui > math.MaxUint8 {
+			return fmt.Errorf("integer value is out ouf uint8 range: %d", ui)
+		}
+		v.Value = uint8(ui)
 	}
 	return nil
 }
