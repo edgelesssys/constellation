@@ -7,7 +7,7 @@ inputs:
     required: true
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
-    required: true
+    required: false
   namePrefix:
     description: "Name prefix to use for resources."
     required: true
@@ -47,8 +47,13 @@ runs:
           exit 0
         fi
 
+        kubernetesFlag=""
+        if [[ ! -z "${{ inputs.kubernetesVersion }}" ]]; then
+          kubernetesFlag="--kubernetes=${{ inputs.kubernetesVersion }}"
+        fi
+
         echo "flag=--update-config" | tee -a "$GITHUB_OUTPUT"
-        constellation config generate ${{ inputs.cloudProvider }} --kubernetes=${{ inputs.kubernetesVersion }}
+        constellation config generate ${{ inputs.cloudProvider }} ${kubernetesFlag}
 
     - name: Constellation iam create aws
       shell: bash
@@ -60,7 +65,7 @@ runs:
           ${{ steps.generate-config.outputs.flag }} \
           --yes
 
-    - name: Constellation iam create azure --kubernetes=${{ inputs.kubernetesVersion }}
+    - name: Constellation iam create azure
       shell: bash
       if: inputs.cloudProvider == 'azure'
       run: |
