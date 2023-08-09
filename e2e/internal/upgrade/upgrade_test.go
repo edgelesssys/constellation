@@ -78,18 +78,11 @@ func TestUpgrade(t *testing.T) {
 	cli, err := getCLIPath(*cliPath)
 	require.NoError(err)
 
-	// Migrate config if necessary.
-	log.Println("Migrating config if needed.")
-	cmd := exec.CommandContext(context.Background(), cli, "config", "migrate", "--debug")
-	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
-	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
-	log.Println(string(stdout))
-
 	targetVersions := writeUpgradeConfig(require, *targetImage, *targetKubernetes, *targetMicroservices)
 
 	log.Println("Fetching measurements for new image.")
-	cmd = exec.CommandContext(context.Background(), cli, "config", "fetch-measurements", "--insecure", "--debug")
-	stdout, stderr, err = runCommandWithSeparateOutputs(cmd)
+	cmd := exec.CommandContext(context.Background(), cli, "config", "fetch-measurements", "--insecure", "--debug")
+	stdout, stderr, err := runCommandWithSeparateOutputs(cmd)
 	require.NoError(err, "Stdout: %s\nStderr: %s", string(stdout), string(stderr))
 	log.Println(string(stdout))
 

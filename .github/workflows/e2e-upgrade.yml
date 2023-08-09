@@ -183,9 +183,10 @@ jobs:
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
-
-
-          ## IAM upgrade
+      - name: Migrate config
+        id: constellation-config-migrate
+        run: |
+          ./build/constellation config migrate --debug
       - name: Upgrade IAM configuration
         id: constellation-iam-upgrade
         uses: ./.github/actions/constellation_iam_upgrade
