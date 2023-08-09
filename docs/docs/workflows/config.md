@@ -82,8 +82,8 @@ Fill the desired VM type into the **instanceType** fields in the `constellation-
 
 ## Creating additional node groups
 
-By default, Constellation will create the node groups `control_plane_default` and `worker_default` for control-plane nodes and workers respectively.
-If you require additional control-plane or worker groups with different instance types, zone placements or disk sizes, you can add additional node groups to the `constellation-conf.yml` file.
+By default, Constellation creates the node groups `control_plane_default` and `worker_default` for control-plane nodes and workers, respectively.
+If you require additional control-plane or worker groups with different instance types, zone placements, or disk sizes, you can add additional node groups to the `constellation-conf.yml` file.
 Each node group can be scaled individually.
 
 
