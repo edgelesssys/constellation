@@ -91,8 +91,13 @@ func TestVersionUnmarshalYAML(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "09 errors",
-			sut:     "09",
+			name:    "hex format is invalid",
+			sut:     "0x10",
+			wantErr: true,
+		},
+		{
+			name:    "octal format is invalid",
+			sut:     "010",
 			wantErr: true,
 		},
 	}
