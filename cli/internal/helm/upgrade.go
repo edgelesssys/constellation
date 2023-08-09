@@ -196,7 +196,7 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 	// it should be done in a separate loop, instead of moving this one up.
 	for _, release := range newReleases {
 		c.log.Debugf("Installing new release %s", release.Chart.Metadata.Name)
-		if err := c.installNewRelease(ctx, timeout, config, idFile, release.Chart); err != nil {
+		if err := c.installNewRelease(ctx, timeout, release); err != nil {
 			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
 	}
@@ -311,13 +311,9 @@ func (c *UpgradeClient) csiVersions() (map[string]semver.Semver, error) {
 
 // installNewRelease installs a previously not installed release on the cluster.
 func (c *UpgradeClient) installNewRelease(
-	ctx context.Context, timeout time.Duration, conf *config.Config, idFile clusterid.File, chart *chart.Chart,
+	ctx context.Context, timeout time.Duration, release Release,
 ) error {
-	releaseName, values, err := c.loadUpgradeValues(ctx, conf, idFile, chart)
-	if err != nil {
-		return fmt.Errorf("loading values: %w", err)
-	}
-	return c.actions.installAction(ctx, releaseName, chart, values, timeout)
+	return c.actions.installAction(ctx, release.ReleaseName, release.Chart, release.Values, timeout)
 }
 
 // upgradeRelease upgrades a release running on the cluster.
