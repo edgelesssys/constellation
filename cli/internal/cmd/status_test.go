@@ -217,6 +217,10 @@ func (s stubConfigMapperAWSNitro) GetConfigMap(_ context.Context, _ string) (*co
 	}, nil
 }
 
+func (s stubConfigMapperAWSNitro) CreateConfigMap(_ context.Context, _ *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+	return nil, nil
+}
+
 type stubKubeClient struct {
 	nodes []corev1.Node
 	err   error

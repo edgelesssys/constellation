@@ -360,10 +360,6 @@ func (c *UpgradeClient) loadUpgradeValues(ctx context.Context, conf *config.Conf
 	case constellationOperatorsInfo.chartName:
 		releaseName = constellationOperatorsInfo.releaseName
 		values = loader.loadOperatorsValues()
-
-		if err := c.updateCRDs(ctx, chart); err != nil {
-			return "", nil, fmt.Errorf("updating CRDs: %w", err)
-		}
 	case constellationServicesInfo.chartName:
 		releaseName = constellationServicesInfo.releaseName
 		values = loader.loadConstellationServicesValues()
