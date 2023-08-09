@@ -203,6 +203,7 @@ runs:
         azureRegion: northeurope
         gcpProjectID: ${{ inputs.gcpProject }}
         gcpZone: europe-west3-b
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
 
     - name: Login to GCP (Cluster service account)
       if: inputs.cloudProvider == 'gcp'
@@ -230,14 +231,11 @@ runs:
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
-        gcpInClusterServiceAccountKey: ${{ inputs.gcpInClusterServiceAccountKey }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
-        kubernetesVersion: ${{ inputs.kubernetesVersion }}
-        existingConfig: ${{ steps.constellation-iam-create.outputs.existingConfig }}
         artifactNameSuffix: ${{ steps.create-prefix.outputs.prefix }}
         fetchMeasurements: ${{ inputs.fetchMeasurements }}
         cliVersion: ${{ inputs.cliVersion }}
