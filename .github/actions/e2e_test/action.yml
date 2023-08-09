@@ -4,52 +4,43 @@ description: "This test does the infrastructure management and runs the e2e test
 inputs:
   workerNodesCount:
     description: "Number of worker nodes to spawn."
-    required: false
     default: "2"
   controlNodesCount:
     description: "Number of control-plane nodes to spawn."
-    required: false
     default: "3"
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
   machineType:
     description: "VM machine type. Make sure it matches selected cloud provider!"
-    required: false
   osImage:
     description: "OS image to run."
     required: true
   isDebugImage:
     description: "Is OS img a debug img?"
-    default: "true"
     required: true
   cliVersion:
     description: "Version of a released CLI to download, e.g. 'v2.3.0', leave empty to build it."
-    required: false
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
-    required: false
   gcpProject:
     description: "The GCP project to deploy Constellation in."
-    required: false
+    required: true
   gcpIAMCreateServiceAccount:
     description: "Service account with permissions to create IAM configuration on GCP."
-    required: false
+    required: true
   gcpClusterCreateServiceAccount:
     description: "Service account with permissions to create a Constellation cluster on GCP."
-    required: false
+    required: true
   gcpInClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
-    required: false
+    required: true
   awsOpenSearchDomain:
     description: "AWS OpenSearch Endpoint Domain to upload the benchmark results."
-    required: false
   awsOpenSearchUsers:
     description: "AWS OpenSearch User to upload the benchmark results."
-    required: false
   awsOpenSearchPwd:
     description: "AWS OpenSearch Password to upload the benchmark results."
-    required: false
   azureClusterCreateCredentials:
     description: "Azure credentials authorized to create a Constellation cluster."
     required: true
@@ -61,10 +52,8 @@ inputs:
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
-    required: false
   buildBuddyApiKey:
     description: "BuildBuddy API key for caching Bazel artifacts"
-    required: false
   registry:
     description: "Container registry to use"
     required: true
@@ -72,8 +61,8 @@ inputs:
     description: "GitHub authorization token"
     required: true
   fetchMeasurements:
-    default: "false"
     description: "Update measurements via the 'constellation config fetch-measurements' command."
+    default: "false"
   azureSNPEnforcementPolicy:
     description: "Enable security policy for the cluster."
 
