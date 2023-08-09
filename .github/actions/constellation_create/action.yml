@@ -93,6 +93,7 @@ runs:
         yq eval -i "(.nodeGroups[] | .instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Set node count
+      # TODO(katexochen): remove if statement once 2.10 is released.
       if: inputs.cliVersion != 'v2.9.0' && inputs.cliVersion != 'v2.9.1'
       shell: bash
       run: |
