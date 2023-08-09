@@ -10,14 +10,14 @@ service API {
 
 // InitRequest is the rpc message sent to the Constellation bootstrapper to initiate the cluster bootstrapping.
 message InitRequest {
+  reserved 4;
+  reserved "cloud_service_account_uri";
   // KmsUri is an URI encoding access to the KMS service or master secret.
   string kms_uri = 1;
   // StorageUri is an URI encoding access to the storage service.
   string storage_uri = 2;
   // MeasurementSalt is a salt used to generate the clusterID for the initial bootstrapping node.
   bytes measurement_salt = 3;
-  // CloudServiceAccountUri is an URI encoding the cloud service account.
-  string cloud_service_account_uri = 4;
   // KubernetesVersion is the version of Kubernetes to install.
   string kubernetes_version = 5;
   // ConformanceMode is a flag to indicate whether the cluster should be bootstrapped for Kubernetes conformance testing.
