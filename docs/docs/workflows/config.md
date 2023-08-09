@@ -116,7 +116,7 @@ nodeGroups:
 
 This configuration creates an additional node group `high_cpu` with a larger instance type and disk.
 
-The field `zone` can be used to specify what availability zone nodes of the group are placed in.
+You can use the field `zone` to specify what availability zone nodes of the group are placed in.
 On Azure, this field is empty by default and nodes are automatically spread across availability zones.
 Consult the documentation of your cloud provider for more information:
 
