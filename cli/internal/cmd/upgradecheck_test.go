@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/cli/internal/upgrade"
 	"github.com/edgelesssys/constellation/v2/internal/api/versionsapi"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -347,12 +346,6 @@ func (u stubUpgradeChecker) CheckTerraformMigrations(_ string) error {
 
 func (u stubUpgradeChecker) CleanUpTerraformMigrations(_ string) error {
 	return u.err
-}
-
-// AddManualStateMigration is not used in this test.
-// TODO(AB#3248): remove this method together with the definition in the interfaces.
-func (u stubUpgradeChecker) AddManualStateMigration(_ terraform.StateMigration) {
-	panic("unused")
 }
 
 func TestNewCLIVersions(t *testing.T) {

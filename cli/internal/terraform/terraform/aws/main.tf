@@ -283,15 +283,3 @@ module "instance_group" {
     { "kubernetes.io/cluster/${local.name}" = "owned" }
   )
 }
-
-// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
-moved {
-  from = module.instance_group_control_plane
-  to   = module.instance_group["control_plane_default"]
-}
-
-// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
-moved {
-  from = module.instance_group_worker_nodes
-  to   = module.instance_group["worker_default"]
-}

@@ -597,7 +597,6 @@ func (c *Client) setLogLevel(logLevel LogLevel) error {
 }
 
 // StateMigration is a manual state migration that is not handled by Terraform due to missing features.
-// TODO(AB#3248): Remove this after we can assume that all existing clusters have been migrated.
 type StateMigration struct {
 	DisplayName string
 	Hook        func(ctx context.Context, tfClient TFMigrator) error
@@ -628,7 +627,6 @@ type tfInterface interface {
 }
 
 // TFMigrator is an interface for manual terraform state migrations (terraform state mv).
-// TODO(AB#3248): Remove this after we can assume that all existing clusters have been migrated.
 type TFMigrator interface {
 	StateMv(ctx context.Context, src, dst string, opts ...tfexec.StateMvCmdOption) error
 }
