@@ -93,11 +93,9 @@ type Upgrader struct {
 	helmClient       helmInterface
 	imageFetcher     imageFetcher
 	outWriter        io.Writer
-	// TODO(AB#3248): Remove this tfClient after we can assume that all existing clusters have been migrated.
-	tfClient   *terraform.Client
-	tfUpgrader *upgrade.TerraformUpgrader
-	log        debugLog
-	upgradeID  string
+	tfUpgrader       *upgrade.TerraformUpgrader
+	log              debugLog
+	upgradeID        string
 }
 
 // NewUpgrader returns a new Upgrader.
@@ -147,7 +145,6 @@ func NewUpgrader(
 	if err != nil {
 		return nil, fmt.Errorf("setting up terraform client: %w", err)
 	}
-	u.tfClient = tfClient
 
 	tfUpgrader, err := upgrade.NewTerraformUpgrader(tfClient, outWriter, fileHandler)
 	if err != nil {
@@ -161,12 +158,6 @@ func NewUpgrader(
 // GetUpgradeID returns the upgrade ID.
 func (u *Upgrader) GetUpgradeID() string {
 	return u.upgradeID
-}
-
-// AddManualStateMigration adds a manual state migration to the Terraform client.
-// TODO(AB#3248): Remove this method after we can assume that all existing clusters have been migrated.
-func (u *Upgrader) AddManualStateMigration(migration terraform.StateMigration) {
-	u.tfClient.WithManualStateMigration(migration)
 }
 
 // CheckTerraformMigrations checks whether Terraform migrations are possible in the current workspace.

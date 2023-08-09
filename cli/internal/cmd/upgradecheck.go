@@ -206,22 +206,16 @@ func (u *upgradeCheckCmd) upgradeCheck(cmd *cobra.Command, fileHandler file.Hand
 	}
 
 	u.log.Debugf("Planning Terraform migrations")
-	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil { // Why is this run twice?????
-		return fmt.Errorf("checking workspace: %w", err)
-	}
 
-	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
-	var awsZone string
-	if csp == cloudprovider.AWS {
-		awsZone = conf.Provider.AWS.Zone
-	}
-	manualMigrations := terraformMigrationAWSNodeGroups(csp, awsZone)
-	for _, migration := range manualMigrations {
-		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
-		u.checker.AddManualStateMigration(migration)
-	}
+	// Add manual migrations here if required
+	//
+	// var manualMigrations []terraform.StateMigration
+	// for _, migration := range manualMigrations {
+	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+	// 	  u.upgrader.AddManualStateMigration(migration)
+	// }
 
-	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil { // Why is this run twice?????
+	if err := u.checker.CheckTerraformMigrations(constants.UpgradeDir); err != nil {
 		return fmt.Errorf("checking workspace: %w", err)
 	}
 
@@ -765,7 +759,6 @@ type upgradeChecker interface {
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
 	CleanUpTerraformMigrations(upgradeWorkspace string) error
-	AddManualStateMigration(migration terraform.StateMigration)
 }
 
 type versionListFetcher interface {
