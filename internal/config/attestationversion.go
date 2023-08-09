@@ -58,15 +58,24 @@ func (v AttestationVersion) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements a custom unmarshaller to resolve "latest" values.
 func (v *AttestationVersion) UnmarshalJSON(data []byte) (err error) {
-	var rawUnmarshal string
-	if err := json.Unmarshal(data, &rawUnmarshal); err != nil {
-		return fmt.Errorf("raw unmarshal: %w", err)
+	// JSON has two distinct ways to represent numbers and strings.
+	// This means we cannot simply unmarshal to string, like with YAML.
+	// Unmarshalling to `any` causes Go to unmarshal numbers to float64.
+	// Therefore, try to unmarshal to string, and then to int, instead of using type assertions.
+	var unmarshalString string
+	if err := json.Unmarshal(data, &unmarshalString); err != nil {
+		var unmarshalInt int64
+		if err := json.Unmarshal(data, &unmarshalInt); err != nil {
+			return fmt.Errorf("unable to unmarshal to string or int: %w", err)
+		}
+		unmarshalString = strconv.FormatInt(unmarshalInt, 10)
 	}
-	return v.parseRawUnmarshal(rawUnmarshal)
+
+	return v.parseRawUnmarshal(unmarshalString)
 }
 
 func (v *AttestationVersion) parseRawUnmarshal(str string) error {
-	if strings.HasPrefix(str, "0") {
+	if strings.HasPrefix(str, "0") && len(str) != 1 {
 		return fmt.Errorf("no format with prefixed 0 (octal, hexadecimal) allowed: %s", str)
 	}
 	if strings.ToLower(str) == "latest" {

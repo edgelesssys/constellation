@@ -33,12 +33,11 @@ import (
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		upgrader             stubUpgrader
-		fetcher              stubImageFetcher
-		wantErr              bool
-		yesFlag              bool
-		stdin                string
-		remoteAttestationCfg config.AttestationCfg // attestation config returned by the stub Kubernetes client
+		upgrader stubUpgrader
+		fetcher  stubImageFetcher
+		wantErr  bool
+		yesFlag  bool
+		stdin    string
 	}{
 		"success": {
 			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
@@ -143,16 +142,15 @@ func TestUpgradeApply(t *testing.T) {
 			handler := file.NewHandler(afero.NewMemMapFs())
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 
-			if tc.remoteAttestationCfg == nil {
-				tc.remoteAttestationCfg = fakeAttestationConfigFromCluster(cmd.Context(), t, cloudprovider.Azure)
-			}
+			remoteAttestationCfg := fakeAttestationConfigFromCluster(cmd.Context(), t, cloudprovider.Azure)
+
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}}
 
 			stubStableClientFactory := func(_ string) (getConfigMapper, error) {
-				return stubGetConfigMap{tc.remoteAttestationCfg}, nil
+				return stubGetConfigMap{remoteAttestationCfg}, nil
 			}
 			err := upgrader.upgradeApply(cmd, handler, stubStableClientFactory)
 			if tc.wantErr {
