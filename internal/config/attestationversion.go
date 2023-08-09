@@ -64,11 +64,11 @@ func (v *AttestationVersion) UnmarshalJSON(data []byte) (err error) {
 	// Therefore, try to unmarshal to string, and then to int, instead of using type assertions.
 	var unmarshalString string
 	if err := json.Unmarshal(data, &unmarshalString); err != nil {
-		var unmarshalInt int
+		var unmarshalInt int64
 		if err := json.Unmarshal(data, &unmarshalInt); err != nil {
 			return fmt.Errorf("unable to unmarshal to string or int: %w", err)
 		}
-		unmarshalString = strconv.FormatInt(int64(unmarshalInt), 10)
+		unmarshalString = strconv.FormatInt(unmarshalInt, 10)
 	}
 
 	return v.parseRawUnmarshal(unmarshalString)
