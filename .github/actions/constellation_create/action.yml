@@ -71,9 +71,9 @@ outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
-  masterSecret:
-    description: "The master-secret for the cluster."
-    value: ${{ steps.constellation-init.outputs.MASTERSECRET }}
+  workspace:
+    description: "The Constellation workspace directory."
+    value: ${{ steps.constellation-init.outputs.WORKSPACE }}
   osImageUsed:
     description: "The OS image used in the cluster."
     value: ${{ steps.setImage.outputs.image }}
@@ -211,8 +211,8 @@ runs:
       shell: bash
       run: |
         constellation init --force --debug
-        echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
-        echo "MASTERSECRET=$(pwd)/constellation-mastersecret.json" >> $GITHUB_OUTPUT
+        echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
+        echo "WORKSPACE=$(pwd)" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
       shell: bash
