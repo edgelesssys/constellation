@@ -366,15 +366,14 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 	if equal {
 		return nil
 	}
-
+	cmd.Println("The configured attestation config is different from the attestation config in the cluster.")
+	diffStr, err := diffAttestationCfg(clusterAttestationConfig, newConfig)
+	if err != nil {
+		return fmt.Errorf("diffing attestation configs: %w", err)
+	}
+	cmd.Println("The following changes will be applied to the attestation config:")
+	cmd.Println(diffStr)
 	if !flags.yes {
-		cmd.Println("The configured attestation config is different from the attestation config in the cluster.")
-		diffStr, err := diffAttestationCfg(clusterAttestationConfig, newConfig)
-		if err != nil {
-			return fmt.Errorf("diffing attestation configs: %w", err)
-		}
-		cmd.Println("The following changes will be applied to the attestation config:")
-		cmd.Println(diffStr)
 		ok, err := askToConfirm(cmd, "Are you sure you want to change your cluster's attestation config?")
 		if err != nil {
 			return fmt.Errorf("asking for confirmation: %w", err)
