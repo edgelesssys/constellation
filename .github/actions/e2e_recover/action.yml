@@ -8,9 +8,6 @@ inputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     required: true
-  workspace:
-    description: "The argument to use for constellation -C."
-    required: true
 
 runs:
   using: "composite"
@@ -40,7 +37,7 @@ runs:
         start_time=$(date +%s)
         recovered=0
         while true; do
-            output=$(constellation recover -C ${{ inputs.workspace }} --force)
+            output=$(constellation recover --force)
             if echo "$output" | grep -q "Pushed recovery key."; then
                 echo "$output"
                 i=$(echo "$output" | grep -o "Pushed recovery key." | wc -l | sed 's/ //g')

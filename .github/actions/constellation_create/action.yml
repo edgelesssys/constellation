@@ -71,9 +71,6 @@ outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
-  workspace:
-    description: "The Constellation workspace directory."
-    value: ${{ steps.constellation-init.outputs.WORKSPACE }}
   osImageUsed:
     description: "The OS image used in the cluster."
     value: ${{ steps.setImage.outputs.image }}
@@ -212,7 +209,6 @@ runs:
       run: |
         constellation init --force --debug
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" | tee -a $GITHUB_OUTPUT
-        echo "WORKSPACE=$(pwd)" | tee -a $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
       shell: bash
