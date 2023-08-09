@@ -151,10 +151,8 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 			c.log.Debugf("Release %s not found, adding to new releases...", release.ReleaseName)
 			newReleases = append(newReleases, release)
 		case errors.As(err, &invalidUpgrade):
-			// TODO(elchead): remove invalid upgrade since we allow any upgrade now? previously even this was invalid: skipping constellation-operators upgrade: upgrading from v2.10.0-pre.0.20230807122325-630c24084cbd to v2.10.0-pre.0.20230807122325-630c24084cbd is not a valid upgrade: current version newer than or equal to new version
 			c.log.Debugf("Appending to %s upgrade: %s", release.ReleaseName, err)
 			upgradeReleases = append(upgradeReleases, release)
-		// upgradeErrs = append(upgradeErrs, fmt.Errorf("skipping %s upgrade: %w", release.ReleaseName, err))
 		case err != nil:
 			c.log.Debugf("Adding %s to upgrade releases...", release.ReleaseName)
 			return fmt.Errorf("should upgrade %s: %w", release.ReleaseName, err)
