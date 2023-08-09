@@ -183,6 +183,11 @@ func (c *UpgradeClient) Upgrade(ctx context.Context, config *config.Config, idFi
 
 	for _, release := range upgradeReleases {
 		c.log.Debugf("Upgrading release %s", release.Chart.Metadata.Name)
+		if release.ReleaseName == constellationOperatorsInfo.releaseName {
+			if err := c.updateCRDs(ctx, release.Chart); err != nil {
+				return fmt.Errorf("updating operator CRDs: %w", err)
+			}
+		}
 		if err := c.upgradeRelease(ctx, timeout, release); err != nil {
 			return fmt.Errorf("upgrading %s: %w", release.Chart.Metadata.Name, err)
 		}
