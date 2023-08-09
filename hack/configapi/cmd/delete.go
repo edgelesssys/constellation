@@ -10,8 +10,10 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/staticupload"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // newDeleteCmd creates the delete command.
@@ -22,7 +24,7 @@ func newDeleteCmd() *cobra.Command {
 		RunE:  runDelete,
 	}
 	cmd.Flags().StringP("version", "v", "", "Name of the version to delete (without .json suffix)")
-	must(enforceRequiredFlags(cmd, "version"))
+	must(cmd.MarkFlagRequired("version"))
 	return cmd
 }
 
@@ -43,21 +45,22 @@ func (d deleteCmd) delete(cmd *cobra.Command) error {
 }
 
 func runDelete(cmd *cobra.Command, _ []string) error {
+	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 	cfg := staticupload.Config{
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	repo, closefn, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log())
+	client, close, err := attestationconfigapi.NewClient(cmd.Context(), cfg, []byte(cosignPwd), []byte(privateKey), false, log)
 	if err != nil {
 		return fmt.Errorf("create attestation client: %w", err)
 	}
 	defer func() {
-		if err := closefn(cmd.Context()); err != nil {
+		if err := close(cmd.Context()); err != nil {
 			cmd.Printf("close client: %s\n", err.Error())
 		}
 	}()
 	deleteCmd := deleteCmd{
-		attestationClient: repo,
+		attestationClient: client,
 	}
 	return deleteCmd.delete(cmd)
 }

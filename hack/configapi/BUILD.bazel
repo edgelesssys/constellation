@@ -9,7 +9,7 @@ go_library(
 )
 
 go_binary(
-    name = "upload",
+    name = "configapi",
     embed = [":configapi_lib"],
     visibility = ["//visibility:public"],
 )

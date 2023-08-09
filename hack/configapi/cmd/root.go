@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/api/attestationconfigapi"
@@ -24,16 +23,12 @@ import (
 const (
 	awsRegion           = "eu-central-1"
 	awsBucket           = "cdn-constellation-backend"
-	invalidDefault      = 0
-	envAwsKeyID         = "AWS_ACCESS_KEY_ID"
-	envAwsKey           = "AWS_ACCESS_KEY"
 	envCosignPwd        = "COSIGN_PASSWORD"
 	envCosignPrivateKey = "COSIGN_PRIVATE_KEY"
 )
 
 var (
-	versionFilePath string
-	force           bool
+	maaFilePath string
 	// Cosign credentials.
 	cosignPwd  string
 	privateKey string
@@ -47,17 +42,20 @@ func Execute() error {
 // newRootCmd creates the root command.
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY AWS_ACCESS_KEY_ID=$ID AWS_ACCESS_KEY=$KEY upload --version-file $FILE",
+		Use:   "COSIGN_PASSWORD=$CPWD COSIGN_PRIVATE_KEY=$CKEY upload --version-file $FILE",
 		Short: "Upload a set of versions specific to the azure-sev-snp attestation variant to the config api.",
 
-		Long:    fmt.Sprintf("Upload a set of versions specific to the azure-sev-snp attestation variant to the config api. Please authenticate with AWS through your preferred method (e.g. environment variables, CLI) to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.", envCosignPrivateKey, envCosignPwd),
+		Long: fmt.Sprintf("Upload a set of versions specific to the azure-sev-snp attestation variant to the config api."+
+			"Please authenticate with AWS through your preferred method (e.g. environment variables, CLI)"+
+			"to be able to upload to S3. Set the %s and %s environment variables to authenticate with cosign.",
+			envCosignPrivateKey, envCosignPwd,
+		),
 		PreRunE: envCheck,
 		RunE:    runCmd,
 	}
-	rootCmd.Flags().StringVarP(&versionFilePath, "version-file", "f", "", "File path to the version json file.")
-	rootCmd.Flags().BoolVar(&force, "force", false, "force to upload version regardless of comparison to latest API value.")
-	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name. Setting it implies --force.")
-	must(enforceRequiredFlags(rootCmd, "version-file"))
+	rootCmd.Flags().StringVarP(&maaFilePath, "maa-claims-path", "t", "", "File path to a json file containing the MAA claims.")
+	rootCmd.Flags().StringP("upload-date", "d", "", "upload a version with this date as version name.")
+	must(rootCmd.MarkFlagRequired("maa-claims-path"))
 	rootCmd.AddCommand(newDeleteCmd())
 	return rootCmd
 }
@@ -73,121 +71,107 @@ func envCheck(_ *cobra.Command, _ []string) error {
 
 func runCmd(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
+	log := logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 	cfg := staticupload.Config{
 		Bucket: awsBucket,
 		Region: awsRegion,
 	}
-	versionBytes, err := os.ReadFile(versionFilePath)
+	maaClaimsBytes, err := os.ReadFile(maaFilePath)
 	if err != nil {
-		return fmt.Errorf("reading version file: %w", err)
+		return fmt.Errorf("reading MAA claims file: %w", err)
 	}
-	var inputVersion attestationconfigapi.AzureSEVSNPVersion
-	if err = json.Unmarshal(versionBytes, &inputVersion); err != nil {
-		return fmt.Errorf("unmarshalling version file: %w", err)
+	var maaTCB maaTokenTCBClaims
+	if err = json.Unmarshal(maaClaimsBytes, &maaTCB); err != nil {
+		return fmt.Errorf("unmarshalling MAA claims file: %w", err)
 	}
+	inputVersion := maaTCB.ToAzureSEVSNPVersion()
 
 	dateStr, err := cmd.Flags().GetString("upload-date")
 	if err != nil {
 		return fmt.Errorf("getting upload date: %w", err)
 	}
-	var uploadDate time.Time
+	uploadDate := time.Now()
 	if dateStr != "" {
 		uploadDate, err = time.Parse(attestationconfigapi.VersionFormat, dateStr)
 		if err != nil {
 			return fmt.Errorf("parsing date: %w", err)
 		}
-	} else {
-		uploadDate = time.Now()
-		force = true
 	}
 
-	doUpload := false
-	if !force {
-		latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, time.Now())
-		if err != nil {
-			return fmt.Errorf("fetching latest version: %w", err)
-		}
-
-		isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
-		if err != nil {
-			return fmt.Errorf("comparing versions: %w", err)
-		}
-		cmd.Print(versionComparisonInformation(isNewer, inputVersion, latestAPIVersion.AzureSEVSNPVersion))
-		doUpload = isNewer
-	} else {
-		doUpload = true
-		cmd.Println("Forcing upload of new version")
+	latestAPIVersion, err := attestationconfigapi.NewFetcher().FetchAzureSEVSNPVersionLatest(ctx, uploadDate)
+	if err != nil {
+		return fmt.Errorf("fetching latest version: %w", err)
 	}
 
-	if doUpload {
-		sut, sutClose, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log())
-		defer func() {
-			if err := sutClose(ctx); err != nil {
-				cmd.Printf("closing repo: %v\n", err)
-			}
-		}()
-		if err != nil {
-			return fmt.Errorf("creating repo: %w", err)
-		}
-
-		if err := sut.UploadAzureSEVSNP(ctx, inputVersion, uploadDate); err != nil {
-			return fmt.Errorf("uploading version: %w", err)
-		}
-		cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
+	isNewer, err := isInputNewerThanLatestAPI(inputVersion, latestAPIVersion.AzureSEVSNPVersion)
+	if err != nil {
+		return fmt.Errorf("comparing versions: %w", err)
 	}
+	if !isNewer {
+		fmt.Printf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+		return nil
+	}
+	fmt.Printf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+
+	client, stop, err := attestationconfigapi.NewClient(ctx, cfg, []byte(cosignPwd), []byte(privateKey), false, log)
+	defer func() {
+		if err := stop(ctx); err != nil {
+			cmd.Printf("stopping client: %v\n", err)
+		}
+	}()
+	if err != nil {
+		return fmt.Errorf("creating client: %w", err)
+	}
+
+	if err := client.UploadAzureSEVSNP(ctx, inputVersion, uploadDate); err != nil {
+		return fmt.Errorf("uploading version: %w", err)
+	}
+
+	cmd.Printf("Successfully uploaded new Azure SEV-SNP version: %+v\n", inputVersion)
 	return nil
 }
 
-func versionComparisonInformation(isNewer bool, inputVersion attestationconfigapi.AzureSEVSNPVersion, latestAPIVersion attestationconfigapi.AzureSEVSNPVersion) string {
-	if isNewer {
-		return fmt.Sprintf("Input version: %+v is newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
+// maaTokenTCBClaims describes the TCB information in a MAA token.
+type maaTokenTCBClaims struct {
+	TEESvn        uint8 `json:"x-ms-sevsnpvm-tee-svn"`
+	SNPFwSvn      uint8 `json:"x-ms-sevsnpvm-snpfw-svn"`
+	MicrocodeSvn  uint8 `json:"x-ms-sevsnpvm-microcode-svn"`
+	BootloaderSvn uint8 `json:"x-ms-sevsnpvm-bootloader-svn"`
+}
+
+func (c maaTokenTCBClaims) ToAzureSEVSNPVersion() attestationconfigapi.AzureSEVSNPVersion {
+	return attestationconfigapi.AzureSEVSNPVersion{
+		TEE:        c.TEESvn,
+		SNP:        c.SNPFwSvn,
+		Microcode:  c.MicrocodeSvn,
+		Bootloader: c.BootloaderSvn,
 	}
-	return fmt.Sprintf("Input version: %+v is not newer than latest API version: %+v\n", inputVersion, latestAPIVersion)
 }
 
 // isInputNewerThanLatestAPI compares all version fields with the latest API version and returns true if any input field is newer.
 func isInputNewerThanLatestAPI(input, latest attestationconfigapi.AzureSEVSNPVersion) (bool, error) {
-	inputValues := reflect.ValueOf(input)
-	latestValues := reflect.ValueOf(latest)
-	fields := reflect.TypeOf(input)
-	num := fields.NumField()
-	// validate that no input field is smaller than latest
-	for i := 0; i < num; i++ {
-		field := fields.Field(i)
-		inputValue := inputValues.Field(i).Uint()
-		latestValue := latestValues.Field(i).Uint()
-		if inputValue < latestValue {
-			return false, fmt.Errorf("input %s version: %d is older than latest API version: %d", field.Name, inputValue, latestValue)
-		} else if inputValue > latestValue {
-			return true, nil
-		}
+	if input == latest {
+		return false, nil
 	}
-	// check if any input field is greater than latest
-	for i := 0; i < num; i++ {
-		inputValue := inputValues.Field(i).Uint()
-		latestValue := latestValues.Field(i).Uint()
-		if inputValue > latestValue {
-			return true, nil
-		}
-	}
-	return false, nil
-}
 
-func enforceRequiredFlags(cmd *cobra.Command, flags ...string) error {
-	for _, flag := range flags {
-		if err := cmd.MarkFlagRequired(flag); err != nil {
-			return err
-		}
+	if input.TEE < latest.TEE {
+		return false, fmt.Errorf("input TEE version: %d is older than latest API version: %d", input.TEE, latest.TEE)
 	}
-	return nil
+	if input.SNP < latest.SNP {
+		return false, fmt.Errorf("input SNP version: %d is older than latest API version: %d", input.SNP, latest.SNP)
+	}
+	if input.Microcode < latest.Microcode {
+		return false, fmt.Errorf("input Microcode version: %d is older than latest API version: %d", input.Microcode, latest.Microcode)
+	}
+	if input.Bootloader < latest.Bootloader {
+		return false, fmt.Errorf("input Bootloader version: %d is older than latest API version: %d", input.Bootloader, latest.Bootloader)
+	}
+
+	return true, nil
 }
 
 func must(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func log() *logger.Logger {
-	return logger.New(logger.PlainLog, zap.DebugLevel).Named("attestationconfigapi")
 }

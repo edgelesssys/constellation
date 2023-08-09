@@ -208,6 +208,8 @@ jobs:
           azureIAMCreateCredentials: ${{ secrets.AZURE_E2E_IAM_CREDENTIALS }}
           registry: ghcr.io
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           fetchMeasurements: ${{ matrix.refStream != 'ref/release/stream/stable/?' }}
           azureSNPEnforcementPolicy: ${{ matrix.azureSNPEnforcementPolicy }}
 
@@ -266,6 +268,7 @@ jobs:
       cloudProvider: ${{ matrix.cloudProvider }}
       nodeCount: '3:2'
       scheduled: ${{ github.event_name == 'schedule' }}
+
   e2e-mini:
     name: Run miniconstellation E2E test
     runs-on: ubuntu-22.04

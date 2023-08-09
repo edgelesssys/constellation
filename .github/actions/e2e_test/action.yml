@@ -63,6 +63,10 @@ inputs:
   githubToken:
     description: "GitHub authorization token"
     required: true
+  cosignPassword:
+    description: "The password for the cosign private key. Used for uploading to the config API"
+  cosignPrivateKey:
+    description: "The cosign private key. Used for uploading to the config API"
   fetchMeasurements:
     description: "Update measurements via the 'constellation config fetch-measurements' command."
     default: "false"
@@ -94,6 +98,15 @@ runs:
       run: |
         if [[ "${{ inputs.workerNodesCount }}" -lt 2 ]]; then
           echo "::error::Test Perf-Bench requires at least 2 worker nodes."
+          exit 1
+        fi
+
+    - name: Validate verify input
+      if: inputs.test == 'verify'
+      shell: bash
+      run: |
+        if [[ "${{ inputs.cosignPassword }}" == '' || "${{ inputs.cosignPrivateKey }}" == '' ]]; then
+          echo "::error::e2e test verify requires cosignPassword and cosignPrivateKey to be set."
           exit 1
         fi
 
@@ -290,6 +303,8 @@ runs:
         cloudProvider: ${{ inputs.cloudProvider }}
         osImage: ${{ steps.constellation-create.outputs.osImageUsed }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
 
     - name: Run recover test
       if: inputs.test == 'recover'
