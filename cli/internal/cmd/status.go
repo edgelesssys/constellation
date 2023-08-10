@@ -112,7 +112,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 
 // status queries the cluster for the relevant status information and returns the output string.
 func status(
-	ctx context.Context, kubeClient kubeClient, cmClient configMapGetterAndCreater, getHelmVersions func() (fmt.Stringer, error),
+	ctx context.Context, kubeClient kubeClient, cmClient configMapClient, getHelmVersions func() (fmt.Stringer, error),
 	dynamicInterface kubernetes.DynamicInterface, attestVariant variant.Variant,
 ) (string, error) {
 	nodeVersion, err := kubernetes.GetConstellationVersion(ctx, dynamicInterface)
@@ -122,12 +122,8 @@ func status(
 	if len(nodeVersion.Status.Conditions) != 1 {
 		return "", fmt.Errorf("expected exactly one condition, got %d", len(nodeVersion.Status.Conditions))
 	}
-	joinCfgClient := kubernetes.NewJoinConfigMapClient(cmClient)
-	clusterJoinConfig, err := joinCfgClient.Get(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting current config map: %w", err)
-	}
-	attestationConfig, err := clusterJoinConfig.GetAttestationConfig(attestVariant)
+
+	attestationConfig, err := getAttestationConfig(ctx, cmClient, attestVariant)
 	if err != nil {
 		return "", fmt.Errorf("getting attestation config: %w", err)
 	}
@@ -152,6 +148,22 @@ func status(
 	}
 
 	return statusOutput(targetVersions, serviceVersions, status, nodeVersion, string(prettyYAML)), nil
+}
+
+func getAttestationConfig(ctx context.Context, cmClient configMapClient, attestVariant variant.Variant) (config.AttestationCfg, error) {
+	joinConfig, err := cmClient.GetConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return nil, fmt.Errorf("getting current config map: %w", err)
+	}
+	rawAttestationConfig, ok := joinConfig.Data[constants.AttestationConfigFilename]
+	if !ok {
+		return nil, fmt.Errorf("attestationConfig not found in %s", constants.JoinConfigMap)
+	}
+	attestationConfig, err := config.UnmarshalAttestationConfig([]byte(rawAttestationConfig), attestVariant)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling attestation config: %w", err)
+	}
+	return attestationConfig, nil
 }
 
 // statusOutput creates the status cmd output string by formatting the received information.
@@ -231,4 +243,8 @@ func parseStatusFlags(cmd *cobra.Command) (statusFlags, error) {
 
 type kubeClient interface {
 	GetNodes(ctx context.Context) ([]corev1.Node, error)
+}
+
+type configMapClient interface {
+	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 }

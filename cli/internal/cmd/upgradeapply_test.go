@@ -156,8 +156,8 @@ func TestUpgradeApply(t *testing.T) {
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
 
-			stubStableClientFactory := func(_ string) (configMapGetterAndCreater, error) {
-				return stubConfigMapClient{tc.remoteAttestationCfg}, nil
+			stubStableClientFactory := func(_ string) (configMapGetter, error) {
+				return stubGetConfigMap{tc.remoteAttestationCfg}, nil
 			}
 			err := upgrader.upgradeApply(cmd, stubStableClientFactory)
 			if tc.wantErr {
@@ -169,11 +169,11 @@ func TestUpgradeApply(t *testing.T) {
 	}
 }
 
-type stubConfigMapClient struct {
+type stubGetConfigMap struct {
 	attestationCfg config.AttestationCfg
 }
 
-func (s stubConfigMapClient) GetConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
+func (s stubGetConfigMap) GetConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
 	data, err := json.Marshal(s.attestationCfg)
 	if err != nil {
 		return nil, err
@@ -182,10 +182,6 @@ func (s stubConfigMapClient) GetConfigMap(_ context.Context, _ string) (*corev1.
 		constants.AttestationConfigFilename: string(data),
 	}
 	return &corev1.ConfigMap{Data: dataMap}, nil
-}
-
-func (s stubConfigMapClient) CreateConfigMap(_ context.Context, _ *corev1.ConfigMap) (*corev1.ConfigMap, error) {
-	return nil, nil
 }
 
 type stubUpgrader struct {
@@ -201,6 +197,10 @@ type stubUpgrader struct {
 
 func (u stubUpgrader) GetUpgradeID() string {
 	return "test-upgrade"
+}
+
+func (u stubUpgrader) BackupConfigMap(_ context.Context, _ *corev1.ConfigMap) error {
+	return nil
 }
 
 func (u stubUpgrader) UpgradeNodeVersion(_ context.Context, _ *config.Config, _ bool) error {

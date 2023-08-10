@@ -4,7 +4,6 @@ load("//bazel/go:go_test.bzl", "go_test")
 go_library(
     name = "kubernetes",
     srcs = [
-        "joinconfig.go",
         "kubernetes.go",
         "status.go",
         "upgrade.go",
@@ -48,12 +47,10 @@ go_library(
 
 go_test(
     name = "kubernetes_test",
-    srcs = [
-        "joinconfig_test.go",
-        "upgrade_test.go",
-    ],
+    srcs = ["upgrade_test.go"],
     embed = [":kubernetes"],
     deps = [
+        "//internal/attestation/measurements",
         "//internal/attestation/variant",
         "//internal/cloud/cloudprovider",
         "//internal/compatibility",

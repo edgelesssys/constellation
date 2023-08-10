@@ -33,7 +33,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -88,20 +87,15 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	return applyCmd.upgradeApply(cmd, stableClientFactoryImpl)
 }
 
-type stableClientFactory func(kubeconfigPath string) (configMapGetterAndCreater, error)
+type stableClientFactory func(kubeconfigPath string) (configMapGetter, error)
 
 // needed because StableClient returns the bigger kubernetes.StableInterface.
-func stableClientFactoryImpl(kubeconfigPath string) (configMapGetterAndCreater, error) {
+func stableClientFactoryImpl(kubeconfigPath string) (configMapGetter, error) {
 	return kubernetes.NewStableClient(kubeconfigPath)
 }
 
 type configMapGetter interface {
 	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
-}
-
-type configMapGetterAndCreater interface {
-	configMapGetter
-	CreateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
 }
 
 type upgradeApplyCmd struct {
@@ -359,16 +353,12 @@ type imageFetcher interface {
 
 // confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set).
-func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, stableClient configMapGetterAndCreater, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
-	joinCfgClient := kubernetes.NewJoinConfigMapClient(stableClient)
-	clusterJoinConfig, err := joinCfgClient.Get(cmd.Context())
-	if err != nil {
-		return fmt.Errorf("getting current config map: %w", err)
-	}
-	clusterAttestationConfig, err := clusterJoinConfig.GetAttestationConfig(newConfig.GetVariant())
+func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, stableClient configMapGetter, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
+	clusterAttestationConfig, clusterJoinConfig, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
+
 	// If the current config is equal, or there is an error when comparing the configs, we skip the upgrade.
 	equal, err := newConfig.EqualTo(clusterAttestationConfig)
 	if err != nil {
@@ -393,10 +383,10 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 			return errors.New("aborting upgrade since attestation config is different")
 		}
 	}
-	if err := joinCfgClient.Backup(cmd.Context(), clusterJoinConfig); err != nil {
-		return fmt.Errorf("backing up config map: %w", err)
+
+	if err := u.upgrader.BackupConfigMap(cmd.Context(), clusterJoinConfig); err != nil {
+		return fmt.Errorf("backing up join-config: %w", err)
 	}
-	u.log.Debugf("Backed up join-config")
 	return nil
 }
 
@@ -507,11 +497,14 @@ type upgradeApplyFlags struct {
 type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput) error
+	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
 	CleanUpTerraformMigrations(upgradeWorkspace string) error
 	AddManualStateMigration(migration terraform.StateMigration)
 	GetUpgradeID() string
+	BackupConfigMap(ctx context.Context, cm *corev1.ConfigMap) error
 }

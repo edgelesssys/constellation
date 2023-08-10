@@ -8,6 +8,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -300,6 +301,70 @@ func (u *Upgrader) CurrentKubernetesVersion(ctx context.Context) (string, error)
 		return "", fmt.Errorf("getting constellation-version: %w", err)
 	}
 	return nodeVersion.Spec.KubernetesClusterVersion, nil
+}
+
+// UpdateAttestationConfig fetches the cluster's attestation config, compares them to a new config,
+// and updates the cluster's config if it is different from the new one.
+func (u *Upgrader) UpdateAttestationConfig(ctx context.Context, newAttestConfig config.AttestationCfg) error {
+	currentAttestConfig, joinConfig, err := u.GetClusterAttestationConfig(ctx, newAttestConfig.GetVariant())
+	if err != nil {
+		return fmt.Errorf("getting attestation config: %w", err)
+	}
+	equal, err := newAttestConfig.EqualTo(currentAttestConfig)
+	if err != nil {
+		return fmt.Errorf("comparing attestation configs: %w", err)
+	}
+	if equal {
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen attestation config, skipping config upgrade")
+		return nil
+	}
+
+	// backup of previous measurements
+	joinConfig.Data[constants.AttestationConfigFilename+"_backup"] = joinConfig.Data[constants.AttestationConfigFilename]
+
+	newConfigJSON, err := json.Marshal(newAttestConfig)
+	if err != nil {
+		return fmt.Errorf("marshaling attestation config: %w", err)
+	}
+	joinConfig.Data[constants.AttestationConfigFilename] = string(newConfigJSON)
+	u.log.Debugf("Triggering attestation config update now")
+	if _, err = u.stableInterface.UpdateConfigMap(ctx, joinConfig); err != nil {
+		return fmt.Errorf("setting new attestation config: %w", err)
+	}
+
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's attestation config")
+	return nil
+}
+
+// GetClusterAttestationConfig fetches the join-config configmap from the cluster, extracts the config
+// and returns both the full configmap and the attestation config.
+func (u *Upgrader) GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
+	existingConf, err := u.stableInterface.GetConfigMap(ctx, constants.JoinConfigMap)
+	if err != nil {
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+	}
+	if _, ok := existingConf.Data[constants.AttestationConfigFilename]; !ok {
+		return nil, nil, errors.New("attestation config missing from join-config")
+	}
+
+	existingAttestationConfig, err := config.UnmarshalAttestationConfig([]byte(existingConf.Data[constants.AttestationConfigFilename]), variant)
+	if err != nil {
+		return nil, nil, fmt.Errorf("retrieving current attestation config: %w", err)
+	}
+
+	return existingAttestationConfig, existingConf, nil
+}
+
+// BackupConfigMap creates a backup of the given config map.
+func (u *Upgrader) BackupConfigMap(ctx context.Context, cm *corev1.ConfigMap) error {
+	backup := cm.DeepCopy()
+	backup.Name = fmt.Sprintf("%s-backup", backup.Name)
+	backup.ResourceVersion = "" // reset resource version to create a new resource
+	if _, err := u.stableInterface.CreateConfigMap(ctx, backup); err != nil {
+		return fmt.Errorf("backing up config map: %w", err)
+	}
+	u.log.Debugf("Successfully backed up config map %s", cm.Name)
+	return nil
 }
 
 // ExtendClusterConfigCertSANs extends the ClusterConfig stored under "kube-system/kubeadm-config" with the given SANs.
