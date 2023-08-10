@@ -54,6 +54,8 @@ When in doubt, check if the encountered [issue is known](https://github.com/edge
 
 :::
 
+If you want to restore the old attestation config after a failed upgrade, you can read the values in the config map `join-config-backup`. On each attestation config upgrade, the current values are stored there.
+
 You can use the `upgrade apply` command to change measurements of a running cluster:
 
 1. Modify the `measurements` key in your local `constellation-conf.yaml` to the expected values.
