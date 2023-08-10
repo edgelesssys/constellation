@@ -264,8 +264,7 @@ jobs:
     with:
       fromVersion: ${{ matrix.fromVersion }}
       cloudProvider: ${{ matrix.cloudProvider }}
-      workerNodesCount: 2
-      controlNodesCount: 3
+      nodeCount: '3:2'
       scheduled: ${{ github.event_name == 'schedule' }}
   e2e-mini:
     name: Run miniconstellation E2E test
