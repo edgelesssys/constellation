@@ -19,6 +19,7 @@ go_library(
     visibility = ["//cli:__subpackages__"],
     deps = [
         "//cli/internal/clusterid",
+        "//cli/internal/cmd/pathprefix",
         "//cli/internal/libvirt",
         "//cli/internal/terraform",
         "//internal/atls",

@@ -9,7 +9,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -36,18 +35,19 @@ import (
 func TestUpgradeApply(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		upgrader stubUpgrader
-		fetcher  stubImageFetcher
-		wantErr  bool
-		yesFlag  bool
-		stdin    string
+		upgrader                 *stubUpgrader
+		fetcher                  stubImageFetcher
+		wantErr                  bool
+		yesFlag                  bool
+		dontWantJoinConfigBackup bool
+		stdin                    string
 	}{
 		"success": {
-			upgrader: stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
+			upgrader: &stubUpgrader{currentConfig: config.DefaultForAzureSEVSNP()},
 			yesFlag:  true,
 		},
 		"nodeVersion some error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: someErr,
 			},
@@ -55,14 +55,14 @@ func TestUpgradeApply(t *testing.T) {
 			yesFlag: true,
 		},
 		"nodeVersion in progress error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:  config.DefaultForAzureSEVSNP(),
 				nodeVersionErr: kubernetes.ErrInProgress,
 			},
 			yesFlag: true,
 		},
 		"helm other error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 				helmErr:       someErr,
 			},
@@ -71,7 +71,7 @@ func TestUpgradeApply(t *testing.T) {
 			yesFlag: true,
 		},
 		"check terraform error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:     config.DefaultForAzureSEVSNP(),
 				checkTerraformErr: someErr,
 			},
@@ -80,7 +80,7 @@ func TestUpgradeApply(t *testing.T) {
 			yesFlag: true,
 		},
 		"abort": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 				terraformDiff: true,
 			},
@@ -89,7 +89,7 @@ func TestUpgradeApply(t *testing.T) {
 			stdin:   "no\n",
 		},
 		"clean terraform error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:     config.DefaultForAzureSEVSNP(),
 				cleanTerraformErr: someErr,
 				terraformDiff:     true,
@@ -99,7 +99,7 @@ func TestUpgradeApply(t *testing.T) {
 			stdin:   "no\n",
 		},
 		"plan terraform error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:    config.DefaultForAzureSEVSNP(),
 				planTerraformErr: someErr,
 			},
@@ -108,7 +108,7 @@ func TestUpgradeApply(t *testing.T) {
 			yesFlag: true,
 		},
 		"apply terraform error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig:     config.DefaultForAzureSEVSNP(),
 				applyTerraformErr: someErr,
 				terraformDiff:     true,
@@ -118,12 +118,20 @@ func TestUpgradeApply(t *testing.T) {
 			yesFlag: true,
 		},
 		"fetch reference error": {
-			upgrader: stubUpgrader{
+			upgrader: &stubUpgrader{
 				currentConfig: config.DefaultForAzureSEVSNP(),
 			},
 			fetcher: stubImageFetcher{fetchReferenceErr: someErr},
 			wantErr: true,
 			yesFlag: true,
+		},
+		"do no backup join-config when remote attestation config is the same": {
+			upgrader: &stubUpgrader{
+				currentConfig: fakeAzureAttestationConfigFromCluster(context.Background(), t, cloudprovider.Azure),
+			},
+			fetcher:                  stubImageFetcher{},
+			yesFlag:                  true,
+			dontWantJoinConfigBackup: true,
 		},
 	}
 
@@ -146,40 +154,22 @@ func TestUpgradeApply(t *testing.T) {
 
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 
-			remoteAttestationCfg := fakeAttestationConfigFromCluster(cmd.Context(), t, cloudprovider.Azure)
-
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 			require.NoError(handler.WriteJSON(constants.ClusterIDsFilename, clusterid.File{}))
 			require.NoError(handler.WriteJSON(constants.MasterSecretFilename, uri.MasterSecret{}))
 
 			upgrader := upgradeApplyCmd{upgrader: tc.upgrader, log: logger.NewTest(t), imageFetcher: tc.fetcher, configFetcher: stubAttestationFetcher{}, clusterShower: &stubShowCluster{}, fileHandler: handler}
 
-			stubStableClientFactory := func(_ string) (configMapGetter, error) {
-				return stubGetConfigMap{remoteAttestationCfg}, nil
-			}
-			err := upgrader.upgradeApply(cmd, stubStableClientFactory)
+			err := upgrader.upgradeApply(cmd)
 			if tc.wantErr {
 				assert.Error(err)
+				return
 			} else {
 				assert.NoError(err)
 			}
+			assert.Equal(!tc.dontWantJoinConfigBackup, tc.upgrader.backupWasCalled)
 		})
 	}
-}
-
-type stubGetConfigMap struct {
-	attestationCfg config.AttestationCfg
-}
-
-func (s stubGetConfigMap) GetConfigMap(_ context.Context, _ string) (*corev1.ConfigMap, error) {
-	data, err := json.Marshal(s.attestationCfg)
-	if err != nil {
-		return nil, err
-	}
-	dataMap := map[string]string{
-		constants.AttestationConfigFilename: string(data),
-	}
-	return &corev1.ConfigMap{Data: dataMap}, nil
 }
 
 type stubUpgrader struct {
@@ -191,13 +181,15 @@ type stubUpgrader struct {
 	checkTerraformErr error
 	applyTerraformErr error
 	cleanTerraformErr error
+	backupWasCalled   bool
 }
 
 func (u stubUpgrader) GetUpgradeID() string {
 	return "test-upgrade"
 }
 
-func (u stubUpgrader) BackupConfigMap(_ context.Context, _ *corev1.ConfigMap) error {
+func (u *stubUpgrader) BackupConfigMap(_ context.Context, _ *corev1.ConfigMap) error {
+	u.backupWasCalled = true
 	return nil
 }
 
@@ -254,7 +246,7 @@ func (f stubImageFetcher) FetchReference(_ context.Context,
 	return "", f.fetchReferenceErr
 }
 
-func fakeAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {
+func fakeAzureAttestationConfigFromCluster(ctx context.Context, t *testing.T, provider cloudprovider.Provider) config.AttestationCfg {
 	cpCfg := defaultConfigWithExpectedMeasurements(t, config.Default(), provider)
 	// the cluster attestation config needs to have real version numbers that are translated from "latest" as defined in config.Default()
 	err := cpCfg.Attestation.AzureSEVSNP.FetchAndSetLatestVersionNumbers(ctx, stubAttestationFetcher{}, time.Date(2022, time.January, 1, 0, 0, 0, 0, time.UTC))

@@ -85,14 +85,7 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 	}
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, clusterShower: tfClient, fileHandler: fileHandler}
-	return applyCmd.upgradeApply(cmd, stableClientFactoryImpl)
-}
-
-type stableClientFactory func(kubeconfigPath string) (configMapGetter, error)
-
-// needed because StableClient returns the bigger kubernetes.StableInterface.
-func stableClientFactoryImpl(kubeconfigPath string) (configMapGetter, error) {
-	return kubernetes.NewStableClient(kubeconfigPath)
+	return applyCmd.upgradeApply(cmd)
 }
 
 type configMapGetter interface {
@@ -108,7 +101,7 @@ type upgradeApplyCmd struct {
 	log           debugLog
 }
 
-func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command, stableClientFactory stableClientFactory) error {
+func (u *upgradeApplyCmd) upgradeApply(cmd *cobra.Command) error {
 	flags, err := parseUpgradeApplyFlags(cmd)
 	if err != nil {
 		return fmt.Errorf("parsing flags: %w", err)
