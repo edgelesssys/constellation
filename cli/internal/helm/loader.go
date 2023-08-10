@@ -134,7 +134,7 @@ func (i *ChartLoader) LoadReleases(
 	}
 
 	if idFile.MeasurementSalt == nil {
-		return nil, fmt.Errorf("missing measurement salt nd idFile")
+		return nil, errors.New("missing measurement salt in idFile")
 	}
 	svcVals, err := extraConstellationServicesValues(config, masterSecret, idFile.MeasurementSalt, idFile.UID, serviceAccURI, output)
 	if err != nil {

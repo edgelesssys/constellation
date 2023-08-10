@@ -208,11 +208,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("generating measurement salt: %w", err)
 	}
-	i.log.Debugf("Writing measurement salt: %x in idFile", measurementSalt)
 	idFile.MeasurementSalt = measurementSalt
-	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, &idFile, file.OptOverwrite); err != nil {
-		return fmt.Errorf("writing cluster ID file: %w", err)
-	}
 
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
