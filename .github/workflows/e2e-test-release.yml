@@ -19,6 +19,9 @@ on:
         type: string
         description: "Target version to test"
         required: true
+      regionZone:
+        description: "Region or zone to run e2e tests in. Leave empty for default region/zone."
+        type: string
   workflow_call:
     inputs:
       ref:
@@ -191,6 +194,7 @@ jobs:
           kubernetesVersion: ${{ matrix.kubernetes-version }}
           osImage: ""
           isDebugImage: "false"
+          regionZone: ${{ inputs.regionZone }}
           awsOpenSearchDomain: ${{ secrets.AWS_OPENSEARCH_DOMAIN }}
           awsOpenSearchUsers: ${{ secrets.AWS_OPENSEARCH_USER }}
           awsOpenSearchPwd: ${{ secrets.AWS_OPENSEARCH_PWD }}
@@ -243,6 +247,5 @@ jobs:
       fromVersion: ${{ matrix.fromVersion }}
       toImage: ${{ inputs.targetVersion }}
       cloudProvider: ${{ matrix.cloudProvider }}
-      workerNodesCount: 2
-      controlNodesCount: 3
+      nodeCount: '3:2'
       gitRef: ${{ inputs.ref || github.head_ref }}

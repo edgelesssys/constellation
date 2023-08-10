@@ -55,6 +55,9 @@ on:
         type: string
         default: "default"
         required: false
+      regionZone:
+        description: "Region or zone to create the cluster in. Leave empty for default region/zone."
+        type: string
       git-ref:
         description: "Git ref to checkout."
         type: string
@@ -96,6 +99,9 @@ on:
         description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
         type: string
         required: true
+      regionZone:
+        description: "Region or zone to create the cluster in. Leave empty for default region/zone."
+        type: string
       git-ref:
         description: "Git ref to checkout."
         type: string
@@ -232,6 +238,7 @@ jobs:
           controlNodesCount: ${{ needs.split-nodeCount.outputs.controlPlaneNodes }}
           cloudProvider: ${{ inputs.cloudProvider }}
           machineType: ${{ inputs.machineType }}
+          regionZone: ${{ inputs.regionZone }}
           gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcpClusterCreateServiceAccount: "constellation-e2e-cluster@constellation-331613.iam.gserviceaccount.com"
           gcpIAMCreateServiceAccount: "constellation-iam-e2e@constellation-331613.iam.gserviceaccount.com"

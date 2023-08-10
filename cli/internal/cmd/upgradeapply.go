@@ -217,17 +217,6 @@ func (u *upgradeApplyCmd) migrateTerraform(
 		return res, fmt.Errorf("checking workspace: %w", err)
 	}
 
-	// TODO(AB#3248): Remove this migration after we can assume that all existing clusters have been migrated.
-	var awsZone string
-	if conf.GetProvider() == cloudprovider.AWS {
-		awsZone = conf.Provider.AWS.Zone
-	}
-	manualMigrations := terraformMigrationAWSNodeGroups(conf.GetProvider(), awsZone)
-	for _, migration := range manualMigrations {
-		u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
-		u.upgrader.AddManualStateMigration(migration)
-	}
-
 	imageRef, err := getImage(cmd.Context(), conf, fetcher)
 	if err != nil {
 		return res, fmt.Errorf("fetching image reference: %w", err)
@@ -248,6 +237,15 @@ func (u *upgradeApplyCmd) migrateTerraform(
 	}
 
 	// Check if there are any Terraform migrations to apply
+
+	// Add manual migrations here if required
+	//
+	// var manualMigrations []terraform.StateMigration
+	// for _, migration := range manualMigrations {
+	// 	  u.log.Debugf("Adding manual Terraform migration: %s", migration.DisplayName)
+	// 	  u.upgrader.AddManualStateMigration(migration)
+	// }
+
 	hasDiff, err := u.upgrader.PlanTerraformMigrations(cmd.Context(), opts)
 	if err != nil {
 		return res, fmt.Errorf("planning terraform migrations: %w", err)
@@ -488,7 +486,6 @@ type cloudUpgrader interface {
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
 	CleanUpTerraformMigrations(upgradeWorkspace string) error
-	AddManualStateMigration(migration terraform.StateMigration)
 	GetUpgradeID() string
 	BackupConfigMap(ctx context.Context, name string) error
 }
