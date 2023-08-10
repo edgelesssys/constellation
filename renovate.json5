@@ -1,0 +1,233 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":preserveSemverRanges",
+    "helpers:pinGitHubActionDigests",
+    ":separateMajorReleases",
+    ":semanticCommitsDisabled",
+  ],
+  "commitMessagePrefix": "deps:",
+  "commitMessageAction": "update",
+  "addLabels": ["dependencies"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  "prConcurrentLimit": 4,
+  "ignorePaths": [
+    "cli/internal/helm/charts/cilium/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/aws-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/azuredisk-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/gcp-compute-persistent-disk-csi-driver/**",
+    "cli/internal/helm/charts/edgeless/csi/charts/openstack-cinder-csi/**",
+    "operators/constellation-node-operator/config/manager/kustomization.yaml",
+  ],
+  "ignoreDeps": ["github.com/edgelesssys/constellation/v2"],
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump",
+      ],
+      "enabled": true,
+      "prPriority": -30,
+    },
+    {
+      "matchPackagePatterns": ["^k8s.io", "^sigs.k8s.io"],
+      "groupName": "K8s dependencies",
+    },
+    {
+      "matchPackagePatterns": ["^go.etcd.io/etcd"],
+      "groupName": "etcd dependencies",
+    },
+    {
+      "matchPackagePatterns": ["^github.com/hashicorp/go-kms-wrapping"],
+      "groupName": "github.com/hashicorp/go-kms-wrapping",
+    },
+    {
+      "matchPackagePatterns": ["^github.com/aws/aws-sdk-go-v2"],
+      "groupName": "AWS SDK",
+      "prPriority": -10,
+    },
+    {
+      "matchPackagePatterns": [
+        "^github.com/Azure/",
+        "^github.com/AzureAD/microsoft-authentication-library-for-go",
+      ],
+      "groupName": "Azure SDK",
+    },
+    {
+      "matchPackagePatterns": ["^cloud.google.com/go"],
+      "groupName": "Google SDK",
+    },
+    {
+      "matchPackagePatterns": ["^google.golang.org/genproto"],
+      "prPriority": -10,
+    },
+    {
+      "matchPackagePatterns": ["^libvirt.org/go"],
+      "groupName": "libvirt.org/go",
+    },
+    {
+      "matchManagers": ["bazelisk", "bazel", "bazel-module"],
+      "matchPackageNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
+      "groupName": "bazel (core)",
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "allowedVersions": "1.19",
+    },
+    {
+      "matchManagers": ["pip_requirements"],
+      "groupName": "Python dependencies",
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub action dependencies",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump",
+      ],
+    },
+    {
+      "matchPackageNames": ["kubernetes/kubernetes"],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "Kubernetes versions",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": [
+        "registry.k8s.io/provider-aws/cloud-controller-manager",
+      ],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained AWS versions",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": [
+        "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager",
+        "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager",
+      ],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained Azure versions",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": [
+        "docker.io/k8scloudprovider/openstack-cloud-controller-manager",
+      ],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained OpenStack versions",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": ["registry.k8s.io/autoscaling/cluster-autoscaler"],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained GCP versions",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
+      "groupName": "cloud-provider-gcp (K8s version constrained)",
+      "prPriority": 15,
+    },
+    {
+      "matchPackagePrefixes": ["ghcr.io/edgelesssys/"],
+      "excludePackageNames": ["ghcr.io/edgelesssys/cloud-provider-gcp"],
+      "versioning": "semver",
+      "groupName": "Constellation containers",
+      "prPriority": 20,
+    },
+    {
+      "matchPackageNames": [
+        "registry.k8s.io/kas-network-proxy/proxy-agent",
+        "registry.k8s.io/kas-network-proxy/proxy-server",
+      ],
+      "versioning": "semver",
+      "groupName": "K8s version independent containers",
+      "prPriority": 15,
+    },
+    {
+      "matchPackageNames": ["^k8s.io/client-go"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+    },
+    {
+      "matchCategories": ["python", "js", "node"],
+      "prPriority": -20,
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["slsa-framework/slsa-github-generator"],
+      "pinDigests": false,
+    },
+    {
+      "matchPackagePatterns": ["_(darwin|linux)_(arm64|amd64)$"],
+      "additionalBranchPrefix": "{{packageName}}-",
+      "groupName": "{{packageName}}",
+    },
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["(^|\\/)versions.go$"],
+      "matchStrings": [
+        " \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+\\/\\/ renovate:container",
+      ],
+      "datasourceTemplate": "docker",
+    },
+    {
+      "fileMatch": ["(^|\\/)versions.go$"],
+      "matchStrings": [
+        " \"https:\\/\\/storage\\.googleapis\\.com\\/kubernetes-release\\/release\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        " \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases",
+    },
+    {
+      "fileMatch": ["(^|\\/)versions.go$"],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:github-release",
+      ],
+      "datasourceTemplate": "github-releases",
+    },
+    {
+      "fileMatch": ["(^|\\/)versions.go$"],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/kubernetes-sigs\\/cri-tools\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
+      ],
+      "depNameTemplate": "kubernetes-sigs/cri-tools",
+      "datasourceTemplate": "github-releases",
+      "autoReplaceStringTemplate": " \"https://github.com/kubernetes-sigs/cri-tools/releases/download/{{{newValue}}}/crictl-{{{newValue}}}-linux-amd64.tar.gz\"",
+    },
+    {
+      "fileMatch": ["versions.go$"],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"",
+      ],
+      "depNameTemplate": "containernetworking/plugins",
+      "datasourceTemplate": "github-releases",
+      "autoReplaceStringTemplate": " \"https://github.com/containernetworking/plugins/releases/download/{{{newValue}}}/cni-plugins-linux-amd64-{{{newValue}}}.tgz\"",
+    },
+    {
+      "fileMatch": ["\\.yaml$", "\\.yml$"],
+      "matchStrings": [
+        "go install (?<depName>[^@]+?)@(?<currentValue>[0-9a-f]{40})",
+      ],
+      "datasourceTemplate": "go",
+    },
+  ],
+}
