@@ -34,7 +34,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func newUpgradeApplyCmd() *cobra.Command {
@@ -86,10 +85,6 @@ func runUpgradeApply(cmd *cobra.Command, _ []string) error {
 
 	applyCmd := upgradeApplyCmd{upgrader: upgrader, log: log, imageFetcher: imagefetcher, configFetcher: configFetcher, clusterShower: tfClient, fileHandler: fileHandler}
 	return applyCmd.upgradeApply(cmd)
-}
-
-type configMapGetter interface {
-	GetConfigMap(ctx context.Context, name string) (*corev1.ConfigMap, error)
 }
 
 type upgradeApplyCmd struct {
@@ -345,7 +340,7 @@ type imageFetcher interface {
 // confirmIfUpgradeAttestConfigHasDiff checks if the locally configured measurements are different from the cluster's measurements.
 // If so the function will ask the user to confirm (if --yes is not set).
 func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command, newConfig config.AttestationCfg, flags upgradeApplyFlags) error {
-	clusterAttestationConfig, clusterJoinConfig, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
+	clusterAttestationConfig, err := u.upgrader.GetClusterAttestationConfig(cmd.Context(), newConfig.GetVariant())
 	if err != nil {
 		return fmt.Errorf("getting cluster attestation config: %w", err)
 	}
@@ -374,8 +369,7 @@ func (u *upgradeApplyCmd) confirmIfUpgradeAttestConfigHasDiff(cmd *cobra.Command
 			return errors.New("aborting upgrade since attestation config is different")
 		}
 	}
-
-	if err := u.upgrader.BackupConfigMap(cmd.Context(), clusterJoinConfig); err != nil {
+	if err := u.upgrader.BackupConfigMap(cmd.Context(), constants.JoinConfigMap); err != nil {
 		return fmt.Errorf("backing up join-config: %w", err)
 	}
 	return nil
@@ -488,14 +482,13 @@ type upgradeApplyFlags struct {
 type cloudUpgrader interface {
 	UpgradeNodeVersion(ctx context.Context, conf *config.Config, force bool) error
 	UpgradeHelmServices(ctx context.Context, config *config.Config, idFile clusterid.File, timeout time.Duration, allowDestructive bool, force bool, conformance bool, helmWaitMode helm.WaitMode, masterSecret uri.MasterSecret, serviceAccURI string, validK8sVersion versions.ValidK8sVersion, tfOutput terraform.ApplyOutput) error
-	UpdateAttestationConfig(ctx context.Context, newConfig config.AttestationCfg) error
 	ExtendClusterConfigCertSANs(ctx context.Context, alternativeNames []string) error
-	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error)
+	GetClusterAttestationConfig(ctx context.Context, variant variant.Variant) (config.AttestationCfg, error)
 	PlanTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (bool, error)
 	ApplyTerraformMigrations(ctx context.Context, opts upgrade.TerraformUpgradeOptions) (terraform.ApplyOutput, error)
 	CheckTerraformMigrations(upgradeWorkspace string) error
 	CleanUpTerraformMigrations(upgradeWorkspace string) error
 	AddManualStateMigration(migration terraform.StateMigration)
 	GetUpgradeID() string
-	BackupConfigMap(ctx context.Context, cm *corev1.ConfigMap) error
+	BackupConfigMap(ctx context.Context, name string) error
 }

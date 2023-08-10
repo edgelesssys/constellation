@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func TestUpgradeApply(t *testing.T) {
@@ -164,9 +163,8 @@ func TestUpgradeApply(t *testing.T) {
 			if tc.wantErr {
 				assert.Error(err)
 				return
-			} else {
-				assert.NoError(err)
 			}
+			assert.NoError(err)
 			assert.Equal(!tc.dontWantJoinConfigBackup, tc.upgrader.backupWasCalled)
 		})
 	}
@@ -188,7 +186,7 @@ func (u stubUpgrader) GetUpgradeID() string {
 	return "test-upgrade"
 }
 
-func (u *stubUpgrader) BackupConfigMap(_ context.Context, _ *corev1.ConfigMap) error {
+func (u *stubUpgrader) BackupConfigMap(_ context.Context, _ string) error {
 	u.backupWasCalled = true
 	return nil
 }
@@ -205,8 +203,8 @@ func (u stubUpgrader) UpdateAttestationConfig(_ context.Context, _ config.Attest
 	return nil
 }
 
-func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.Variant) (config.AttestationCfg, *corev1.ConfigMap, error) {
-	return u.currentConfig, &corev1.ConfigMap{}, nil
+func (u stubUpgrader) GetClusterAttestationConfig(_ context.Context, _ variant.Variant) (config.AttestationCfg, error) {
+	return u.currentConfig, nil
 }
 
 func (u stubUpgrader) CheckTerraformMigrations(_ string) error {
