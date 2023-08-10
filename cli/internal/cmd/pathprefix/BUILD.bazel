@@ -1,14 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "workspace",
-    srcs = ["workspace.go"],
-    importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cmd/workspace",
-    visibility = ["//cli:__subpackages__"],
-    deps = ["//internal/constants"],
-)
-
-go_library(
     name = "pathprefix",
     srcs = ["pathprefix.go"],
     importpath = "github.com/edgelesssys/constellation/v2/cli/internal/cmd/pathprefix",

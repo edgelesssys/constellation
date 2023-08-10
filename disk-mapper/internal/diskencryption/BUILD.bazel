@@ -1,69 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "mapper",
-    srcs = [
-        "cryptdevice.go",
-        "mapper.go",
-        "mapper_cgo.go",
-        "mapper_cross.go",
-    ],
-    importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper",
-    visibility = ["//disk-mapper:__subpackages__"],
-    deps = select({
-        "@io_bazel_rules_go//go/platform:aix": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:android": [
-            "//internal/cryptsetup",
-            "//internal/logger",
-            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
-            "@org_uber_go_zap//:zap",
-        ],
-        "@io_bazel_rules_go//go/platform:darwin": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:dragonfly": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:freebsd": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:illumos": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:ios": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:js": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:linux": [
-            "//internal/cryptsetup",
-            "//internal/logger",
-            "@com_github_martinjungblut_go_cryptsetup//:go-cryptsetup",
-            "@org_uber_go_zap//:zap",
-        ],
-        "@io_bazel_rules_go//go/platform:netbsd": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:openbsd": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:plan9": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:solaris": [
-            "//internal/logger",
-        ],
-        "@io_bazel_rules_go//go/platform:windows": [
-            "//internal/logger",
-        ],
-        "//conditions:default": [],
-    }),
-)
-
-go_library(
     name = "diskencryption",
     srcs = ["diskencryption.go"],
     importpath = "github.com/edgelesssys/constellation/v2/disk-mapper/internal/diskencryption",
