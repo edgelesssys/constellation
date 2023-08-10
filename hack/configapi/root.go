@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cmd
+package main
 
 import (
 	"encoding/json"
@@ -34,9 +34,11 @@ var (
 	privateKey string
 )
 
-// Execute executes the root command.
-func Execute() error {
-	return newRootCmd().Execute()
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
 // newRootCmd creates the root command.

@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package cmd
+package main
 
 import (
 	"testing"
@@ -13,14 +13,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testCfg = attestationconfigapi.AzureSEVSNPVersion{
-	Microcode:  93,
-	TEE:        0,
-	SNP:        6,
-	Bootloader: 2,
-}
-
 func TestIsInputNewerThanLatestAPI(t *testing.T) {
+	newTestCfg := func() attestationconfigapi.AzureSEVSNPVersion {
+		return attestationconfigapi.AzureSEVSNPVersion{
+			Microcode:  93,
+			TEE:        0,
+			SNP:        6,
+			Bootloader: 2,
+		}
+	}
+
 	testCases := map[string]struct {
 		latest attestationconfigapi.AzureSEVSNPVersion
 		input  attestationconfigapi.AzureSEVSNPVersion
@@ -31,8 +33,8 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
 				c.Microcode--
 				return c
-			}(testCfg),
-			latest: testCfg,
+			}(newTestCfg()),
+			latest: newTestCfg(),
 			expect: false,
 			errMsg: "input Microcode version: 92 is older than latest API version: 93",
 		},
@@ -41,8 +43,8 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 				c.Microcode++
 				c.Bootloader--
 				return c
-			}(testCfg),
-			latest: testCfg,
+			}(newTestCfg()),
+			latest: newTestCfg(),
 			expect: false,
 			errMsg: "input Bootloader version: 1 is older than latest API version: 2",
 		},
@@ -50,13 +52,13 @@ func TestIsInputNewerThanLatestAPI(t *testing.T) {
 			input: func(c attestationconfigapi.AzureSEVSNPVersion) attestationconfigapi.AzureSEVSNPVersion {
 				c.TEE++
 				return c
-			}(testCfg),
-			latest: testCfg,
+			}(newTestCfg()),
+			latest: newTestCfg(),
 			expect: true,
 		},
 		"input is equal to latest": {
-			input:  testCfg,
-			latest: testCfg,
+			input:  newTestCfg(),
+			latest: newTestCfg(),
 			expect: false,
 		},
 	}
