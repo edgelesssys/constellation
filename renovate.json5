@@ -75,6 +75,11 @@
       "groupName": "libvirt.org/go",
     },
     {
+      "matchManagers": ["bazelisk", "bazel", "bazel-module"],
+      "matchPackageNames": ["bazel", "io_bazel_rules_go", "bazel_gazelle"],
+      "groupName": "bazel (core)",
+    },
+    {
       "matchDatasources": ["golang-version"],
       "allowedVersions": "1.19",
     },
