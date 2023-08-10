@@ -35,6 +35,8 @@ type File struct {
 	// AttestationURL is the URL of the attestation service.
 	// It is only set if the cluster is created on Azure.
 	AttestationURL string `json:"attestationURL,omitempty"`
+	// MeasurementSalt is the salt generated during cluster init.
+	MeasurementSalt []byte `json:"measurementSalt,omitempty"`
 }
 
 // Merge merges the other file into the current file and returns the result.

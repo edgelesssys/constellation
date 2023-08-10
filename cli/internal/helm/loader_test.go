@@ -70,8 +70,8 @@ func TestLoadReleases(t *testing.T) {
 	chartLoader := ChartLoader{csp: config.GetProvider()}
 	helmReleases, err := chartLoader.LoadReleases(
 		config, true, WaitModeAtomic,
-		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("salt")}, []byte("salt"),
-		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid"}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
+		uri.MasterSecret{Key: []byte("secret"), Salt: []byte("masterSalt")},
+		fakeServiceAccURI(cloudprovider.GCP), clusterid.File{UID: "testuid", MeasurementSalt: []byte("measurementSalt")}, terraform.ApplyOutput{GCP: &terraform.GCPApplyOutput{}},
 	)
 	require.NoError(err)
 	chart := helmReleases.ConstellationServices.Chart

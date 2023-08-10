@@ -208,7 +208,11 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("generating measurement salt: %w", err)
 	}
-	i.log.Debugf("Measurement salt: %x", measurementSalt)
+	i.log.Debugf("Writing measurement salt: %x in idFile", measurementSalt)
+	idFile.MeasurementSalt = measurementSalt
+	if err := i.fileHandler.WriteJSON(constants.ClusterIDsFilename, &idFile, file.OptOverwrite); err != nil {
+		return fmt.Errorf("writing cluster ID file: %w", err)
+	}
 
 	clusterName := clusterid.GetClusterName(conf, idFile)
 	i.log.Debugf("Setting cluster name to %s", clusterName)
@@ -255,7 +259,7 @@ func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator atls.V
 	if err != nil {
 		return fmt.Errorf("getting Terraform output: %w", err)
 	}
-	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret, measurementSalt, serviceAccURI, idFile, output)
+	releases, err := helmLoader.LoadReleases(conf, flags.conformance, flags.helmWaitMode, masterSecret, serviceAccURI, idFile, output)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
